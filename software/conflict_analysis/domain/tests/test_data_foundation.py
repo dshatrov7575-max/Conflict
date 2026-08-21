@@ -287,18 +287,18 @@ class ProjectPackageTests(TestCase):
         present = clean_save(
             ParameterValue(
                 project=self.project,
-                code="ROUNDTRIP-CONFIRMED",
+                code="ROUNDTRIP-PROVISIONAL-NO-RANGE",
                 time_slice=time_slice,
                 assessment_set=human_set,
                 parameter_definition=definition,
                 target_type=TargetType.GROUP_TENSION_RELATION,
                 target_id=relation.id,
-                status=ValueStatus.CONFIRMED,
+                status=ValueStatus.PROVISIONAL,
                 value=2,
                 confidence=Decimal("0.7500"),
-                range_min=1,
-                range_max=3,
-                rationale="Тестовое значение проверяет перенос обоснования и диапазона.",
+                range_min=None,
+                range_max=None,
+                rationale="Test value verifies a present assessment without a range.",
             )
         )
         unknown = clean_save(
@@ -348,10 +348,52 @@ class ProjectPackageTests(TestCase):
                 entity_type="PARAMETER_VALUE",
                 entity_id=present.id,
                 before=None,
-                after={"status": ValueStatus.CONFIRMED},
+                after={"status": ValueStatus.PROVISIONAL},
             )
         )
         return present, unknown, source, link, audit
+
+    def _add_scenario_override_without_range(self):
+        time_slice = TimeSlice.objects.get(project=self.project, code="2011-12-15")
+        base_set = AssessmentSet.objects.get(
+            project=self.project, code="HUMAN_DRAFT"
+        )
+        scenario_set = clean_save(
+            AssessmentSet(
+                project=self.project,
+                code="SCENARIO-RANGE-TEST",
+                kind=AssessmentKind.SCENARIO,
+                name="Scenario range test",
+            )
+        )
+        scenario = clean_save(
+            Scenario(
+                project=self.project,
+                code="SCENARIO-RANGE-TEST",
+                time_slice=time_slice,
+                assessment_set=scenario_set,
+                base_assessment_set=base_set,
+                name="Scenario range test",
+            )
+        )
+        relation = GroupTensionRelation.objects.filter(project=self.project).first()
+        definition = ParameterDefinition.objects.get(project=self.project, code="UOS")
+        return clean_save(
+            ScenarioOverride(
+                project=self.project,
+                code="SCENARIO-OVERRIDE-NO-RANGE",
+                scenario=scenario,
+                parameter_definition=definition,
+                target_type=TargetType.GROUP_TENSION_RELATION,
+                target_id=relation.id,
+                status=ValueStatus.PROVISIONAL,
+                value=1,
+                confidence=Decimal("0.6000"),
+                range_min=None,
+                range_max=None,
+                rationale="Scenario override intentionally omits an admissible range.",
+            )
+        )
 
     def _delete_project_graph(self):
         EvidenceLink.objects.filter(project=self.project).delete()
@@ -362,8 +404,9 @@ class ProjectPackageTests(TestCase):
         GroupTensionRelation.objects.filter(project=self.project).delete()
         self.project.delete()
 
-    def test_json_schema_and_round_trip_preserve_identity_status_and_evidence(self):
+    def test_present_value_without_range_full_clean_and_json_round_trip(self):
         present, unknown, source, link, audit = self._add_assessments_and_evidence()
+        override = self._add_scenario_override_without_range()
         exported_json = export_project_json(self.project)
         self.assertEqual(exported_json, export_project_json(self.project))
         package = json.loads(exported_json)
@@ -383,9 +426,13 @@ class ProjectPackageTests(TestCase):
         restored_present = ParameterValue.objects.get(pk=present.id)
         restored_unknown = ParameterValue.objects.get(pk=unknown.id)
         self.assertEqual(restored_present.code, present.code)
-        self.assertEqual(restored_present.status, ValueStatus.CONFIRMED)
+        self.assertEqual(restored_present.status, ValueStatus.PROVISIONAL)
+        self.assertEqual(restored_present.value, 2)
         self.assertEqual(restored_present.confidence, Decimal("0.7500"))
-        self.assertEqual((restored_present.range_min, restored_present.range_max), (1, 3))
+        self.assertEqual(
+            (restored_present.range_min, restored_present.range_max),
+            (None, None),
+        )
         self.assertEqual(restored_present.rationale, present.rationale)
         self.assertEqual(restored_unknown.status, ValueStatus.UNKNOWN)
         self.assertIsNone(restored_unknown.value)
@@ -397,7 +444,126 @@ class ProjectPackageTests(TestCase):
         self.assertEqual(restored_link.parameter_value_id, present.id)
         self.assertEqual(restored_link.source_id, source.id)
         self.assertEqual(AuditEvent.objects.get(pk=audit.id).entity_id, present.id)
+        restored_override = ScenarioOverride.objects.get(pk=override.id)
+        self.assertEqual(restored_override.status, ValueStatus.PROVISIONAL)
+        self.assertEqual(restored_override.value, 1)
+        self.assertEqual(
+            (restored_override.range_min, restored_override.range_max),
+            (None, None),
+        )
         self.assertEqual(export_project_json(imported), exported_json)
+
+    def test_one_sided_ranges_are_rejected_by_models_and_packages(self):
+        present, *_ = self._add_assessments_and_evidence()
+        present.range_min = 0
+        with self.assertRaises(ValidationError):
+            present.full_clean()
+        present.range_min = None
+
+        package = export_project_package(self.project)
+        packaged_value = next(
+            item
+            for item in package["parameter_values"]
+            if item["id"] == str(present.id)
+        )
+        packaged_value["range_min"] = 0
+        with self.assertRaises(ProjectPackageValidationError):
+            import_project_package(seal_project_package(package))
+
+        override = self._add_scenario_override_without_range()
+        override.range_max = 2
+        with self.assertRaises(ValidationError):
+            override.full_clean()
+        override.range_min = 0
+        override.full_clean()
+        override.range_min = None
+        override.range_max = None
+
+        package = export_project_package(self.project)
+        packaged_override = next(
+            item
+            for item in package["scenario_overrides"]
+            if item["id"] == str(override.id)
+        )
+        packaged_override["range_max"] = 2
+        with self.assertRaises(ProjectPackageValidationError):
+            import_project_package(seal_project_package(package))
+
+    def test_two_sided_range_order_and_containment_validation_remain_active(self):
+        present, *_ = self._add_assessments_and_evidence()
+        override = self._add_scenario_override_without_range()
+
+        present.range_min = 3
+        present.range_max = 1
+        with self.assertRaises(ValidationError):
+            present.full_clean()
+
+        present.range_min = 0
+        present.range_max = 1
+        with self.assertRaises(ValidationError):
+            present.full_clean()
+
+        present.range_max = 3
+        clean_save(present)
+
+        override.range_min = 2
+        override.range_max = 0
+        with self.assertRaises(ValidationError):
+            override.full_clean()
+
+        override.range_min = 2
+        override.range_max = 3
+        with self.assertRaises(ValidationError):
+            override.full_clean()
+
+        override.range_min = 0
+        override.range_max = 2
+        clean_save(override)
+        package = export_project_package(self.project)
+
+        reversed_range = copy.deepcopy(package)
+        packaged_value = next(
+            item
+            for item in reversed_range["parameter_values"]
+            if item["id"] == str(present.id)
+        )
+        packaged_value["range_min"] = 3
+        packaged_value["range_max"] = 1
+        with self.assertRaises(ProjectPackageValidationError):
+            import_project_package(seal_project_package(reversed_range))
+
+        outside_range = copy.deepcopy(package)
+        packaged_value = next(
+            item
+            for item in outside_range["parameter_values"]
+            if item["id"] == str(present.id)
+        )
+        packaged_value["range_min"] = 0
+        packaged_value["range_max"] = 1
+        with self.assertRaises(ProjectPackageValidationError):
+            import_project_package(seal_project_package(outside_range))
+
+        reversed_override_range = copy.deepcopy(package)
+        packaged_override = next(
+            item
+            for item in reversed_override_range["scenario_overrides"]
+            if item["id"] == str(override.id)
+        )
+        packaged_override["range_min"] = 2
+        packaged_override["range_max"] = 0
+        with self.assertRaises(ProjectPackageValidationError):
+            import_project_package(seal_project_package(reversed_override_range))
+
+        outside_override_range = copy.deepcopy(package)
+        packaged_override = next(
+            item
+            for item in outside_override_range["scenario_overrides"]
+            if item["id"] == str(override.id)
+        )
+        packaged_override["range_min"] = 2
+        packaged_override["range_max"] = 3
+        with self.assertRaises(ProjectPackageValidationError):
+            import_project_package(seal_project_package(outside_override_range))
 
     def test_invalid_reference_duplicate_version_and_boolean_are_rejected_atomically(self):
         original = export_project_package(self.project)

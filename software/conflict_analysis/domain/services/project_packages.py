@@ -597,8 +597,10 @@ def _validate_assessment_metadata(
         _reject(f"{path}.confidence must be between 0 and 1.")
     if not item["rationale"].strip():
         _reject(f"{path}.rationale is required for a present assessment.")
-    if item["range_min"] is None or item["range_max"] is None:
-        _reject(f"{path} requires both range_min and range_max.")
+    if (item["range_min"] is None) != (item["range_max"] is None):
+        _reject(f"{path}.range_min and range_max must be provided together.")
+    if item["range_min"] is None:
+        return
 
     if definition["value_type"] not in {
         ParameterValueType.DECIMAL,

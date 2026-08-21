@@ -1,12 +1,18 @@
 # Conflict Analysis
 
 Каркас первой итерации — модульный монолит на Python 3.12, Django 5.2 LTS,
-Django REST Framework и PostgreSQL. Доменный модуль расположен в `domain/`;
+Django REST Framework и PostgreSQL 18. Доменный модуль расположен в `domain/`;
 проектная конфигурация и точки входа — в `conflict_analysis/`.
 
-PostgreSQL является штатной и интеграционной базой. SQLite включается только
-явно и предназначен для быстрых локальных тестов; успешный прогон на SQLite не
-заменяет PostgreSQL gate.
+PostgreSQL 18 является единственной штатной и интеграционной базой. Docker
+Compose фиксирует основную версию 18 через образ `postgres:18-alpine` и
+монтирует именованный volume в штатный для PostgreSQL 18 путь
+`/var/lib/postgresql`.
+Контракт PostgreSQL gate для этой итерации проверяется на чистой одноразовой
+PostgreSQL 18.4: миграции применяются с нуля, затем выполняются
+`manage.py check` и сфокусированный набор тестов с `USE_SQLITE=false`. SQLite
+включается только явно и предназначен для быстрых локальных тестов; успешный
+прогон на SQLite не заменяет PostgreSQL 18.4 gate.
 
 ## Запуск через Docker Compose
 
@@ -17,7 +23,7 @@ PostgreSQL является штатной и интеграционной ба�
 docker compose up --build
 ```
 
-Compose ожидает готовности PostgreSQL по healthcheck, применяет миграции и
+Compose ожидает готовности PostgreSQL 18 по healthcheck, применяет миграции и
 запускает сервер на <http://localhost:8000>.
 
 Полезные команды:
@@ -42,7 +48,7 @@ docker compose run --rm web python manage.py migrate --noinput
 
 ## Локальный запуск без Docker
 
-Нужны Python 3.12 и доступный PostgreSQL. Установите приложение с test extras:
+Нужны Python 3.12 и доступный PostgreSQL 18. Установите приложение с test extras:
 
 Windows PowerShell:
 
@@ -83,8 +89,8 @@ $env:USE_SQLITE = "true"
 python -m pytest
 ```
 
-Перед интеграционной поставкой верните `USE_SQLITE=false` и выполните тесты на
-чистой PostgreSQL базе.
+Перед интеграционной поставкой верните `USE_SQLITE=false` и выполните миграции,
+`manage.py check` и сфокусированные тесты на чистой PostgreSQL 18.4 базе.
 
 ## Границы архитектуры
 

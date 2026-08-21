@@ -385,13 +385,31 @@
             }
           },
           "else": {
-            "properties": {
-              "value": {"not": {"type": "null"}},
-              "confidence": {"type": "string"},
-              "range_min": {"not": {"type": "null"}},
-              "range_max": {"not": {"type": "null"}},
-              "rationale": {"pattern": ".*\\S.*"}
-            }
+            "allOf": [
+              {
+                "properties": {
+                  "value": {"not": {"type": "null"}},
+                  "confidence": {"type": "string"},
+                  "rationale": {"pattern": ".*\\S.*"}
+                }
+              },
+              {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "range_min": {"type": "null"},
+                      "range_max": {"type": "null"}
+                    }
+                  },
+                  {
+                    "properties": {
+                      "range_min": {"not": {"type": "null"}},
+                      "range_max": {"not": {"type": "null"}}
+                    }
+                  }
+                ]
+              }
+            ]
           }
         }
       ],
@@ -552,13 +570,31 @@
             }
           },
           "else": {
-            "properties": {
-              "value": {"not": {"type": "null"}},
-              "confidence": {"type": "string"},
-              "range_min": {"not": {"type": "null"}},
-              "range_max": {"not": {"type": "null"}},
-              "rationale": {"pattern": ".*\\S.*"}
-            }
+            "allOf": [
+              {
+                "properties": {
+                  "value": {"not": {"type": "null"}},
+                  "confidence": {"type": "string"},
+                  "rationale": {"pattern": ".*\\S.*"}
+                }
+              },
+              {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "range_min": {"type": "null"},
+                      "range_max": {"type": "null"}
+                    }
+                  },
+                  {
+                    "properties": {
+                      "range_min": {"not": {"type": "null"}},
+                      "range_max": {"not": {"type": "null"}}
+                    }
+                  }
+                ]
+              }
+            ]
           }
         }
       ],

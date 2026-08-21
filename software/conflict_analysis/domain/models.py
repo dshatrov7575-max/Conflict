@@ -78,7 +78,7 @@ def _value_presence_constraint(prefix: str) -> models.CheckConstraint:
 
 
 def _assessment_metadata_constraint(prefix: str) -> models.CheckConstraint:
-    """Require provenance metadata for values while keeping absent states empty."""
+    """Require provenance metadata and optional ranges supplied as a pair."""
 
     return models.CheckConstraint(
         condition=(
@@ -92,10 +92,12 @@ def _assessment_metadata_constraint(prefix: str) -> models.CheckConstraint:
                 Q(
                     status__in=tuple(PRESENT_VALUE_STATUSES),
                     confidence__isnull=False,
-                    range_min__isnull=False,
-                    range_max__isnull=False,
                 )
                 & ~Q(rationale="")
+                & (
+                    Q(range_min__isnull=True, range_max__isnull=True)
+                    | Q(range_min__isnull=False, range_max__isnull=False)
+                )
             )
         ),
         name=f"{prefix}_metadata_consistent",
@@ -584,8 +586,10 @@ def _validate_assessment_metadata(
         errors["confidence"] = "Confidence must be between 0 and 1."
     if not rationale.strip():
         errors["rationale"] = "A present assessment requires a rationale."
-    if range_min is None or range_max is None:
-        errors["range_min"] = "A present assessment requires an admissible range."
+    if (range_min is None) != (range_max is None):
+        errors["range_min"] = "Range minimum and maximum must be provided together."
+        return
+    if range_min is None:
         return
     if definition is None or definition.value_type not in {
         ParameterValueType.DECIMAL,

@@ -511,7 +511,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='scenariooverride',
-            constraint=models.CheckConstraint(condition=models.Q(models.Q(('confidence__isnull', True), ('range_max__isnull', True), ('range_min__isnull', True), ('status__in', ('UNKNOWN', 'NOT_APPLICABLE', 'INSUFFICIENT_DATA', 'OPEN_METHOD'))), models.Q(('confidence__isnull', False), ('range_max__isnull', False), ('range_min__isnull', False), ('status__in', ('PROVISIONAL', 'CONFIRMED')), models.Q(('rationale', ''), _negated=True)), _connector='OR'), name='domain_override_metadata_consistent'),
+            constraint=models.CheckConstraint(condition=models.Q(models.Q(('confidence__isnull', True), ('range_max__isnull', True), ('range_min__isnull', True), ('status__in', ('UNKNOWN', 'NOT_APPLICABLE', 'INSUFFICIENT_DATA', 'OPEN_METHOD'))), models.Q(('confidence__isnull', False), ('status__in', ('PROVISIONAL', 'CONFIRMED')), models.Q(('rationale', ''), _negated=True), models.Q(models.Q(('range_max__isnull', True), ('range_min__isnull', True)), models.Q(('range_max__isnull', False), ('range_min__isnull', False)), _connector='OR')), _connector='OR'), name='domain_override_metadata_consistent'),
         ),
         migrations.AddConstraint(
             model_name='tensionpoint',
@@ -599,6 +599,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='parametervalue',
-            constraint=models.CheckConstraint(condition=models.Q(models.Q(('confidence__isnull', True), ('range_max__isnull', True), ('range_min__isnull', True), ('status__in', ('UNKNOWN', 'NOT_APPLICABLE', 'INSUFFICIENT_DATA', 'OPEN_METHOD'))), models.Q(('confidence__isnull', False), ('range_max__isnull', False), ('range_min__isnull', False), ('status__in', ('PROVISIONAL', 'CONFIRMED')), models.Q(('rationale', ''), _negated=True)), _connector='OR'), name='domain_value_metadata_consistent'),
+            constraint=models.CheckConstraint(condition=models.Q(models.Q(('confidence__isnull', True), ('range_max__isnull', True), ('range_min__isnull', True), ('status__in', ('UNKNOWN', 'NOT_APPLICABLE', 'INSUFFICIENT_DATA', 'OPEN_METHOD'))), models.Q(('confidence__isnull', False), ('status__in', ('PROVISIONAL', 'CONFIRMED')), models.Q(('rationale', ''), _negated=True), models.Q(models.Q(('range_max__isnull', True), ('range_min__isnull', True)), models.Q(('range_max__isnull', False), ('range_min__isnull', False)), _connector='OR')), _connector='OR'), name='domain_value_metadata_consistent'),
         ),
     ]
