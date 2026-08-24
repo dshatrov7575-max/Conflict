@@ -30,6 +30,8 @@ Compose ожидает готовности PostgreSQL 18 по healthcheck, пр
 
 ```bash
 docker compose run --rm web python manage.py migrate --noinput
+# Legacy V1 compatibility/regression seed only; current V4 data uses the
+# versioned Foundation import boundary documented in docs/foundation-package-v2.md.
 docker compose run --rm web python manage.py seed_zhanaozen
 docker compose run --rm web pytest
 docker compose run --rm web python manage.py check
