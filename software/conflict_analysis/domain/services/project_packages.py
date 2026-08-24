@@ -58,6 +58,28 @@ from domain.models import (
 PACKAGE_FORMAT = "conflict-analysis-project"
 PACKAGE_VERSION = "1.0.0"
 HASH_ALGORITHM = "sha256"
+# The v1 package is a frozen compatibility format.  These sections remain
+# importable for lossless historical round trips, but none of them grants
+# authority in the Foundation/V4 domain.
+LEGACY_COMPATIBILITY_ONLY = "LEGACY_COMPATIBILITY_ONLY"
+V1_SECTION_AUTHORITY = {
+    "evidence_sources": LEGACY_COMPATIBILITY_ONLY,
+    "evidence_links": LEGACY_COMPATIBILITY_ONLY,
+    "scenarios": LEGACY_COMPATIBILITY_ONLY,
+    "scenario_overrides": LEGACY_COMPATIBILITY_ONLY,
+}
+V1_HISTORICAL_SCENARIO_RESIDUE = frozenset(
+    {"scenarios", "scenario_overrides"}
+)
+CANONICAL_EVIDENCE_CHAIN = (
+    "Source",
+    "Document",
+    "DocumentVersion",
+    "TextFragment",
+    "Fact",
+    "Assessment/ParameterValue",
+)
+CANONICAL_CAPTURED_CONTENT_MODEL = "DocumentContent"
 SCHEMA_PATH = (
     Path(__file__).resolve().parent
     / "schemas"
@@ -1170,7 +1192,12 @@ def _common(item: Mapping[str, Any], project: Project | None = None) -> dict[str
 
 @transaction.atomic
 def import_project_package(raw_package: Mapping[str, Any] | str) -> Project:
-    """Validate a whole package, then create it in one database transaction."""
+    """Import the frozen v1 compatibility graph in one database transaction.
+
+    V1 evidence and scenario rows are historical residue only.  This importer
+    never promotes them into the canonical Foundation/V4 evidence chain and
+    never authorizes a scenario or modelling engine.
+    """
 
     if isinstance(raw_package, str):
         try:
@@ -1357,7 +1384,10 @@ def import_project_package(raw_package: Mapping[str, Any] | str) -> Project:
                 canonical_id=None,
                 canonical_code="",
                 status="UNRESOLVED",
-                reason="Legacy source retained outside the canonical evidence chain.",
+                reason=(
+                    f"{LEGACY_COMPATIBILITY_ONLY}: legacy EvidenceSource retained "
+                    "outside the canonical evidence chain."
+                ),
                 migration_version=PACKAGE_VERSION,
             )
 
@@ -1383,7 +1413,10 @@ def import_project_package(raw_package: Mapping[str, Any] | str) -> Project:
                 canonical_id=None,
                 canonical_code="",
                 status="UNRESOLVED",
-                reason="Legacy link retained outside the canonical evidence chain.",
+                reason=(
+                    f"{LEGACY_COMPATIBILITY_ONLY}: legacy EvidenceLink retained "
+                    "outside the canonical evidence chain."
+                ),
                 migration_version=PACKAGE_VERSION,
             )
 

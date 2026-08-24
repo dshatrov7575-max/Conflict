@@ -5293,7 +5293,12 @@ class ImportBoundaryContractTests(FoundationFactoryMixin, TestCase):
             {AssessmentKind.HUMAN, AssessmentKind.AI},
         )
         run = ImportRun.objects.get(pk=receipt.id)
-        self.assertEqual(run.selected_input, selected_input)
+        self.assertEqual(
+            {key: run.selected_input[key] for key in selected_input},
+            selected_input,
+        )
+        self.assertEqual(run.selected_input["raw_input_kind"], "CANONICAL_MAPPING")
+        self.assertEqual(run.selected_input["raw_input_sha256"], preview.raw_input_sha256)
         self.assertEqual(run.row_counts["parameter_values"], 4)
         self.assertEqual(run.checksum, preview.checksum)
 
@@ -5632,7 +5637,10 @@ class ImportBoundaryContractTests(FoundationFactoryMixin, TestCase):
         self.assertEqual(run.ontology_version, "4.0.0")
         self.assertEqual(run.dataset_version, "fixture-dataset-1")
         self.assertEqual(run.adapter, "json")
-        self.assertEqual(run.selected_input, {"sheet": "Assessment", "rows": [2]})
+        self.assertEqual(run.selected_input["sheet"], "Assessment")
+        self.assertEqual(run.selected_input["rows"], [2])
+        self.assertEqual(run.selected_input["raw_input_kind"], "CANONICAL_MAPPING")
+        self.assertEqual(run.selected_input["raw_input_sha256"], preview.raw_input_sha256)
         self.assertEqual(run.actor_identifier, "fixture-coder")
         self.assertEqual(run.row_counts["actors"], 1)
         self.assertEqual(run.row_counts["compatibility_receipts"], 1)

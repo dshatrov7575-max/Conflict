@@ -17,6 +17,13 @@ silently overwrite a non-empty target. HUMAN and AI input is selected for one
 explicit Experiment/AssessmentSet; there is no fill-across or automatic
 consensus.
 
+Every successful JSON preview and immutable receipt also keeps transport
+provenance separate from the canonical semantic package checksum:
+`PATH_BYTES`, `BYTES`, and `TEXT` hash the exact supplied bytes, while
+`CANONICAL_MAPPING` hashes deterministic canonical JSON and explicitly makes no
+claim about unavailable original transport bytes. Commit uses the previewed
+snapshot and never re-reads a mutable input path.
+
 Evidence follows one canonical path:
 
 ```text
@@ -38,9 +45,35 @@ as separate records with their own status and provenance. The package does not
 define total/scalar Power, automatic means or weights, prediction, risk, or a
 calculation formula.
 
-The legacy project package 1.0.0 schema is retained unchanged. Its explicit
-upgrade path creates a deterministic default workspace and compatibility
-receipts; a 1.0.0 payload is never silently treated as 2.0.0.
+## Legacy 1.0.0 compatibility boundary
+
+The legacy `project-package-1.0.0` schema is retained unchanged. Its
+`evidence_sources` and `evidence_links` sections are
+`LEGACY_COMPATIBILITY_ONLY`: they are never a second authoritative evidence
+chain. Import preserves those rows for historical round trips and emits an
+explicit `UNRESOLVED` compatibility receipt/data gap until the exact canonical
+chain exists:
+
+```text
+Source
+  -> Document
+  -> immutable DocumentVersion (with captured DocumentContent)
+  -> TextFragment
+  -> Fact
+  -> Assessment/ParameterValue
+```
+
+The v1 importer never fabricates any node or link in that canonical chain from
+a URL, legacy source, or legacy link. Foundation 2.0.0 export exposes only the
+canonical sections plus explicit compatibility receipts; it does not export
+the v1 evidence sections.
+
+The v1 `scenarios` and `scenario_overrides` sections are historical
+compatibility residue only. Their retention does not authorize product
+scenarios, a modelling engine, calculations, prediction, ranking, or
+recommendations. The explicit upgrade path creates a deterministic default
+workspace and compatibility receipts; a 1.0.0 payload is never silently
+treated as 2.0.0.
 
 ## Bound external contracts
 

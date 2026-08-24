@@ -31,6 +31,14 @@ from domain import models as domain_models
 FOUNDATION_PACKAGE_FORMAT = "conflict-analysis-foundation"
 FOUNDATION_PACKAGE_VERSION = "2.0.0"
 HASH_ALGORITHM = "sha256"
+RAW_INPUT_KINDS = frozenset(
+    {"PATH_BYTES", "BYTES", "TEXT", "CANONICAL_MAPPING"}
+)
+RAW_INPUT_PROVENANCE_KEYS = (
+    "raw_input_kind",
+    "raw_input_sha256",
+    "raw_input_name",
+)
 SCHEMA_PATH = (
     Path(__file__).resolve().parent
     / "schemas"
@@ -163,6 +171,18 @@ class FoundationImportPreview:
     def payload_copy(self) -> dict[str, Any]:
         return _deep_thaw(self.canonical_payload)
 
+    @property
+    def raw_input_kind(self) -> str:
+        return str(self.selected_input.get("raw_input_kind", ""))
+
+    @property
+    def raw_input_sha256(self) -> str:
+        return str(self.selected_input.get("raw_input_sha256", ""))
+
+    @property
+    def raw_input_name(self) -> str:
+        return str(self.selected_input.get("raw_input_name", ""))
+
 
 @dataclass(frozen=True, slots=True)
 class FoundationImportReceipt:
@@ -194,6 +214,18 @@ class FoundationImportReceipt:
     allow_nonempty: bool
     actor_identifier: str
     committed_at: str | None
+
+    @property
+    def raw_input_kind(self) -> str:
+        return str(self.selected_input.get("raw_input_kind", ""))
+
+    @property
+    def raw_input_sha256(self) -> str:
+        return str(self.selected_input.get("raw_input_sha256", ""))
+
+    @property
+    def raw_input_name(self) -> str:
+        return str(self.selected_input.get("raw_input_name", ""))
 
 
 @dataclass(frozen=True, slots=True)
@@ -242,6 +274,61 @@ def canonical_json(value: Any) -> str:
         sort_keys=True,
         separators=(",", ":"),
     )
+
+
+def _capture_json_input(raw: Any) -> tuple[Any, dict[str, str]]:
+    """Freeze exact JSON input provenance before transport adaptation.
+
+    A ``Path`` is read exactly once and its captured bytes are passed to the JSON
+    adapter.  A mapping has no original transport bytes, so its fingerprint is
+    explicitly over deterministic canonical JSON rather than an invented source
+    representation.
+    """
+
+    input_name = ""
+    if isinstance(raw, Path):
+        try:
+            snapshot: Any = raw.read_bytes()
+        except OSError as exc:
+            raise FoundationPackageValidationError(
+                f"Cannot read JSON input: {exc}."
+            ) from exc
+        kind = "PATH_BYTES"
+        digest_bytes = snapshot
+        input_name = raw.name
+    elif isinstance(raw, bytes):
+        snapshot = bytes(raw)
+        kind = "BYTES"
+        digest_bytes = snapshot
+    elif isinstance(raw, str):
+        if raw.lstrip().startswith(("{", "[")):
+            snapshot = raw
+            kind = "TEXT"
+            digest_bytes = raw.encode("utf-8")
+        else:
+            path = Path(raw)
+            try:
+                snapshot = path.read_bytes()
+            except OSError as exc:
+                raise FoundationPackageValidationError(
+                    f"Cannot read JSON input: {exc}."
+                ) from exc
+            kind = "PATH_BYTES"
+            digest_bytes = snapshot
+            input_name = path.name
+    elif isinstance(raw, Mapping):
+        snapshot = copy.deepcopy(dict(raw))
+        kind = "CANONICAL_MAPPING"
+        digest_bytes = canonical_json(snapshot).encode("utf-8")
+    else:
+        return raw, {}
+    provenance = {
+        "raw_input_kind": kind,
+        "raw_input_sha256": hashlib.sha256(digest_bytes).hexdigest(),
+    }
+    if input_name:
+        provenance["raw_input_name"] = input_name
+    return snapshot, provenance
 
 
 def _payload_without_manifest(package: Mapping[str, Any]) -> dict[str, Any]:
@@ -2147,8 +2234,15 @@ def preview_foundation_package(
     """Validate transport, schema, semantics and conflicts without any DB writes."""
 
     workspace_id, workspace_code = _workspace_identity(workspace)
+    normalized_adapter = adapter.strip().lower()
     selected = dict(selected_input or {})
-    package = adapt_foundation_input(raw, adapter=adapter)
+    for reserved_key in RAW_INPUT_PROVENANCE_KEYS:
+        selected.pop(reserved_key, None)
+    adapted_raw = raw
+    raw_input_provenance: dict[str, str] = {}
+    if normalized_adapter == "json":
+        adapted_raw, raw_input_provenance = _capture_json_input(raw)
+    package = adapt_foundation_input(adapted_raw, adapter=normalized_adapter)
     if package.get("__xlsx_profile__"):
         package, selected = _map_pre_freeze_xlsx_profile(
             package,
@@ -2176,7 +2270,8 @@ def preview_foundation_package(
         workspace=workspace,
         selected_input=selected,
     )
-    if adapter.strip().lower() == "xlsx" and isinstance(raw, Path):
+    selected.update(raw_input_provenance)
+    if normalized_adapter == "xlsx" and isinstance(raw, Path):
         try:
             workbook_bytes = raw.read_bytes()
         except OSError as exc:
@@ -2216,7 +2311,7 @@ def preview_foundation_package(
         errors=(),
         workspace_id=workspace_id,
         workspace_code=workspace_code,
-        adapter=adapter.strip().lower(),
+        adapter=normalized_adapter,
         selected_input=_deep_freeze(selected),
         source_identity_map=_deep_freeze(source_identity_map),
         correction_lineage=tuple(_deep_freeze(item) for item in correction_lineage),
@@ -2308,6 +2403,7 @@ def _new(model: type[Any], values: Mapping[str, Any]) -> Any:
 
 
 def _receipt_view(run: Any) -> FoundationImportReceipt:
+    selected_input = dict(run.selected_input)
     return FoundationImportReceipt(
         id=str(run.pk),
         code=run.code,
@@ -2328,7 +2424,7 @@ def _receipt_view(run: Any) -> FoundationImportReceipt:
         dataset_version=run.dataset_version,
         checksum=run.checksum,
         adapter=run.adapter,
-        selected_input=_deep_freeze(run.selected_input),
+        selected_input=_deep_freeze(selected_input),
         selected_source_column=run.selected_source_column,
         source_identity_map=_deep_freeze(run.source_identity_map),
         correction_lineage=tuple(_deep_freeze(item) for item in run.correction_lineage),
@@ -2376,15 +2472,37 @@ def commit_foundation_package(
 
     Workspace = _model("ProjectWorkspace")
     locked_workspace = Workspace.objects.select_for_update().get(pk=workspace.pk)
+    locked_workspace_id, locked_workspace_code = _workspace_identity(locked_workspace)
+    if (
+        locked_workspace_id != preview.workspace_id
+        or locked_workspace_code != preview.workspace_code
+    ):
+        raise FoundationPackageConflictError(
+            "Locked workspace identity differs from the immutable preview."
+        )
     package, repeated_warnings = validate_foundation_package(preview.payload_copy())
     if package["manifest"]["payload_sha256"] != preview.checksum:
         raise FoundationPackageValidationError("Preview payload was changed after validation.")
+    _validate_workspace_definition(package, locked_workspace)
 
     selected_existing, normalized_selected = _resolve_selected_lane(
         package,
         workspace=locked_workspace,
         selected_input=_deep_thaw(preview.selected_input),
     )
+    if preview.adapter == "json":
+        committed_kind = normalized_selected.get("raw_input_kind")
+        committed_sha256 = normalized_selected.get("raw_input_sha256")
+        committed_name = normalized_selected.get("raw_input_name", "")
+        if (
+            committed_kind not in RAW_INPUT_KINDS
+            or committed_kind != preview.raw_input_kind
+            or committed_sha256 != preview.raw_input_sha256
+            or committed_name != preview.raw_input_name
+        ):
+            raise FoundationPackageValidationError(
+                "Preview raw input provenance was changed after validation."
+            )
     verified_identity_map = _source_identity_map(package)
     verified_lineage = _correction_lineage(package)
     verified_changes = _intended_changes(
@@ -2482,7 +2600,14 @@ def commit_foundation_package(
     return _receipt_view(run)
 
 
-def _raw_input_checksum(raw: Any) -> str:
+def _raw_input_checksum(raw: Any, *, adapter: str | None = None) -> str:
+    if (adapter or "").strip().lower() == "json":
+        try:
+            _, provenance = _capture_json_input(raw)
+        except FoundationPackageError:
+            provenance = {}
+        if provenance:
+            return provenance["raw_input_sha256"]
     if isinstance(raw, Path):
         try:
             value = raw.read_bytes()
@@ -2572,6 +2697,7 @@ def _record_unsuccessful_import(
     errors: tuple[Mapping[str, str], ...],
     status: str,
     checksum: str | None = None,
+    preserve_captured_provenance: bool = False,
 ) -> FoundationImportReceipt:
     """Append one rejected/failed attempt after materialization rollback has ended."""
 
@@ -2584,9 +2710,23 @@ def _record_unsuccessful_import(
     raw_selected = dict(selected_input or {})
     selected = _receipt_json_snapshot(raw_selected)
     assert isinstance(selected, dict)
+    captured_kind = selected.get("raw_input_kind")
+    captured_sha256 = selected.get("raw_input_sha256")
+    captured_name = selected.get("raw_input_name", "")
+    has_captured_provenance = (
+        preserve_captured_provenance
+        and captured_kind in RAW_INPUT_KINDS
+        and isinstance(captured_sha256, str)
+        and _SHA256_PATTERN.fullmatch(captured_sha256) is not None
+        and isinstance(captured_name, str)
+    )
     if isinstance(raw, Path):
         selected["input_name"] = raw.name
-        selected["input_sha256"] = _raw_input_checksum(raw)
+        selected["input_sha256"] = (
+            captured_sha256
+            if has_captured_provenance
+            else _raw_input_checksum(raw, adapter=adapter)
+        )
     target_experiment = None
     target_assessment_set = None
     experiment_raw = selected.get("target_experiment_id")
@@ -2610,7 +2750,9 @@ def _record_unsuccessful_import(
             target_experiment = None
             target_assessment_set = None
 
-    checksum_candidate = str(checksum or _raw_input_checksum(raw)).strip().lower()
+    checksum_candidate = str(
+        checksum or _raw_input_checksum(raw, adapter=adapter)
+    ).strip().lower()
     raw_checksum = (
         checksum_candidate
         if _SHA256_PATTERN.fullmatch(checksum_candidate)
@@ -2634,7 +2776,42 @@ def _record_unsuccessful_import(
         "actor_identifier": actor_identifier,
     }
     selected["raw_receipt_metadata"] = _receipt_json_snapshot(raw_receipt_metadata)
-    selected["raw_input_sha256"] = raw_checksum
+    if not has_captured_provenance:
+        fallback_provenance: dict[str, str] = {}
+        if adapter.strip().lower() == "json":
+            try:
+                _, fallback_provenance = _capture_json_input(raw)
+            except FoundationPackageError:
+                fallback_provenance = {}
+        if fallback_provenance:
+            captured_kind = fallback_provenance["raw_input_kind"]
+            captured_sha256 = fallback_provenance["raw_input_sha256"]
+            captured_name = fallback_provenance.get("raw_input_name", "")
+        else:
+            if isinstance(raw, Path):
+                captured_kind = "PATH_BYTES"
+                captured_name = raw.name
+            elif isinstance(raw, bytes):
+                captured_kind = "BYTES"
+                captured_name = ""
+            elif isinstance(raw, str) and raw.lstrip().startswith(("{", "[")):
+                captured_kind = "TEXT"
+                captured_name = ""
+            elif isinstance(raw, Mapping):
+                captured_kind = "CANONICAL_MAPPING"
+                captured_name = ""
+            else:
+                captured_kind = ""
+                captured_name = ""
+            captured_sha256 = (
+                _raw_input_checksum(raw, adapter=adapter) if captured_kind else ""
+            )
+    selected["raw_input_kind"] = captured_kind
+    selected["raw_input_sha256"] = captured_sha256
+    if captured_name:
+        selected["raw_input_name"] = captured_name
+    else:
+        selected.pop("raw_input_name", None)
     package_id = _safe_receipt_code(
         package_meta.get("package_id") or f"INVALID-{raw_checksum}",
         max_length=128,
@@ -2779,6 +2956,7 @@ def attempt_foundation_import(
             errors=rejected_report.errors,
             status="REJECTED",
             checksum=report.preview.checksum,
+            preserve_captured_provenance=True,
         )
         return FoundationImportAttemptResult("REJECTED", rejected_report, receipt)
     except Exception as exc:
@@ -2797,6 +2975,7 @@ def attempt_foundation_import(
             errors=failed_report.errors,
             status="FAILED",
             checksum=report.preview.checksum,
+            preserve_captured_provenance=True,
         )
         return FoundationImportAttemptResult("FAILED", failed_report, receipt)
     return FoundationImportAttemptResult("COMMITTED", report, receipt)
@@ -3383,6 +3562,9 @@ def _export_item(section: str, obj: Any) -> dict[str, Any]:
     elif section == "legacy_term_mappings":
         item.update(terminology_entry_code=obj.terminology_entry.code if obj.terminology_entry_id else None, legacy_code=obj.legacy_code, legacy_label=obj.legacy_label, source_version=obj.source_version, mapping_status=obj.mapping_status, notes=obj.notes)
     elif section == "compatibility_receipts":
+        # The v2 compatibility receipt schema deliberately has no metadata lane:
+        # it is an explicit migration/data-gap record, not a generic entity DTO.
+        item.pop("metadata", None)
         item.update(legacy_model=obj.legacy_model, legacy_id=str(obj.legacy_id), legacy_code=obj.legacy_code, canonical_model=obj.canonical_model, canonical_id=str(obj.canonical_id) if obj.canonical_id else None, canonical_code=obj.canonical_code, status=obj.status, reason=obj.reason, migration_version=obj.migration_version)
     else:
         raise AssertionError(f"Unmapped Foundation export section {section}.")
