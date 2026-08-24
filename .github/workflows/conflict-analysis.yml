@@ -1,0 +1,156 @@
+name: Conflict Analysis Foundation
+
+on:
+  pull_request:
+    paths:
+      - "software/conflict_analysis/**"
+      - ".github/workflows/conflict-analysis.yml"
+  push:
+    branches:
+      - main
+      - codex/ca-i1-data-001
+      - codex/ca-suite-i1-foundation
+    paths:
+      - "software/conflict_analysis/**"
+      - ".github/workflows/conflict-analysis.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: conflict-analysis-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  foundation-contract:
+    name: Python 3.12 / PostgreSQL 18 / SQLite regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: conflict_analysis
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    defaults:
+      run:
+        working-directory: software/conflict_analysis
+
+    env:
+      DJANGO_SECRET_KEY: ci-only-secret-key
+      POSTGRES_DB: conflict_analysis
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_CONN_MAX_AGE: "0"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: Check out exact delivery tree
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify accepted stacked base ancestry
+        shell: bash
+        run: |
+          test "$(git rev-parse f940a91a92658285063802ee1a43bf84360fc013^{tree})" = "1125b01a90da3ea324e661d729a845c58febb8e2"
+          git merge-base --is-ancestor f940a91a92658285063802ee1a43bf84360fc013 HEAD
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: software/conflict_analysis/pyproject.toml
+
+      - name: Install application and test dependencies
+        run: python -m pip install --disable-pip-version-check -e ".[dev]"
+
+      - name: Check installed dependency consistency
+        run: python -m pip check
+
+      - name: Check package and bundled schema integrity
+        run: |
+          python -m compileall -q conflict_analysis domain
+          python -c "import json; from importlib.resources import files; root = files('domain.services').joinpath('schemas'); schemas = sorted((p for p in root.iterdir() if p.name.endswith('.json')), key=lambda p: p.name); assert schemas, 'no packaged JSON schemas'; [json.loads(p.read_text(encoding='utf-8')) for p in schemas]; print('validated schemas:', ', '.join(p.name for p in schemas))"
+
+      - name: Reject migration drift
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Apply all migrations to clean PostgreSQL 18
+        run: python manage.py migrate --noinput
+
+      - name: Run Django deployment-independent checks
+        run: python manage.py check
+
+      - name: Scan forbidden scope and public legacy terminology
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: python -m pytest domain/tests/test_v4_foundation_contracts.py::PublicContractStaticTests
+
+      - name: Run focused deterministic JSON and XLSX fixture gates
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: >-
+          python -m pytest
+          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_materialized_zhanaozen_trace_fixture_imports_exact_graph_and_round_trips
+          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_real_xlsx_assessment_import_matches_json_dto_and_rejects_formula_cells
+          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_pre_freeze_meta_assessments_profile_selects_exact_human_ai_lanes_atomically
+          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_pending_ingest_fragment_preserves_exact_whitespace_and_hash_without_claiming_anchor
+          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_confirmed_records_without_complete_exact_evidence_chain_fail_preview_atomically
+          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_structured_preview_reports_invalid_boundaries_and_valid_intended_changes_without_mutation
+          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_scalar_power_identifiers_are_rejected_as_numeric_lane_identity_at_preview
+          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_materialized_atomic_human_ai_lanes_are_stable_order_independent_and_fail_closed
+          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_selected_lane_receipt_correction_lineage_and_frozen_child_guard_are_exact
+          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_import_export_import_round_trip_preserves_exact_document_version_identity
+          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_atomic_commit_rolls_back_then_records_complete_append_only_receipt_without_overwrite
+          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_import_attempt_orchestrator_records_rejection_after_rollback_and_allows_exact_retry
+
+      - name: Run PostgreSQL foundation and PR 21 regression suite
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: python -m pytest domain/tests
+
+      - name: Run SQLite regression suite
+        env:
+          USE_SQLITE: "true"
+          SQLITE_PATH: ${{ runner.temp }}/conflict-analysis.sqlite3
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: python -m pytest domain/tests

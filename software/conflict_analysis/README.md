@@ -1,5 +1,16 @@
 # Conflict Analysis
 
+## Legacy package boundary
+
+`project-package-1.0.0` is retained for historical round trips only.
+`EvidenceSource`, `EvidenceLink`, `Scenario`, and `ScenarioOverride` are
+`LEGACY_COMPATIBILITY_ONLY`; they neither form a second authoritative evidence
+chain nor authorize a scenarios/modeling feature. Current Foundation evidence
+uses `Source -> Document -> DocumentVersion/DocumentContent -> TextFragment ->
+Fact -> Assessment/ParameterValue`. Unresolved v1 evidence remains an explicit
+compatibility receipt/data gap, and Foundation 2.0.0 export uses only canonical
+evidence sections.
+
 Каркас первой итерации — модульный монолит на Python 3.12, Django 5.2 LTS,
 Django REST Framework и PostgreSQL 18. Доменный модуль расположен в `domain/`;
 проектная конфигурация и точки входа — в `conflict_analysis/`.
@@ -30,6 +41,8 @@ Compose ожидает готовности PostgreSQL 18 по healthcheck, пр
 
 ```bash
 docker compose run --rm web python manage.py migrate --noinput
+# Legacy V1 compatibility/regression seed only; current V4 data uses the
+# versioned Foundation import boundary documented in docs/foundation-package-v2.md.
 docker compose run --rm web python manage.py seed_zhanaozen
 docker compose run --rm web pytest
 docker compose run --rm web python manage.py check

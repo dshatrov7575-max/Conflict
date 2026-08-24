@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import Any, TypeVar
 from uuid import UUID
 
@@ -26,12 +26,17 @@ from domain.demo_data import (
 )
 from domain.models import (
     AssessmentSet,
+    ExpertProfile,
+    Experiment,
     GroupTensionRelation,
     ParameterDefinition,
     ParticipantGroup,
     Project,
+    ProjectDefinitionVersion,
     ProjectLock,
+    ProjectPublication,
     ProjectSchemaVersion,
+    ProjectWorkspace,
     TensionPoint,
     TimeSlice,
 )
@@ -158,7 +163,71 @@ def seed_zhanaozen_demo() -> Project:
             "version": SCHEMA_VERSION,
             "name": PROJECT_NAME,
             "description": "",
-            "metadata": {"seed_version": SEED_VERSION},
+            "metadata": {
+                "seed_version": SEED_VERSION,
+                "compatibility_profile": "V1_LEGACY_REGRESSION_ONLY",
+            },
+        },
+    )
+
+    seed_manifest, seed_manifest_hash = _stable_manifest()
+    definition_code = f"DEFINITION-{SCHEMA_VERSION}"
+    ProjectDefinitionVersion.objects.filter(project=project).exclude(
+        code=definition_code
+    ).update(is_current=False)
+    definition = _upsert(
+        ProjectDefinitionVersion,
+        object_id=stable_demo_uuid("project-definition-version", definition_code),
+        code=definition_code,
+        project=project,
+        defaults={
+            "project": project,
+            "version": SCHEMA_VERSION,
+            "is_current": True,
+            "publication_status": "PUBLISHED",
+            "manifest": seed_manifest,
+            "manifest_hash": seed_manifest_hash,
+            "published_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
+            "schema_version": SCHEMA_VERSION,
+            "semantic_version": SCHEMA_VERSION,
+            "construct_version": SCHEMA_VERSION,
+            "validated_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
+            "validated_by": "SEED-ZHANAOZEN-1.0.0",
+            "validation_result": {"valid": True, "source": "LEGACY_V1_SEED"},
+            "published_by": "SEED-ZHANAOZEN-1.0.0",
+            "supersedes": None,
+        },
+    )
+    _upsert(
+        ProjectPublication,
+        object_id=stable_demo_uuid("project-publication", definition_code),
+        code=f"PUBLICATION-{SCHEMA_VERSION}",
+        project=project,
+        defaults={
+            "project": project,
+            "definition_version": definition,
+            "version": SCHEMA_VERSION,
+            "locale": "en",
+            "actor_identifier": "SEED-ZHANAOZEN-1.0.0",
+            "validation_result": {"valid": True, "source": "LEGACY_V1_SEED"},
+            "published_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
+        },
+    )
+    workspace = _upsert(
+        ProjectWorkspace,
+        object_id=stable_demo_uuid("project-workspace", "DEFAULT"),
+        code="DEFAULT",
+        defaults={
+            "project": project,
+            "definition_version": definition,
+            "definition_manifest_hash": seed_manifest_hash,
+            "version": SCHEMA_VERSION,
+            "name": "Default",
+            "is_default": True,
+            "metadata": {
+                "migration": "deterministic-demo-default",
+                "compatibility_profile": "V1_LEGACY_REGRESSION_ONLY",
+            },
         },
     )
 
@@ -172,6 +241,7 @@ def seed_zhanaozen_demo() -> Project:
             project=project,
             defaults={
                 "project": project,
+                "workspace": workspace,
                 "version": SCHEMA_VERSION,
                 "name": code,
                 "cutoff_date": date.fromisoformat(item["cutoff_date"]),
@@ -233,19 +303,61 @@ def seed_zhanaozen_demo() -> Project:
                 },
             )
 
+    assessment_sets: dict[str, AssessmentSet] = {}
     for item in ASSESSMENT_SETS:
         code = item["code"]
-        _upsert(
+        assessment_sets[code] = _upsert(
             AssessmentSet,
             object_id=stable_demo_uuid("assessment-set", code),
             code=code,
             project=project,
             defaults={
                 "project": project,
+                "workspace": workspace,
                 "version": SCHEMA_VERSION,
                 "kind": item["kind"],
                 "name": item["name"],
                 "description": "",
+            },
+        )
+
+    for item in ASSESSMENT_SETS:
+        assessment_set = assessment_sets[item["code"]]
+        kind = item["kind"]
+        profile_code = f"EXPERT-{kind}"
+        profile = _upsert(
+            ExpertProfile,
+            object_id=stable_demo_uuid("expert-profile", profile_code),
+            code=profile_code,
+            defaults={
+                "workspace": workspace,
+                "version": SCHEMA_VERSION,
+                "kind": kind,
+                "display_name": f"{kind} demo expert",
+                "identity_key": f"demo:{kind.lower()}",
+                "provider": "demo" if kind == "AI" else "",
+                "model_name": "demo-placeholder" if kind == "AI" else "",
+                "metadata": {"seed_version": SEED_VERSION},
+            },
+        )
+        experiment_code = f"EXP-{item['code']}"
+        _upsert(
+            Experiment,
+            object_id=stable_demo_uuid("experiment", experiment_code),
+            code=experiment_code,
+            defaults={
+                "workspace": workspace,
+                "version": SCHEMA_VERSION,
+                "expert_profile": profile,
+                "assessment_set": assessment_set,
+                "experiment_type": "ASSESSMENT",
+                "name": f"{item['name']} experiment",
+                "status": "DRAFT",
+                "color": "",
+                "order": 0,
+                "method_version": "",
+                "frozen_at": None,
+                "metadata": {"seed_version": SEED_VERSION},
             },
         )
 
@@ -283,7 +395,6 @@ def seed_zhanaozen_demo() -> Project:
         {item["code"] for item in PARAMETER_DEFINITIONS},
     )
 
-    seed_manifest, seed_manifest_hash = _stable_manifest()
     schema_code = f"SCHEMA-{SCHEMA_VERSION}"
     schema_id = stable_demo_uuid("project-schema-version", schema_code)
     ProjectSchemaVersion.objects.filter(project=project).exclude(pk=schema_id).update(

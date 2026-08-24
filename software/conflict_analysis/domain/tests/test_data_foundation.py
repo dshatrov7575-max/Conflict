@@ -397,7 +397,9 @@ class ProjectPackageTests(TestCase):
 
     def _delete_project_graph(self):
         EvidenceLink.objects.filter(project=self.project).delete()
-        AuditEvent.objects.filter(project=self.project).delete()
+        # Test-only teardown uses Django's non-public base manager; the public
+        # append-only manager remains fail-closed for product callers.
+        AuditEvent._base_manager.filter(project=self.project).delete()
         ScenarioOverride.objects.filter(project=self.project).delete()
         Scenario.objects.filter(project=self.project).delete()
         ParameterValue.objects.filter(project=self.project).delete()

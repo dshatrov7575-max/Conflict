@@ -6,11 +6,11 @@ import copy
 import hashlib
 import json
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Iterable, Mapping
-from uuid import UUID
+from uuid import UUID, uuid5
 
 from jsonschema import Draft202012Validator, FormatChecker
 from django.core.exceptions import ValidationError
@@ -35,13 +35,19 @@ from domain.models import (
     CalculationStrategyDefinition,
     EvidenceLink,
     EvidenceSource,
+    ExpertProfile,
+    Experiment,
     GroupTensionRelation,
+    LegacyCompatibilityReceipt,
     ParameterDefinition,
     ParameterValue,
     ParticipantGroup,
     Project,
+    ProjectDefinitionVersion,
     ProjectLock,
+    ProjectPublication,
     ProjectSchemaVersion,
+    ProjectWorkspace,
     Scenario,
     ScenarioOverride,
     TensionPoint,
@@ -52,6 +58,28 @@ from domain.models import (
 PACKAGE_FORMAT = "conflict-analysis-project"
 PACKAGE_VERSION = "1.0.0"
 HASH_ALGORITHM = "sha256"
+# The v1 package is a frozen compatibility format.  These sections remain
+# importable for lossless historical round trips, but none of them grants
+# authority in the Foundation/V4 domain.
+LEGACY_COMPATIBILITY_ONLY = "LEGACY_COMPATIBILITY_ONLY"
+V1_SECTION_AUTHORITY = {
+    "evidence_sources": LEGACY_COMPATIBILITY_ONLY,
+    "evidence_links": LEGACY_COMPATIBILITY_ONLY,
+    "scenarios": LEGACY_COMPATIBILITY_ONLY,
+    "scenario_overrides": LEGACY_COMPATIBILITY_ONLY,
+}
+V1_HISTORICAL_SCENARIO_RESIDUE = frozenset(
+    {"scenarios", "scenario_overrides"}
+)
+CANONICAL_EVIDENCE_CHAIN = (
+    "Source",
+    "Document",
+    "DocumentVersion",
+    "TextFragment",
+    "Fact",
+    "Assessment/ParameterValue",
+)
+CANONICAL_CAPTURED_CONTENT_MODEL = "DocumentContent"
 SCHEMA_PATH = (
     Path(__file__).resolve().parent
     / "schemas"
@@ -1087,6 +1115,70 @@ def _create(model: Any, **kwargs: Any) -> Any:
     return obj
 
 
+def _legacy_foundation_uuid(project: Project, identity: str) -> UUID:
+    """Derive stable identities for v1 rows that predate the workspace boundary."""
+
+    return uuid5(project.id, f"conflict-analysis-v1:{identity}")
+
+
+def _create_legacy_workspace(
+    project: Project,
+    package: Mapping[str, Any],
+) -> ProjectWorkspace:
+    manifest = {
+        "legacy_package_format": PACKAGE_FORMAT,
+        "legacy_package_version": PACKAGE_VERSION,
+        "legacy_payload_sha256": package["manifest"]["payload_sha256"],
+    }
+    manifest_hash = hashlib.sha256(
+        canonical_json(manifest).encode("utf-8")
+    ).hexdigest()
+    definition = _create(
+        ProjectDefinitionVersion,
+        id=_legacy_foundation_uuid(project, "definition"),
+        code="LEGACY-DEFINITION-1.0.0",
+        version=PACKAGE_VERSION,
+        project=project,
+        is_current=True,
+        publication_status="PUBLISHED",
+        manifest=manifest,
+        manifest_hash=manifest_hash,
+        published_at=datetime(1970, 1, 1, tzinfo=timezone.utc),
+        schema_version=PACKAGE_VERSION,
+        semantic_version=PACKAGE_VERSION,
+        construct_version=PACKAGE_VERSION,
+        validated_at=datetime(1970, 1, 1, tzinfo=timezone.utc),
+        validated_by="LEGACY_V1_IMPORT",
+        validation_result={"valid": True, "source": "LEGACY_V1_IMPORT"},
+        published_by="LEGACY_V1_IMPORT",
+        supersedes=None,
+    )
+    _create(
+        ProjectPublication,
+        id=_legacy_foundation_uuid(project, "publication"),
+        code="LEGACY-PUBLICATION-1.0.0",
+        version=PACKAGE_VERSION,
+        project=project,
+        definition_version=definition,
+        locale="en",
+        actor_identifier="LEGACY_V1_IMPORT",
+        validation_result={"valid": True, "source": "LEGACY_V1_IMPORT"},
+        published_at=datetime(1970, 1, 1, tzinfo=timezone.utc),
+    )
+    return _create(
+        ProjectWorkspace,
+        id=_legacy_foundation_uuid(project, "workspace"),
+        code="DEFAULT",
+        version=PACKAGE_VERSION,
+        project=project,
+        definition_version=definition,
+        definition_manifest_hash=manifest_hash,
+        name="Default",
+        is_default=True,
+        metadata={"legacy_package_version": PACKAGE_VERSION},
+    )
+
+
 def _common(item: Mapping[str, Any], project: Project | None = None) -> dict[str, Any]:
     values: dict[str, Any] = {
         "id": UUID(item["id"]),
@@ -1100,7 +1192,12 @@ def _common(item: Mapping[str, Any], project: Project | None = None) -> dict[str
 
 @transaction.atomic
 def import_project_package(raw_package: Mapping[str, Any] | str) -> Project:
-    """Validate a whole package, then create it in one database transaction."""
+    """Import the frozen v1 compatibility graph in one database transaction.
+
+    V1 evidence and scenario rows are historical residue only.  This importer
+    never promotes them into the canonical Foundation/V4 evidence chain and
+    never authorizes a scenario or modelling engine.
+    """
 
     if isinstance(raw_package, str):
         try:
@@ -1122,6 +1219,7 @@ def import_project_package(raw_package: Mapping[str, Any] | str) -> Project:
             description=project_data["description"],
             metadata=project_data["metadata"],
         )
+        workspace = _create_legacy_workspace(project, package)
 
         time_slices: dict[str, TimeSlice] = {}
         groups: dict[str, ParticipantGroup] = {}
@@ -1137,6 +1235,7 @@ def import_project_package(raw_package: Mapping[str, Any] | str) -> Project:
             obj = _create(
                 TimeSlice,
                 **_common(item, project),
+                workspace=workspace,
                 name=item["name"],
                 cutoff_date=_date_value(item["cutoff_date"], "cutoff_date"),
                 order=item["order"],
@@ -1171,11 +1270,47 @@ def import_project_package(raw_package: Mapping[str, Any] | str) -> Project:
             obj = _create(
                 AssessmentSet,
                 **_common(item, project),
+                workspace=workspace,
                 kind=item["kind"],
                 name=item["name"],
                 description=item["description"],
             )
             assessment_sets[item["id"]] = obj
+
+        for item in package["assessment_sets"]:
+            if item["kind"] not in {AssessmentKind.HUMAN, AssessmentKind.AI}:
+                continue
+            assessment_set = assessment_sets[item["id"]]
+            profile = _create(
+                ExpertProfile,
+                id=_legacy_foundation_uuid(project, f"expert:{item['id']}"),
+                code=f"LEGACY-EXPERT-{assessment_set.code}",
+                version=PACKAGE_VERSION,
+                workspace=workspace,
+                kind=item["kind"],
+                display_name=f"Legacy {item['kind']} profile for {assessment_set.code}",
+                identity_key=f"legacy:{project.id}:{assessment_set.id}",
+                provider="legacy-import" if item["kind"] == AssessmentKind.AI else "",
+                model_name="unspecified-legacy-ai" if item["kind"] == AssessmentKind.AI else "",
+                metadata={"source_package_version": PACKAGE_VERSION},
+            )
+            _create(
+                Experiment,
+                id=_legacy_foundation_uuid(project, f"experiment:{item['id']}"),
+                code=f"LEGACY-EXP-{assessment_set.code}",
+                version=PACKAGE_VERSION,
+                workspace=workspace,
+                expert_profile=profile,
+                assessment_set=assessment_set,
+                experiment_type="ASSESSMENT",
+                name=f"Legacy {assessment_set.name}",
+                status="DRAFT",
+                color="",
+                order=0,
+                method_version="",
+                frozen_at=None,
+                metadata={"source_package_version": PACKAGE_VERSION},
+            )
 
         for item in package["parameter_definitions"]:
             obj = _create(
@@ -1206,6 +1341,7 @@ def import_project_package(raw_package: Mapping[str, Any] | str) -> Project:
             obj = _create(
                 ParameterValue,
                 **_common(item, project),
+                workspace=workspace,
                 time_slice=time_slices[item["time_slice_id"]],
                 assessment_set=assessment_sets[item["assessment_set_id"]],
                 parameter_definition=definitions[item["parameter_definition_id"]],
@@ -1235,6 +1371,25 @@ def import_project_package(raw_package: Mapping[str, Any] | str) -> Project:
                 metadata=item["metadata"],
             )
             sources[item["id"]] = obj
+            _create(
+                LegacyCompatibilityReceipt,
+                id=_legacy_foundation_uuid(project, f"compat:EvidenceSource:{item['id']}"),
+                code=f"LEGACY-ES-{UUID(item['id']).hex}",
+                version=PACKAGE_VERSION,
+                workspace=workspace,
+                legacy_model="EvidenceSource",
+                legacy_id=UUID(item["id"]),
+                legacy_code=item["code"],
+                canonical_model="",
+                canonical_id=None,
+                canonical_code="",
+                status="UNRESOLVED",
+                reason=(
+                    f"{LEGACY_COMPATIBILITY_ONLY}: legacy EvidenceSource retained "
+                    "outside the canonical evidence chain."
+                ),
+                migration_version=PACKAGE_VERSION,
+            )
 
         for item in package["evidence_links"]:
             _create(
@@ -1244,6 +1399,25 @@ def import_project_package(raw_package: Mapping[str, Any] | str) -> Project:
                 source=sources[item["source_id"]],
                 relation=item["relation"],
                 rationale=item["rationale"],
+            )
+            _create(
+                LegacyCompatibilityReceipt,
+                id=_legacy_foundation_uuid(project, f"compat:EvidenceLink:{item['id']}"),
+                code=f"LEGACY-EL-{UUID(item['id']).hex}",
+                version=PACKAGE_VERSION,
+                workspace=workspace,
+                legacy_model="EvidenceLink",
+                legacy_id=UUID(item["id"]),
+                legacy_code=item["code"],
+                canonical_model="",
+                canonical_id=None,
+                canonical_code="",
+                status="UNRESOLVED",
+                reason=(
+                    f"{LEGACY_COMPATIBILITY_ONLY}: legacy EvidenceLink retained "
+                    "outside the canonical evidence chain."
+                ),
+                migration_version=PACKAGE_VERSION,
             )
 
         for item in package["calculation_strategies"]:
@@ -1315,6 +1489,7 @@ def import_project_package(raw_package: Mapping[str, Any] | str) -> Project:
             _create(
                 AuditEvent,
                 **_common(item, project),
+                workspace=workspace,
                 assessment_set=(
                     assessment_sets[item["assessment_set_id"]]
                     if item["assessment_set_id"]
