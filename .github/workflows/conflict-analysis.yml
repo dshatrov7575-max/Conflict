@@ -96,6 +96,21 @@ jobs:
       - name: Run Django deployment-independent checks
         run: python manage.py check
 
+      - name: Check isolated Studio showcase composition and contracts
+        env:
+          DJANGO_SETTINGS_MODULE: conflict_analysis.studio_showcase_settings
+          USE_SQLITE: "true"
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: |
+          python manage.py check --settings conflict_analysis.studio_showcase_settings
+          python -m pytest domain/tests/test_studio_showcase_session.py domain/tests/test_studio_showcase_http.py domain/tests/test_studio_showcase_static_contracts.py
+
       - name: Scan forbidden scope and public legacy terminology
         env:
           HTTP_PROXY: "http://127.0.0.1:9"

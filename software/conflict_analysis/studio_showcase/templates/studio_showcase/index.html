@@ -1,0 +1,382 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Изолированный интерфейс исследовательского прототипа ConflictAnalysis Studio">
+  <title>ConflictAnalysis Studio — Прототип</title>
+  <link rel="stylesheet" href="{% static 'shared_ui/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'studio_showcase/studio.css' %}">
+</head>
+<body>
+  <a class="skip-link" href="#studio-workspace">К рабочей области</a>
+
+  <div class="prototype-banner" role="note">
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18"><path d="M12 3 2 21h20L12 3Zm0 5.4 5.2 9.6H6.8L12 8.4ZM11 11v3.8h2V11h-2Zm0 5v2h2v-2h-2Z"/></svg>
+    <span>Исследовательский прототип — публикация и научная валидация ещё не завершены</span>
+  </div>
+
+  <header class="app-header">
+    <div class="brand-block">
+      <div class="brand-mark" aria-hidden="true">CA</div>
+      <div>
+        <p class="eyebrow">ConflictAnalysis Studio</p>
+        <h1>Исследовательский прототип</h1>
+      </div>
+    </div>
+    <div class="header-status" aria-label="Статус сессии">
+      <span class="session-chip"><span class="status-dot" aria-hidden="true"></span>Только эта сессия</span>
+      <span id="session-summary" class="session-summary">6 тем · 8 групп</span>
+    </div>
+  </header>
+
+  <nav class="toolbar" aria-label="Команды проекта">
+    <div class="toolbar-group">
+      <button type="button" class="toolbar-button" data-command="new">
+        <span aria-hidden="true">＋</span><span>Новый</span>
+      </button>
+      <button type="button" class="toolbar-button" data-command="open">
+        <span aria-hidden="true">↗</span><span>Открыть</span>
+      </button>
+      <button type="button" class="toolbar-button" data-command="clone">
+        <span aria-hidden="true">⧉</span><span>Клонировать</span>
+      </button>
+      <button type="button" class="toolbar-button" data-command="save">
+        <span aria-hidden="true">↓</span><span>Сохранить</span>
+      </button>
+    </div>
+    <span class="toolbar-divider" aria-hidden="true"></span>
+    <div class="toolbar-group">
+      <button type="button" class="toolbar-button toolbar-button--primary" data-command="validate">
+        <span aria-hidden="true">✓</span><span>Проверить</span>
+      </button>
+      <button type="button" class="toolbar-button" data-command="import">
+        <span aria-hidden="true">⇥</span><span>Импорт</span>
+      </button>
+      <button type="button" class="toolbar-button" data-command="export">
+        <span aria-hidden="true">⇤</span><span>Экспорт</span>
+      </button>
+      <button
+        type="button"
+        class="toolbar-button toolbar-button--disabled"
+        data-command="publish"
+        aria-disabled="true"
+        title="Публикация недоступна до отдельного производственного контракта"
+      >
+        <span aria-hidden="true">◉</span><span>Опубликовать</span>
+      </button>
+    </div>
+    <div class="fixture-switcher" aria-label="Демонстрационные наборы">
+      <span>Набор:</span>
+      {% for fixture_name in fixture_names %}
+        <button type="button" data-fixture="{{ fixture_name }}">{{ fixture_name }}</button>
+      {% endfor %}
+    </div>
+  </nav>
+
+  <input id="session-file-input" class="visually-hidden" type="file" accept="application/json,.json" tabindex="-1">
+
+  <main id="studio-workspace" class="studio-shell" data-layout-version="STUDIO_LAYOUT_V1">
+    <aside id="project-panel" class="studio-panel project-panel" aria-label="Структура проекта">
+      <div class="panel-heading">
+        <div>
+          <p class="panel-kicker">Навигация</p>
+          <h2>Проект</h2>
+        </div>
+        <button type="button" class="help-button" data-help-topic="project" aria-label="Справка: проект">?</button>
+      </div>
+
+      <nav class="project-tree" aria-label="Разделы проекта">
+        <button type="button" class="tree-item is-active" data-view="welcome" aria-current="page">
+          <span class="tree-icon" aria-hidden="true">⌂</span><span>Начало работы</span>
+        </button>
+        <button type="button" class="tree-item" data-view="project">
+          <span class="tree-icon" aria-hidden="true">▣</span><span>Карточка проекта</span>
+        </button>
+        <button type="button" class="tree-item" data-view="elements">
+          <span class="tree-icon" aria-hidden="true">◇</span><span>Проблемные темы</span><span id="elements-count" class="count-badge">6</span>
+        </button>
+        <button type="button" class="tree-item" data-view="actors">
+          <span class="tree-icon" aria-hidden="true">◎</span><span>Группы людей и организаций</span><span id="actors-count" class="count-badge">8</span>
+        </button>
+        <button type="button" class="tree-item" data-view="parameters">
+          <span class="tree-icon" aria-hidden="true">≡</span><span>Параметры</span><span class="status-label">не в срезе</span>
+        </button>
+        <button type="button" class="tree-item" data-view="publications">
+          <span class="tree-icon" aria-hidden="true">□</span><span>Публикации</span><span class="status-label status-label--waiting">ожидает</span>
+        </button>
+        <button type="button" class="tree-item" data-view="help">
+          <span class="tree-icon" aria-hidden="true">?</span><span>Справка</span>
+        </button>
+      </nav>
+
+      <div class="isolation-note">
+        <strong>Изолированная сессия</strong>
+        <p>Редактирование не изменяет производственную базу и не создаёт публикацию.</p>
+      </div>
+    </aside>
+
+    <div
+      id="splitter-left"
+      class="splitter"
+      role="separator"
+      aria-label="Изменить ширину дерева проекта"
+      aria-orientation="vertical"
+      aria-controls="project-panel editor-panel"
+      aria-valuemin="220"
+      aria-valuemax="420"
+      aria-valuenow="272"
+      tabindex="0"
+      data-splitter="left"
+    ><span aria-hidden="true"></span></div>
+
+    <section id="editor-panel" class="studio-panel editor-panel" aria-label="Редактор проекта">
+      <div id="session-notice" class="session-notice" role="status" aria-live="polite">
+        <span class="notice-icon" aria-hidden="true">●</span>
+        <span>Данные находятся только в памяти вкладки. Для переноса используйте файл SHOWCASE_SESSION_V1.</span>
+        <button type="button" data-dismiss-notice aria-label="Закрыть уведомление">×</button>
+      </div>
+
+      <section class="workspace-screen is-active" data-screen="welcome" aria-labelledby="welcome-title">
+        <div class="welcome-hero">
+          <div>
+            <p class="panel-kicker">Начало работы</p>
+            <h2 id="welcome-title">Опишите структуру исследовательского проекта</h2>
+            <p class="welcome-lead">Здесь вы фиксируете проблемные темы и группы людей или организаций, чтобы вместе обсуждать одну и ту же структуру.</p>
+            <div class="welcome-actions">
+              <button type="button" class="button button--primary" data-go-view="elements">Перейти к проблемным темам</button>
+              <button type="button" class="button button--secondary" data-command="validate">Проверить структуру</button>
+              <button type="button" class="help-button help-button--inline" data-help-topic="welcome" aria-label="Справка: начало работы">?</button>
+            </div>
+          </div>
+          <div class="welcome-visual" aria-hidden="true">
+            <span class="visual-node visual-node--one"></span>
+            <span class="visual-node visual-node--two"></span>
+            <span class="visual-node visual-node--three"></span>
+            <span class="visual-node visual-node--four"></span>
+            <svg viewBox="0 0 280 170"><path d="M62 55 135 86 211 48M135 86l76 47M135 86l-70 52"/></svg>
+          </div>
+        </div>
+
+        <div class="onboarding-grid" aria-label="Как работает прототип">
+          <article class="onboarding-card">
+            <span class="step-number">1</span>
+            <h3>Опишите темы</h3>
+            <p>Назовите то, что требует анализа, и дайте каждому пункту рабочее определение.</p>
+          </article>
+          <article class="onboarding-card">
+            <span class="step-number">2</span>
+            <h3>Добавьте участников</h3>
+            <p>Перечислите релевантные группы людей и организации понятными названиями.</p>
+          </article>
+          <article class="onboarding-card">
+            <span class="step-number">3</span>
+            <h3>Проверьте структуру</h3>
+            <p>Версия структуры отделена от доказательств и исследовательских оценок.</p>
+          </article>
+        </div>
+
+        <div class="boundary-card">
+          <div class="boundary-icon" aria-hidden="true">i</div>
+          <div>
+            <h3>Что важно знать</h3>
+            <p>Прототип не прогнозирует конфликт, не ранжирует людей и не принимает решения за пользователя. Публикация и научная валидация остаются отдельными этапами.</p>
+            <p class="partner-opening-label">Исследовательский прототип. Демонстрируются архитектура, доказательная трассировка и рабочий процесс. Научная валидность Power-профиля, превосходство над сильным экспертным baseline, прогнозирование и production readiness пока не заявляются.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace-screen" data-screen="project" aria-labelledby="project-title">
+        <div class="screen-heading">
+          <div>
+            <p class="panel-kicker">Карточка</p>
+            <h2 id="project-title">Проект</h2>
+            <p>Понятное имя и краткое назначение этой демонстрационной структуры.</p>
+          </div>
+          <button type="button" class="help-button" data-help-topic="project" aria-label="Справка: карточка проекта">?</button>
+        </div>
+        <div class="form-card">
+          <label for="project-name">Название <span aria-hidden="true">*</span></label>
+          <input id="project-name" name="project-name" type="text" autocomplete="off" required>
+          <label for="project-description">Описание</label>
+          <textarea id="project-description" name="project-description" rows="6"></textarea>
+          <p class="field-note">Изменения существуют только в текущей вкладке до экспорта файла сессии.</p>
+        </div>
+      </section>
+
+      <section class="workspace-screen" data-screen="elements" aria-labelledby="elements-title">
+        <div class="screen-heading">
+          <div>
+            <p class="panel-kicker">Редактор структуры</p>
+            <h2 id="elements-title">Проблемные темы</h2>
+            <p>Добавляйте темы, уточняйте определения и меняйте порядок перетаскиванием или кнопками.</p>
+          </div>
+          <div class="screen-actions">
+            <button type="button" class="help-button" data-help-topic="analytical-elements" aria-label="Справка: проблемные темы">?</button>
+            <button type="button" class="button button--primary" data-add-row="analyticalElements">＋ Добавить тему</button>
+          </div>
+        </div>
+        <div class="table-shell">
+          <table class="editor-table" aria-label="Проблемные темы">
+            <thead><tr><th class="order-column">Порядок</th><th>Код</th><th>Название</th><th>Рабочее определение</th><th class="actions-column">Действия</th></tr></thead>
+            <tbody id="elements-editor-body" data-collection="analyticalElements"></tbody>
+          </table>
+        </div>
+        <div id="elements-empty" class="empty-state" hidden>
+          <h3>Пока нет проблемных тем</h3><p>Добавьте первую тему, чтобы начать описание структуры.</p>
+        </div>
+      </section>
+
+      <section class="workspace-screen" data-screen="actors" aria-labelledby="actors-title">
+        <div class="screen-heading">
+          <div>
+            <p class="panel-kicker">Редактор структуры</p>
+            <h2 id="actors-title">Группы людей и организаций</h2>
+            <p>Используйте полные понятные названия; порядок можно менять без пересоздания записей.</p>
+          </div>
+          <div class="screen-actions">
+            <button type="button" class="help-button" data-help-topic="actors" aria-label="Справка: группы и организации">?</button>
+            <button type="button" class="button button--primary" data-add-row="actors">＋ Добавить участника</button>
+          </div>
+        </div>
+        <div class="table-shell">
+          <table class="editor-table" aria-label="Группы людей и организаций">
+            <thead><tr><th class="order-column">Порядок</th><th>Код</th><th>Название</th><th>Краткое описание</th><th class="actions-column">Действия</th></tr></thead>
+            <tbody id="actors-editor-body" data-collection="actors"></tbody>
+          </table>
+        </div>
+        <div id="actors-empty" class="empty-state" hidden>
+          <h3>Пока нет участников</h3><p>Добавьте первую группу людей или организацию.</p>
+        </div>
+      </section>
+
+      <section class="workspace-screen" data-screen="parameters" aria-labelledby="parameters-title">
+        <div class="screen-heading">
+          <div><p class="panel-kicker">Граница среза</p><h2 id="parameters-title">Параметры</h2></div>
+          <button type="button" class="help-button" data-help-topic="project" aria-label="Справка: границы прототипа">?</button>
+        </div>
+        <div class="limitation-card">
+          <span aria-hidden="true">◌</span>
+          <div><h3>Редактор параметров не входит в showcase-срез</h3><p>Экран намеренно не создаёт поля оценок, временных срезов или вычислений. Здесь демонстрируется только структура проекта.</p></div>
+        </div>
+      </section>
+
+      <section class="workspace-screen" data-screen="publications" aria-labelledby="publications-title">
+        <div class="screen-heading">
+          <div><p class="panel-kicker">Ограничение</p><h2 id="publications-title">Публикации</h2></div>
+          <button type="button" class="help-button" data-help-topic="publication-limitation" aria-label="Справка: ограничение публикации">?</button>
+        </div>
+        <div class="limitation-card limitation-card--amber">
+          <span aria-hidden="true">!</span>
+          <div><h3>Публикация пока недоступна</h3><p>Необходим отдельный производственный контракт авторства и публикации. Showcase может только показать и проверить локальную структуру, не изменяя производственные данные.</p></div>
+        </div>
+        <button type="button" class="button button--secondary" data-command="preview">Открыть локальный preview</button>
+      </section>
+
+      <section class="workspace-screen" data-screen="help" aria-labelledby="central-help-title">
+        <div class="screen-heading">
+          <div><p class="panel-kicker">Локальная справка · HELP_LOCAL_V1</p><h2 id="central-help-title">Справка по прототипу</h2><p>Выберите раздел или используйте кнопку «?» рядом с конкретным интерфейсом.</p></div>
+        </div>
+        <div id="help-topic-list" class="help-topic-list"></div>
+      </section>
+
+      <section id="validation-panel" class="result-panel" aria-labelledby="validation-title" hidden>
+        <div class="result-heading">
+          <div><p class="panel-kicker">Проверка</p><h2 id="validation-title">Диагностика структуры</h2></div>
+          <div class="result-actions">
+            <button type="button" class="help-button" data-help-topic="validation" aria-label="Справка: диагностика структуры">?</button>
+            <button type="button" class="icon-button" data-close-result="validation" aria-label="Закрыть диагностику">×</button>
+          </div>
+        </div>
+        <div id="diagnostics" role="status" aria-live="polite"></div>
+      </section>
+
+      <section id="preview-panel" class="result-panel" aria-labelledby="preview-title" hidden>
+        <div class="result-heading">
+          <div><p class="panel-kicker">Только просмотр</p><h2 id="preview-title">Preview структуры</h2></div>
+          <div class="result-actions">
+            <button type="button" class="help-button" data-help-topic="preview" aria-label="Справка: preview структуры">?</button>
+            <button type="button" class="icon-button" data-close-result="preview" aria-label="Закрыть preview">×</button>
+          </div>
+        </div>
+        <div id="structure-preview" class="structure-preview"></div>
+      </section>
+    </section>
+
+    <div
+      id="splitter-right"
+      class="splitter"
+      role="separator"
+      aria-label="Изменить ширину правой панели"
+      aria-orientation="vertical"
+      aria-controls="editor-panel context-panel"
+      aria-valuemin="300"
+      aria-valuemax="500"
+      aria-valuenow="360"
+      tabindex="0"
+      data-splitter="right"
+    ><span aria-hidden="true"></span></div>
+
+    <aside id="context-panel" class="studio-panel context-panel" aria-label="Документ, чат и справка">
+      <div class="context-tabs" role="tablist" aria-label="Контекстная панель">
+        <button id="tab-document" type="button" role="tab" aria-selected="true" aria-controls="panel-document" tabindex="0" data-right-tab="document">Документ</button>
+        <button id="tab-chat" type="button" role="tab" aria-selected="false" aria-controls="panel-chat" tabindex="-1" data-right-tab="chat">Чат</button>
+        <button id="tab-help" type="button" role="tab" aria-selected="false" aria-controls="panel-help" tabindex="-1" data-right-tab="help">Справка</button>
+      </div>
+
+      <section id="panel-document" class="context-tab-panel is-active" role="tabpanel" aria-labelledby="tab-document" data-right-panel="document">
+        <div class="context-heading">
+          <p class="panel-kicker">Безопасный fixture</p>
+          <h2>Доказательная трасса</h2>
+          <p>Пример показывает происхождение фрагмента без числовых утверждений.</p>
+        </div>
+        <ol class="evidence-trace" aria-label="Assessment → Fact → Fragment → DocumentVersion → Source">
+          <li><span class="trace-kind">Assessment</span><strong>Исследовательская оценка</strong><small>Отделена от фактического основания</small></li>
+          <li><span class="trace-kind">Fact</span><strong>Зафиксированный факт</strong><small>Ссылается на точный фрагмент</small></li>
+          <li><span class="trace-kind">Fragment</span><strong>Текстовый фрагмент</strong><small>Якорь внутри сохранённой версии</small></li>
+          <li><span class="trace-kind">DocumentVersion</span><strong>Версия документа</strong><small>Неизменяемая копия с контрольной суммой</small></li>
+          <li><span class="trace-kind">Source</span><strong>Источник</strong><small>Происхождение документа</small></li>
+        </ol>
+        <div class="trace-boundary"><strong>Доказательства ≠ оценки</strong><p>Связь видна, но эти два слоя не смешиваются.</p></div>
+      </section>
+
+      <section id="panel-chat" class="context-tab-panel" role="tabpanel" aria-labelledby="tab-chat" data-right-panel="chat" hidden>
+        <div class="disabled-feature">
+          <span class="disabled-feature-icon" aria-hidden="true">···</span>
+          <h2>Чат пока отключён</h2>
+          <p>Будет подключён после отдельного provider/RAG gate</p>
+          <button type="button" class="button" disabled>Начать разговор</button>
+        </div>
+      </section>
+
+      <section id="panel-help" class="context-tab-panel" role="tabpanel" aria-labelledby="tab-help" data-right-panel="help" hidden>
+        <div class="help-version"><span>Локальная справка</span><code>HELP_LOCAL_V1</code></div>
+        <article id="help-content" class="help-content" tabindex="0">
+          <p class="panel-kicker">Раздел</p>
+          <h2>Начало работы</h2>
+          <p>Выберите кнопку «?» рядом с элементом интерфейса, чтобы открыть связанную страницу.</p>
+        </article>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="app-footer">
+    <span>SHOWCASE_SESSION_V1 · без записи в производственную базу</span>
+    <button type="button" data-command="preview">Preview структуры</button>
+    <button type="button" data-reset-layout>Сбросить панели</button>
+  </footer>
+
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-title">
+    <form method="dialog">
+      <h2 id="confirm-title">Начать новую сессию?</h2>
+      <p>Несохранённые изменения текущей вкладки будут заменены. Производственные данные не затрагиваются.</p>
+      <div class="dialog-actions"><button value="cancel" class="button button--secondary">Отмена</button><button value="confirm" class="button button--primary">Начать</button></div>
+    </form>
+  </dialog>
+
+  {{ initial_session|json_script:"initial-showcase-session" }}
+  <script src="{% static 'studio_showcase/studio.js' %}" defer></script>
+</body>
+</html>
