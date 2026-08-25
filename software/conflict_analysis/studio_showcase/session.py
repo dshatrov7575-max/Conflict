@@ -12,6 +12,8 @@ from typing import Any, Mapping
 
 SHOWCASE_FORMAT = "SHOWCASE_SESSION_V1"
 SHOWCASE_VERSION = "1.0.0"
+MAX_ITEMS_PER_COLLECTION = 500
+MAX_PREVIEW_CELLS = 10_000
 
 
 def _element(index: int) -> dict[str, Any]:
@@ -77,6 +79,12 @@ def _diagnostic(code: str, path: str, message: str) -> dict[str, str]:
     return {"level": "error", "code": code, "path": path, "message": message}
 
 
+def _text(value: Any) -> str:
+    """Match JavaScript's empty handling for JSON null in authored text fields."""
+
+    return "" if value is None else str(value)
+
+
 def validate_session(payload: Any) -> list[dict[str, str]]:
     """Return stable, plain-language diagnostics without mutating input."""
 
@@ -102,7 +110,7 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
         )
 
     project = payload.get("project")
-    if not isinstance(project, Mapping) or not str(project.get("name", "")).strip():
+    if not isinstance(project, Mapping) or not _text(project.get("name", "")).strip():
         diagnostics.append(
             _diagnostic("PROJECT_NAME_BLANK", "project.name", "Укажите название проекта.")
         )
@@ -123,6 +131,18 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
                 )
             )
             continue
+        if len(rows) > MAX_ITEMS_PER_COLLECTION:
+            diagnostics.append(
+                _diagnostic(
+                    "COLLECTION_TOO_LARGE",
+                    collection_name,
+                    (
+                        f"Список «{collection_name}» содержит {len(rows)} записей; "
+                        f"максимум — {MAX_ITEMS_PER_COLLECTION}."
+                    ),
+                )
+            )
+            continue
 
         codes: dict[str, int] = {}
         row_ids: set[str] = set()
@@ -133,9 +153,9 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
                     _diagnostic("ROW_NOT_OBJECT", path, f"Запись {label} должна быть объектом.")
                 )
                 continue
-            row_id = str(row.get("id", "")).strip()
-            code = str(row.get("code", "")).strip()
-            name = str(row.get("name", "")).strip()
+            row_id = _text(row.get("id", "")).strip()
+            code = _text(row.get("code", "")).strip()
+            name = _text(row.get("name", "")).strip()
             if not row_id:
                 diagnostics.append(_diagnostic("ID_BLANK", f"{path}.id", "У записи отсутствует ID."))
             elif row_id in all_ids:
@@ -152,7 +172,7 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
             if not code:
                 diagnostics.append(_diagnostic("CODE_BLANK", f"{path}.code", "Укажите код записи."))
             else:
-                normalized_code = code.casefold()
+                normalized_code = code.lower()
                 if normalized_code in codes:
                     diagnostics.append(
                         _diagnostic(
@@ -167,7 +187,7 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
                 diagnostics.append(
                     _diagnostic("NAME_BLANK", f"{path}.name", f"Укажите название {label}.")
                 )
-            if needs_definition and not str(row.get("definition", "")).strip():
+            if needs_definition and not _text(row.get("definition", "")).strip():
                 diagnostics.append(
                     _diagnostic(
                         "DEFINITION_BLANK",
@@ -175,7 +195,7 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
                         "Добавьте рабочее определение проблемной темы.",
                     )
                 )
-            if not needs_definition and not str(row.get("description", "")).strip():
+            if not needs_definition and not _text(row.get("description", "")).strip():
                 diagnostics.append(
                     _diagnostic(
                         "DESCRIPTION_BLANK",
@@ -188,7 +208,7 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
             if not isinstance(row, Mapping):
                 continue
             parent_id = row.get("parentId")
-            if parent_id not in (None, "") and str(parent_id) not in row_ids:
+            if parent_id not in (None, "") and _text(parent_id) not in row_ids:
                 diagnostics.append(
                     _diagnostic(
                         "PARENT_REFERENCE_MISSING",
@@ -196,6 +216,22 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
                         f"Ссылка на родительскую запись «{parent_id}» не найдена.",
                     )
                 )
+
+    analytical_elements = payload.get("analyticalElements")
+    actors = payload.get("actors")
+    if isinstance(analytical_elements, list) and isinstance(actors, list):
+        preview_cells = len(analytical_elements) * len(actors)
+        if preview_cells > MAX_PREVIEW_CELLS:
+            diagnostics.append(
+                _diagnostic(
+                    "PREVIEW_CELL_BUDGET_EXCEEDED",
+                    "analyticalElements×actors",
+                    (
+                        f"Preview содержит {preview_cells} ячеек; "
+                        f"безопасный максимум — {MAX_PREVIEW_CELLS}."
+                    ),
+                )
+            )
 
     return diagnostics
 

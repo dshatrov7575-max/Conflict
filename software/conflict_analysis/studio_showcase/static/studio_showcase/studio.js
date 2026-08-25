@@ -3,11 +3,29 @@
 
   const SESSION_FORMAT = "SHOWCASE_SESSION_V1";
   const SESSION_VERSION = "1.0.0";
+  const MAX_ITEMS_PER_COLLECTION = 500;
+  const MAX_PREVIEW_CELLS = 10000;
   const LAYOUT_KEY = "conflict-analysis-studio:layout:v1";
   const LAYOUT_VERSION = "STUDIO_LAYOUT_V1";
   const DEFAULT_LAYOUT = Object.freeze({ left: 272, right: 360, activeRightTab: "document" });
   const WIDTH_LIMITS = Object.freeze({ left: [220, 420], right: [300, 500] });
   const RIGHT_TABS = new Set(["document", "chat", "help"]);
+
+  if (typeof document === "undefined") {
+    if (typeof module !== "undefined" && module.exports) {
+      module.exports = Object.freeze({
+        validateSession,
+        constants: Object.freeze({
+          SESSION_FORMAT,
+          SESSION_VERSION,
+          MAX_ITEMS_PER_COLLECTION,
+          MAX_PREVIEW_CELLS,
+        }),
+      });
+    }
+    return;
+  }
+
   const INITIAL_SESSION = JSON.parse(document.getElementById("initial-showcase-session").textContent);
 
   const HELP_TOPICS = Object.freeze({
@@ -366,46 +384,90 @@
     return { level: "error", code, path, message };
   }
 
+  function text(value) {
+    return value === null || value === undefined ? "" : String(value);
+  }
+
   function validateSession(payload) {
     const diagnostics = [];
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
       return [diagnostic("SESSION_NOT_OBJECT", "$", "Файл сессии должен содержать JSON-объект.")];
     }
-    if (payload.format !== SESSION_FORMAT) diagnostics.push(diagnostic("FORMAT_MISMATCH", "format", `Ожидается маркировка ${SESSION_FORMAT}.`));
-    if (payload.version !== SESSION_VERSION) diagnostics.push(diagnostic("VERSION_MISMATCH", "version", `Поддерживается версия ${SESSION_VERSION}.`));
-    if (!payload.project || !String(payload.project.name || "").trim()) diagnostics.push(diagnostic("PROJECT_NAME_BLANK", "project.name", "Укажите название проекта."));
+    if (payload.format !== SESSION_FORMAT) diagnostics.push(diagnostic("FORMAT_MISMATCH", "format", `Ожидается маркировка ${SESSION_FORMAT}; Foundation package здесь не принимается.`));
+    if (payload.version !== SESSION_VERSION) diagnostics.push(diagnostic("VERSION_MISMATCH", "version", `Поддерживается версия showcase-сессии ${SESSION_VERSION}.`));
+    if (!payload.project || Array.isArray(payload.project) || typeof payload.project !== "object" || !text(payload.project.name).trim()) {
+      diagnostics.push(diagnostic("PROJECT_NAME_BLANK", "project.name", "Укажите название проекта."));
+    }
 
     const allIds = new Map();
-    [
+    for (const [collection, label, detail] of [
       ["analyticalElements", "проблемной темы", "definition"],
       ["actors", "группы или организации", "description"],
-    ].forEach(([collection, label, detail]) => {
+    ]) {
       const rows = payload[collection];
       if (!Array.isArray(rows)) {
-        diagnostics.push(diagnostic("COLLECTION_NOT_ARRAY", collection, "Список должен быть массивом."));
-        return;
+        diagnostics.push(diagnostic("COLLECTION_NOT_ARRAY", collection, `Список «${collection}» должен быть массивом.`));
+        continue;
+      }
+      if (rows.length > MAX_ITEMS_PER_COLLECTION) {
+        diagnostics.push(diagnostic(
+          "COLLECTION_TOO_LARGE",
+          collection,
+          `Список «${collection}» содержит ${rows.length} записей; максимум — ${MAX_ITEMS_PER_COLLECTION}.`,
+        ));
+        continue;
       }
       const codes = new Set();
-      const rowIds = new Set(rows.map((row) => String(row?.id || "")).filter(Boolean));
+      const rowIds = new Set();
       rows.forEach((row, index) => {
         const path = `${collection}[${index}]`;
         if (!row || typeof row !== "object" || Array.isArray(row)) {
-          diagnostics.push(diagnostic("ROW_NOT_OBJECT", path, "Запись должна быть объектом."));
+          diagnostics.push(diagnostic("ROW_NOT_OBJECT", path, `Запись ${label} должна быть объектом.`));
           return;
         }
-        const id = String(row.id || "").trim();
-        const code = String(row.code || "").trim();
+        const id = text(row.id).trim();
+        const code = text(row.code).trim();
+        const name = text(row.name).trim();
         if (!id) diagnostics.push(diagnostic("ID_BLANK", `${path}.id`, "У записи отсутствует ID."));
         else if (allIds.has(id)) diagnostics.push(diagnostic("ID_DUPLICATE", `${path}.id`, `ID «${id}» уже используется в ${allIds.get(id)}.`));
-        else allIds.set(id, path);
+        else {
+          allIds.set(id, path);
+          rowIds.add(id);
+        }
         if (!code) diagnostics.push(diagnostic("CODE_BLANK", `${path}.code`, "Укажите код записи."));
-        else if (codes.has(code.toLocaleLowerCase("ru"))) diagnostics.push(diagnostic("CODE_DUPLICATE", `${path}.code`, `Код «${code}» уже используется.`));
+        else if (codes.has(code.toLocaleLowerCase("ru"))) diagnostics.push(diagnostic("CODE_DUPLICATE", `${path}.code`, `Код «${code}» уже используется в этой таблице.`));
         else codes.add(code.toLocaleLowerCase("ru"));
-        if (!String(row.name || "").trim()) diagnostics.push(diagnostic("NAME_BLANK", `${path}.name`, `Укажите название ${label}.`));
-        if (!String(row[detail] || "").trim()) diagnostics.push(diagnostic(detail === "definition" ? "DEFINITION_BLANK" : "DESCRIPTION_BLANK", `${path}.${detail}`, `Заполните поле «${detail === "definition" ? "Рабочее определение" : "Краткое описание"}».`));
-        if (row.parentId && !rowIds.has(String(row.parentId))) diagnostics.push(diagnostic("PARENT_REFERENCE_MISSING", `${path}.parentId`, `Ссылка «${row.parentId}» не найдена.`));
+        if (!name) diagnostics.push(diagnostic("NAME_BLANK", `${path}.name`, `Укажите название ${label}.`));
+        if (detail === "definition" && !text(row.definition).trim()) {
+          diagnostics.push(diagnostic("DEFINITION_BLANK", `${path}.definition`, "Добавьте рабочее определение проблемной темы."));
+        }
+        if (detail === "description" && !text(row.description).trim()) {
+          diagnostics.push(diagnostic("DESCRIPTION_BLANK", `${path}.description`, "Добавьте краткое описание группы или организации."));
+        }
       });
-    });
+      rows.forEach((row, index) => {
+        if (!row || typeof row !== "object" || Array.isArray(row)) return;
+        const parentId = row.parentId;
+        if (parentId !== null && parentId !== undefined && parentId !== "" && !rowIds.has(text(parentId))) {
+          diagnostics.push(diagnostic(
+            "PARENT_REFERENCE_MISSING",
+            `${collection}[${index}].parentId`,
+            `Ссылка на родительскую запись «${text(parentId)}» не найдена.`,
+          ));
+        }
+      });
+    }
+
+    if (Array.isArray(payload.analyticalElements) && Array.isArray(payload.actors)) {
+      const previewCells = payload.analyticalElements.length * payload.actors.length;
+      if (previewCells > MAX_PREVIEW_CELLS) {
+        diagnostics.push(diagnostic(
+          "PREVIEW_CELL_BUDGET_EXCEEDED",
+          "analyticalElements×actors",
+          `Preview содержит ${previewCells} ячеек; безопасный максимум — ${MAX_PREVIEW_CELLS}.`,
+        ));
+      }
+    }
     return diagnostics;
   }
 
@@ -447,6 +509,16 @@
   }
 
   function showPreview() {
+    const resourceDiagnostics = validateSession(session).filter((item) => (
+      item.code === "COLLECTION_TOO_LARGE" || item.code === "PREVIEW_CELL_BUDGET_EXCEEDED"
+    ));
+    if (resourceDiagnostics.length) {
+      elements.structurePreview.replaceChildren();
+      renderDiagnostics(resourceDiagnostics);
+      openHelp("preview", false);
+      toast("Preview отклонён: превышен безопасный лимит представления.", "error");
+      return false;
+    }
     elements.validationPanel.hidden = true;
     elements.previewPanel.hidden = false;
     const themes = session.analyticalElements;
@@ -490,6 +562,7 @@
     elements.structurePreview.replaceChildren(table, note);
     elements.previewPanel.scrollIntoView({ block: "nearest" });
     openHelp("preview", false);
+    return true;
   }
 
   function activateRightTab(tabName, persist = true) {
@@ -748,7 +821,14 @@
   setView(activeView, false);
 
   window.StudioShowcase = Object.freeze({
-    constants: Object.freeze({ SESSION_FORMAT, SESSION_VERSION, LAYOUT_KEY, LAYOUT_VERSION }),
+    constants: Object.freeze({
+      SESSION_FORMAT,
+      SESSION_VERSION,
+      MAX_ITEMS_PER_COLLECTION,
+      MAX_PREVIEW_CELLS,
+      LAYOUT_KEY,
+      LAYOUT_VERSION,
+    }),
     getSession: () => clone(session),
     loadSession,
     validate: (payload = session) => clone(validateSession(payload)),

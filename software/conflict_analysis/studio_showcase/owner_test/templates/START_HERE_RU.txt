@@ -1,0 +1,28 @@
+CONFLICTANALYSIS STUDIO — OWNER-TEST
+====================================
+
+Это исследовательский session-only прототип. Он не публикует данные, не изменяет
+Foundation, не содержит формул/Power/прогноза и не принимает решений.
+
+DELIVERY HEAD: @@HEAD@@
+DELIVERY TREE: @@TREE@@
+
+Требования: Windows 10/11, PowerShell 5.1+ и Python 3.12 x64.
+Первичная установка Python-зависимостей требует доступа к PyPI по сети.
+
+1. До распаковки сравните SHA-256 ZIP с соседним файлом @@ZIP_NAME@@.sha256:
+   Get-FileHash .\@@ZIP_NAME@@ -Algorithm SHA256
+
+2. Распакуйте ZIP в новый локальный каталог. В распакованном каталоге выполните:
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\VERIFY_CONTENT.ps1
+
+3. Установите изолированные зависимости:
+   cd .\app
+   py -3.12 -m venv .venv
+   .\.venv\Scripts\python.exe -m pip install --disable-pip-version-check -r requirements-owner-test.txt
+
+4. Запустите foreground-сервер только на loopback:
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_studio_showcase.ps1 -ListenAddress 127.0.0.1 -Port 8000
+
+5. Откройте http://127.0.0.1:8000/ и проверьте http://127.0.0.1:8000/health/.
+   Остановите сервер Ctrl+C. Инструкции удаления находятся в CLEANUP_RU.md.
