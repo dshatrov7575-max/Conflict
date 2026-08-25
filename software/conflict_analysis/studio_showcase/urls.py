@@ -11,4 +11,3 @@ urlpatterns = [
     path("api/fixtures/<str:fixture_name>/", views.fixture_api, name="fixture"),
     path("api/validate/", views.validate_api, name="validate"),
 ]
-

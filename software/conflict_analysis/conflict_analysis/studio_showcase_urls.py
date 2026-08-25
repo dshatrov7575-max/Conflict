@@ -6,4 +6,3 @@ from django.urls import include, path
 urlpatterns = [
     path("", include("studio_showcase.urls")),
 ]
-
