@@ -32,6 +32,7 @@ include = ["conflict_analysis*", "domain*", "shared_ui*", "studio_showcase*"]
     "templates/studio_showcase/*.html",
     "static/studio_showcase/*.css",
     "static/studio_showcase/*.js",
+    "screenshots/*.jpg",
     "screenshots/*.png",
 ]
 "shared_ui" = ["static/shared_ui/*.css"]

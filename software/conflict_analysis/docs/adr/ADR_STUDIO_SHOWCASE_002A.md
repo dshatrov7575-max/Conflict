@@ -50,7 +50,7 @@ authoring/publication contract is absent.
 The right-hand evidence trace is a static, non-numeric demonstration of the
 canonical direction:
 
-`Assessment -> Fact -> TextFragment -> DocumentVersion -> Document -> Source`
+`Assessment -> Fact -> Fragment -> DocumentVersion -> Source`
 
 It does not create or alter evidence records. Chat remains disabled until a
 separate provider/RAG gate. Help pages are local, versioned presentation
