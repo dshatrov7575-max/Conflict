@@ -227,6 +227,10 @@ def test_packaging_wrapper_requires_exact_head_tree_and_never_commits_an_archive
     ):
         assert gate in clean_room
     assert "Unexpected package file not covered by MANIFEST.json" in verifier
+    assert "Get-Sha256Hex" in verifier
+    assert "Get-Sha256Hex" in clean_room
+    assert "Get-FileHash" not in verifier
+    assert "Get-FileHash" not in clean_room
     assert "--headless=new" in browser_smoke
     assert 'id="studio-workspace"' in browser_smoke
     assert not list(REPOSITORY_ROOT.rglob("*.zip"))

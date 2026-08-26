@@ -43,6 +43,23 @@ function Get-FreeLoopbackPort {
     }
 }
 
+function Get-Sha256Hex {
+    param([Parameter(Mandatory = $true)][string]$LiteralPath)
+
+    $Stream = [System.IO.File]::OpenRead([System.IO.Path]::GetFullPath($LiteralPath))
+    $Hasher = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return ([System.BitConverter]::ToString($Hasher.ComputeHash($Stream))).Replace(
+            "-",
+            ""
+        ).ToLowerInvariant()
+    }
+    finally {
+        $Hasher.Dispose()
+        $Stream.Dispose()
+    }
+}
+
 function Test-HealthUnavailable {
     param([Parameter(Mandatory = $true)][string]$HealthUrl)
 
@@ -66,7 +83,7 @@ $RecordedZipName = $Matches[2]
 if ($RecordedZipName -cne [System.IO.Path]::GetFileName($ResolvedZip)) {
     throw "Package SHA-256 record names '$RecordedZipName', not '$([System.IO.Path]::GetFileName($ResolvedZip))'."
 }
-$ActualZipHash = (Get-FileHash -LiteralPath $ResolvedZip -Algorithm SHA256).Hash.ToLowerInvariant()
+$ActualZipHash = Get-Sha256Hex -LiteralPath $ResolvedZip
 if ($ActualZipHash -cne $ExpectedZipHash) {
     throw "OWNER-TEST ZIP SHA-256 mismatch. Expected $ExpectedZipHash, got $ActualZipHash."
 }
@@ -202,9 +219,8 @@ try {
         tree = $Tree
         zip_path = $ResolvedZip
         zip_sha256 = $ActualZipHash
-        manifest_sha256 = (Get-FileHash `
-            -LiteralPath (Join-Path $PackageRoot "MANIFEST.json") `
-            -Algorithm SHA256).Hash.ToLowerInvariant()
+        manifest_sha256 = Get-Sha256Hex `
+            -LiteralPath (Join-Path $PackageRoot "MANIFEST.json")
         dependency_install_requires_network = $true
         fresh_temporary_directory = $Scratch
         manifest_verified = $true

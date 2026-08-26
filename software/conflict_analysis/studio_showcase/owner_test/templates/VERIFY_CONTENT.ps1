@@ -11,12 +11,29 @@ $RootPrefix = $Root.TrimEnd(
 $ManifestPath = Join-Path $Root "MANIFEST.json"
 $ManifestHashPath = Join-Path $Root "MANIFEST.sha256"
 
+function Get-Sha256Hex {
+    param([Parameter(Mandatory = $true)][string]$LiteralPath)
+
+    $Stream = [System.IO.File]::OpenRead([System.IO.Path]::GetFullPath($LiteralPath))
+    $Hasher = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        return ([System.BitConverter]::ToString($Hasher.ComputeHash($Stream))).Replace(
+            "-",
+            ""
+        ).ToLowerInvariant()
+    }
+    finally {
+        $Hasher.Dispose()
+        $Stream.Dispose()
+    }
+}
+
 if (-not (Test-Path -LiteralPath $ManifestPath -PathType Leaf)) {
     throw "MANIFEST.json not found. Re-extract the OWNER-TEST ZIP."
 }
 
 $ExpectedManifestHash = ((Get-Content -LiteralPath $ManifestHashPath -Raw) -split '\s+')[0].ToLowerInvariant()
-$ActualManifestHash = (Get-FileHash -LiteralPath $ManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$ActualManifestHash = Get-Sha256Hex -LiteralPath $ManifestPath
 if ($ExpectedManifestHash -cne $ActualManifestHash) {
     throw "MANIFEST.json SHA-256 mismatch. Do not run this package."
 }
@@ -34,7 +51,7 @@ foreach ($Entry in $Manifest.files) {
     if (-not (Test-Path -LiteralPath $FullPath -PathType Leaf)) {
         throw "Missing package file: $($Entry.path)"
     }
-    $Actual = (Get-FileHash -LiteralPath $FullPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $Actual = Get-Sha256Hex -LiteralPath $FullPath
     if ($Actual -cne $Entry.sha256.ToLowerInvariant()) {
         throw "SHA-256 mismatch: $($Entry.path)"
     }
@@ -72,7 +89,7 @@ foreach ($Line in $ScreenshotLines) {
     if (-not (Test-Path -LiteralPath $ScreenshotPath -PathType Leaf)) {
         throw "Screenshot listed in checksum register is missing: $($Matches[2])"
     }
-    $ScreenshotHash = (Get-FileHash -LiteralPath $ScreenshotPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $ScreenshotHash = Get-Sha256Hex -LiteralPath $ScreenshotPath
     if ($ScreenshotHash -cne $Matches[1]) {
         throw "Screenshot SHA-256 mismatch: $($Matches[2])"
     }
