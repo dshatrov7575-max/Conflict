@@ -14,6 +14,10 @@ No pre-published fake workspace, borrowed workspace, caller-provided
 `valid:true`, direct status update, or second publication receipt is permitted.
 An exception at any stage rolls back validation state, publication state,
 workspace, HelpTopic bindings, publication receipt, and success audits together.
+All initial, successor, and Foundation 2.1 publication paths use the same lock
+order: `Project -> exact ProjectDefinitionVersion -> dependent
+ProjectPublication/ProjectWorkspace rows`. The canonical-validation failure
+seam occurs after the complete valid report and before any lifecycle mutation.
 
 Audit scopes are exclusive:
 
