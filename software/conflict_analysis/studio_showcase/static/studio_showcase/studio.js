@@ -5,6 +5,8 @@
   const SESSION_VERSION = "1.0.0";
   const MAX_ITEMS_PER_COLLECTION = 500;
   const MAX_PREVIEW_CELLS = 10000;
+  const MISSING_FIELD = Symbol("missing-field");
+  const ECMASCRIPT_TRIM_PATTERN = /^[\u0009-\u000d\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+|[\u0009-\u000d\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+$/g;
   const LAYOUT_KEY = "conflict-analysis-studio:layout:v1";
   const LAYOUT_VERSION = "STUDIO_LAYOUT_V1";
   const DEFAULT_LAYOUT = Object.freeze({ left: 272, right: 360, activeRightTab: "document" });
@@ -299,14 +301,16 @@
 
   function nextAvailableCode(collection, prefix) {
     const usedCodes = new Set(
-      session[collection].map((row) => String(row.code || "").trim().toLocaleUpperCase("ru")),
+      session[collection].map((row) => (
+        typeof row.code === "string" ? normalizeCode(trimText(row.code)) : ""
+      )),
     );
     let number = 1;
     let code = "";
     do {
       code = `${prefix}-${String(number).padStart(2, "0")}`;
       number += 1;
-    } while (usedCodes.has(code));
+    } while (usedCodes.has(normalizeCode(code.toLocaleLowerCase("ru"))));
     return { code, number: number - 1 };
   }
 
@@ -384,8 +388,26 @@
     return { level: "error", code, path, message };
   }
 
-  function text(value) {
-    return value === null || value === undefined ? "" : String(value);
+  function rawField(object, key) {
+    return Object.prototype.hasOwnProperty.call(object, key) ? object[key] : MISSING_FIELD;
+  }
+
+  function trimText(value) {
+    return value.replace(ECMASCRIPT_TRIM_PATTERN, "");
+  }
+
+  function normalizeCode(value) {
+    return [...value].map((character) => {
+      const point = character.codePointAt(0);
+      if ((point >= 0x41 && point <= 0x5a) || (point >= 0x410 && point <= 0x42f)) {
+        return String.fromCodePoint(point + 0x20);
+      }
+      return character === "Ё" ? "ё" : character;
+    }).join("");
+  }
+
+  function fieldNotString(path) {
+    return diagnostic("FIELD_NOT_STRING", path, "Поле должно быть JSON-строкой.");
   }
 
   function validateSession(payload) {
@@ -393,9 +415,17 @@
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
       return [diagnostic("SESSION_NOT_OBJECT", "$", "Файл сессии должен содержать JSON-объект.")];
     }
-    if (payload.format !== SESSION_FORMAT) diagnostics.push(diagnostic("FORMAT_MISMATCH", "format", `Ожидается маркировка ${SESSION_FORMAT}; Foundation package здесь не принимается.`));
-    if (payload.version !== SESSION_VERSION) diagnostics.push(diagnostic("VERSION_MISMATCH", "version", `Поддерживается версия showcase-сессии ${SESSION_VERSION}.`));
-    if (!payload.project || Array.isArray(payload.project) || typeof payload.project !== "object" || !text(payload.project.name).trim()) {
+    const formatValue = rawField(payload, "format");
+    if (formatValue !== MISSING_FIELD && typeof formatValue !== "string") diagnostics.push(fieldNotString("format"));
+    else if (formatValue !== SESSION_FORMAT) diagnostics.push(diagnostic("FORMAT_MISMATCH", "format", `Ожидается маркировка ${SESSION_FORMAT}; Foundation package здесь не принимается.`));
+    const versionValue = rawField(payload, "version");
+    if (versionValue !== MISSING_FIELD && typeof versionValue !== "string") diagnostics.push(fieldNotString("version"));
+    else if (versionValue !== SESSION_VERSION) diagnostics.push(diagnostic("VERSION_MISMATCH", "version", `Поддерживается версия showcase-сессии ${SESSION_VERSION}.`));
+    const projectIsObject = payload.project && !Array.isArray(payload.project) && typeof payload.project === "object";
+    const projectName = projectIsObject ? rawField(payload.project, "name") : MISSING_FIELD;
+    if (projectName !== MISSING_FIELD && typeof projectName !== "string") {
+      diagnostics.push(fieldNotString("project.name"));
+    } else if (projectName === MISSING_FIELD || !trimText(projectName)) {
       diagnostics.push(diagnostic("PROJECT_NAME_BLANK", "project.name", "Укажите название проекта."));
     }
 
@@ -425,34 +455,47 @@
           diagnostics.push(diagnostic("ROW_NOT_OBJECT", path, `Запись ${label} должна быть объектом.`));
           return;
         }
-        const id = text(row.id).trim();
-        const code = text(row.code).trim();
-        const name = text(row.name).trim();
-        if (!id) diagnostics.push(diagnostic("ID_BLANK", `${path}.id`, "У записи отсутствует ID."));
+        const rawId = rawField(row, "id");
+        const rawCode = rawField(row, "code");
+        const rawName = rawField(row, "name");
+        const id = typeof rawId === "string" ? trimText(rawId) : "";
+        const code = typeof rawCode === "string" ? trimText(rawCode) : "";
+        const name = typeof rawName === "string" ? trimText(rawName) : "";
+        if (rawId !== MISSING_FIELD && typeof rawId !== "string") diagnostics.push(fieldNotString(`${path}.id`));
+        else if (!id) diagnostics.push(diagnostic("ID_BLANK", `${path}.id`, "У записи отсутствует ID."));
         else if (allIds.has(id)) diagnostics.push(diagnostic("ID_DUPLICATE", `${path}.id`, `ID «${id}» уже используется в ${allIds.get(id)}.`));
         else {
           allIds.set(id, path);
           rowIds.add(id);
         }
-        if (!code) diagnostics.push(diagnostic("CODE_BLANK", `${path}.code`, "Укажите код записи."));
-        else if (codes.has(code.toLocaleLowerCase("ru"))) diagnostics.push(diagnostic("CODE_DUPLICATE", `${path}.code`, `Код «${code}» уже используется в этой таблице.`));
-        else codes.add(code.toLocaleLowerCase("ru"));
-        if (!name) diagnostics.push(diagnostic("NAME_BLANK", `${path}.name`, `Укажите название ${label}.`));
-        if (detail === "definition" && !text(row.definition).trim()) {
-          diagnostics.push(diagnostic("DEFINITION_BLANK", `${path}.definition`, "Добавьте рабочее определение проблемной темы."));
-        }
-        if (detail === "description" && !text(row.description).trim()) {
-          diagnostics.push(diagnostic("DESCRIPTION_BLANK", `${path}.description`, "Добавьте краткое описание группы или организации."));
+        if (rawCode !== MISSING_FIELD && typeof rawCode !== "string") diagnostics.push(fieldNotString(`${path}.code`));
+        else if (!code) diagnostics.push(diagnostic("CODE_BLANK", `${path}.code`, "Укажите код записи."));
+        else if (codes.has(normalizeCode(code))) diagnostics.push(diagnostic("CODE_DUPLICATE", `${path}.code`, `Код «${code}» уже используется в этой таблице.`));
+        else codes.add(normalizeCode(code));
+        if (rawName !== MISSING_FIELD && typeof rawName !== "string") diagnostics.push(fieldNotString(`${path}.name`));
+        else if (!name) diagnostics.push(diagnostic("NAME_BLANK", `${path}.name`, `Укажите название ${label}.`));
+        const detailValue = rawField(row, detail);
+        if (detailValue !== MISSING_FIELD && typeof detailValue !== "string") {
+          diagnostics.push(fieldNotString(`${path}.${detail}`));
+        } else if (detailValue === MISSING_FIELD || !trimText(detailValue)) {
+          diagnostics.push(diagnostic(
+            detail === "definition" ? "DEFINITION_BLANK" : "DESCRIPTION_BLANK",
+            `${path}.${detail}`,
+            detail === "definition" ? "Добавьте рабочее определение проблемной темы." : "Добавьте краткое описание группы или организации.",
+          ));
         }
       });
       rows.forEach((row, index) => {
         if (!row || typeof row !== "object" || Array.isArray(row)) return;
-        const parentId = row.parentId;
-        if (parentId !== null && parentId !== undefined && parentId !== "" && !rowIds.has(text(parentId))) {
+        const parentId = rawField(row, "parentId");
+        const parentPath = `${collection}[${index}].parentId`;
+        if (parentId !== MISSING_FIELD && parentId !== null && typeof parentId !== "string") {
+          diagnostics.push(fieldNotString(parentPath));
+        } else if (typeof parentId === "string" && trimText(parentId) && !rowIds.has(trimText(parentId))) {
           diagnostics.push(diagnostic(
             "PARENT_REFERENCE_MISSING",
-            `${collection}[${index}].parentId`,
-            `Ссылка на родительскую запись «${text(parentId)}» не найдена.`,
+            parentPath,
+            `Ссылка на родительскую запись «${trimText(parentId)}» не найдена.`,
           ));
         }
       });

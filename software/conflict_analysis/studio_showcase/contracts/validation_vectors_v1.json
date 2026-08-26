@@ -1,7 +1,7 @@
 {
   "format": "SHOWCASE_VALIDATION_VECTORS_V1",
   "version": "1.0.0",
-  "normalizationContract": "trim plus Unicode lowercase using Python str.lower and JavaScript toLocaleLowerCase('ru'); no compatibility case folding",
+  "normalizationContract": "explicit ECMAScript TrimString whitespace; duplicate-code folding covers ASCII A-Z, Cyrillic А-Я and Ё only; every other code point is preserved",
   "cases": [
     {
       "name": "valid_6x8",
@@ -66,7 +66,7 @@
       "name": "blank_project_name",
       "source": {"fixture": [1, 1]},
       "set": [
-        {"path": ["project", "name"], "value": null}
+        {"path": ["project", "name"], "value": "\ufeff"}
       ],
       "expectedDiagnostics": [
         {
@@ -140,9 +140,9 @@
       "expectedDiagnostics": [
         {
           "level": "error",
-          "code": "ID_BLANK",
+          "code": "FIELD_NOT_STRING",
           "path": "analyticalElements[0].id",
-          "message": "У записи отсутствует ID."
+          "message": "Поле должно быть JSON-строкой."
         },
         {
           "level": "error",
@@ -158,9 +158,9 @@
         },
         {
           "level": "error",
-          "code": "DEFINITION_BLANK",
+          "code": "FIELD_NOT_STRING",
           "path": "analyticalElements[0].definition",
-          "message": "Добавьте рабочее определение проблемной темы."
+          "message": "Поле должно быть JSON-строкой."
         },
         {
           "level": "error",
@@ -182,9 +182,9 @@
         },
         {
           "level": "error",
-          "code": "DESCRIPTION_BLANK",
+          "code": "FIELD_NOT_STRING",
           "path": "actors[0].description",
-          "message": "Добавьте краткое описание группы или организации."
+          "message": "Поле должно быть JSON-строкой."
         },
         {
           "level": "error",
@@ -263,6 +263,81 @@
         {"path": ["analyticalElements", 1, "code"], "value": "STRASSE"}
       ],
       "expectedDiagnostics": []
+    },
+    {
+      "name": "numeric_ids_1_and_1_point_0_are_type_errors_not_duplicates",
+      "source": {"fixture": [2, 0]},
+      "set": [
+        {"path": ["analyticalElements", 0, "id"], "value": 1},
+        {"path": ["analyticalElements", 1, "id"], "value": 1.0}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "FIELD_NOT_STRING",
+          "path": "analyticalElements[0].id",
+          "message": "Поле должно быть JSON-строкой."
+        },
+        {
+          "level": "error",
+          "code": "FIELD_NOT_STRING",
+          "path": "analyticalElements[1].id",
+          "message": "Поле должно быть JSON-строкой."
+        }
+      ]
+    },
+    {
+      "name": "boolean_null_container_and_parent_types",
+      "source": {"fixture": [1, 1]},
+      "set": [
+        {"path": ["format"], "value": {}},
+        {"path": ["version"], "value": true},
+        {"path": ["project", "name"], "value": false},
+        {"path": ["analyticalElements", 0, "code"], "value": false},
+        {"path": ["analyticalElements", 0, "name"], "value": []},
+        {"path": ["analyticalElements", 0, "definition"], "value": {}},
+        {"path": ["actors", 0, "id"], "value": {}},
+        {"path": ["actors", 0, "code"], "value": 7},
+        {"path": ["actors", 0, "name"], "value": null},
+        {"path": ["actors", 0, "description"], "value": false},
+        {"path": ["actors", 0, "parentId"], "value": 1}
+      ],
+      "expectedDiagnostics": [
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "format", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "version", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "project.name", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "analyticalElements[0].code", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "analyticalElements[0].name", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "analyticalElements[0].definition", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "actors[0].id", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "actors[0].code", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "actors[0].name", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "actors[0].description", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "actors[0].parentId", "message": "Поле должно быть JSON-строкой."}
+      ]
+    },
+    {
+      "name": "explicit_unicode_whitespace_and_case_edges",
+      "source": {"fixture": [4, 0]},
+      "set": [
+        {"path": ["project", "name"], "value": "\u00a0Проект\u3000"},
+        {"path": ["analyticalElements", 0, "id"], "value": "\u3000root\u00a0"},
+        {"path": ["analyticalElements", 0, "code"], "value": "ABC-Я"},
+        {"path": ["analyticalElements", 1, "code"], "value": "abc-я"},
+        {"path": ["analyticalElements", 1, "parentId"], "value": "\ufeffroot\u2029"},
+        {"path": ["analyticalElements", 2, "code"], "value": "K"},
+        {"path": ["analyticalElements", 2, "name"], "value": "\u0085"},
+        {"path": ["analyticalElements", 2, "definition"], "value": "\u0085"},
+        {"path": ["analyticalElements", 3, "code"], "value": "K"}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "CODE_DUPLICATE",
+          "path": "analyticalElements[1].code",
+          "message": "Код «abc-я» уже используется в этой таблице."
+        }
+      ]
     },
     {
       "name": "collection_exactly_500",

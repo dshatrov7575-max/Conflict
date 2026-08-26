@@ -14,6 +14,12 @@ SHOWCASE_FORMAT = "SHOWCASE_SESSION_V1"
 SHOWCASE_VERSION = "1.0.0"
 MAX_ITEMS_PER_COLLECTION = 500
 MAX_PREVIEW_CELLS = 10_000
+ECMASCRIPT_TRIM_CHARACTERS = (
+    "\u0009\u000a\u000b\u000c\u000d\u0020\u00a0\u1680"
+    "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a"
+    "\u2028\u2029\u202f\u205f\u3000\ufeff"
+)
+_MISSING = object()
 
 
 def _element(index: int) -> dict[str, Any]:
@@ -79,10 +85,33 @@ def _diagnostic(code: str, path: str, message: str) -> dict[str, str]:
     return {"level": "error", "code": code, "path": path, "message": message}
 
 
-def _text(value: Any) -> str:
-    """Match JavaScript's empty handling for JSON null in authored text fields."""
+def _trim_text(value: str) -> str:
+    """Apply the explicit ECMAScript TrimString whitespace contract."""
 
-    return "" if value is None else str(value)
+    return value.strip(ECMASCRIPT_TRIM_CHARACTERS)
+
+
+def _normalize_code(value: str) -> str:
+    """Fold only stable ASCII and Cyrillic uppercase ranges."""
+
+    normalized: list[str] = []
+    for character in value:
+        point = ord(character)
+        if 0x41 <= point <= 0x5A or 0x410 <= point <= 0x42F:
+            normalized.append(chr(point + 0x20))
+        elif character == "Ё":
+            normalized.append("ё")
+        else:
+            normalized.append(character)
+    return "".join(normalized)
+
+
+def _field_not_string(path: str) -> dict[str, str]:
+    return _diagnostic(
+        "FIELD_NOT_STRING",
+        path,
+        "Поле должно быть JSON-строкой.",
+    )
 
 
 def validate_session(payload: Any) -> list[dict[str, str]]:
@@ -92,7 +121,10 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
     if not isinstance(payload, Mapping):
         return [_diagnostic("SESSION_NOT_OBJECT", "$", "Файл сессии должен содержать JSON-объект.")]
 
-    if payload.get("format") != SHOWCASE_FORMAT:
+    format_value = payload.get("format", _MISSING)
+    if format_value is not _MISSING and not isinstance(format_value, str):
+        diagnostics.append(_field_not_string("format"))
+    elif format_value != SHOWCASE_FORMAT:
         diagnostics.append(
             _diagnostic(
                 "FORMAT_MISMATCH",
@@ -100,7 +132,10 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
                 f"Ожидается маркировка {SHOWCASE_FORMAT}; Foundation package здесь не принимается.",
             )
         )
-    if payload.get("version") != SHOWCASE_VERSION:
+    version_value = payload.get("version", _MISSING)
+    if version_value is not _MISSING and not isinstance(version_value, str):
+        diagnostics.append(_field_not_string("version"))
+    elif version_value != SHOWCASE_VERSION:
         diagnostics.append(
             _diagnostic(
                 "VERSION_MISMATCH",
@@ -110,7 +145,10 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
         )
 
     project = payload.get("project")
-    if not isinstance(project, Mapping) or not _text(project.get("name", "")).strip():
+    project_name = project.get("name", _MISSING) if isinstance(project, Mapping) else _MISSING
+    if project_name is not _MISSING and not isinstance(project_name, str):
+        diagnostics.append(_field_not_string("project.name"))
+    elif project_name is _MISSING or not _trim_text(project_name):
         diagnostics.append(
             _diagnostic("PROJECT_NAME_BLANK", "project.name", "Укажите название проекта.")
         )
@@ -153,10 +191,15 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
                     _diagnostic("ROW_NOT_OBJECT", path, f"Запись {label} должна быть объектом.")
                 )
                 continue
-            row_id = _text(row.get("id", "")).strip()
-            code = _text(row.get("code", "")).strip()
-            name = _text(row.get("name", "")).strip()
-            if not row_id:
+            raw_id = row.get("id", _MISSING)
+            raw_code = row.get("code", _MISSING)
+            raw_name = row.get("name", _MISSING)
+            row_id = _trim_text(raw_id) if isinstance(raw_id, str) else ""
+            code = _trim_text(raw_code) if isinstance(raw_code, str) else ""
+            name = _trim_text(raw_name) if isinstance(raw_name, str) else ""
+            if raw_id is not _MISSING and not isinstance(raw_id, str):
+                diagnostics.append(_field_not_string(f"{path}.id"))
+            elif not row_id:
                 diagnostics.append(_diagnostic("ID_BLANK", f"{path}.id", "У записи отсутствует ID."))
             elif row_id in all_ids:
                 diagnostics.append(
@@ -169,10 +212,12 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
             else:
                 all_ids[row_id] = path
                 row_ids.add(row_id)
-            if not code:
+            if raw_code is not _MISSING and not isinstance(raw_code, str):
+                diagnostics.append(_field_not_string(f"{path}.code"))
+            elif not code:
                 diagnostics.append(_diagnostic("CODE_BLANK", f"{path}.code", "Укажите код записи."))
             else:
-                normalized_code = code.lower()
+                normalized_code = _normalize_code(code)
                 if normalized_code in codes:
                     diagnostics.append(
                         _diagnostic(
@@ -183,37 +228,43 @@ def validate_session(payload: Any) -> list[dict[str, str]]:
                     )
                 else:
                     codes[normalized_code] = index
-            if not name:
+            if raw_name is not _MISSING and not isinstance(raw_name, str):
+                diagnostics.append(_field_not_string(f"{path}.name"))
+            elif not name:
                 diagnostics.append(
                     _diagnostic("NAME_BLANK", f"{path}.name", f"Укажите название {label}.")
                 )
-            if needs_definition and not _text(row.get("definition", "")).strip():
+            detail_name = "definition" if needs_definition else "description"
+            detail_value = row.get(detail_name, _MISSING)
+            detail_path = f"{path}.{detail_name}"
+            if detail_value is not _MISSING and not isinstance(detail_value, str):
+                diagnostics.append(_field_not_string(detail_path))
+            elif detail_value is _MISSING or not _trim_text(detail_value):
                 diagnostics.append(
                     _diagnostic(
-                        "DEFINITION_BLANK",
-                        f"{path}.definition",
-                        "Добавьте рабочее определение проблемной темы.",
-                    )
-                )
-            if not needs_definition and not _text(row.get("description", "")).strip():
-                diagnostics.append(
-                    _diagnostic(
-                        "DESCRIPTION_BLANK",
-                        f"{path}.description",
-                        "Добавьте краткое описание группы или организации.",
+                        "DEFINITION_BLANK" if needs_definition else "DESCRIPTION_BLANK",
+                        detail_path,
+                        (
+                            "Добавьте рабочее определение проблемной темы."
+                            if needs_definition
+                            else "Добавьте краткое описание группы или организации."
+                        ),
                     )
                 )
 
         for index, row in enumerate(rows):
             if not isinstance(row, Mapping):
                 continue
-            parent_id = row.get("parentId")
-            if parent_id not in (None, "") and _text(parent_id) not in row_ids:
+            parent_id = row.get("parentId", _MISSING)
+            parent_path = f"{collection_name}[{index}].parentId"
+            if parent_id is not _MISSING and parent_id is not None and not isinstance(parent_id, str):
+                diagnostics.append(_field_not_string(parent_path))
+            elif isinstance(parent_id, str) and _trim_text(parent_id) and _trim_text(parent_id) not in row_ids:
                 diagnostics.append(
                     _diagnostic(
                         "PARENT_REFERENCE_MISSING",
-                        f"{collection_name}[{index}].parentId",
-                        f"Ссылка на родительскую запись «{parent_id}» не найдена.",
+                        parent_path,
+                        f"Ссылка на родительскую запись «{_trim_text(parent_id)}» не найдена.",
                     )
                 )
 

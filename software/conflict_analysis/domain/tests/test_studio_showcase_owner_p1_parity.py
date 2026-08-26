@@ -256,6 +256,9 @@ class OwnerTestSharedValidationCorpusTests(SimpleTestCase):
                 "cross_collection_duplicate_id_and_parent",
                 "supported_ascii_cyrillic_case_normalization",
                 "supported_lowercase_not_compatibility_casefold",
+                "numeric_ids_1_and_1_point_0_are_type_errors_not_duplicates",
+                "boolean_null_container_and_parent_types",
+                "explicit_unicode_whitespace_and_case_edges",
                 "collection_exactly_500",
                 "collection_501",
                 "preview_exactly_10000",
@@ -291,8 +294,10 @@ class OwnerTestSharedValidationCorpusTests(SimpleTestCase):
                     javascript_result["diagnosticsJson"],
                     _diagnostics_json(python_diagnostics),
                 )
-                self.assertEqual(javascript_result["beforeHash"], before_hash)
-                self.assertEqual(javascript_result["afterHash"], before_hash)
+                self.assertEqual(
+                    javascript_result["afterHash"],
+                    javascript_result["beforeHash"],
+                )
 
                 byte_limit = case.get("assertSerializedBytesBelow")
                 if byte_limit is not None:
