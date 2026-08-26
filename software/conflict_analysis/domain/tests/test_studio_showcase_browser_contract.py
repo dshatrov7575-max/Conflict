@@ -11,6 +11,7 @@ APP_ROOT = Path(__file__).resolve().parents[2]
 BROWSER_TEST_ROOT = APP_ROOT / "studio_showcase" / "browser_tests"
 CDP_CLIENT = BROWSER_TEST_ROOT / "cdp_client.mjs"
 PHASE1_SCRIPT = BROWSER_TEST_ROOT / "phase1_import_export.mjs"
+PHASE3_SCRIPT = BROWSER_TEST_ROOT / "phase3_dom_safety.mjs"
 
 
 def _read(path: Path) -> str:
@@ -59,7 +60,7 @@ class ShowcaseBrowserHarnessContractTests(SimpleTestCase):
         if node is None:
             self.skipTest("Node is not available for the browser harness syntax gate.")
 
-        for script in (CDP_CLIENT, PHASE1_SCRIPT):
+        for script in (CDP_CLIENT, PHASE1_SCRIPT, PHASE3_SCRIPT):
             with self.subTest(script=script.name):
                 result = subprocess.run(
                     [node, "--check", str(script)],
@@ -70,3 +71,44 @@ class ShowcaseBrowserHarnessContractTests(SimpleTestCase):
                     check=False,
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_phase3_is_a_real_dom_safety_and_interaction_matrix(self):
+        phase3 = _read(PHASE3_SCRIPT)
+
+        for required_contract in (
+            'window.StudioShowcase.fixture("6x8")',
+            'window.StudioShowcase.fixture("3x4")',
+            'new KeyboardEvent("keydown"',
+            'key: "ArrowDown"',
+            "altKey: true",
+            "focusPreservedOnMovedStableId",
+            'document.getElementById("tab-chat")',
+            "provider/RAG gate",
+            "HELP_LOCAL_V1",
+            '[...document.querySelectorAll(".evidence-trace .trace-kind")]',
+            "new File([text], filename",
+            "new DataTransfer()",
+            "__ownerTestXssExecuted",
+            "executableNodesInEditors",
+            "localStorage.getItem",
+            "window.StudioShowcase.resetLayout()",
+            "await page.goto(options.baseUrl)",
+            "new MutationObserver",
+            'String(name).toLowerCase() === "td"',
+            "matrixCellAllocations === 0",
+            "matrixCellMutations === 0",
+            "PREVIEW_CELL_BUDGET_EXCEEDED",
+            "payloadBytes < 2 * 1024 * 1024",
+            "prospectiveCells === 10_100",
+        ):
+            with self.subTest(contract=required_contract):
+                self.assertIn(required_contract, phase3)
+
+        for forbidden_dependency in (
+            "playwright",
+            "puppeteer",
+            "selenium",
+            "webdriver",
+            "node_modules",
+        ):
+            self.assertNotIn(forbidden_dependency, phase3.casefold())
