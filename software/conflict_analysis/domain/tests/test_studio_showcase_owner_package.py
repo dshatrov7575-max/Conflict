@@ -83,6 +83,7 @@ def test_owner_package_has_required_launcher_payload_evidence_and_boundaries():
     assert ZIP_NAME in start_here
     assert "@@" not in start_here
     assert "RUN_BROWSER_SMOKE.ps1" in start_here
+    assert "-File ..\\RUN_BROWSER_SMOKE.ps1" in start_here
     assert "требует доступа к PyPI по сети" in start_here
     for boundary in ("session-only", "не публикует", "не изменяет", "Power", "прогноза"):
         assert boundary in start_here

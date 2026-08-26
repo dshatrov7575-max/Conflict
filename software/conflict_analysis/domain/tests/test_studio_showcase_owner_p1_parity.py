@@ -252,6 +252,7 @@ class OwnerTestSharedValidationCorpusTests(SimpleTestCase):
                 "collections_not_arrays",
                 "rows_not_objects",
                 "blank_duplicate_and_required_fields",
+                "blank_id_definition_and_description_strings",
                 "within_collection_parent_missing",
                 "cross_collection_duplicate_id_and_parent",
                 "supported_ascii_cyrillic_case_normalization",

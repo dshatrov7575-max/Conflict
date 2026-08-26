@@ -225,7 +225,25 @@ def test_launcher_wrong_python_version_error_is_actionable():
     assert "py -3.12 -m venv .venv" in combined
 
 
-@pytest.mark.skipif(sys.version_info[:2] != (3, 12), reason="OWNER-TEST targets Python 3.12")
+def test_launcher_wrong_django_version_error_is_actionable_and_pre_server():
+    result = _run_powershell(
+        f". {_ps_literal(LAUNCHER)}; "
+        "Assert-StudioShowcaseDjangoVersion -Version '5.2.16' "
+        "-PythonSource 'test interpreter'"
+    )
+    combined = f"{result.stdout}\n{result.stderr}"
+
+    assert result.returncode != 0
+    assert "Django 5.2.17" in combined
+    assert "5.2.16" in combined
+    assert "pip install -r requirements-owner-test.txt" in combined
+    assert "Open:" not in combined
+
+
+@pytest.mark.skipif(
+    os.name != "nt" or sys.version_info[:2] != (3, 12),
+    reason="Windows OWNER-TEST targets Python 3.12",
+)
 def test_launcher_missing_django_error_is_actionable_and_pre_server(tmp_path: Path):
     package_root = tmp_path / "owner-test"
     copied_launcher = _copy_launcher(package_root)

@@ -195,6 +195,35 @@
       ]
     },
     {
+      "name": "blank_id_definition_and_description_strings",
+      "source": {"fixture": [1, 1]},
+      "set": [
+        {"path": ["analyticalElements", 0, "id"], "value": " \ufeff"},
+        {"path": ["analyticalElements", 0, "definition"], "value": "\u00a0"},
+        {"path": ["actors", 0, "description"], "value": "\u3000"}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "ID_BLANK",
+          "path": "analyticalElements[0].id",
+          "message": "У записи отсутствует ID."
+        },
+        {
+          "level": "error",
+          "code": "DEFINITION_BLANK",
+          "path": "analyticalElements[0].definition",
+          "message": "Добавьте рабочее определение проблемной темы."
+        },
+        {
+          "level": "error",
+          "code": "DESCRIPTION_BLANK",
+          "path": "actors[0].description",
+          "message": "Добавьте краткое описание группы или организации."
+        }
+      ]
+    },
+    {
       "name": "within_collection_parent_missing",
       "source": {"fixture": [2, 0]},
       "set": [

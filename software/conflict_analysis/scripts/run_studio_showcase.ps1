@@ -131,6 +131,28 @@ function Assert-StudioShowcasePythonVersion {
     }
 }
 
+function Assert-StudioShowcaseDjangoVersion {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Version,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$PythonSource
+    )
+
+    $RequiredVersion = "5.2.17"
+    if ($Version.Trim() -cne $RequiredVersion) {
+        throw (
+            "Для OWNER-TEST требуется Django {0}; выбранный источник '{1}' " +
+            "сообщил версию '{2}'. Установите точные зависимости командой " +
+            "'py -3.12 -m pip install -r requirements-owner-test.txt'."
+        ) -f $RequiredVersion, $PythonSource, $Version.Trim()
+    }
+}
+
 function Invoke-StudioShowcasePythonProbe {
     [CmdletBinding()]
     param(
@@ -275,6 +297,9 @@ if ($DjangoProbe.ExitCode -ne 0) {
         "py -3.12 -m pip install -r requirements-owner-test.txt"
     )
 }
+Assert-StudioShowcaseDjangoVersion `
+    -Version ([string]($DjangoProbe.Output | Select-Object -Last 1)) `
+    -PythonSource $PythonSource
 $DjangoProbe = $null
 
 $PerRunSecret = New-StudioShowcaseSecret

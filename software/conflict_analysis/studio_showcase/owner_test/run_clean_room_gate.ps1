@@ -21,7 +21,9 @@ param(
 
     [string]$PythonCommand = "",
 
-    [string]$BrowserPath = ""
+    [string]$BrowserPath = "",
+
+    [string]$EvidencePath = ""
 )
 
 Set-StrictMode -Version Latest
@@ -274,4 +276,17 @@ if (-not $Result.stop_no_orphan -or -not $Cleaned) {
     throw "Clean-room OWNER-TEST lifecycle gate failed: stop_no_orphan=$($Result.stop_no_orphan), cleanup=$Cleaned"
 }
 
-$Result | ConvertTo-Json -Depth 5
+$ResultJson = $Result | ConvertTo-Json -Depth 5
+if (-not [string]::IsNullOrWhiteSpace($EvidencePath)) {
+    $ResolvedEvidencePath = [System.IO.Path]::GetFullPath($EvidencePath)
+    $EvidenceDirectory = [System.IO.Path]::GetDirectoryName($ResolvedEvidencePath)
+    if (-not [string]::IsNullOrWhiteSpace($EvidenceDirectory)) {
+        [System.IO.Directory]::CreateDirectory($EvidenceDirectory) | Out-Null
+    }
+    [System.IO.File]::WriteAllText(
+        $ResolvedEvidencePath,
+        $ResultJson + [Environment]::NewLine,
+        [System.Text.UTF8Encoding]::new($false)
+    )
+}
+$ResultJson
