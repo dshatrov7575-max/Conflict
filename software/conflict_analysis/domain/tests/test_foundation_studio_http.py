@@ -1137,6 +1137,35 @@ class FoundationStudioApplicationGatewayHttpTests(
                     self.assertEqual(stream.read_attempts, 0)
                     self.assertEqual(domain_counts(), baseline)
 
+            basic_stream = _ZeroReadWSGIInput()
+            factory = APIRequestFactory(enforce_csrf_checks=True)
+            basic_request = factory.generic(
+                "POST",
+                attempt_url,
+                b"",
+                content_type=content_type,
+                HTTP_AUTHORIZATION=basic_authorization,
+            )
+            basic_request._stream = basic_stream
+            basic_request._read_started = False
+            basic_request.META["CONTENT_TYPE"] = content_type
+            basic_request.META["CONTENT_LENGTH"] = "64"
+            basic_response = attempt_definition_package_2_1(
+                basic_request,
+                project_id=self.project.pk,
+            )
+            self.assertEqual(basic_response.status_code, 400, basic_response.data)
+            self.assertEqual(
+                basic_response.data["code"],
+                "RAW_JSON_MEDIA_TYPE_UNSUPPORTED",
+            )
+            self.assertEqual(basic_stream.bytes_served, 0)
+            self.assertEqual(basic_stream.read_attempts, 0)
+            self.assertFalse(
+                hasattr(basic_request, "_foundation_raw_json_capture")
+            )
+            self.assertEqual(domain_counts(), baseline)
+
     def test_preloaded_oversize_body_has_no_partial_identity_or_receipt(self):
         attempt_url = (
             f"/api/foundation/projects/{self.project.pk}/"
