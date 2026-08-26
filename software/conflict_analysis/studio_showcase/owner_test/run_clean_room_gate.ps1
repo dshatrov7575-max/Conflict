@@ -1,0 +1,277 @@
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]
+    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
+    [string]$ZipPath,
+
+    [Parameter(Mandatory = $true)]
+    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
+    [string]$Sha256RecordPath,
+
+    [Parameter(Mandatory = $true)]
+    [ValidatePattern('^[0-9a-f]{40}$')]
+    [string]$Head,
+
+    [Parameter(Mandatory = $true)]
+    [ValidatePattern('^[0-9a-f]{40}$')]
+    [string]$Tree,
+
+    [ValidateRange(0, 65535)]
+    [int]$Port = 0,
+
+    [string]$PythonCommand = "",
+
+    [string]$BrowserPath = ""
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+function Get-FreeLoopbackPort {
+    $Listener = [System.Net.Sockets.TcpListener]::new(
+        [System.Net.IPAddress]::Loopback,
+        0
+    )
+    try {
+        $Listener.Start()
+        return ([System.Net.IPEndPoint]$Listener.LocalEndpoint).Port
+    }
+    finally {
+        $Listener.Stop()
+    }
+}
+
+function Test-HealthUnavailable {
+    param([Parameter(Mandatory = $true)][string]$HealthUrl)
+
+    try {
+        Invoke-WebRequest -UseBasicParsing -Uri $HealthUrl -TimeoutSec 1 | Out-Null
+        return $false
+    }
+    catch {
+        return $true
+    }
+}
+
+$ResolvedZip = [System.IO.Path]::GetFullPath($ZipPath)
+$ResolvedHashRecord = [System.IO.Path]::GetFullPath($Sha256RecordPath)
+$Record = (Get-Content -LiteralPath $ResolvedHashRecord -Raw -Encoding ASCII).Trim()
+if ($Record -notmatch '^([0-9a-fA-F]{64})\s{2}([^\r\n]+)$') {
+    throw "Invalid package SHA-256 record format: $ResolvedHashRecord"
+}
+$ExpectedZipHash = $Matches[1].ToLowerInvariant()
+$RecordedZipName = $Matches[2]
+if ($RecordedZipName -cne [System.IO.Path]::GetFileName($ResolvedZip)) {
+    throw "Package SHA-256 record names '$RecordedZipName', not '$([System.IO.Path]::GetFileName($ResolvedZip))'."
+}
+$ActualZipHash = (Get-FileHash -LiteralPath $ResolvedZip -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($ActualZipHash -cne $ExpectedZipHash) {
+    throw "OWNER-TEST ZIP SHA-256 mismatch. Expected $ExpectedZipHash, got $ActualZipHash."
+}
+
+if ($Port -eq 0) {
+    $Port = Get-FreeLoopbackPort
+}
+$BaseUrl = "http://127.0.0.1:$Port/"
+$HealthUrl = "${BaseUrl}health/"
+$Scratch = Join-Path ([System.IO.Path]::GetTempPath()) (
+    "conflict-studio-owner-clean-room-" + [System.Guid]::NewGuid().ToString("N")
+)
+$ExtractPath = Join-Path $Scratch "extracted"
+$ServerOut = Join-Path $Scratch "server.stdout.log"
+$ServerError = Join-Path $Scratch "server.stderr.log"
+$ServerProcess = $null
+$Result = $null
+$Failure = $null
+$FailureLogs = ""
+
+try {
+    [System.IO.Directory]::CreateDirectory($ExtractPath) | Out-Null
+    Expand-Archive -LiteralPath $ResolvedZip -DestinationPath $ExtractPath
+    $PackageRoots = @(Get-ChildItem -LiteralPath $ExtractPath -Directory)
+    if ($PackageRoots.Count -ne 1 -or
+        $PackageRoots[0].Name -cne "ConflictAnalysis-Studio-OWNER-TEST") {
+        throw "OWNER-TEST ZIP must contain exactly one ConflictAnalysis-Studio-OWNER-TEST root directory."
+    }
+    $PackageRoot = $PackageRoots[0].FullName
+    $Verifier = Join-Path $PackageRoot "VERIFY_CONTENT.ps1"
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Verifier
+    if ($LASTEXITCODE -ne 0) {
+        throw "VERIFY_CONTENT.ps1 failed with exit code $LASTEXITCODE."
+    }
+
+    $Manifest = Get-Content -LiteralPath (Join-Path $PackageRoot "MANIFEST.json") `
+        -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($Manifest.head -cne $Head -or $Manifest.tree -cne $Tree) {
+        throw "Package revision mismatch: manifest $($Manifest.head)/$($Manifest.tree), expected $Head/$Tree."
+    }
+    if (-not $Manifest.build_environment.dependency_install_requires_network) {
+        throw "Manifest must disclose that dependency installation requires network access."
+    }
+
+    if ([string]::IsNullOrWhiteSpace($PythonCommand)) {
+        $PythonLauncher = Get-Command py.exe -ErrorAction SilentlyContinue
+        if ($null -eq $PythonLauncher) {
+            $PythonLauncher = Get-Command py -ErrorAction SilentlyContinue
+        }
+        if ($null -eq $PythonLauncher) {
+            throw "Python 3.12 launcher not found. Install Python 3.12 or pass -PythonCommand <python.exe>."
+        }
+        $PythonExecutable = $PythonLauncher.Source
+        $PythonPrefix = @("-3.12")
+    }
+    else {
+        $PythonExecutable = [System.IO.Path]::GetFullPath($PythonCommand)
+        if (-not (Test-Path -LiteralPath $PythonExecutable -PathType Leaf)) {
+            throw "Python executable not found: $PythonExecutable"
+        }
+        $PythonPrefix = @()
+    }
+
+    $AppRoot = Join-Path $PackageRoot "app"
+    $VenvRoot = Join-Path $AppRoot ".venv"
+    & $PythonExecutable @PythonPrefix -m venv $VenvRoot
+    if ($LASTEXITCODE -ne 0) {
+        throw "Fresh clean-room virtual environment creation failed with exit code $LASTEXITCODE."
+    }
+    $VenvPython = Join-Path $VenvRoot "Scripts\python.exe"
+    & $VenvPython -m pip install --disable-pip-version-check `
+        -r (Join-Path $AppRoot "requirements-owner-test.txt")
+    if ($LASTEXITCODE -ne 0) {
+        throw (
+            "OWNER-TEST dependency installation failed with exit code $LASTEXITCODE. " +
+            "This step requires PyPI network access unless the packages are cached."
+        )
+    }
+
+    $Launcher = Join-Path $AppRoot "scripts\run_studio_showcase.ps1"
+    $LauncherArguments = @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", "`"$Launcher`"",
+        "-ListenAddress", "127.0.0.1",
+        "-Port", [string]$Port
+    )
+    $ServerProcess = Start-Process -FilePath "powershell.exe" `
+        -ArgumentList $LauncherArguments -RedirectStandardOutput $ServerOut `
+        -RedirectStandardError $ServerError -WindowStyle Hidden -PassThru
+
+    $Deadline = [DateTime]::UtcNow.AddSeconds(45)
+    $Health = $null
+    while ([DateTime]::UtcNow -lt $Deadline) {
+        if ($ServerProcess.HasExited) {
+            throw "OWNER-TEST launcher exited before health became ready (exit $($ServerProcess.ExitCode))."
+        }
+        try {
+            $Health = Invoke-RestMethod -Uri $HealthUrl -Method Get -TimeoutSec 2
+            if ($Health.status -ceq "ok") {
+                break
+            }
+        }
+        catch {
+            Start-Sleep -Milliseconds 200
+        }
+    }
+    if ($null -eq $Health -or $Health.status -cne "ok") {
+        throw "OWNER-TEST /health/ did not become ready within 45 seconds: $HealthUrl"
+    }
+    $RootResponse = Invoke-WebRequest -UseBasicParsing -Uri $BaseUrl -TimeoutSec 20
+    if ($RootResponse.StatusCode -ne 200 -or
+        $RootResponse.Content -notmatch 'id="studio-workspace"') {
+        throw "OWNER-TEST root HTTP/DOM smoke failed at $BaseUrl"
+    }
+
+    $BrowserSmoke = Join-Path $PackageRoot "RUN_BROWSER_SMOKE.ps1"
+    $BrowserArguments = @(
+        "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", $BrowserSmoke,
+        "-BaseUrl", $BaseUrl
+    )
+    if (-not [string]::IsNullOrWhiteSpace($BrowserPath)) {
+        $BrowserArguments += @("-BrowserPath", [System.IO.Path]::GetFullPath($BrowserPath))
+    }
+    $BrowserEvidence = & powershell.exe @BrowserArguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "RUN_BROWSER_SMOKE.ps1 failed with exit code $LASTEXITCODE."
+    }
+
+    $Result = [ordered]@{
+        status = "PASS"
+        head = $Head
+        tree = $Tree
+        zip_path = $ResolvedZip
+        zip_sha256 = $ActualZipHash
+        manifest_sha256 = (Get-FileHash `
+            -LiteralPath (Join-Path $PackageRoot "MANIFEST.json") `
+            -Algorithm SHA256).Hash.ToLowerInvariant()
+        dependency_install_requires_network = $true
+        fresh_temporary_directory = $Scratch
+        manifest_verified = $true
+        health = "PASS"
+        root = "PASS"
+        browser_smoke = ($BrowserEvidence -join [Environment]::NewLine)
+        stop_no_orphan = $false
+        cleanup = "PENDING"
+    }
+}
+catch {
+    $Failure = $_
+}
+finally {
+    if ($null -ne $ServerProcess) {
+        try {
+            $ServerProcess.Refresh()
+            if (-not $ServerProcess.HasExited) {
+                & taskkill.exe /PID $ServerProcess.Id /T /F 2>&1 | Out-Null
+                $ServerProcess.WaitForExit(10000) | Out-Null
+            }
+        }
+        catch {
+            if ($null -eq $Failure) {
+                $Failure = $_
+            }
+        }
+    }
+
+    $StopDeadline = [DateTime]::UtcNow.AddSeconds(10)
+    while ([DateTime]::UtcNow -lt $StopDeadline -and
+        -not (Test-HealthUnavailable -HealthUrl $HealthUrl)) {
+        Start-Sleep -Milliseconds 200
+    }
+    $LauncherGone = $true
+    if ($null -ne $ServerProcess) {
+        $ServerProcess.Refresh()
+        $LauncherGone = $ServerProcess.HasExited
+    }
+    $Stopped = (Test-HealthUnavailable -HealthUrl $HealthUrl) -and $LauncherGone
+    if ($null -ne $Result) {
+        $Result.stop_no_orphan = $Stopped
+    }
+    elseif (-not $Stopped -and $null -eq $Failure) {
+        $Failure = [System.Management.Automation.RuntimeException]::new(
+            "Server health remains reachable after clean-room shutdown: $HealthUrl"
+        )
+    }
+
+    if (Test-Path -LiteralPath $ServerOut) {
+        $FailureLogs += Get-Content -LiteralPath $ServerOut -Raw -ErrorAction SilentlyContinue
+    }
+    if (Test-Path -LiteralPath $ServerError) {
+        $FailureLogs += Get-Content -LiteralPath $ServerError -Raw -ErrorAction SilentlyContinue
+    }
+    if (Test-Path -LiteralPath $Scratch) {
+        Remove-Item -LiteralPath $Scratch -Recurse -Force
+    }
+}
+
+$Cleaned = -not (Test-Path -LiteralPath $Scratch)
+if ($null -ne $Result) {
+    $Result.cleanup = if ($Cleaned) { "PASS" } else { "FAIL" }
+}
+if ($null -ne $Failure) {
+    throw "Clean-room OWNER-TEST gate failed: $($Failure.Exception.Message)`n$FailureLogs"
+}
+if (-not $Result.stop_no_orphan -or -not $Cleaned) {
+    throw "Clean-room OWNER-TEST lifecycle gate failed: stop_no_orphan=$($Result.stop_no_orphan), cleanup=$Cleaned"
+}
+
+$Result | ConvertTo-Json -Depth 5

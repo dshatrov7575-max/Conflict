@@ -3,11 +3,16 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import shutil
+import subprocess
 import zipfile
+
+import pytest
 
 from studio_showcase.owner_test.build_owner_test_package import (
     ARCHIVE_ROOT,
     FORMAT,
+    SCREENSHOT_PATHS,
     create_package_files,
     write_deterministic_zip,
 )
@@ -42,6 +47,7 @@ def test_owner_package_has_required_launcher_payload_evidence_and_boundaries():
         "KNOWN_LIMITATIONS_RU.md",
         "CLEANUP_RU.md",
         "VERIFY_CONTENT.ps1",
+        "RUN_BROWSER_SMOKE.ps1",
         "MANIFEST.json",
         "MANIFEST.sha256",
         "app/manage.py",
@@ -53,17 +59,33 @@ def test_owner_package_has_required_launcher_payload_evidence_and_boundaries():
         "app/studio_showcase/static/studio_showcase/studio.js",
         "app/shared_ui/static/shared_ui/tokens.css",
         "screenshots/README.md",
+        "screenshots/SHA256SUMS.txt",
     }
     assert required <= files.keys()
-    assert len(
-        [path for path in files if path.startswith("screenshots/") and path != "screenshots/README.md"]
-    ) == 6
+    screenshot_files = sorted(
+        path
+        for path in files
+        if path.startswith("screenshots/")
+        and Path(path).suffix.lower() in {".jpg", ".png"}
+    )
+    assert len(screenshot_files) == 6
+    assert len(SCREENSHOT_PATHS) == 6
+    screenshot_register = files["screenshots/SHA256SUMS.txt"].decode("ascii")
+    assert screenshot_register.endswith("\n")
+    assert screenshot_register.splitlines() == [
+        f"{hashlib.sha256(files[path]).hexdigest()}  {Path(path).name}"
+        for path in screenshot_files
+    ]
 
     start_here = files["START_HERE_RU.txt"].decode()
     assert HEAD in start_here
     assert TREE in start_here
     assert ZIP_NAME in start_here
     assert "@@" not in start_here
+    assert "RUN_BROWSER_SMOKE.ps1" in start_here
+    assert "требует доступа к PyPI по сети" in start_here
+    for boundary in ("session-only", "не публикует", "не изменяет", "Power", "прогноза"):
+        assert boundary in start_here
     limitations = files["KNOWN_LIMITATIONS_RU.md"].decode()
     assert "500" in limitations
     assert "10 000" in limitations
@@ -82,6 +104,10 @@ def test_owner_package_has_required_launcher_payload_evidence_and_boundaries():
         "formula_power_prediction": False,
     }
     assert manifest["package_sha256_record"] == f"{ZIP_NAME}.sha256"
+    assert manifest["manifest_sha256_record"] == "MANIFEST.sha256"
+    assert manifest["screenshot_sha256_register"] == "screenshots/SHA256SUMS.txt"
+    assert manifest["build_environment"]["dependency_install_requires_network"] is True
+    assert "PyPI" in manifest["build_environment"]["dependency_source"]
     assert files["MANIFEST.sha256"].decode() == (
         f"{manifest_hash}  MANIFEST.json\n"
     )
@@ -115,6 +141,52 @@ def test_owner_package_zip_is_byte_reproducible_and_has_stable_metadata(tmp_path
         assert extracted_manifest["tree"] == TREE
 
 
+@pytest.mark.skipif(shutil.which("powershell") is None, reason="PowerShell unavailable")
+def test_packaged_verifier_accepts_exact_files_and_rejects_unmanifested_file(
+    tmp_path: Path,
+):
+    files, _ = _package_files()
+    archive_path = tmp_path / "owner-test.zip"
+    write_deterministic_zip(archive_path, files)
+    with zipfile.ZipFile(archive_path) as archive:
+        archive.extractall(tmp_path / "extracted")
+    package_root = tmp_path / "extracted" / ARCHIVE_ROOT
+    verifier = package_root / "VERIFY_CONTENT.ps1"
+
+    accepted = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(verifier),
+        ],
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+    assert accepted.returncode == 0, accepted.stderr
+    assert "OWNER-TEST content verified" in accepted.stdout
+
+    (package_root / "unmanifested.txt").write_text("not allowed", encoding="utf-8")
+    rejected = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(verifier),
+        ],
+        capture_output=True,
+        check=False,
+        text=True,
+    )
+    assert rejected.returncode != 0
+    assert "Unexpected package file" in rejected.stderr
+
+
 def test_packaging_wrapper_requires_exact_head_tree_and_never_commits_an_archive():
     wrapper = (
         REPOSITORY_ROOT
@@ -124,9 +196,36 @@ def test_packaging_wrapper_requires_exact_head_tree_and_never_commits_an_archive
         REPOSITORY_ROOT
         / "software/conflict_analysis/studio_showcase/owner_test/build_owner_test_package.py"
     ).read_text(encoding="utf-8")
+    clean_room = (
+        REPOSITORY_ROOT
+        / "software/conflict_analysis/studio_showcase/owner_test/run_clean_room_gate.ps1"
+    ).read_text(encoding="utf-8")
+    verifier = (
+        REPOSITORY_ROOT
+        / "software/conflict_analysis/studio_showcase/owner_test/templates/VERIFY_CONTENT.ps1"
+    ).read_text(encoding="utf-8")
+    browser_smoke = (
+        REPOSITORY_ROOT
+        / "software/conflict_analysis/studio_showcase/owner_test/templates/RUN_BROWSER_SMOKE.ps1"
+    ).read_text(encoding="utf-8")
 
     assert wrapper.count("ValidatePattern('^[0-9a-f]{40}$')") == 2
     assert "--head $Head --tree $Tree" in wrapper
     assert '"rev-parse", "HEAD^{tree}"' in builder
     assert '"show", f"{head}:{source_path}"' in builder
+    for gate in (
+        "Expand-Archive",
+        "VERIFY_CONTENT.ps1",
+        "-m venv",
+        "pip install",
+        "run_studio_showcase.ps1",
+        "health/",
+        "RUN_BROWSER_SMOKE.ps1",
+        "taskkill.exe",
+        "Remove-Item -LiteralPath $Scratch -Recurse -Force",
+    ):
+        assert gate in clean_room
+    assert "Unexpected package file not covered by MANIFEST.json" in verifier
+    assert "--headless=new" in browser_smoke
+    assert 'id="studio-workspace"' in browser_smoke
     assert not list(REPOSITORY_ROOT.rglob("*.zip"))

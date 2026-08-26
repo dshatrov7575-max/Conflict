@@ -9,3 +9,8 @@
 
 Showcase не создаёт migrations, SQLite-файл или записи Foundation. Не используйте
 команды очистки production database.
+
+`RUN_BROWSER_SMOKE.ps1` удаляет собственный временный профиль Chrome/Edge в
+блоке `finally`. Для полного удаления OWNER-TEST достаточно остановить launcher
+и удалить только распакованный каталог; системные данные и production database
+затрагивать не нужно.

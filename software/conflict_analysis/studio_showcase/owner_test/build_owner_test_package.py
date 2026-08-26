@@ -42,11 +42,19 @@ PAYLOAD_PATHS = (
     "software/conflict_analysis/studio_showcase/screenshots/06-editor-3x4-browser.jpg",
 )
 
+SCREENSHOT_PATHS = tuple(
+    path
+    for path in PAYLOAD_PATHS
+    if path.startswith("software/conflict_analysis/studio_showcase/screenshots/")
+    and not path.endswith("/README.md")
+)
+
 TEMPLATES = {
     "START_HERE_RU.txt": "START_HERE_RU.txt",
     "KNOWN_LIMITATIONS_RU.md": "KNOWN_LIMITATIONS_RU.md",
     "CLEANUP_RU.md": "CLEANUP_RU.md",
     "VERIFY_CONTENT.ps1": "VERIFY_CONTENT.ps1",
+    "RUN_BROWSER_SMOKE.ps1": "RUN_BROWSER_SMOKE.ps1",
     "app/requirements-owner-test.txt": "requirements-owner-test.txt",
 }
 TEMPLATE_PREFIX = (
@@ -108,6 +116,13 @@ def create_package_files(
             text = text.replace(marker, value)
         files[destination] = text.replace("\r\n", "\n").encode("utf-8")
 
+    screenshot_register = "".join(
+        f"{sha256_bytes(files[_destination_for_payload(source)])}  "
+        f"{Path(source).name}\n"
+        for source in sorted(SCREENSHOT_PATHS)
+    )
+    files["screenshots/SHA256SUMS.txt"] = screenshot_register.encode("ascii")
+
     entries = [
         {"path": path, "sha256": sha256_bytes(content), "size": len(content)}
         for path, content in sorted(files.items())
@@ -118,9 +133,10 @@ def create_package_files(
         "tree": tree,
         "build_environment": {
             "archive": "deterministic ZIP_STORED",
-            "builder": "Python 3.12 standard library",
+            "builder": "CPython 3.12 standard library",
             "target": "Windows 10/11, PowerShell 5.1+, Python 3.12",
             "dependency_install_requires_network": True,
+            "dependency_source": "PyPI (network required unless already cached)",
         },
         "boundary": {
             "research_prototype": True,
@@ -130,6 +146,8 @@ def create_package_files(
             "formula_power_prediction": False,
         },
         "package_sha256_record": f"{zip_name}.sha256",
+        "manifest_sha256_record": "MANIFEST.sha256",
+        "screenshot_sha256_register": "screenshots/SHA256SUMS.txt",
         "files": entries,
     }
     manifest_bytes = (

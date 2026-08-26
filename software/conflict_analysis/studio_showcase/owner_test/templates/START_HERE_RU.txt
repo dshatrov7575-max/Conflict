@@ -2,19 +2,27 @@ CONFLICTANALYSIS STUDIO — OWNER-TEST
 ====================================
 
 Это исследовательский session-only прототип. Он не публикует данные, не изменяет
-Foundation, не содержит формул/Power/прогноза и не принимает решений.
+Foundation, не содержит формул, scalar Power/POW, POW×SAL или прогноза и не
+принимает решений.
 
 DELIVERY HEAD: @@HEAD@@
 DELIVERY TREE: @@TREE@@
 
-Требования: Windows 10/11, PowerShell 5.1+ и Python 3.12 x64.
-Первичная установка Python-зависимостей требует доступа к PyPI по сети.
+Требования: Windows 10/11, PowerShell 5.1+, Python 3.12 x64 и установленный
+Google Chrome либо Microsoft Edge для браузерного smoke-теста.
+Первичная установка Python-зависимостей требует доступа к PyPI по сети (если
+нужные пакеты не находятся в локальном pip-кэше). После установки запуск полностью
+локален и не требует сети.
 
 1. До распаковки сравните SHA-256 ZIP с соседним файлом @@ZIP_NAME@@.sha256:
    Get-FileHash .\@@ZIP_NAME@@ -Algorithm SHA256
 
 2. Распакуйте ZIP в новый локальный каталог. В распакованном каталоге выполните:
    powershell -NoProfile -ExecutionPolicy Bypass -File .\VERIFY_CONTENT.ps1
+
+   Скрипт проверяет MANIFEST.sha256, каждый файл по MANIFEST.json и отсутствие
+   посторонних файлов. Контрольные суммы шести снимков также записаны в
+   .\screenshots\SHA256SUMS.txt.
 
 3. Установите изолированные зависимости:
    cd .\app
@@ -25,4 +33,11 @@ DELIVERY TREE: @@TREE@@
    powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_studio_showcase.ps1 -ListenAddress 127.0.0.1 -Port 8000
 
 5. Откройте http://127.0.0.1:8000/ и проверьте http://127.0.0.1:8000/health/.
-   Остановите сервер Ctrl+C. Инструкции удаления находятся в CLEANUP_RU.md.
+   В отдельном окне PowerShell выполните браузерный smoke-тест:
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\RUN_BROWSER_SMOKE.ps1 -BaseUrl http://127.0.0.1:8000/
+
+6. Остановите сервер Ctrl+C и убедитесь, что /health/ больше недоступен.
+   Инструкции безопасного локального удаления находятся в CLEANUP_RU.md.
+
+Файл контрольной суммы всего ZIP называется @@ZIP_NAME@@.sha256 и поставляется
+рядом с ZIP, а не внутри него (внутренний SHA-256 архива был бы циклическим).
