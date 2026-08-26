@@ -1135,6 +1135,12 @@ class FoundationStudioApplicationGatewayHttpTests(
                     )
                     self.assertEqual(stream.bytes_served, 0)
                     self.assertEqual(stream.read_attempts, 0)
+                    self.assertFalse(
+                        hasattr(
+                            response.wsgi_request,
+                            "_foundation_raw_json_capture",
+                        )
+                    )
                     self.assertEqual(domain_counts(), baseline)
 
             basic_stream = _ZeroReadWSGIInput()
