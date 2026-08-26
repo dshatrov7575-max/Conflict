@@ -11,6 +11,73 @@ Fact -> Assessment/ParameterValue`. Unresolved v1 evidence remains an explicit
 compatibility receipt/data gap, and Foundation 2.0.0 export uses only canonical
 evidence sections.
 
+## ConflictAnalysis Studio — исследовательский прототип
+
+Issue #64 добавляет отдельный запускаемый showcase для партнёрского показа.
+Это presentation-only интерфейс, а не production Studio: он работает только с
+явно маркированным JSON `SHOWCASE_SESSION_V1` в текущей браузерной сессии и не
+записывает данные в Foundation ORM или production database. Формат showcase не
+является Foundation package и не может использоваться вместо него.
+
+Из каталога `software/conflict_analysis` запустите:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_studio_showcase.ps1
+```
+
+По умолчанию интерфейс доступен на <http://127.0.0.1:8000/>. Адрес и порт можно
+задать явно:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_studio_showcase.ps1 -ListenAddress 127.0.0.1 -Port 8010
+```
+
+`-ExecutionPolicy Bypass` действует только для этого процесса PowerShell и не
+меняет системную policy. Если локальная policy уже разрешает подписанные или
+локальные scripts, допустим также прямой вызов `.\scripts\run_studio_showcase.ps1`.
+
+Launcher сначала использует `.venv\Scripts\python.exe` из каталога приложения
+(затем из корня репозитория), а при его отсутствии — `py -3.12`. Если Python
+3.12 или Django недоступны, команда завершится с точной диагностикой и не будет
+пытаться изменить окружение. Установить зависимости можно отдельно:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+```
+
+Воспроизводимый ручной эквивалент запуска:
+
+```powershell
+$env:DJANGO_SETTINGS_MODULE = "conflict_analysis.studio_showcase_settings"
+$env:DJANGO_DEBUG = "true"
+$env:USE_SQLITE = "true"
+py -3.12 manage.py check --settings conflict_analysis.studio_showcase_settings
+py -3.12 manage.py runserver 127.0.0.1:8000 --settings conflict_analysis.studio_showcase_settings --noreload
+```
+
+Миграции перед этим запуском не нужны: showcase settings используют только
+in-memory SQLite для системной конфигурации Django, а showcase views не вызывают
+ORM. Проектные изменения живут в памяти страницы; `Открыть`, `Импорт` и
+`Экспорт` обмениваются только `SHOWCASE_SESSION_V1`. В `localStorage` допустимы
+только versioned UI preferences: ширины панелей и активная правая вкладка.
+
+Границы showcase неизменны: нет ORM-моделей и миграций, authoritative
+publication, формул, Calculation Core, scalar Power/`POW`, `POW × SAL`,
+prediction, risk score, recommendations или scenario/modeling engine.
+`Опубликовать` не имитирует успех; `Чат` отключён до отдельного provider/RAG
+gate. Подробное решение зафиксировано в
+[`docs/adr/ADR_STUDIO_SHOWCASE_002A.md`](docs/adr/ADR_STUDIO_SHOWCASE_002A.md).
+
+Локальная сфокусированная проверка:
+
+```powershell
+$env:DJANGO_SETTINGS_MODULE = "conflict_analysis.studio_showcase_settings"
+py -3.12 manage.py check --settings conflict_analysis.studio_showcase_settings
+$env:USE_SQLITE = "true"
+py -3.12 -m pytest domain/tests/test_studio_showcase_session.py domain/tests/test_studio_showcase_http.py domain/tests/test_studio_showcase_static_contracts.py
+```
+
 Каркас первой итерации — модульный монолит на Python 3.12, Django 5.2 LTS,
 Django REST Framework и PostgreSQL 18. Доменный модуль расположен в `domain/`;
 проектная конфигурация и точки входа — в `conflict_analysis/`.

@@ -1,0 +1,419 @@
+{
+  "format": "SHOWCASE_VALIDATION_VECTORS_V1",
+  "version": "1.0.0",
+  "normalizationContract": "explicit ECMAScript TrimString whitespace; duplicate-code folding covers ASCII A-Z, Cyrillic А-Я and Ё only; every other code point is preserved",
+  "cases": [
+    {
+      "name": "valid_6x8",
+      "source": {"fixture": [6, 8]},
+      "expectedDiagnostics": []
+    },
+    {
+      "name": "valid_3x4",
+      "source": {"fixture": [3, 4]},
+      "expectedDiagnostics": []
+    },
+    {
+      "name": "valid_empty",
+      "source": {"fixture": [0, 0]},
+      "expectedDiagnostics": []
+    },
+    {
+      "name": "valid_ordinary_custom",
+      "source": {"fixture": [7, 5]},
+      "set": [
+        {"path": ["project", "code"], "value": "CUSTOM-OWNER-TEST"},
+        {"path": ["project", "name"], "value": "Обычная пользовательская сессия"},
+        {"path": ["meta", "fixture"], "value": "custom"}
+      ],
+      "expectedDiagnostics": []
+    },
+    {
+      "name": "session_not_object",
+      "source": {"literal": []},
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "SESSION_NOT_OBJECT",
+          "path": "$",
+          "message": "Файл сессии должен содержать JSON-объект."
+        }
+      ]
+    },
+    {
+      "name": "wrong_format_and_version",
+      "source": {"fixture": [1, 1]},
+      "set": [
+        {"path": ["format"], "value": "FOUNDATION_PACKAGE_V2"},
+        {"path": ["version"], "value": "999.0"}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "FORMAT_MISMATCH",
+          "path": "format",
+          "message": "Ожидается маркировка SHOWCASE_SESSION_V1; Foundation package здесь не принимается."
+        },
+        {
+          "level": "error",
+          "code": "VERSION_MISMATCH",
+          "path": "version",
+          "message": "Поддерживается версия showcase-сессии 1.0.0."
+        }
+      ]
+    },
+    {
+      "name": "blank_project_name",
+      "source": {"fixture": [1, 1]},
+      "set": [
+        {"path": ["project", "name"], "value": "\ufeff"}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "PROJECT_NAME_BLANK",
+          "path": "project.name",
+          "message": "Укажите название проекта."
+        }
+      ]
+    },
+    {
+      "name": "collections_not_arrays",
+      "source": {"fixture": [1, 1]},
+      "set": [
+        {"path": ["analyticalElements"], "value": {"not": "an array"}},
+        {"path": ["actors"], "value": "not an array"}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "COLLECTION_NOT_ARRAY",
+          "path": "analyticalElements",
+          "message": "Список «analyticalElements» должен быть массивом."
+        },
+        {
+          "level": "error",
+          "code": "COLLECTION_NOT_ARRAY",
+          "path": "actors",
+          "message": "Список «actors» должен быть массивом."
+        }
+      ]
+    },
+    {
+      "name": "rows_not_objects",
+      "source": {"fixture": [1, 1]},
+      "set": [
+        {"path": ["analyticalElements", 0], "value": "not an object"},
+        {"path": ["actors", 0], "value": []}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "ROW_NOT_OBJECT",
+          "path": "analyticalElements[0]",
+          "message": "Запись проблемной темы должна быть объектом."
+        },
+        {
+          "level": "error",
+          "code": "ROW_NOT_OBJECT",
+          "path": "actors[0]",
+          "message": "Запись группы или организации должна быть объектом."
+        }
+      ]
+    },
+    {
+      "name": "blank_duplicate_and_required_fields",
+      "source": {"fixture": [3, 2]},
+      "set": [
+        {"path": ["analyticalElements", 0, "id"], "value": null},
+        {"path": ["analyticalElements", 0, "code"], "value": " "},
+        {"path": ["analyticalElements", 0, "name"], "value": "\t"},
+        {"path": ["analyticalElements", 0, "definition"], "value": null},
+        {"path": ["analyticalElements", 1, "id"], "value": "element-shared"},
+        {"path": ["analyticalElements", 1, "code"], "value": "КОД"},
+        {"path": ["analyticalElements", 2, "id"], "value": "element-shared"},
+        {"path": ["analyticalElements", 2, "code"], "value": "код"},
+        {"path": ["actors", 0, "name"], "value": "\n"},
+        {"path": ["actors", 0, "description"], "value": null},
+        {"path": ["actors", 1, "code"], "value": ""}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "FIELD_NOT_STRING",
+          "path": "analyticalElements[0].id",
+          "message": "Поле должно быть JSON-строкой."
+        },
+        {
+          "level": "error",
+          "code": "CODE_BLANK",
+          "path": "analyticalElements[0].code",
+          "message": "Укажите код записи."
+        },
+        {
+          "level": "error",
+          "code": "NAME_BLANK",
+          "path": "analyticalElements[0].name",
+          "message": "Укажите название проблемной темы."
+        },
+        {
+          "level": "error",
+          "code": "FIELD_NOT_STRING",
+          "path": "analyticalElements[0].definition",
+          "message": "Поле должно быть JSON-строкой."
+        },
+        {
+          "level": "error",
+          "code": "ID_DUPLICATE",
+          "path": "analyticalElements[2].id",
+          "message": "ID «element-shared» уже используется в analyticalElements[1]."
+        },
+        {
+          "level": "error",
+          "code": "CODE_DUPLICATE",
+          "path": "analyticalElements[2].code",
+          "message": "Код «код» уже используется в этой таблице."
+        },
+        {
+          "level": "error",
+          "code": "NAME_BLANK",
+          "path": "actors[0].name",
+          "message": "Укажите название группы или организации."
+        },
+        {
+          "level": "error",
+          "code": "FIELD_NOT_STRING",
+          "path": "actors[0].description",
+          "message": "Поле должно быть JSON-строкой."
+        },
+        {
+          "level": "error",
+          "code": "CODE_BLANK",
+          "path": "actors[1].code",
+          "message": "Укажите код записи."
+        }
+      ]
+    },
+    {
+      "name": "blank_id_definition_and_description_strings",
+      "source": {"fixture": [1, 1]},
+      "set": [
+        {"path": ["analyticalElements", 0, "id"], "value": " \ufeff"},
+        {"path": ["analyticalElements", 0, "definition"], "value": "\u00a0"},
+        {"path": ["actors", 0, "description"], "value": "\u3000"}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "ID_BLANK",
+          "path": "analyticalElements[0].id",
+          "message": "У записи отсутствует ID."
+        },
+        {
+          "level": "error",
+          "code": "DEFINITION_BLANK",
+          "path": "analyticalElements[0].definition",
+          "message": "Добавьте рабочее определение проблемной темы."
+        },
+        {
+          "level": "error",
+          "code": "DESCRIPTION_BLANK",
+          "path": "actors[0].description",
+          "message": "Добавьте краткое описание группы или организации."
+        }
+      ]
+    },
+    {
+      "name": "within_collection_parent_missing",
+      "source": {"fixture": [2, 0]},
+      "set": [
+        {"path": ["analyticalElements", 1, "parentId"], "value": "element-missing"}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "PARENT_REFERENCE_MISSING",
+          "path": "analyticalElements[1].parentId",
+          "message": "Ссылка на родительскую запись «element-missing» не найдена."
+        }
+      ]
+    },
+    {
+      "name": "cross_collection_duplicate_id_and_parent",
+      "source": {"fixture": [1, 2]},
+      "set": [
+        {"path": ["actors", 0, "id"], "value": "element-01"},
+        {"path": ["actors", 1, "parentId"], "value": "element-01"}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "ID_DUPLICATE",
+          "path": "actors[0].id",
+          "message": "ID «element-01» уже используется в analyticalElements[0]."
+        },
+        {
+          "level": "error",
+          "code": "PARENT_REFERENCE_MISSING",
+          "path": "actors[1].parentId",
+          "message": "Ссылка на родительскую запись «element-01» не найдена."
+        }
+      ]
+    },
+    {
+      "name": "supported_ascii_cyrillic_case_normalization",
+      "source": {"fixture": [2, 2]},
+      "set": [
+        {"path": ["analyticalElements", 0, "code"], "value": "ABC-Я"},
+        {"path": ["analyticalElements", 1, "code"], "value": "abc-я"},
+        {"path": ["actors", 0, "code"], "value": "ЁЖ"},
+        {"path": ["actors", 1, "code"], "value": "ёж"}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "CODE_DUPLICATE",
+          "path": "analyticalElements[1].code",
+          "message": "Код «abc-я» уже используется в этой таблице."
+        },
+        {
+          "level": "error",
+          "code": "CODE_DUPLICATE",
+          "path": "actors[1].code",
+          "message": "Код «ёж» уже используется в этой таблице."
+        }
+      ]
+    },
+    {
+      "name": "supported_lowercase_not_compatibility_casefold",
+      "source": {"fixture": [2, 0]},
+      "set": [
+        {"path": ["analyticalElements", 0, "code"], "value": "Straße"},
+        {"path": ["analyticalElements", 1, "code"], "value": "STRASSE"}
+      ],
+      "expectedDiagnostics": []
+    },
+    {
+      "name": "numeric_ids_1_and_1_point_0_are_type_errors_not_duplicates",
+      "source": {"fixture": [2, 0]},
+      "set": [
+        {"path": ["analyticalElements", 0, "id"], "value": 1},
+        {"path": ["analyticalElements", 1, "id"], "value": 1.0}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "FIELD_NOT_STRING",
+          "path": "analyticalElements[0].id",
+          "message": "Поле должно быть JSON-строкой."
+        },
+        {
+          "level": "error",
+          "code": "FIELD_NOT_STRING",
+          "path": "analyticalElements[1].id",
+          "message": "Поле должно быть JSON-строкой."
+        }
+      ]
+    },
+    {
+      "name": "boolean_null_container_and_parent_types",
+      "source": {"fixture": [1, 1]},
+      "set": [
+        {"path": ["format"], "value": {}},
+        {"path": ["version"], "value": true},
+        {"path": ["project", "name"], "value": false},
+        {"path": ["analyticalElements", 0, "code"], "value": false},
+        {"path": ["analyticalElements", 0, "name"], "value": []},
+        {"path": ["analyticalElements", 0, "definition"], "value": {}},
+        {"path": ["actors", 0, "id"], "value": {}},
+        {"path": ["actors", 0, "code"], "value": 7},
+        {"path": ["actors", 0, "name"], "value": null},
+        {"path": ["actors", 0, "description"], "value": false},
+        {"path": ["actors", 0, "parentId"], "value": 1}
+      ],
+      "expectedDiagnostics": [
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "format", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "version", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "project.name", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "analyticalElements[0].code", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "analyticalElements[0].name", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "analyticalElements[0].definition", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "actors[0].id", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "actors[0].code", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "actors[0].name", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "actors[0].description", "message": "Поле должно быть JSON-строкой."},
+        {"level": "error", "code": "FIELD_NOT_STRING", "path": "actors[0].parentId", "message": "Поле должно быть JSON-строкой."}
+      ]
+    },
+    {
+      "name": "explicit_unicode_whitespace_and_case_edges",
+      "source": {"fixture": [4, 0]},
+      "set": [
+        {"path": ["project", "name"], "value": "\u00a0Проект\u3000"},
+        {"path": ["analyticalElements", 0, "id"], "value": "\u3000root\u00a0"},
+        {"path": ["analyticalElements", 0, "code"], "value": "ABC-Я"},
+        {"path": ["analyticalElements", 1, "code"], "value": "abc-я"},
+        {"path": ["analyticalElements", 1, "parentId"], "value": "\ufeffroot\u2029"},
+        {"path": ["analyticalElements", 2, "code"], "value": "K"},
+        {"path": ["analyticalElements", 2, "name"], "value": "\u0085"},
+        {"path": ["analyticalElements", 2, "definition"], "value": "\u0085"},
+        {"path": ["analyticalElements", 3, "code"], "value": "K"}
+      ],
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "CODE_DUPLICATE",
+          "path": "analyticalElements[1].code",
+          "message": "Код «abc-я» уже используется в этой таблице."
+        }
+      ]
+    },
+    {
+      "name": "collection_exactly_500",
+      "source": {"fixture": [500, 0]},
+      "expectedDiagnostics": []
+    },
+    {
+      "name": "collection_501",
+      "source": {"fixture": [501, 0]},
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "COLLECTION_TOO_LARGE",
+          "path": "analyticalElements",
+          "message": "Список «analyticalElements» содержит 501 записей; максимум — 500."
+        }
+      ]
+    },
+    {
+      "name": "preview_exactly_10000",
+      "source": {"fixture": [100, 100]},
+      "expectedDiagnostics": []
+    },
+    {
+      "name": "preview_10001",
+      "source": {"fixture": [73, 137]},
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "PREVIEW_CELL_BUDGET_EXCEEDED",
+          "path": "analyticalElements×actors",
+          "message": "Preview содержит 10001 ячеек; безопасный максимум — 10000."
+        }
+      ]
+    },
+    {
+      "name": "under_2mb_500x500",
+      "source": {"fixture": [500, 500]},
+      "assertSerializedBytesBelow": 2097152,
+      "expectedDiagnostics": [
+        {
+          "level": "error",
+          "code": "PREVIEW_CELL_BUDGET_EXCEEDED",
+          "path": "analyticalElements×actors",
+          "message": "Preview содержит 250000 ячеек; безопасный максимум — 10000."
+        }
+      ]
+    }
+  ]
+}

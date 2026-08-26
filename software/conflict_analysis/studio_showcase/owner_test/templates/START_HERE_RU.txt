@@ -1,0 +1,48 @@
+CONFLICTANALYSIS STUDIO — OWNER-TEST
+====================================
+
+Это исследовательский session-only прототип. Он не публикует данные, не изменяет
+Foundation, не содержит формул, scalar Power/POW, POW×SAL или прогноза и не
+принимает решений.
+
+DELIVERY HEAD: @@HEAD@@
+DELIVERY TREE: @@TREE@@
+
+Требования: Windows 10/11, PowerShell 5.1+, Python 3.12 x64 и установленный
+Google Chrome либо Microsoft Edge для браузерного smoke-теста.
+Первичная установка Python-зависимостей требует доступа к PyPI по сети (если
+нужные пакеты не находятся в локальном pip-кэше). После установки запуск полностью
+локален и не требует сети.
+
+1. Поместите ZIP и оба соседних sidecar-файла в один новый пустой каталог.
+   До распаковки сравните SHA-256 ZIP с @@ZIP_NAME@@.sha256:
+   Get-Content .\@@ZIP_NAME@@.sha256
+   Get-FileHash .\@@ZIP_NAME@@ -Algorithm SHA256
+
+2. Распакуйте ZIP в этом же каталоге, перейдите в созданный каталог
+   .\ConflictAnalysis-Studio-OWNER-TEST и выполните:
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\VERIFY_CONTENT.ps1 -ManifestSha256RecordPath ..\@@ZIP_NAME@@.manifest.sha256
+
+   Скрипт проверяет соседний @@ZIP_NAME@@.manifest.sha256, каждый файл по MANIFEST.json и отсутствие
+   посторонних файлов. Контрольные суммы шести снимков также записаны в
+   .\screenshots\SHA256SUMS.txt.
+
+3. Установите изолированные зависимости:
+   cd .\app
+   py -3.12 -m venv .venv
+   .\.venv\Scripts\python.exe -m pip install --disable-pip-version-check -r requirements-owner-test.txt
+
+4. Запустите foreground-сервер только на loopback:
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_studio_showcase.ps1 -ListenAddress 127.0.0.1 -Port 8000
+
+5. Откройте http://127.0.0.1:8000/ и проверьте http://127.0.0.1:8000/health/.
+   В отдельном окне PowerShell перейдите в тот же каталог `app` и выполните
+   браузерный smoke-тест (скрипт расположен на один уровень выше):
+   powershell -NoProfile -ExecutionPolicy Bypass -File ..\RUN_BROWSER_SMOKE.ps1 -BaseUrl http://127.0.0.1:8000/
+
+6. Остановите сервер Ctrl+C и убедитесь, что /health/ больше недоступен.
+   Инструкции безопасного локального удаления находятся в CLEANUP_RU.md.
+
+Файл контрольной суммы всего ZIP называется @@ZIP_NAME@@.sha256 и поставляется
+рядом с ZIP. Файл @@ZIP_NAME@@.manifest.sha256 также лежит рядом и содержит
+SHA-256 точных байтов MANIFEST.json. Оба sidecar-файла не входят в ZIP.
