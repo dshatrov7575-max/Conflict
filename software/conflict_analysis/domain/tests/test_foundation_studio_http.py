@@ -1084,6 +1084,86 @@ class FoundationStudioApplicationGatewayHttpTests(
         self.assertEqual(mismatched_stream.bytes_served, 2)
         self.assertEqual(domain_counts(), baseline)
 
+    def test_preloaded_oversize_body_has_no_partial_identity_or_receipt(self):
+        attempt_url = (
+            f"/api/foundation/projects/{self.project.pk}/"
+            "definition-packages/2.1/attempt/"
+        )
+        oversized = (
+            b'{"padding":"'
+            + b"x" * (FOUNDATION_RAW_JSON_MAX_BYTES + 4096)
+            + b'"}'
+        )
+        authorization = "Basic " + base64.b64encode(
+            b"gateway-http-import-reader:test-password"
+        ).decode("ascii")
+        factory = APIRequestFactory(enforce_csrf_checks=True)
+        django_request = factory.generic(
+            "POST",
+            attempt_url,
+            b"",
+            content_type="application/json",
+            HTTP_AUTHORIZATION=authorization,
+        )
+        stream = _AdversarialBoundedWSGIInput(
+            oversized,
+            max_bytes=FOUNDATION_RAW_JSON_MAX_BYTES,
+        )
+        django_request._stream = stream
+        django_request._read_started = False
+        django_request._body = oversized
+        django_request.META["CONTENT_TYPE"] = "application/json"
+        django_request.META.pop("CONTENT_LENGTH", None)
+
+        membership_model = Group.user_set.through
+        baseline = {
+            "projects": Project.objects.count(),
+            "definitions": ProjectDefinitionVersion.objects.count(),
+            "imports": ImportRun.objects.count(),
+            "audits": AuditEvent.objects.count(),
+            "publications": ProjectPublication.objects.count(),
+            "workspaces": ProjectWorkspace.objects.count(),
+            "groups": Group.objects.count(),
+            "memberships": membership_model.objects.count(),
+        }
+        real_sha256 = hashlib.sha256
+
+        def bounded_sha256(value=b"", *args, **kwargs):
+            if isinstance(value, (bytes, bytearray, memoryview)) and len(value) > (
+                FOUNDATION_RAW_JSON_MAX_BYTES + 1
+            ):
+                raise AssertionError("oversized preloaded body was hashed")
+            return real_sha256(value, *args, **kwargs)
+
+        with patch(
+            "domain.services.foundation_packages.hashlib.sha256",
+            side_effect=bounded_sha256,
+        ):
+            response = attempt_definition_package_2_1(
+                django_request,
+                project_id=self.project.pk,
+            )
+
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertEqual(response.data["code"], "RAW_JSON_BYTE_BUDGET_EXCEEDED")
+        self.assertEqual(stream.bytes_served, 0)
+        self.assertFalse(
+            hasattr(django_request, "_foundation_raw_json_capture")
+        )
+        self.assertEqual(
+            {
+                "projects": Project.objects.count(),
+                "definitions": ProjectDefinitionVersion.objects.count(),
+                "imports": ImportRun.objects.count(),
+                "audits": AuditEvent.objects.count(),
+                "publications": ProjectPublication.objects.count(),
+                "workspaces": ProjectWorkspace.objects.count(),
+                "groups": Group.objects.count(),
+                "memberships": membership_model.objects.count(),
+            },
+            baseline,
+        )
+
     def test_successor_http_201_etag_pin_preservation_and_stable_retry_409(self):
         initial = bootstrap_initial_project_definition(
             definition=self.draft(code="HTTP-SUCCESSOR-INITIAL"),

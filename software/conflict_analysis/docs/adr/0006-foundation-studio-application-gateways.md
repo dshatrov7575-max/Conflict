@@ -66,7 +66,9 @@ or Content-Length is rejected at HTTP admission without a durable receipt.
 Over-budget HTTP bodies likewise have no receipt and no claimed full-body raw
 identity because their remainder is intentionally never consumed. Admitted
 malformed or schema-invalid attempts still reach the canonical durable REJECTED
-receipt path.
+receipt path. The same limit applies when Django already exposes a private
+preloaded `_body`: its size is checked before hashing or copying, and an
+oversized preloaded body never becomes an exact `HTTP_BYTES` identity.
 
 Before package work, the adapter requires all of:
 
