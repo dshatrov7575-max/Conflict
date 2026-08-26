@@ -22,7 +22,8 @@ from rest_framework.decorators import (
     authentication_classes,
     permission_classes,
 )
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ParseError
+from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.status import (
@@ -55,6 +56,7 @@ from domain.services.foundation_packages import (
     parse_strong_manifest_if_match,
     preview_foundation_package_2_1,
     read_http_json,
+    validate_json_content_type,
 )
 from domain.services.project_definitions import (
     FoundationStudioApplicationConflict,
@@ -72,7 +74,7 @@ from domain.services.project_definitions import (
 
 
 class _RawJSONSessionAuthentication(SessionAuthentication):
-    """Run real session CSRF before the view admits or reads JSON bytes."""
+    """Admit JSON headers without body I/O before running real session CSRF."""
 
     def authenticate(self, request: Request):
         user = getattr(request._request, "user", None)
@@ -83,11 +85,20 @@ class _RawJSONSessionAuthentication(SessionAuthentication):
         ):
             # Preserve Basic-first anonymous semantics without reading a body.
             return None
-        # DRF's wrapper may parse ``request.POST`` while CSRF is evaluated.  The
-        # underlying Django request performs the same real cookie/header check
-        # without treating application/json as a form body.  Therefore missing
-        # or invalid CSRF consumes zero body bytes, and the view remains the
-        # single bounded transport-admission and capture boundary.
+        if request.method not in SAFE_METHODS:
+            try:
+                validate_json_content_type(
+                    str(request._request.META.get("CONTENT_TYPE", ""))
+                )
+            except RawJSONError as exc:
+                # Authentication runs outside the view's `_execute` wrapper.
+                # Translate the fixed, bounded transport diagnostic to a DRF
+                # response instead of allowing a raw ValueError to become 500.
+                raise ParseError(detail=dict(exc.as_dict())) from exc
+        # Unsupported form/multipart media has already failed without touching
+        # request.POST. The underlying Django request now performs the real
+        # cookie/header check for admitted JSON, which Django does not parse as
+        # a form body. The view remains the sole body capture/parser authority.
         self.enforce_csrf(request._request)
         return user, None
 

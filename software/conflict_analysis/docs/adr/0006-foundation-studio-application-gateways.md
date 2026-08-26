@@ -127,13 +127,15 @@ are 404. Unsafe session requests require real CSRF. Explicit body/query/header
 spoof vectors include actor, role, capability, service context/purpose, project
 authority and stale-token authority.
 
-For an authenticated unsafe session request, the adapter runs Django's real
-cookie/header check against the underlying `HttpRequest` before transport
-admission. Django does not treat `application/json` as a form body, so this avoids
-DRF form parsing and preserves zero-byte 403 denial for a missing or invalid CSRF
-token. Only after CSRF succeeds may the view invoke the canonical bounded HTTP
-transport gate and capture; Basic authentication reaches that same single gate.
-Malformed media/charset and known oversize lengths are rejected before body I/O.
+For an authenticated unsafe session request, the adapter first applies only the
+canonical non-consuming JSON media/charset gate. Media admission failures return
+bounded HTTP 400 before CSRF and before body I/O, so unsupported form-urlencoded or
+multipart media can never make Django parse `request.POST`. For admitted
+`application/json`, the adapter then runs Django's real cookie/header check
+against the underlying `HttpRequest`; missing or invalid CSRF returns 403 without
+a body read. Only after CSRF succeeds may the view apply `Content-Length`, byte
+budget and body capture/parser authority. Basic authentication reaches that same
+view authority without session CSRF.
 
 Acceptance preserves all accepted FSA tests and adds SQLite and PostgreSQL 18
 route, lifecycle, conflict, raw-byte, receipt, rollback and concurrency gates.

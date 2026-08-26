@@ -100,6 +100,22 @@ class _AdversarialBoundedWSGIInput:
         return self.read(size)
 
 
+class _ZeroReadWSGIInput:
+    """Hostile stream proving a header-only failure never touches the body."""
+
+    def __init__(self) -> None:
+        self.bytes_served = 0
+        self.read_attempts = 0
+
+    def read(self, size: int = -1) -> bytes:
+        self.read_attempts += 1
+        raise AssertionError("HTTP body must not be read before media rejection")
+
+    def readline(self, size: int = -1) -> bytes:
+        self.read_attempts += 1
+        raise AssertionError("HTTP body must not be read before media rejection")
+
+
 class FoundationStudioRawIngressTests(TestCase):
     def setUp(self) -> None:
         fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
@@ -1083,6 +1099,43 @@ class FoundationStudioApplicationGatewayHttpTests(
         )
         self.assertEqual(mismatched_stream.bytes_served, 2)
         self.assertEqual(domain_counts(), baseline)
+
+        # Django CSRF consults request.POST for POST requests. Unsupported form
+        # media must fail the non-consuming Foundation header gate before CSRF
+        # can invoke form or multipart parsing. Exercise a real authenticated
+        # session for every token state; the hostile stream raises on any read.
+        for content_type in (
+            "application/x-www-form-urlencoded",
+            "multipart/form-data; boundary=foundation-boundary",
+        ):
+            for token_name, token in (
+                ("missing", None),
+                ("invalid", "0" * 64),
+                ("valid", csrf_token),
+            ):
+                with self.subTest(
+                    content_type=content_type,
+                    csrf_token=token_name,
+                ):
+                    stream = _ZeroReadWSGIInput()
+                    environ = {
+                        "PATH_INFO": attempt_url,
+                        "REQUEST_METHOD": "POST",
+                        "CONTENT_TYPE": content_type,
+                        "CONTENT_LENGTH": "64",
+                        "wsgi.input": stream,
+                    }
+                    if token is not None:
+                        environ["HTTP_X_CSRFTOKEN"] = token
+                    response = session.request(**environ)
+                    self.assertEqual(response.status_code, 400, response.data)
+                    self.assertEqual(
+                        response.data["code"],
+                        "RAW_JSON_MEDIA_TYPE_UNSUPPORTED",
+                    )
+                    self.assertEqual(stream.bytes_served, 0)
+                    self.assertEqual(stream.read_attempts, 0)
+                    self.assertEqual(domain_counts(), baseline)
 
     def test_preloaded_oversize_body_has_no_partial_identity_or_receipt(self):
         attempt_url = (
