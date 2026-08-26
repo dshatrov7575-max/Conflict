@@ -11,8 +11,9 @@ import base64
 import copy
 import hashlib
 import json
+import math
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -24,15 +25,424 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from jsonschema import Draft202012Validator, FormatChecker
+from referencing import Registry, Resource
 
 from domain import models as domain_models
 
 
+FOUNDATION_RAW_JSON_MAX_BYTES = 2 * 1024 * 1024
+FOUNDATION_RAW_JSON_MAX_NESTING = 128
+FOUNDATION_JSON_MEDIA_TYPE = "application/json"
+FOUNDATION_JSON_CHARSET = "utf-8"
+STRONG_MANIFEST_ETAG_PATTERN = re.compile(r'^"([0-9a-f]{64})"$')
+
+
+@dataclass(frozen=True, slots=True)
+class RawInputIdentity:
+    kind: str
+    sha256: str
+    byte_length: int
+    name: str = ""
+
+    def as_dict(self) -> Mapping[str, Any]:
+        value: dict[str, Any] = {
+            "raw_input_kind": self.kind,
+            "raw_input_sha256": self.sha256,
+            "raw_input_byte_length": self.byte_length,
+        }
+        if self.name:
+            value["raw_input_name"] = self.name
+        return MappingProxyType(value)
+
+
+@dataclass(frozen=True, slots=True)
+class RawJSONDocument:
+    value: Mapping[str, Any]
+    identity: RawInputIdentity
+
+
+@dataclass(frozen=True, slots=True)
+class CapturedRawJSON:
+    payload: bytes
+    identity: RawInputIdentity
+
+
+class RawJSONError(ValueError):
+    """One stable, bounded raw-ingest failure."""
+
+    def __init__(self, code: str, message: str, *, path: str = "$") -> None:
+        self.code = code
+        self.path = path
+        self.message = message
+        super().__init__(f"{code} at {path}: {message}")
+
+    def as_dict(self) -> Mapping[str, str]:
+        return MappingProxyType(
+            {"code": self.code, "path": self.path, "message": self.message}
+        )
+
+
+def _error(code: str, message: str, *, path: str = "$") -> RawJSONError:
+    return RawJSONError(code, message, path=path)
+
+
+def validate_json_content_type(raw_content_type: str | None) -> None:
+    """Accept only application/json with no charset or exact UTF-8 charset."""
+
+    if not isinstance(raw_content_type, str) or not raw_content_type.strip():
+        raise _error(
+            "RAW_JSON_MEDIA_TYPE_REQUIRED",
+            "Content-Type must be application/json with optional charset=utf-8.",
+        )
+    parts = [part.strip() for part in raw_content_type.split(";")]
+    if parts[0].lower() != FOUNDATION_JSON_MEDIA_TYPE:
+        raise _error(
+            "RAW_JSON_MEDIA_TYPE_UNSUPPORTED",
+            "Content-Type must be application/json.",
+        )
+    parameters: dict[str, str] = {}
+    for part in parts[1:]:
+        if not part or "=" not in part:
+            raise _error(
+                "RAW_JSON_CHARSET_UNSUPPORTED",
+                "Only the optional charset=utf-8 parameter is accepted.",
+            )
+        name, value = (item.strip() for item in part.split("=", 1))
+        name = name.lower()
+        normalized_value = value.lower()
+        if normalized_value == f'"{FOUNDATION_JSON_CHARSET}"':
+            normalized_value = FOUNDATION_JSON_CHARSET
+        if (
+            name in parameters
+            or name != "charset"
+            or normalized_value != FOUNDATION_JSON_CHARSET
+        ):
+            raise _error(
+                "RAW_JSON_CHARSET_UNSUPPORTED",
+                "Only the optional charset=utf-8 parameter is accepted.",
+            )
+        parameters[name] = normalized_value
+
+
+def _reject_constant(_value: str) -> Any:
+    raise _error(
+        "RAW_JSON_NON_FINITE_NUMBER",
+        "NaN and Infinity are not valid Foundation JSON numbers.",
+    )
+
+
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise _error(
+                "RAW_JSON_DUPLICATE_KEY",
+                "Duplicate object keys are forbidden at every nesting depth.",
+            )
+        value[key] = item
+    return value
+
+
+def _reject_non_finite_tree(
+    value: Any,
+    *,
+    depth: int = 0,
+    active_container_ids: frozenset[int] = frozenset(),
+) -> None:
+    """Reject exponent overflow and excessive structural nesting."""
+
+    if depth > FOUNDATION_RAW_JSON_MAX_NESTING:
+        raise _error(
+            "RAW_JSON_NESTING_EXCEEDED",
+            f"JSON nesting exceeds the configured {FOUNDATION_RAW_JSON_MAX_NESTING}-level limit.",
+        )
+
+    if isinstance(value, float) and not math.isfinite(value):
+        raise _error(
+            "RAW_JSON_NON_FINITE_NUMBER",
+            "NaN and Infinity are not valid Foundation JSON numbers.",
+        )
+    if isinstance(value, Mapping | list):
+        container_id = id(value)
+        if container_id in active_container_ids:
+            raise _error(
+                "RAW_JSON_MAPPING_NOT_SERIALIZABLE",
+                "The canonical mapping contains a cyclic non-JSON value.",
+            )
+        active_container_ids = active_container_ids | {container_id}
+    if isinstance(value, Mapping):
+        for item in value.values():
+            _reject_non_finite_tree(
+                item,
+                depth=depth + 1,
+                active_container_ids=active_container_ids,
+            )
+    elif isinstance(value, list):
+        for item in value:
+            _reject_non_finite_tree(
+                item,
+                depth=depth + 1,
+                active_container_ids=active_container_ids,
+            )
+
+
+def parse_raw_json_bytes(
+    payload: bytes,
+    *,
+    kind: str = "BYTES",
+    name: str = "",
+    content_type: str = FOUNDATION_JSON_MEDIA_TYPE,
+    max_bytes: int = FOUNDATION_RAW_JSON_MAX_BYTES,
+) -> RawJSONDocument:
+    """Parse exactly one UTF-8 JSON object without normalization or repair."""
+
+    validate_json_content_type(content_type)
+    if not isinstance(max_bytes, int) or max_bytes < 1:
+        raise ValueError("max_bytes must be a positive integer.")
+    if len(payload) > max_bytes:
+        raise _error(
+            "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+            f"JSON input exceeds the configured {max_bytes}-byte budget.",
+        )
+    if payload.startswith(b"\xef\xbb\xbf"):
+        raise _error("RAW_JSON_BOM_FORBIDDEN", "A UTF-8 BOM is forbidden.")
+    try:
+        text = payload.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise _error(
+            "RAW_JSON_INVALID_UTF8",
+            "JSON input must be strict UTF-8.",
+        ) from exc
+    try:
+        value = json.loads(
+            text,
+            object_pairs_hook=_unique_object,
+            parse_constant=_reject_constant,
+        )
+    except RawJSONError:
+        raise
+    except RecursionError as exc:
+        raise _error(
+            "RAW_JSON_NESTING_EXCEEDED",
+            f"JSON nesting exceeds the configured {FOUNDATION_RAW_JSON_MAX_NESTING}-level limit.",
+        ) from exc
+    except json.JSONDecodeError as exc:
+        code = (
+            "RAW_JSON_TRAILING_DOCUMENT"
+            if exc.msg == "Extra data"
+            else "RAW_JSON_SYNTAX_INVALID"
+        )
+        message = (
+            "Exactly one JSON document is required."
+            if code == "RAW_JSON_TRAILING_DOCUMENT"
+            else "JSON syntax is invalid."
+        )
+        raise _error(code, message) from exc
+    except ValueError as exc:
+        raise _error(
+            "RAW_JSON_NUMBER_INVALID",
+            "A JSON numeric token exceeds the bounded Foundation representation.",
+        ) from exc
+    _reject_non_finite_tree(value)
+    if not isinstance(value, dict):
+        raise _error("RAW_JSON_OBJECT_REQUIRED", "The JSON document root must be an object.")
+    identity = RawInputIdentity(
+        kind=kind,
+        sha256=hashlib.sha256(payload).hexdigest(),
+        byte_length=len(payload),
+        name=name,
+    )
+    try:
+        copied = copy.deepcopy(value)
+    except RecursionError as exc:
+        raise _error(
+            "RAW_JSON_NESTING_EXCEEDED",
+            f"JSON nesting exceeds the configured {FOUNDATION_RAW_JSON_MAX_NESTING}-level limit.",
+        ) from exc
+    return RawJSONDocument(copied, identity)
+
+
+def _canonical_mapping_bytes(value: Mapping[str, Any]) -> bytes:
+    _reject_non_finite_tree(value)
+    try:
+        return json.dumps(
+            copy.deepcopy(dict(value)),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+    except RecursionError as exc:
+        raise _error(
+            "RAW_JSON_NESTING_EXCEEDED",
+            f"JSON nesting exceeds the configured {FOUNDATION_RAW_JSON_MAX_NESTING}-level limit.",
+        ) from exc
+    except (TypeError, ValueError) as exc:
+        raise _error(
+            "RAW_JSON_MAPPING_NOT_SERIALIZABLE",
+            "The canonical mapping contains a non-JSON value.",
+        ) from exc
+
+
+def capture_json_source(
+    source: Any,
+    *,
+    max_bytes: int = FOUNDATION_RAW_JSON_MAX_BYTES,
+) -> CapturedRawJSON:
+    """Capture transport bytes and immutable identity without parsing JSON."""
+
+    if not isinstance(max_bytes, int) or max_bytes < 1:
+        raise ValueError("max_bytes must be a positive integer.")
+    name = ""
+    if isinstance(source, Path):
+        try:
+            digest = hashlib.sha256()
+            retained = bytearray()
+            byte_length = 0
+            with source.open("rb") as stream:
+                while chunk := stream.read(64 * 1024):
+                    digest.update(chunk)
+                    byte_length += len(chunk)
+                    remaining = max_bytes + 1 - len(retained)
+                    if remaining > 0:
+                        retained.extend(chunk[:remaining])
+        except OSError as exc:
+            raise _error("RAW_JSON_PATH_UNREADABLE", "The JSON path cannot be read.") from exc
+        payload = bytes(retained)
+        kind = "PATH_BYTES"
+        name = source.name
+        identity = RawInputIdentity(
+            kind=kind,
+            sha256=digest.hexdigest(),
+            byte_length=byte_length,
+            name=name,
+        )
+    elif isinstance(source, bytes):
+        payload = source
+        kind = "BYTES"
+    elif isinstance(source, str):
+        payload = source.encode("utf-8")
+        kind = "TEXT"
+    elif isinstance(source, Mapping):
+        payload = _canonical_mapping_bytes(source)
+        kind = "CANONICAL_MAPPING"
+    else:
+        raise _error(
+            "RAW_JSON_INPUT_UNSUPPORTED",
+            "JSON input must be bytes, UTF-8 text, Path, or an explicit canonical mapping.",
+        )
+    if not isinstance(source, Path):
+        identity = RawInputIdentity(
+            kind=kind,
+            sha256=hashlib.sha256(payload).hexdigest(),
+            byte_length=len(payload),
+            name=name,
+        )
+    return CapturedRawJSON(payload=payload, identity=identity)
+
+
+def parse_captured_json(
+    captured: CapturedRawJSON,
+    *,
+    max_bytes: int = FOUNDATION_RAW_JSON_MAX_BYTES,
+    content_type: str = FOUNDATION_JSON_MEDIA_TYPE,
+) -> RawJSONDocument:
+    """Parse an immutable capture without reading its transport a second time."""
+
+    validate_json_content_type(content_type)
+    if captured.identity.byte_length > max_bytes:
+        raise _error(
+            "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+            f"JSON input exceeds the configured {max_bytes}-byte budget.",
+        )
+    document = parse_raw_json_bytes(
+        captured.payload,
+        kind=captured.identity.kind,
+        name=captured.identity.name,
+        content_type=content_type,
+        max_bytes=max_bytes,
+    )
+    if document.identity != captured.identity:
+        raise RuntimeError("Captured raw JSON identity changed before parsing.")
+    return document
+
+
+def parse_json_source(
+    source: Any,
+    *,
+    max_bytes: int = FOUNDATION_RAW_JSON_MAX_BYTES,
+    content_type: str = FOUNDATION_JSON_MEDIA_TYPE,
+) -> RawJSONDocument:
+    """Route bytes, text, Path, or an explicit canonical mapping to one parser."""
+
+    return parse_captured_json(
+        capture_json_source(source, max_bytes=max_bytes),
+        content_type=content_type,
+        max_bytes=max_bytes,
+    )
+
+
+def read_http_json(request: Any, *, max_bytes: int = FOUNDATION_RAW_JSON_MAX_BYTES) -> RawJSONDocument:
+    """Read a Django/DRF request once, before ``request.data`` is accessed."""
+
+    http_request = getattr(request, "_request", request)
+    content_type = str(http_request.META.get("CONTENT_TYPE", ""))
+    validate_json_content_type(content_type)
+    length_header = http_request.META.get("CONTENT_LENGTH")
+    if length_header not in (None, ""):
+        try:
+            advertised_length = int(length_header)
+        except (TypeError, ValueError) as exc:
+            raise _error(
+                "RAW_JSON_CONTENT_LENGTH_INVALID",
+                "Content-Length must be a non-negative decimal integer.",
+            ) from exc
+        if advertised_length < 0:
+            raise _error(
+                "RAW_JSON_CONTENT_LENGTH_INVALID",
+                "Content-Length must be a non-negative decimal integer.",
+            )
+        if advertised_length > max_bytes:
+            raise _error(
+                "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+                f"JSON input exceeds the configured {max_bytes}-byte budget.",
+            )
+    if hasattr(http_request, "_body"):
+        payload = http_request._body
+    else:
+        payload = http_request.read(max_bytes + 1)
+    return parse_raw_json_bytes(
+        payload,
+        kind="HTTP_BYTES",
+        content_type=content_type,
+        max_bytes=max_bytes,
+    )
+
+
+def parse_strong_manifest_if_match(value: str | None) -> str:
+    """Accept one exact strong ETag: a quoted lowercase SHA-256 digest."""
+
+    if value is None or value == "":
+        raise _error(
+            "IF_MATCH_REQUIRED",
+            'Draft save requires If-Match: "<lowercase-sha256>".',
+        )
+    match = STRONG_MANIFEST_ETAG_PATTERN.fullmatch(value)
+    if match is None:
+        raise _error(
+            "IF_MATCH_INVALID",
+            "If-Match must contain exactly one strong quoted lowercase SHA-256 validator.",
+        )
+    return match.group(1)
+
+
 FOUNDATION_PACKAGE_FORMAT = "conflict-analysis-foundation"
 FOUNDATION_PACKAGE_VERSION = "2.0.0"
+FOUNDATION_PACKAGE_VERSION_2_1 = "2.1.0"
+FOUNDATION_PACKAGE_SCOPES_2_1 = frozenset({"WORKSPACE", "PROJECT_DEFINITION"})
 HASH_ALGORITHM = "sha256"
 RAW_INPUT_KINDS = frozenset(
-    {"PATH_BYTES", "BYTES", "TEXT", "CANONICAL_MAPPING"}
+    {"PATH_BYTES", "BYTES", "TEXT", "HTTP_BYTES", "CANONICAL_MAPPING"}
 )
 RAW_INPUT_PROVENANCE_KEYS = (
     "raw_input_kind",
@@ -44,6 +454,16 @@ SCHEMA_PATH = (
     / "schemas"
     / "foundation-package-2.0.0.schema.json"
 )
+SCHEMA_PATH_2_1 = (
+    Path(__file__).resolve().parent
+    / "schemas"
+    / "foundation-package-2.1.0.schema.json"
+)
+DEFINITION_MANIFEST_SCHEMA_PATH = (
+    Path(__file__).resolve().parent
+    / "schemas"
+    / "project-definition-manifest-1.0.0.schema.json"
+)
 
 with SCHEMA_PATH.open(encoding="utf-8") as _schema_file:
     FOUNDATION_PACKAGE_JSON_SCHEMA = json.load(_schema_file)
@@ -52,6 +472,28 @@ _VALIDATOR = Draft202012Validator(
     FOUNDATION_PACKAGE_JSON_SCHEMA,
     format_checker=FormatChecker(),
 )
+
+
+def _load_foundation_2_1_validator() -> Draft202012Validator:
+    """Load the 2.1 schema with its bundled typed-manifest dependency."""
+
+    try:
+        with SCHEMA_PATH_2_1.open(encoding="utf-8") as schema_file:
+            schema = json.load(schema_file)
+        with DEFINITION_MANIFEST_SCHEMA_PATH.open(encoding="utf-8") as manifest_file:
+            manifest_schema = json.load(manifest_file)
+    except OSError as exc:
+        raise RuntimeError("Foundation 2.1 schemas are not installed.") from exc
+    Draft202012Validator.check_schema(manifest_schema)
+    Draft202012Validator.check_schema(schema)
+    registry = Registry().with_resource(
+        manifest_schema["$id"], Resource.from_contents(manifest_schema)
+    )
+    return Draft202012Validator(
+        schema,
+        format_checker=FormatChecker(),
+        registry=registry,
+    )
 
 ENTITY_SECTIONS = (
     "project_definition_versions",
@@ -246,6 +688,61 @@ class FoundationImportAttemptResult:
     receipt: FoundationImportReceipt | None
 
 
+@dataclass(frozen=True, slots=True)
+class Foundation21Preview:
+    """Non-mutating preflight for a Foundation 2.1 wrapper."""
+
+    valid: bool
+    package_scope: str
+    checksum: str
+    project_id: str
+    project_code: str
+    project_version: str
+    selected_definition_id: str
+    intended_action: str
+    raw_input_kind: str
+    raw_input_sha256: str
+    raw_input_byte_length: int
+    raw_input_name: str = ""
+    errors: tuple[str, ...] = ()
+    _payload: Mapping[str, Any] = field(
+        default_factory=dict,
+        repr=False,
+        compare=False,
+    )
+    _workspace_preview: FoundationImportPreview | None = field(
+        default=None,
+        repr=False,
+        compare=False,
+    )
+
+    def payload_copy(self) -> dict[str, Any]:
+        return _deep_thaw(self._payload)
+
+
+@dataclass(frozen=True, slots=True)
+class Foundation21CommitResult:
+    """Immutable service result for one explicit 2.1 commit."""
+
+    package_scope: str
+    action: str
+    definition_id: str
+    workspace_id: str | None
+    receipt_id: str | None
+    checksum: str
+
+
+@dataclass(frozen=True, slots=True)
+class Foundation21AttemptResult:
+    """One append-only Foundation 2.1 attempt and its immutable outcome."""
+
+    status: str
+    preview: Foundation21Preview | None
+    commit: Foundation21CommitResult | None
+    receipt_id: str
+    errors: tuple[Mapping[str, str], ...]
+
+
 _ADAPTERS: dict[str, Adapter] = {}
 
 
@@ -358,38 +855,12 @@ def seal_foundation_package(package: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _json_adapter(raw: Any) -> Mapping[str, Any]:
-    if isinstance(raw, Mapping):
-        return copy.deepcopy(dict(raw))
-    if isinstance(raw, Path):
-        try:
-            raw = raw.read_text(encoding="utf-8")
-        except OSError as exc:
-            raise FoundationPackageValidationError(f"Cannot read JSON input: {exc}.") from exc
-    if isinstance(raw, bytes):
-        try:
-            raw = raw.decode("utf-8")
-        except UnicodeDecodeError as exc:
-            raise FoundationPackageValidationError("JSON input must be UTF-8.") from exc
-    if isinstance(raw, str):
-        candidate = raw.lstrip()
-        if not candidate.startswith(("{", "[")):
-            path = Path(raw)
-            try:
-                raw = path.read_text(encoding="utf-8")
-            except OSError as exc:
-                raise FoundationPackageValidationError(f"Cannot read JSON input: {exc}.") from exc
-        try:
-            decoded = json.loads(raw)
-        except json.JSONDecodeError as exc:
-            raise FoundationPackageValidationError(
-                f"Invalid JSON at line {exc.lineno}, column {exc.colno}: {exc.msg}."
-            ) from exc
-        if not isinstance(decoded, Mapping):
-            raise FoundationPackageValidationError("Canonical JSON root must be an object.")
-        return decoded
-    raise FoundationPackageValidationError(
-        f"Unsupported JSON input type {type(raw).__name__}."
-    )
+    try:
+        return copy.deepcopy(dict(parse_json_source(raw).value))
+    except RawJSONError as exc:
+        raise FoundationPackageValidationError(
+            f"{exc.code} at {exc.path}: {exc.message}"
+        ) from exc
 
 
 register_foundation_adapter("json", _json_adapter)
@@ -1090,6 +1561,165 @@ def validate_foundation_package(package: Mapping[str, Any]) -> tuple[dict[str, A
         _reject("Package manifest, entity counts or SHA-256 checksum is invalid.")
     warnings = _validate_semantics(canonical)
     return canonical, warnings
+
+
+def _payload_without_manifest_2_1(package: Mapping[str, Any]) -> dict[str, Any]:
+    payload = copy.deepcopy(dict(package))
+    payload.pop("manifest", None)
+    return payload
+
+
+def _manifest_for_2_1(payload: Mapping[str, Any]) -> dict[str, str]:
+    return {
+        "hash_algorithm": HASH_ALGORITHM,
+        "payload_sha256": hashlib.sha256(
+            canonical_json(payload).encode("utf-8")
+        ).hexdigest(),
+    }
+
+
+def seal_foundation_package_2_1(package: Mapping[str, Any]) -> dict[str, Any]:
+    """Seal one explicit 2.1 scope without altering a nested 2.0 package."""
+
+    payload = _payload_without_manifest_2_1(package)
+    payload["manifest"] = _manifest_for_2_1(payload)
+    return payload
+
+
+def _schema_error_message_2_1(error: Any) -> str:
+    safe_parts: list[str] = []
+    for part in error.absolute_path:
+        value = str(part)
+        safe_parts.append(
+            value if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", value) else "*"
+        )
+    path = ".".join(safe_parts) or "package"
+    validator = str(error.validator or "invalid")
+    if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", validator) is None:
+        validator = "invalid"
+    return (
+        f"FOUNDATION_2_1_SCHEMA_{validator.upper()} at {path}: "
+        "value does not satisfy the exact Foundation 2.1 contract."
+    )
+
+
+def _validate_foundation_package_2_1_mapping(
+    package: Mapping[str, Any],
+) -> dict[str, Any]:
+    canonical = copy.deepcopy(dict(package))
+    validator = _load_foundation_2_1_validator()
+    errors = sorted(
+        validator.iter_errors(canonical),
+        key=lambda error: (
+            tuple(str(part) for part in error.absolute_path),
+            error.message,
+        ),
+    )
+    if errors:
+        raise FoundationPackageValidationError(_schema_error_message_2_1(errors[0]))
+    expected_manifest = _manifest_for_2_1(_payload_without_manifest_2_1(canonical))
+    if canonical["manifest"] != expected_manifest:
+        raise FoundationPackageValidationError(
+            "Foundation 2.1 manifest SHA-256 does not match its exact payload."
+        )
+
+    scope = canonical["package_scope"]
+    if scope == "WORKSPACE":
+        nested, _warnings = validate_foundation_package(canonical["workspace_package"])
+        if nested["format_version"] != FOUNDATION_PACKAGE_VERSION:
+            raise FoundationPackageValidationError(
+                "A 2.1 WORKSPACE wrapper must preserve one exact Foundation 2.0.0 payload."
+            )
+        if canonical["workspace"] != nested["workspace"]:
+            raise FoundationPackageValidationError(
+                "The 2.1 workspace identity must equal the nested canonical workspace."
+            )
+        if (
+            canonical["selected_definition_id"]
+            != nested["workspace"]["project_definition_version_id"]
+        ):
+            raise FoundationPackageValidationError(
+                "selected_definition_id must equal the nested workspace definition pin."
+            )
+        return canonical
+
+    definition = canonical["project_definition"]
+    if definition["id"] != canonical["selected_definition_id"]:
+        raise FoundationPackageValidationError(
+            "selected_definition_id must equal the exact project definition identity."
+        )
+    from domain.services.project_definitions import (
+        hash_project_definition_manifest_v1,
+        identify_typed_project_definition_manifest,
+    )
+
+    if not identify_typed_project_definition_manifest(definition["manifest"]):
+        raise FoundationPackageValidationError(
+            "PROJECT_DEFINITION scope requires the exact typed V1 manifest envelope."
+        )
+    actual_hash = hash_project_definition_manifest_v1(definition["manifest"])
+    if actual_hash != definition["manifest_hash"]:
+        raise FoundationPackageValidationError(
+            "Project definition manifest_hash does not match canonical typed bytes."
+        )
+    status = definition["publication_status"]
+    if status == "DRAFT":
+        if any(
+            (
+                definition["validated_at"] is not None,
+                bool(definition["validated_by"]),
+                bool(definition["validation_result"]),
+                definition["published_at"] is not None,
+                bool(definition["published_by"]),
+                definition["is_current"],
+            )
+        ):
+            raise FoundationPackageValidationError(
+                "A DRAFT definition cannot claim validation or publication state."
+            )
+    elif status == "VALIDATED":
+        if (
+            definition["validated_at"] is None
+            or not definition["validated_by"]
+            or definition["validation_result"].get("valid") is not True
+            or definition["published_at"] is not None
+            or definition["published_by"]
+        ):
+            raise FoundationPackageValidationError(
+                "A VALIDATED definition requires exact successful validation metadata only."
+            )
+    else:
+        if (
+            definition["validated_at"] is None
+            or not definition["validated_by"]
+            or definition["validation_result"].get("valid") is not True
+            or definition["published_at"] is None
+            or not definition["published_by"]
+        ):
+            raise FoundationPackageValidationError(
+                "A published definition requires exact validation and publication metadata."
+            )
+    return canonical
+
+
+def _parse_and_validate_foundation_package_2_1(
+    raw: Any,
+) -> tuple[dict[str, Any], RawInputIdentity]:
+    try:
+        document = parse_json_source(raw)
+    except RawJSONError as exc:
+        raise FoundationPackageValidationError(
+            f"{exc.code} at {exc.path}: {exc.message}"
+        ) from exc
+    canonical = _validate_foundation_package_2_1_mapping(document.value)
+    return canonical, document.identity
+
+
+def validate_foundation_package_2_1(package: Any) -> dict[str, Any]:
+    """Parse raw bytes once, then validate the exact typed 2.1 envelope."""
+
+    canonical, _identity = _parse_and_validate_foundation_package_2_1(package)
+    return canonical
 
 
 def _workspace_identity(workspace: Any) -> tuple[str, str]:
@@ -2450,6 +3080,7 @@ def commit_foundation_package(
     allow_nonempty: bool = False,
     actor_identifier: str,
     inject_failure_after: int | None = None,
+    _audit_context: object | None = None,
 ) -> FoundationImportReceipt:
     """Atomically materialize a validated preview and append one ImportRun receipt.
 
@@ -2582,12 +3213,27 @@ def commit_foundation_package(
             "committed_at": datetime.now(timezone.utc),
         },
     )
-    from domain.policies import record_foundation_audit
+    from domain.policies import FoundationAuditContext, record_foundation_audit
+
+    audit_context = (
+        FoundationAuditContext.for_human_workspace(
+            workspace=locked_workspace,
+            actor_identifier=actor_identifier,
+        )
+        if _audit_context is None
+        else _audit_context
+    )
+    if (
+        not isinstance(audit_context, FoundationAuditContext)
+        or audit_context.actor_identifier != actor_identifier.strip()
+    ):
+        raise FoundationPackageValidationError(
+            "Import receipt actor must equal the trusted Foundation audit context."
+        )
 
     record_foundation_audit(
-        workspace=locked_workspace,
+        context=audit_context,
         action="IMPORT",
-        actor_identifier=actor_identifier.strip(),
         entity_type="IMPORT_RUN",
         entity_id=run.pk,
         after={
@@ -2883,12 +3529,14 @@ def _record_unsuccessful_import(
             "committed_at": None,
         },
     )
-    from domain.policies import record_foundation_audit
+    from domain.policies import FoundationAuditContext, record_foundation_audit
 
     record_foundation_audit(
-        workspace=workspace,
+        context=FoundationAuditContext.for_human_workspace(
+            workspace=workspace,
+            actor_identifier=safe_actor_identifier,
+        ),
         action="IMPORT",
-        actor_identifier=safe_actor_identifier,
         entity_type="IMPORT_RUN",
         entity_id=run.pk,
         after={
@@ -3429,6 +4077,787 @@ def export_foundation_package(workspace: Any) -> dict[str, Any]:
 
 def export_foundation_json(workspace: Any) -> str:
     return canonical_json(export_foundation_package(workspace)) + "\n"
+
+
+def _project_identity_2_1(project: Any) -> dict[str, str]:
+    if project is None or getattr(project, "pk", None) is None:
+        raise FoundationPackageValidationError("A persisted Project is required.")
+    return {
+        "id": str(project.pk),
+        "code": str(project.code),
+        "version": str(project.version),
+    }
+
+
+def _bounded_package_id_2_1(prefix: str, value: object) -> str:
+    """Keep derived 2.1 package identities valid without truncating identity."""
+
+    raw_value = str(value)
+    candidate = f"{prefix}-{raw_value}"
+    if len(candidate) <= 128 and _ASCII_CODE_PATTERN.fullmatch(candidate):
+        return candidate
+    return f"{prefix}-{hashlib.sha256(raw_value.encode('utf-8')).hexdigest()}"
+
+
+def export_workspace_package_2_1(workspace: Any) -> dict[str, Any]:
+    """Wrap an unchanged canonical 2.0 workspace graph in a typed 2.1 scope."""
+
+    nested = export_foundation_package(workspace)
+    package = {
+        "format": FOUNDATION_PACKAGE_FORMAT,
+        "format_version": FOUNDATION_PACKAGE_VERSION_2_1,
+        "package_scope": "WORKSPACE",
+        "package_id": _bounded_package_id_2_1("V21", nested["package_id"]),
+        "project": _project_identity_2_1(workspace.project),
+        "selected_definition_id": nested["workspace"][
+            "project_definition_version_id"
+        ],
+        "workspace": copy.deepcopy(nested["workspace"]),
+        "workspace_package": nested,
+        "project_definition": None,
+    }
+    sealed = seal_foundation_package_2_1(package)
+    return validate_foundation_package_2_1(sealed)
+
+
+def export_project_definition_package_2_1(definition: Any) -> dict[str, Any]:
+    """Export one exact typed definition without requiring a workspace."""
+
+    if definition is None or getattr(definition, "pk", None) is None:
+        raise FoundationPackageValidationError(
+            "A persisted ProjectDefinitionVersion is required."
+        )
+    from domain.services.project_definitions import (
+        hash_project_definition_manifest_v1,
+        identify_typed_project_definition_manifest,
+    )
+
+    if not identify_typed_project_definition_manifest(definition.manifest):
+        raise FoundationPackageValidationError(
+            "Only an explicitly typed V1 manifest can use PROJECT_DEFINITION scope."
+        )
+    actual_hash = hash_project_definition_manifest_v1(definition.manifest)
+    if definition.manifest_hash != actual_hash:
+        raise FoundationPackageValidationError(
+            "Stored definition hash does not match the exact typed manifest."
+        )
+    package = {
+        "format": FOUNDATION_PACKAGE_FORMAT,
+        "format_version": FOUNDATION_PACKAGE_VERSION_2_1,
+        "package_scope": "PROJECT_DEFINITION",
+        "package_id": _bounded_package_id_2_1("DEFINITION", definition.code),
+        "project": _project_identity_2_1(definition.project),
+        "selected_definition_id": str(definition.pk),
+        "workspace": None,
+        "workspace_package": None,
+        "project_definition": _export_definition(definition),
+    }
+    sealed = seal_foundation_package_2_1(package)
+    return validate_foundation_package_2_1(sealed)
+
+
+def export_project_definition_json_2_1(definition: Any) -> str:
+    return canonical_json(export_project_definition_package_2_1(definition)) + "\n"
+
+
+def _require_exact_project_2_1(package: Mapping[str, Any], project: Any) -> None:
+    expected = _project_identity_2_1(project)
+    if package["project"] != expected:
+        raise FoundationPackageConflictError(
+            "Foundation 2.1 project id/code/version differs from the explicit target Project."
+        )
+
+
+def _definition_plan_2_1(
+    package: Mapping[str, Any],
+    *,
+    project: Any,
+) -> tuple[str, Any | None]:
+    """Resolve one stable definition identity without repair or retargeting."""
+
+    definition_data = package["project_definition"]
+    definition_id = UUID(definition_data["id"])
+    Definition = _model("ProjectDefinitionVersion")
+    by_id = Definition.objects.filter(pk=definition_id).first()
+    by_code = Definition.objects.filter(
+        project=project,
+        code=definition_data["code"],
+    ).first()
+    by_version = Definition.objects.filter(
+        project=project,
+        version=definition_data["version"],
+    ).first()
+    identities = {row.pk for row in (by_id, by_code, by_version) if row is not None}
+    if len(identities) > 1:
+        raise FoundationPackageConflictError(
+            "Project-definition id/code/version resolve to different persisted rows."
+        )
+    existing = by_id or by_code or by_version
+    if existing is not None:
+        if (
+            str(existing.project_id) != str(project.pk)
+            or str(existing.pk) != definition_data["id"]
+            or existing.code != definition_data["code"]
+            or existing.version != definition_data["version"]
+        ):
+            raise FoundationPackageConflictError(
+                "Persisted project-definition stable identity differs from the package."
+            )
+        if _export_definition(existing) != definition_data:
+            raise FoundationPackageConflictError(
+                "Persisted project-definition bytes or lifecycle state differ from the package."
+            )
+        return "REUSE_EXACT", existing
+
+    status = definition_data["publication_status"]
+    if status == "DRAFT":
+        return "CREATE_DRAFT", None
+    if status == "PUBLISHED" and definition_data["is_current"]:
+        return "BOOTSTRAP_PUBLISHED", None
+    raise FoundationPackageConflictError(
+        "Absent VALIDATED/RETIRED/non-current PUBLISHED snapshots cannot bypass the canonical lifecycle."
+    )
+
+
+def _preview_foundation_package_2_1_canonical(
+    canonical: Mapping[str, Any],
+    raw_identity: RawInputIdentity,
+    *,
+    project: Any,
+    workspace: Any | None = None,
+    selected_input: Mapping[str, Any] | None = None,
+    allow_nonempty: bool = False,
+) -> Foundation21Preview:
+    _require_exact_project_2_1(canonical, project)
+    checksum = canonical["manifest"]["payload_sha256"]
+    if canonical["package_scope"] == "WORKSPACE":
+        if workspace is None:
+            raise FoundationPackageValidationError(
+                "A 2.1 WORKSPACE package requires an explicit target workspace."
+            )
+        if str(workspace.project_id) != str(project.pk):
+            raise FoundationPackageConflictError(
+                "The target workspace belongs to a different Project."
+            )
+        nested_preview = preview_foundation_package(
+            canonical["workspace_package"],
+            workspace=workspace,
+            adapter="json",
+            selected_input=selected_input,
+            allow_nonempty=allow_nonempty,
+        )
+        action = "IMPORT_WORKSPACE_2_0_PAYLOAD"
+    else:
+        from domain.services.project_definitions import (
+            parse_project_definition_manifest_v1,
+        )
+
+        definition_data = canonical["project_definition"]
+        if definition_data.get("metadata") not in ({}, None):
+            raise FoundationPackageValidationError(
+                "ProjectDefinitionVersion has no parallel metadata authority; "
+                "definition metadata must remain inside the typed manifest project object."
+            )
+        dto = parse_project_definition_manifest_v1(
+            definition_data["manifest"],
+            project=project,
+        )
+        if dto.manifest_sha256 != definition_data["manifest_hash"]:
+            raise FoundationPackageConflictError(
+                "Typed manifest hash differs after exact persisted-Project validation."
+            )
+        action, _existing = _definition_plan_2_1(canonical, project=project)
+        nested_preview = None
+    return Foundation21Preview(
+        valid=True,
+        package_scope=canonical["package_scope"],
+        checksum=checksum,
+        project_id=str(project.pk),
+        project_code=str(project.code),
+        project_version=str(project.version),
+        selected_definition_id=canonical["selected_definition_id"],
+        intended_action=action,
+        raw_input_kind=raw_identity.kind,
+        raw_input_sha256=raw_identity.sha256,
+        raw_input_byte_length=raw_identity.byte_length,
+        raw_input_name=raw_identity.name,
+        errors=(),
+        _payload=_deep_freeze(canonical),
+        _workspace_preview=nested_preview,
+    )
+
+
+def preview_foundation_package_2_1(
+    raw: Any,
+    *,
+    project: Any,
+    workspace: Any | None = None,
+    selected_input: Mapping[str, Any] | None = None,
+    allow_nonempty: bool = False,
+) -> Foundation21Preview:
+    """Validate one raw typed 2.1 scope and derive an immutable DB plan."""
+
+    canonical, raw_identity = _parse_and_validate_foundation_package_2_1(raw)
+    return _preview_foundation_package_2_1_canonical(
+        canonical,
+        raw_identity,
+        project=project,
+        workspace=workspace,
+        selected_input=selected_input,
+        allow_nonempty=allow_nonempty,
+    )
+
+
+def _locked_project_for_preview_2_1(
+    preview: Foundation21Preview,
+    project: Any,
+) -> Any:
+    Project = _model("Project")
+    locked = Project.objects.select_for_update().get(pk=project.pk)
+    locked_identity = _project_identity_2_1(locked)
+    expected = {
+        "id": preview.project_id,
+        "code": preview.project_code,
+        "version": preview.project_version,
+    }
+    if locked_identity != expected:
+        raise FoundationPackageConflictError(
+            "Locked Project identity differs from the immutable Foundation 2.1 preview."
+        )
+    return locked
+
+
+def _create_definition_import_receipt_2_1(
+    *,
+    package: Mapping[str, Any],
+    project: Any,
+    definition: Any,
+    action: str,
+    actor_identifier: str,
+    preview: Foundation21Preview,
+) -> Any:
+    from domain.enums import ImportPackageScope
+
+    ImportRun = _model("ImportRun")
+    checksum = package["manifest"]["payload_sha256"]
+    if ImportRun.objects.filter(
+        project=project,
+        package_scope=ImportPackageScope.PROJECT_DEFINITION,
+        checksum=checksum,
+        status="COMMITTED",
+    ).exists():
+        raise FoundationPackageConflictError(
+            "This exact project-definition package already has a committed receipt."
+        )
+    source = package["project_definition"]
+    return _new(
+        ImportRun,
+        {
+            "project": project,
+            "workspace": None,
+            "definition_version": definition,
+            "package_scope": ImportPackageScope.PROJECT_DEFINITION,
+            "code": f"IMPORT-{checksum}",
+            "version": FOUNDATION_PACKAGE_VERSION_2_1,
+            "package_format": FOUNDATION_PACKAGE_FORMAT,
+            "package_id": package["package_id"],
+            "package_version": FOUNDATION_PACKAGE_VERSION_2_1,
+            "schema_version": source["schema_version"],
+            "template_version": "1.0.0",
+            "method_version": "PROJECT_DEFINITION_MANIFEST_VALIDATION_V1",
+            "ontology_version": source["construct_version"],
+            "dataset_version": source["version"],
+            "checksum": checksum,
+            "adapter": "json",
+            "selected_input": {
+                "package_scope": "PROJECT_DEFINITION",
+                "intended_action": action,
+                "raw_input_kind": preview.raw_input_kind,
+                "raw_input_sha256": preview.raw_input_sha256,
+                "raw_input_byte_length": preview.raw_input_byte_length,
+                **(
+                    {"raw_input_name": preview.raw_input_name}
+                    if preview.raw_input_name
+                    else {}
+                ),
+                "canonical_payload_sha256": preview.checksum,
+                "source_definition_id": source["id"],
+                "source_publication_status": source["publication_status"],
+                "source_validated_at": source["validated_at"],
+                "source_validated_by": source["validated_by"],
+                "source_validation_result": copy.deepcopy(source["validation_result"]),
+                "source_published_at": source["published_at"],
+                "source_published_by": source["published_by"],
+                "source_is_current": source["is_current"],
+            },
+            "selected_source_column": "",
+            "source_identity_map": {
+                "project_definition": {source["code"]: source["id"]},
+            },
+            "correction_lineage": (
+                [
+                    {
+                        "code": source["code"],
+                        "supersedes_code": source["supersedes_code"],
+                    }
+                ]
+                if source["supersedes_code"]
+                else []
+            ),
+            "intended_changes": {"project_definition": action},
+            "row_counts": {"project_definition_versions": 1},
+            "warnings": [],
+            "errors": [],
+            "allow_nonempty": False,
+            "status": "COMMITTED",
+            "actor_identifier": actor_identifier,
+            "committed_at": datetime.now(timezone.utc),
+        },
+    )
+
+
+@transaction.atomic
+def commit_foundation_package_2_1(
+    preview: Foundation21Preview,
+    *,
+    project: Any,
+    principal: object,
+    actor_identifier: str,
+    workspace: Any | None = None,
+    initial_workspace: Mapping[str, Any] | None = None,
+    locale: str = "ru",
+    allow_nonempty: bool = False,
+    inject_failure_at: str | None = None,
+) -> Foundation21CommitResult:
+    """Commit exactly one 2.1 plan through existing canonical authorities."""
+
+    if not isinstance(preview, Foundation21Preview) or not preview.valid:
+        raise FoundationPackageValidationError("Commit requires a valid 2.1 preview.")
+    if (
+        preview.raw_input_kind not in RAW_INPUT_KINDS
+        or _SHA256_PATTERN.fullmatch(preview.raw_input_sha256) is None
+        or preview.raw_input_byte_length < 0
+    ):
+        raise FoundationPackageValidationError(
+            "Commit requires exact immutable raw-input identity from preview."
+        )
+    if not actor_identifier.strip():
+        raise FoundationPackageValidationError("actor_identifier is required.")
+    from domain.policies import (
+        FoundationAuditContext,
+        StudioCapability,
+        StudioPrincipal,
+        require_studio_capability,
+    )
+
+    require_studio_capability(principal, StudioCapability.FOUNDATION_IMPORT)
+    if (
+        not isinstance(principal, StudioPrincipal)
+        or actor_identifier.strip() != principal.actor_identifier
+    ):
+        raise FoundationPackageValidationError(
+            "actor_identifier must equal the trusted Foundation import principal."
+        )
+    locked_project = _locked_project_for_preview_2_1(preview, project)
+    package = validate_foundation_package_2_1(preview.payload_copy())
+    if package["manifest"]["payload_sha256"] != preview.checksum:
+        raise FoundationPackageConflictError(
+            "Foundation 2.1 preview payload changed after validation."
+        )
+    _require_exact_project_2_1(package, locked_project)
+
+    if package["package_scope"] == "WORKSPACE":
+        if workspace is None or preview._workspace_preview is None:
+            raise FoundationPackageValidationError(
+                "A WORKSPACE commit requires its explicit target and nested preview."
+            )
+        receipt = commit_foundation_package(
+            preview._workspace_preview,
+            workspace=workspace,
+            allow_nonempty=allow_nonempty,
+            actor_identifier=actor_identifier,
+            _audit_context=FoundationAuditContext.for_principal_workspace(
+                workspace=workspace,
+                principal=principal,
+            ),
+        )
+        return Foundation21CommitResult(
+            package_scope="WORKSPACE",
+            action=preview.intended_action,
+            definition_id=preview.selected_definition_id,
+            workspace_id=str(workspace.pk),
+            receipt_id=receipt.id,
+            checksum=preview.checksum,
+        )
+
+    action, existing = _definition_plan_2_1(package, project=locked_project)
+    if action != preview.intended_action:
+        raise FoundationPackageConflictError(
+            "Project-definition import plan changed after preview."
+        )
+    source = package["project_definition"]
+    if existing is not None:
+        definition = existing
+        initial_workspace_id = None
+    else:
+        from domain.services.project_definitions import create_project_definition_draft
+
+        supersedes = None
+        if source["supersedes_code"]:
+            supersedes = _model("ProjectDefinitionVersion").objects.filter(
+                project=locked_project,
+                code=source["supersedes_code"],
+            ).first()
+            if supersedes is None:
+                raise FoundationPackageConflictError(
+                    "The package supersedes_code is not an exact persisted definition."
+                )
+        definition = create_project_definition_draft(
+            project=locked_project,
+            definition_id=UUID(source["id"]),
+            code=source["code"],
+            version=source["version"],
+            manifest=source["manifest"],
+            metadata=source.get("metadata", {}),
+            semantic_version=source["semantic_version"],
+            construct_version=source["construct_version"],
+            supersedes=supersedes,
+            principal=principal,
+        )
+        initial_workspace_id = None
+        if action == "BOOTSTRAP_PUBLISHED":
+            if initial_workspace is None:
+                raise FoundationPackageValidationError(
+                    "A published definition import requires an explicit initial workspace specification."
+                )
+            from domain.policies import bootstrap_initial_project_definition
+
+            bootstrap = bootstrap_initial_project_definition(
+                definition=definition,
+                principal=principal,
+                actor_identifier=actor_identifier,
+                workspace_spec=initial_workspace,
+                locale=locale,
+                inject_failure_at=inject_failure_at,
+            )
+            definition = bootstrap.definition
+            initial_workspace_id = str(bootstrap.workspace.pk)
+    run = _create_definition_import_receipt_2_1(
+        package=package,
+        project=locked_project,
+        definition=definition,
+        action=action,
+        actor_identifier=actor_identifier.strip(),
+        preview=preview,
+    )
+    if inject_failure_at == "after_definition_import_receipt":
+        raise RuntimeError(
+            "Injected Foundation 2.1 failure at after_definition_import_receipt."
+        )
+    from domain.policies import FoundationAuditContext, record_definition_audit
+
+    record_definition_audit(
+        context=FoundationAuditContext.for_principal_definition(
+            definition=definition,
+            principal=principal,
+        ),
+        action="IMPORT",
+        entity_type="IMPORT_RUN",
+        entity_id=run.pk,
+        after={
+            "package_id": package["package_id"],
+            "checksum": preview.checksum,
+            "action": action,
+        },
+    )
+    if inject_failure_at == "after_definition_import_audit":
+        raise RuntimeError(
+            "Injected Foundation 2.1 failure at after_definition_import_audit."
+        )
+    return Foundation21CommitResult(
+        package_scope="PROJECT_DEFINITION",
+        action=action,
+        definition_id=str(definition.pk),
+        workspace_id=initial_workspace_id,
+        receipt_id=str(run.pk),
+        checksum=preview.checksum,
+    )
+
+
+def _bounded_foundation_2_1_error(exc: Exception) -> Mapping[str, str]:
+    if isinstance(exc, RawJSONError):
+        value = dict(exc.as_dict())
+    else:
+        detail = str(exc)
+        value = {
+            "code": exc.__class__.__name__.upper(),
+            "path": "$",
+            "message": (
+                "Foundation 2.1 identity or stale-state validation rejected the attempt."
+                if isinstance(exc, FoundationPackageConflictError)
+                else "Foundation 2.1 validation or commit failed without applying domain writes."
+            ),
+            "detail_sha256": hashlib.sha256(detail.encode("utf-8")).hexdigest(),
+        }
+    return MappingProxyType(value)
+
+
+@transaction.atomic
+def _record_unsuccessful_definition_import_2_1(
+    *,
+    project: Any,
+    captured: CapturedRawJSON,
+    actor_identifier: str,
+    status: str,
+    errors: tuple[Mapping[str, str], ...],
+    canonical: Mapping[str, Any] | None = None,
+    preview: Foundation21Preview | None = None,
+) -> Any:
+    """Append one project-scoped receipt after the mutation transaction ended."""
+
+    from domain.enums import ImportPackageScope
+
+    if status not in {"REJECTED", "FAILED"}:
+        raise ValueError("Unsuccessful Foundation 2.1 status must be REJECTED or FAILED.")
+    Project = _model("Project")
+    persisted_project = Project.objects.get(pk=project.pk)
+    source = (
+        canonical.get("project_definition")
+        if isinstance(canonical, Mapping)
+        else None
+    )
+    definition = None
+    if (
+        isinstance(source, Mapping)
+        and isinstance(canonical, Mapping)
+        and canonical.get("project") == _project_identity_2_1(persisted_project)
+    ):
+        Definition = _model("ProjectDefinitionVersion")
+        candidates: list[Any] = []
+        try:
+            by_id = Definition.objects.filter(
+                pk=UUID(str(source.get("id"))),
+                project=persisted_project,
+            ).first()
+        except (TypeError, ValueError):
+            by_id = None
+        if by_id is not None:
+            candidates.append(by_id)
+        source_code = source.get("code")
+        if isinstance(source_code, str) and source_code:
+            by_code = Definition.objects.filter(
+                project=persisted_project,
+                code=source_code,
+            ).first()
+            if by_code is not None:
+                candidates.append(by_code)
+        source_version = source.get("version")
+        if isinstance(source_version, str) and source_version:
+            by_version = Definition.objects.filter(
+                project=persisted_project,
+                version=source_version,
+            ).first()
+            if by_version is not None:
+                candidates.append(by_version)
+        resolved_ids = {candidate.pk for candidate in candidates}
+        if len(resolved_ids) == 1:
+            definition = candidates[0]
+    semantic_checksum = preview.checksum if preview is not None else ""
+    if not semantic_checksum and isinstance(canonical, Mapping):
+        candidate = canonical.get("manifest", {}).get("payload_sha256")
+        if isinstance(candidate, str) and _SHA256_PATTERN.fullmatch(candidate):
+            semantic_checksum = candidate
+    receipt_checksum = semantic_checksum or captured.identity.sha256
+    raw_package_id = (
+        canonical.get("package_id")
+        if isinstance(canonical, Mapping)
+        else None
+    )
+    package_id = _safe_receipt_code(
+        raw_package_id or f"INVALID-{captured.identity.sha256}",
+        max_length=128,
+        label="PACKAGE",
+    )
+    definition_identity = (
+        str(source.get("id", "")) if isinstance(source, Mapping) else ""
+    )
+    selected_input = {
+        **dict(captured.identity.as_dict()),
+        "package_scope": "PROJECT_DEFINITION",
+        "canonical_payload_sha256": semantic_checksum,
+        "source_definition_id": definition_identity,
+    }
+    attempt_id = uuid4()
+    run = _new(
+        _model("ImportRun"),
+        {
+            "id": attempt_id,
+            "code": f"IMPORT-{status}-{attempt_id.hex}",
+            "version": FOUNDATION_PACKAGE_VERSION_2_1,
+            "project": persisted_project,
+            "workspace": None,
+            "definition_version": definition,
+            "package_scope": ImportPackageScope.PROJECT_DEFINITION,
+            "target_experiment": None,
+            "target_assessment_set": None,
+            "package_format": FOUNDATION_PACKAGE_FORMAT,
+            "package_id": package_id,
+            "package_version": FOUNDATION_PACKAGE_VERSION_2_1,
+            "schema_version": _safe_receipt_text(
+                source.get("schema_version") if isinstance(source, Mapping) else "UNKNOWN",
+                max_length=64,
+                label="SCHEMA",
+            ),
+            "template_version": "1.0.0",
+            "method_version": "PROJECT_DEFINITION_MANIFEST_VALIDATION_V1",
+            "ontology_version": _safe_receipt_text(
+                source.get("construct_version") if isinstance(source, Mapping) else "UNKNOWN",
+                max_length=64,
+                label="ONTOLOGY",
+            ),
+            "dataset_version": _safe_receipt_text(
+                source.get("version") if isinstance(source, Mapping) else "UNKNOWN",
+                max_length=64,
+                label="DATASET",
+            ),
+            "checksum": receipt_checksum,
+            "adapter": "json-raw-v1",
+            "selected_input": selected_input,
+            "selected_source_column": "",
+            "source_identity_map": (
+                {"project_definition": {str(source.get("code", "")): definition_identity}}
+                if isinstance(source, Mapping) and source.get("code")
+                else {}
+            ),
+            "correction_lineage": [],
+            "intended_changes": {},
+            "row_counts": {},
+            "warnings": [],
+            "errors": [dict(item) for item in errors],
+            "allow_nonempty": False,
+            "status": status,
+            "actor_identifier": actor_identifier,
+            "committed_at": None,
+        },
+    )
+    return run
+
+
+def attempt_foundation_import_2_1(
+    raw: Any,
+    *,
+    project: Any,
+    principal: object,
+    actor_identifier: str,
+    initial_workspace: Mapping[str, Any] | None = None,
+    locale: str = "ru",
+    inject_failure_at: str | None = None,
+) -> Foundation21AttemptResult:
+    """Persist durable PROJECT_DEFINITION outcomes around one atomic commit."""
+
+    from domain.policies import StudioCapability, StudioPrincipal, require_studio_capability
+
+    require_studio_capability(principal, StudioCapability.FOUNDATION_IMPORT)
+    if (
+        not isinstance(principal, StudioPrincipal)
+        or actor_identifier.strip() != principal.actor_identifier
+    ):
+        raise FoundationPackageValidationError(
+            "actor_identifier must equal the trusted Foundation import principal."
+        )
+    captured = capture_json_source(raw)
+    canonical: Mapping[str, Any] | None = None
+    preview: Foundation21Preview | None = None
+    try:
+        document = parse_captured_json(captured)
+        canonical = _validate_foundation_package_2_1_mapping(document.value)
+        if canonical["package_scope"] != "PROJECT_DEFINITION":
+            raise FoundationPackageValidationError(
+                "Durable Foundation 2.1 definition attempts require PROJECT_DEFINITION scope."
+            )
+        preview = _preview_foundation_package_2_1_canonical(
+            canonical,
+            captured.identity,
+            project=project,
+        )
+    except (
+        FoundationPackageError,
+        RawJSONError,
+        ValidationError,
+        ValueError,
+        TypeError,
+    ) as exc:
+        errors = (_bounded_foundation_2_1_error(exc),)
+        run = _record_unsuccessful_definition_import_2_1(
+            project=project,
+            captured=captured,
+            actor_identifier=principal.actor_identifier,
+            status="REJECTED",
+            errors=errors,
+            canonical=canonical,
+            preview=preview,
+        )
+        return Foundation21AttemptResult(
+            status="REJECTED",
+            preview=preview,
+            commit=None,
+            receipt_id=str(run.pk),
+            errors=errors,
+        )
+
+    try:
+        commit = commit_foundation_package_2_1(
+            preview,
+            project=project,
+            principal=principal,
+            actor_identifier=principal.actor_identifier,
+            initial_workspace=initial_workspace,
+            locale=locale,
+            inject_failure_at=inject_failure_at,
+        )
+    except FoundationPackageError as exc:
+        errors = (_bounded_foundation_2_1_error(exc),)
+        run = _record_unsuccessful_definition_import_2_1(
+            project=project,
+            captured=captured,
+            actor_identifier=principal.actor_identifier,
+            status="REJECTED",
+            errors=errors,
+            canonical=canonical,
+            preview=preview,
+        )
+        return Foundation21AttemptResult(
+            status="REJECTED",
+            preview=preview,
+            commit=None,
+            receipt_id=str(run.pk),
+            errors=errors,
+        )
+    except Exception as exc:
+        errors = (_bounded_foundation_2_1_error(exc),)
+        run = _record_unsuccessful_definition_import_2_1(
+            project=project,
+            captured=captured,
+            actor_identifier=principal.actor_identifier,
+            status="FAILED",
+            errors=errors,
+            canonical=canonical,
+            preview=preview,
+        )
+        return Foundation21AttemptResult(
+            status="FAILED",
+            preview=preview,
+            commit=None,
+            receipt_id=str(run.pk),
+            errors=errors,
+        )
+    return Foundation21AttemptResult(
+        status="COMMITTED",
+        preview=preview,
+        commit=commit,
+        receipt_id=str(commit.receipt_id),
+        errors=(),
+    )
 
 
 def _iso_date(value: date | None) -> str | None:

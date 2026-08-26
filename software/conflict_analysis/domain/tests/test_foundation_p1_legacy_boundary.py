@@ -5,6 +5,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from django.contrib import admin as django_admin
+from django.db import transaction
 from django.test import SimpleTestCase, TestCase
 
 from domain.models import (
@@ -118,6 +119,7 @@ class FoundationP1LegacyBoundaryStaticTests(SimpleTestCase):
 
 class FoundationP1LegacyBoundaryRuntimeTests(TestCase):
     def test_v1_direct_evidence_stays_unresolved_and_v2_export_is_canonical(self):
+        fixture_savepoint = transaction.savepoint()
         project = seed_zhanaozen_demo()
         value = ParameterValue(
             project=project,
@@ -163,14 +165,7 @@ class FoundationP1LegacyBoundaryRuntimeTests(TestCase):
         legacy_link.full_clean()
         legacy_link.save(force_insert=True)
         v1_package = export_project_package(project)
-
-        EvidenceLink.objects.filter(project=project).delete()
-        AuditEvent._base_manager.filter(project=project).delete()
-        ScenarioOverride.objects.filter(project=project).delete()
-        Scenario.objects.filter(project=project).delete()
-        ParameterValue.objects.filter(project=project).delete()
-        GroupTensionRelation.objects.filter(project=project).delete()
-        project.delete()
+        transaction.savepoint_rollback(fixture_savepoint)
 
         imported = import_project_package(v1_package)
         workspace = ProjectWorkspace.objects.get(project=imported, is_default=True)

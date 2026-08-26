@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://conflictology.invalid/schemas/project-definition-manifest-1.0.0.schema.json",
+  "title": "Conflict Analysis typed project-definition manifest 1.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "format",
+    "format_version",
+    "project",
+    "policies",
+    "actors",
+    "analytical_elements",
+    "actor_element_roles",
+    "parameter_definitions",
+    "help_bindings"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://conflictology.invalid/schemas/project-definition-manifest-1.0.0.schema.json"
+    },
+    "format": {"const": "conflict-analysis-project-definition"},
+    "format_version": {"const": "1.0.0"},
+    "project": {"$ref": "#/$defs/project"},
+    "policies": {"$ref": "#/$defs/policies"},
+    "actors": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/actor"}
+    },
+    "analytical_elements": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/analytical_element"}
+    },
+    "actor_element_roles": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/actor_element_role"}
+    },
+    "parameter_definitions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/parameter_definition"}
+    },
+    "help_bindings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/help_binding"}
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "uuid_or_null": {
+      "oneOf": [
+        {"$ref": "#/$defs/uuid"},
+        {"type": "null"}
+      ]
+    },
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "locale": {
+      "type": "string",
+      "pattern": "^[a-z]{2,3}(?:-[A-Z]{2})?$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "decimal_string": {
+      "type": "string",
+      "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+    },
+    "entity_identity": {
+      "type": "object",
+      "required": ["id", "code", "version"],
+      "properties": {
+        "id": {"$ref": "#/$defs/uuid"},
+        "code": {"$ref": "#/$defs/code"},
+        "version": {"$ref": "#/$defs/version"}
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "code",
+        "version",
+        "name",
+        "description",
+        "default_locale",
+        "metadata"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/uuid"},
+        "code": {"$ref": "#/$defs/code"},
+        "version": {"$ref": "#/$defs/version"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 255},
+        "description": {"type": "string"},
+        "default_locale": {"$ref": "#/$defs/locale"},
+        "metadata": {"type": "object"}
+      }
+    },
+    "policies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["structure_lock"],
+      "properties": {
+        "structure_lock": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "is_structure_locked",
+            "ordinary_user_can_edit_structure",
+            "studio_can_edit_structure",
+            "reason"
+          ],
+          "properties": {
+            "is_structure_locked": {"type": "boolean"},
+            "ordinary_user_can_edit_structure": {"type": "boolean"},
+            "studio_can_edit_structure": {"type": "boolean"},
+            "reason": {"type": "string"}
+          }
+        }
+      }
+    },
+    "actor": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_identity"},
+        {
+          "type": "object",
+          "required": [
+            "label",
+            "description",
+            "actor_type",
+            "order",
+            "parent_id"
+          ],
+          "properties": {
+            "label": {"type": "string", "minLength": 1},
+            "description": {"type": "string"},
+            "actor_type": {
+              "enum": [
+                "INDIVIDUAL",
+                "GROUP",
+                "ORGANIZATION",
+                "INSTITUTION",
+                "STATE",
+                "OTHER"
+              ]
+            },
+            "order": {"type": "integer", "minimum": 0},
+            "parent_id": {"$ref": "#/$defs/uuid_or_null"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "analytical_element": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_identity"},
+        {
+          "type": "object",
+          "required": [
+            "label",
+            "description",
+            "element_type",
+            "reference_statement",
+            "order",
+            "parent_id"
+          ],
+          "properties": {
+            "label": {"type": "string", "minLength": 1},
+            "description": {"type": "string"},
+            "element_type": {
+              "enum": [
+                "CONFLICT_ISSUE",
+                "GRIEVANCE",
+                "STRUCTURAL_DRIVER",
+                "PROXIMATE_DRIVER",
+                "TRIGGER",
+                "PROCESS",
+                "INSTITUTIONAL_RESPONSE",
+                "CONSEQUENCE",
+                "PEACE_FACTOR"
+              ]
+            },
+            "reference_statement": {"type": "string", "minLength": 1},
+            "order": {"type": "integer", "minimum": 0},
+            "parent_id": {"$ref": "#/$defs/uuid_or_null"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "actor_element_role": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_identity"},
+        {
+          "type": "object",
+          "required": [
+            "actor_id",
+            "element_id",
+            "role",
+            "note",
+            "order"
+          ],
+          "properties": {
+            "actor_id": {"$ref": "#/$defs/uuid"},
+            "element_id": {"$ref": "#/$defs/uuid"},
+            "role": {
+              "enum": [
+                "PRIMARY",
+                "SECONDARY",
+                "AFFECTED",
+                "INTERMEDIARY",
+                "OBSERVER",
+                "OTHER"
+              ]
+            },
+            "note": {"type": "string"},
+            "order": {"type": "integer", "minimum": 0}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "scale": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum", "maximum", "step"],
+      "properties": {
+        "minimum": {
+          "oneOf": [
+            {"$ref": "#/$defs/decimal_string"},
+            {"type": "null"}
+          ]
+        },
+        "maximum": {
+          "oneOf": [
+            {"$ref": "#/$defs/decimal_string"},
+            {"type": "null"}
+          ]
+        },
+        "step": {
+          "oneOf": [
+            {"$ref": "#/$defs/decimal_string"},
+            {"type": "null"}
+          ]
+        }
+      }
+    },
+    "applicability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actor_ids",
+        "analytical_element_ids",
+        "actor_element_role_ids"
+      ],
+      "properties": {
+        "actor_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/uuid"}
+        },
+        "analytical_element_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/uuid"}
+        },
+        "actor_element_role_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/uuid"}
+        }
+      }
+    },
+    "parameter_definition": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_identity"},
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "description",
+            "target_type",
+            "value_type",
+            "scale",
+            "allowed_statuses",
+            "applicability",
+            "reference_statement"
+          ],
+          "properties": {
+            "name": {"type": "string", "minLength": 1},
+            "description": {"type": "string"},
+            "target_type": {
+              "enum": [
+                "PROJECT",
+                "TIME_SLICE",
+                "ACTOR",
+                "ANALYTICAL_ELEMENT",
+                "ACTOR_ELEMENT_ROLE",
+                "ACTOR_ELEMENT_ASSESSMENT"
+              ]
+            },
+            "value_type": {
+              "enum": ["DECIMAL", "INTEGER", "BOOLEAN", "TEXT", "JSON"]
+            },
+            "scale": {"$ref": "#/$defs/scale"},
+            "allowed_statuses": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "enum": [
+                  "UNKNOWN",
+                  "NOT_APPLICABLE",
+                  "INSUFFICIENT_DATA",
+                  "PROVISIONAL",
+                  "CONFIRMED",
+                  "OPEN_METHOD",
+                  "DISPUTED",
+                  "RETROSPECTIVE_KNOWLEDGE"
+                ]
+              }
+            },
+            "applicability": {"$ref": "#/$defs/applicability"},
+            "reference_statement": {"type": "string", "minLength": 1}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "help_binding": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_identity"},
+        {
+          "type": "object",
+          "required": [
+            "application_scope",
+            "ui_key",
+            "locale",
+            "topic_stable_key",
+            "topic_version",
+            "topic_sha256"
+          ],
+          "properties": {
+            "application_scope": {"const": "STUDIO"},
+            "ui_key": {"$ref": "#/$defs/code"},
+            "locale": {"$ref": "#/$defs/locale"},
+            "topic_stable_key": {"$ref": "#/$defs/code"},
+            "topic_version": {"$ref": "#/$defs/version"},
+            "topic_sha256": {"$ref": "#/$defs/sha256"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    }
+  }
+}

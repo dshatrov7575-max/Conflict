@@ -8,6 +8,7 @@ from unittest import mock
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.test import TestCase
 
 from domain.demo_data import (
@@ -276,6 +277,10 @@ class StructurePolicyTests(TestCase):
 
 class ProjectPackageTests(TestCase):
     def setUp(self):
+        # Preserve a genuinely blank import target without bypassing any
+        # append-only manager.  The round-trip test rolls back to this
+        # checkpoint instead of deleting immutable audit/receipt rows.
+        self.blank_import_savepoint = transaction.savepoint()
         self.project = seed_zhanaozen_demo()
 
     def _add_assessments_and_evidence(self):
@@ -395,16 +400,8 @@ class ProjectPackageTests(TestCase):
             )
         )
 
-    def _delete_project_graph(self):
-        EvidenceLink.objects.filter(project=self.project).delete()
-        # Test-only teardown uses Django's non-public base manager; the public
-        # append-only manager remains fail-closed for product callers.
-        AuditEvent._base_manager.filter(project=self.project).delete()
-        ScenarioOverride.objects.filter(project=self.project).delete()
-        Scenario.objects.filter(project=self.project).delete()
-        ParameterValue.objects.filter(project=self.project).delete()
-        GroupTensionRelation.objects.filter(project=self.project).delete()
-        self.project.delete()
+    def _restore_blank_import_checkpoint(self):
+        transaction.savepoint_rollback(self.blank_import_savepoint)
 
     def test_present_value_without_range_full_clean_and_json_round_trip(self):
         present, unknown, source, link, audit = self._add_assessments_and_evidence()
@@ -421,7 +418,7 @@ class ProjectPackageTests(TestCase):
         self.assertEqual(package["manifest"]["ptn_version"], PTN_VERSION)
         self.assertEqual(package["manifest"]["gu_version"], GU_VERSION)
         original_project_id = self.project.id
-        self._delete_project_graph()
+        self._restore_blank_import_checkpoint()
 
         imported = import_project_package(package)
         self.assertEqual(imported.id, original_project_id)

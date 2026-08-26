@@ -4,8 +4,10 @@ import hashlib
 import json
 import re
 import uuid
+from contextlib import contextmanager
+from contextvars import ContextVar
 from decimal import Decimal, InvalidOperation
-from typing import Any
+from typing import Any, Iterator
 
 from django.core.exceptions import ValidationError
 from django.core.validators import (
@@ -29,6 +31,7 @@ from .enums import (
     AssessmentTemporalStatus,
     AuditAction,
     AuditActorType,
+    AuditScope,
     ChatChannelType,
     ChatMessageRole,
     ChatMessageStatus,
@@ -44,6 +47,7 @@ from .enums import (
     FactOrigin,
     FactType,
     HelpApplicationScope,
+    ImportPackageScope,
     ImportRunStatus,
     ParameterValueType,
     PowerDimension,
@@ -86,6 +90,33 @@ PRESENT_VALUE_STATUSES = (
     ValueStatus.DISPUTED,
     ValueStatus.RETROSPECTIVE_KNOWLEDGE,
 )
+
+
+# Runtime writes for typed Studio definitions and their publication receipts
+# must pass through the canonical service boundary.  Migrations deliberately
+# use historical models, so they neither import nor need this private runtime
+# scope.  Separate authorities keep a definition write from accidentally
+# authorizing a publication receipt (or vice versa) in callbacks.
+_STUDIO_CANONICAL_WRITE_AUTHORITIES: ContextVar[frozenset[str]] = ContextVar(
+    "studio_canonical_write_authorities",
+    default=frozenset(),
+)
+
+
+@contextmanager
+def _canonical_studio_write(*authorities: str) -> Iterator[None]:
+    current = _STUDIO_CANONICAL_WRITE_AUTHORITIES.get()
+    token = _STUDIO_CANONICAL_WRITE_AUTHORITIES.set(
+        current | frozenset(authorities)
+    )
+    try:
+        yield
+    finally:
+        _STUDIO_CANONICAL_WRITE_AUTHORITIES.reset(token)
+
+
+def _studio_write_is_authorized(authority: str) -> bool:
+    return authority in _STUDIO_CANONICAL_WRITE_AUTHORITIES.get()
 
 
 def _stable_constraints(prefix: str) -> list[models.BaseConstraint]:
@@ -257,11 +288,61 @@ class Project(StableVersionedModel):
 
 
 class WorkspaceQuerySet(models.QuerySet):
+    def bulk_create(
+        self,
+        objs: Any,
+        batch_size: int | None = None,
+        ignore_conflicts: bool = False,
+        update_conflicts: bool = False,
+        update_fields: Any = None,
+        unique_fields: Any = None,
+    ) -> Any:
+        objects = list(objs)
+        if ignore_conflicts or update_conflicts:
+            raise ValidationError(
+                "Workspace bulk inserts cannot ignore or rewrite identity conflicts."
+            )
+        # full_clean() re-fetches the persisted definition, so a stale caller
+        # object cannot hide a DRAFT, cross-project pin, or checksum drift.
+        with transaction.atomic(using=self.db):
+            for obj in objects:
+                obj.full_clean()
+            return super().bulk_create(
+                objects,
+                batch_size=batch_size,
+                ignore_conflicts=False,
+                update_conflicts=False,
+                update_fields=update_fields,
+                unique_fields=unique_fields,
+            )
+
     def update(self, **kwargs: Any) -> int:
-        protected = {"definition_version", "definition_version_id", "definition_manifest_hash"}
+        protected = {
+            "project",
+            "project_id",
+            "definition_version",
+            "definition_version_id",
+            "definition_manifest_hash",
+        }
         if protected.intersection(kwargs):
-            raise ValidationError("A workspace definition pin is immutable.")
+            raise ValidationError("A workspace project/definition pin is immutable.")
         return super().update(**kwargs)
+
+    def bulk_update(
+        self,
+        objs: Any,
+        fields: Any,
+        batch_size: int | None = None,
+    ) -> int:
+        if {
+            "project",
+            "project_id",
+            "definition_version",
+            "definition_version_id",
+            "definition_manifest_hash",
+        }.intersection(fields):
+            raise ValidationError("A workspace project/definition pin is immutable.")
+        return super().bulk_update(objs, fields, batch_size=batch_size)
 
 
 class WorkspaceManager(models.Manager.from_queryset(WorkspaceQuerySet)):
@@ -293,6 +374,7 @@ class ProjectWorkspace(StableVersionedModel):
 
     class Meta:
         ordering = ("project__code", "code")
+        base_manager_name = "objects"
         constraints = [
             *_stable_constraints("domain_workspace"),
             models.UniqueConstraint(
@@ -354,9 +436,70 @@ class ProjectWorkspace(StableVersionedModel):
 class ProjectDefinitionQuerySet(models.QuerySet):
     """Force lifecycle mutations through the validation/publication services."""
 
+    def bulk_create(
+        self,
+        objs: Any,
+        batch_size: int | None = None,
+        ignore_conflicts: bool = False,
+        update_conflicts: bool = False,
+        update_fields: Any = None,
+        unique_fields: Any = None,
+    ) -> Any:
+        from .services.project_definitions import (
+            identify_typed_project_definition_manifest,
+        )
+
+        objects = list(objs)
+        if ignore_conflicts or update_conflicts:
+            raise ValidationError(
+                "Definition bulk inserts cannot ignore or rewrite identity conflicts."
+            )
+        with transaction.atomic(using=self.db):
+            for obj in objects:
+                if identify_typed_project_definition_manifest(obj.manifest):
+                    raise ValidationError(
+                        "Typed definition drafts require the canonical Studio draft service."
+                    )
+                if obj.publication_status != PublicationStatus.DRAFT:
+                    raise ValidationError(
+                        "Definition bulk inserts may create DRAFT records only."
+                    )
+                obj.full_clean()
+            return super().bulk_create(
+                objects,
+                batch_size=batch_size,
+                ignore_conflicts=False,
+                update_conflicts=False,
+                update_fields=update_fields,
+                unique_fields=unique_fields,
+            )
+
     def update(self, **kwargs: Any) -> int:
         if set(kwargs) <= {"is_current"} and kwargs.get("is_current") is False:
+            from .services.project_definitions import (
+                identify_typed_project_definition_manifest,
+            )
+
+            contains_typed_definition = any(
+                identify_typed_project_definition_manifest(manifest)
+                for manifest in self.values_list("manifest", flat=True)
+            )
+            if (
+                contains_typed_definition
+                and not _studio_write_is_authorized("definition")
+            ):
+                raise ValidationError(
+                    "Typed definition lifecycle updates require the canonical Studio service."
+                )
             return super().update(**kwargs)
+        raise ValidationError("Definition lifecycle updates require the publication service.")
+
+    def bulk_update(
+        self,
+        objs: Any,
+        fields: Any,
+        batch_size: int | None = None,
+    ) -> int:
         raise ValidationError("Definition lifecycle updates require the publication service.")
 
     def delete(self) -> tuple[int, dict[str, int]]:
@@ -409,6 +552,15 @@ class ProjectDefinitionVersion(StableVersionedModel):
 
     class Meta:
         ordering = ("project__code", "version")
+        base_manager_name = "objects"
+        permissions = (
+            ("studio_read_definition", "Can read Studio project definitions"),
+            ("studio_create_definition_draft", "Can create Studio definition drafts"),
+            ("studio_clone_definition_draft", "Can clone Studio definition drafts"),
+            ("studio_save_definition_draft", "Can save Studio definition drafts"),
+            ("studio_validate_definition", "Can validate Studio project definitions"),
+            ("studio_publish_definition", "Can publish Studio project definitions"),
+        )
         constraints = [
             *_stable_constraints("domain_definition_version"),
             models.UniqueConstraint(
@@ -518,9 +670,25 @@ class ProjectDefinitionVersion(StableVersionedModel):
             raise ValidationError(errors)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
-        self.full_clean()
+        from .services.project_definitions import (
+            identify_typed_project_definition_manifest,
+        )
+
+        previous = None
         if self.pk:
             previous = ProjectDefinitionVersion.objects.filter(pk=self.pk).first()
+        is_typed_runtime_write = identify_typed_project_definition_manifest(
+            self.manifest
+        ) or (
+            previous is not None
+            and identify_typed_project_definition_manifest(previous.manifest)
+        )
+        if is_typed_runtime_write and not _studio_write_is_authorized("definition"):
+            raise ValidationError(
+                "Typed definition writes require the canonical Studio service."
+            )
+        self.full_clean()
+        if previous is not None:
             allowed_transitions = {
                 PublicationStatus.DRAFT: {
                     PublicationStatus.DRAFT,
@@ -546,7 +714,7 @@ class ProjectDefinitionVersion(StableVersionedModel):
                         )
                     }
                 )
-            if previous is not None and previous.publication_status in {
+            if previous.publication_status in {
                 PublicationStatus.VALIDATED,
                 PublicationStatus.PUBLISHED,
                 PublicationStatus.RETIRED,
@@ -583,7 +751,52 @@ class ProjectDefinitionVersion(StableVersionedModel):
 
 
 class PublicationQuerySet(models.QuerySet):
+    def bulk_create(
+        self,
+        objs: Any,
+        batch_size: int | None = None,
+        ignore_conflicts: bool = False,
+        update_conflicts: bool = False,
+        update_fields: Any = None,
+        unique_fields: Any = None,
+    ) -> Any:
+        from .services.project_definitions import (
+            identify_typed_project_definition_manifest,
+        )
+
+        objects = list(objs)
+        if ignore_conflicts or update_conflicts:
+            raise ValidationError(
+                "Publication bulk inserts cannot ignore or rewrite identity conflicts."
+            )
+        with transaction.atomic(using=self.db):
+            for obj in objects:
+                persisted_manifest = ProjectDefinitionVersion.objects.filter(
+                    pk=obj.definition_version_id
+                ).values_list("manifest", flat=True).first()
+                if identify_typed_project_definition_manifest(persisted_manifest):
+                    raise ValidationError(
+                        "Typed publications require the canonical Studio publication service."
+                    )
+                obj.full_clean()
+            return super().bulk_create(
+                objects,
+                batch_size=batch_size,
+                ignore_conflicts=False,
+                update_conflicts=False,
+                update_fields=update_fields,
+                unique_fields=unique_fields,
+            )
+
     def update(self, **kwargs: Any) -> int:
+        raise ValidationError("Publication records are append-only.")
+
+    def bulk_update(
+        self,
+        objs: Any,
+        fields: Any,
+        batch_size: int | None = None,
+    ) -> int:
         raise ValidationError("Publication records are append-only.")
 
     def delete(self) -> tuple[int, dict[str, int]]:
@@ -609,6 +822,13 @@ class ProjectPublication(StableVersionedModel):
         on_delete=models.RESTRICT,
         related_name="publications",
     )
+    initial_workspace = models.OneToOneField(
+        ProjectWorkspace,
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="initial_publication",
+    )
     locale = models.CharField(max_length=16, validators=[LOCALE_VALIDATOR])
     actor_identifier = models.CharField(max_length=255, blank=True)
     validation_result = models.JSONField(default=dict, blank=True)
@@ -616,6 +836,7 @@ class ProjectPublication(StableVersionedModel):
 
     class Meta:
         ordering = ("project__code", "-published_at")
+        base_manager_name = "objects"
         constraints = [
             *_stable_constraints("domain_publication"),
             models.UniqueConstraint(
@@ -634,6 +855,10 @@ class ProjectPublication(StableVersionedModel):
 
     def clean(self) -> None:
         super().clean()
+        from .services.project_definitions import (
+            identify_typed_project_definition_manifest,
+        )
+
         definition = ProjectDefinitionVersion.objects.filter(
             pk=self.definition_version_id
         ).first()
@@ -648,10 +873,64 @@ class ProjectPublication(StableVersionedModel):
             errors["actor_identifier"] = "Publication actor is required."
         if self.validation_result.get("valid") is not True:
             errors["validation_result"] = "Publication requires a successful validation result."
+        if (
+            identify_typed_project_definition_manifest(definition.manifest)
+            and ProjectPublication.objects.filter(
+                project_id=self.project_id,
+                definition_version_id=self.definition_version_id,
+            )
+            .exclude(pk=self.pk)
+            .exists()
+        ):
+            errors["definition_version"] = (
+                "A typed definition has exactly one canonical publication receipt."
+            )
+        if self.initial_workspace_id:
+            workspace = ProjectWorkspace.objects.filter(
+                pk=self.initial_workspace_id
+            ).first()
+            if workspace is not None:
+                if workspace.project_id != self.project_id:
+                    errors["initial_workspace"] = (
+                        "Initial workspace and publication projects differ."
+                    )
+                elif workspace.definition_version_id != self.definition_version_id:
+                    errors["initial_workspace"] = (
+                        "Initial workspace must pin the published definition."
+                    )
+                elif workspace.definition_manifest_hash != definition.manifest_hash:
+                    errors["initial_workspace"] = (
+                        "Initial workspace must pin the exact published manifest hash."
+                    )
+            if (
+                ProjectPublication.objects.filter(
+                    project_id=self.project_id,
+                    initial_workspace_id__isnull=False,
+                )
+                .exclude(pk=self.pk)
+                .exists()
+            ):
+                errors["initial_workspace"] = (
+                    "A project has exactly one initial-workspace publication receipt."
+                )
         if errors:
             raise ValidationError(errors)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
+        from .services.project_definitions import (
+            identify_typed_project_definition_manifest,
+        )
+
+        persisted_manifest = ProjectDefinitionVersion.objects.filter(
+            pk=self.definition_version_id
+        ).values_list("manifest", flat=True).first()
+        if (
+            identify_typed_project_definition_manifest(persisted_manifest)
+            and not _studio_write_is_authorized("publication")
+        ):
+            raise ValidationError(
+                "Typed publication writes require the canonical Studio service."
+            )
         self.full_clean()
         if self.pk and ProjectPublication.objects.filter(pk=self.pk).exists():
             previous = ProjectPublication.objects.get(pk=self.pk)
@@ -3214,7 +3493,7 @@ class HelpTopic(ImmutableCapturedModel):
         constraints = [
             *_stable_constraints("domain_help_topic"),
             models.UniqueConstraint(
-                fields=("stable_key", "locale", "version"),
+                fields=("application_scope", "stable_key", "locale", "version"),
                 name="domain_help_exact_version_uniq",
             ),
             models.CheckConstraint(
@@ -3252,7 +3531,13 @@ class UIHelpBinding(ImmutableCapturedModel):
     workspace = models.ForeignKey(
         ProjectWorkspace,
         on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
         related_name="help_bindings",
+    )
+    application_scope = models.CharField(
+        max_length=16,
+        choices=HelpApplicationScope.choices,
     )
     ui_key = models.CharField(max_length=255, validators=[CODE_VALIDATOR])
     locale = models.CharField(max_length=16, validators=[LOCALE_VALIDATOR])
@@ -3264,13 +3549,48 @@ class UIHelpBinding(ImmutableCapturedModel):
 
     class Meta:
         ordering = ("workspace__code", "ui_key", "locale", "version")
+        base_manager_name = "objects"
         constraints = [
             *_stable_constraints("domain_ui_help_binding"),
             models.UniqueConstraint(
-                fields=("workspace", "ui_key", "locale", "version"),
-                name="domain_ui_help_binding_uniq",
+                fields=("workspace", "application_scope", "ui_key", "locale", "version"),
+                condition=Q(workspace__isnull=False),
+                name="domain_ui_help_ws_uniq",
+            ),
+            models.UniqueConstraint(
+                fields=("application_scope", "ui_key", "locale", "version"),
+                condition=Q(workspace__isnull=True),
+                name="domain_ui_help_global_uniq",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(workspace__isnull=False)
+                    | Q(application_scope=HelpApplicationScope.STUDIO)
+                ),
+                name="domain_ui_help_global_studio",
             ),
         ]
+        indexes = [
+            models.Index(
+                fields=("workspace", "application_scope", "ui_key", "locale", "version"),
+                name="domain_ui_help_ws_idx",
+            ),
+            models.Index(
+                fields=("application_scope", "ui_key", "locale", "version"),
+                name="domain_ui_help_global_idx",
+            ),
+        ]
+
+    def full_clean(self, *args: Any, **kwargs: Any) -> None:
+        # Keep existing workspace-bound constructors source-compatible. New
+        # pre-workspace bindings must always declare STUDIO explicitly.
+        if self.workspace_id is not None and not self.application_scope:
+            topic_scope = HelpTopic.objects.filter(pk=self.help_topic_id).values_list(
+                "application_scope", flat=True
+            ).first()
+            if topic_scope:
+                self.application_scope = topic_scope
+        super().full_clean(*args, **kwargs)
 
     def clean(self) -> None:
         super().clean()
@@ -3280,6 +3600,12 @@ class UIHelpBinding(ImmutableCapturedModel):
         errors: dict[str, str] = {}
         if topic.locale != self.locale:
             errors["locale"] = "Binding locale must match the exact HelpTopic version."
+        if topic.application_scope != self.application_scope:
+            errors["application_scope"] = (
+                "Binding application scope must match the exact HelpTopic version."
+            )
+        if topic.version != self.version:
+            errors["version"] = "Binding version must match the exact HelpTopic version."
         if topic.publication_status != PublicationStatus.PUBLISHED:
             errors["help_topic"] = "Bindings require an exact published HelpTopic version."
         if errors:
@@ -3719,10 +4045,29 @@ class ChatCitation(ImmutableCapturedModel):
 class ImportRun(ImmutableCapturedModel):
     """Append-only receipt for preview/commit/reject; never an overwrite instruction."""
 
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.RESTRICT,
+        related_name="import_runs",
+    )
     workspace = models.ForeignKey(
         ProjectWorkspace,
         on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
         related_name="import_runs",
+    )
+    definition_version = models.ForeignKey(
+        ProjectDefinitionVersion,
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="import_runs",
+    )
+    package_scope = models.CharField(
+        max_length=24,
+        choices=ImportPackageScope.choices,
+        default=ImportPackageScope.WORKSPACE,
     )
     target_experiment = models.ForeignKey(
         Experiment,
@@ -3762,12 +4107,19 @@ class ImportRun(ImmutableCapturedModel):
     committed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        ordering = ("workspace__code", "-created_at")
+        ordering = ("project__code", "package_scope", "-created_at")
+        base_manager_name = "objects"
         constraints = [
             *_stable_constraints("domain_import_run"),
             models.UniqueConstraint(
                 fields=("workspace", "code"),
-                name="domain_import_run_code_uniq",
+                condition=Q(package_scope=ImportPackageScope.WORKSPACE),
+                name="domain_import_run_ws_code_uniq",
+            ),
+            models.UniqueConstraint(
+                fields=("project", "code"),
+                condition=Q(package_scope=ImportPackageScope.PROJECT_DEFINITION),
+                name="domain_import_run_def_code_uniq",
             ),
             models.CheckConstraint(
                 condition=(
@@ -3786,7 +4138,47 @@ class ImportRun(ImmutableCapturedModel):
                 ),
                 name="domain_import_target_lane_pair",
             ),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        package_scope=ImportPackageScope.WORKSPACE,
+                        workspace__isnull=False,
+                        definition_version__isnull=False,
+                    )
+                    | Q(
+                        package_scope=ImportPackageScope.PROJECT_DEFINITION,
+                        workspace__isnull=True,
+                        target_experiment__isnull=True,
+                        target_assessment_set__isnull=True,
+                    )
+                    & (
+                        ~Q(status=ImportRunStatus.COMMITTED)
+                        | Q(definition_version__isnull=False)
+                    )
+                ),
+                name="domain_import_scope_boundary",
+            ),
         ]
+        indexes = [
+            models.Index(
+                fields=("project", "package_scope", "created_at"),
+                name="domain_import_scope_time_idx",
+            ),
+        ]
+
+    def full_clean(self, *args: Any, **kwargs: Any) -> None:
+        if self.workspace_id is not None:
+            workspace_identity = ProjectWorkspace.objects.filter(
+                pk=self.workspace_id
+            ).values("project_id", "definition_version_id").first()
+            if workspace_identity is not None:
+                if self.project_id is None:
+                    self.project_id = workspace_identity["project_id"]
+                if self.definition_version_id is None:
+                    self.definition_version_id = workspace_identity[
+                        "definition_version_id"
+                    ]
+        super().full_clean(*args, **kwargs)
 
     def clean(self) -> None:
         super().clean()
@@ -3807,7 +4199,46 @@ class ImportRun(ImmutableCapturedModel):
             errors["intended_changes"] = "Intended changes must be a JSON object."
         if (self.target_experiment_id is None) != (self.target_assessment_set_id is None):
             errors["target_experiment"] = "Target Experiment and AssessmentSet are one lane."
-        if self.target_experiment_id:
+        workspace = None
+        if self.workspace_id:
+            workspace = ProjectWorkspace.objects.filter(pk=self.workspace_id).first()
+        definition = None
+        if self.definition_version_id:
+            definition = ProjectDefinitionVersion.objects.filter(
+                pk=self.definition_version_id
+            ).first()
+        if self.package_scope == ImportPackageScope.WORKSPACE:
+            if workspace is None:
+                errors["workspace"] = "Workspace package receipts require a workspace."
+            else:
+                if workspace.project_id != self.project_id:
+                    errors["project"] = "Import receipt and workspace projects differ."
+                if workspace.definition_version_id != self.definition_version_id:
+                    errors["definition_version"] = (
+                        "Workspace receipt must pin the workspace definition."
+                    )
+            if definition is None:
+                errors["definition_version"] = (
+                    "Workspace package receipts require an exact definition."
+                )
+        elif self.package_scope == ImportPackageScope.PROJECT_DEFINITION:
+            if self.workspace_id is not None:
+                errors["workspace"] = (
+                    "Project-definition receipts are not workspace-scoped."
+                )
+            if self.target_experiment_id or self.target_assessment_set_id:
+                errors["target_experiment"] = (
+                    "Project-definition receipts cannot select a workspace target lane."
+                )
+            if self.status == ImportRunStatus.COMMITTED and definition is None:
+                errors["definition_version"] = (
+                    "Committed project-definition receipts require an exact definition."
+                )
+        if definition is not None and definition.project_id != self.project_id:
+            errors["definition_version"] = (
+                "Import receipt and definition projects differ."
+            )
+        if self.target_experiment_id and self.package_scope == ImportPackageScope.WORKSPACE:
             experiment = Experiment.objects.filter(pk=self.target_experiment_id).first()
             if experiment is not None:
                 if experiment.workspace_id != self.workspace_id:
@@ -4153,7 +4584,21 @@ class AuditEvent(ImmutableCapturedModel):
     workspace = models.ForeignKey(
         ProjectWorkspace,
         on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
         related_name="audit_events",
+    )
+    definition_version = models.ForeignKey(
+        ProjectDefinitionVersion,
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="audit_events",
+    )
+    scope = models.CharField(
+        max_length=16,
+        choices=AuditScope.choices,
+        default=AuditScope.WORKSPACE,
     )
     assessment_set = models.ForeignKey(
         AssessmentSet,
@@ -4180,11 +4625,35 @@ class AuditEvent(ImmutableCapturedModel):
 
     class Meta:
         ordering = ("-occurred_at", "code")
+        base_manager_name = "objects"
         constraints = [
             *_stable_constraints("domain_audit_event"),
             models.UniqueConstraint(
                 fields=("workspace", "code"),
-                name="domain_audit_workspace_code_uniq",
+                condition=Q(scope=AuditScope.WORKSPACE),
+                name="domain_audit_ws_code_uniq",
+            ),
+            models.UniqueConstraint(
+                fields=("definition_version", "code"),
+                condition=Q(scope=AuditScope.DEFINITION),
+                name="domain_audit_def_code_uniq",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        scope=AuditScope.WORKSPACE,
+                        workspace__isnull=False,
+                        definition_version__isnull=True,
+                    )
+                    | Q(
+                        scope=AuditScope.DEFINITION,
+                        workspace__isnull=True,
+                        definition_version__isnull=False,
+                        assessment_set__isnull=True,
+                        parameter_value__isnull=True,
+                    )
+                ),
+                name="domain_audit_scope_boundary",
             ),
         ]
         indexes = [
@@ -4196,24 +4665,52 @@ class AuditEvent(ImmutableCapturedModel):
                 fields=("workspace", "occurred_at"),
                 name="domain_audit_time_idx",
             ),
+            models.Index(
+                fields=("definition_version", "entity_type", "entity_id"),
+                name="domain_audit_def_entity_idx",
+            ),
+            models.Index(
+                fields=("definition_version", "occurred_at"),
+                name="domain_audit_def_time_idx",
+            ),
         ]
 
     def full_clean(self, *args: Any, **kwargs: Any) -> None:
-        _hydrate_legacy_default_workspace(
-            self,
-            "assessment_set",
-            "parameter_value",
-        )
+        if self.scope == AuditScope.WORKSPACE and self.definition_version_id is None:
+            _hydrate_legacy_default_workspace(
+                self,
+                "assessment_set",
+                "parameter_value",
+            )
         super().full_clean(*args, **kwargs)
 
     def clean(self) -> None:
         super().clean()
         errors: dict[str, str] = {}
-        workspace_project_id = ProjectWorkspace.objects.filter(
-            pk=self.workspace_id
-        ).values_list("project_id", flat=True).first()
-        if workspace_project_id != self.project_id:
-            errors["workspace"] = "The workspace belongs to a different project."
+        if self.scope == AuditScope.DEFINITION:
+            definition_project_id = ProjectDefinitionVersion.objects.filter(
+                pk=self.definition_version_id
+            ).values_list("project_id", flat=True).first()
+            if definition_project_id != self.project_id:
+                errors["definition_version"] = (
+                    "The definition belongs to a different project."
+                )
+            if self.workspace_id is not None:
+                errors["workspace"] = "Definition audit events cannot borrow a workspace."
+            if self.assessment_set_id is not None or self.parameter_value_id is not None:
+                errors["assessment_set"] = (
+                    "Definition audit events cannot reference workspace assessment data."
+                )
+        elif self.scope == AuditScope.WORKSPACE:
+            workspace_project_id = ProjectWorkspace.objects.filter(
+                pk=self.workspace_id
+            ).values_list("project_id", flat=True).first()
+            if workspace_project_id != self.project_id:
+                errors["workspace"] = "The workspace belongs to a different project."
+            if self.definition_version_id is not None:
+                errors["definition_version"] = (
+                    "Workspace audit events cannot use definition scope."
+                )
         _validate_related_project(
             project_id=self.project_id,
             related_model=AssessmentSet,
@@ -4221,7 +4718,7 @@ class AuditEvent(ImmutableCapturedModel):
             field_name="assessment_set",
             errors=errors,
         )
-        if self.assessment_set_id:
+        if self.assessment_set_id and self.workspace_id:
             _validate_related_workspace(
                 workspace_id=self.workspace_id,
                 related_model=AssessmentSet,
@@ -4229,7 +4726,7 @@ class AuditEvent(ImmutableCapturedModel):
                 field_name="assessment_set",
                 errors=errors,
             )
-        if self.parameter_value_id:
+        if self.parameter_value_id and self.workspace_id:
             _validate_related_workspace(
                 workspace_id=self.workspace_id,
                 related_model=ParameterValue,

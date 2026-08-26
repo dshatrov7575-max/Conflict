@@ -113,27 +113,49 @@ def sanitized_help_checksum(sanitized_html: str) -> str:
 
 def resolve_help_topic(
     *,
-    workspace: Any,
+    application_scope: str,
     ui_key: str,
     locale: str,
     version: str,
+    workspace: Any | None = None,
 ) -> Any:
-    """Resolve one stable UI key to one exact published locale/version topic."""
+    """Resolve one exact binding without locale, version, or scope fallback."""
 
+    from domain.enums import HelpApplicationScope
     from domain.models import UIHelpBinding
+
+    if workspace is None and application_scope != HelpApplicationScope.STUDIO:
+        raise HelpTopicResolutionError(
+            "Pre-workspace HelpTopic resolution is available only for STUDIO."
+        )
+
+    lookup = {
+        "workspace": workspace,
+        "application_scope": application_scope,
+        "ui_key": ui_key,
+        "locale": locale,
+        "version": version,
+        "help_topic__application_scope": application_scope,
+        "help_topic__locale": locale,
+        "help_topic__version": version,
+        "help_topic__publication_status": "PUBLISHED",
+    }
 
     try:
         binding = UIHelpBinding.objects.select_related("help_topic").get(
-            workspace=workspace,
-            ui_key=ui_key,
-            locale=locale,
-            version=version,
-            help_topic__locale=locale,
-            help_topic__version=version,
-            help_topic__publication_status="PUBLISHED",
+            **lookup,
         )
     except UIHelpBinding.DoesNotExist as exc:
         raise HelpTopicResolutionError(
-            f"No published HelpTopic binding for {ui_key!r}/{locale!r}/{version!r}."
+            "No exact published HelpTopic binding for "
+            f"{application_scope!r}/{ui_key!r}/{locale!r}/{version!r}."
         ) from exc
-    return binding.help_topic
+    topic = binding.help_topic
+    if (
+        sanitize_help_html(topic.sanitized_html) != topic.sanitized_html
+        or sanitized_help_checksum(topic.sanitized_html) != topic.content_sha256
+    ):
+        raise HelpTopicResolutionError(
+            "The exact HelpTopic failed its canonical sanitization/checksum invariant."
+        )
+    return topic
