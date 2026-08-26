@@ -1,0 +1,243 @@
+{
+  "contract": "PROJECT_DEFINITION_MANIFEST_VECTORS_V1",
+  "schema_id": "https://conflictology.invalid/schemas/project-definition-manifest-1.0.0.schema.json",
+  "project": {
+    "id": "10000000-0000-4000-8000-000000000001",
+    "code": "PROJECT-STUDIO-V1",
+    "version": "1.0.0"
+  },
+  "vectors": [
+    {
+      "name": "valid_3x4",
+      "expected_sha256": "6d944ace31ec82f04c4934075a08f97247f705e653a60e95b293878f8f92746a",
+      "manifest": {
+        "$schema": "https://conflictology.invalid/schemas/project-definition-manifest-1.0.0.schema.json",
+        "format": "conflict-analysis-project-definition",
+        "format_version": "1.0.0",
+        "project": {
+          "id": "10000000-0000-4000-8000-000000000001",
+          "code": "PROJECT-STUDIO-V1",
+          "version": "1.0.0",
+          "name": "Studio contract fixture",
+          "description": "Three actors by four analytical elements.",
+          "default_locale": "en",
+          "metadata": {"fixture": "3x4"}
+        },
+        "policies": {
+          "structure_lock": {
+            "is_structure_locked": false,
+            "ordinary_user_can_edit_structure": false,
+            "studio_can_edit_structure": true,
+            "reason": "Draft fixture"
+          }
+        },
+        "actors": [
+          {
+            "id": "11000000-0000-4000-8000-000000000001",
+            "code": "ACTOR-001",
+            "version": "1.0.0",
+            "label": "Actor one",
+            "description": "First actor.",
+            "actor_type": "GROUP",
+            "order": 0,
+            "parent_id": null
+          },
+          {
+            "id": "11000000-0000-4000-8000-000000000002",
+            "code": "ACTOR-002",
+            "version": "1.0.0",
+            "label": "Actor two",
+            "description": "Second actor.",
+            "actor_type": "ORGANIZATION",
+            "order": 1,
+            "parent_id": null
+          },
+          {
+            "id": "11000000-0000-4000-8000-000000000003",
+            "code": "ACTOR-003",
+            "version": "1.0.0",
+            "label": "Actor three",
+            "description": "Third actor.",
+            "actor_type": "INSTITUTION",
+            "order": 2,
+            "parent_id": null
+          }
+        ],
+        "analytical_elements": [
+          {
+            "id": "12000000-0000-4000-8000-000000000001",
+            "code": "ELEMENT-001",
+            "version": "1.0.0",
+            "label": "Issue",
+            "description": "Issue description.",
+            "element_type": "CONFLICT_ISSUE",
+            "reference_statement": "The actor has an explicit relation to the issue.",
+            "order": 0,
+            "parent_id": null
+          },
+          {
+            "id": "12000000-0000-4000-8000-000000000002",
+            "code": "ELEMENT-002",
+            "version": "1.0.0",
+            "label": "Grievance",
+            "description": "Grievance description.",
+            "element_type": "GRIEVANCE",
+            "reference_statement": "The grievance is stated without a calculated score.",
+            "order": 1,
+            "parent_id": null
+          },
+          {
+            "id": "12000000-0000-4000-8000-000000000003",
+            "code": "ELEMENT-003",
+            "version": "1.0.0",
+            "label": "Driver",
+            "description": "Driver description.",
+            "element_type": "STRUCTURAL_DRIVER",
+            "reference_statement": "The structural driver is recorded as a definition.",
+            "order": 2,
+            "parent_id": null
+          },
+          {
+            "id": "12000000-0000-4000-8000-000000000004",
+            "code": "ELEMENT-004",
+            "version": "1.0.0",
+            "label": "Peace factor",
+            "description": "Peace factor description.",
+            "element_type": "PEACE_FACTOR",
+            "reference_statement": "The peace factor is available for independent assessment.",
+            "order": 3,
+            "parent_id": null
+          }
+        ],
+        "actor_element_roles": [
+          {
+            "id": "13000000-0000-4000-8000-000000000001",
+            "code": "ROLE-001",
+            "version": "1.0.0",
+            "actor_id": "11000000-0000-4000-8000-000000000001",
+            "element_id": "12000000-0000-4000-8000-000000000001",
+            "role": "PRIMARY",
+            "note": "Fixture cross-reference.",
+            "order": 0
+          }
+        ],
+        "parameter_definitions": [
+          {
+            "id": "14000000-0000-4000-8000-000000000001",
+            "code": "PARAMETER-001",
+            "version": "1.0.0",
+            "name": "Independent observation",
+            "description": "A recorded value with explicit missing-value statuses.",
+            "target_type": "ACTOR_ELEMENT_ASSESSMENT",
+            "value_type": "DECIMAL",
+            "scale": {"minimum": "-10", "maximum": "10", "step": "0.5"},
+            "allowed_statuses": ["UNKNOWN", "PROVISIONAL", "CONFIRMED"],
+            "applicability": {
+              "actor_ids": ["11000000-0000-4000-8000-000000000001"],
+              "analytical_element_ids": ["12000000-0000-4000-8000-000000000001"],
+              "actor_element_role_ids": ["13000000-0000-4000-8000-000000000001"]
+            },
+            "reference_statement": "The parameter records an attributable independent observation."
+          }
+        ],
+        "help_bindings": [
+          {
+            "id": "15000000-0000-4000-8000-000000000001",
+            "code": "HELP-001",
+            "version": "1.0.0",
+            "application_scope": "STUDIO",
+            "ui_key": "studio.welcome",
+            "locale": "en",
+            "topic_stable_key": "studio.welcome",
+            "topic_version": "1.0.0",
+            "topic_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      }
+    },
+    {
+      "name": "valid_6x8",
+      "expected_sha256": "ccd6852b8d5e8cb5145d5e352902290f042f0527b260cd1783c9ef7d031f1061",
+      "manifest": {
+        "$schema": "https://conflictology.invalid/schemas/project-definition-manifest-1.0.0.schema.json",
+        "format": "conflict-analysis-project-definition",
+        "format_version": "1.0.0",
+        "project": {
+          "id": "10000000-0000-4000-8000-000000000001",
+          "code": "PROJECT-STUDIO-V1",
+          "version": "1.0.0",
+          "name": "Studio cardinality fixture",
+          "description": "Six actors by eight analytical elements.",
+          "default_locale": "en",
+          "metadata": {"fixture": "6x8"}
+        },
+        "policies": {
+          "structure_lock": {
+            "is_structure_locked": false,
+            "ordinary_user_can_edit_structure": false,
+            "studio_can_edit_structure": true,
+            "reason": "Cardinality fixture"
+          }
+        },
+        "actors": [
+          {"id": "11000000-0000-4000-8000-000000000001", "code": "ACTOR-001", "version": "1.0.0", "label": "Actor 1", "description": "", "actor_type": "GROUP", "order": 0, "parent_id": null},
+          {"id": "11000000-0000-4000-8000-000000000002", "code": "ACTOR-002", "version": "1.0.0", "label": "Actor 2", "description": "", "actor_type": "GROUP", "order": 1, "parent_id": null},
+          {"id": "11000000-0000-4000-8000-000000000003", "code": "ACTOR-003", "version": "1.0.0", "label": "Actor 3", "description": "", "actor_type": "GROUP", "order": 2, "parent_id": null},
+          {"id": "11000000-0000-4000-8000-000000000004", "code": "ACTOR-004", "version": "1.0.0", "label": "Actor 4", "description": "", "actor_type": "GROUP", "order": 3, "parent_id": null},
+          {"id": "11000000-0000-4000-8000-000000000005", "code": "ACTOR-005", "version": "1.0.0", "label": "Actor 5", "description": "", "actor_type": "GROUP", "order": 4, "parent_id": null},
+          {"id": "11000000-0000-4000-8000-000000000006", "code": "ACTOR-006", "version": "1.0.0", "label": "Actor 6", "description": "", "actor_type": "GROUP", "order": 5, "parent_id": null}
+        ],
+        "analytical_elements": [
+          {"id": "12000000-0000-4000-8000-000000000001", "code": "ELEMENT-001", "version": "1.0.0", "label": "Element 1", "description": "", "element_type": "CONFLICT_ISSUE", "reference_statement": "Reference 1", "order": 0, "parent_id": null},
+          {"id": "12000000-0000-4000-8000-000000000002", "code": "ELEMENT-002", "version": "1.0.0", "label": "Element 2", "description": "", "element_type": "GRIEVANCE", "reference_statement": "Reference 2", "order": 1, "parent_id": null},
+          {"id": "12000000-0000-4000-8000-000000000003", "code": "ELEMENT-003", "version": "1.0.0", "label": "Element 3", "description": "", "element_type": "STRUCTURAL_DRIVER", "reference_statement": "Reference 3", "order": 2, "parent_id": null},
+          {"id": "12000000-0000-4000-8000-000000000004", "code": "ELEMENT-004", "version": "1.0.0", "label": "Element 4", "description": "", "element_type": "PROXIMATE_DRIVER", "reference_statement": "Reference 4", "order": 3, "parent_id": null},
+          {"id": "12000000-0000-4000-8000-000000000005", "code": "ELEMENT-005", "version": "1.0.0", "label": "Element 5", "description": "", "element_type": "TRIGGER", "reference_statement": "Reference 5", "order": 4, "parent_id": null},
+          {"id": "12000000-0000-4000-8000-000000000006", "code": "ELEMENT-006", "version": "1.0.0", "label": "Element 6", "description": "", "element_type": "PROCESS", "reference_statement": "Reference 6", "order": 5, "parent_id": null},
+          {"id": "12000000-0000-4000-8000-000000000007", "code": "ELEMENT-007", "version": "1.0.0", "label": "Element 7", "description": "", "element_type": "CONSEQUENCE", "reference_statement": "Reference 7", "order": 6, "parent_id": null},
+          {"id": "12000000-0000-4000-8000-000000000008", "code": "ELEMENT-008", "version": "1.0.0", "label": "Element 8", "description": "", "element_type": "PEACE_FACTOR", "reference_statement": "Reference 8", "order": 7, "parent_id": null}
+        ],
+        "actor_element_roles": [],
+        "parameter_definitions": [],
+        "help_bindings": []
+      }
+    }
+  ],
+  "invalid_mutations": [
+    {
+      "name": "project-code-mismatch",
+      "vector": "valid_3x4",
+      "path": ["project", "code"],
+      "value": "OTHER-PROJECT",
+      "expected_codes": ["PROJECT_IDENTITY_MISMATCH"]
+    },
+    {
+      "name": "duplicate-stable-id",
+      "vector": "valid_3x4",
+      "path": ["actors", 1, "id"],
+      "value": "11000000-0000-4000-8000-000000000001",
+      "expected_codes": ["ID_DUPLICATE"]
+    },
+    {
+      "name": "broken-parent-reference",
+      "vector": "valid_3x4",
+      "path": ["actors", 1, "parent_id"],
+      "value": "11000000-0000-4000-8000-000000000099",
+      "expected_codes": ["BROKEN_PARENT_REFERENCE"]
+    },
+    {
+      "name": "broken-role-reference",
+      "vector": "valid_3x4",
+      "path": ["actor_element_roles", 0, "actor_id"],
+      "value": "11000000-0000-4000-8000-000000000099",
+      "expected_codes": ["BROKEN_CROSS_REFERENCE"]
+    },
+    {
+      "name": "invalid-scale-order",
+      "vector": "valid_3x4",
+      "path": ["parameter_definitions", 0, "scale", "minimum"],
+      "value": "11",
+      "expected_codes": ["SCALE_INVALID"]
+    }
+  ]
+}

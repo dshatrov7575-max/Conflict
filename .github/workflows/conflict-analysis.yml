@@ -10,6 +10,7 @@ on:
       - main
       - codex/ca-i1-data-001
       - codex/ca-suite-i1-foundation
+      - codex/ca-suite-i1-foundation-studio-contract
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -68,6 +69,8 @@ jobs:
         run: |
           test "$(git rev-parse f940a91a92658285063802ee1a43bf84360fc013^{tree})" = "1125b01a90da3ea324e661d729a845c58febb8e2"
           git merge-base --is-ancestor f940a91a92658285063802ee1a43bf84360fc013 HEAD
+          test "$(git rev-parse eaee9227c5c43ea18ef3c3ea7a2b9d70fb5910bf^{tree})" = "f0a4d67585fc599102acf448df649bd5d70d8356"
+          git merge-base --is-ancestor eaee9227c5c43ea18ef3c3ea7a2b9d70fb5910bf HEAD
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -130,6 +133,22 @@ jobs:
           domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_import_export_import_round_trip_preserves_exact_document_version_identity
           domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_atomic_commit_rolls_back_then_records_complete_append_only_receipt_without_overwrite
           domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_import_attempt_orchestrator_records_rejection_after_rollback_and_allows_exact_retry
+
+      - name: Run Foundation Studio contract addendum gates
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: >-
+          python -m pytest
+          domain/tests/test_foundation_studio_manifest.py
+          domain/tests/test_foundation_studio_help_migrations.py
+          domain/tests/test_foundation_studio_bootstrap_auth.py
+          domain/tests/test_foundation_studio_package_21.py
 
       - name: Run PostgreSQL foundation and PR 21 regression suite
         env:

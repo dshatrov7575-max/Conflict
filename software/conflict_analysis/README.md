@@ -1,5 +1,20 @@
 # Conflict Analysis
 
+## Foundation Studio contract addendum
+
+Production definition authoring uses the single persisted
+`ProjectDefinitionVersion.manifest` authority and the typed schema
+`project-definition-manifest-1.0.0`. Server-side services enforce DRAFT
+create/open/clone/save, computed validation, and atomic first publication. The
+first publication creates the exact initial workspace pin, versioned HelpTopic
+bindings, one `ProjectPublication`, and exclusive definition/workspace audits
+in one transaction. ADRs 0002–0005 define the typed manifest, authorization,
+bootstrap, versioned-help, and additive Foundation 2.1 package boundaries.
+
+No Studio-local structural tables, second publisher, caller-supplied
+`valid:true`, formula/Calculation Core, scalar Power, prediction, risk score,
+or recommendations are authorized by this boundary.
+
 ## Legacy package boundary
 
 `project-package-1.0.0` is retained for historical round trips only.

@@ -36,7 +36,7 @@ def _migrated_uuid(kind, *parts):
 
 class FoundationPR21UpgradeTests(TransactionTestCase):
     migrate_from = [("domain", "0001_initial")]
-    migrate_to = [("domain", "0012_xlsx_metadata_contract")]
+    migrate_to = [("domain", "0015_foundation_studio_contract_constraints")]
 
     def _restore_leaf_migrations(self):
         executor = MigrationExecutor(connection)
@@ -293,6 +293,10 @@ class FoundationPR21UpgradeTests(TransactionTestCase):
             publication.validation_result,
             {"valid": True, "source": "PR21_UPGRADE_COMPATIBILITY"},
         )
+        self.assertIsNone(
+            publication.initial_workspace_id,
+            "Historical publication receipts are preserved, not silently rewritten.",
+        )
         self.assertEqual(workspace.project_id, ids["project"])
         self.assertEqual(workspace.definition_version_id, ids["schema"])
         self.assertEqual(workspace.definition_manifest_hash, definition.manifest_hash)
@@ -455,6 +459,8 @@ class FoundationPR21UpgradeTests(TransactionTestCase):
         audit = AuditEvent.objects.get(pk=ids["audit"])
         self.assertEqual(audit.workspace_id, workspace.id)
         self.assertEqual(audit.parameter_value_id, ids["unknown_value"])
+        self.assertEqual(audit.scope, "WORKSPACE")
+        self.assertIsNone(audit.definition_version_id)
 
         counts_before_rerun = {
             "definitions": ProjectDefinitionVersion.objects.count(),

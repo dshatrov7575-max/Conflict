@@ -12,7 +12,7 @@ import copy
 import hashlib
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -24,12 +24,15 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from jsonschema import Draft202012Validator, FormatChecker
+from referencing import Registry, Resource
 
 from domain import models as domain_models
 
 
 FOUNDATION_PACKAGE_FORMAT = "conflict-analysis-foundation"
 FOUNDATION_PACKAGE_VERSION = "2.0.0"
+FOUNDATION_PACKAGE_VERSION_2_1 = "2.1.0"
+FOUNDATION_PACKAGE_SCOPES_2_1 = frozenset({"WORKSPACE", "PROJECT_DEFINITION"})
 HASH_ALGORITHM = "sha256"
 RAW_INPUT_KINDS = frozenset(
     {"PATH_BYTES", "BYTES", "TEXT", "CANONICAL_MAPPING"}
@@ -44,6 +47,16 @@ SCHEMA_PATH = (
     / "schemas"
     / "foundation-package-2.0.0.schema.json"
 )
+SCHEMA_PATH_2_1 = (
+    Path(__file__).resolve().parent
+    / "schemas"
+    / "foundation-package-2.1.0.schema.json"
+)
+DEFINITION_MANIFEST_SCHEMA_PATH = (
+    Path(__file__).resolve().parent
+    / "schemas"
+    / "project-definition-manifest-1.0.0.schema.json"
+)
 
 with SCHEMA_PATH.open(encoding="utf-8") as _schema_file:
     FOUNDATION_PACKAGE_JSON_SCHEMA = json.load(_schema_file)
@@ -52,6 +65,28 @@ _VALIDATOR = Draft202012Validator(
     FOUNDATION_PACKAGE_JSON_SCHEMA,
     format_checker=FormatChecker(),
 )
+
+
+def _load_foundation_2_1_validator() -> Draft202012Validator:
+    """Load the 2.1 schema with its bundled typed-manifest dependency."""
+
+    try:
+        with SCHEMA_PATH_2_1.open(encoding="utf-8") as schema_file:
+            schema = json.load(schema_file)
+        with DEFINITION_MANIFEST_SCHEMA_PATH.open(encoding="utf-8") as manifest_file:
+            manifest_schema = json.load(manifest_file)
+    except OSError as exc:
+        raise RuntimeError("Foundation 2.1 schemas are not installed.") from exc
+    Draft202012Validator.check_schema(manifest_schema)
+    Draft202012Validator.check_schema(schema)
+    registry = Registry().with_resource(
+        manifest_schema["$id"], Resource.from_contents(manifest_schema)
+    )
+    return Draft202012Validator(
+        schema,
+        format_checker=FormatChecker(),
+        registry=registry,
+    )
 
 ENTITY_SECTIONS = (
     "project_definition_versions",
@@ -244,6 +279,46 @@ class FoundationImportAttemptResult:
     status: str
     report: FoundationValidationReport
     receipt: FoundationImportReceipt | None
+
+
+@dataclass(frozen=True, slots=True)
+class Foundation21Preview:
+    """Non-mutating preflight for a Foundation 2.1 wrapper."""
+
+    valid: bool
+    package_scope: str
+    checksum: str
+    project_id: str
+    project_code: str
+    project_version: str
+    selected_definition_id: str
+    intended_action: str
+    errors: tuple[str, ...] = ()
+    _payload: Mapping[str, Any] = field(
+        default_factory=dict,
+        repr=False,
+        compare=False,
+    )
+    _workspace_preview: FoundationImportPreview | None = field(
+        default=None,
+        repr=False,
+        compare=False,
+    )
+
+    def payload_copy(self) -> dict[str, Any]:
+        return _deep_thaw(self._payload)
+
+
+@dataclass(frozen=True, slots=True)
+class Foundation21CommitResult:
+    """Immutable service result for one explicit 2.1 commit."""
+
+    package_scope: str
+    action: str
+    definition_id: str
+    workspace_id: str | None
+    receipt_id: str | None
+    checksum: str
 
 
 _ADAPTERS: dict[str, Adapter] = {}
@@ -1090,6 +1165,133 @@ def validate_foundation_package(package: Mapping[str, Any]) -> tuple[dict[str, A
         _reject("Package manifest, entity counts or SHA-256 checksum is invalid.")
     warnings = _validate_semantics(canonical)
     return canonical, warnings
+
+
+def _payload_without_manifest_2_1(package: Mapping[str, Any]) -> dict[str, Any]:
+    payload = copy.deepcopy(dict(package))
+    payload.pop("manifest", None)
+    return payload
+
+
+def _manifest_for_2_1(payload: Mapping[str, Any]) -> dict[str, str]:
+    return {
+        "hash_algorithm": HASH_ALGORITHM,
+        "payload_sha256": hashlib.sha256(
+            canonical_json(payload).encode("utf-8")
+        ).hexdigest(),
+    }
+
+
+def seal_foundation_package_2_1(package: Mapping[str, Any]) -> dict[str, Any]:
+    """Seal one explicit 2.1 scope without altering a nested 2.0 package."""
+
+    payload = _payload_without_manifest_2_1(package)
+    payload["manifest"] = _manifest_for_2_1(payload)
+    return payload
+
+
+def _schema_error_message_2_1(error: Any) -> str:
+    path = ".".join(str(part) for part in error.absolute_path) or "package"
+    return f"JSON Schema 2.1 validation failed at {path}: {error.message}"
+
+
+def validate_foundation_package_2_1(package: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate the typed 2.1 envelope with strict legacy dispatch."""
+
+    canonical = copy.deepcopy(dict(package))
+    validator = _load_foundation_2_1_validator()
+    errors = sorted(
+        validator.iter_errors(canonical),
+        key=lambda error: (
+            tuple(str(part) for part in error.absolute_path),
+            error.message,
+        ),
+    )
+    if errors:
+        raise FoundationPackageValidationError(_schema_error_message_2_1(errors[0]))
+    expected_manifest = _manifest_for_2_1(_payload_without_manifest_2_1(canonical))
+    if canonical["manifest"] != expected_manifest:
+        raise FoundationPackageValidationError(
+            "Foundation 2.1 manifest SHA-256 does not match its exact payload."
+        )
+
+    scope = canonical["package_scope"]
+    if scope == "WORKSPACE":
+        nested, _warnings = validate_foundation_package(canonical["workspace_package"])
+        if nested["format_version"] != FOUNDATION_PACKAGE_VERSION:
+            raise FoundationPackageValidationError(
+                "A 2.1 WORKSPACE wrapper must preserve one exact Foundation 2.0.0 payload."
+            )
+        if canonical["workspace"] != nested["workspace"]:
+            raise FoundationPackageValidationError(
+                "The 2.1 workspace identity must equal the nested canonical workspace."
+            )
+        if (
+            canonical["selected_definition_id"]
+            != nested["workspace"]["project_definition_version_id"]
+        ):
+            raise FoundationPackageValidationError(
+                "selected_definition_id must equal the nested workspace definition pin."
+            )
+        return canonical
+
+    definition = canonical["project_definition"]
+    if definition["id"] != canonical["selected_definition_id"]:
+        raise FoundationPackageValidationError(
+            "selected_definition_id must equal the exact project definition identity."
+        )
+    from domain.services.project_definitions import (
+        hash_project_definition_manifest_v1,
+        identify_typed_project_definition_manifest,
+    )
+
+    if not identify_typed_project_definition_manifest(definition["manifest"]):
+        raise FoundationPackageValidationError(
+            "PROJECT_DEFINITION scope requires the exact typed V1 manifest envelope."
+        )
+    actual_hash = hash_project_definition_manifest_v1(definition["manifest"])
+    if actual_hash != definition["manifest_hash"]:
+        raise FoundationPackageValidationError(
+            "Project definition manifest_hash does not match canonical typed bytes."
+        )
+    status = definition["publication_status"]
+    if status == "DRAFT":
+        if any(
+            (
+                definition["validated_at"] is not None,
+                bool(definition["validated_by"]),
+                bool(definition["validation_result"]),
+                definition["published_at"] is not None,
+                bool(definition["published_by"]),
+                definition["is_current"],
+            )
+        ):
+            raise FoundationPackageValidationError(
+                "A DRAFT definition cannot claim validation or publication state."
+            )
+    elif status == "VALIDATED":
+        if (
+            definition["validated_at"] is None
+            or not definition["validated_by"]
+            or definition["validation_result"].get("valid") is not True
+            or definition["published_at"] is not None
+            or definition["published_by"]
+        ):
+            raise FoundationPackageValidationError(
+                "A VALIDATED definition requires exact successful validation metadata only."
+            )
+    else:
+        if (
+            definition["validated_at"] is None
+            or not definition["validated_by"]
+            or definition["validation_result"].get("valid") is not True
+            or definition["published_at"] is None
+            or not definition["published_by"]
+        ):
+            raise FoundationPackageValidationError(
+                "A published definition requires exact validation and publication metadata."
+            )
+    return canonical
 
 
 def _workspace_identity(workspace: Any) -> tuple[str, str]:
@@ -3429,6 +3631,462 @@ def export_foundation_package(workspace: Any) -> dict[str, Any]:
 
 def export_foundation_json(workspace: Any) -> str:
     return canonical_json(export_foundation_package(workspace)) + "\n"
+
+
+def _project_identity_2_1(project: Any) -> dict[str, str]:
+    if project is None or getattr(project, "pk", None) is None:
+        raise FoundationPackageValidationError("A persisted Project is required.")
+    return {
+        "id": str(project.pk),
+        "code": str(project.code),
+        "version": str(project.version),
+    }
+
+
+def _bounded_package_id_2_1(prefix: str, value: object) -> str:
+    """Keep derived 2.1 package identities valid without truncating identity."""
+
+    raw_value = str(value)
+    candidate = f"{prefix}-{raw_value}"
+    if len(candidate) <= 128 and _ASCII_CODE_PATTERN.fullmatch(candidate):
+        return candidate
+    return f"{prefix}-{hashlib.sha256(raw_value.encode('utf-8')).hexdigest()}"
+
+
+def export_workspace_package_2_1(workspace: Any) -> dict[str, Any]:
+    """Wrap an unchanged canonical 2.0 workspace graph in a typed 2.1 scope."""
+
+    nested = export_foundation_package(workspace)
+    package = {
+        "format": FOUNDATION_PACKAGE_FORMAT,
+        "format_version": FOUNDATION_PACKAGE_VERSION_2_1,
+        "package_scope": "WORKSPACE",
+        "package_id": _bounded_package_id_2_1("V21", nested["package_id"]),
+        "project": _project_identity_2_1(workspace.project),
+        "selected_definition_id": nested["workspace"][
+            "project_definition_version_id"
+        ],
+        "workspace": copy.deepcopy(nested["workspace"]),
+        "workspace_package": nested,
+        "project_definition": None,
+    }
+    sealed = seal_foundation_package_2_1(package)
+    return validate_foundation_package_2_1(sealed)
+
+
+def export_project_definition_package_2_1(definition: Any) -> dict[str, Any]:
+    """Export one exact typed definition without requiring a workspace."""
+
+    if definition is None or getattr(definition, "pk", None) is None:
+        raise FoundationPackageValidationError(
+            "A persisted ProjectDefinitionVersion is required."
+        )
+    from domain.services.project_definitions import (
+        hash_project_definition_manifest_v1,
+        identify_typed_project_definition_manifest,
+    )
+
+    if not identify_typed_project_definition_manifest(definition.manifest):
+        raise FoundationPackageValidationError(
+            "Only an explicitly typed V1 manifest can use PROJECT_DEFINITION scope."
+        )
+    actual_hash = hash_project_definition_manifest_v1(definition.manifest)
+    if definition.manifest_hash != actual_hash:
+        raise FoundationPackageValidationError(
+            "Stored definition hash does not match the exact typed manifest."
+        )
+    package = {
+        "format": FOUNDATION_PACKAGE_FORMAT,
+        "format_version": FOUNDATION_PACKAGE_VERSION_2_1,
+        "package_scope": "PROJECT_DEFINITION",
+        "package_id": _bounded_package_id_2_1("DEFINITION", definition.code),
+        "project": _project_identity_2_1(definition.project),
+        "selected_definition_id": str(definition.pk),
+        "workspace": None,
+        "workspace_package": None,
+        "project_definition": _export_definition(definition),
+    }
+    sealed = seal_foundation_package_2_1(package)
+    return validate_foundation_package_2_1(sealed)
+
+
+def export_project_definition_json_2_1(definition: Any) -> str:
+    return canonical_json(export_project_definition_package_2_1(definition)) + "\n"
+
+
+def _require_exact_project_2_1(package: Mapping[str, Any], project: Any) -> None:
+    expected = _project_identity_2_1(project)
+    if package["project"] != expected:
+        raise FoundationPackageConflictError(
+            "Foundation 2.1 project id/code/version differs from the explicit target Project."
+        )
+
+
+def _definition_plan_2_1(
+    package: Mapping[str, Any],
+    *,
+    project: Any,
+) -> tuple[str, Any | None]:
+    """Resolve one stable definition identity without repair or retargeting."""
+
+    definition_data = package["project_definition"]
+    definition_id = UUID(definition_data["id"])
+    Definition = _model("ProjectDefinitionVersion")
+    by_id = Definition.objects.filter(pk=definition_id).first()
+    by_code = Definition.objects.filter(
+        project=project,
+        code=definition_data["code"],
+    ).first()
+    by_version = Definition.objects.filter(
+        project=project,
+        version=definition_data["version"],
+    ).first()
+    identities = {row.pk for row in (by_id, by_code, by_version) if row is not None}
+    if len(identities) > 1:
+        raise FoundationPackageConflictError(
+            "Project-definition id/code/version resolve to different persisted rows."
+        )
+    existing = by_id or by_code or by_version
+    if existing is not None:
+        if (
+            str(existing.project_id) != str(project.pk)
+            or str(existing.pk) != definition_data["id"]
+            or existing.code != definition_data["code"]
+            or existing.version != definition_data["version"]
+        ):
+            raise FoundationPackageConflictError(
+                "Persisted project-definition stable identity differs from the package."
+            )
+        if _export_definition(existing) != definition_data:
+            raise FoundationPackageConflictError(
+                "Persisted project-definition bytes or lifecycle state differ from the package."
+            )
+        return "REUSE_EXACT", existing
+
+    status = definition_data["publication_status"]
+    if status == "DRAFT":
+        return "CREATE_DRAFT", None
+    if status == "PUBLISHED" and definition_data["is_current"]:
+        return "BOOTSTRAP_PUBLISHED", None
+    raise FoundationPackageConflictError(
+        "Absent VALIDATED/RETIRED/non-current PUBLISHED snapshots cannot bypass the canonical lifecycle."
+    )
+
+
+def preview_foundation_package_2_1(
+    raw: Mapping[str, Any],
+    *,
+    project: Any,
+    workspace: Any | None = None,
+    selected_input: Mapping[str, Any] | None = None,
+    allow_nonempty: bool = False,
+) -> Foundation21Preview:
+    """Validate one typed 2.1 scope and derive an immutable DB plan."""
+
+    canonical = validate_foundation_package_2_1(raw)
+    _require_exact_project_2_1(canonical, project)
+    checksum = canonical["manifest"]["payload_sha256"]
+    if canonical["package_scope"] == "WORKSPACE":
+        if workspace is None:
+            raise FoundationPackageValidationError(
+                "A 2.1 WORKSPACE package requires an explicit target workspace."
+            )
+        if str(workspace.project_id) != str(project.pk):
+            raise FoundationPackageConflictError(
+                "The target workspace belongs to a different Project."
+            )
+        nested_preview = preview_foundation_package(
+            canonical["workspace_package"],
+            workspace=workspace,
+            adapter="json",
+            selected_input=selected_input,
+            allow_nonempty=allow_nonempty,
+        )
+        action = "IMPORT_WORKSPACE_2_0_PAYLOAD"
+    else:
+        from domain.services.project_definitions import (
+            parse_project_definition_manifest_v1,
+        )
+
+        definition_data = canonical["project_definition"]
+        if definition_data.get("metadata") not in ({}, None):
+            raise FoundationPackageValidationError(
+                "ProjectDefinitionVersion has no parallel metadata authority; "
+                "definition metadata must remain inside the typed manifest project object."
+            )
+        dto = parse_project_definition_manifest_v1(
+            definition_data["manifest"],
+            project=project,
+        )
+        if dto.manifest_sha256 != definition_data["manifest_hash"]:
+            raise FoundationPackageConflictError(
+                "Typed manifest hash differs after exact persisted-Project validation."
+            )
+        action, _existing = _definition_plan_2_1(canonical, project=project)
+        nested_preview = None
+    return Foundation21Preview(
+        valid=True,
+        package_scope=canonical["package_scope"],
+        checksum=checksum,
+        project_id=str(project.pk),
+        project_code=str(project.code),
+        project_version=str(project.version),
+        selected_definition_id=canonical["selected_definition_id"],
+        intended_action=action,
+        errors=(),
+        _payload=_deep_freeze(canonical),
+        _workspace_preview=nested_preview,
+    )
+
+
+def _locked_project_for_preview_2_1(
+    preview: Foundation21Preview,
+    project: Any,
+) -> Any:
+    Project = _model("Project")
+    locked = Project.objects.select_for_update().get(pk=project.pk)
+    locked_identity = _project_identity_2_1(locked)
+    expected = {
+        "id": preview.project_id,
+        "code": preview.project_code,
+        "version": preview.project_version,
+    }
+    if locked_identity != expected:
+        raise FoundationPackageConflictError(
+            "Locked Project identity differs from the immutable Foundation 2.1 preview."
+        )
+    return locked
+
+
+def _create_definition_import_receipt_2_1(
+    *,
+    package: Mapping[str, Any],
+    project: Any,
+    definition: Any,
+    action: str,
+    actor_identifier: str,
+) -> Any:
+    from domain.enums import ImportPackageScope
+
+    ImportRun = _model("ImportRun")
+    checksum = package["manifest"]["payload_sha256"]
+    if ImportRun.objects.filter(
+        project=project,
+        package_scope=ImportPackageScope.PROJECT_DEFINITION,
+        checksum=checksum,
+        status="COMMITTED",
+    ).exists():
+        raise FoundationPackageConflictError(
+            "This exact project-definition package already has a committed receipt."
+        )
+    source = package["project_definition"]
+    return _new(
+        ImportRun,
+        {
+            "project": project,
+            "workspace": None,
+            "definition_version": definition,
+            "package_scope": ImportPackageScope.PROJECT_DEFINITION,
+            "code": f"IMPORT-{checksum}",
+            "version": FOUNDATION_PACKAGE_VERSION_2_1,
+            "package_format": FOUNDATION_PACKAGE_FORMAT,
+            "package_id": package["package_id"],
+            "package_version": FOUNDATION_PACKAGE_VERSION_2_1,
+            "schema_version": source["schema_version"],
+            "template_version": "1.0.0",
+            "method_version": "PROJECT_DEFINITION_MANIFEST_VALIDATION_V1",
+            "ontology_version": source["construct_version"],
+            "dataset_version": source["version"],
+            "checksum": checksum,
+            "adapter": "json",
+            "selected_input": {
+                "package_scope": "PROJECT_DEFINITION",
+                "intended_action": action,
+                "source_definition_id": source["id"],
+                "source_publication_status": source["publication_status"],
+                "source_validated_at": source["validated_at"],
+                "source_validated_by": source["validated_by"],
+                "source_validation_result": copy.deepcopy(source["validation_result"]),
+                "source_published_at": source["published_at"],
+                "source_published_by": source["published_by"],
+                "source_is_current": source["is_current"],
+            },
+            "selected_source_column": "",
+            "source_identity_map": {
+                "project_definition": {source["code"]: source["id"]},
+            },
+            "correction_lineage": (
+                [
+                    {
+                        "code": source["code"],
+                        "supersedes_code": source["supersedes_code"],
+                    }
+                ]
+                if source["supersedes_code"]
+                else []
+            ),
+            "intended_changes": {"project_definition": action},
+            "row_counts": {"project_definition_versions": 1},
+            "warnings": [],
+            "errors": [],
+            "allow_nonempty": False,
+            "status": "COMMITTED",
+            "actor_identifier": actor_identifier,
+            "committed_at": datetime.now(timezone.utc),
+        },
+    )
+
+
+@transaction.atomic
+def commit_foundation_package_2_1(
+    preview: Foundation21Preview,
+    *,
+    project: Any,
+    principal: object,
+    actor_identifier: str,
+    workspace: Any | None = None,
+    initial_workspace: Mapping[str, Any] | None = None,
+    locale: str = "ru",
+    allow_nonempty: bool = False,
+    inject_failure_at: str | None = None,
+) -> Foundation21CommitResult:
+    """Commit exactly one 2.1 plan through existing canonical authorities."""
+
+    if not isinstance(preview, Foundation21Preview) or not preview.valid:
+        raise FoundationPackageValidationError("Commit requires a valid 2.1 preview.")
+    if not actor_identifier.strip():
+        raise FoundationPackageValidationError("actor_identifier is required.")
+    from domain.policies import (
+        StudioCapability,
+        StudioPrincipal,
+        require_studio_capability,
+    )
+
+    require_studio_capability(principal, StudioCapability.FOUNDATION_IMPORT)
+    if (
+        not isinstance(principal, StudioPrincipal)
+        or actor_identifier.strip() != principal.actor_identifier
+    ):
+        raise FoundationPackageValidationError(
+            "actor_identifier must equal the trusted Foundation import principal."
+        )
+    locked_project = _locked_project_for_preview_2_1(preview, project)
+    package = validate_foundation_package_2_1(preview.payload_copy())
+    if package["manifest"]["payload_sha256"] != preview.checksum:
+        raise FoundationPackageConflictError(
+            "Foundation 2.1 preview payload changed after validation."
+        )
+    _require_exact_project_2_1(package, locked_project)
+
+    if package["package_scope"] == "WORKSPACE":
+        if workspace is None or preview._workspace_preview is None:
+            raise FoundationPackageValidationError(
+                "A WORKSPACE commit requires its explicit target and nested preview."
+            )
+        receipt = commit_foundation_package(
+            preview._workspace_preview,
+            workspace=workspace,
+            allow_nonempty=allow_nonempty,
+            actor_identifier=actor_identifier,
+        )
+        return Foundation21CommitResult(
+            package_scope="WORKSPACE",
+            action=preview.intended_action,
+            definition_id=preview.selected_definition_id,
+            workspace_id=str(workspace.pk),
+            receipt_id=receipt.id,
+            checksum=preview.checksum,
+        )
+
+    action, existing = _definition_plan_2_1(package, project=locked_project)
+    if action != preview.intended_action:
+        raise FoundationPackageConflictError(
+            "Project-definition import plan changed after preview."
+        )
+    source = package["project_definition"]
+    if existing is not None:
+        definition = existing
+        initial_workspace_id = None
+    else:
+        from domain.services.project_definitions import create_project_definition_draft
+
+        supersedes = None
+        if source["supersedes_code"]:
+            supersedes = _model("ProjectDefinitionVersion").objects.filter(
+                project=locked_project,
+                code=source["supersedes_code"],
+            ).first()
+            if supersedes is None:
+                raise FoundationPackageConflictError(
+                    "The package supersedes_code is not an exact persisted definition."
+                )
+        definition = create_project_definition_draft(
+            project=locked_project,
+            definition_id=UUID(source["id"]),
+            code=source["code"],
+            version=source["version"],
+            manifest=source["manifest"],
+            metadata=source.get("metadata", {}),
+            semantic_version=source["semantic_version"],
+            construct_version=source["construct_version"],
+            supersedes=supersedes,
+            principal=principal,
+        )
+        initial_workspace_id = None
+        if action == "BOOTSTRAP_PUBLISHED":
+            if initial_workspace is None:
+                raise FoundationPackageValidationError(
+                    "A published definition import requires an explicit initial workspace specification."
+                )
+            from domain.policies import bootstrap_initial_project_definition
+
+            bootstrap = bootstrap_initial_project_definition(
+                definition=definition,
+                principal=principal,
+                actor_identifier=actor_identifier,
+                workspace_spec=initial_workspace,
+                locale=locale,
+                inject_failure_at=inject_failure_at,
+            )
+            definition = bootstrap.definition
+            initial_workspace_id = str(bootstrap.workspace.pk)
+    run = _create_definition_import_receipt_2_1(
+        package=package,
+        project=locked_project,
+        definition=definition,
+        action=action,
+        actor_identifier=actor_identifier.strip(),
+    )
+    if inject_failure_at == "after_definition_import_receipt":
+        raise RuntimeError(
+            "Injected Foundation 2.1 failure at after_definition_import_receipt."
+        )
+    from domain.policies import record_definition_audit
+
+    record_definition_audit(
+        definition=definition,
+        action="IMPORT",
+        actor_identifier=actor_identifier.strip(),
+        entity_type="IMPORT_RUN",
+        entity_id=run.pk,
+        after={
+            "package_id": package["package_id"],
+            "checksum": preview.checksum,
+            "action": action,
+        },
+    )
+    if inject_failure_at == "after_definition_import_audit":
+        raise RuntimeError(
+            "Injected Foundation 2.1 failure at after_definition_import_audit."
+        )
+    return Foundation21CommitResult(
+        package_scope="PROJECT_DEFINITION",
+        action=action,
+        definition_id=str(definition.pk),
+        workspace_id=initial_workspace_id,
+        receipt_id=str(run.pk),
+        checksum=preview.checksum,
+    )
 
 
 def _iso_date(value: date | None) -> str | None:

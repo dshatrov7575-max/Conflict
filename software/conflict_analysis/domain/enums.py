@@ -244,6 +244,13 @@ class ImportRunStatus(models.TextChoices):
     FAILED = "FAILED", "Failed"
 
 
+class ImportPackageScope(models.TextChoices):
+    """Persistence boundary selected by one immutable import receipt."""
+
+    WORKSPACE = "WORKSPACE", "Workspace"
+    PROJECT_DEFINITION = "PROJECT_DEFINITION", "Project definition"
+
+
 class CompatibilityStatus(models.TextChoices):
     MIGRATED = "MIGRATED", "Migrated"
     UNRESOLVED = "UNRESOLVED", "Unresolved"
@@ -300,6 +307,14 @@ class AuditAction(models.TextChoices):
     FREEZE = "FREEZE", "Freeze"
     LOCK = "LOCK", "Lock"
     UNLOCK = "UNLOCK", "Unlock"
+    BOOTSTRAP = "BOOTSTRAP", "Bootstrap"
+
+
+class AuditScope(models.TextChoices):
+    """Exactly one Foundation boundary attributed by an audit event."""
+
+    WORKSPACE = "WORKSPACE", "Workspace"
+    DEFINITION = "DEFINITION", "Project definition"
 
 
 class AuditActorType(models.TextChoices):
