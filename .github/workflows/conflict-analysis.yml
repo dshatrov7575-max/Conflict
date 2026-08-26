@@ -130,6 +130,11 @@ jobs:
         run: python -m pip check
 
       - name: Enforce offline product execution after dependency install
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
         shell: bash
         run: |
           echo "HTTP_PROXY=http://127.0.0.1:9" >> "$GITHUB_ENV"
