@@ -196,6 +196,7 @@ def test_windows_launcher_serves_root_and_health_then_stops_without_orphan():
     assert "DJANGO_SECRET_KEY" not in output
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows launcher diagnostic contract")
 def test_launcher_missing_python_error_is_actionable_and_pre_server():
     result = _run_powershell(
         f". {_ps_literal(LAUNCHER)}; "
