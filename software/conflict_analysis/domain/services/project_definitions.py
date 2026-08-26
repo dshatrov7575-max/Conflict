@@ -32,7 +32,7 @@ from domain.models import (
     ProjectDefinitionVersion,
     _canonical_studio_write,
 )
-from domain.services.raw_ingest import RawJSONError, parse_json_source
+from domain.services.foundation_packages import RawJSONError, parse_json_source
 
 
 PROJECT_DEFINITION_MANIFEST_FORMAT: Final = "conflict-analysis-project-definition"
@@ -73,7 +73,7 @@ MANIFEST_SECTIONS: Final = (
     "help_bindings",
 )
 
-_SECTION_RANK: Final = {name: index for index, name in enumerate(MANIFEST_SECTIONS)}
+_DIAGNOSTIC_LOCAL_SECTIONS: Final = MANIFEST_SECTIONS[3:]
 _FORBIDDEN_KEYS: Final = frozenset(
     {
         "automatic_mean",
@@ -247,38 +247,46 @@ def _pointer(parts: Sequence[object]) -> str:
     return "/" + "/".join(escaped)
 
 
-def _path_parts(path: str) -> tuple[tuple[int, object], ...]:
-    if path == "/":
-        return ()
-    result: list[tuple[int, object]] = []
-    for raw in path.lstrip("/").split("/"):
-        token = raw.replace("~1", "/").replace("~0", "~")
-        if token.isdigit():
-            result.append((0, int(token)))
-        else:
-            result.append((1, token))
-    return tuple(result)
-
-
-def _diagnostic_sort_key(
-    diagnostic: ProjectDefinitionManifestDiagnostic,
-) -> tuple[Any, ...]:
-    first = diagnostic.path.lstrip("/").split("/", 1)[0]
-    return (
-        _SECTION_RANK.get(first, len(_SECTION_RANK)),
-        _path_parts(diagnostic.path),
-        diagnostic.code,
-        diagnostic.message,
-    )
-
-
 def _deduplicate_diagnostics(
     diagnostics: Sequence[ProjectDefinitionManifestDiagnostic],
 ) -> tuple[ProjectDefinitionManifestDiagnostic, ...]:
-    unique = {
-        (item.level, item.code, item.path, item.message): item for item in diagnostics
-    }
-    return tuple(sorted(unique.values(), key=_diagnostic_sort_key))
+    ordered: list[ProjectDefinitionManifestDiagnostic] = []
+    seen: set[tuple[str, str, str, str]] = set()
+    for item in diagnostics:
+        identity = (item.level, item.code, item.path, item.message)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        ordered.append(item)
+    return tuple(ordered)
+
+
+def _diagnostic_local_section(
+    diagnostic: ProjectDefinitionManifestDiagnostic,
+) -> str | None:
+    if diagnostic.path == "/":
+        return None
+    raw = diagnostic.path.lstrip("/").split("/", 1)[0]
+    section = raw.replace("~1", "/").replace("~0", "~")
+    if section in _DIAGNOSTIC_LOCAL_SECTIONS:
+        return section
+    return None
+
+
+def _section_ordered_diagnostics(
+    passes: Sequence[Sequence[ProjectDefinitionManifestDiagnostic]],
+) -> list[ProjectDefinitionManifestDiagnostic]:
+    """Keep validation-pass order inside each authoritative manifest section."""
+
+    ordered: list[ProjectDefinitionManifestDiagnostic] = []
+    for section in (None, *_DIAGNOSTIC_LOCAL_SECTIONS):
+        for diagnostic_pass in passes:
+            ordered.extend(
+                diagnostic
+                for diagnostic in diagnostic_pass
+                if _diagnostic_local_section(diagnostic) == section
+            )
+    return ordered
 
 
 def _diagnostic(code: str, path: str, message: str) -> ProjectDefinitionManifestDiagnostic:
@@ -321,15 +329,13 @@ def _envelope_diagnostics(manifest: Mapping[str, Any]) -> list[ProjectDefinition
 
 def _schema_diagnostics(manifest: Mapping[str, Any]) -> list[ProjectDefinitionManifestDiagnostic]:
     diagnostics: list[ProjectDefinitionManifestDiagnostic] = []
-    errors = sorted(
-        _SCHEMA_VALIDATOR.iter_errors(manifest),
-        key=lambda error: (_pointer(tuple(error.absolute_path)), error.validator or ""),
-    )
-    for error in errors:
+    for error in _SCHEMA_VALIDATOR.iter_errors(manifest):
         path_parts = tuple(error.absolute_path)
         path = _pointer(path_parts)
         if error.validator == "required":
-            missing = sorted(set(error.validator_value) - set(error.instance))
+            missing = [
+                field for field in error.validator_value if field not in error.instance
+            ]
             for field in missing:
                 diagnostics.append(
                     _diagnostic(
@@ -389,7 +395,8 @@ def _walk_forbidden_keys(
 ) -> list[ProjectDefinitionManifestDiagnostic]:
     diagnostics: list[ProjectDefinitionManifestDiagnostic] = []
     if isinstance(value, Mapping):
-        for key, item in value.items():
+        for key in sorted(value, key=lambda item: str(item)):
+            item = value[key]
             normalized = str(key).strip().lower().replace("×", "_").replace("*", "_")
             normalized = normalized.replace("-", "_").replace(" ", "_")
             if normalized in _FORBIDDEN_KEYS:
@@ -826,18 +833,22 @@ def validate_project_definition_manifest_v1(
             diagnostics=(diagnostic,),
         )
 
-    diagnostics: list[ProjectDefinitionManifestDiagnostic] = []
-    diagnostics.extend(_envelope_diagnostics(manifest))
-    diagnostics.extend(_schema_diagnostics(manifest))
-    diagnostics.extend(_walk_forbidden_keys(manifest))
-    diagnostics.extend(_project_identity_diagnostics(manifest, project))
-    diagnostics.extend(_identity_diagnostics(manifest))
+    local_passes = (
+        _schema_diagnostics(manifest),
+        _walk_forbidden_keys(manifest),
+        _project_identity_diagnostics(manifest, project),
+        _identity_diagnostics(manifest),
+        _scale_diagnostics(manifest),
+        _content_diagnostics(manifest),
+        _help_diagnostics(manifest, help_topic_resolver),
+    )
+    diagnostics = _envelope_diagnostics(manifest)
+    diagnostics.extend(_section_ordered_diagnostics(local_passes))
+    # Cross-reference and hierarchy checks are deliberately final passes. Their
+    # row paths must never be sorted back into the earlier section-local output.
+    diagnostics.extend(_cross_reference_diagnostics(manifest))
     diagnostics.extend(_hierarchy_diagnostics(manifest, "actors"))
     diagnostics.extend(_hierarchy_diagnostics(manifest, "analytical_elements"))
-    diagnostics.extend(_cross_reference_diagnostics(manifest))
-    diagnostics.extend(_scale_diagnostics(manifest))
-    diagnostics.extend(_content_diagnostics(manifest))
-    diagnostics.extend(_help_diagnostics(manifest, help_topic_resolver))
     ordered = _deduplicate_diagnostics(diagnostics)
     manifest_sha256 = ""
     blocking = any(

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from types import MappingProxyType
 from typing import Any, Mapping
@@ -49,7 +49,7 @@ class StructureMutationDenied(PermissionDenied):
     """Raised when an actor attempts to mutate a locked project structure."""
 
 
-class StudioRole(StrEnum):
+class StudioDefinitionRole(StrEnum):
     """Non-spoofable server-side Studio authorization classifications."""
 
     STUDIO_EDITOR = "STUDIO_EDITOR"
@@ -57,6 +57,14 @@ class StudioRole(StrEnum):
     VIEWER = "VIEWER"
     PLAYER = "PLAYER"
     SERVICE = "SERVICE"
+
+
+StudioRole = StudioDefinitionRole
+"""Compatibility alias for the accepted ``StudioDefinitionRole`` contract."""
+
+
+class StudioAuthorizationDenied(PermissionDenied):
+    """Raised when a trusted Studio principal lacks an exact capability."""
 
 
 class StudioCapability(StrEnum):
@@ -70,9 +78,11 @@ class StudioCapability(StrEnum):
     STRUCTURE_MUTATE = "STRUCTURE_MUTATE"
 
 
-_ROLE_CAPABILITIES: Mapping[StudioRole, frozenset[StudioCapability]] = MappingProxyType(
+_ROLE_CAPABILITIES: Mapping[
+    StudioDefinitionRole, frozenset[StudioCapability]
+] = MappingProxyType(
     {
-        StudioRole.STUDIO_EDITOR: frozenset(
+        StudioDefinitionRole.STUDIO_EDITOR: frozenset(
             {
                 StudioCapability.DEFINITION_READ,
                 StudioCapability.DRAFT_CREATE,
@@ -80,20 +90,98 @@ _ROLE_CAPABILITIES: Mapping[StudioRole, frozenset[StudioCapability]] = MappingPr
                 StudioCapability.DRAFT_SAVE,
             }
         ),
-        StudioRole.STUDIO_PUBLISHER: frozenset(
+        StudioDefinitionRole.STUDIO_PUBLISHER: frozenset(
             {
                 StudioCapability.DEFINITION_READ,
                 StudioCapability.DEFINITION_VALIDATE,
                 StudioCapability.DEFINITION_PUBLISH,
             }
         ),
-        StudioRole.VIEWER: frozenset({StudioCapability.DEFINITION_READ}),
-        StudioRole.PLAYER: frozenset(),
+        StudioDefinitionRole.VIEWER: frozenset({StudioCapability.DEFINITION_READ}),
+        StudioDefinitionRole.PLAYER: frozenset(),
         # SERVICE is deliberately empty unless a caller supplies a bounded
         # purpose and an explicit subset through ``StudioPrincipal.service``.
-        StudioRole.SERVICE: frozenset(),
+        StudioDefinitionRole.SERVICE: frozenset(),
     }
 )
+
+
+_SERVICE_CONTEXT_SEAL = object()
+_MAX_ACTOR_IDENTIFIER_LENGTH = 255
+_MAX_SERVICE_PURPOSE_LENGTH = 255
+
+
+def _bounded_identity(value: object, *, label: str, maximum: int) -> str:
+    """Normalize one server-side identity field and reject unbounded/control text."""
+
+    if not isinstance(value, str):
+        raise ValueError(f"{label} must be text.")
+    normalized = value.strip()
+    if not normalized or len(normalized) > maximum:
+        raise ValueError(f"{label} must contain 1..{maximum} characters.")
+    if any(ord(character) < 32 or ord(character) == 127 for character in normalized):
+        raise ValueError(f"{label} must not contain control characters.")
+    return normalized
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class ServiceMutationContext:
+    """Sealed, bounded SERVICE identity created only by a trusted server factory."""
+
+    actor_identifier: str
+    purpose: str
+    capabilities: frozenset[StudioCapability]
+    _trusted_seal: object = field(repr=False, compare=False)
+
+    def __init__(
+        self,
+        *,
+        actor_identifier: str,
+        purpose: str,
+        capabilities: frozenset[StudioCapability | str],
+        _seal: object | None = None,
+    ) -> None:
+        if _seal is not _SERVICE_CONTEXT_SEAL:
+            raise ValueError(
+                "ServiceMutationContext must be created by the trusted server factory."
+            )
+        actor = _bounded_identity(
+            actor_identifier,
+            label="SERVICE actor identifier",
+            maximum=_MAX_ACTOR_IDENTIFIER_LENGTH,
+        )
+        bounded_purpose = _bounded_identity(
+            purpose,
+            label="SERVICE purpose",
+            maximum=_MAX_SERVICE_PURPOSE_LENGTH,
+        )
+        try:
+            resolved_capabilities = frozenset(
+                StudioCapability(capability) for capability in capabilities
+            )
+        except (TypeError, ValueError):
+            raise ValueError("SERVICE contains an unknown Studio capability.")
+        if not resolved_capabilities:
+            raise ValueError("SERVICE requires at least one explicit capability.")
+        object.__setattr__(self, "actor_identifier", actor)
+        object.__setattr__(self, "purpose", bounded_purpose)
+        object.__setattr__(self, "capabilities", resolved_capabilities)
+        object.__setattr__(self, "_trusted_seal", _SERVICE_CONTEXT_SEAL)
+
+    @classmethod
+    def _create(
+        cls,
+        *,
+        actor_identifier: str,
+        purpose: str,
+        capabilities: frozenset[StudioCapability | str],
+    ) -> "ServiceMutationContext":
+        return cls(
+            actor_identifier=actor_identifier,
+            purpose=purpose,
+            capabilities=capabilities,
+            _seal=_SERVICE_CONTEXT_SEAL,
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,28 +189,35 @@ class StudioPrincipal:
     """Immutable authorization fact created by a trusted server boundary."""
 
     actor_identifier: str
-    role: StudioRole
+    role: StudioDefinitionRole
     capabilities: frozenset[StudioCapability]
-    service_purpose: str = ""
+    service_context: ServiceMutationContext | None = None
 
     def __post_init__(self) -> None:
         """Reject incoherent facts even when callers bypass trusted factories."""
 
         try:
-            role = StudioRole(self.role)
+            role = StudioDefinitionRole(self.role)
             capabilities = frozenset(
                 StudioCapability(capability) for capability in self.capabilities
             )
         except (TypeError, ValueError):
             raise ValueError("StudioPrincipal contains an unknown role or capability.")
-        actor_identifier = self.actor_identifier.strip()
-        service_purpose = self.service_purpose.strip()
-        if not actor_identifier:
-            raise ValueError("StudioPrincipal requires an actor identifier.")
-        if role is StudioRole.SERVICE:
-            if not service_purpose or not capabilities:
+        actor_identifier = _bounded_identity(
+            self.actor_identifier,
+            label="StudioPrincipal actor identifier",
+            maximum=_MAX_ACTOR_IDENTIFIER_LENGTH,
+        )
+        if role is StudioDefinitionRole.SERVICE:
+            service_context = self.service_context
+            if (
+                not isinstance(service_context, ServiceMutationContext)
+                or service_context._trusted_seal is not _SERVICE_CONTEXT_SEAL
+                or service_context.actor_identifier != actor_identifier
+                or service_context.capabilities != capabilities
+            ):
                 raise ValueError(
-                    "SERVICE requires an actor, a bounded purpose, and explicit capabilities."
+                    "SERVICE requires one exact trusted ServiceMutationContext."
                 )
         else:
             unexpected = capabilities - _ROLE_CAPABILITIES[role]
@@ -130,22 +225,27 @@ class StudioPrincipal:
                 raise ValueError(
                     f"{role.value} contains capabilities outside its authorized role matrix."
                 )
-            if service_purpose:
-                raise ValueError("Only SERVICE may carry a bounded service purpose.")
+            if self.service_context is not None:
+                raise ValueError("Only SERVICE may carry a ServiceMutationContext.")
         object.__setattr__(self, "actor_identifier", actor_identifier)
         object.__setattr__(self, "role", role)
         object.__setattr__(self, "capabilities", capabilities)
-        object.__setattr__(self, "service_purpose", service_purpose)
+
+    @property
+    def service_purpose(self) -> str:
+        """Read-only compatibility view; purpose authority lives in the sealed context."""
+
+        return self.service_context.purpose if self.service_context is not None else ""
 
     @classmethod
     def for_role(
         cls,
         *,
         actor_identifier: str,
-        role: StudioRole | str,
+        role: StudioDefinitionRole | str,
     ) -> "StudioPrincipal":
-        resolved = StudioRole(role)
-        if resolved is StudioRole.SERVICE:
+        resolved = StudioDefinitionRole(role)
+        if resolved is StudioDefinitionRole.SERVICE:
             raise ValueError("SERVICE requires an explicit bounded purpose/capability set.")
         return cls(
             actor_identifier=actor_identifier.strip(),
@@ -161,21 +261,16 @@ class StudioPrincipal:
         purpose: str,
         capabilities: frozenset[StudioCapability | str],
     ) -> "StudioPrincipal":
-        if not actor_identifier.strip() or not purpose.strip() or not capabilities:
-            raise ValueError(
-                "SERVICE requires an actor, a bounded purpose, and explicit capabilities."
-            )
-        try:
-            resolved_capabilities = frozenset(
-                StudioCapability(capability) for capability in capabilities
-            )
-        except ValueError:
-            raise ValueError("SERVICE contains an unknown Studio capability.")
+        context = ServiceMutationContext._create(
+            actor_identifier=actor_identifier,
+            purpose=purpose,
+            capabilities=capabilities,
+        )
         return cls(
-            actor_identifier=actor_identifier.strip(),
-            role=StudioRole.SERVICE,
-            capabilities=resolved_capabilities,
-            service_purpose=purpose.strip(),
+            actor_identifier=context.actor_identifier,
+            role=StudioDefinitionRole.SERVICE,
+            capabilities=context.capabilities,
+            service_context=context,
         )
 
 
@@ -195,39 +290,43 @@ def studio_principal_from_user(user: object) -> StudioPrincipal:
     """Derive capabilities only from authenticated Django permissions."""
 
     if not bool(getattr(user, "is_authenticated", False)):
-        raise PermissionDenied("Authenticated Studio access is required.")
+        raise StudioAuthorizationDenied("Authenticated Studio access is required.")
     has_perm = getattr(user, "has_perm", None)
     if not callable(has_perm):
-        raise PermissionDenied("The authenticated principal has no permission backend.")
+        raise StudioAuthorizationDenied(
+            "The authenticated principal has no permission backend."
+        )
     capabilities = frozenset(
         capability
         for permission, capability in _DJANGO_PERMISSION_CAPABILITIES.items()
         if has_perm(permission)
     )
-    publisher_capabilities = _ROLE_CAPABILITIES[StudioRole.STUDIO_PUBLISHER]
-    editor_capabilities = _ROLE_CAPABILITIES[StudioRole.STUDIO_EDITOR]
+    publisher_capabilities = _ROLE_CAPABILITIES[
+        StudioDefinitionRole.STUDIO_PUBLISHER
+    ]
+    editor_capabilities = _ROLE_CAPABILITIES[StudioDefinitionRole.STUDIO_EDITOR]
     if capabilities <= publisher_capabilities and capabilities & {
         StudioCapability.DEFINITION_VALIDATE,
         StudioCapability.DEFINITION_PUBLISH,
     }:
-        role = StudioRole.STUDIO_PUBLISHER
+        role = StudioDefinitionRole.STUDIO_PUBLISHER
     elif capabilities <= editor_capabilities and capabilities & (
         editor_capabilities - {StudioCapability.DEFINITION_READ}
     ):
-        role = StudioRole.STUDIO_EDITOR
+        role = StudioDefinitionRole.STUDIO_EDITOR
     elif StudioCapability.DEFINITION_READ in capabilities:
-        if capabilities == _ROLE_CAPABILITIES[StudioRole.VIEWER]:
-            role = StudioRole.VIEWER
+        if capabilities == _ROLE_CAPABILITIES[StudioDefinitionRole.VIEWER]:
+            role = StudioDefinitionRole.VIEWER
         else:
-            raise PermissionDenied(
+            raise StudioAuthorizationDenied(
                 "Django Studio permissions span incompatible non-service roles."
             )
     elif capabilities:
-        raise PermissionDenied(
+        raise StudioAuthorizationDenied(
             "Django Studio permissions span incompatible non-service roles."
         )
     else:
-        role = StudioRole.PLAYER
+        role = StudioDefinitionRole.PLAYER
     return StudioPrincipal(
         actor_identifier=f"django-user:{getattr(user, 'pk', '')}",
         role=role,
@@ -243,13 +342,18 @@ def require_studio_capability(
 
     required = StudioCapability(capability)
     if not isinstance(principal, StudioPrincipal):
-        raise PermissionDenied("A trusted StudioPrincipal is required.")
+        raise StudioAuthorizationDenied("A trusted StudioPrincipal is required.")
     if not principal.actor_identifier or required not in principal.capabilities:
-        raise PermissionDenied(
+        raise StudioAuthorizationDenied(
             f"{principal.role.value} is not allowed to perform {required.value}."
         )
-    if principal.role is StudioRole.SERVICE and not principal.service_purpose:
-        raise PermissionDenied("SERVICE authorization requires a bounded purpose.")
+    if (
+        principal.role is StudioDefinitionRole.SERVICE
+        and principal.service_context is None
+    ):
+        raise StudioAuthorizationDenied(
+            "SERVICE authorization requires a trusted bounded context."
+        )
 
 
 def can_modify_project_structure(
@@ -269,9 +373,9 @@ def can_modify_project_structure(
     if actor is StructureActor.SERVICE:
         return bool(
             isinstance(service_principal, StudioPrincipal)
-            and service_principal.role is StudioRole.SERVICE
+            and service_principal.role is StudioDefinitionRole.SERVICE
             and service_principal.actor_identifier
-            and service_principal.service_purpose
+            and service_principal.service_context is not None
             and StudioCapability.STRUCTURE_MUTATE in service_principal.capabilities
         )
 
@@ -328,21 +432,278 @@ def _audit_code(prefix: str) -> str:
     return f"{prefix}-{uuid4().hex}"
 
 
+_FOUNDATION_AUDIT_CONTEXT_SEAL = object()
+_FOUNDATION_AUDIT_ATTRIBUTION_KEY = "foundation_audit_context"
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class FoundationAuditContext:
+    """Sealed actor and exact scope target consumed by audit insertion only."""
+
+    actor_type: AuditActorType
+    actor_identifier: str
+    purpose: str
+    scope: AuditScope
+    project_id: UUID
+    workspace_id: UUID | None
+    definition_version_id: UUID | None
+    _trusted_seal: object = field(repr=False, compare=False)
+
+    def __init__(
+        self,
+        *,
+        actor_type: AuditActorType | str,
+        actor_identifier: str,
+        purpose: str,
+        scope: AuditScope | str,
+        project_id: UUID,
+        workspace_id: UUID | None,
+        definition_version_id: UUID | None,
+        _seal: object | None = None,
+    ) -> None:
+        if _seal is not _FOUNDATION_AUDIT_CONTEXT_SEAL:
+            raise ValueError(
+                "FoundationAuditContext must be created by a trusted server factory."
+            )
+        resolved_actor_type = AuditActorType(actor_type)
+        if resolved_actor_type not in {
+            AuditActorType.HUMAN,
+            AuditActorType.SYSTEM,
+        }:
+            raise ValueError("Foundation audit attribution is HUMAN or SYSTEM only.")
+        actor = _bounded_identity(
+            actor_identifier,
+            label="Foundation audit actor identifier",
+            maximum=_MAX_ACTOR_IDENTIFIER_LENGTH,
+        )
+        resolved_scope = AuditScope(scope)
+        bounded_purpose = purpose
+        if resolved_actor_type == AuditActorType.SYSTEM:
+            bounded_purpose = _bounded_identity(
+                purpose,
+                label="Foundation audit SERVICE purpose",
+                maximum=_MAX_SERVICE_PURPOSE_LENGTH,
+            )
+        elif purpose:
+            raise ValueError("HUMAN Foundation audit context cannot carry SERVICE purpose.")
+        if resolved_scope == AuditScope.WORKSPACE:
+            if workspace_id is None or definition_version_id is not None:
+                raise ValueError("WORKSPACE audit context requires only a workspace target.")
+        elif definition_version_id is None or workspace_id is not None:
+            raise ValueError("DEFINITION audit context requires only a definition target.")
+        object.__setattr__(self, "actor_type", resolved_actor_type)
+        object.__setattr__(self, "actor_identifier", actor)
+        object.__setattr__(self, "purpose", bounded_purpose)
+        object.__setattr__(self, "scope", resolved_scope)
+        object.__setattr__(self, "project_id", UUID(str(project_id)))
+        object.__setattr__(
+            self,
+            "workspace_id",
+            UUID(str(workspace_id)) if workspace_id is not None else None,
+        )
+        object.__setattr__(
+            self,
+            "definition_version_id",
+            UUID(str(definition_version_id))
+            if definition_version_id is not None
+            else None,
+        )
+        object.__setattr__(self, "_trusted_seal", _FOUNDATION_AUDIT_CONTEXT_SEAL)
+
+    @classmethod
+    def _create(
+        cls,
+        *,
+        actor_type: AuditActorType,
+        actor_identifier: str,
+        purpose: str,
+        scope: AuditScope,
+        project_id: UUID,
+        workspace_id: UUID | None = None,
+        definition_version_id: UUID | None = None,
+    ) -> "FoundationAuditContext":
+        return cls(
+            actor_type=actor_type,
+            actor_identifier=actor_identifier,
+            purpose=purpose,
+            scope=scope,
+            project_id=project_id,
+            workspace_id=workspace_id,
+            definition_version_id=definition_version_id,
+            _seal=_FOUNDATION_AUDIT_CONTEXT_SEAL,
+        )
+
+    @staticmethod
+    def _principal_attribution(
+        principal: StudioPrincipal,
+    ) -> tuple[AuditActorType, str, str]:
+        if not isinstance(principal, StudioPrincipal):
+            raise StudioAuthorizationDenied(
+                "A trusted StudioPrincipal is required for audit attribution."
+            )
+        if principal.role is StudioDefinitionRole.SERVICE:
+            context = principal.service_context
+            if (
+                context is None
+                or context._trusted_seal is not _SERVICE_CONTEXT_SEAL
+            ):
+                raise StudioAuthorizationDenied(
+                    "SERVICE audit attribution requires a trusted bounded context."
+                )
+            return AuditActorType.SYSTEM, context.actor_identifier, context.purpose
+        return AuditActorType.HUMAN, principal.actor_identifier, ""
+
+    @classmethod
+    def for_human_workspace(
+        cls,
+        *,
+        workspace: ProjectWorkspace,
+        actor_identifier: str,
+    ) -> "FoundationAuditContext":
+        """Create a HUMAN context from a server-owned workspace and identity."""
+
+        if not isinstance(workspace, ProjectWorkspace) or workspace.pk is None:
+            raise ValueError("A persisted ProjectWorkspace is required for audit context.")
+        persisted = ProjectWorkspace.objects.only("id", "project_id").get(pk=workspace.pk)
+        return cls._create(
+            actor_type=AuditActorType.HUMAN,
+            actor_identifier=actor_identifier,
+            purpose="",
+            scope=AuditScope.WORKSPACE,
+            project_id=persisted.project_id,
+            workspace_id=persisted.pk,
+        )
+
+    @classmethod
+    def for_human_definition(
+        cls,
+        *,
+        definition: ProjectDefinitionVersion,
+        actor_identifier: str,
+    ) -> "FoundationAuditContext":
+        """Create a HUMAN context from a server-owned definition and identity."""
+
+        if not isinstance(definition, ProjectDefinitionVersion) or definition.pk is None:
+            raise ValueError(
+                "A persisted ProjectDefinitionVersion is required for audit context."
+            )
+        persisted = ProjectDefinitionVersion.objects.only("id", "project_id").get(
+            pk=definition.pk
+        )
+        return cls._create(
+            actor_type=AuditActorType.HUMAN,
+            actor_identifier=actor_identifier,
+            purpose="",
+            scope=AuditScope.DEFINITION,
+            project_id=persisted.project_id,
+            definition_version_id=persisted.pk,
+        )
+
+    @classmethod
+    def for_principal_workspace(
+        cls,
+        *,
+        workspace: ProjectWorkspace,
+        principal: StudioPrincipal,
+    ) -> "FoundationAuditContext":
+        """Bind trusted HUMAN/SERVICE attribution to one persisted workspace."""
+
+        if not isinstance(workspace, ProjectWorkspace) or workspace.pk is None:
+            raise ValueError("A persisted ProjectWorkspace is required for audit context.")
+        persisted = ProjectWorkspace.objects.only("id", "project_id").get(pk=workspace.pk)
+        actor_type, actor_identifier, purpose = cls._principal_attribution(principal)
+        return cls._create(
+            actor_type=actor_type,
+            actor_identifier=actor_identifier,
+            purpose=purpose,
+            scope=AuditScope.WORKSPACE,
+            project_id=persisted.project_id,
+            workspace_id=persisted.pk,
+        )
+
+    @classmethod
+    def for_principal_definition(
+        cls,
+        *,
+        definition: ProjectDefinitionVersion,
+        principal: StudioPrincipal,
+    ) -> "FoundationAuditContext":
+        """Bind trusted HUMAN/SERVICE attribution to one persisted definition."""
+
+        if not isinstance(definition, ProjectDefinitionVersion) or definition.pk is None:
+            raise ValueError(
+                "A persisted ProjectDefinitionVersion is required for audit context."
+            )
+        persisted = ProjectDefinitionVersion.objects.only("id", "project_id").get(
+            pk=definition.pk
+        )
+        actor_type, actor_identifier, purpose = cls._principal_attribution(principal)
+        return cls._create(
+            actor_type=actor_type,
+            actor_identifier=actor_identifier,
+            purpose=purpose,
+            scope=AuditScope.DEFINITION,
+            project_id=persisted.project_id,
+            definition_version_id=persisted.pk,
+        )
+
+
+def _audit_after_payload(
+    context: FoundationAuditContext,
+    after: dict | None,
+) -> dict | None:
+    """Persist exact SERVICE purpose without allowing payload provenance spoofing."""
+
+    payload = dict(after) if after is not None else {}
+    if _FOUNDATION_AUDIT_ATTRIBUTION_KEY in payload:
+        raise ValidationError(
+            {
+                "after": (
+                    f"{_FOUNDATION_AUDIT_ATTRIBUTION_KEY} is reserved for server attribution."
+                )
+            }
+        )
+    if context.actor_type == AuditActorType.SYSTEM:
+        payload[_FOUNDATION_AUDIT_ATTRIBUTION_KEY] = {
+            "actor_identifier": context.actor_identifier,
+            "service_purpose": context.purpose,
+        }
+    return payload or None
+
+
+def _require_audit_context(
+    context: FoundationAuditContext,
+    *,
+    scope: AuditScope,
+) -> FoundationAuditContext:
+    if (
+        not isinstance(context, FoundationAuditContext)
+        or context._trusted_seal is not _FOUNDATION_AUDIT_CONTEXT_SEAL
+        or context.scope != scope
+    ):
+        raise ValidationError(
+            {"audit_context": f"A trusted {scope} FoundationAuditContext is required."}
+        )
+    return context
+
+
 def record_foundation_audit(
     *,
-    workspace: ProjectWorkspace,
+    context: FoundationAuditContext,
     action: AuditAction | str,
-    actor_identifier: str,
     entity_type: str,
     entity_id: object,
     before: dict | None = None,
     after: dict | None = None,
     experiment: Experiment | None = None,
 ) -> AuditEvent:
-    """Append one attributed event for create/import/publish/freeze paths."""
+    """Append one WORKSPACE event from a sealed, server-created context."""
 
-    if not actor_identifier.strip():
-        raise ValidationError({"actor_identifier": "Audit actor is required."})
+    context = _require_audit_context(context, scope=AuditScope.WORKSPACE)
+    workspace = ProjectWorkspace.objects.select_related("project").get(
+        pk=context.workspace_id,
+        project_id=context.project_id,
+    )
     if experiment is not None:
         require_same_workspace(workspace, experiment)
     event = AuditEvent(
@@ -351,12 +712,12 @@ def record_foundation_audit(
         assessment_set=experiment.assessment_set if experiment else None,
         code=_audit_code("AUD"),
         action=action,
-        actor_type=AuditActorType.HUMAN,
-        actor_identifier=actor_identifier,
+        actor_type=context.actor_type,
+        actor_identifier=context.actor_identifier,
         entity_type=entity_type,
         entity_id=entity_id,
         before=before,
-        after=after,
+        after=_audit_after_payload(context, after),
     )
     event.full_clean()
     event.save(force_insert=True)
@@ -365,18 +726,20 @@ def record_foundation_audit(
 
 def record_definition_audit(
     *,
-    definition: ProjectDefinitionVersion,
+    context: FoundationAuditContext,
     action: AuditAction | str,
-    actor_identifier: str,
     entity_type: str,
     entity_id: object,
     before: dict | None = None,
     after: dict | None = None,
 ) -> AuditEvent:
-    """Append one project/definition-scoped event without borrowing a workspace."""
+    """Append one DEFINITION event from a sealed, server-created context."""
 
-    if not actor_identifier.strip():
-        raise ValidationError({"actor_identifier": "Audit actor is required."})
+    context = _require_audit_context(context, scope=AuditScope.DEFINITION)
+    definition = ProjectDefinitionVersion.objects.select_related("project").get(
+        pk=context.definition_version_id,
+        project_id=context.project_id,
+    )
     event = AuditEvent(
         project=definition.project,
         workspace=None,
@@ -386,12 +749,12 @@ def record_definition_audit(
         parameter_value=None,
         code=_audit_code("AUD-DEF"),
         action=action,
-        actor_type=AuditActorType.HUMAN,
-        actor_identifier=actor_identifier.strip(),
+        actor_type=context.actor_type,
+        actor_identifier=context.actor_identifier,
         entity_type=entity_type,
         entity_id=entity_id,
         before=before,
-        after=after,
+        after=_audit_after_payload(context, after),
     )
     event.full_clean()
     event.save(force_insert=True)
@@ -431,6 +794,58 @@ def _typed_help_topic(reference: Mapping[str, Any]) -> HelpTopic | None:
         return None
 
 
+def _lock_project_then_definition(
+    definition: ProjectDefinitionVersion,
+) -> tuple[Project, ProjectDefinitionVersion]:
+    """Apply the canonical cross-path transition lock order.
+
+    Every typed validation/publication/bootstrap path locks the owning
+    ``Project`` first, then the exact ``ProjectDefinitionVersion``. Publication
+    and workspace rows are locked/read only after this helper returns. Using
+    the caller's project id solely to acquire the first lock, followed by an
+    exact persisted row/hash recheck, fails closed on stale/reparented objects
+    without ever locking a definition before its project.
+    """
+
+    if (
+        not isinstance(definition, ProjectDefinitionVersion)
+        or definition.pk is None
+        or definition.project_id is None
+    ):
+        raise ValidationError(
+            {"definition": "A persisted project definition is required."}
+        )
+    supplied_project_id = definition.project_id
+    supplied_manifest_hash = definition.manifest_hash
+    try:
+        project = Project.objects.select_for_update().get(pk=supplied_project_id)
+        current = (
+            ProjectDefinitionVersion.objects.select_for_update()
+            .select_related("project")
+            .get(pk=definition.pk, project_id=project.pk)
+        )
+    except (Project.DoesNotExist, ProjectDefinitionVersion.DoesNotExist):
+        raise ValidationError(
+            {
+                "definition": (
+                    "The project/definition identity changed before the canonical lock."
+                )
+            }
+        )
+    if (
+        current.project_id != supplied_project_id
+        or current.manifest_hash != supplied_manifest_hash
+    ):
+        raise ValidationError(
+            {
+                "definition": (
+                    "The project/definition snapshot changed before the canonical lock."
+                )
+            }
+        )
+    return project, current
+
+
 @transaction.atomic
 def validate_project_definition(
     definition: ProjectDefinitionVersion,
@@ -453,9 +868,7 @@ def validate_project_definition(
         validate_project_definition_manifest_v1,
     )
 
-    current = ProjectDefinitionVersion.objects.select_for_update().select_related(
-        "project"
-    ).get(pk=definition.pk)
+    _, current = _lock_project_then_definition(definition)
     is_typed = identify_typed_project_definition_manifest(current.manifest)
 
     if is_typed:
@@ -497,6 +910,7 @@ def validate_project_definition(
                     )
                 }
             )
+        _inject_bootstrap_failure(inject_failure_at, "after_canonical_validation")
         before = {"publication_status": current.publication_status}
         current.manifest_hash = report.manifest_sha256
         current.publication_status = PublicationStatus.VALIDATED
@@ -517,9 +931,11 @@ def validate_project_definition(
             )
         _inject_bootstrap_failure(inject_failure_at, "after_validation_transition")
         record_definition_audit(
-            definition=current,
+            context=FoundationAuditContext.for_principal_definition(
+                definition=current,
+                principal=principal,
+            ),
             action=AuditAction.VALIDATE,
-            actor_identifier=principal.actor_identifier,
             entity_type="PROJECT_DEFINITION_VERSION",
             entity_id=current.pk,
             before=before,
@@ -578,9 +994,11 @@ def validate_project_definition(
         )
     )
     record_foundation_audit(
-        workspace=persisted_audit_workspace,
+        context=FoundationAuditContext.for_human_workspace(
+            workspace=persisted_audit_workspace,
+            actor_identifier=actor_identifier,
+        ),
         action=AuditAction.VALIDATE,
-        actor_identifier=actor_identifier.strip(),
         entity_type="PROJECT_DEFINITION_VERSION",
         entity_id=current.pk,
         before=before,
@@ -615,9 +1033,7 @@ def publish_project_definition(
 
     from .services.project_definitions import identify_typed_project_definition_manifest
 
-    current = ProjectDefinitionVersion.objects.select_for_update().select_related(
-        "project"
-    ).get(pk=definition.pk)
+    _, current = _lock_project_then_definition(definition)
     is_typed = identify_typed_project_definition_manifest(current.manifest)
 
     if is_typed:
@@ -631,7 +1047,6 @@ def publish_project_definition(
             raise ValidationError(
                 {"actor_identifier": "Publication actor must equal the trusted principal."}
             )
-        Project.objects.select_for_update().get(pk=current.project_id)
         if current.publication_status != PublicationStatus.VALIDATED:
             raise ValidationError(
                 {"publication_status": "Publishing requires an explicit VALIDATED transition."}
@@ -791,9 +1206,11 @@ def publish_project_definition(
         _inject_bootstrap_failure(inject_failure_at, "after_project_publication")
 
         record_definition_audit(
-            definition=current,
+            context=FoundationAuditContext.for_principal_definition(
+                definition=current,
+                principal=principal,
+            ),
             action=AuditAction.PUBLISH,
-            actor_identifier=principal.actor_identifier,
             entity_type="PROJECT_DEFINITION_VERSION",
             entity_id=current.pk,
             before=before,
@@ -807,9 +1224,11 @@ def publish_project_definition(
         _inject_bootstrap_failure(inject_failure_at, "after_definition_publish_audit")
         if workspace is not None:
             record_foundation_audit(
-                workspace=workspace,
+                context=FoundationAuditContext.for_principal_workspace(
+                    workspace=workspace,
+                    principal=principal,
+                ),
                 action=AuditAction.BOOTSTRAP,
-                actor_identifier=principal.actor_identifier,
                 entity_type="PROJECT_WORKSPACE",
                 entity_id=workspace.pk,
                 after={
@@ -874,9 +1293,11 @@ def publish_project_definition(
     publication.full_clean()
     publication.save(force_insert=True)
     record_foundation_audit(
-        workspace=persisted_audit_workspace,
+        context=FoundationAuditContext.for_human_workspace(
+            workspace=persisted_audit_workspace,
+            actor_identifier=actor_identifier,
+        ),
         action=AuditAction.PUBLISH,
-        actor_identifier=actor_identifier,
         entity_type="PROJECT_DEFINITION_VERSION",
         entity_id=current.pk,
         before=before,
@@ -903,10 +1324,7 @@ def bootstrap_initial_project_definition(
 
     require_studio_capability(principal, StudioCapability.DEFINITION_VALIDATE)
     require_studio_capability(principal, StudioCapability.DEFINITION_PUBLISH)
-    locked = ProjectDefinitionVersion.objects.select_for_update().select_related(
-        "project"
-    ).get(pk=definition.pk)
-    Project.objects.select_for_update().get(pk=locked.project_id)
+    _, locked = _lock_project_then_definition(definition)
     if ProjectWorkspace.objects.filter(project=locked.project).exists():
         raise ValidationError(
             {"workspace_spec": "Bootstrap requires a project with no workspace."}
@@ -962,9 +1380,11 @@ def freeze_experiment(
     experiment.full_clean()
     experiment.save(update_fields=("status", "frozen_at", "updated_at"))
     record_foundation_audit(
-        workspace=experiment.workspace,
+        context=FoundationAuditContext.for_human_workspace(
+            workspace=experiment.workspace,
+            actor_identifier=actor_identifier,
+        ),
         action=AuditAction.FREEZE,
-        actor_identifier=actor_identifier,
         entity_type="EXPERIMENT",
         entity_id=experiment.pk,
         before=before,

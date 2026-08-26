@@ -1,4 +1,4 @@
-# ADR 0004: Atomic first-publication bootstrap
+# ADR 0003: Atomic first-definition bootstrap
 
 Status: accepted by `FOUNDATION-STUDIO-CONTRACT-ADDENDUM-001`.
 

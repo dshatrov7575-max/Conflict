@@ -203,6 +203,218 @@
       }
     }
   ],
+  "diagnostic_order_oracle": {
+    "name": "adversarial-complete-pass-order-v1",
+    "manifest": {
+      "$schema": "https://conflictology.invalid/schemas/project-definition-manifest-1.0.0.schema.json",
+      "format": "conflict-analysis-project-definition",
+      "format_version": "9.9.9",
+      "project": {
+        "id": "10000000-0000-4000-8000-000000000001",
+        "code": "OTHER-PROJECT",
+        "version": "1.0.0",
+        "name": "",
+        "description": "Diagnostic ordering oracle.",
+        "default_locale": "en",
+        "metadata": {"risk_score": 7}
+      },
+      "policies": {
+        "structure_lock": {
+          "is_structure_locked": "false",
+          "ordinary_user_can_edit_structure": false,
+          "studio_can_edit_structure": true,
+          "reason": "Diagnostic ordering oracle"
+        },
+        "prediction": "forbidden"
+      },
+      "actors": [
+        {
+          "id": "11000000-0000-4000-8000-000000000001",
+          "code": "ACTOR-001",
+          "version": "1.0.0",
+          "label": "",
+          "description": "First cycle member.",
+          "actor_type": "GROUP",
+          "order": 0,
+          "parent_id": "11000000-0000-4000-8000-000000000002"
+        },
+        {
+          "id": "11000000-0000-4000-8000-000000000002",
+          "code": "ACTOR-001",
+          "version": "1.0.0",
+          "label": "Second actor",
+          "description": "Second cycle member.",
+          "actor_type": "INVALID",
+          "order": 0,
+          "parent_id": "11000000-0000-4000-8000-000000000001"
+        },
+        {
+          "id": "11000000-0000-4000-8000-000000000003",
+          "code": "ACTOR-003",
+          "version": "1.0.0",
+          "label": "Third actor",
+          "description": "Duplicate sibling order.",
+          "actor_type": "GROUP",
+          "order": 0,
+          "parent_id": "11000000-0000-4000-8000-000000000001"
+        }
+      ],
+      "analytical_elements": [
+        {
+          "id": "12000000-0000-4000-8000-000000000001",
+          "code": "ELEMENT-001",
+          "version": "1.0.0",
+          "label": "First element",
+          "description": "Blank reference statement.",
+          "element_type": "CONFLICT_ISSUE",
+          "reference_statement": "",
+          "order": 0,
+          "parent_id": null
+        },
+        {
+          "id": "12000000-0000-4000-8000-000000000002",
+          "code": "ELEMENT-002",
+          "version": "1.0.0",
+          "label": "Second element",
+          "description": "Broken parent.",
+          "element_type": "GRIEVANCE",
+          "reference_statement": "Second element reference.",
+          "order": 1,
+          "parent_id": "12000000-0000-4000-8000-000000000099"
+        },
+        {
+          "id": "12000000-0000-4000-8000-000000000003",
+          "code": "ELEMENT-003",
+          "version": "1.0.0",
+          "label": "Third element",
+          "description": "Duplicate root order.",
+          "element_type": "STRUCTURAL_DRIVER",
+          "reference_statement": "Third element reference.",
+          "order": 0,
+          "parent_id": null
+        }
+      ],
+      "actor_element_roles": [
+        {
+          "id": "13000000-0000-4000-8000-000000000001",
+          "code": "ROLE-001",
+          "version": "1.0.0",
+          "actor_id": "11000000-0000-4000-8000-000000000099",
+          "element_id": "12000000-0000-4000-8000-000000000001",
+          "role": "INVALID",
+          "note": "Broken actor reference.",
+          "order": 0
+        },
+        {
+          "id": "13000000-0000-4000-8000-000000000002",
+          "code": "ROLE-002",
+          "version": "1.0.0",
+          "actor_id": "11000000-0000-4000-8000-000000000099",
+          "element_id": "12000000-0000-4000-8000-000000000001",
+          "role": "INVALID",
+          "note": "Duplicate broken role.",
+          "order": 1
+        }
+      ],
+      "parameter_definitions": [
+        {
+          "id": "14000000-0000-4000-8000-000000000001",
+          "code": "PARAMETER-001",
+          "version": "1.0.0",
+          "name": "Adversarial parameter",
+          "description": "Multiple parameter diagnostics.",
+          "target_type": "ACTOR_ELEMENT_ASSESSMENT",
+          "value_type": "DECIMAL",
+          "scale": {"minimum": "11", "maximum": "10", "step": "0"},
+          "allowed_statuses": ["UNKNOWN", "UNKNOWN"],
+          "applicability": {
+            "actor_ids": [
+              "11000000-0000-4000-8000-000000000099",
+              "11000000-0000-4000-8000-000000000099"
+            ],
+            "analytical_element_ids": [
+              "12000000-0000-4000-8000-000000000099"
+            ],
+            "actor_element_role_ids": [
+              "13000000-0000-4000-8000-000000000099"
+            ]
+          },
+          "reference_statement": ""
+        }
+      ],
+      "help_bindings": [
+        {
+          "id": "15000000-0000-4000-8000-000000000001",
+          "code": "HELP-001",
+          "version": "1.0.0",
+          "application_scope": "STUDIO",
+          "ui_key": "studio.oracle",
+          "locale": "en",
+          "topic_stable_key": "studio.oracle",
+          "topic_version": "2.0.0",
+          "topic_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "id": "15000000-0000-4000-8000-000000000002",
+          "code": "HELP-002",
+          "version": "1.0.0",
+          "application_scope": "STUDIO",
+          "ui_key": "studio.oracle",
+          "locale": "en",
+          "topic_stable_key": "studio.oracle",
+          "topic_version": "2.0.0",
+          "topic_sha256": "not-a-sha256"
+        }
+      ]
+    },
+    "expected_diagnostics": [
+      {"level": "ERROR", "code": "SCHEMA_VERSION_UNSUPPORTED", "path": "/format_version", "message": "format_version must equal '1.0.0'."},
+      {"level": "ERROR", "code": "SCHEMA_VERSION_UNSUPPORTED", "path": "/format_version", "message": "Field does not match the required contract value."},
+      {"level": "ERROR", "code": "FIELD_BLANK", "path": "/project/name", "message": "Field must not be blank."},
+      {"level": "ERROR", "code": "FORBIDDEN_AGGREGATE_IDENTITY", "path": "/project/metadata/risk_score", "message": "Calculated aggregate, prediction, risk, and recommendation fields are forbidden."},
+      {"level": "ERROR", "code": "PROJECT_IDENTITY_MISMATCH", "path": "/project/code", "message": "Manifest project.code must match the persisted Project exactly."},
+      {"level": "ERROR", "code": "FIELD_UNEXPECTED", "path": "/policies/*", "message": "Object contains a field outside the typed manifest contract."},
+      {"level": "ERROR", "code": "FIELD_TYPE_INVALID", "path": "/policies/structure_lock/is_structure_locked", "message": "Field has the wrong JSON type."},
+      {"level": "ERROR", "code": "FORBIDDEN_AGGREGATE_IDENTITY", "path": "/policies/prediction", "message": "Calculated aggregate, prediction, risk, and recommendation fields are forbidden."},
+      {"level": "ERROR", "code": "FIELD_BLANK", "path": "/actors/0/label", "message": "Field must not be blank."},
+      {"level": "ERROR", "code": "FIELD_VALUE_INVALID", "path": "/actors/0", "message": "Field value does not satisfy the typed manifest contract."},
+      {"level": "ERROR", "code": "FIELD_VALUE_INVALID", "path": "/actors/1/actor_type", "message": "Field value does not satisfy the typed manifest contract."},
+      {"level": "ERROR", "code": "FIELD_VALUE_INVALID", "path": "/actors/1", "message": "Field value does not satisfy the typed manifest contract."},
+      {"level": "ERROR", "code": "CODE_DUPLICATE", "path": "/actors/1/code", "message": "Code duplicates /actors/0/code."},
+      {"level": "ERROR", "code": "FIELD_BLANK", "path": "/analytical_elements/0/reference_statement", "message": "Field must not be blank."},
+      {"level": "ERROR", "code": "FIELD_VALUE_INVALID", "path": "/analytical_elements/0", "message": "Field value does not satisfy the typed manifest contract."},
+      {"level": "ERROR", "code": "REFERENCE_STATEMENT_REQUIRED", "path": "/analytical_elements/0/reference_statement", "message": "Analytical elements require a reference statement."},
+      {"level": "ERROR", "code": "FIELD_VALUE_INVALID", "path": "/actor_element_roles/0/role", "message": "Field value does not satisfy the typed manifest contract."},
+      {"level": "ERROR", "code": "FIELD_VALUE_INVALID", "path": "/actor_element_roles/0", "message": "Field value does not satisfy the typed manifest contract."},
+      {"level": "ERROR", "code": "FIELD_VALUE_INVALID", "path": "/actor_element_roles/1/role", "message": "Field value does not satisfy the typed manifest contract."},
+      {"level": "ERROR", "code": "FIELD_VALUE_INVALID", "path": "/actor_element_roles/1", "message": "Field value does not satisfy the typed manifest contract."},
+      {"level": "ERROR", "code": "FIELD_BLANK", "path": "/parameter_definitions/0/reference_statement", "message": "Field must not be blank."},
+      {"level": "ERROR", "code": "FIELD_VALUE_INVALID", "path": "/parameter_definitions/0", "message": "Field value does not satisfy the typed manifest contract."},
+      {"level": "ERROR", "code": "SCALE_INVALID", "path": "/parameter_definitions/0/scale", "message": "Scale minimum must be less than or equal to maximum."},
+      {"level": "ERROR", "code": "SCALE_INVALID", "path": "/parameter_definitions/0/scale/step", "message": "Scale step must be positive."},
+      {"level": "ERROR", "code": "REFERENCE_STATEMENT_REQUIRED", "path": "/parameter_definitions/0/reference_statement", "message": "Parameter definitions require a reference statement."},
+      {"level": "ERROR", "code": "STATUS_INVALID", "path": "/parameter_definitions/0/allowed_statuses/1", "message": "Allowed status is duplicated."},
+      {"level": "ERROR", "code": "FIELD_VALUE_INVALID", "path": "/help_bindings/1/topic_sha256", "message": "Field value does not satisfy the typed manifest contract."},
+      {"level": "ERROR", "code": "FIELD_VALUE_INVALID", "path": "/help_bindings/1", "message": "Field value does not satisfy the typed manifest contract."},
+      {"level": "ERROR", "code": "HELP_TOPIC_VERSION_MISMATCH", "path": "/help_bindings/0/topic_version", "message": "Help binding version must equal the exact HelpTopic version."},
+      {"level": "ERROR", "code": "HELP_TOPIC_UNAVAILABLE", "path": "/help_bindings/0", "message": "The exact published, sanitized HelpTopic is unavailable."},
+      {"level": "ERROR", "code": "HELP_TOPIC_VERSION_MISMATCH", "path": "/help_bindings/1/topic_version", "message": "Help binding version must equal the exact HelpTopic version."},
+      {"level": "ERROR", "code": "HELP_BINDING_DUPLICATE", "path": "/help_bindings/1", "message": "Help binding duplicates /help_bindings/0."},
+      {"level": "ERROR", "code": "HELP_TOPIC_UNAVAILABLE", "path": "/help_bindings/1", "message": "The exact published, sanitized HelpTopic is unavailable."},
+      {"level": "ERROR", "code": "BROKEN_CROSS_REFERENCE", "path": "/actor_element_roles/0/actor_id", "message": "actor_id does not reference the required manifest section."},
+      {"level": "ERROR", "code": "BROKEN_CROSS_REFERENCE", "path": "/actor_element_roles/1/actor_id", "message": "actor_id does not reference the required manifest section."},
+      {"level": "ERROR", "code": "CROSS_REFERENCE_DUPLICATE", "path": "/actor_element_roles/1", "message": "Actor-element role duplicates /actor_element_roles/0."},
+      {"level": "ERROR", "code": "BROKEN_CROSS_REFERENCE", "path": "/parameter_definitions/0/applicability/actor_ids/0", "message": "Applicability reference does not resolve in this manifest."},
+      {"level": "ERROR", "code": "APPLICABILITY_INVALID", "path": "/parameter_definitions/0/applicability/actor_ids/1", "message": "Applicability reference is duplicated."},
+      {"level": "ERROR", "code": "BROKEN_CROSS_REFERENCE", "path": "/parameter_definitions/0/applicability/analytical_element_ids/0", "message": "Applicability reference does not resolve in this manifest."},
+      {"level": "ERROR", "code": "BROKEN_CROSS_REFERENCE", "path": "/parameter_definitions/0/applicability/actor_element_role_ids/0", "message": "Applicability reference does not resolve in this manifest."},
+      {"level": "ERROR", "code": "ORDER_DUPLICATE", "path": "/actors/2/order", "message": "Sibling order duplicates /actors/1/order."},
+      {"level": "ERROR", "code": "HIERARCHY_CYCLE", "path": "/actors/0/parent_id", "message": "actors hierarchy contains a cycle."},
+      {"level": "ERROR", "code": "HIERARCHY_CYCLE", "path": "/actors/1/parent_id", "message": "actors hierarchy contains a cycle."},
+      {"level": "ERROR", "code": "BROKEN_PARENT_REFERENCE", "path": "/analytical_elements/1/parent_id", "message": "parent_id does not reference an item in analytical_elements."},
+      {"level": "ERROR", "code": "ORDER_DUPLICATE", "path": "/analytical_elements/2/order", "message": "Sibling order duplicates /analytical_elements/0/order."}
+    ]
+  },
   "invalid_mutations": [
     {
       "name": "project-code-mismatch",

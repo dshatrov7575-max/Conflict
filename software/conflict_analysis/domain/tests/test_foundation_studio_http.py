@@ -16,21 +16,19 @@ from domain.api.studio_definitions import project_access_group_name
 from domain.models import Project, ProjectDefinitionVersion
 from domain.policies import StudioPrincipal, StudioRole
 from domain.services.foundation_packages import (
+    FOUNDATION_RAW_JSON_MAX_BYTES,
+    FOUNDATION_RAW_JSON_MAX_NESTING,
     FoundationPackageValidationError,
+    RawJSONError,
     canonical_json,
+    capture_json_source,
     export_project_definition_package_2_1,
+    parse_captured_json,
+    parse_raw_json_bytes,
     preview_foundation_package_2_1,
     validate_foundation_package_2_1,
 )
 from domain.services.project_definitions import create_project_definition_draft
-from domain.services.raw_ingest import (
-    FOUNDATION_RAW_JSON_MAX_BYTES,
-    FOUNDATION_RAW_JSON_MAX_NESTING,
-    RawJSONError,
-    capture_json_source,
-    parse_captured_json,
-    parse_raw_json_bytes,
-)
 
 
 FIXTURE_PATH = (

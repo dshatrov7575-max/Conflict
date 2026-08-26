@@ -111,6 +111,7 @@ from domain.services.foundation_packages import (
     validate_foundation_package,
 )
 from domain.policies import (
+    FoundationAuditContext,
     freeze_experiment,
     publish_project_definition,
     record_foundation_audit,
@@ -2766,9 +2767,11 @@ class EvidenceChainContractTests(FoundationFactoryMixin, TestCase):
             )
         )
         audit = record_foundation_audit(
-            workspace=self.workspace,
+            context=FoundationAuditContext.for_human_workspace(
+                workspace=self.workspace,
+                actor_identifier="fixture:source-qa",
+            ),
             action=AuditAction.UPDATE,
-            actor_identifier="fixture:source-qa",
             entity_type="FACT_EVIDENCE_SET",
             entity_id=stable_fact.id,
             before={"source_group": first.independence_group},
@@ -5898,9 +5901,11 @@ class FoundationAuditContractTests(FoundationFactoryMixin, TestCase):
     def test_create_publish_freeze_and_import_are_attributed_append_only_audit_events(self):
         actor_identifier = "foundation-owner"
         created = record_foundation_audit(
-            workspace=self.workspace,
+            context=FoundationAuditContext.for_human_workspace(
+                workspace=self.workspace,
+                actor_identifier=actor_identifier,
+            ),
             action=AuditAction.CREATE,
-            actor_identifier=actor_identifier,
             entity_type="PROJECT_WORKSPACE",
             entity_id=self.workspace.id,
             after={"code": self.workspace.code},

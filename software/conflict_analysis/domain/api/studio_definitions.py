@@ -41,17 +41,17 @@ from domain.policies import (
     validate_project_definition,
 )
 from domain.services.help_topics import HelpTopicResolutionError, resolve_help_topic
+from domain.services.foundation_packages import (
+    RawJSONError,
+    parse_strong_manifest_if_match,
+    read_http_json,
+)
 from domain.services.project_definitions import (
     ProjectDefinitionDraftConflict,
     clone_project_definition_draft,
     create_project_definition_draft,
     open_project_definition_draft,
     save_project_definition_draft,
-)
-from domain.services.raw_ingest import (
-    RawJSONError,
-    parse_strong_manifest_if_match,
-    read_http_json,
 )
 
 
@@ -61,11 +61,14 @@ _SPOOF_FIELDS = frozenset(
     {
         "actor",
         "actor_identifier",
+        "actor_type",
+        "audit_context",
         "capabilities",
         "capability",
         "expected_manifest_hash",
         "project_id",
         "role",
+        "service_context",
         "service_purpose",
     }
 )

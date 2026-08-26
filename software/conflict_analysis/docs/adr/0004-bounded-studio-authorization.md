@@ -1,4 +1,4 @@
-# ADR 0003: Foundation Studio authorization boundary
+# ADR 0004: Bounded Studio authorization
 
 Status: accepted by `FOUNDATION-STUDIO-CONTRACT-ADDENDUM-001`.
 
