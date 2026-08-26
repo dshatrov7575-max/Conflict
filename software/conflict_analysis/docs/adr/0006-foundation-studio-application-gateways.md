@@ -55,11 +55,18 @@ Any failure rolls back every row and membership.
 
 ## Package ingress and authorization
 
-Preview and attempt capture one immutable HTTP byte stream. The capture preserves
-`HTTP_BYTES`, full SHA-256 and actual byte length and is parsed without a second
-body read or JSON reserialization. Invalid media type, charset or Content-Length
-is rejected at HTTP admission. Valid-media malformed, oversized or schema-invalid
-attempts reach the canonical durable REJECTED receipt path.
+Preview and attempt admit and capture at most one immutable HTTP byte stream. A
+successfully admitted body is consumed once, preserves exact `HTTP_BYTES`, full
+SHA-256 and actual byte length, and is parsed without a second body read or JSON
+reserialization. The transport budget limits bytes consumed from the request,
+not merely bytes retained in memory: a known numeric `Content-Length` over the
+limit is rejected before any read, and an absent, untrusted or mismatched length
+can consume at most `max_bytes + 1` before rejection. Invalid media type, charset
+or Content-Length is rejected at HTTP admission without a durable receipt.
+Over-budget HTTP bodies likewise have no receipt and no claimed full-body raw
+identity because their remainder is intentionally never consumed. Admitted
+malformed or schema-invalid attempts still reach the canonical durable REJECTED
+receipt path.
 
 Before package work, the adapter requires all of:
 
@@ -118,12 +125,13 @@ are 404. Unsafe session requests require real CSRF. Explicit body/query/header
 spoof vectors include actor, role, capability, service context/purpose, project
 authority and stale-token authority.
 
-For an authenticated unsafe session request, the adapter primes the canonical
-bounded sealed HTTP capture before CSRF evaluation, then runs Django's real
-cookie/header check against the underlying `HttpRequest`. This prevents DRF from
-form-parsing or consuming JSON during CSRF while preserving 403-before-view on a
-missing/invalid token. Anonymous requests are not primed, and the view remains the
-only transport-validation/parser authority after CSRF succeeds.
+For an authenticated unsafe session request, the adapter runs Django's real
+cookie/header check against the underlying `HttpRequest` before transport
+admission. Django does not treat `application/json` as a form body, so this avoids
+DRF form parsing and preserves zero-byte 403 denial for a missing or invalid CSRF
+token. Only after CSRF succeeds may the view invoke the canonical bounded HTTP
+transport gate and capture; Basic authentication reaches that same single gate.
+Malformed media/charset and known oversize lengths are rejected before body I/O.
 
 Acceptance preserves all accepted FSA tests and adds SQLite and PostgreSQL 18
 route, lifecycle, conflict, raw-byte, receipt, rollback and concurrency gates.

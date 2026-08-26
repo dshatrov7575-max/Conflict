@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import copy
 import hashlib
 import json
@@ -14,9 +15,12 @@ from django.contrib.auth.models import Group, Permission
 from django.test import TestCase
 from django.urls import Resolver404, resolve
 from django.utils import timezone
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient, APIRequestFactory
 
-from domain.api.studio_definitions import project_access_group_name
+from domain.api.studio_definitions import (
+    attempt_definition_package_2_1,
+    project_access_group_name,
+)
 from domain.enums import PublicationStatus
 from domain.models import (
     AuditEvent,
@@ -64,6 +68,36 @@ FIXTURE_PATH = (
     / "fixtures"
     / "foundation_studio_definition_vectors_v1.json"
 )
+
+
+class _AdversarialBoundedWSGIInput:
+    """Short-read stream that raises if a caller asks past the byte budget."""
+
+    def __init__(self, payload: bytes, *, max_bytes: int) -> None:
+        self._payload = payload
+        self._offset = 0
+        self._budget = max_bytes + 1
+        self.bytes_served = 0
+
+    def read(self, size: int = -1) -> bytes:
+        if self._offset >= len(self._payload):
+            return b""
+        if self.bytes_served >= self._budget:
+            raise AssertionError("HTTP body read exceeded max_bytes + 1")
+        remaining_budget = self._budget - self.bytes_served
+        requested = len(self._payload) - self._offset if size < 0 else size
+        served = min(
+            requested,
+            remaining_budget,
+            len(self._payload) - self._offset,
+        )
+        chunk = self._payload[self._offset : self._offset + served]
+        self._offset += served
+        self.bytes_served += served
+        return chunk
+
+    def readline(self, size: int = -1) -> bytes:
+        return self.read(size)
 
 
 class FoundationStudioRawIngressTests(TestCase):
@@ -884,6 +918,171 @@ class FoundationStudioApplicationGatewayHttpTests(
             self.import_reader,
         )
         self.client = APIClient()
+
+    def test_http_admission_is_transport_bounded_before_domain_work(self):
+        definition = self.draft(code="HTTP-ADMISSION-BUDGET")
+        attempt_url = (
+            f"/api/foundation/projects/{self.project.pk}/"
+            "definition-packages/2.1/attempt/"
+        )
+        oversized = (
+            b'{"padding":"'
+            + b"x" * (FOUNDATION_RAW_JSON_MAX_BYTES + 4096)
+            + b'"}'
+        )
+        basic_authorization = "Basic " + base64.b64encode(
+            b"gateway-http-import-reader:test-password"
+        ).decode("ascii")
+
+        session = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(
+            session.login(
+                username="gateway-http-import-reader",
+                password="test-password",
+            )
+        )
+        self.assertEqual(
+            session.get(
+                f"/api/foundation/definitions/{definition.pk}/"
+            ).status_code,
+            200,
+        )
+        csrf_token = session.cookies["csrftoken"].value
+
+        membership_model = Group.user_set.through
+
+        def domain_counts() -> dict[str, int]:
+            return {
+                "projects": Project.objects.count(),
+                "definitions": ProjectDefinitionVersion.objects.count(),
+                "imports": ImportRun.objects.count(),
+                "audits": AuditEvent.objects.count(),
+                "publications": ProjectPublication.objects.count(),
+                "workspaces": ProjectWorkspace.objects.count(),
+                "groups": Group.objects.count(),
+                "memberships": membership_model.objects.count(),
+            }
+
+        baseline = domain_counts()
+
+        def direct_request(
+            stream: _AdversarialBoundedWSGIInput,
+            *,
+            content_type: str = "application/json",
+            content_length: str | None = None,
+            session_csrf: str | None | bool = False,
+        ):
+            factory = APIRequestFactory(enforce_csrf_checks=True)
+            headers: dict[str, str] = {}
+            if session_csrf is False:
+                headers["HTTP_AUTHORIZATION"] = basic_authorization
+            else:
+                headers["HTTP_COOKIE"] = f"csrftoken={csrf_token}"
+                if isinstance(session_csrf, str):
+                    headers["HTTP_X_CSRFTOKEN"] = session_csrf
+            django_request = factory.generic(
+                "POST",
+                attempt_url,
+                b"",
+                content_type=content_type,
+                **headers,
+            )
+            if session_csrf is not False:
+                django_request.user = self.import_reader
+            django_request._stream = stream
+            django_request._read_started = False
+            django_request.META["CONTENT_TYPE"] = content_type
+            django_request.META.pop("CONTENT_LENGTH", None)
+            if content_length is not None:
+                django_request.META["CONTENT_LENGTH"] = content_length
+            return attempt_definition_package_2_1(
+                django_request,
+                project_id=self.project.pk,
+            )
+
+        # Lengthless Basic and valid-session requests may consume only the
+        # sentinel byte that establishes over-budget input, never the remainder.
+        for name, session_csrf in (
+            ("basic", False),
+            ("valid_session_csrf", csrf_token),
+        ):
+            with self.subTest(name=name):
+                stream = _AdversarialBoundedWSGIInput(
+                    oversized,
+                    max_bytes=FOUNDATION_RAW_JSON_MAX_BYTES,
+                )
+                response = direct_request(stream, session_csrf=session_csrf)
+                self.assertEqual(response.status_code, 400, response.data)
+                self.assertEqual(
+                    response.data["code"],
+                    "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+                )
+                self.assertLessEqual(
+                    stream.bytes_served,
+                    FOUNDATION_RAW_JSON_MAX_BYTES + 1,
+                )
+                self.assertEqual(domain_counts(), baseline)
+
+        # Missing/invalid session CSRF is denied before transport admission.
+        for name, token in (
+            ("missing_session_csrf", None),
+            ("invalid_session_csrf", "0" * 64),
+        ):
+            with self.subTest(name=name):
+                stream = _AdversarialBoundedWSGIInput(
+                    oversized,
+                    max_bytes=FOUNDATION_RAW_JSON_MAX_BYTES,
+                )
+                response = direct_request(stream, session_csrf=token)
+                self.assertEqual(response.status_code, 403)
+                self.assertEqual(stream.bytes_served, 0)
+                self.assertEqual(domain_counts(), baseline)
+
+        # Media admission and a trustworthy known-over-budget length are both
+        # zero-read failures. No full-body raw identity or receipt is created.
+        for name, content_type, content_length in (
+            (
+                "malformed_charset",
+                "application/json; charset=iso-8859-1",
+                None,
+            ),
+            (
+                "known_content_length_oversize",
+                "application/json",
+                str(len(oversized)),
+            ),
+        ):
+            with self.subTest(name=name):
+                stream = _AdversarialBoundedWSGIInput(
+                    oversized,
+                    max_bytes=FOUNDATION_RAW_JSON_MAX_BYTES,
+                )
+                response = direct_request(
+                    stream,
+                    content_type=content_type,
+                    content_length=content_length,
+                )
+                self.assertEqual(response.status_code, 400, response.data)
+                self.assertEqual(stream.bytes_served, 0)
+                self.assertEqual(domain_counts(), baseline)
+
+        # A declared/observed length mismatch is also an admission failure and
+        # cannot be converted into a durable malformed-package attempt.
+        mismatched_stream = _AdversarialBoundedWSGIInput(
+            b"{}",
+            max_bytes=FOUNDATION_RAW_JSON_MAX_BYTES,
+        )
+        mismatched = direct_request(
+            mismatched_stream,
+            content_length="16",
+        )
+        self.assertEqual(mismatched.status_code, 400, mismatched.data)
+        self.assertEqual(
+            mismatched.data["code"],
+            "RAW_JSON_CONTENT_LENGTH_MISMATCH",
+        )
+        self.assertEqual(mismatched_stream.bytes_served, 2)
+        self.assertEqual(domain_counts(), baseline)
 
     def test_successor_http_201_etag_pin_preservation_and_stable_retry_409(self):
         initial = bootstrap_initial_project_definition(

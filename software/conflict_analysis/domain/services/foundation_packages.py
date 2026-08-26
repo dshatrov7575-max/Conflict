@@ -411,16 +411,88 @@ def parse_json_source(
     )
 
 
+def validate_http_json_transport(
+    request: Any,
+    *,
+    max_bytes: int = FOUNDATION_RAW_JSON_MAX_BYTES,
+) -> int | None:
+    """Validate non-consuming HTTP admission gates and return declared length."""
+
+    if not isinstance(max_bytes, int) or max_bytes < 1:
+        raise ValueError("max_bytes must be a positive integer.")
+    http_request = getattr(request, "_request", request)
+    validate_json_content_type(str(http_request.META.get("CONTENT_TYPE", "")))
+    length_header = http_request.META.get("CONTENT_LENGTH")
+    if length_header in (None, ""):
+        return None
+    if (
+        not isinstance(length_header, str)
+        or re.fullmatch(r"[0-9]+", length_header) is None
+    ):
+        raise _error(
+            "RAW_JSON_CONTENT_LENGTH_INVALID",
+            "Content-Length must be a non-negative decimal integer.",
+        )
+    normalized_length = length_header.lstrip("0") or "0"
+    max_length = str(max_bytes)
+    if len(normalized_length) > len(max_length) or (
+        len(normalized_length) == len(max_length) and normalized_length > max_length
+    ):
+        raise _error(
+            "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+            f"JSON input exceeds the configured {max_bytes}-byte budget.",
+        )
+    advertised_length = int(normalized_length)
+    return advertised_length
+
+
+def _raise_http_content_length_mismatch() -> None:
+    raise _error(
+        "RAW_JSON_CONTENT_LENGTH_MISMATCH",
+        "Content-Length does not match the complete HTTP request body.",
+    )
+
+
+def _require_exact_http_capture(
+    captured: CapturedRawJSON,
+    *,
+    advertised_length: int | None,
+    max_bytes: int,
+) -> None:
+    _require_sealed_raw_json_capture(captured)
+    payload = captured.payload
+    identity = captured.identity
+    if len(payload) > max_bytes:
+        raise _error(
+            "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+            f"JSON input exceeds the configured {max_bytes}-byte budget.",
+        )
+    if (
+        identity.kind != "HTTP_BYTES"
+        or identity.name
+        or identity.byte_length != len(payload)
+        or identity.sha256 != hashlib.sha256(payload).hexdigest()
+    ):
+        raise _error(
+            "RAW_JSON_CAPTURE_UNTRUSTED",
+            "The server-private raw JSON request cache is not an exact capture.",
+        )
+    if advertised_length is not None and advertised_length != len(payload):
+        _raise_http_content_length_mismatch()
+
+
 def prime_http_json_capture(
     request: Any,
     *,
     max_bytes: int = FOUNDATION_RAW_JSON_MAX_BYTES,
 ) -> CapturedRawJSON:
-    """Prime one sealed pre-CSRF body cache without transport validation."""
+    """Capture a fully observed, admitted HTTP body once within a hard budget."""
 
-    if not isinstance(max_bytes, int) or max_bytes < 1:
-        raise ValueError("max_bytes must be a positive integer.")
     http_request = getattr(request, "_request", request)
+    advertised_length = validate_http_json_transport(
+        http_request,
+        max_bytes=max_bytes,
+    )
     cached = getattr(http_request, _HTTP_JSON_CAPTURE_ATTRIBUTE, None)
     if cached is not None:
         if not isinstance(cached, CapturedRawJSON):
@@ -428,12 +500,14 @@ def prime_http_json_capture(
                 "RAW_JSON_CAPTURE_UNTRUSTED",
                 "The server-private raw JSON request cache is invalid.",
             )
-        _require_sealed_raw_json_capture(cached)
+        _require_exact_http_capture(
+            cached,
+            advertised_length=advertised_length,
+            max_bytes=max_bytes,
+        )
         return cached
 
-    digest = hashlib.sha256()
     retained = bytearray()
-    byte_length = 0
     if hasattr(http_request, "_body"):
         body = http_request._body
         if not isinstance(body, bytes):
@@ -441,27 +515,62 @@ def prime_http_json_capture(
                 "RAW_JSON_HTTP_BODY_INVALID",
                 "The HTTP request body must be an immutable byte sequence.",
             )
-        digest.update(body)
-        byte_length = len(body)
-        retained.extend(body[: max_bytes + 1])
+        if len(body) > max_bytes:
+            raise _error(
+                "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+                f"JSON input exceeds the configured {max_bytes}-byte budget.",
+            )
+        retained.extend(body)
     else:
-        while chunk := http_request.read(64 * 1024):
+        if bool(getattr(http_request, "_read_started", False)):
+            raise _error(
+                "RAW_JSON_HTTP_BODY_ALREADY_READ",
+                "The HTTP request body was consumed before canonical capture.",
+            )
+        while True:
+            remaining = max_bytes + 1 - len(retained)
+            if remaining <= 0:
+                raise _error(
+                    "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+                    f"JSON input exceeds the configured {max_bytes}-byte budget.",
+                )
+            requested = min(64 * 1024, remaining)
+            try:
+                chunk = http_request.read(requested)
+            except Exception as exc:
+                if isinstance(exc, AssertionError):
+                    raise
+                raise _error(
+                    "RAW_JSON_HTTP_BODY_UNREADABLE",
+                    "The HTTP request body could not be captured.",
+                ) from exc
             if not isinstance(chunk, bytes):
                 raise _error(
                     "RAW_JSON_HTTP_BODY_INVALID",
                     "The HTTP request body must be an immutable byte sequence.",
                 )
-            digest.update(chunk)
-            byte_length += len(chunk)
-            remaining = max_bytes + 1 - len(retained)
-            if remaining > 0:
-                retained.extend(chunk[:remaining])
+            if len(chunk) > requested:
+                raise _error(
+                    "RAW_JSON_HTTP_BODY_INVALID",
+                    "The HTTP request body exceeded the requested bounded read.",
+                )
+            if not chunk:
+                break
+            retained.extend(chunk)
+            if len(retained) > max_bytes:
+                raise _error(
+                    "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+                    f"JSON input exceeds the configured {max_bytes}-byte budget.",
+                )
+    if advertised_length is not None and advertised_length != len(retained):
+        _raise_http_content_length_mismatch()
+    payload = bytes(retained)
     captured = _sealed_raw_json_capture(
-        bytes(retained),
+        payload,
         identity=RawInputIdentity(
             kind="HTTP_BYTES",
-            sha256=digest.hexdigest(),
-            byte_length=byte_length,
+            sha256=hashlib.sha256(payload).hexdigest(),
+            byte_length=len(payload),
         ),
     )
     try:
@@ -479,28 +588,9 @@ def capture_http_json(
     *,
     max_bytes: int = FOUNDATION_RAW_JSON_MAX_BYTES,
 ) -> CapturedRawJSON:
-    """Validate HTTP transport gates and reuse one sealed pre-CSRF capture."""
+    """Validate HTTP transport gates and reuse one sealed exact capture."""
 
-    if not isinstance(max_bytes, int) or max_bytes < 1:
-        raise ValueError("max_bytes must be a positive integer.")
-    http_request = getattr(request, "_request", request)
-    content_type = str(http_request.META.get("CONTENT_TYPE", ""))
-    validate_json_content_type(content_type)
-    length_header = http_request.META.get("CONTENT_LENGTH")
-    if length_header not in (None, ""):
-        try:
-            advertised_length = int(length_header)
-        except (TypeError, ValueError) as exc:
-            raise _error(
-                "RAW_JSON_CONTENT_LENGTH_INVALID",
-                "Content-Length must be a non-negative decimal integer.",
-            ) from exc
-        if advertised_length < 0:
-            raise _error(
-                "RAW_JSON_CONTENT_LENGTH_INVALID",
-                "Content-Length must be a non-negative decimal integer.",
-            )
-    return prime_http_json_capture(http_request, max_bytes=max_bytes)
+    return prime_http_json_capture(request, max_bytes=max_bytes)
 
 
 def read_http_json(

@@ -479,6 +479,31 @@ class _OnePassHTTPRequest:
         return chunk
 
 
+class _BudgetGuardHTTPRequest(_OnePassHTTPRequest):
+    """Fail the test if capture ever requests bytes beyond its hard allowance."""
+
+    def __init__(self, payload: bytes, *, read_budget: int) -> None:
+        super().__init__(payload)
+        self.read_budget = read_budget
+        self.read_calls = 0
+        self.requested_sizes: list[int] = []
+
+    def read(self, size: int = -1) -> bytes:
+        self.read_calls += 1
+        self.requested_sizes.append(size)
+        if size < 0 or size > self.read_budget - self.bytes_served:
+            raise AssertionError("HTTP capture attempted to read beyond its byte budget")
+        return super().read(size)
+
+
+class _OvershootingHTTPRequest(_OnePassHTTPRequest):
+    """Hostile transport that violates the bounded ``read(size)`` contract."""
+
+    def read(self, size: int = -1) -> bytes:
+        self.bytes_served += size + 1
+        return b"x" * (size + 1)
+
+
 class FoundationStudioPackage21Tests(TestCase):
     def setUp(self) -> None:
         fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
@@ -643,56 +668,141 @@ class FoundationStudioPackage21Tests(TestCase):
             semantic_payload_sha256,
         )
 
-    def test_valid_media_oversize_is_stream_bounded_and_durably_receipted(self):
-        raw = b'{"oversize":"' + b"z" * FOUNDATION_RAW_JSON_MAX_BYTES + b'"}'
-        request = _OnePassHTTPRequest(raw)
-        captured = prime_http_json_capture(request)
-        self.assertEqual(request.bytes_served, len(raw))
-        self.assertEqual(len(captured.payload), FOUNDATION_RAW_JSON_MAX_BYTES + 1)
-        self.assertEqual(captured.identity.byte_length, len(raw))
-        self.assertEqual(captured.identity.sha256, hashlib.sha256(raw).hexdigest())
-        self.assertIs(capture_http_json(request), captured)
-        self.assertEqual(request.bytes_served, len(raw))
+    def test_known_http_oversize_fails_before_read_without_identity_or_receipt(self):
+        max_bytes = 8
+        request = _BudgetGuardHTTPRequest(b"x" * 9, read_budget=0)
 
-        service = StudioPrincipal.service(
-            actor_identifier="foundation-malformed-service",
-            purpose="Foundation 2.1 malformed HTTP attempt",
-            capabilities=foundation_import_service_capabilities_2_1(None),
-        )
-        outcome = attempt_foundation_import_2_1(
-            captured,
-            project=self.project,
-            principal=service,
-            actor_identifier=service.actor_identifier,
-        )
+        with self.assertRaises(RawJSONError) as raised:
+            prime_http_json_capture(request, max_bytes=max_bytes)
 
-        self.assertEqual(outcome.status, "REJECTED")
-        self.assertIsNone(outcome.preview)
-        self.assertFalse(ProjectDefinitionVersion.objects.exists())
-        receipt = ImportRun.objects.get(pk=outcome.receipt_id)
-        self.assertEqual(receipt.status, "REJECTED")
-        self.assertEqual(receipt.selected_input["raw_input_kind"], "HTTP_BYTES")
+        self.assertEqual(raised.exception.code, "RAW_JSON_BYTE_BUDGET_EXCEEDED")
+        self.assertEqual(request.read_calls, 0)
+        self.assertEqual(request.bytes_served, 0)
+        self.assertFalse(hasattr(request, "_foundation_raw_json_capture"))
+        self.assertFalse(ImportRun.objects.exists())
+
+    def test_unknown_http_oversize_stops_at_max_plus_one_without_cache(self):
+        max_bytes = 8
+        request = _BudgetGuardHTTPRequest(b"x" * 32, read_budget=max_bytes + 1)
+        request.META.pop("CONTENT_LENGTH")
+
+        with self.assertRaises(RawJSONError) as raised:
+            capture_http_json(request, max_bytes=max_bytes)
+
+        self.assertEqual(raised.exception.code, "RAW_JSON_BYTE_BUDGET_EXCEEDED")
+        self.assertEqual(request.read_calls, 1)
+        self.assertEqual(request.requested_sizes, [max_bytes + 1])
+        self.assertEqual(request.bytes_served, max_bytes + 1)
+        self.assertFalse(hasattr(request, "_foundation_raw_json_capture"))
+        self.assertFalse(ImportRun.objects.exists())
+
+    def test_http_content_length_mismatch_has_no_capture_or_receipt(self):
+        for advertised_length in ("1", "3"):
+            with self.subTest(advertised_length=advertised_length):
+                request = _BudgetGuardHTTPRequest(b"{}", read_budget=9)
+                request.META["CONTENT_LENGTH"] = advertised_length
+
+                with self.assertRaises(RawJSONError) as raised:
+                    capture_http_json(request, max_bytes=8)
+
+                self.assertEqual(
+                    raised.exception.code,
+                    "RAW_JSON_CONTENT_LENGTH_MISMATCH",
+                )
+                self.assertEqual(request.read_calls, 2)
+                self.assertEqual(request.bytes_served, 2)
+                self.assertFalse(hasattr(request, "_foundation_raw_json_capture"))
+        self.assertFalse(ImportRun.objects.exists())
+
+    def test_http_under_and_at_budget_are_exact_and_read_once(self):
+        for raw, max_bytes in ((b"{}", 8), (b'{"a":1}', 7)):
+            with self.subTest(raw=raw, max_bytes=max_bytes):
+                request = _BudgetGuardHTTPRequest(raw, read_budget=max_bytes + 1)
+                captured = capture_http_json(request, max_bytes=max_bytes)
+                calls_after_capture = request.read_calls
+
+                self.assertEqual(captured.payload, raw)
+                self.assertEqual(captured.identity.byte_length, len(raw))
+                self.assertEqual(
+                    captured.identity.sha256,
+                    hashlib.sha256(raw).hexdigest(),
+                )
+                self.assertIs(
+                    capture_http_json(request, max_bytes=max_bytes),
+                    captured,
+                )
+                self.assertEqual(request.read_calls, calls_after_capture)
+                self.assertEqual(request.bytes_served, len(raw))
+
+    def test_http_capture_fail_closed_edges_never_create_partial_identity(self):
+        body_request = _OnePassHTTPRequest(b"")
+        body_request.META.pop("CONTENT_LENGTH")
+        body_request._body = b"x" * 9
+        with self.assertRaises(RawJSONError) as body_error:
+            capture_http_json(body_request, max_bytes=8)
+        self.assertEqual(body_error.exception.code, "RAW_JSON_BYTE_BUDGET_EXCEEDED")
+        self.assertFalse(hasattr(body_request, "_foundation_raw_json_capture"))
+
+        started_request = _OnePassHTTPRequest(b"{}")
+        started_request.META.pop("CONTENT_LENGTH")
+        started_request._read_started = True
+        with self.assertRaises(RawJSONError) as started_error:
+            capture_http_json(started_request, max_bytes=8)
         self.assertEqual(
-            receipt.selected_input["raw_input_sha256"],
-            hashlib.sha256(raw).hexdigest(),
+            started_error.exception.code,
+            "RAW_JSON_HTTP_BODY_ALREADY_READ",
         )
-        self.assertEqual(receipt.selected_input["raw_input_byte_length"], len(raw))
-        self.assertEqual(receipt.errors[0]["code"], "RAW_JSON_BYTE_BUDGET_EXCEEDED")
+        self.assertEqual(started_request.bytes_served, 0)
+        self.assertFalse(hasattr(started_request, "_foundation_raw_json_capture"))
 
-    def test_pre_csrf_prime_defers_media_validation_and_reuses_exact_cache(self):
+        hostile_request = _OvershootingHTTPRequest(b"")
+        hostile_request.META.pop("CONTENT_LENGTH")
+        with self.assertRaises(RawJSONError) as hostile_error:
+            capture_http_json(hostile_request, max_bytes=8)
+        self.assertEqual(hostile_error.exception.code, "RAW_JSON_HTTP_BODY_INVALID")
+        self.assertFalse(hasattr(hostile_request, "_foundation_raw_json_capture"))
+
+    def test_cached_capture_rechecks_budget_and_huge_length_never_reads(self):
+        request = _BudgetGuardHTTPRequest(b"{}", read_budget=9)
+        request.META.pop("CONTENT_LENGTH")
+        captured = capture_http_json(request, max_bytes=8)
+        calls_after_capture = request.read_calls
+        with self.assertRaises(RawJSONError) as smaller_budget_error:
+            capture_http_json(request, max_bytes=1)
+        self.assertEqual(
+            smaller_budget_error.exception.code,
+            "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+        )
+        self.assertEqual(request.read_calls, calls_after_capture)
+        self.assertEqual(captured.identity.byte_length, 2)
+
+        huge_length_request = _BudgetGuardHTTPRequest(b"", read_budget=0)
+        huge_length_request.META["CONTENT_LENGTH"] = "9" * 5000
+        with self.assertRaises(RawJSONError) as huge_length_error:
+            capture_http_json(huge_length_request, max_bytes=8)
+        self.assertEqual(
+            huge_length_error.exception.code,
+            "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+        )
+        self.assertEqual(huge_length_request.read_calls, 0)
+        self.assertFalse(
+            hasattr(huge_length_request, "_foundation_raw_json_capture")
+        )
+
+    def test_http_admission_precedes_capture_and_exact_cache_is_reused(self):
         raw = b'{"value":"pre-csrf"}'
         request = _OnePassHTTPRequest(raw)
         request.META["CONTENT_TYPE"] = "text/plain"
+
+        with self.assertRaises(RawJSONError) as raised:
+            prime_http_json_capture(request)
+        self.assertEqual(raised.exception.code, "RAW_JSON_MEDIA_TYPE_UNSUPPORTED")
+        self.assertEqual(request.bytes_served, 0)
+
+        request.META["CONTENT_TYPE"] = "application/json"
         primed = prime_http_json_capture(request)
         self.assertEqual(primed.identity.sha256, hashlib.sha256(raw).hexdigest())
         self.assertEqual(request.bytes_served, len(raw))
-
-        with self.assertRaises(RawJSONError) as raised:
-            capture_http_json(request)
-        self.assertEqual(raised.exception.code, "RAW_JSON_MEDIA_TYPE_UNSUPPORTED")
-        self.assertEqual(request.bytes_served, len(raw))
-
-        request.META["CONTENT_TYPE"] = "application/json"
         admitted = capture_http_json(request)
         self.assertIs(admitted, primed)
         self.assertEqual(admitted.payload, raw)

@@ -53,7 +53,6 @@ from domain.services.foundation_packages import (
     export_project_definition_package_2_1,
     foundation_import_service_capabilities_2_1,
     parse_strong_manifest_if_match,
-    prime_http_json_capture,
     preview_foundation_package_2_1,
     read_http_json,
 )
@@ -73,7 +72,7 @@ from domain.services.project_definitions import (
 
 
 class _RawJSONSessionAuthentication(SessionAuthentication):
-    """Seal unsafe session bytes before DRF's real CSRF check consumes them."""
+    """Run real session CSRF before the view admits or reads JSON bytes."""
 
     def authenticate(self, request: Request):
         user = getattr(request._request, "user", None)
@@ -84,18 +83,11 @@ class _RawJSONSessionAuthentication(SessionAuthentication):
         ):
             # Preserve Basic-first anonymous semantics without reading a body.
             return None
-        media_type = str(
-            request._request.META.get("CONTENT_TYPE", "")
-        ).split(";", 1)[0].strip().lower()
-        if (
-            request.method not in {"GET", "HEAD", "OPTIONS"}
-            and media_type == "application/json"
-        ):
-            prime_http_json_capture(request)
-        # DRF passes its wrapper to CSRFCheck, whose ``request.POST`` access
-        # would parse/consume JSON.  The underlying Django request performs the
-        # same real cookie/header check without treating application/json as a
-        # form body; the sealed byte capture remains the sole JSON ingress.
+        # DRF's wrapper may parse ``request.POST`` while CSRF is evaluated.  The
+        # underlying Django request performs the same real cookie/header check
+        # without treating application/json as a form body.  Therefore missing
+        # or invalid CSRF consumes zero body bytes, and the view remains the
+        # single bounded transport-admission and capture boundary.
         self.enforce_csrf(request._request)
         return user, None
 
