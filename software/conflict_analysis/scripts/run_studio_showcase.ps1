@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [ValidateNotNullOrEmpty()]
     [string]$ListenAddress = "127.0.0.1",
@@ -100,13 +100,86 @@ function Assert-StudioShowcasePortAvailable {
     }
     catch {
         throw (
-            "Port {0} on loopback address {1} is unavailable. Stop the process " +
-            "using that port or launch with -Port <free-port>. Technical detail: {2}"
+            "Порт {0} на loopback-адресе {1} недоступен (Port {0} is unavailable). " +
+            "Остановите процесс, который занимает этот порт, или повторите запуск " +
+            "с параметром -Port <свободный-порт>. Техническая деталь: {2}"
         ) -f $PortNumber, $SocketAddress, $_.Exception.Message
     }
     finally {
         $Listener.Stop()
     }
+}
+
+function Assert-StudioShowcasePythonVersion {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Version,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$PythonSource
+    )
+
+    if ($Version.Trim() -cne "3.12") {
+        throw (
+            "Для OWNER-TEST требуется Python 3.12; выбранный источник '{0}' " +
+            "сообщил версию '{1}'. Установите Python 3.12 x64 или пересоздайте " +
+            "локальную среду .venv с помощью 'py -3.12 -m venv .venv'."
+        ) -f $PythonSource, $Version.Trim()
+    }
+}
+
+function Invoke-StudioShowcasePythonProbe {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$PythonExecutable,
+
+        [AllowEmptyCollection()]
+        [object[]]$PythonPrefixArguments = @(),
+
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Code
+    )
+
+    # Windows PowerShell 5.1 turns a native process' stderr into a terminating
+    # NativeCommandError when the launcher-wide ErrorActionPreference is Stop.
+    # Probe failures must reach our short actionable OWNER-TEST diagnostics.
+    $PreviousErrorActionPreference = $ErrorActionPreference
+    $ProbeOutput = @()
+    $ProbeExitCode = -1
+    try {
+        $ErrorActionPreference = "Continue"
+        $ProbeOutput = @(& $PythonExecutable @PythonPrefixArguments -c $Code 2>$null)
+        $ProbeExitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $PreviousErrorActionPreference
+    }
+
+    return [PSCustomObject]@{
+        ExitCode = $ProbeExitCode
+        Output = $ProbeOutput
+    }
+}
+
+function Throw-StudioShowcaseMissingPython {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ExpectedPath
+    )
+
+    throw (
+        "Python 3.12 не найден. Ожидался файл '{0}' или Windows-команда " +
+        "'py -3.12'. Установите Python 3.12 x64, затем повторите шаги из " +
+        "START_HERE_RU.txt."
+    ) -f $ExpectedPath
 }
 
 function Set-StudioShowcaseProcessEnvironment {
@@ -165,11 +238,7 @@ else {
         $PyLauncher = Get-Command "py" -ErrorAction SilentlyContinue
     }
     if ($null -eq $PyLauncher) {
-        throw (
-            "Python 3.12 was not found. Expected '{0}' or the Windows Python " +
-            "launcher command 'py -3.12'. Install Python 3.12, then follow " +
-            "START_HERE_RU.txt if this is an OWNER-TEST package."
-        ) -f $ProjectVenvPython
+        Throw-StudioShowcaseMissingPython -ExpectedPath $ProjectVenvPython
     }
     $PythonExecutable = $PyLauncher.Source
     $PythonPrefixArguments = @("-3.12")
@@ -177,25 +246,36 @@ else {
 }
 
 if (-not (Test-Path -LiteralPath $ManagePy -PathType Leaf)) {
-    throw "Django entry point not found: '$ManagePy'. Re-extract the OWNER-TEST package and do not move the scripts directory."
+    throw "Точка входа Django не найдена: '$ManagePy'. Распакуйте OWNER-TEST заново и не перемещайте каталог scripts отдельно от app."
 }
 
-& $PythonExecutable @PythonPrefixArguments -c (
-    "import sys; assert sys.version_info[:2] == (3, 12), " +
-    "f'Python 3.12 required, got {sys.version.split()[0]}'"
-)
-if ($LASTEXITCODE -ne 0) {
-    throw "The selected $PythonSource is not Python 3.12. Install Python 3.12 or recreate '$ProjectVenvPython'."
-}
-
-& $PythonExecutable @PythonPrefixArguments -c "import django; print('Django', django.get_version())"
-if ($LASTEXITCODE -ne 0) {
+$VersionProbe = Invoke-StudioShowcasePythonProbe `
+    -PythonExecutable $PythonExecutable `
+    -PythonPrefixArguments $PythonPrefixArguments `
+    -Code "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
+if ($VersionProbe.ExitCode -ne 0) {
     throw (
-        "The selected $PythonSource cannot import Django. From '$ProjectRoot', " +
-        "install the OWNER-TEST dependencies with: " +
+        "Не удалось запустить выбранный интерпретатор '$PythonSource'. " +
+        "Установите Python 3.12 x64 или пересоздайте '$ProjectVenvPython'."
+    )
+}
+Assert-StudioShowcasePythonVersion `
+    -Version ([string]($VersionProbe.Output | Select-Object -Last 1)) `
+    -PythonSource $PythonSource
+$VersionProbe = $null
+
+$DjangoProbe = Invoke-StudioShowcasePythonProbe `
+    -PythonExecutable $PythonExecutable `
+    -PythonPrefixArguments $PythonPrefixArguments `
+    -Code "import django; print(django.get_version())"
+if ($DjangoProbe.ExitCode -ne 0) {
+    throw (
+        "Django не импортируется выбранным интерпретатором '$PythonSource'. " +
+        "Из каталога '$ProjectRoot' установите OWNER-TEST зависимости командой: " +
         "py -3.12 -m pip install -r requirements-owner-test.txt"
     )
 }
+$DjangoProbe = $null
 
 $PerRunSecret = New-StudioShowcaseSecret
 $PreviousEnvironment = Set-StudioShowcaseProcessEnvironment -Values @{
