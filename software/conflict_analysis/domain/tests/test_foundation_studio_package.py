@@ -431,11 +431,15 @@ from domain.services.foundation_packages import (
     FOUNDATION_RAW_JSON_MAX_BYTES,
     FoundationPackageConflictError,
     FoundationPackageValidationError,
+    RawJSONError,
     attempt_foundation_import_2_1,
     canonical_json,
+    capture_http_json,
     commit_foundation_package_2_1,
     export_project_definition_package_2_1,
     export_workspace_package_2_1,
+    foundation_import_service_capabilities_2_1,
+    prime_http_json_capture,
     preview_foundation_package_2_1,
     seal_foundation_package_2_1,
     validate_foundation_package_2_1,
@@ -451,6 +455,53 @@ FIXTURE_PATH = (
     / "fixtures"
     / "foundation_studio_definition_vectors_v1.json"
 )
+
+
+class _OnePassHTTPRequest:
+    """Tiny streaming request oracle: every source byte can be consumed only once."""
+
+    def __init__(self, payload: bytes) -> None:
+        self.META = {
+            "CONTENT_TYPE": "application/json; charset=utf-8",
+            "CONTENT_LENGTH": str(len(payload)),
+        }
+        self._payload = payload
+        self._offset = 0
+        self.bytes_served = 0
+
+    def read(self, size: int = -1) -> bytes:
+        if self._offset >= len(self._payload):
+            return b""
+        stop = len(self._payload) if size < 0 else self._offset + size
+        chunk = self._payload[self._offset : stop]
+        self._offset += len(chunk)
+        self.bytes_served += len(chunk)
+        return chunk
+
+
+class _BudgetGuardHTTPRequest(_OnePassHTTPRequest):
+    """Fail the test if capture ever requests bytes beyond its hard allowance."""
+
+    def __init__(self, payload: bytes, *, read_budget: int) -> None:
+        super().__init__(payload)
+        self.read_budget = read_budget
+        self.read_calls = 0
+        self.requested_sizes: list[int] = []
+
+    def read(self, size: int = -1) -> bytes:
+        self.read_calls += 1
+        self.requested_sizes.append(size)
+        if size < 0 or size > self.read_budget - self.bytes_served:
+            raise AssertionError("HTTP capture attempted to read beyond its byte budget")
+        return super().read(size)
+
+
+class _OvershootingHTTPRequest(_OnePassHTTPRequest):
+    """Hostile transport that violates the bounded ``read(size)`` contract."""
+
+    def read(self, size: int = -1) -> bytes:
+        self.bytes_served += size + 1
+        return b"x" * (size + 1)
 
 
 class FoundationStudioPackage21Tests(TestCase):
@@ -556,6 +607,287 @@ class FoundationStudioPackage21Tests(TestCase):
             package["manifest"]["payload_sha256"],
         )
 
+    def test_http_capture_export_bytes_and_hashes_roundtrip_without_second_read(self):
+        source = self.create_draft()
+        source_id = source.pk
+        package = export_project_definition_package_2_1(source)
+        response_bytes = (canonical_json(package) + "\n").encode("utf-8")
+        representation_sha256 = hashlib.sha256(response_bytes).hexdigest()
+        semantic_payload_sha256 = package["manifest"]["payload_sha256"]
+        self.assertTrue(response_bytes.endswith(b"\n"))
+        self.assertNotEqual(representation_sha256, semantic_payload_sha256)
+
+        request = _OnePassHTTPRequest(response_bytes)
+        primed = prime_http_json_capture(request)
+        capture_read_count = request.bytes_served
+        self.assertEqual(capture_read_count, len(response_bytes))
+        captured = capture_http_json(request)
+        self.assertIs(captured, primed)
+        self.assertEqual(captured.payload, response_bytes)
+        self.assertEqual(captured.identity.kind, "HTTP_BYTES")
+        self.assertEqual(captured.identity.sha256, representation_sha256)
+        self.assertEqual(captured.identity.byte_length, len(response_bytes))
+
+        source.delete()
+        preview = preview_foundation_package_2_1(captured, project=self.project)
+        self.assertEqual(preview.intended_action, "CREATE_DRAFT")
+        service = StudioPrincipal.service(
+            actor_identifier="foundation-create-draft-service",
+            purpose="Foundation 2.1 CREATE_DRAFT HTTP attempt",
+            capabilities=foundation_import_service_capabilities_2_1("CREATE_DRAFT"),
+        )
+        result = attempt_foundation_import_2_1(
+            captured,
+            project=self.project,
+            principal=service,
+            actor_identifier=service.actor_identifier,
+        )
+
+        self.assertEqual(result.status, "COMMITTED")
+        self.assertEqual(request.bytes_served, capture_read_count)
+        self.assertEqual(result.commit.action, "CREATE_DRAFT")
+        self.assertEqual(result.commit.checksum, semantic_payload_sha256)
+        imported = ProjectDefinitionVersion.objects.get(pk=source_id)
+        reexported_bytes = (
+            canonical_json(export_project_definition_package_2_1(imported)) + "\n"
+        ).encode("utf-8")
+        self.assertEqual(reexported_bytes, response_bytes)
+        receipt = ImportRun.objects.get(pk=result.receipt_id)
+        self.assertEqual(receipt.checksum, semantic_payload_sha256)
+        self.assertEqual(receipt.selected_input["raw_input_kind"], "HTTP_BYTES")
+        self.assertEqual(
+            receipt.selected_input["raw_input_sha256"],
+            representation_sha256,
+        )
+        self.assertEqual(
+            receipt.selected_input["raw_input_byte_length"],
+            len(response_bytes),
+        )
+        self.assertEqual(
+            receipt.selected_input["canonical_payload_sha256"],
+            semantic_payload_sha256,
+        )
+
+    def test_known_http_oversize_fails_before_read_without_identity_or_receipt(self):
+        max_bytes = 8
+        request = _BudgetGuardHTTPRequest(b"x" * 9, read_budget=0)
+
+        with self.assertRaises(RawJSONError) as raised:
+            prime_http_json_capture(request, max_bytes=max_bytes)
+
+        self.assertEqual(raised.exception.code, "RAW_JSON_BYTE_BUDGET_EXCEEDED")
+        self.assertEqual(request.read_calls, 0)
+        self.assertEqual(request.bytes_served, 0)
+        self.assertFalse(hasattr(request, "_foundation_raw_json_capture"))
+        self.assertFalse(ImportRun.objects.exists())
+
+    def test_unknown_http_oversize_stops_at_max_plus_one_without_cache(self):
+        max_bytes = 8
+        request = _BudgetGuardHTTPRequest(b"x" * 32, read_budget=max_bytes + 1)
+        request.META.pop("CONTENT_LENGTH")
+
+        with self.assertRaises(RawJSONError) as raised:
+            capture_http_json(request, max_bytes=max_bytes)
+
+        self.assertEqual(raised.exception.code, "RAW_JSON_BYTE_BUDGET_EXCEEDED")
+        self.assertEqual(request.read_calls, 1)
+        self.assertEqual(request.requested_sizes, [max_bytes + 1])
+        self.assertEqual(request.bytes_served, max_bytes + 1)
+        self.assertFalse(hasattr(request, "_foundation_raw_json_capture"))
+        self.assertFalse(ImportRun.objects.exists())
+
+    def test_http_content_length_mismatch_has_no_capture_or_receipt(self):
+        for advertised_length in ("1", "3"):
+            with self.subTest(advertised_length=advertised_length):
+                request = _BudgetGuardHTTPRequest(b"{}", read_budget=9)
+                request.META["CONTENT_LENGTH"] = advertised_length
+
+                with self.assertRaises(RawJSONError) as raised:
+                    capture_http_json(request, max_bytes=8)
+
+                self.assertEqual(
+                    raised.exception.code,
+                    "RAW_JSON_CONTENT_LENGTH_MISMATCH",
+                )
+                self.assertEqual(request.read_calls, 2)
+                self.assertEqual(request.bytes_served, 2)
+                self.assertFalse(hasattr(request, "_foundation_raw_json_capture"))
+        self.assertFalse(ImportRun.objects.exists())
+
+    def test_http_under_and_at_budget_are_exact_and_read_once(self):
+        for raw, max_bytes in ((b"{}", 8), (b'{"a":1}', 7)):
+            with self.subTest(raw=raw, max_bytes=max_bytes):
+                request = _BudgetGuardHTTPRequest(raw, read_budget=max_bytes + 1)
+                captured = capture_http_json(request, max_bytes=max_bytes)
+                calls_after_capture = request.read_calls
+
+                self.assertEqual(captured.payload, raw)
+                self.assertEqual(captured.identity.byte_length, len(raw))
+                self.assertEqual(
+                    captured.identity.sha256,
+                    hashlib.sha256(raw).hexdigest(),
+                )
+                self.assertIs(
+                    capture_http_json(request, max_bytes=max_bytes),
+                    captured,
+                )
+                self.assertEqual(request.read_calls, calls_after_capture)
+                self.assertEqual(request.bytes_served, len(raw))
+
+    def test_http_capture_fail_closed_edges_never_create_partial_identity(self):
+        body_request = _OnePassHTTPRequest(b"")
+        body_request.META.pop("CONTENT_LENGTH")
+        body_request._body = b"x" * 9
+        with self.assertRaises(RawJSONError) as body_error:
+            capture_http_json(body_request, max_bytes=8)
+        self.assertEqual(body_error.exception.code, "RAW_JSON_BYTE_BUDGET_EXCEEDED")
+        self.assertFalse(hasattr(body_request, "_foundation_raw_json_capture"))
+
+        started_request = _OnePassHTTPRequest(b"{}")
+        started_request.META.pop("CONTENT_LENGTH")
+        started_request._read_started = True
+        with self.assertRaises(RawJSONError) as started_error:
+            capture_http_json(started_request, max_bytes=8)
+        self.assertEqual(
+            started_error.exception.code,
+            "RAW_JSON_HTTP_BODY_ALREADY_READ",
+        )
+        self.assertEqual(started_request.bytes_served, 0)
+        self.assertFalse(hasattr(started_request, "_foundation_raw_json_capture"))
+
+        hostile_request = _OvershootingHTTPRequest(b"")
+        hostile_request.META.pop("CONTENT_LENGTH")
+        with self.assertRaises(RawJSONError) as hostile_error:
+            capture_http_json(hostile_request, max_bytes=8)
+        self.assertEqual(hostile_error.exception.code, "RAW_JSON_HTTP_BODY_INVALID")
+        self.assertFalse(hasattr(hostile_request, "_foundation_raw_json_capture"))
+
+    def test_cached_capture_rechecks_budget_and_huge_length_never_reads(self):
+        request = _BudgetGuardHTTPRequest(b"{}", read_budget=9)
+        request.META.pop("CONTENT_LENGTH")
+        captured = capture_http_json(request, max_bytes=8)
+        calls_after_capture = request.read_calls
+        with self.assertRaises(RawJSONError) as smaller_budget_error:
+            capture_http_json(request, max_bytes=1)
+        self.assertEqual(
+            smaller_budget_error.exception.code,
+            "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+        )
+        self.assertEqual(request.read_calls, calls_after_capture)
+        self.assertEqual(captured.identity.byte_length, 2)
+
+        huge_length_request = _BudgetGuardHTTPRequest(b"", read_budget=0)
+        huge_length_request.META["CONTENT_LENGTH"] = "9" * 5000
+        with self.assertRaises(RawJSONError) as huge_length_error:
+            capture_http_json(huge_length_request, max_bytes=8)
+        self.assertEqual(
+            huge_length_error.exception.code,
+            "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+        )
+        self.assertEqual(huge_length_request.read_calls, 0)
+        self.assertFalse(
+            hasattr(huge_length_request, "_foundation_raw_json_capture")
+        )
+
+    def test_http_admission_precedes_capture_and_exact_cache_is_reused(self):
+        raw = b'{"value":"pre-csrf"}'
+        request = _OnePassHTTPRequest(raw)
+        request.META["CONTENT_TYPE"] = "text/plain"
+
+        with self.assertRaises(RawJSONError) as raised:
+            prime_http_json_capture(request)
+        self.assertEqual(raised.exception.code, "RAW_JSON_MEDIA_TYPE_UNSUPPORTED")
+        self.assertEqual(request.bytes_served, 0)
+
+        request.META["CONTENT_TYPE"] = "application/json"
+        primed = prime_http_json_capture(request)
+        self.assertEqual(primed.identity.sha256, hashlib.sha256(raw).hexdigest())
+        self.assertEqual(request.bytes_served, len(raw))
+        admitted = capture_http_json(request)
+        self.assertIs(admitted, primed)
+        self.assertEqual(admitted.payload, raw)
+        self.assertEqual(request.bytes_served, len(raw))
+
+    def test_action_capabilities_and_workspace_input_fail_closed(self):
+        self.assertEqual(
+            foundation_import_service_capabilities_2_1(None),
+            frozenset({StudioCapability.FOUNDATION_IMPORT}),
+        )
+        self.assertEqual(
+            foundation_import_service_capabilities_2_1("CREATE_DRAFT"),
+            frozenset(
+                {
+                    StudioCapability.FOUNDATION_IMPORT,
+                    StudioCapability.DRAFT_CREATE,
+                }
+            ),
+        )
+        self.assertEqual(
+            foundation_import_service_capabilities_2_1("BOOTSTRAP_PUBLISHED"),
+            frozenset(
+                {
+                    StudioCapability.FOUNDATION_IMPORT,
+                    StudioCapability.DRAFT_CREATE,
+                    StudioCapability.DEFINITION_VALIDATE,
+                    StudioCapability.DEFINITION_PUBLISH,
+                }
+            ),
+        )
+        self.assertEqual(
+            foundation_import_service_capabilities_2_1("REUSE_EXACT"),
+            frozenset({StudioCapability.FOUNDATION_IMPORT}),
+        )
+        with self.assertRaises(FoundationPackageValidationError):
+            foundation_import_service_capabilities_2_1("CLIENT_CHOSEN_ACTION")
+
+        definition = self.create_draft()
+        raw = (
+            canonical_json(export_project_definition_package_2_1(definition)) + "\n"
+        ).encode("utf-8")
+        request = _OnePassHTTPRequest(raw)
+        captured = capture_http_json(request)
+        service = StudioPrincipal.service(
+            actor_identifier="foundation-reuse-service",
+            purpose="Foundation 2.1 REUSE_EXACT HTTP attempt",
+            capabilities=foundation_import_service_capabilities_2_1("REUSE_EXACT"),
+        )
+        rejected = attempt_foundation_import_2_1(
+            captured,
+            project=self.project,
+            principal=service,
+            actor_identifier=service.actor_identifier,
+            initial_workspace={
+                "id": "18000000-0000-4000-8000-000000000099",
+                "code": "FORBIDDEN-REUSE-WORKSPACE",
+                "version": "1.0.0",
+                "name": "Must not exist",
+                "is_default": True,
+                "metadata": {},
+            },
+        )
+        self.assertEqual(rejected.status, "REJECTED")
+        self.assertEqual(ProjectDefinitionVersion.objects.count(), 1)
+        self.assertFalse(ProjectWorkspace.objects.exists())
+        rejected_receipt = ImportRun.objects.get(pk=rejected.receipt_id)
+        self.assertEqual(
+            rejected_receipt.selected_input["intended_action"],
+            "REUSE_EXACT",
+        )
+        self.assertEqual(
+            rejected_receipt.intended_changes,
+            {"project_definition": "REUSE_EXACT"},
+        )
+
+        committed = attempt_foundation_import_2_1(
+            captured,
+            project=self.project,
+            principal=service,
+            actor_identifier=service.actor_identifier,
+        )
+        self.assertEqual(committed.status, "COMMITTED")
+        self.assertEqual(committed.commit.action, "REUSE_EXACT")
+        self.assertEqual(request.bytes_served, len(raw))
+
     def test_exact_reuse_is_allowed_once_but_drift_and_replay_fail_closed(self):
         definition = self.create_draft()
         package = export_project_definition_package_2_1(definition)
@@ -635,6 +967,10 @@ class FoundationStudioPackage21Tests(TestCase):
 
         preview = preview_foundation_package_2_1(package, project=self.project)
         self.assertEqual(preview.intended_action, "BOOTSTRAP_PUBLISHED")
+        self.assertEqual(
+            self.service.capabilities,
+            foundation_import_service_capabilities_2_1("BOOTSTRAP_PUBLISHED"),
+        )
         result = commit_foundation_package_2_1(
             preview,
             project=self.project,
@@ -787,11 +1123,16 @@ class FoundationStudioPackage21Tests(TestCase):
         source.delete()
         raw = canonical_json(package).encode("utf-8")
         duplicate = raw.replace(b'"package_scope":"PROJECT_DEFINITION"', b'"package_scope":"PROJECT_DEFINITION","package_scope":"PROJECT_DEFINITION"')
+        malformed_service = StudioPrincipal.service(
+            actor_identifier="foundation-malformed-duplicate-service",
+            purpose="Foundation 2.1 malformed duplicate-key attempt",
+            capabilities=foundation_import_service_capabilities_2_1(None),
+        )
         rejected = attempt_foundation_import_2_1(
             duplicate,
             project=self.project,
-            principal=self.service,
-            actor_identifier=self.service.actor_identifier,
+            principal=malformed_service,
+            actor_identifier=malformed_service.actor_identifier,
         )
         self.assertEqual(rejected.status, "REJECTED")
         receipt = ImportRun.objects.get(pk=rejected.receipt_id)

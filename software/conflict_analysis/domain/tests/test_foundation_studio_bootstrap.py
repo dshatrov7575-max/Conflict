@@ -5,11 +5,13 @@ import hashlib
 import json
 import threading
 from pathlib import Path
+from unittest.mock import patch
+from uuid import UUID, uuid4
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import close_old_connections, connection
+from django.db import OperationalError, close_old_connections, connection
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -31,6 +33,7 @@ from domain.models import (
     ProjectPublication,
     ProjectWorkspace,
     UIHelpBinding,
+    _canonical_studio_write,
 )
 from domain.policies import (
     FoundationAuditContext,
@@ -44,12 +47,18 @@ from domain.policies import (
     can_modify_project_structure,
     publish_project_definition,
     require_studio_capability,
+    studio_principal_from_user,
     validate_project_definition,
 )
 from domain.services.project_definitions import (
+    FoundationStudioApplicationConflict,
+    bootstrap_project_definition_draft,
+    clone_project_definition_draft,
     create_project_definition_draft,
     hash_project_definition_manifest_v1,
+    open_project_definition,
     open_project_definition_draft,
+    publish_successor_project_definition,
 )
 
 
@@ -1806,3 +1815,716 @@ class FoundationStudioSuccessorConcurrencyTests(
             ProjectDefinitionVersion.objects.filter(is_current=True).count(),
             1,
         )
+
+
+class FoundationStudioLifecycleCompleteReadTests(
+    FoundationStudioBootstrapMixin,
+    TestCase,
+):
+    def setUp(self) -> None:
+        self.make_contract()
+        self.viewer = StudioPrincipal.for_role(
+            actor_identifier="lifecycle-viewer",
+            role=StudioDefinitionRole.VIEWER,
+        )
+
+    def _definition_for_status(
+        self,
+        status: PublicationStatus,
+        *,
+        index: int,
+    ) -> ProjectDefinitionVersion:
+        now = timezone.now()
+        lifecycle_fields = {}
+        if status in {
+            PublicationStatus.VALIDATED,
+            PublicationStatus.PUBLISHED,
+            PublicationStatus.RETIRED,
+        }:
+            lifecycle_fields.update(
+                validated_at=now,
+                validated_by="lifecycle-publisher",
+                validation_result={"valid": True},
+            )
+        if status in {PublicationStatus.PUBLISHED, PublicationStatus.RETIRED}:
+            lifecycle_fields.update(
+                published_at=now,
+                published_by="lifecycle-publisher",
+            )
+        definition = ProjectDefinitionVersion(
+            project=self.project,
+            code=f"LIFECYCLE-READ-{status}",
+            version=f"1.0.{index}",
+            manifest=copy.deepcopy(self.manifest),
+            manifest_hash=hash_project_definition_manifest_v1(
+                self.manifest,
+                project=self.project,
+            ),
+            schema_version="1.0.0",
+            semantic_version="1.0.0",
+            construct_version="1.0.0",
+            publication_status=status,
+            **lifecycle_fields,
+        )
+        with _canonical_studio_write("definition"):
+            definition.save(force_insert=True)
+        return definition
+
+    def test_canonical_read_accepts_every_lifecycle_state_with_read_capability(self):
+        for index, status in enumerate(
+            (
+                PublicationStatus.DRAFT,
+                PublicationStatus.VALIDATED,
+                PublicationStatus.PUBLISHED,
+                PublicationStatus.RETIRED,
+            ),
+            start=1,
+        ):
+            with self.subTest(status=status):
+                definition = self._definition_for_status(status, index=index)
+                opened = open_project_definition(
+                    definition,
+                    principal=self.viewer,
+                )
+                self.assertEqual(opened.pk, definition.pk)
+                self.assertEqual(opened.publication_status, status)
+                self.assertEqual(
+                    opened.manifest_hash,
+                    hash_project_definition_manifest_v1(
+                        opened.manifest,
+                        project=self.project,
+                    ),
+                )
+
+    def test_legacy_draft_read_remains_draft_only(self):
+        published = self._definition_for_status(
+            PublicationStatus.PUBLISHED,
+            index=1,
+        )
+        with self.assertRaises(ValidationError):
+            open_project_definition_draft(published, principal=self.viewer)
+
+
+class FoundationStudioFirstProjectDraftBootstrapTests(TestCase):
+    def setUp(self) -> None:
+        user_model = get_user_model()
+        self.user = user_model.objects.create_user(
+            username="first-project-editor",
+            password="foundation-studio-test",
+        )
+        permission = Permission.objects.get(
+            content_type__app_label="domain",
+            codename="studio_create_definition_draft",
+        )
+        self.user.user_permissions.add(permission)
+        self.user = user_model.objects.get(pk=self.user.pk)
+        self.principal = studio_principal_from_user(self.user)
+
+    def _bootstrap_arguments(
+        self,
+        *,
+        project_id: UUID | None = None,
+        project_code: str | None = None,
+        definition_id: UUID | None = None,
+    ) -> dict:
+        resolved_project_id = project_id or uuid4()
+        resolved_project_code = project_code or f"NEW-PROJECT-{uuid4().hex[:12]}"
+        resolved_definition_id = definition_id or uuid4()
+        manifest = manifest_vector()
+        manifest["project"].update(
+            {
+                "id": str(resolved_project_id),
+                "code": resolved_project_code,
+                "version": "1.0.0",
+                "name": "First Project",
+                "description": "Atomic first-Project bootstrap.",
+                "metadata": {
+                    "source": "first-project-test",
+                    "nested": {"owner": "client"},
+                },
+            }
+        )
+        return {
+            "project_id": resolved_project_id,
+            "project_code": resolved_project_code,
+            "project_version": "1.0.0",
+            "project_name": "First Project",
+            "project_description": "Atomic first-Project bootstrap.",
+            "project_metadata": {
+                "source": "first-project-test",
+                "nested": {"owner": "client"},
+            },
+            "definition_id": resolved_definition_id,
+            "definition_code": "FIRST-PROJECT-DRAFT",
+            "definition_version": "1.0.0",
+            "manifest": manifest,
+            "principal": self.principal,
+            "user": self.user,
+        }
+
+    def test_bootstrap_creates_exact_scope_draft_and_trusted_human_create_audit(self):
+        arguments = self._bootstrap_arguments()
+        supplied_metadata = arguments["project_metadata"]
+        result = bootstrap_project_definition_draft(**arguments)
+
+        expected_group = project_access_group_name(arguments["project_id"])
+        self.assertEqual(result.project.pk, arguments["project_id"])
+        self.assertEqual(result.scope_group.name, expected_group)
+        self.assertTrue(self.user.groups.filter(name=expected_group).exists())
+        self.assertEqual(result.definition.project_id, result.project.pk)
+        self.assertEqual(
+            result.definition.publication_status,
+            PublicationStatus.DRAFT,
+        )
+        self.assertEqual(result.definition.manifest, arguments["manifest"])
+        self.assertEqual(result.project.metadata, supplied_metadata)
+        self.assertIsNot(result.project.metadata, supplied_metadata)
+        self.assertIsNot(
+            result.project.metadata["nested"],
+            supplied_metadata["nested"],
+        )
+        supplied_metadata["nested"]["owner"] = "caller-mutated"
+        supplied_metadata["new"] = "caller-only"
+        self.assertEqual(
+            result.project.metadata,
+            {
+                "source": "first-project-test",
+                "nested": {"owner": "client"},
+            },
+        )
+        result.project.refresh_from_db()
+        self.assertEqual(
+            result.project.metadata,
+            {
+                "source": "first-project-test",
+                "nested": {"owner": "client"},
+            },
+        )
+        self.assertFalse(ProjectWorkspace.objects.exists())
+        self.assertFalse(ProjectPublication.objects.exists())
+
+        event = AuditEvent.objects.get(pk=result.audit_event.pk)
+        self.assertEqual(event.scope, AuditScope.DEFINITION)
+        self.assertEqual(event.definition_version_id, result.definition.pk)
+        self.assertEqual(event.action, AuditAction.CREATE)
+        self.assertEqual(event.actor_type, AuditActorType.HUMAN)
+        self.assertEqual(event.actor_identifier, f"django-user:{self.user.pk}")
+        self.assertEqual(event.entity_type, "PROJECT_DEFINITION_VERSION")
+        self.assertEqual(event.entity_id, result.definition.pk)
+        self.assertIsNone(event.before)
+        self.assertEqual(
+            event.after,
+            {
+                "project_identity": {
+                    "id": str(result.project.pk),
+                    "code": result.project.code,
+                    "version": result.project.version,
+                },
+                "object_scope_group": {"name": expected_group},
+            },
+        )
+
+    def test_exact_definition_id_and_metadata_fail_before_any_domain_write(self):
+        invalid_cases = (
+            ("null-definition-id", "definition_id", None),
+            ("malformed-definition-id", "definition_id", "not-a-uuid"),
+            ("null-project-metadata", "project_metadata", None),
+            ("list-project-metadata", "project_metadata", []),
+        )
+        for label, field, value in invalid_cases:
+            with self.subTest(case=label):
+                arguments = self._bootstrap_arguments()
+                arguments[field] = value
+                with self.assertRaises(ValidationError):
+                    bootstrap_project_definition_draft(**arguments)
+                self.assertFalse(Project.objects.exists())
+                self.assertFalse(ProjectDefinitionVersion.objects.exists())
+                self.assertFalse(AuditEvent.objects.exists())
+                self.assertFalse(ProjectWorkspace.objects.exists())
+                self.assertFalse(ProjectPublication.objects.exists())
+                self.assertFalse(
+                    Group.objects.filter(name__startswith="studio-project:").exists()
+                )
+                self.assertFalse(self.user.groups.exists())
+
+        for missing_field in ("definition_id", "project_metadata"):
+            with self.subTest(missing=missing_field):
+                arguments = self._bootstrap_arguments()
+                arguments.pop(missing_field)
+                with self.assertRaises(TypeError):
+                    bootstrap_project_definition_draft(**arguments)
+                self.assertFalse(Project.objects.exists())
+                self.assertFalse(ProjectDefinitionVersion.objects.exists())
+                self.assertFalse(AuditEvent.objects.exists())
+                self.assertFalse(
+                    Group.objects.filter(name__startswith="studio-project:").exists()
+                )
+                self.assertFalse(self.user.groups.exists())
+
+    def test_uuid_code_and_derived_group_collisions_are_typed_conflicts(self):
+        id_arguments = self._bootstrap_arguments()
+        Project.objects.create(
+            id=id_arguments["project_id"],
+            code="PREEXISTING-ID-OWNER",
+            version="1.0.0",
+            name="Existing Project by id",
+        )
+        with self.assertRaises(FoundationStudioApplicationConflict) as caught:
+            bootstrap_project_definition_draft(**id_arguments)
+        self.assertEqual(caught.exception.conflict_code, "PROJECT_ID_CONFLICT")
+        self.assertFalse(
+            ProjectDefinitionVersion.objects.filter(
+                pk=id_arguments["definition_id"]
+            ).exists()
+        )
+
+        code_arguments = self._bootstrap_arguments()
+        Project.objects.create(
+            code=code_arguments["project_code"],
+            version="1.0.0",
+            name="Existing Project by code",
+        )
+        with self.assertRaises(FoundationStudioApplicationConflict) as caught:
+            bootstrap_project_definition_draft(**code_arguments)
+        self.assertEqual(caught.exception.conflict_code, "PROJECT_CODE_CONFLICT")
+        self.assertFalse(
+            Group.objects.filter(
+                name=project_access_group_name(code_arguments["project_id"])
+            ).exists()
+        )
+
+        group_arguments = self._bootstrap_arguments()
+        collision_group = Group.objects.create(
+            name=project_access_group_name(group_arguments["project_id"])
+        )
+        with self.assertRaises(FoundationStudioApplicationConflict) as caught:
+            bootstrap_project_definition_draft(**group_arguments)
+        self.assertEqual(
+            caught.exception.conflict_code,
+            "PROJECT_SCOPE_GROUP_CONFLICT",
+        )
+        self.assertFalse(
+            Project.objects.filter(pk=group_arguments["project_id"]).exists()
+        )
+        self.assertFalse(self.user.groups.filter(pk=collision_group.pk).exists())
+        self.assertFalse(AuditEvent.objects.exists())
+
+    def test_each_bootstrap_stage_failure_rolls_back_every_created_row(self):
+        for stage in (
+            "after_project",
+            "after_scope_group",
+            "after_scope_membership",
+            "after_definition",
+            "after_create_audit",
+        ):
+            with self.subTest(stage=stage):
+                arguments = self._bootstrap_arguments()
+                with self.assertRaisesRegex(RuntimeError, stage):
+                    bootstrap_project_definition_draft(
+                        **arguments,
+                        inject_failure_at=stage,
+                    )
+                expected_group = project_access_group_name(arguments["project_id"])
+                self.assertFalse(
+                    Project.objects.filter(pk=arguments["project_id"]).exists()
+                )
+                self.assertFalse(Group.objects.filter(name=expected_group).exists())
+                self.assertFalse(self.user.groups.filter(name=expected_group).exists())
+                self.assertFalse(
+                    ProjectDefinitionVersion.objects.filter(
+                        pk=arguments["definition_id"]
+                    ).exists()
+                )
+                self.assertFalse(
+                    AuditEvent.objects.filter(
+                        entity_id=arguments["definition_id"]
+                    ).exists()
+                )
+
+    def test_audit_append_failure_rolls_back_project_group_membership_and_draft(self):
+        arguments = self._bootstrap_arguments()
+        with patch(
+            "domain.policies.record_definition_audit",
+            side_effect=RuntimeError("trusted CREATE audit unavailable"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "audit unavailable"):
+                bootstrap_project_definition_draft(**arguments)
+
+        expected_group = project_access_group_name(arguments["project_id"])
+        self.assertFalse(Project.objects.filter(pk=arguments["project_id"]).exists())
+        self.assertFalse(Group.objects.filter(name=expected_group).exists())
+        self.assertFalse(self.user.groups.filter(name=expected_group).exists())
+        self.assertFalse(
+            ProjectDefinitionVersion.objects.filter(
+                pk=arguments["definition_id"]
+            ).exists()
+        )
+        self.assertFalse(AuditEvent.objects.exists())
+
+    def test_bootstrap_rejects_principal_from_a_different_human(self):
+        user_model = get_user_model()
+        other = user_model.objects.create_user(username="other-first-project-editor")
+        permission = Permission.objects.get(
+            content_type__app_label="domain",
+            codename="studio_create_definition_draft",
+        )
+        other.user_permissions.add(permission)
+        other = user_model.objects.get(pk=other.pk)
+        arguments = self._bootstrap_arguments()
+        arguments["principal"] = studio_principal_from_user(other)
+
+        with self.assertRaises(StudioAuthorizationDenied):
+            bootstrap_project_definition_draft(**arguments)
+        self.assertFalse(Project.objects.filter(pk=arguments["project_id"]).exists())
+
+
+class FoundationStudioTypedSuccessorConflictTests(
+    FoundationStudioBootstrapMixin,
+    TestCase,
+):
+    def setUp(self) -> None:
+        self.make_contract()
+        self.initial = bootstrap_initial_project_definition(
+            definition=self.draft(code="APPLICATION-CONFLICT-INITIAL"),
+            principal=self.publisher(),
+            actor_identifier="publisher",
+            workspace_spec=self.workspace_spec(),
+            locale="en",
+        )
+
+    def _validated_successor(self, *, code: str, version: str):
+        draft = clone_project_definition_draft(
+            self.initial.definition,
+            code=code,
+            version=version,
+            principal=self.editor(),
+        )
+        return validate_project_definition(
+            draft,
+            actor_identifier="publisher",
+            principal=self.publisher(),
+        )
+
+    def test_retry_and_competing_current_are_one_typed_application_conflict(self):
+        winner = self._validated_successor(
+            code="APPLICATION-CONFLICT-WINNER",
+            version="2.0.0",
+        )
+        loser = self._validated_successor(
+            code="APPLICATION-CONFLICT-LOSER",
+            version="2.1.0",
+        )
+        publication = publish_successor_project_definition(
+            winner,
+            principal=self.publisher(),
+        )
+        self.assertEqual(publication.definition_version_id, winner.pk)
+
+        for candidate in (winner, loser):
+            with self.subTest(candidate=candidate.code):
+                with self.assertRaises(FoundationStudioApplicationConflict) as caught:
+                    publish_successor_project_definition(
+                        candidate,
+                        principal=self.publisher(),
+                    )
+                self.assertEqual(
+                    caught.exception.conflict_code,
+                    "SUCCESSOR_PUBLICATION_CONFLICT",
+                )
+
+
+class FoundationStudioApplicationSuccessorConcurrencyTests(
+    FoundationStudioBootstrapMixin,
+    TransactionTestCase,
+):
+    reset_sequences = True
+
+    def setUp(self) -> None:
+        self.make_contract()
+
+    def test_postgresql_application_wrapper_has_one_success_and_one_typed_conflict(self):
+        if connection.vendor != "postgresql":
+            self.skipTest(
+                "Application successor wrapper race gate is PostgreSQL-only."
+            )
+        initial = bootstrap_initial_project_definition(
+            definition=self.draft(code="APPLICATION-RACE-INITIAL"),
+            principal=self.publisher(),
+            actor_identifier="publisher",
+            workspace_spec=self.workspace_spec(),
+            locale="en",
+        )
+        old_pin = (
+            initial.workspace.pk,
+            initial.workspace.definition_version_id,
+            initial.workspace.definition_manifest_hash,
+        )
+        successor_ids = []
+        for index in (1, 2):
+            draft = clone_project_definition_draft(
+                initial.definition,
+                code=f"APPLICATION-RACE-SUCCESSOR-{index}",
+                version=f"{index + 1}.0.0",
+                principal=self.editor(),
+            )
+            successor = validate_project_definition(
+                draft,
+                actor_identifier="publisher",
+                principal=self.publisher(),
+            )
+            successor_ids.append(successor.pk)
+
+        barrier = threading.Barrier(2)
+        outcomes: list[str] = []
+        errors: list[Exception] = []
+        outcome_lock = threading.Lock()
+
+        def worker(definition_id: UUID) -> None:
+            close_old_connections()
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SET lock_timeout = '5s'")
+                    cursor.execute("SET statement_timeout = '20s'")
+                local = ProjectDefinitionVersion.objects.get(pk=definition_id)
+                barrier.wait(timeout=10)
+                publication = publish_successor_project_definition(
+                    local,
+                    principal=self.publisher(),
+                )
+                with outcome_lock:
+                    outcomes.append(str(publication.pk))
+            except Exception as exc:
+                with outcome_lock:
+                    errors.append(exc)
+            finally:
+                close_old_connections()
+
+        threads = [
+            threading.Thread(
+                target=worker,
+                args=(definition_id,),
+                daemon=True,
+            )
+            for definition_id in successor_ids
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=30)
+
+        self.assertFalse(
+            any(thread.is_alive() for thread in threads),
+            "Successor publication race exceeded its bounded join.",
+        )
+        self.assertFalse(
+            any(isinstance(error, OperationalError) for error in errors),
+            f"PostgreSQL successor race raised OperationalError: {errors!r}",
+        )
+        self.assertEqual(len(outcomes), 1)
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], FoundationStudioApplicationConflict)
+        self.assertEqual(
+            errors[0].conflict_code,
+            "SUCCESSOR_PUBLICATION_CONFLICT",
+        )
+        self.assertEqual(ProjectPublication.objects.count(), 2)
+        self.assertEqual(
+            ProjectPublication.objects.filter(
+                initial_workspace__isnull=True,
+            ).count(),
+            1,
+        )
+        self.assertEqual(ProjectWorkspace.objects.count(), 1)
+        initial.workspace.refresh_from_db()
+        self.assertEqual(
+            (
+                initial.workspace.pk,
+                initial.workspace.definition_version_id,
+                initial.workspace.definition_manifest_hash,
+            ),
+            old_pin,
+        )
+        self.assertEqual(
+            ProjectDefinitionVersion.objects.filter(
+                pk__in=successor_ids,
+                publication_status=PublicationStatus.PUBLISHED,
+                is_current=True,
+            ).count(),
+            1,
+        )
+        self.assertEqual(
+            ProjectDefinitionVersion.objects.filter(
+                pk__in=successor_ids,
+                publication_status=PublicationStatus.VALIDATED,
+                is_current=False,
+            ).count(),
+            1,
+        )
+
+
+class FoundationStudioFirstProjectApplicationConcurrencyTests(TransactionTestCase):
+    reset_sequences = True
+
+    def setUp(self) -> None:
+        permission = Permission.objects.get(
+            content_type__app_label="domain",
+            codename="studio_create_definition_draft",
+        )
+        user_model = get_user_model()
+        self.users = []
+        self.principals = []
+        for index in (1, 2):
+            user = user_model.objects.create_user(
+                username=f"first-project-race-editor-{index}",
+                password="foundation-studio-test",
+            )
+            user.user_permissions.add(permission)
+            user = user_model.objects.get(pk=user.pk)
+            self.users.append(user)
+            self.principals.append(studio_principal_from_user(user))
+
+    def test_postgresql_application_bootstrap_has_one_complete_winner_and_no_orphans(self):
+        if connection.vendor != "postgresql":
+            self.skipTest(
+                "First-Project application bootstrap race gate is PostgreSQL-only."
+            )
+        project_id = uuid4()
+        definition_id = uuid4()
+        project_code = "FIRST-PROJECT-APPLICATION-RACE"
+        scope_group_name = project_access_group_name(project_id)
+        manifest = manifest_vector()
+        manifest["project"].update(
+            {
+                "id": str(project_id),
+                "code": project_code,
+                "version": "1.0.0",
+                "name": "First Project Race",
+                "description": "PostgreSQL atomic application race.",
+                "metadata": {"source": "first-project-race"},
+            }
+        )
+        barrier = threading.Barrier(2)
+        outcomes: list[tuple[object, object, object, object]] = []
+        errors: list[Exception] = []
+        outcome_lock = threading.Lock()
+
+        def worker(user: object, principal: StudioPrincipal) -> None:
+            close_old_connections()
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SET lock_timeout = '5s'")
+                    cursor.execute("SET statement_timeout = '20s'")
+                barrier.wait(timeout=10)
+                result = bootstrap_project_definition_draft(
+                    project_id=project_id,
+                    project_code=project_code,
+                    project_version="1.0.0",
+                    project_name="First Project Race",
+                    project_description="PostgreSQL atomic application race.",
+                    project_metadata={"source": "first-project-race"},
+                    definition_id=definition_id,
+                    definition_code="FIRST-PROJECT-APPLICATION-RACE-DRAFT",
+                    definition_version="1.0.0",
+                    manifest=copy.deepcopy(manifest),
+                    principal=principal,
+                    user=user,
+                )
+                with outcome_lock:
+                    outcomes.append(
+                        (
+                            user.pk,
+                            result.project.pk,
+                            result.definition.pk,
+                            result.audit_event.pk,
+                        )
+                    )
+            except Exception as exc:
+                with outcome_lock:
+                    errors.append(exc)
+            finally:
+                close_old_connections()
+
+        threads = [
+            threading.Thread(
+                target=worker,
+                args=(user, principal),
+                daemon=True,
+            )
+            for user, principal in zip(
+                self.users,
+                self.principals,
+                strict=True,
+            )
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=30)
+
+        self.assertFalse(
+            any(thread.is_alive() for thread in threads),
+            "First-Project application race exceeded its bounded join.",
+        )
+        self.assertFalse(
+            any(isinstance(error, OperationalError) for error in errors),
+            f"PostgreSQL first-Project race raised OperationalError: {errors!r}",
+        )
+        self.assertEqual(len(outcomes), 1)
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], FoundationStudioApplicationConflict)
+        self.assertEqual(errors[0].conflict_code, "PROJECT_ID_CONFLICT")
+
+        winner_user_id, winner_project_id, winner_definition_id, winner_audit_id = (
+            outcomes[0]
+        )
+        self.assertEqual(winner_project_id, project_id)
+        self.assertEqual(winner_definition_id, definition_id)
+        self.assertEqual(Project.objects.count(), 1)
+        self.assertEqual(ProjectDefinitionVersion.objects.count(), 1)
+        self.assertEqual(
+            ProjectDefinitionVersion.objects.get().publication_status,
+            PublicationStatus.DRAFT,
+        )
+        self.assertEqual(
+            Group.objects.filter(name__startswith="studio-project:").count(),
+            1,
+        )
+        scope_group = Group.objects.get(name=scope_group_name)
+        user_model = get_user_model()
+        self.assertEqual(
+            user_model.objects.filter(
+                pk__in=[user.pk for user in self.users],
+                groups=scope_group,
+            ).count(),
+            1,
+        )
+        self.assertTrue(
+            user_model.objects.filter(
+                pk=winner_user_id,
+                groups=scope_group,
+            ).exists()
+        )
+        self.assertEqual(AuditEvent.objects.count(), 1)
+        audit = AuditEvent.objects.get(pk=winner_audit_id)
+        self.assertEqual(audit.action, AuditAction.CREATE)
+        self.assertEqual(audit.scope, AuditScope.DEFINITION)
+        self.assertEqual(audit.definition_version_id, definition_id)
+        self.assertEqual(audit.project_id, project_id)
+        self.assertEqual(audit.actor_type, AuditActorType.HUMAN)
+        self.assertEqual(
+            audit.actor_identifier,
+            f"django-user:{winner_user_id}",
+        )
+        self.assertEqual(
+            audit.after,
+            {
+                "project_identity": {
+                    "id": str(project_id),
+                    "code": project_code,
+                    "version": "1.0.0",
+                },
+                "object_scope_group": {"name": scope_group_name},
+            },
+        )
+        self.assertFalse(ProjectWorkspace.objects.exists())
+        self.assertFalse(ProjectPublication.objects.exists())
