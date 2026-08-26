@@ -2,6 +2,39 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+def reject_lossy_reverse_before_schema_changes(apps, schema_editor):
+    """Refuse a lossy downgrade before any 0015 DDL is reversed."""
+
+    database = schema_editor.connection.alias
+    AuditEvent = apps.get_model("domain", "AuditEvent")
+    ImportRun = apps.get_model("domain", "ImportRun")
+    ProjectPublication = apps.get_model("domain", "ProjectPublication")
+    UIHelpBinding = apps.get_model("domain", "UIHelpBinding")
+
+    if AuditEvent.objects.using(database).filter(scope="DEFINITION").exists():
+        raise RuntimeError(
+            "Cannot reverse after definition-scoped audit provenance exists."
+        )
+    if UIHelpBinding.objects.using(database).filter(
+        workspace_id__isnull=True
+    ).exists():
+        raise RuntimeError(
+            "Cannot reverse after pre-workspace HelpTopic bindings exist."
+        )
+    if ProjectPublication.objects.using(database).filter(
+        initial_workspace_id__isnull=False
+    ).exists():
+        raise RuntimeError(
+            "Cannot reverse after an initial-workspace publication receipt exists."
+        )
+    if ImportRun.objects.using(database).filter(
+        package_scope="PROJECT_DEFINITION"
+    ).exists():
+        raise RuntimeError(
+            "Cannot reverse after project-definition import receipts exist."
+        )
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -204,5 +237,11 @@ class Migration(migrations.Migration):
                 fields=("definition_version", "occurred_at"),
                 name="domain_audit_def_time_idx",
             ),
+        ),
+        # This must remain the final forward operation. Django reverses operations
+        # in the opposite order, so the guard runs before any 0015 schema change.
+        migrations.RunPython(
+            migrations.RunPython.noop,
+            reject_lossy_reverse_before_schema_changes,
         ),
     ]

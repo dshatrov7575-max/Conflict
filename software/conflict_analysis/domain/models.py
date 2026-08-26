@@ -4,8 +4,10 @@ import hashlib
 import json
 import re
 import uuid
+from contextlib import contextmanager
+from contextvars import ContextVar
 from decimal import Decimal, InvalidOperation
-from typing import Any
+from typing import Any, Iterator
 
 from django.core.exceptions import ValidationError
 from django.core.validators import (
@@ -88,6 +90,33 @@ PRESENT_VALUE_STATUSES = (
     ValueStatus.DISPUTED,
     ValueStatus.RETROSPECTIVE_KNOWLEDGE,
 )
+
+
+# Runtime writes for typed Studio definitions and their publication receipts
+# must pass through the canonical service boundary.  Migrations deliberately
+# use historical models, so they neither import nor need this private runtime
+# scope.  Separate authorities keep a definition write from accidentally
+# authorizing a publication receipt (or vice versa) in callbacks.
+_STUDIO_CANONICAL_WRITE_AUTHORITIES: ContextVar[frozenset[str]] = ContextVar(
+    "studio_canonical_write_authorities",
+    default=frozenset(),
+)
+
+
+@contextmanager
+def _canonical_studio_write(*authorities: str) -> Iterator[None]:
+    current = _STUDIO_CANONICAL_WRITE_AUTHORITIES.get()
+    token = _STUDIO_CANONICAL_WRITE_AUTHORITIES.set(
+        current | frozenset(authorities)
+    )
+    try:
+        yield
+    finally:
+        _STUDIO_CANONICAL_WRITE_AUTHORITIES.reset(token)
+
+
+def _studio_write_is_authorized(authority: str) -> bool:
+    return authority in _STUDIO_CANONICAL_WRITE_AUTHORITIES.get()
 
 
 def _stable_constraints(prefix: str) -> list[models.BaseConstraint]:
@@ -259,11 +288,61 @@ class Project(StableVersionedModel):
 
 
 class WorkspaceQuerySet(models.QuerySet):
+    def bulk_create(
+        self,
+        objs: Any,
+        batch_size: int | None = None,
+        ignore_conflicts: bool = False,
+        update_conflicts: bool = False,
+        update_fields: Any = None,
+        unique_fields: Any = None,
+    ) -> Any:
+        objects = list(objs)
+        if ignore_conflicts or update_conflicts:
+            raise ValidationError(
+                "Workspace bulk inserts cannot ignore or rewrite identity conflicts."
+            )
+        # full_clean() re-fetches the persisted definition, so a stale caller
+        # object cannot hide a DRAFT, cross-project pin, or checksum drift.
+        with transaction.atomic(using=self.db):
+            for obj in objects:
+                obj.full_clean()
+            return super().bulk_create(
+                objects,
+                batch_size=batch_size,
+                ignore_conflicts=False,
+                update_conflicts=False,
+                update_fields=update_fields,
+                unique_fields=unique_fields,
+            )
+
     def update(self, **kwargs: Any) -> int:
-        protected = {"definition_version", "definition_version_id", "definition_manifest_hash"}
+        protected = {
+            "project",
+            "project_id",
+            "definition_version",
+            "definition_version_id",
+            "definition_manifest_hash",
+        }
         if protected.intersection(kwargs):
-            raise ValidationError("A workspace definition pin is immutable.")
+            raise ValidationError("A workspace project/definition pin is immutable.")
         return super().update(**kwargs)
+
+    def bulk_update(
+        self,
+        objs: Any,
+        fields: Any,
+        batch_size: int | None = None,
+    ) -> int:
+        if {
+            "project",
+            "project_id",
+            "definition_version",
+            "definition_version_id",
+            "definition_manifest_hash",
+        }.intersection(fields):
+            raise ValidationError("A workspace project/definition pin is immutable.")
+        return super().bulk_update(objs, fields, batch_size=batch_size)
 
 
 class WorkspaceManager(models.Manager.from_queryset(WorkspaceQuerySet)):
@@ -295,6 +374,7 @@ class ProjectWorkspace(StableVersionedModel):
 
     class Meta:
         ordering = ("project__code", "code")
+        base_manager_name = "objects"
         constraints = [
             *_stable_constraints("domain_workspace"),
             models.UniqueConstraint(
@@ -396,6 +476,21 @@ class ProjectDefinitionQuerySet(models.QuerySet):
 
     def update(self, **kwargs: Any) -> int:
         if set(kwargs) <= {"is_current"} and kwargs.get("is_current") is False:
+            from .services.project_definitions import (
+                identify_typed_project_definition_manifest,
+            )
+
+            contains_typed_definition = any(
+                identify_typed_project_definition_manifest(manifest)
+                for manifest in self.values_list("manifest", flat=True)
+            )
+            if (
+                contains_typed_definition
+                and not _studio_write_is_authorized("definition")
+            ):
+                raise ValidationError(
+                    "Typed definition lifecycle updates require the canonical Studio service."
+                )
             return super().update(**kwargs)
         raise ValidationError("Definition lifecycle updates require the publication service.")
 
@@ -457,6 +552,7 @@ class ProjectDefinitionVersion(StableVersionedModel):
 
     class Meta:
         ordering = ("project__code", "version")
+        base_manager_name = "objects"
         permissions = (
             ("studio_read_definition", "Can read Studio project definitions"),
             ("studio_create_definition_draft", "Can create Studio definition drafts"),
@@ -574,9 +670,25 @@ class ProjectDefinitionVersion(StableVersionedModel):
             raise ValidationError(errors)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
-        self.full_clean()
+        from .services.project_definitions import (
+            identify_typed_project_definition_manifest,
+        )
+
+        previous = None
         if self.pk:
             previous = ProjectDefinitionVersion.objects.filter(pk=self.pk).first()
+        is_typed_runtime_write = identify_typed_project_definition_manifest(
+            self.manifest
+        ) or (
+            previous is not None
+            and identify_typed_project_definition_manifest(previous.manifest)
+        )
+        if is_typed_runtime_write and not _studio_write_is_authorized("definition"):
+            raise ValidationError(
+                "Typed definition writes require the canonical Studio service."
+            )
+        self.full_clean()
+        if previous is not None:
             allowed_transitions = {
                 PublicationStatus.DRAFT: {
                     PublicationStatus.DRAFT,
@@ -602,7 +714,7 @@ class ProjectDefinitionVersion(StableVersionedModel):
                         )
                     }
                 )
-            if previous is not None and previous.publication_status in {
+            if previous.publication_status in {
                 PublicationStatus.VALIDATED,
                 PublicationStatus.PUBLISHED,
                 PublicationStatus.RETIRED,
@@ -724,6 +836,7 @@ class ProjectPublication(StableVersionedModel):
 
     class Meta:
         ordering = ("project__code", "-published_at")
+        base_manager_name = "objects"
         constraints = [
             *_stable_constraints("domain_publication"),
             models.UniqueConstraint(
@@ -742,6 +855,10 @@ class ProjectPublication(StableVersionedModel):
 
     def clean(self) -> None:
         super().clean()
+        from .services.project_definitions import (
+            identify_typed_project_definition_manifest,
+        )
+
         definition = ProjectDefinitionVersion.objects.filter(
             pk=self.definition_version_id
         ).first()
@@ -756,6 +873,18 @@ class ProjectPublication(StableVersionedModel):
             errors["actor_identifier"] = "Publication actor is required."
         if self.validation_result.get("valid") is not True:
             errors["validation_result"] = "Publication requires a successful validation result."
+        if (
+            identify_typed_project_definition_manifest(definition.manifest)
+            and ProjectPublication.objects.filter(
+                project_id=self.project_id,
+                definition_version_id=self.definition_version_id,
+            )
+            .exclude(pk=self.pk)
+            .exists()
+        ):
+            errors["definition_version"] = (
+                "A typed definition has exactly one canonical publication receipt."
+            )
         if self.initial_workspace_id:
             workspace = ProjectWorkspace.objects.filter(
                 pk=self.initial_workspace_id
@@ -773,10 +902,35 @@ class ProjectPublication(StableVersionedModel):
                     errors["initial_workspace"] = (
                         "Initial workspace must pin the exact published manifest hash."
                     )
+            if (
+                ProjectPublication.objects.filter(
+                    project_id=self.project_id,
+                    initial_workspace_id__isnull=False,
+                )
+                .exclude(pk=self.pk)
+                .exists()
+            ):
+                errors["initial_workspace"] = (
+                    "A project has exactly one initial-workspace publication receipt."
+                )
         if errors:
             raise ValidationError(errors)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
+        from .services.project_definitions import (
+            identify_typed_project_definition_manifest,
+        )
+
+        persisted_manifest = ProjectDefinitionVersion.objects.filter(
+            pk=self.definition_version_id
+        ).values_list("manifest", flat=True).first()
+        if (
+            identify_typed_project_definition_manifest(persisted_manifest)
+            and not _studio_write_is_authorized("publication")
+        ):
+            raise ValidationError(
+                "Typed publication writes require the canonical Studio service."
+            )
         self.full_clean()
         if self.pk and ProjectPublication.objects.filter(pk=self.pk).exists():
             previous = ProjectPublication.objects.get(pk=self.pk)
@@ -3395,6 +3549,7 @@ class UIHelpBinding(ImmutableCapturedModel):
 
     class Meta:
         ordering = ("workspace__code", "ui_key", "locale", "version")
+        base_manager_name = "objects"
         constraints = [
             *_stable_constraints("domain_ui_help_binding"),
             models.UniqueConstraint(
@@ -3953,6 +4108,7 @@ class ImportRun(ImmutableCapturedModel):
 
     class Meta:
         ordering = ("project__code", "package_scope", "-created_at")
+        base_manager_name = "objects"
         constraints = [
             *_stable_constraints("domain_import_run"),
             models.UniqueConstraint(
@@ -4469,6 +4625,7 @@ class AuditEvent(ImmutableCapturedModel):
 
     class Meta:
         ordering = ("-occurred_at", "code")
+        base_manager_name = "objects"
         constraints = [
             *_stable_constraints("domain_audit_event"),
             models.UniqueConstraint(

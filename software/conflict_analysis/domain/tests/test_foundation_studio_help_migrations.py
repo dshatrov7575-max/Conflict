@@ -1,4 +1,5 @@
 import hashlib
+import importlib
 import json
 
 from django.core.exceptions import ValidationError
@@ -369,3 +370,369 @@ class FoundationStudioContractMigrationTests(TransactionTestCase):
         self.assertEqual(migrated_audit.scope, "WORKSPACE")
         self.assertEqual(migrated_audit.workspace_id, workspace.id)
         self.assertIsNone(migrated_audit.definition_version_id)
+
+
+class FoundationStudioContractReverseMigrationTests(TransactionTestCase):
+    migrate_from = [("domain", "0012_xlsx_metadata_contract")]
+    migrate_to = [("domain", "0015_foundation_studio_contract_constraints")]
+    guarded_model_names = (
+        "Project",
+        "ProjectDefinitionVersion",
+        "ProjectWorkspace",
+        "ProjectPublication",
+        "HelpTopic",
+        "UIHelpBinding",
+        "ImportRun",
+        "AuditEvent",
+    )
+    guarded_schema_model_names = (
+        "AuditEvent",
+        "UIHelpBinding",
+        "ProjectPublication",
+        "ImportRun",
+    )
+
+    def _restore_leaf_migrations(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+
+    def _contract_apps(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.migrate_to)
+        self.addCleanup(self._restore_leaf_migrations)
+        return executor.loader.project_state(self.migrate_to).apps
+
+    def _seed_contract_core(self, apps):
+        Project = apps.get_model("domain", "Project")
+        Definition = apps.get_model("domain", "ProjectDefinitionVersion")
+        Workspace = apps.get_model("domain", "ProjectWorkspace")
+        Topic = apps.get_model("domain", "HelpTopic")
+
+        project = Project.objects.create(
+            code="REVERSE-GUARD-PROJECT",
+            version="1.0.0",
+            name="Reverse guard project",
+        )
+        now = timezone.now()
+        manifest = {}
+        definition = Definition.objects.create(
+            project=project,
+            code="REVERSE-GUARD-DEFINITION",
+            version="1.0.0",
+            is_current=True,
+            publication_status="PUBLISHED",
+            manifest=manifest,
+            manifest_hash=_manifest_hash(manifest),
+            validated_at=now,
+            validated_by="reverse-guard-owner",
+            validation_result={"valid": True},
+            published_at=now,
+            published_by="reverse-guard-owner",
+        )
+        workspace = Workspace.objects.create(
+            project=project,
+            definition_version=definition,
+            definition_manifest_hash=definition.manifest_hash,
+            code="REVERSE-GUARD-WORKSPACE",
+            version="1.0.0",
+            name="Reverse guard workspace",
+            is_default=True,
+        )
+        html = "<p>Reverse guard help.</p>"
+        topic = Topic.objects.create(
+            code="REVERSE-GUARD-TOPIC",
+            stable_key="studio.reverse-guard",
+            version="1.0.0",
+            title="Reverse guard help",
+            application_scope="STUDIO",
+            construct_version="1.0.0",
+            term_version="1.0.0",
+            locale="ru-RU",
+            sanitized_html=html,
+            content_sha256=hashlib.sha256(html.encode("utf-8")).hexdigest(),
+            publication_status="PUBLISHED",
+            published_at=now,
+        )
+        return {
+            "project": project,
+            "definition": definition,
+            "workspace": workspace,
+            "topic": topic,
+        }
+
+    def _create_import_run(self, apps, core, *, package_scope, workspace):
+        ImportRun = apps.get_model("domain", "ImportRun")
+        suffix = "WORKSPACE" if workspace is not None else "DEFINITION"
+        return ImportRun.objects.create(
+            project=core["project"],
+            workspace=workspace,
+            definition_version=core["definition"],
+            package_scope=package_scope,
+            code=f"REVERSE-GUARD-{suffix}-IMPORT",
+            version="1.0.0",
+            package_format="CONFLICT_ANALYSIS_FOUNDATION",
+            package_id=f"REVERSE-GUARD-{suffix}-PACKAGE",
+            package_version="2.1.0",
+            schema_version="2.1.0",
+            template_version="1.0.0",
+            method_version="1.0.0",
+            ontology_version="1.0.0",
+            dataset_version="1.0.0",
+            checksum=("c" if workspace is not None else "d") * 64,
+            adapter="reverse-guard-test",
+            selected_input={"preserve": True},
+            status="PREVIEWED",
+            actor_identifier="reverse-guard-owner",
+        )
+
+    def _seed_legacy_compatible_rows(self, apps, core):
+        Binding = apps.get_model("domain", "UIHelpBinding")
+        Publication = apps.get_model("domain", "ProjectPublication")
+        Audit = apps.get_model("domain", "AuditEvent")
+
+        binding = Binding.objects.create(
+            workspace=core["workspace"],
+            application_scope="STUDIO",
+            help_topic=core["topic"],
+            code="REVERSE-GUARD-WORKSPACE-HELP",
+            version="1.0.0",
+            ui_key="studio.reverse-guard",
+            locale="ru-RU",
+        )
+        publication = Publication.objects.create(
+            project=core["project"],
+            definition_version=core["definition"],
+            initial_workspace=None,
+            code="REVERSE-GUARD-LEGACY-PUBLICATION",
+            version="1.0.0",
+            locale="ru-RU",
+            actor_identifier="reverse-guard-owner",
+            validation_result={"valid": True},
+        )
+        receipt = self._create_import_run(
+            apps,
+            core,
+            package_scope="WORKSPACE",
+            workspace=core["workspace"],
+        )
+        audit = Audit.objects.create(
+            project=core["project"],
+            workspace=core["workspace"],
+            definition_version=None,
+            scope="WORKSPACE",
+            code="REVERSE-GUARD-WORKSPACE-AUDIT",
+            version="1.0.0",
+            action="IMPORT",
+            actor_type="HUMAN",
+            actor_identifier="reverse-guard-owner",
+            entity_type="IMPORT_RUN",
+            entity_id=receipt.id,
+        )
+        return {
+            "UIHelpBinding": binding.id,
+            "ProjectPublication": publication.id,
+            "ImportRun": receipt.id,
+            "AuditEvent": audit.id,
+        }
+
+    def _seed_blocker(self, apps, core, blocker):
+        if blocker == "definition_audit":
+            Audit = apps.get_model("domain", "AuditEvent")
+            return Audit.objects.create(
+                project=core["project"],
+                workspace=None,
+                definition_version=core["definition"],
+                scope="DEFINITION",
+                code="REVERSE-GUARD-DEFINITION-AUDIT",
+                version="1.0.0",
+                action="PUBLISH",
+                actor_type="HUMAN",
+                actor_identifier="reverse-guard-owner",
+                entity_type="PROJECT_DEFINITION_VERSION",
+                entity_id=core["definition"].id,
+            )
+        if blocker == "global_help_binding":
+            Binding = apps.get_model("domain", "UIHelpBinding")
+            return Binding.objects.create(
+                workspace=None,
+                application_scope="STUDIO",
+                help_topic=core["topic"],
+                code="REVERSE-GUARD-GLOBAL-HELP",
+                version="1.0.0",
+                ui_key="studio.reverse-guard",
+                locale="ru-RU",
+            )
+        if blocker == "initial_workspace_publication":
+            Publication = apps.get_model("domain", "ProjectPublication")
+            return Publication.objects.create(
+                project=core["project"],
+                definition_version=core["definition"],
+                initial_workspace=core["workspace"],
+                code="REVERSE-GUARD-BOOTSTRAP-PUBLICATION",
+                version="1.0.0",
+                locale="ru-RU",
+                actor_identifier="reverse-guard-owner",
+                validation_result={"valid": True},
+            )
+        if blocker == "project_definition_import":
+            return self._create_import_run(
+                apps,
+                core,
+                package_scope="PROJECT_DEFINITION",
+                workspace=None,
+            )
+        raise AssertionError(f"Unknown reverse blocker: {blocker}")
+
+    def _row_snapshot(self, apps):
+        return {
+            model_name: list(
+                apps.get_model("domain", model_name)
+                .objects.order_by("pk")
+                .values()
+            )
+            for model_name in self.guarded_model_names
+        }
+
+    @staticmethod
+    def _constraint_signature(details):
+        foreign_key = details.get("foreign_key")
+        if foreign_key is not None:
+            foreign_key = tuple(foreign_key)
+        return {
+            "columns": tuple(details.get("columns") or ()),
+            "primary_key": bool(details.get("primary_key")),
+            "unique": bool(details.get("unique")),
+            "foreign_key": foreign_key,
+            "check": bool(details.get("check")),
+            "index": bool(details.get("index")),
+            "orders": tuple(details.get("orders") or ()),
+            "type": details.get("type"),
+        }
+
+    def _schema_snapshot(self, apps):
+        snapshot = {}
+        with connection.cursor() as cursor:
+            for model_name in self.guarded_schema_model_names:
+                model = apps.get_model("domain", model_name)
+                table_name = model._meta.db_table
+                description = connection.introspection.get_table_description(
+                    cursor, table_name
+                )
+                constraints = connection.introspection.get_constraints(
+                    cursor, table_name
+                )
+                snapshot[table_name] = {
+                    "columns": tuple(
+                        (field.name, field.null_ok) for field in description
+                    ),
+                    "constraints": {
+                        name: self._constraint_signature(details)
+                        for name, details in sorted(constraints.items())
+                    },
+                }
+        return snapshot
+
+    def _assert_reverse_blocked(self, blocker, expected_message):
+        apps = self._contract_apps()
+        core = self._seed_contract_core(apps)
+        self._seed_blocker(apps, core, blocker)
+        rows_before = self._row_snapshot(apps)
+        schema_before = self._schema_snapshot(apps)
+
+        executor = MigrationExecutor(connection)
+        with self.assertRaises(RuntimeError) as caught:
+            executor.migrate(self.migrate_from)
+
+        self.assertEqual(str(caught.exception), expected_message)
+        self.assertEqual(self._row_snapshot(apps), rows_before)
+        self.assertEqual(self._schema_snapshot(apps), schema_before)
+        self.assertEqual(
+            MigrationExecutor(connection).migration_plan(self.migrate_to),
+            [],
+            "A refused reverse must leave 0015 recorded as applied.",
+        )
+
+    def test_reverse_guard_is_the_last_forward_operation(self):
+        migration_module = importlib.import_module(
+            "domain.migrations.0015_foundation_studio_contract_constraints"
+        )
+        operation = migration_module.Migration.operations[-1]
+
+        self.assertEqual(operation.__class__.__name__, "RunPython")
+        self.assertEqual(operation.code.__name__, "noop")
+        self.assertIs(
+            operation.reverse_code,
+            migration_module.reject_lossy_reverse_before_schema_changes,
+        )
+
+    def test_clean_0015_to_0012_reverse_succeeds_and_preserves_legacy_rows(self):
+        apps = self._contract_apps()
+        core = self._seed_contract_core(apps)
+        row_ids = self._seed_legacy_compatible_rows(apps, core)
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.migrate_from)
+        legacy_apps = executor.loader.project_state(self.migrate_from).apps
+
+        for model_name, row_id in row_ids.items():
+            self.assertTrue(
+                legacy_apps.get_model("domain", model_name)
+                .objects.filter(pk=row_id)
+                .exists()
+            )
+        self.assertEqual(
+            MigrationExecutor(connection).migration_plan(self.migrate_from),
+            [],
+        )
+
+        legacy_schema = self._schema_snapshot(legacy_apps)
+        removed_columns = {
+            "domain_auditevent": {"definition_version_id", "scope"},
+            "domain_uihelpbinding": {"application_scope"},
+            "domain_projectpublication": {"initial_workspace_id"},
+            "domain_importrun": {
+                "project_id",
+                "definition_version_id",
+                "package_scope",
+            },
+        }
+        for table_name, column_names in removed_columns.items():
+            actual_columns = {
+                name for name, _null_ok in legacy_schema[table_name]["columns"]
+            }
+            self.assertTrue(column_names.isdisjoint(actual_columns))
+
+        legacy_constraints = {
+            "domain_uihelpbinding": "domain_ui_help_binding_uniq",
+            "domain_importrun": "domain_import_run_code_uniq",
+            "domain_auditevent": "domain_audit_workspace_code_uniq",
+        }
+        for table_name, constraint_name in legacy_constraints.items():
+            self.assertIn(
+                constraint_name,
+                legacy_schema[table_name]["constraints"],
+            )
+
+    def test_definition_audit_refuses_reverse_before_schema_changes(self):
+        self._assert_reverse_blocked(
+            "definition_audit",
+            "Cannot reverse after definition-scoped audit provenance exists.",
+        )
+
+    def test_global_help_binding_refuses_reverse_before_schema_changes(self):
+        self._assert_reverse_blocked(
+            "global_help_binding",
+            "Cannot reverse after pre-workspace HelpTopic bindings exist.",
+        )
+
+    def test_initial_workspace_publication_refuses_reverse_before_schema_changes(self):
+        self._assert_reverse_blocked(
+            "initial_workspace_publication",
+            "Cannot reverse after an initial-workspace publication receipt exists.",
+        )
+
+    def test_project_definition_import_refuses_reverse_before_schema_changes(self):
+        self._assert_reverse_blocked(
+            "project_definition_import",
+            "Cannot reverse after project-definition import receipts exist.",
+        )

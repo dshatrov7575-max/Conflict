@@ -11,7 +11,6 @@ serialization and checksum behavior.
 
 from __future__ import annotations
 
-import codecs
 import copy
 import hashlib
 import json
@@ -28,7 +27,12 @@ from django.db import transaction
 from jsonschema import Draft202012Validator, FormatChecker
 
 from domain.enums import PublicationStatus
-from domain.models import Project, ProjectDefinitionVersion
+from domain.models import (
+    Project,
+    ProjectDefinitionVersion,
+    _canonical_studio_write,
+)
+from domain.services.raw_ingest import RawJSONError, parse_json_source
 
 
 PROJECT_DEFINITION_MANIFEST_FORMAT: Final = "conflict-analysis-project-definition"
@@ -181,12 +185,6 @@ class _DecodeFailure(Exception):
         self.message = message
 
 
-class _DuplicateJsonKey(Exception):
-    def __init__(self, key: str):
-        super().__init__(key)
-        self.key = key
-
-
 def _deep_freeze(value: Any) -> Any:
     if isinstance(value, Mapping):
         return MappingProxyType(
@@ -205,78 +203,20 @@ def _deep_thaw(value: Any) -> Any:
     return copy.deepcopy(value)
 
 
-def _without_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    result: dict[str, Any] = {}
-    for key, value in pairs:
-        if key in result:
-            raise _DuplicateJsonKey(key)
-        result[key] = value
-    return result
-
-
 def _decode_manifest(raw: Mapping[str, Any] | str | bytes) -> dict[str, Any]:
-    if isinstance(raw, Mapping):
-        decoded = _deep_thaw(raw)
-    else:
-        if isinstance(raw, bytes):
-            if raw.startswith(codecs.BOM_UTF8):
-                raise _DecodeFailure(
-                    "UTF8_BOM_FORBIDDEN",
-                    "/",
-                    "A typed manifest must not contain a UTF-8 BOM.",
-                )
-            try:
-                text = raw.decode("utf-8", errors="strict")
-            except UnicodeDecodeError as exc:
-                raise _DecodeFailure(
-                    "UTF8_INVALID",
-                    "/",
-                    "A typed manifest must be valid UTF-8.",
-                ) from exc
-        elif isinstance(raw, str):
-            text = raw
-            if text.startswith("\ufeff"):
-                raise _DecodeFailure(
-                    "UTF8_BOM_FORBIDDEN",
-                    "/",
-                    "A typed manifest must not contain a UTF-8 BOM.",
-                )
-        else:
-            raise _DecodeFailure(
-                "FIELD_TYPE_INVALID",
-                "/",
-                "A typed manifest must be a JSON object, UTF-8 bytes, or JSON text.",
-            )
-        try:
-            decoded = json.loads(text, object_pairs_hook=_without_duplicate_keys)
-        except _DuplicateJsonKey as exc:
-            raise _DecodeFailure(
-                "DUPLICATE_JSON_KEY",
-                "/",
-                f"JSON object key {exc.key!r} occurs more than once.",
-            ) from exc
-        except json.JSONDecodeError as exc:
-            raise _DecodeFailure(
-                "JSON_INVALID",
-                "/",
-                f"JSON is invalid at line {exc.lineno}, column {exc.colno}.",
-            ) from exc
-    if not isinstance(decoded, dict):
-        raise _DecodeFailure(
-            "FIELD_TYPE_INVALID",
-            "/",
-            "A typed manifest root must be a JSON object.",
-        )
     try:
-        # Refuse non-JSON Python values and non-finite floats before hashing.
-        json.dumps(decoded, ensure_ascii=False, allow_nan=False)
-    except (TypeError, ValueError) as exc:
-        raise _DecodeFailure(
-            "FIELD_TYPE_INVALID",
-            "/",
-            "A typed manifest may contain only finite JSON values.",
-        ) from exc
-    return decoded
+        return dict(parse_json_source(raw).value)
+    except RawJSONError as exc:
+        code = {
+            "RAW_JSON_BOM_FORBIDDEN": "UTF8_BOM_FORBIDDEN",
+            "RAW_JSON_INVALID_UTF8": "UTF8_INVALID",
+            "RAW_JSON_DUPLICATE_KEY": "DUPLICATE_JSON_KEY",
+            "RAW_JSON_OBJECT_REQUIRED": "FIELD_TYPE_INVALID",
+            "RAW_JSON_INPUT_UNSUPPORTED": "FIELD_TYPE_INVALID",
+            "RAW_JSON_NON_FINITE_NUMBER": "FIELD_TYPE_INVALID",
+            "RAW_JSON_MAPPING_NOT_SERIALIZABLE": "FIELD_TYPE_INVALID",
+        }.get(exc.code, "JSON_INVALID")
+        raise _DecodeFailure(code, "/", exc.message) from exc
 
 
 def identify_typed_project_definition_manifest(value: object) -> bool:
@@ -401,12 +341,12 @@ def _schema_diagnostics(manifest: Mapping[str, Any]) -> list[ProjectDefinitionMa
         elif error.validator == "additionalProperties":
             allowed = set(error.schema.get("properties", {}))
             unexpected = sorted(set(error.instance) - allowed)
-            for field in unexpected:
+            if unexpected:
                 diagnostics.append(
                     _diagnostic(
                         "FIELD_UNEXPECTED",
-                        _pointer((*path_parts, field)),
-                        f"Field {field!r} is not part of the typed manifest contract.",
+                        _pointer((*path_parts, "*")),
+                        "Object contains a field outside the typed manifest contract.",
                     )
                 )
         elif error.validator == "type":
@@ -900,7 +840,10 @@ def validate_project_definition_manifest_v1(
     diagnostics.extend(_help_diagnostics(manifest, help_topic_resolver))
     ordered = _deduplicate_diagnostics(diagnostics)
     manifest_sha256 = ""
-    if identify_typed_project_definition_manifest(manifest):
+    blocking = any(
+        diagnostic.code in _DRAFT_BLOCKING_CODES for diagnostic in ordered
+    )
+    if identify_typed_project_definition_manifest(manifest) and not blocking:
         manifest_sha256 = hashlib.sha256(_canonical_json(manifest).encode("utf-8")).hexdigest()
     return ProjectDefinitionManifestValidation(
         valid=not ordered,
@@ -1058,7 +1001,8 @@ def create_project_definition_draft(
         kwargs["id"] = definition_id
     definition = ProjectDefinitionVersion(**kwargs)
     definition.full_clean()
-    definition.save(force_insert=True)
+    with _canonical_studio_write("definition"):
+        definition.save(force_insert=True)
     return definition
 
 
@@ -1113,7 +1057,8 @@ def clone_project_definition_draft(
         kwargs["id"] = definition_id
     successor = ProjectDefinitionVersion(**kwargs)
     successor.full_clean()
-    successor.save(force_insert=True)
+    with _canonical_studio_write("definition"):
+        successor.save(force_insert=True)
     return successor
 
 
@@ -1154,7 +1099,8 @@ def save_project_definition_draft(
     current.manifest_hash = dto.manifest_sha256
     current.schema_version = PROJECT_DEFINITION_MANIFEST_VERSION
     current.full_clean()
-    current.save(
-        update_fields=("manifest", "manifest_hash", "schema_version", "updated_at")
-    )
+    with _canonical_studio_write("definition"):
+        current.save(
+            update_fields=("manifest", "manifest_hash", "schema_version", "updated_at")
+        )
     return current

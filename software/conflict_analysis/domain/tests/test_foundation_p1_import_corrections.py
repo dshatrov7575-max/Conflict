@@ -5,6 +5,7 @@ import json
 import tempfile
 from pathlib import Path
 
+from django.db import connection
 from django.test import TestCase
 from django.utils import timezone
 
@@ -102,10 +103,22 @@ class FoundationP1ImportCorrectionTests(FoundationFactoryMixin, TestCase):
                 supersedes=self.definition,
             )
         )
-        ProjectWorkspace._base_manager.filter(pk=self.workspace.pk).update(
-            definition_version=next_definition,
-            definition_manifest_hash=next_definition.manifest_hash,
+        # Simulate out-of-band database drift. Public and _base_manager ORM
+        # updates are now intentionally fail-closed by the P0 integrity guard.
+        uuid_field = ProjectWorkspace._meta.get_field("id")
+        workspace_db_id = uuid_field.get_db_prep_value(
+            self.workspace.pk, connection, prepared=False
         )
+        definition_db_id = uuid_field.get_db_prep_value(
+            next_definition.pk, connection, prepared=False
+        )
+        table = connection.ops.quote_name(ProjectWorkspace._meta.db_table)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"UPDATE {table} SET definition_version_id = %s, "
+                "definition_manifest_hash = %s WHERE id = %s",
+                [definition_db_id, next_definition.manifest_hash, workspace_db_id],
+            )
         before = (Actor.objects.count(), ImportRun.objects.count(), AuditEvent.objects.count())
 
         with self.assertRaises(FoundationPackageConflictError):

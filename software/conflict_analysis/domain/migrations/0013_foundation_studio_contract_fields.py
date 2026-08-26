@@ -13,6 +13,7 @@ class Migration(migrations.Migration):
             name="projectdefinitionversion",
             options={
                 "ordering": ("project__code", "version"),
+                "base_manager_name": "objects",
                 "permissions": (
                     ("studio_read_definition", "Can read Studio project definitions"),
                     (
@@ -42,6 +43,35 @@ class Migration(migrations.Migration):
             name="importrun",
             options={
                 "ordering": ("project__code", "package_scope", "-created_at"),
+                "base_manager_name": "objects",
+            },
+        ),
+        migrations.AlterModelOptions(
+            name="projectworkspace",
+            options={
+                "ordering": ("project__code", "code"),
+                "base_manager_name": "objects",
+            },
+        ),
+        migrations.AlterModelOptions(
+            name="projectpublication",
+            options={
+                "ordering": ("project__code", "-published_at"),
+                "base_manager_name": "objects",
+            },
+        ),
+        migrations.AlterModelOptions(
+            name="uihelpbinding",
+            options={
+                "ordering": ("workspace__code", "ui_key", "locale", "version"),
+                "base_manager_name": "objects",
+            },
+        ),
+        migrations.AlterModelOptions(
+            name="auditevent",
+            options={
+                "ordering": ("-occurred_at", "code"),
+                "base_manager_name": "objects",
             },
         ),
         migrations.AlterField(

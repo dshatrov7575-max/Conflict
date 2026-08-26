@@ -72,6 +72,29 @@ jobs:
           test "$(git rev-parse eaee9227c5c43ea18ef3c3ea7a2b9d70fb5910bf^{tree})" = "f0a4d67585fc599102acf448df649bd5d70d8356"
           git merge-base --is-ancestor eaee9227c5c43ea18ef3c3ea7a2b9d70fb5910bf HEAD
 
+      - name: Enforce accepted Foundation Studio correction allowlist
+        shell: bash
+        run: |
+          invalid=0
+          while IFS= read -r path; do
+            case "$path" in
+              .github/workflows/conflict-analysis.yml|\
+              software/conflict_analysis/README.md|\
+              software/conflict_analysis/pyproject.toml|\
+              software/conflict_analysis/conflict_analysis/urls.py|\
+              software/conflict_analysis/domain/*|\
+              software/conflict_analysis/docs/adr/*)
+                ;;
+              *)
+                echo "outside accepted G0 allowlist: $path" >&2
+                invalid=1
+                ;;
+            esac
+          done < <(git diff --name-only eaee9227c5c43ea18ef3c3ea7a2b9d70fb5910bf HEAD)
+          test "$invalid" -eq 0
+          test ! -e conflict_analysis/studio_definition_api.py
+          ! git grep -n '/api/studio/' -- conflict_analysis domain ':!domain/tests'
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
@@ -149,6 +172,8 @@ jobs:
           domain/tests/test_foundation_studio_help_migrations.py
           domain/tests/test_foundation_studio_bootstrap_auth.py
           domain/tests/test_foundation_studio_package_21.py
+          domain/tests/test_foundation_studio_p0_integrity.py
+          domain/tests/test_foundation_studio_p0_raw_auth.py
 
       - name: Run PostgreSQL foundation and PR 21 regression suite
         env:

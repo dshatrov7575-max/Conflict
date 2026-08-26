@@ -33,6 +33,7 @@ from .models import (
     ProjectPublication,
     ProjectWorkspace,
     UIHelpBinding,
+    _canonical_studio_write,
 )
 
 
@@ -503,16 +504,17 @@ def validate_project_definition(
         current.validated_by = principal.actor_identifier
         current.validation_result = report.as_dict()
         current.full_clean()
-        current.save(
-            update_fields=(
-                "publication_status",
-                "validated_at",
-                "validated_by",
-                "validation_result",
-                "manifest_hash",
-                "updated_at",
+        with _canonical_studio_write("definition"):
+            current.save(
+                update_fields=(
+                    "publication_status",
+                    "validated_at",
+                    "validated_by",
+                    "validation_result",
+                    "manifest_hash",
+                    "updated_at",
+                )
             )
-        )
         _inject_bootstrap_failure(inject_failure_at, "after_validation_transition")
         record_definition_audit(
             definition=current,
@@ -604,10 +606,11 @@ def publish_project_definition(
 ) -> ProjectPublication:
     """Publish through the sole Foundation authority.
 
-    Typed V1 first-publication owns the PUBLISHED transition, exact initial
-    workspace pin, workspace HelpTopic bindings, one ProjectPublication, and
-    both definition/workspace audit events in this transaction. Historical
-    manifests retain the earlier workspace-audited publication path.
+    Typed V1 publication owns every PUBLISHED transition.  The first
+    transition additionally creates the exact initial workspace and its help
+    bindings; a successor creates only its ordinary publication receipt and
+    never mutates an existing workspace pin.  Historical manifests retain the
+    earlier workspace-audited publication path.
     """
 
     from .services.project_definitions import identify_typed_project_definition_manifest
@@ -622,15 +625,11 @@ def publish_project_definition(
         assert principal is not None
         if audit_workspace is not None:
             raise WorkspaceBoundaryViolation(
-                "Typed first publication cannot borrow a pre-existing workspace."
+                "Typed publication is definition-scoped and cannot borrow a workspace."
             )
         if actor_identifier.strip() != principal.actor_identifier:
             raise ValidationError(
                 {"actor_identifier": "Publication actor must equal the trusted principal."}
-            )
-        if not isinstance(workspace_spec, Mapping):
-            raise ValidationError(
-                {"workspace_spec": "Typed first publication requires an initial workspace."}
             )
         Project.objects.select_for_update().get(pk=current.project_id)
         if current.publication_status != PublicationStatus.VALIDATED:
@@ -641,78 +640,141 @@ def publish_project_definition(
             raise ValidationError(
                 {"validation_result": "Publishing requires canonical successful validation."}
             )
-        if ProjectWorkspace.objects.filter(project=current.project).exists():
-            raise ValidationError(
-                {"workspace_spec": "Initial publication requires a project with no workspace."}
-            )
-        if ProjectPublication.objects.filter(project=current.project).exists():
-            raise ValidationError(
-                {"publication": "Initial publication receipt already exists for this project."}
-            )
+
+        prior_publications = ProjectPublication.objects.select_for_update().filter(
+            project_id=current.project_id
+        )
+        is_initial_publication = not prior_publications.exists()
+        previous_current = (
+            ProjectDefinitionVersion.objects.select_for_update()
+            .filter(project_id=current.project_id, is_current=True)
+            .exclude(pk=current.pk)
+            .first()
+        )
+        if is_initial_publication:
+            if not isinstance(workspace_spec, Mapping):
+                raise ValidationError(
+                    {
+                        "workspace_spec": (
+                            "Typed initial publication requires an exact initial workspace."
+                        )
+                    }
+                )
+            if ProjectWorkspace.objects.filter(project=current.project).exists():
+                raise ValidationError(
+                    {
+                        "workspace_spec": (
+                            "Initial publication requires a project with no workspace."
+                        )
+                    }
+                )
+            if previous_current is not None:
+                raise ValidationError(
+                    {
+                        "publication": (
+                            "Initial publication cannot replace an unreceipted current definition."
+                        )
+                    }
+                )
+        else:
+            if workspace_spec is not None:
+                raise ValidationError(
+                    {
+                        "workspace_spec": (
+                            "A successor publication cannot create a second initial workspace."
+                        )
+                    }
+                )
+            if prior_publications.filter(initial_workspace_id__isnull=False).count() != 1:
+                raise ValidationError(
+                    {
+                        "publication": (
+                            "A typed successor requires exactly one initial publication receipt."
+                        )
+                    }
+                )
+            if (
+                previous_current is None
+                or previous_current.publication_status != PublicationStatus.PUBLISHED
+                or current.supersedes_id != previous_current.pk
+            ):
+                raise ValidationError(
+                    {
+                        "supersedes": (
+                            "A typed successor must supersede the exact current published definition."
+                        )
+                    }
+                )
 
         before = {
             "publication_status": current.publication_status,
             "is_current": current.is_current,
         }
-        ProjectDefinitionVersion.objects.filter(
-            project_id=current.project_id,
-            is_current=True,
-        ).exclude(pk=current.pk).update(is_current=False)
-        current.publication_status = PublicationStatus.PUBLISHED
-        current.published_at = timezone.now()
-        current.published_by = principal.actor_identifier
-        current.is_current = True
-        current.full_clean()
-        current.save()
+        with _canonical_studio_write("definition"):
+            ProjectDefinitionVersion.objects.filter(
+                project_id=current.project_id,
+                is_current=True,
+            ).exclude(pk=current.pk).update(is_current=False)
+            current.publication_status = PublicationStatus.PUBLISHED
+            current.published_at = timezone.now()
+            current.published_by = principal.actor_identifier
+            current.is_current = True
+            current.full_clean()
+            current.save()
         _inject_bootstrap_failure(inject_failure_at, "after_publication_transition")
 
-        workspace_kwargs: dict[str, Any] = {
-            "project": current.project,
-            "definition_version": current,
-            "definition_manifest_hash": current.manifest_hash,
-            "code": str(workspace_spec.get("code", "")),
-            "version": str(workspace_spec.get("version", "")),
-            "name": str(workspace_spec.get("name", "")),
-            "is_default": bool(workspace_spec.get("is_default", True)),
-            "metadata": dict(workspace_spec.get("metadata", {})),
-        }
-        if workspace_spec.get("id") is not None:
-            workspace_kwargs["id"] = UUID(str(workspace_spec["id"]))
-        workspace = ProjectWorkspace(**workspace_kwargs)
-        workspace.full_clean()
-        workspace.save(force_insert=True)
-        _inject_bootstrap_failure(inject_failure_at, "after_initial_workspace")
-
+        workspace: ProjectWorkspace | None = None
         created_bindings: list[UIHelpBinding] = []
-        for reference in current.manifest.get("help_bindings", []):
-            topic = _typed_help_topic(reference)
-            if (
-                topic is None
-                or topic.stable_key != reference["topic_stable_key"]
-                or topic.content_sha256 != reference["topic_sha256"]
-            ):
-                raise ValidationError(
-                    {
-                        "help_bindings": (
-                            "An exact published, sanitized pre-workspace HelpTopic "
-                            "binding disappeared after validation."
-                        )
-                    }
+        if is_initial_publication:
+            assert isinstance(workspace_spec, Mapping)
+            workspace_kwargs: dict[str, Any] = {
+                "project": current.project,
+                "definition_version": current,
+                "definition_manifest_hash": current.manifest_hash,
+                "code": str(workspace_spec.get("code", "")),
+                "version": str(workspace_spec.get("version", "")),
+                "name": str(workspace_spec.get("name", "")),
+                "is_default": bool(workspace_spec.get("is_default", True)),
+                "metadata": dict(workspace_spec.get("metadata", {})),
+            }
+            if workspace_spec.get("id") is not None:
+                workspace_kwargs["id"] = UUID(str(workspace_spec["id"]))
+            workspace = ProjectWorkspace(**workspace_kwargs)
+            workspace.full_clean()
+            workspace.save(force_insert=True)
+            _inject_bootstrap_failure(inject_failure_at, "after_initial_workspace")
+
+            for reference in current.manifest.get("help_bindings", []):
+                topic = _typed_help_topic(reference)
+                if (
+                    topic is None
+                    or topic.stable_key != reference["topic_stable_key"]
+                    or topic.content_sha256 != reference["topic_sha256"]
+                ):
+                    raise ValidationError(
+                        {
+                            "help_bindings": (
+                                "An exact published, sanitized pre-workspace HelpTopic "
+                                "binding disappeared after validation."
+                            )
+                        }
+                    )
+                binding = UIHelpBinding(
+                    id=UUID(reference["id"]),
+                    workspace=workspace,
+                    application_scope=HelpApplicationScope.STUDIO,
+                    code=reference["code"],
+                    version=reference["version"],
+                    ui_key=reference["ui_key"],
+                    locale=reference["locale"],
+                    help_topic=topic,
                 )
-            binding = UIHelpBinding(
-                id=UUID(reference["id"]),
-                workspace=workspace,
-                application_scope=HelpApplicationScope.STUDIO,
-                code=reference["code"],
-                version=reference["version"],
-                ui_key=reference["ui_key"],
-                locale=reference["locale"],
-                help_topic=topic,
+                binding.full_clean()
+                binding.save(force_insert=True)
+                created_bindings.append(binding)
+            _inject_bootstrap_failure(
+                inject_failure_at, "after_workspace_help_bindings"
             )
-            binding.full_clean()
-            binding.save(force_insert=True)
-            created_bindings.append(binding)
-        _inject_bootstrap_failure(inject_failure_at, "after_workspace_help_bindings")
 
         publication = ProjectPublication(
             project=current.project,
@@ -724,7 +786,8 @@ def publish_project_definition(
             validation_result=current.validation_result,
         )
         publication.full_clean()
-        publication.save(force_insert=True)
+        with _canonical_studio_write("publication"):
+            publication.save(force_insert=True)
         _inject_bootstrap_failure(inject_failure_at, "after_project_publication")
 
         record_definition_audit(
@@ -738,24 +801,27 @@ def publish_project_definition(
                 "publication_status": current.publication_status,
                 "is_current": current.is_current,
                 "manifest_hash": current.manifest_hash,
-                "initial_workspace_id": str(workspace.pk),
+                "initial_workspace_id": str(workspace.pk) if workspace else None,
             },
         )
         _inject_bootstrap_failure(inject_failure_at, "after_definition_publish_audit")
-        record_foundation_audit(
-            workspace=workspace,
-            action=AuditAction.BOOTSTRAP,
-            actor_identifier=principal.actor_identifier,
-            entity_type="PROJECT_WORKSPACE",
-            entity_id=workspace.pk,
-            after={
-                "definition_id": str(current.pk),
-                "manifest_hash": current.manifest_hash,
-                "publication_id": str(publication.pk),
-                "help_binding_ids": [str(item.pk) for item in created_bindings],
-            },
-        )
-        _inject_bootstrap_failure(inject_failure_at, "after_workspace_bootstrap_audit")
+        if workspace is not None:
+            record_foundation_audit(
+                workspace=workspace,
+                action=AuditAction.BOOTSTRAP,
+                actor_identifier=principal.actor_identifier,
+                entity_type="PROJECT_WORKSPACE",
+                entity_id=workspace.pk,
+                after={
+                    "definition_id": str(current.pk),
+                    "manifest_hash": current.manifest_hash,
+                    "publication_id": str(publication.pk),
+                    "help_binding_ids": [str(item.pk) for item in created_bindings],
+                },
+            )
+            _inject_bootstrap_failure(
+                inject_failure_at, "after_workspace_bootstrap_audit"
+            )
         return publication
 
     if audit_workspace is None:
@@ -783,10 +849,14 @@ def publish_project_definition(
         "publication_status": current.publication_status,
         "is_current": current.is_current,
     }
-    ProjectDefinitionVersion.objects.filter(
-        project_id=current.project_id,
-        is_current=True,
-    ).exclude(pk=current.pk).update(is_current=False)
+    # This historical path is still the canonical publication authority.  It
+    # may legitimately demote an existing typed current pointer, but it never
+    # receives authority to rewrite the typed snapshot itself.
+    with _canonical_studio_write("definition"):
+        ProjectDefinitionVersion.objects.filter(
+            project_id=current.project_id,
+            is_current=True,
+        ).exclude(pk=current.pk).update(is_current=False)
     current.publication_status = PublicationStatus.PUBLISHED
     current.published_at = current.published_at or timezone.now()
     current.published_by = actor_identifier.strip()

@@ -60,6 +60,26 @@ and requires the exact prior manifest hash. Clone creates a new DRAFT successor
 and never modifies the source. Validated and published bytes remain immutable
 and can be changed only through a successor definition.
 
+All public manifest and Foundation 2.1 JSON ingress uses the shared bounded
+raw-byte parser before DRF or a package adapter materializes a mapping. The
+transport contract is `application/json` with no charset or the exact
+`charset=utf-8`, with a 2 MiB byte budget. It rejects a UTF-8 BOM, invalid
+UTF-8, duplicate keys at any depth, NaN/Infinity, a second/trailing JSON
+document and a non-object root without echoing input bytes. File `Path`, byte,
+UTF-8 text and explicitly identified canonical-mapping adapters all route
+through this same parser; only the transport identity kind differs.
+
+Public DRAFT save accepts exactly one strong validator form:
+
+```http
+If-Match: "<64 lowercase hexadecimal manifest SHA-256>"
+```
+
+Missing, weak (`W/`), wildcard, unquoted, uppercase, multiple or malformed
+validators fail before body materialization and cannot be replaced by a body,
+query or custom-header hash. The service then repeats the stale-hash comparison
+against the locked persisted row.
+
 Help bindings carry exact application, UI key, locale, topic stable key,
 version, and sanitized-content checksum. Binding version and topic version must
 match. Publication-grade validation supplies the shared exact HelpTopic

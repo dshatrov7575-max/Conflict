@@ -7,12 +7,14 @@ import threading
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Group, Permission
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import close_old_connections, connection
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
+
+from domain.api.studio_definitions import project_access_group_name
 
 from domain.enums import AuditAction, AuditScope, HelpApplicationScope, PublicationStatus
 from domain.models import (
@@ -549,10 +551,11 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
         User = get_user_model()
         self.player = User.objects.create_user(username="player", password="test-password")
         self.editor_user = User.objects.create_user(username="editor", password="test-password")
-        self.publisher_user = User.objects.create_user(
-            username="publisher", password="test-password"
-        )
+        self.publisher_user = User.objects.create_user(username="publisher", password="test-password")
         self.viewer_user = User.objects.create_user(username="viewer", password="test-password")
+        self.inaccessible_user = User.objects.create_user(
+            username="inaccessible", password="test-password"
+        )
         permissions = {
             permission.codename: permission
             for permission in Permission.objects.filter(
@@ -572,312 +575,315 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
             permissions["studio_publish_definition"],
         )
         self.viewer_user.user_permissions.add(permissions["studio_read_definition"])
-
-    def test_unauthenticated_and_body_role_spoof_are_denied(self):
-        payload = {
-            "project_id": str(self.project.pk),
-            "code": "HTTP-DRAFT",
-            "version": "1.0.0",
-            "manifest": self.manifest,
-            "role": "STUDIO_PUBLISHER",
-            "actor_identifier": "owner-spoof",
-        }
-        self.assertIn(
-            self.client.post("/api/studio/definitions/drafts/", payload, format="json").status_code,
-            {401, 403},
+        self.inaccessible_user.user_permissions.add(permissions["studio_read_definition"])
+        access_group = Group.objects.create(name=project_access_group_name(self.project.pk))
+        access_group.user_set.add(
+            self.player,
+            self.editor_user,
+            self.publisher_user,
+            self.viewer_user,
         )
+        self.create_url = f"/api/foundation/projects/{self.project.pk}/definitions/"
+
+    def test_exact_401_403_and_object_scoped_404(self):
+        payload = {"code": "HTTP-DRAFT", "version": "1.0.0", "manifest": self.manifest}
+        self.assertEqual(self.client.post(self.create_url, payload, format="json").status_code, 401)
+
         self.client.force_authenticate(self.player)
-        response = self.client.post(
-            "/api/studio/definitions/drafts/",
-            payload,
+        self.assertEqual(self.client.post(self.create_url, payload, format="json").status_code, 403)
+
+        definition = create_project_definition_draft(
+            project=self.project,
+            code="INACCESSIBLE-DRAFT",
+            version="1.0.0",
+            manifest=self.manifest,
+            principal=self.editor(),
+        )
+        self.client.force_authenticate(self.inaccessible_user)
+        self.assertEqual(
+            self.client.get(f"/api/foundation/definitions/{definition.pk}/").status_code,
+            404,
+        )
+
+        other_manifest = copy.deepcopy(self.manifest)
+        other_project = Project.objects.create(
+            code="PROJECT-STUDIO-OTHER",
+            version="2.0.0",
+            name="Other inaccessible project",
+        )
+        other_manifest["project"].update(
+            {
+                "id": str(other_project.pk),
+                "code": other_project.code,
+                "version": other_project.version,
+            }
+        )
+        other_definition = create_project_definition_draft(
+            project=other_project,
+            code="CROSS-PROJECT-DRAFT",
+            version="1.0.0",
+            manifest=other_manifest,
+            principal=self.editor(),
+        )
+        self.client.force_authenticate(self.viewer_user)
+        self.assertEqual(
+            self.client.get(
+                f"/api/foundation/definitions/{other_definition.pk}/"
+            ).status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.post(
+                f"/api/foundation/projects/{other_project.pk}/definitions/",
+                {
+                    "code": "CROSS-PROJECT-CREATE",
+                    "version": "2.0.0",
+                    "manifest": other_manifest,
+                },
+                format="json",
+            ).status_code,
+            404,
+        )
+
+    def test_complete_public_http_role_denial_matrix(self):
+        definition = create_project_definition_draft(
+            project=self.project,
+            code="HTTP-ROLE-MATRIX",
+            version="1.0.0",
+            manifest=self.manifest,
+            principal=self.editor(),
+        )
+        definition_url = f"/api/foundation/definitions/{definition.pk}/"
+        create_payload = {
+            "code": "HTTP-ROLE-MATRIX-NEW",
+            "version": "2.0.0",
+            "manifest": self.manifest,
+        }
+        mutation_count = ProjectDefinitionVersion.objects.count()
+
+        cases = (
+            (self.player, "GET", definition_url, None, {}, 403),
+            (self.player, "POST", self.create_url, create_payload, {}, 403),
+            (self.viewer_user, "POST", self.create_url, create_payload, {}, 403),
+            (
+                self.viewer_user,
+                "POST",
+                f"{definition_url}clone/",
+                {"code": "VIEWER-CLONE", "version": "3.0.0"},
+                {},
+                403,
+            ),
+            (
+                self.viewer_user,
+                "PUT",
+                f"{definition_url}draft/",
+                {"manifest": self.manifest},
+                {"HTTP_IF_MATCH": f'"{definition.manifest_hash}"'},
+                403,
+            ),
+            (self.viewer_user, "POST", f"{definition_url}validate/", {}, {}, 403),
+            (
+                self.viewer_user,
+                "POST",
+                f"{definition_url}publish-initial/",
+                {"workspace": self.workspace_spec(), "locale": "en"},
+                {},
+                403,
+            ),
+            (self.editor_user, "POST", f"{definition_url}validate/", {}, {}, 403),
+            (
+                self.editor_user,
+                "POST",
+                f"{definition_url}publish-initial/",
+                {"workspace": self.workspace_spec(), "locale": "en"},
+                {},
+                403,
+            ),
+            (self.publisher_user, "POST", self.create_url, create_payload, {}, 403),
+            (
+                self.publisher_user,
+                "POST",
+                f"{definition_url}clone/",
+                {"code": "PUBLISHER-CLONE", "version": "4.0.0"},
+                {},
+                403,
+            ),
+            (
+                self.publisher_user,
+                "PUT",
+                f"{definition_url}draft/",
+                {"manifest": self.manifest},
+                {"HTTP_IF_MATCH": f'"{definition.manifest_hash}"'},
+                403,
+            ),
+        )
+        for user, method, path, payload, headers, expected in cases:
+            with self.subTest(user=user.username, method=method, path=path):
+                self.client.force_authenticate(user)
+                request = getattr(self.client, method.lower())
+                response = request(path, payload, format="json", **headers)
+                self.assertEqual(response.status_code, expected, response.data)
+
+        malformed_denials = (
+            (self.player, "POST", self.create_url),
+            (self.viewer_user, "POST", f"{definition_url}validate/"),
+            (self.editor_user, "POST", f"{definition_url}publish-initial/"),
+            (self.publisher_user, "POST", f"{definition_url}clone/"),
+        )
+        for user, method, path in malformed_denials:
+            with self.subTest(user=user.username, malformed_path=path):
+                self.client.force_authenticate(user)
+                response = self.client.generic(
+                    method,
+                    path,
+                    b"{not-json",
+                    content_type="application/json",
+                )
+                self.assertEqual(response.status_code, 403, response.data)
+
+        self.client.force_authenticate(self.viewer_user)
+        self.assertEqual(self.client.get(definition_url).status_code, 200)
+        self.assertEqual(
+            self.client.get(
+                "/api/foundation/help/studio.welcome/",
+                {"application": "STUDIO", "locale": "en", "version": "1.0.0"},
+            ).status_code,
+            200,
+        )
+        self.client.force_authenticate(self.publisher_user)
+        self.assertEqual(self.client.get(definition_url).status_code, 200)
+        self.client.force_authenticate(self.player)
+        self.assertEqual(
+            self.client.get(
+                "/api/foundation/help/studio.welcome/",
+                {"application": "STUDIO", "locale": "en", "version": "1.0.0"},
+            ).status_code,
+            403,
+        )
+        self.assertEqual(ProjectDefinitionVersion.objects.count(), mutation_count)
+        self.assertFalse(ProjectPublication.objects.exists())
+        self.assertFalse(ProjectWorkspace.objects.exists())
+
+    def test_server_authority_spoof_vectors_reject_without_mutation(self):
+        self.client.force_authenticate(self.editor_user)
+        baseline = ProjectDefinitionVersion.objects.count()
+        base = {"code": "SPOOF-DRAFT", "version": "1.0.0", "manifest": self.manifest}
+        body_spoof = self.client.post(
+            self.create_url,
+            {**base, "actor_identifier": "spoof", "role": "STUDIO_PUBLISHER"},
+            format="json",
+        )
+        header_spoof = self.client.post(
+            self.create_url,
+            base,
             format="json",
             HTTP_X_STUDIO_ROLE="STUDIO_EDITOR",
         )
-        self.assertEqual(response.status_code, 403)
-        self.assertFalse(ProjectDefinitionVersion.objects.exists())
+        query_spoof = self.client.post(
+            f"{self.create_url}?capability=DRAFT_CREATE",
+            base,
+            format="json",
+        )
+        self.assertEqual(
+            [body_spoof.status_code, header_spoof.status_code, query_spoof.status_code],
+            [400, 400, 400],
+        )
+        self.assertEqual(ProjectDefinitionVersion.objects.count(), baseline)
 
-    def test_editor_create_viewer_read_publisher_atomic_bootstrap(self):
+    def test_editor_viewer_publisher_matrix_and_exact_routes(self):
         self.client.force_authenticate(self.editor_user)
         create_response = self.client.post(
-            "/api/studio/definitions/drafts/",
-            {
-                "project_id": str(self.project.pk),
-                "code": "HTTP-DRAFT",
-                "version": "1.0.0",
-                "manifest": self.manifest,
-            },
+            self.create_url,
+            {"code": "HTTP-DRAFT", "version": "1.0.0", "manifest": self.manifest},
             format="json",
         )
         self.assertEqual(create_response.status_code, 201, create_response.data)
-        definition_id = create_response.data["id"]
+        self.assertEqual(create_response["ETag"], f'"{create_response.data["manifest_hash"]}"')
+        definition_url = f"/api/foundation/definitions/{create_response.data['id']}/"
 
-        self.client.force_authenticate(self.viewer_user)
-        read_response = self.client.get(f"/api/studio/definitions/{definition_id}/")
-        self.assertEqual(read_response.status_code, 200, read_response.data)
-        denied = self.client.put(
-            f"/api/studio/definitions/{definition_id}/save/",
-            {
-                "manifest": self.manifest,
-                "expected_manifest_hash": create_response.data["manifest_hash"],
-            },
-            format="json",
-        )
-        self.assertEqual(denied.status_code, 403)
-
-        self.client.force_authenticate(self.publisher_user)
-        publish_response = self.client.post(
-            f"/api/studio/definitions/{definition_id}/bootstrap/",
-            {
-                "workspace": self.workspace_spec(),
-                "locale": "en",
-                "role": "SERVICE",
-                "actor_identifier": "owner-spoof",
-            },
-            format="json",
-        )
-        self.assertEqual(publish_response.status_code, 201, publish_response.data)
-        self.assertEqual(ProjectPublication.objects.count(), 1)
-        self.assertEqual(ProjectWorkspace.objects.count(), 1)
-        definition = ProjectDefinitionVersion.objects.get(pk=definition_id)
-        self.assertEqual(definition.published_by, f"django-user:{self.publisher_user.pk}")
-        self.assertEqual(
-            set(AuditEvent.objects.values_list("actor_identifier", flat=True)),
-            {f"django-user:{self.publisher_user.pk}"},
-        )
-        self.assertNotIn(
-            "owner-spoof",
-            AuditEvent.objects.values_list("actor_identifier", flat=True),
-        )
-
-    def test_http_role_matrix_denies_every_ungranted_mutation(self):
-        definition = create_project_definition_draft(
-            project=self.project,
-            code="ROLE-MATRIX-DRAFT",
-            version="1.0.0",
-            manifest=self.manifest,
-            principal=self.editor(),
-        )
-        definition_url = f"/api/studio/definitions/{definition.pk}/"
-
-        self.client.force_authenticate(self.editor_user)
-        self.assertEqual(self.client.get(definition_url).status_code, 200)
-        self.assertEqual(
-            self.client.post(f"{definition_url}validate/", {}, format="json").status_code,
-            403,
-        )
-        self.assertEqual(
-            self.client.post(
-                f"{definition_url}bootstrap/",
-                {"workspace": self.workspace_spec()},
-                format="json",
-            ).status_code,
-            403,
-        )
-        self.assertEqual(
-            self.client.post(
-                f"{definition_url}publish/",
-                {"workspace": self.workspace_spec()},
-                format="json",
-            ).status_code,
-            403,
-        )
-
-        self.client.force_authenticate(self.publisher_user)
-        self.assertEqual(self.client.get(definition_url).status_code, 200)
-        self.assertEqual(
-            self.client.put(
-                f"{definition_url}save/",
-                {
-                    "manifest": self.manifest,
-                    "expected_manifest_hash": definition.manifest_hash,
-                },
-                format="json",
-            ).status_code,
-            403,
-        )
-        self.assertEqual(
-            self.client.post(
-                "/api/studio/definitions/drafts/",
-                {
-                    "project_id": str(self.project.pk),
-                    "code": "PUBLISHER-CANNOT-CREATE",
-                    "version": "2.0.0",
-                    "manifest": self.manifest,
-                },
-                format="json",
-            ).status_code,
-            403,
-        )
-        self.assertEqual(
-            self.client.post(
-                f"{definition_url}clone/",
-                {"code": "PUBLISHER-CANNOT-CLONE", "version": "2.0.0"},
-                format="json",
-            ).status_code,
-            403,
-        )
-
-        self.client.force_authenticate(self.viewer_user)
-        self.assertEqual(self.client.get(definition_url).status_code, 200)
-        viewer_denials = (
-            self.client.post(
-                "/api/studio/definitions/drafts/",
-                {
-                    "project_id": str(self.project.pk),
-                    "code": "VIEWER-CANNOT-CREATE",
-                    "version": "2.0.0",
-                    "manifest": self.manifest,
-                },
-                format="json",
-            ),
-            self.client.post(
-                f"{definition_url}clone/",
-                {"code": "VIEWER-CANNOT-CLONE", "version": "2.0.0"},
-                format="json",
-            ),
-            self.client.put(
-                f"{definition_url}save/",
-                {
-                    "manifest": self.manifest,
-                    "expected_manifest_hash": definition.manifest_hash,
-                },
-                format="json",
-            ),
-            self.client.post(f"{definition_url}validate/", {}, format="json"),
-            self.client.post(
-                f"{definition_url}publish/",
-                {"workspace": self.workspace_spec()},
-                format="json",
-            ),
-            self.client.post(
-                f"{definition_url}bootstrap/",
-                {"workspace": self.workspace_spec()},
-                format="json",
-            ),
-        )
-        self.assertEqual([response.status_code for response in viewer_denials], [403] * 6)
-
-        self.client.force_authenticate(self.player)
-        self.assertEqual(self.client.get(definition_url).status_code, 403)
-        player_denials = (
-            self.client.post(
-                "/api/studio/definitions/drafts/",
-                {
-                    "project_id": str(self.project.pk),
-                    "code": "PLAYER-CANNOT-CREATE",
-                    "version": "2.0.0",
-                    "manifest": self.manifest,
-                },
-                format="json",
-            ),
-            self.client.post(
-                f"{definition_url}clone/",
-                {"code": "PLAYER-CLONE", "version": "2.0.0"},
-                format="json",
-            ),
-            self.client.put(
-                f"{definition_url}save/",
-                {
-                    "manifest": self.manifest,
-                    "expected_manifest_hash": definition.manifest_hash,
-                },
-                format="json",
-            ),
-            self.client.post(f"{definition_url}validate/", {}, format="json"),
-            self.client.post(
-                f"{definition_url}publish/",
-                {"workspace": self.workspace_spec()},
-                format="json",
-            ),
-            self.client.post(
-                f"{definition_url}bootstrap/",
-                {"workspace": self.workspace_spec()},
-                format="json",
-            ),
-        )
-        self.assertEqual([response.status_code for response in player_denials], [403] * 6)
-        definition.refresh_from_db()
-        self.assertEqual(definition.publication_status, PublicationStatus.DRAFT)
-        self.assertEqual(ProjectDefinitionVersion.objects.count(), 1)
-
-    def test_http_positive_clone_save_validate_publish_and_exact_help_paths(self):
-        definition = create_project_definition_draft(
-            project=self.project,
-            code="HTTP-POSITIVE-DRAFT",
-            version="1.0.0",
-            manifest=self.manifest,
-            principal=self.editor(),
-        )
-        definition_url = f"/api/studio/definitions/{definition.pk}/"
-
-        self.client.force_authenticate(self.editor_user)
         clone_response = self.client.post(
             f"{definition_url}clone/",
-            {"code": "HTTP-POSITIVE-CLONE", "version": "2.0.0"},
+            {"code": "HTTP-CLONE", "version": "2.0.0"},
             format="json",
         )
         self.assertEqual(clone_response.status_code, 201, clone_response.data)
         changed_manifest = copy.deepcopy(self.manifest)
         changed_manifest["project"]["name"] = "Changed snapshot description"
         save_response = self.client.put(
-            f"/api/studio/definitions/{clone_response.data['id']}/save/",
-            {
-                "manifest": changed_manifest,
-                "expected_manifest_hash": clone_response.data["manifest_hash"],
-            },
+            f"/api/foundation/definitions/{clone_response.data['id']}/draft/",
+            {"manifest": changed_manifest},
             format="json",
+            HTTP_IF_MATCH=f'"{clone_response.data["manifest_hash"]}"',
         )
         self.assertEqual(save_response.status_code, 200, save_response.data)
-        self.assertNotEqual(
-            save_response.data["manifest_hash"],
-            clone_response.data["manifest_hash"],
-        )
-
-        self.client.force_authenticate(self.publisher_user)
-        validate_response = self.client.post(
-            f"{definition_url}validate/",
-            {},
-            format="json",
-        )
-        self.assertEqual(validate_response.status_code, 200, validate_response.data)
-        self.assertEqual(
-            validate_response.data["publication_status"],
-            PublicationStatus.VALIDATED,
-        )
-        publish_response = self.client.post(
-            f"{definition_url}publish/",
-            {"workspace": self.workspace_spec(), "locale": "en"},
-            format="json",
-        )
-        self.assertEqual(publish_response.status_code, 201, publish_response.data)
-        workspace_id = publish_response.data["initial_workspace_id"]
 
         self.client.force_authenticate(self.viewer_user)
-        preworkspace_help = self.client.get(
-            "/api/studio/help/studio.welcome/?locale=en&version=1.0.0"
-        )
-        self.assertEqual(preworkspace_help.status_code, 200, preworkspace_help.data)
-        workspace_help = self.client.get(
-            "/api/studio/help/studio.welcome/",
-            {
-                "locale": "en",
-                "version": "1.0.0",
-                "workspace_id": workspace_id,
-            },
-        )
-        self.assertEqual(workspace_help.status_code, 200, workspace_help.data)
+        self.assertEqual(self.client.get(definition_url).status_code, 200)
         self.assertEqual(
-            workspace_help.data["content_sha256"],
-            self.topic.content_sha256,
-        )
-
-        self.client.force_authenticate(self.player)
-        self.assertEqual(
-            self.client.get(
-                "/api/studio/help/studio.welcome/?locale=en&version=1.0.0"
+            self.client.put(
+                f"{definition_url}draft/",
+                {"manifest": self.manifest},
+                format="json",
+                HTTP_IF_MATCH=f'"{create_response.data["manifest_hash"]}"',
             ).status_code,
             403,
         )
+
+        self.client.force_authenticate(self.publisher_user)
+        response = self.client.post(
+            f"{definition_url}publish-initial/",
+            {"workspace": self.workspace_spec(), "locale": "en"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(ProjectPublication.objects.count(), 1)
+        self.assertEqual(ProjectWorkspace.objects.count(), 1)
+        self.assertEqual(
+            set(AuditEvent.objects.values_list("actor_identifier", flat=True)),
+            {f"django-user:{self.publisher_user.pk}"},
+        )
+        self.assertEqual(self.client.post(self.create_url, {}, format="json").status_code, 403)
+
+        self.client.force_authenticate(self.viewer_user)
+        help_response = self.client.get(
+            "/api/foundation/help/studio.welcome/",
+            {"application": "STUDIO", "locale": "en", "version": "1.0.0"},
+        )
+        self.assertEqual(help_response.status_code, 200, help_response.data)
+        self.assertEqual(help_response.data["content_sha256"], self.topic.content_sha256)
+
+    def test_session_authentication_enforces_csrf_and_strong_if_match(self):
+        definition = create_project_definition_draft(
+            project=self.project,
+            code="SESSION-DRAFT",
+            version="1.0.0",
+            manifest=self.manifest,
+            principal=self.editor(),
+        )
+        client = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(client.login(username="editor", password="test-password"))
+        definition_url = f"/api/foundation/definitions/{definition.pk}/"
+        self.assertEqual(client.get(definition_url).status_code, 200)
+        token = client.cookies["csrftoken"].value
+        changed = copy.deepcopy(self.manifest)
+        changed["project"]["name"] = "CSRF exact save"
+        denied = client.put(
+            f"{definition_url}draft/",
+            {"manifest": changed},
+            format="json",
+            HTTP_IF_MATCH=f'"{definition.manifest_hash}"',
+        )
+        self.assertEqual(denied.status_code, 403)
+        definition.refresh_from_db()
+        self.assertEqual(definition.manifest, self.manifest)
+        accepted = client.put(
+            f"{definition_url}draft/",
+            {"manifest": changed},
+            format="json",
+            HTTP_IF_MATCH=f'"{definition.manifest_hash}"',
+            HTTP_X_CSRFTOKEN=token,
+        )
+        self.assertEqual(accepted.status_code, 200, accepted.data)
 
 
 class FoundationStudioBootstrapConcurrencyTests(
