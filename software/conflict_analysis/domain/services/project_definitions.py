@@ -22,14 +22,18 @@ from types import MappingProxyType
 from typing import Any, Final, Protocol
 from uuid import UUID
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from jsonschema import Draft202012Validator, FormatChecker
 
 from domain.enums import PublicationStatus
 from domain.models import (
+    AuditEvent,
     Project,
     ProjectDefinitionVersion,
+    ProjectPublication,
     _canonical_studio_write,
 )
 from domain.services.foundation_packages import RawJSONError, parse_json_source
@@ -44,6 +48,7 @@ PROJECT_DEFINITION_MANIFEST_SCHEMA_ID: Final = (
 PROJECT_DEFINITION_VALIDATION_CONTRACT: Final = (
     "PROJECT_DEFINITION_MANIFEST_VALIDATION_V1"
 )
+PROJECT_ACCESS_GROUP_PREFIX: Final = "studio-project:"
 
 SCHEMA_PATH: Final = (
     Path(__file__).resolve().parent
@@ -118,6 +123,30 @@ class ProjectDefinitionDraftConflict(ValidationError):
     """Optimistic DRAFT save token does not match the stored manifest."""
 
 
+class FoundationStudioApplicationConflict(ValidationError):
+    """Stable, typed application conflict mapped to HTTP 409 by adapters."""
+
+    def __init__(self, conflict_code: str, message: str) -> None:
+        bounded_code = str(conflict_code).strip()
+        if not bounded_code:
+            raise ValueError("Foundation Studio conflict code must not be blank.")
+        self.conflict_code = bounded_code
+        super().__init__(
+            {
+                "conflict": ValidationError(
+                    str(message),
+                    code=bounded_code,
+                )
+            }
+        )
+
+
+def project_access_group_name(project_id: object) -> str:
+    """Return the sole derived object-scope group name for one Project."""
+
+    return f"{PROJECT_ACCESS_GROUP_PREFIX}{UUID(str(project_id))}"
+
+
 class HelpTopicReferenceResolver(Protocol):
     """Read-only exact HelpTopic lookup used during publish-grade validation."""
 
@@ -175,6 +204,16 @@ class ProjectDefinitionManifestV1:
 
     def as_dict(self) -> dict[str, Any]:
         return _deep_thaw(self.manifest)
+
+
+@dataclass(frozen=True, slots=True)
+class ProjectDefinitionDraftBootstrapResult:
+    """Exact rows created by the atomic first-Project application service."""
+
+    project: Project
+    scope_group: Group
+    definition: ProjectDefinitionVersion
+    audit_event: AuditEvent
 
 
 class _DecodeFailure(Exception):
@@ -1017,20 +1056,360 @@ def create_project_definition_draft(
     return definition
 
 
+def _first_project_identity_conflict(
+    *,
+    project_id: UUID,
+    project_code: str,
+    scope_group_name: str,
+    definition_id: UUID,
+) -> FoundationStudioApplicationConflict | None:
+    """Classify only persisted identity collisions, never exception prose."""
+
+    if Project.objects.filter(pk=project_id).exists():
+        return FoundationStudioApplicationConflict(
+            "PROJECT_ID_CONFLICT",
+            "The requested Project UUID is already persisted.",
+        )
+    if Project.objects.filter(code=project_code).exists():
+        return FoundationStudioApplicationConflict(
+            "PROJECT_CODE_CONFLICT",
+            "The requested Project code is already persisted.",
+        )
+    if Group.objects.filter(name=scope_group_name).exists():
+        return FoundationStudioApplicationConflict(
+            "PROJECT_SCOPE_GROUP_CONFLICT",
+            "The derived Project object-scope group is already persisted.",
+        )
+    if ProjectDefinitionVersion.objects.filter(pk=definition_id).exists():
+        return FoundationStudioApplicationConflict(
+            "DEFINITION_ID_CONFLICT",
+            "The requested first-definition UUID is already persisted.",
+        )
+    return None
+
+
+def _inject_first_project_failure(requested_stage: str | None, stage: str) -> None:
+    if requested_stage == stage:
+        raise RuntimeError(f"Injected first-Project bootstrap failure at {stage}.")
+
+
+def _exact_first_definition_id(value: object) -> UUID:
+    if value is None:
+        raise ValidationError(
+            {"definition_id": "First-Project bootstrap requires a non-null UUID."}
+        )
+    try:
+        return UUID(str(value))
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise ValidationError(
+            {"definition_id": "First-Project bootstrap requires a valid UUID."}
+        ) from exc
+
+
+def _copy_project_metadata(value: object) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ValidationError(
+            {"project_metadata": "Project metadata must be a JSON object."}
+        )
+    if any(not isinstance(key, str) for key in value):
+        raise ValidationError(
+            {"project_metadata": "Project metadata object keys must be strings."}
+        )
+    try:
+        copied = copy.deepcopy(dict(value))
+        json.dumps(
+            copied,
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValidationError(
+            {"project_metadata": "Project metadata must contain only JSON values."}
+        ) from exc
+    return copied
+
+
+def _trusted_human_bootstrap_user(*, principal: object, user: object) -> object:
+    """Bind a sealed HUMAN principal to the exact persisted Django user."""
+
+    from domain.policies import (
+        StudioAuthorizationDenied,
+        StudioDefinitionRole,
+        StudioPrincipal,
+    )
+
+    _require_capability(principal, "DRAFT_CREATE")
+    user_model = get_user_model()
+    if (
+        not isinstance(principal, StudioPrincipal)
+        or principal.role is StudioDefinitionRole.SERVICE
+        or not isinstance(user, user_model)
+        or getattr(user, "pk", None) is None
+        or not bool(getattr(user, "is_authenticated", False))
+    ):
+        raise StudioAuthorizationDenied(
+            "First-Project bootstrap requires one trusted authenticated HUMAN principal."
+        )
+    expected_actor = f"django-user:{user.pk}"
+    if principal.actor_identifier != expected_actor:
+        raise StudioAuthorizationDenied(
+            "First-Project bootstrap principal does not match the authenticated user."
+        )
+    try:
+        return user_model._default_manager.get(pk=user.pk)
+    except user_model.DoesNotExist as exc:
+        raise StudioAuthorizationDenied(
+            "First-Project bootstrap user is no longer persisted."
+        ) from exc
+
+
+def bootstrap_project_definition_draft(
+    *,
+    project_id: UUID | str,
+    project_code: str,
+    project_version: str,
+    project_name: str,
+    project_description: str = "",
+    project_metadata: Mapping[str, Any],
+    definition_id: UUID | str,
+    definition_code: str,
+    definition_version: str,
+    manifest: Mapping[str, Any] | str | bytes,
+    principal: object,
+    user: object,
+    semantic_version: str = PROJECT_DEFINITION_MANIFEST_VERSION,
+    construct_version: str = PROJECT_DEFINITION_MANIFEST_VERSION,
+    inject_failure_at: str | None = None,
+) -> ProjectDefinitionDraftBootstrapResult:
+    """Atomically create the first Project, scope grant, DRAFT and CREATE audit."""
+
+    resolved_project_id = UUID(str(project_id))
+    resolved_definition_id = _exact_first_definition_id(definition_id)
+    resolved_project_metadata = _copy_project_metadata(project_metadata)
+    persisted_user = _trusted_human_bootstrap_user(principal=principal, user=user)
+    scope_group_name = project_access_group_name(resolved_project_id)
+
+    try:
+        with transaction.atomic():
+            user_model = get_user_model()
+            persisted_user = user_model._default_manager.select_for_update().get(
+                pk=persisted_user.pk
+            )
+            conflict = _first_project_identity_conflict(
+                project_id=resolved_project_id,
+                project_code=project_code,
+                scope_group_name=scope_group_name,
+                definition_id=resolved_definition_id,
+            )
+            if conflict is not None:
+                raise conflict
+
+            project = Project(
+                id=resolved_project_id,
+                code=project_code,
+                version=project_version,
+                name=project_name,
+                description=project_description,
+                metadata=resolved_project_metadata,
+            )
+            project.full_clean()
+            project.save(force_insert=True)
+            _inject_first_project_failure(inject_failure_at, "after_project")
+
+            scope_group = Group.objects.create(name=scope_group_name)
+            _inject_first_project_failure(inject_failure_at, "after_scope_group")
+
+            persisted_user.groups.add(scope_group)
+            _inject_first_project_failure(inject_failure_at, "after_scope_membership")
+
+            definition = create_project_definition_draft(
+                project=project,
+                definition_id=resolved_definition_id,
+                code=definition_code,
+                version=definition_version,
+                manifest=manifest,
+                semantic_version=semantic_version,
+                construct_version=construct_version,
+                principal=principal,
+            )
+            _inject_first_project_failure(inject_failure_at, "after_definition")
+
+            from domain.enums import AuditAction
+            from domain.policies import (
+                FoundationAuditContext,
+                record_definition_audit,
+            )
+
+            audit_event = record_definition_audit(
+                context=FoundationAuditContext.for_principal_definition(
+                    definition=definition,
+                    principal=principal,
+                ),
+                action=AuditAction.CREATE,
+                entity_type="PROJECT_DEFINITION_VERSION",
+                entity_id=definition.pk,
+                after={
+                    "project_identity": {
+                        "id": str(project.pk),
+                        "code": project.code,
+                        "version": project.version,
+                    },
+                    "object_scope_group": {
+                        "name": scope_group.name,
+                    },
+                },
+            )
+            _inject_first_project_failure(inject_failure_at, "after_create_audit")
+
+            return ProjectDefinitionDraftBootstrapResult(
+                project=project,
+                scope_group=scope_group,
+                definition=definition,
+                audit_event=audit_event,
+            )
+    except FoundationStudioApplicationConflict:
+        raise
+    except (IntegrityError, ValidationError) as exc:
+        conflict = _first_project_identity_conflict(
+            project_id=resolved_project_id,
+            project_code=project_code,
+            scope_group_name=scope_group_name,
+            definition_id=resolved_definition_id,
+        )
+        if conflict is not None:
+            raise conflict from exc
+        raise
+
+
+def _is_successor_application_conflict(definition_id: object) -> bool:
+    """Classify retry/stale-lineage state from rows, without message matching."""
+
+    candidate = (
+        ProjectDefinitionVersion.objects.filter(pk=definition_id)
+        .values(
+            "id",
+            "project_id",
+            "publication_status",
+            "supersedes_id",
+        )
+        .first()
+    )
+    if candidate is None:
+        return False
+    if (
+        candidate["publication_status"] == PublicationStatus.PUBLISHED
+        or ProjectPublication.objects.filter(definition_version_id=definition_id).exists()
+    ):
+        return True
+    if not ProjectPublication.objects.filter(project_id=candidate["project_id"]).exists():
+        return False
+    exact_current = (
+        ProjectDefinitionVersion.objects.filter(
+            project_id=candidate["project_id"],
+            is_current=True,
+        )
+        .values("id", "publication_status")
+        .first()
+    )
+    return bool(
+        exact_current is None
+        or exact_current["publication_status"] != PublicationStatus.PUBLISHED
+        or candidate["supersedes_id"] != exact_current["id"]
+    )
+
+
+def publish_successor_project_definition(
+    definition: ProjectDefinitionVersion,
+    *,
+    principal: object,
+    locale: str = "en",
+    inject_failure_at: str | None = None,
+) -> ProjectPublication:
+    """Delegate successor publication while typing only retry/race conflicts."""
+
+    from domain.policies import (
+        StudioAuthorizationDenied,
+        StudioDefinitionRole,
+        StudioPrincipal,
+        publish_project_definition,
+    )
+
+    _require_capability(principal, "DEFINITION_PUBLISH")
+    if (
+        not isinstance(principal, StudioPrincipal)
+        or principal.role is StudioDefinitionRole.SERVICE
+    ):
+        raise StudioAuthorizationDenied(
+            "Public successor publication requires a trusted HUMAN principal."
+        )
+    if _is_successor_application_conflict(definition.pk):
+        raise FoundationStudioApplicationConflict(
+            "SUCCESSOR_PUBLICATION_CONFLICT",
+            "The successor was already published or no longer supersedes the exact current definition.",
+        )
+    try:
+        return publish_project_definition(
+            definition,
+            actor_identifier=principal.actor_identifier,
+            principal=principal,
+            workspace_spec=None,
+            locale=locale,
+            inject_failure_at=inject_failure_at,
+        )
+    except (IntegrityError, ValidationError) as exc:
+        if _is_successor_application_conflict(definition.pk):
+            raise FoundationStudioApplicationConflict(
+                "SUCCESSOR_PUBLICATION_CONFLICT",
+                "The successor was already published or lost the exact-current race.",
+            ) from exc
+        raise
+
+
+def open_project_definition(
+    definition: ProjectDefinitionVersion,
+    *,
+    principal: object,
+) -> ProjectDefinitionVersion:
+    """Read one exact typed definition through every accepted lifecycle state."""
+
+    _require_capability(principal, "DEFINITION_READ")
+    current = _fresh_typed_definition(definition)
+    if current.publication_status not in {
+        PublicationStatus.DRAFT,
+        PublicationStatus.VALIDATED,
+        PublicationStatus.PUBLISHED,
+        PublicationStatus.RETIRED,
+    }:
+        raise ValidationError(
+            {
+                "publication_status": (
+                    "Definition lifecycle is outside the canonical Studio read contract."
+                )
+            }
+        )
+    dto = parse_project_definition_manifest_v1(
+        current.manifest,
+        project=current.project,
+    )
+    if current.manifest_hash != dto.manifest_sha256:
+        raise ProjectDefinitionManifestError(
+            {"manifest_hash": "Stored definition checksum does not match typed bytes."}
+        )
+    return current
+
+
 def open_project_definition_draft(
     definition: ProjectDefinitionVersion,
     *,
     principal: object,
 ) -> ProjectDefinitionVersion:
-    """Open an exact typed DRAFT after server-side read authorization."""
+    """Compatibility boundary that deliberately remains DRAFT-only."""
 
-    _require_capability(principal, "DEFINITION_READ")
-    current = _fresh_typed_definition(definition)
+    current = open_project_definition(definition, principal=principal)
     if current.publication_status != PublicationStatus.DRAFT:
         raise ValidationError(
             {"publication_status": "Only a DRAFT can be opened by the DRAFT service."}
         )
-    parse_project_definition_manifest_v1(current.manifest, project=current.project)
     return current
 
 

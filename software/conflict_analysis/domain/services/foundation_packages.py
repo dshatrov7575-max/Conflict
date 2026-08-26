@@ -35,6 +35,8 @@ FOUNDATION_RAW_JSON_MAX_NESTING = 128
 FOUNDATION_JSON_MEDIA_TYPE = "application/json"
 FOUNDATION_JSON_CHARSET = "utf-8"
 STRONG_MANIFEST_ETAG_PATTERN = re.compile(r'^"([0-9a-f]{64})"$')
+_RAW_JSON_CAPTURE_SEAL = object()
+_HTTP_JSON_CAPTURE_ATTRIBUTE = "_foundation_raw_json_capture"
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +67,29 @@ class RawJSONDocument:
 class CapturedRawJSON:
     payload: bytes
     identity: RawInputIdentity
+    _seal: object = field(default=None, repr=False, compare=False)
+
+
+def _sealed_raw_json_capture(
+    payload: bytes,
+    *,
+    identity: RawInputIdentity,
+) -> CapturedRawJSON:
+    """Create one immutable capture that can be safely reused by adapters."""
+
+    return CapturedRawJSON(
+        payload=payload,
+        identity=identity,
+        _seal=_RAW_JSON_CAPTURE_SEAL,
+    )
+
+
+def _require_sealed_raw_json_capture(captured: CapturedRawJSON) -> None:
+    if captured._seal is not _RAW_JSON_CAPTURE_SEAL:
+        raise _error(
+            "RAW_JSON_CAPTURE_UNTRUSTED",
+            "Raw JSON captures must be created by the canonical capture boundary.",
+        )
 
 
 class RawJSONError(ValueError):
@@ -293,6 +318,9 @@ def capture_json_source(
 
     if not isinstance(max_bytes, int) or max_bytes < 1:
         raise ValueError("max_bytes must be a positive integer.")
+    if isinstance(source, CapturedRawJSON):
+        _require_sealed_raw_json_capture(source)
+        return source
     name = ""
     if isinstance(source, Path):
         try:
@@ -338,7 +366,7 @@ def capture_json_source(
             byte_length=len(payload),
             name=name,
         )
-    return CapturedRawJSON(payload=payload, identity=identity)
+    return _sealed_raw_json_capture(payload, identity=identity)
 
 
 def parse_captured_json(
@@ -349,6 +377,7 @@ def parse_captured_json(
 ) -> RawJSONDocument:
     """Parse an immutable capture without reading its transport a second time."""
 
+    _require_sealed_raw_json_capture(captured)
     validate_json_content_type(content_type)
     if captured.identity.byte_length > max_bytes:
         raise _error(
@@ -382,9 +411,78 @@ def parse_json_source(
     )
 
 
-def read_http_json(request: Any, *, max_bytes: int = FOUNDATION_RAW_JSON_MAX_BYTES) -> RawJSONDocument:
-    """Read a Django/DRF request once, before ``request.data`` is accessed."""
+def prime_http_json_capture(
+    request: Any,
+    *,
+    max_bytes: int = FOUNDATION_RAW_JSON_MAX_BYTES,
+) -> CapturedRawJSON:
+    """Prime one sealed pre-CSRF body cache without transport validation."""
 
+    if not isinstance(max_bytes, int) or max_bytes < 1:
+        raise ValueError("max_bytes must be a positive integer.")
+    http_request = getattr(request, "_request", request)
+    cached = getattr(http_request, _HTTP_JSON_CAPTURE_ATTRIBUTE, None)
+    if cached is not None:
+        if not isinstance(cached, CapturedRawJSON):
+            raise _error(
+                "RAW_JSON_CAPTURE_UNTRUSTED",
+                "The server-private raw JSON request cache is invalid.",
+            )
+        _require_sealed_raw_json_capture(cached)
+        return cached
+
+    digest = hashlib.sha256()
+    retained = bytearray()
+    byte_length = 0
+    if hasattr(http_request, "_body"):
+        body = http_request._body
+        if not isinstance(body, bytes):
+            raise _error(
+                "RAW_JSON_HTTP_BODY_INVALID",
+                "The HTTP request body must be an immutable byte sequence.",
+            )
+        digest.update(body)
+        byte_length = len(body)
+        retained.extend(body[: max_bytes + 1])
+    else:
+        while chunk := http_request.read(64 * 1024):
+            if not isinstance(chunk, bytes):
+                raise _error(
+                    "RAW_JSON_HTTP_BODY_INVALID",
+                    "The HTTP request body must be an immutable byte sequence.",
+                )
+            digest.update(chunk)
+            byte_length += len(chunk)
+            remaining = max_bytes + 1 - len(retained)
+            if remaining > 0:
+                retained.extend(chunk[:remaining])
+    captured = _sealed_raw_json_capture(
+        bytes(retained),
+        identity=RawInputIdentity(
+            kind="HTTP_BYTES",
+            sha256=digest.hexdigest(),
+            byte_length=byte_length,
+        ),
+    )
+    try:
+        setattr(http_request, _HTTP_JSON_CAPTURE_ATTRIBUTE, captured)
+    except (AttributeError, TypeError) as exc:
+        raise _error(
+            "RAW_JSON_CAPTURE_CACHE_UNAVAILABLE",
+            "The server-private raw JSON request cache is unavailable.",
+        ) from exc
+    return captured
+
+
+def capture_http_json(
+    request: Any,
+    *,
+    max_bytes: int = FOUNDATION_RAW_JSON_MAX_BYTES,
+) -> CapturedRawJSON:
+    """Validate HTTP transport gates and reuse one sealed pre-CSRF capture."""
+
+    if not isinstance(max_bytes, int) or max_bytes < 1:
+        raise ValueError("max_bytes must be a positive integer.")
     http_request = getattr(request, "_request", request)
     content_type = str(http_request.META.get("CONTENT_TYPE", ""))
     validate_json_content_type(content_type)
@@ -402,19 +500,18 @@ def read_http_json(request: Any, *, max_bytes: int = FOUNDATION_RAW_JSON_MAX_BYT
                 "RAW_JSON_CONTENT_LENGTH_INVALID",
                 "Content-Length must be a non-negative decimal integer.",
             )
-        if advertised_length > max_bytes:
-            raise _error(
-                "RAW_JSON_BYTE_BUDGET_EXCEEDED",
-                f"JSON input exceeds the configured {max_bytes}-byte budget.",
-            )
-    if hasattr(http_request, "_body"):
-        payload = http_request._body
-    else:
-        payload = http_request.read(max_bytes + 1)
-    return parse_raw_json_bytes(
-        payload,
-        kind="HTTP_BYTES",
-        content_type=content_type,
+    return prime_http_json_capture(http_request, max_bytes=max_bytes)
+
+
+def read_http_json(
+    request: Any,
+    *,
+    max_bytes: int = FOUNDATION_RAW_JSON_MAX_BYTES,
+) -> RawJSONDocument:
+    """Capture and parse a request once, before ``request.data`` is accessed."""
+
+    return parse_captured_json(
+        capture_http_json(request, max_bytes=max_bytes),
         max_bytes=max_bytes,
     )
 
@@ -741,6 +838,39 @@ class Foundation21AttemptResult:
     commit: Foundation21CommitResult | None
     receipt_id: str
     errors: tuple[Mapping[str, str], ...]
+
+
+def foundation_import_service_capabilities_2_1(
+    intended_action: str | None,
+) -> frozenset[Any]:
+    """Return the sealed least-privilege SERVICE set for one server plan."""
+
+    from domain.policies import StudioCapability
+
+    by_action = {
+        None: frozenset({StudioCapability.FOUNDATION_IMPORT}),
+        "CREATE_DRAFT": frozenset(
+            {
+                StudioCapability.FOUNDATION_IMPORT,
+                StudioCapability.DRAFT_CREATE,
+            }
+        ),
+        "BOOTSTRAP_PUBLISHED": frozenset(
+            {
+                StudioCapability.FOUNDATION_IMPORT,
+                StudioCapability.DRAFT_CREATE,
+                StudioCapability.DEFINITION_VALIDATE,
+                StudioCapability.DEFINITION_PUBLISH,
+            }
+        ),
+        "REUSE_EXACT": frozenset({StudioCapability.FOUNDATION_IMPORT}),
+    }
+    try:
+        return by_action[intended_action]
+    except (KeyError, TypeError) as exc:
+        raise FoundationPackageValidationError(
+            "Unknown Foundation 2.1 public import action; SERVICE elevation denied."
+        ) from exc
 
 
 _ADAPTERS: dict[str, Adapter] = {}
@@ -4467,6 +4597,10 @@ def commit_foundation_package_2_1(
     _require_exact_project_2_1(package, locked_project)
 
     if package["package_scope"] == "WORKSPACE":
+        if initial_workspace is not None:
+            raise FoundationPackageValidationError(
+                "initial_workspace is forbidden for a WORKSPACE package import."
+            )
         if workspace is None or preview._workspace_preview is None:
             raise FoundationPackageValidationError(
                 "A WORKSPACE commit requires its explicit target and nested preview."
@@ -4494,6 +4628,10 @@ def commit_foundation_package_2_1(
     if action != preview.intended_action:
         raise FoundationPackageConflictError(
             "Project-definition import plan changed after preview."
+        )
+    if action != "BOOTSTRAP_PUBLISHED" and initial_workspace is not None:
+        raise FoundationPackageValidationError(
+            "initial_workspace is accepted only for BOOTSTRAP_PUBLISHED."
         )
     source = package["project_definition"]
     if existing is not None:
@@ -4686,6 +4824,11 @@ def _record_unsuccessful_definition_import_2_1(
         "package_scope": "PROJECT_DEFINITION",
         "canonical_payload_sha256": semantic_checksum,
         "source_definition_id": definition_identity,
+        **(
+            {"intended_action": preview.intended_action}
+            if preview is not None
+            else {}
+        ),
     }
     attempt_id = uuid4()
     run = _new(
@@ -4730,7 +4873,11 @@ def _record_unsuccessful_definition_import_2_1(
                 else {}
             ),
             "correction_lineage": [],
-            "intended_changes": {},
+            "intended_changes": (
+                {"project_definition": preview.intended_action}
+                if preview is not None
+                else {}
+            ),
             "row_counts": {},
             "warnings": [],
             "errors": [dict(item) for item in errors],

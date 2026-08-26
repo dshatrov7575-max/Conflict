@@ -431,11 +431,15 @@ from domain.services.foundation_packages import (
     FOUNDATION_RAW_JSON_MAX_BYTES,
     FoundationPackageConflictError,
     FoundationPackageValidationError,
+    RawJSONError,
     attempt_foundation_import_2_1,
     canonical_json,
+    capture_http_json,
     commit_foundation_package_2_1,
     export_project_definition_package_2_1,
     export_workspace_package_2_1,
+    foundation_import_service_capabilities_2_1,
+    prime_http_json_capture,
     preview_foundation_package_2_1,
     seal_foundation_package_2_1,
     validate_foundation_package_2_1,
@@ -451,6 +455,28 @@ FIXTURE_PATH = (
     / "fixtures"
     / "foundation_studio_definition_vectors_v1.json"
 )
+
+
+class _OnePassHTTPRequest:
+    """Tiny streaming request oracle: every source byte can be consumed only once."""
+
+    def __init__(self, payload: bytes) -> None:
+        self.META = {
+            "CONTENT_TYPE": "application/json; charset=utf-8",
+            "CONTENT_LENGTH": str(len(payload)),
+        }
+        self._payload = payload
+        self._offset = 0
+        self.bytes_served = 0
+
+    def read(self, size: int = -1) -> bytes:
+        if self._offset >= len(self._payload):
+            return b""
+        stop = len(self._payload) if size < 0 else self._offset + size
+        chunk = self._payload[self._offset : stop]
+        self._offset += len(chunk)
+        self.bytes_served += len(chunk)
+        return chunk
 
 
 class FoundationStudioPackage21Tests(TestCase):
@@ -556,6 +582,202 @@ class FoundationStudioPackage21Tests(TestCase):
             package["manifest"]["payload_sha256"],
         )
 
+    def test_http_capture_export_bytes_and_hashes_roundtrip_without_second_read(self):
+        source = self.create_draft()
+        source_id = source.pk
+        package = export_project_definition_package_2_1(source)
+        response_bytes = (canonical_json(package) + "\n").encode("utf-8")
+        representation_sha256 = hashlib.sha256(response_bytes).hexdigest()
+        semantic_payload_sha256 = package["manifest"]["payload_sha256"]
+        self.assertTrue(response_bytes.endswith(b"\n"))
+        self.assertNotEqual(representation_sha256, semantic_payload_sha256)
+
+        request = _OnePassHTTPRequest(response_bytes)
+        primed = prime_http_json_capture(request)
+        capture_read_count = request.bytes_served
+        self.assertEqual(capture_read_count, len(response_bytes))
+        captured = capture_http_json(request)
+        self.assertIs(captured, primed)
+        self.assertEqual(captured.payload, response_bytes)
+        self.assertEqual(captured.identity.kind, "HTTP_BYTES")
+        self.assertEqual(captured.identity.sha256, representation_sha256)
+        self.assertEqual(captured.identity.byte_length, len(response_bytes))
+
+        source.delete()
+        preview = preview_foundation_package_2_1(captured, project=self.project)
+        self.assertEqual(preview.intended_action, "CREATE_DRAFT")
+        service = StudioPrincipal.service(
+            actor_identifier="foundation-create-draft-service",
+            purpose="Foundation 2.1 CREATE_DRAFT HTTP attempt",
+            capabilities=foundation_import_service_capabilities_2_1("CREATE_DRAFT"),
+        )
+        result = attempt_foundation_import_2_1(
+            captured,
+            project=self.project,
+            principal=service,
+            actor_identifier=service.actor_identifier,
+        )
+
+        self.assertEqual(result.status, "COMMITTED")
+        self.assertEqual(request.bytes_served, capture_read_count)
+        self.assertEqual(result.commit.action, "CREATE_DRAFT")
+        self.assertEqual(result.commit.checksum, semantic_payload_sha256)
+        imported = ProjectDefinitionVersion.objects.get(pk=source_id)
+        reexported_bytes = (
+            canonical_json(export_project_definition_package_2_1(imported)) + "\n"
+        ).encode("utf-8")
+        self.assertEqual(reexported_bytes, response_bytes)
+        receipt = ImportRun.objects.get(pk=result.receipt_id)
+        self.assertEqual(receipt.checksum, semantic_payload_sha256)
+        self.assertEqual(receipt.selected_input["raw_input_kind"], "HTTP_BYTES")
+        self.assertEqual(
+            receipt.selected_input["raw_input_sha256"],
+            representation_sha256,
+        )
+        self.assertEqual(
+            receipt.selected_input["raw_input_byte_length"],
+            len(response_bytes),
+        )
+        self.assertEqual(
+            receipt.selected_input["canonical_payload_sha256"],
+            semantic_payload_sha256,
+        )
+
+    def test_valid_media_oversize_is_stream_bounded_and_durably_receipted(self):
+        raw = b'{"oversize":"' + b"z" * FOUNDATION_RAW_JSON_MAX_BYTES + b'"}'
+        request = _OnePassHTTPRequest(raw)
+        captured = prime_http_json_capture(request)
+        self.assertEqual(request.bytes_served, len(raw))
+        self.assertEqual(len(captured.payload), FOUNDATION_RAW_JSON_MAX_BYTES + 1)
+        self.assertEqual(captured.identity.byte_length, len(raw))
+        self.assertEqual(captured.identity.sha256, hashlib.sha256(raw).hexdigest())
+        self.assertIs(capture_http_json(request), captured)
+        self.assertEqual(request.bytes_served, len(raw))
+
+        service = StudioPrincipal.service(
+            actor_identifier="foundation-malformed-service",
+            purpose="Foundation 2.1 malformed HTTP attempt",
+            capabilities=foundation_import_service_capabilities_2_1(None),
+        )
+        outcome = attempt_foundation_import_2_1(
+            captured,
+            project=self.project,
+            principal=service,
+            actor_identifier=service.actor_identifier,
+        )
+
+        self.assertEqual(outcome.status, "REJECTED")
+        self.assertIsNone(outcome.preview)
+        self.assertFalse(ProjectDefinitionVersion.objects.exists())
+        receipt = ImportRun.objects.get(pk=outcome.receipt_id)
+        self.assertEqual(receipt.status, "REJECTED")
+        self.assertEqual(receipt.selected_input["raw_input_kind"], "HTTP_BYTES")
+        self.assertEqual(
+            receipt.selected_input["raw_input_sha256"],
+            hashlib.sha256(raw).hexdigest(),
+        )
+        self.assertEqual(receipt.selected_input["raw_input_byte_length"], len(raw))
+        self.assertEqual(receipt.errors[0]["code"], "RAW_JSON_BYTE_BUDGET_EXCEEDED")
+
+    def test_pre_csrf_prime_defers_media_validation_and_reuses_exact_cache(self):
+        raw = b'{"value":"pre-csrf"}'
+        request = _OnePassHTTPRequest(raw)
+        request.META["CONTENT_TYPE"] = "text/plain"
+        primed = prime_http_json_capture(request)
+        self.assertEqual(primed.identity.sha256, hashlib.sha256(raw).hexdigest())
+        self.assertEqual(request.bytes_served, len(raw))
+
+        with self.assertRaises(RawJSONError) as raised:
+            capture_http_json(request)
+        self.assertEqual(raised.exception.code, "RAW_JSON_MEDIA_TYPE_UNSUPPORTED")
+        self.assertEqual(request.bytes_served, len(raw))
+
+        request.META["CONTENT_TYPE"] = "application/json"
+        admitted = capture_http_json(request)
+        self.assertIs(admitted, primed)
+        self.assertEqual(admitted.payload, raw)
+        self.assertEqual(request.bytes_served, len(raw))
+
+    def test_action_capabilities_and_workspace_input_fail_closed(self):
+        self.assertEqual(
+            foundation_import_service_capabilities_2_1(None),
+            frozenset({StudioCapability.FOUNDATION_IMPORT}),
+        )
+        self.assertEqual(
+            foundation_import_service_capabilities_2_1("CREATE_DRAFT"),
+            frozenset(
+                {
+                    StudioCapability.FOUNDATION_IMPORT,
+                    StudioCapability.DRAFT_CREATE,
+                }
+            ),
+        )
+        self.assertEqual(
+            foundation_import_service_capabilities_2_1("BOOTSTRAP_PUBLISHED"),
+            frozenset(
+                {
+                    StudioCapability.FOUNDATION_IMPORT,
+                    StudioCapability.DRAFT_CREATE,
+                    StudioCapability.DEFINITION_VALIDATE,
+                    StudioCapability.DEFINITION_PUBLISH,
+                }
+            ),
+        )
+        self.assertEqual(
+            foundation_import_service_capabilities_2_1("REUSE_EXACT"),
+            frozenset({StudioCapability.FOUNDATION_IMPORT}),
+        )
+        with self.assertRaises(FoundationPackageValidationError):
+            foundation_import_service_capabilities_2_1("CLIENT_CHOSEN_ACTION")
+
+        definition = self.create_draft()
+        raw = (
+            canonical_json(export_project_definition_package_2_1(definition)) + "\n"
+        ).encode("utf-8")
+        request = _OnePassHTTPRequest(raw)
+        captured = capture_http_json(request)
+        service = StudioPrincipal.service(
+            actor_identifier="foundation-reuse-service",
+            purpose="Foundation 2.1 REUSE_EXACT HTTP attempt",
+            capabilities=foundation_import_service_capabilities_2_1("REUSE_EXACT"),
+        )
+        rejected = attempt_foundation_import_2_1(
+            captured,
+            project=self.project,
+            principal=service,
+            actor_identifier=service.actor_identifier,
+            initial_workspace={
+                "id": "18000000-0000-4000-8000-000000000099",
+                "code": "FORBIDDEN-REUSE-WORKSPACE",
+                "version": "1.0.0",
+                "name": "Must not exist",
+                "is_default": True,
+                "metadata": {},
+            },
+        )
+        self.assertEqual(rejected.status, "REJECTED")
+        self.assertEqual(ProjectDefinitionVersion.objects.count(), 1)
+        self.assertFalse(ProjectWorkspace.objects.exists())
+        rejected_receipt = ImportRun.objects.get(pk=rejected.receipt_id)
+        self.assertEqual(
+            rejected_receipt.selected_input["intended_action"],
+            "REUSE_EXACT",
+        )
+        self.assertEqual(
+            rejected_receipt.intended_changes,
+            {"project_definition": "REUSE_EXACT"},
+        )
+
+        committed = attempt_foundation_import_2_1(
+            captured,
+            project=self.project,
+            principal=service,
+            actor_identifier=service.actor_identifier,
+        )
+        self.assertEqual(committed.status, "COMMITTED")
+        self.assertEqual(committed.commit.action, "REUSE_EXACT")
+        self.assertEqual(request.bytes_served, len(raw))
+
     def test_exact_reuse_is_allowed_once_but_drift_and_replay_fail_closed(self):
         definition = self.create_draft()
         package = export_project_definition_package_2_1(definition)
@@ -635,6 +857,10 @@ class FoundationStudioPackage21Tests(TestCase):
 
         preview = preview_foundation_package_2_1(package, project=self.project)
         self.assertEqual(preview.intended_action, "BOOTSTRAP_PUBLISHED")
+        self.assertEqual(
+            self.service.capabilities,
+            foundation_import_service_capabilities_2_1("BOOTSTRAP_PUBLISHED"),
+        )
         result = commit_foundation_package_2_1(
             preview,
             project=self.project,
@@ -787,11 +1013,16 @@ class FoundationStudioPackage21Tests(TestCase):
         source.delete()
         raw = canonical_json(package).encode("utf-8")
         duplicate = raw.replace(b'"package_scope":"PROJECT_DEFINITION"', b'"package_scope":"PROJECT_DEFINITION","package_scope":"PROJECT_DEFINITION"')
+        malformed_service = StudioPrincipal.service(
+            actor_identifier="foundation-malformed-duplicate-service",
+            purpose="Foundation 2.1 malformed duplicate-key attempt",
+            capabilities=foundation_import_service_capabilities_2_1(None),
+        )
         rejected = attempt_foundation_import_2_1(
             duplicate,
             project=self.project,
-            principal=self.service,
-            actor_identifier=self.service.actor_identifier,
+            principal=malformed_service,
+            actor_identifier=malformed_service.actor_identifier,
         )
         self.assertEqual(rejected.status, "REJECTED")
         receipt = ImportRun.objects.get(pk=rejected.receipt_id)

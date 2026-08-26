@@ -7,9 +7,24 @@ from domain.api import studio_definitions
 
 urlpatterns = [
     path(
+        "projects/bootstrap-first-draft/",
+        studio_definitions.bootstrap_first_definition_draft,
+        name="foundation-project-bootstrap-first-draft",
+    ),
+    path(
         "projects/<uuid:project_id>/definitions/",
         studio_definitions.create_definition_draft,
         name="foundation-definition-create",
+    ),
+    path(
+        "projects/<uuid:project_id>/definition-packages/2.1/preview/",
+        studio_definitions.preview_definition_package_2_1,
+        name="foundation-definition-package-21-preview",
+    ),
+    path(
+        "projects/<uuid:project_id>/definition-packages/2.1/attempt/",
+        studio_definitions.attempt_definition_package_2_1,
+        name="foundation-definition-package-21-attempt",
     ),
     path(
         "definitions/<uuid:definition_id>/",
@@ -35,6 +50,16 @@ urlpatterns = [
         "definitions/<uuid:definition_id>/publish-initial/",
         studio_definitions.publish_initial_definition,
         name="foundation-definition-publish-initial",
+    ),
+    path(
+        "definitions/<uuid:definition_id>/publish-successor/",
+        studio_definitions.publish_successor_definition,
+        name="foundation-definition-publish-successor",
+    ),
+    path(
+        "definitions/<uuid:definition_id>/package/2.1/",
+        studio_definitions.export_definition_package_2_1,
+        name="foundation-definition-package-21-export",
     ),
     path(
         "help/<str:ui_key>/",
