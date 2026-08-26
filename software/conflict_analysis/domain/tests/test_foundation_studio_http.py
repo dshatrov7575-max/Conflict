@@ -92,6 +92,18 @@ class FoundationStudioRawIngressTests(TestCase):
             "POST", self.create_url, payload, content_type=content_type
         )
 
+    def test_raw_ingress_has_one_authoritative_service_module(self):
+        domain_dir = Path(__file__).resolve().parents[1]
+        self.assertFalse((domain_dir / "services" / "raw_ingest.py").exists())
+
+        for relative_path in (
+            Path("api") / "studio_definitions.py",
+            Path("services") / "foundation_packages.py",
+            Path("services") / "project_definitions.py",
+        ):
+            source = (domain_dir / relative_path).read_text(encoding="utf-8")
+            self.assertNotIn("domain.services.raw_ingest", source)
+
     def test_only_the_exact_canonical_foundation_routes_are_public(self):
         paths = (
             self.create_url,
