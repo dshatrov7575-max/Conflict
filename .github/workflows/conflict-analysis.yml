@@ -318,8 +318,28 @@ jobs:
             throw "OWNER-TEST ZIP is not reproducible: $FirstHash != $SecondHash"
           }
           $HashRecord = "$($FirstZip.FullName).sha256"
-          $EvidencePath = Join-Path $First 'clean-room-evidence.json'
-          powershell -NoProfile -ExecutionPolicy Bypass -File .\studio_showcase\owner_test\run_clean_room_gate.ps1 -ZipPath $FirstZip.FullName -Sha256RecordPath $HashRecord -Head $Head -Tree $Tree -PythonCommand (Get-Command python).Source -EvidencePath $EvidencePath
+          $ManifestHashRecord = "$($FirstZip.FullName).manifest.sha256"
+          $ExpectedFiles = @(
+            $FirstZip.Name
+            "$($FirstZip.Name).sha256"
+            "$($FirstZip.Name).manifest.sha256"
+          ) | Sort-Object
+          $FirstFiles = @(Get-ChildItem -LiteralPath $First -File -ErrorAction Stop | Select-Object -ExpandProperty Name | Sort-Object)
+          $SecondFiles = @(Get-ChildItem -LiteralPath $Second -File -ErrorAction Stop | Select-Object -ExpandProperty Name | Sort-Object)
+          $FirstDifference = @(Compare-Object -ReferenceObject $ExpectedFiles -DifferenceObject $FirstFiles)
+          $SecondDifference = @(Compare-Object -ReferenceObject $ExpectedFiles -DifferenceObject $SecondFiles)
+          if ($FirstDifference.Count -ne 0 -or $SecondDifference.Count -ne 0) {
+            throw "Each reproducibility directory must contain exactly ZIP, <zip>.sha256 and <zip>.manifest.sha256."
+          }
+          foreach ($Name in $ExpectedFiles) {
+            $FirstFileHash = (Get-FileHash -LiteralPath (Join-Path $First $Name) -Algorithm SHA256).Hash
+            $SecondFileHash = (Get-FileHash -LiteralPath (Join-Path $Second $Name) -Algorithm SHA256).Hash
+            if ($FirstFileHash -cne $SecondFileHash) {
+              throw "OWNER-TEST output is not reproducible: $Name"
+            }
+          }
+          $EvidencePath = Join-Path $env:RUNNER_TEMP 'clean-room-evidence.json'
+          powershell -NoProfile -ExecutionPolicy Bypass -File .\studio_showcase\owner_test\run_clean_room_gate.ps1 -ZipPath $FirstZip.FullName -Sha256RecordPath $HashRecord -ManifestSha256RecordPath $ManifestHashRecord -Head $Head -Tree $Tree -PythonCommand (Get-Command python).Source -EvidencePath $EvidencePath
           if ($LASTEXITCODE -ne 0) {
             throw "Clean-room gate exited with code $LASTEXITCODE."
           }
@@ -327,7 +347,9 @@ jobs:
           if ($Evidence.status -cne 'PASS' -or -not $Evidence.stop_no_orphan -or $Evidence.cleanup -cne 'PASS') {
             throw "Clean-room evidence is not PASS: $($Evidence | ConvertTo-Json -Depth 5 -Compress)"
           }
-          "artifact_dir=$First" >> $env:GITHUB_OUTPUT
+          "zip_path=$($FirstZip.FullName)" >> $env:GITHUB_OUTPUT
+          "zip_sha256_path=$HashRecord" >> $env:GITHUB_OUTPUT
+          "manifest_sha256_path=$ManifestHashRecord" >> $env:GITHUB_OUTPUT
           "zip_sha256=$FirstHash" >> $env:GITHUB_OUTPUT
           "manifest_sha256=$($Evidence.manifest_sha256)" >> $env:GITHUB_OUTPUT
           "head=$Head" >> $env:GITHUB_OUTPUT
@@ -337,6 +359,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ConflictAnalysis-Studio-OWNER-TEST-${{ steps.owner_package.outputs.head }}
-          path: ${{ steps.owner_package.outputs.artifact_dir }}
+          path: |
+            ${{ steps.owner_package.outputs.zip_path }}
+            ${{ steps.owner_package.outputs.zip_sha256_path }}
+            ${{ steps.owner_package.outputs.manifest_sha256_path }}
           if-no-files-found: error
           retention-days: 14

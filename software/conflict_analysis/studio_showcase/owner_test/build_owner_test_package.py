@@ -124,7 +124,11 @@ def create_package_files(
     files["screenshots/SHA256SUMS.txt"] = screenshot_register.encode("ascii")
 
     entries = [
-        {"path": path, "sha256": sha256_bytes(content), "size": len(content)}
+        {
+            "path": path,
+            "size_bytes": len(content),
+            "sha256": sha256_bytes(content),
+        }
         for path, content in sorted(files.items())
     ]
     manifest = {
@@ -146,7 +150,7 @@ def create_package_files(
             "formula_power_prediction": False,
         },
         "package_sha256_record": f"{zip_name}.sha256",
-        "manifest_sha256_record": "MANIFEST.sha256",
+        "manifest_sha256_record": f"{zip_name}.manifest.sha256",
         "screenshot_sha256_register": "screenshots/SHA256SUMS.txt",
         "files": entries,
     }
@@ -155,7 +159,6 @@ def create_package_files(
     ).encode("utf-8")
     manifest_sha256 = sha256_bytes(manifest_bytes)
     files["MANIFEST.json"] = manifest_bytes
-    files["MANIFEST.sha256"] = f"{manifest_sha256}  MANIFEST.json\n".encode()
     return files, manifest_sha256
 
 
@@ -196,12 +199,19 @@ def build_package(
     write_deterministic_zip(zip_path, files)
     zip_hash = sha256_bytes(zip_path.read_bytes())
     hash_path = zip_path.with_name(f"{zip_path.name}.sha256")
-    hash_path.write_text(f"{zip_hash}  {zip_path.name}\n", encoding="ascii")
+    manifest_hash_path = zip_path.with_name(
+        f"{zip_path.name}.manifest.sha256"
+    )
+    hash_path.write_bytes(f"{zip_hash}  {zip_path.name}\n".encode("ascii"))
+    manifest_hash_path.write_bytes(
+        f"{manifest_hash}  MANIFEST.json\n".encode("ascii")
+    )
     return {
         "zip_path": str(zip_path),
         "zip_sha256": zip_hash,
         "manifest_sha256": manifest_hash,
         "sha256_record": str(hash_path),
+        "manifest_sha256_record": str(manifest_hash_path),
         "file_count": len(files),
     }
 

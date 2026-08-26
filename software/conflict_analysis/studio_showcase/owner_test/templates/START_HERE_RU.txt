@@ -14,13 +14,16 @@ Google Chrome либо Microsoft Edge для браузерного smoke-тес
 нужные пакеты не находятся в локальном pip-кэше). После установки запуск полностью
 локален и не требует сети.
 
-1. До распаковки сравните SHA-256 ZIP с соседним файлом @@ZIP_NAME@@.sha256:
+1. Поместите ZIP и оба соседних sidecar-файла в один новый пустой каталог.
+   До распаковки сравните SHA-256 ZIP с @@ZIP_NAME@@.sha256:
+   Get-Content .\@@ZIP_NAME@@.sha256
    Get-FileHash .\@@ZIP_NAME@@ -Algorithm SHA256
 
-2. Распакуйте ZIP в новый локальный каталог. В распакованном каталоге выполните:
-   powershell -NoProfile -ExecutionPolicy Bypass -File .\VERIFY_CONTENT.ps1
+2. Распакуйте ZIP в этом же каталоге, перейдите в созданный каталог
+   .\ConflictAnalysis-Studio-OWNER-TEST и выполните:
+   powershell -NoProfile -ExecutionPolicy Bypass -File .\VERIFY_CONTENT.ps1 -ManifestSha256RecordPath ..\@@ZIP_NAME@@.manifest.sha256
 
-   Скрипт проверяет MANIFEST.sha256, каждый файл по MANIFEST.json и отсутствие
+   Скрипт проверяет соседний @@ZIP_NAME@@.manifest.sha256, каждый файл по MANIFEST.json и отсутствие
    посторонних файлов. Контрольные суммы шести снимков также записаны в
    .\screenshots\SHA256SUMS.txt.
 
@@ -41,4 +44,5 @@ Google Chrome либо Microsoft Edge для браузерного smoke-тес
    Инструкции безопасного локального удаления находятся в CLEANUP_RU.md.
 
 Файл контрольной суммы всего ZIP называется @@ZIP_NAME@@.sha256 и поставляется
-рядом с ZIP, а не внутри него (внутренний SHA-256 архива был бы циклическим).
+рядом с ZIP. Файл @@ZIP_NAME@@.manifest.sha256 также лежит рядом и содержит
+SHA-256 точных байтов MANIFEST.json. Оба sidecar-файла не входят в ZIP.

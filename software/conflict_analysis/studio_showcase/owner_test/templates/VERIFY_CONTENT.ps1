@@ -1,5 +1,9 @@
 [CmdletBinding()]
-param()
+param(
+    [Parameter(Mandatory = $true)]
+    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
+    [string]$ManifestSha256RecordPath
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -9,7 +13,9 @@ $RootPrefix = $Root.TrimEnd(
     [System.IO.Path]::AltDirectorySeparatorChar
 ) + [System.IO.Path]::DirectorySeparatorChar
 $ManifestPath = Join-Path $Root "MANIFEST.json"
-$ManifestHashPath = Join-Path $Root "MANIFEST.sha256"
+$ResolvedManifestHashRecord = [System.IO.Path]::GetFullPath(
+    $ManifestSha256RecordPath
+)
 
 function Get-Sha256Hex {
     param([Parameter(Mandatory = $true)][string]$LiteralPath)
@@ -32,48 +38,117 @@ if (-not (Test-Path -LiteralPath $ManifestPath -PathType Leaf)) {
     throw "MANIFEST.json not found. Re-extract the OWNER-TEST ZIP."
 }
 
-$ExpectedManifestHash = ((Get-Content -LiteralPath $ManifestHashPath -Raw) -split '\s+')[0].ToLowerInvariant()
+$ManifestHashRecord = (
+    Get-Content -LiteralPath $ResolvedManifestHashRecord -Raw -Encoding ASCII
+).Trim()
+if ($ManifestHashRecord -notmatch '^([0-9a-fA-F]{64})\s{2}MANIFEST\.json$') {
+    throw "Invalid MANIFEST.json SHA-256 record format: $ResolvedManifestHashRecord"
+}
+$ExpectedManifestHash = $Matches[1].ToLowerInvariant()
 $ActualManifestHash = Get-Sha256Hex -LiteralPath $ManifestPath
 if ($ExpectedManifestHash -cne $ActualManifestHash) {
     throw "MANIFEST.json SHA-256 mismatch. Do not run this package."
 }
 
 $Manifest = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$ExpectedManifestRecordName = [string]$Manifest.manifest_sha256_record
+if ([System.IO.Path]::GetFileName($ResolvedManifestHashRecord) -cne
+    $ExpectedManifestRecordName) {
+    throw (
+        "Manifest SHA-256 record filename mismatch: expected " +
+        "$ExpectedManifestRecordName."
+    )
+}
 $ExpectedFiles = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
-foreach ($Entry in $Manifest.files) {
-    if (-not $ExpectedFiles.Add([string]$Entry.path)) {
-        throw "Duplicate manifest path: $($Entry.path)"
+$ExpectedFilesCaseInsensitive = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::OrdinalIgnoreCase)
+$ManifestPaths = @()
+foreach ($Entry in @($Manifest.files)) {
+    foreach ($RequiredProperty in @("path", "size_bytes", "sha256")) {
+        if ($null -eq $Entry.PSObject.Properties[$RequiredProperty]) {
+            throw "Manifest entry is missing required property '$RequiredProperty'."
+        }
     }
-    $FullPath = [System.IO.Path]::GetFullPath((Join-Path $Root $Entry.path))
+    $EntryPath = [string]$Entry.path
+    if ([string]::IsNullOrWhiteSpace($EntryPath) -or
+        $EntryPath.Contains("\") -or
+        $EntryPath.StartsWith("/") -or
+        $EntryPath -match '^[A-Za-z]:' -or
+        $EntryPath.Split('/') -contains "" -or
+        $EntryPath.Split('/') -contains "." -or
+        $EntryPath.Split('/') -contains "..") {
+        throw "Unsafe or non-normalized manifest path: $EntryPath"
+    }
+    if ($EntryPath -ceq "MANIFEST.json") {
+        throw "MANIFEST.json must not hash itself."
+    }
+    if (-not $ExpectedFiles.Add($EntryPath)) {
+        throw "Duplicate manifest path: $EntryPath"
+    }
+    if (-not $ExpectedFilesCaseInsensitive.Add($EntryPath)) {
+        throw "Case-colliding manifest path: $EntryPath"
+    }
+    $ManifestPaths += $EntryPath
+    $FullPath = [System.IO.Path]::GetFullPath((Join-Path $Root $EntryPath))
     if (-not $FullPath.StartsWith($RootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
-        throw "Unsafe manifest path: $($Entry.path)"
+        throw "Unsafe manifest path: $EntryPath"
     }
     if (-not (Test-Path -LiteralPath $FullPath -PathType Leaf)) {
-        throw "Missing package file: $($Entry.path)"
+        throw "Missing package file: $EntryPath"
+    }
+    $DeclaredSize = 0L
+    if (-not [long]::TryParse(
+        [string]$Entry.size_bytes,
+        [System.Globalization.NumberStyles]::None,
+        [System.Globalization.CultureInfo]::InvariantCulture,
+        [ref]$DeclaredSize
+    ) -or $DeclaredSize -lt 0) {
+        throw "Invalid size_bytes for manifest path: $EntryPath"
+    }
+    $ActualSize = (Get-Item -LiteralPath $FullPath).Length
+    if ($ActualSize -ne $DeclaredSize) {
+        throw "Size mismatch: $EntryPath"
+    }
+    $ExpectedHash = [string]$Entry.sha256
+    if ($ExpectedHash -cnotmatch '^[0-9a-f]{64}$') {
+        throw "Invalid SHA-256 for manifest path: $EntryPath"
     }
     $Actual = Get-Sha256Hex -LiteralPath $FullPath
-    if ($Actual -cne $Entry.sha256.ToLowerInvariant()) {
-        throw "SHA-256 mismatch: $($Entry.path)"
+    if ($Actual -cne $ExpectedHash) {
+        throw "SHA-256 mismatch: $EntryPath"
     }
 }
 
-$AllowedMetadata = @("MANIFEST.json", "MANIFEST.sha256")
-$ActualFiles = Get-ChildItem -LiteralPath $Root -Recurse -File | ForEach-Object {
+$SortedManifestPaths = @($ManifestPaths)
+[Array]::Sort($SortedManifestPaths, [System.StringComparer]::Ordinal)
+if (($ManifestPaths -join "`n") -cne ($SortedManifestPaths -join "`n")) {
+    throw "Manifest paths must be in sorted normalized relative-path order."
+}
+
+$ActualFiles = @(Get-ChildItem -LiteralPath $Root -Recurse -File | ForEach-Object {
     $_.FullName.Substring($RootPrefix.Length).Replace(
         [System.IO.Path]::DirectorySeparatorChar,
         [System.IO.Path]::AltDirectorySeparatorChar
     )
-}
+})
+$ActualFileSet = New-Object 'System.Collections.Generic.HashSet[string]' ([System.StringComparer]::Ordinal)
 foreach ($RelativePath in $ActualFiles) {
-    if ($AllowedMetadata -notcontains $RelativePath -and
-        -not $ExpectedFiles.Contains($RelativePath)) {
+    if (-not $ActualFileSet.Add($RelativePath)) {
+        throw "Duplicate extracted package file: $RelativePath"
+    }
+    if ($RelativePath -cne "MANIFEST.json" -and -not $ExpectedFiles.Contains($RelativePath)) {
         throw "Unexpected package file not covered by MANIFEST.json: $RelativePath"
     }
 }
-foreach ($MetadataPath in $AllowedMetadata) {
-    if ($ActualFiles -notcontains $MetadataPath) {
-        throw "Missing package metadata file: $MetadataPath"
+if (-not $ActualFileSet.Contains("MANIFEST.json")) {
+    throw "Missing package metadata file: MANIFEST.json"
+}
+foreach ($ExpectedPath in $ExpectedFiles) {
+    if (-not $ActualFileSet.Contains($ExpectedPath)) {
+        throw "Missing package file: $ExpectedPath"
     }
+}
+if ($ActualFileSet.Count -ne ($ExpectedFiles.Count + 1)) {
+    throw "Actual package file set does not exactly match MANIFEST.json."
 }
 
 $ScreenshotRegisterPath = Join-Path $Root "screenshots\SHA256SUMS.txt"

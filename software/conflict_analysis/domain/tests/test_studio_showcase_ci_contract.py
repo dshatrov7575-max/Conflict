@@ -43,6 +43,9 @@ class StudioShowcaseCiContractTests(SimpleTestCase):
             "build_owner_test_package.ps1",
             "$FirstHash -cne $SecondHash",
             "run_clean_room_gate.ps1",
+            '$ManifestHashRecord = "$($FirstZip.FullName).manifest.sha256"',
+            "-ManifestSha256RecordPath $ManifestHashRecord",
+            "$EvidencePath = Join-Path $env:RUNNER_TEMP 'clean-room-evidence.json'",
             "-EvidencePath $EvidencePath",
             "stop_no_orphan",
             "actions/upload-artifact@v4",
@@ -53,3 +56,13 @@ class StudioShowcaseCiContractTests(SimpleTestCase):
 
         self.assertEqual(workflow.count("build_owner_test_package.ps1"), 2)
         self.assertNotIn("Select-Object -Single", workflow)
+        self.assertNotIn("artifact_dir=$First", workflow)
+        self.assertNotIn("path: ${{ steps.owner_package.outputs.artifact_dir }}", workflow)
+        self.assertIn(
+            """path: |
+            ${{ steps.owner_package.outputs.zip_path }}
+            ${{ steps.owner_package.outputs.zip_sha256_path }}
+            ${{ steps.owner_package.outputs.manifest_sha256_path }}
+          if-no-files-found: error""",
+            workflow,
+        )
