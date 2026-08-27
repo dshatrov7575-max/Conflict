@@ -1,0 +1,205 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Production Studio C — определение {{ definition_id }}</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="{% static 'production_studio/studio.css' %}">
+  <script src="{% static 'production_studio/studio.js' %}" defer></script>
+</head>
+<body data-studio-page="definition">
+  <header id="studio-boundary-banner" class="claim-banner" data-claim-contract="{{ claim_contract }}" data-claim-sha256="{{ claim_sha256 }}">
+    <p><strong>{{ claim_by_code.STATUS }}</strong></p>
+    <p>{{ claim_by_code.TRACEABILITY }}</p>
+    <a href="{% url 'production_studio:claim_boundaries_read_only_v1' %}" download="read_only_claim_boundaries_v1.ru.json">
+      Скачать проверенный контракт ограничений
+    </a>
+    <code>SHA-256 {{ claim_sha256 }}</code>
+  </header>
+
+  <main
+    id="studio-app"
+    class="studio-layout"
+    data-authenticated="{{ studio_authenticated|yesno:'true,false' }}"
+    data-definition-id="{{ definition_id }}"
+    data-open-url="{{ foundation_open_url }}"
+    data-export-url="{{ foundation_export_url }}"
+    data-help-base-url="/api/foundation/help/"
+    data-claim-url="{% url 'production_studio:claim_boundaries_read_only_v1' %}"
+    data-claim-sha256="{{ claim_sha256 }}"
+    data-claim-bytes="2197"
+    data-state="loading"
+  >
+    <aside class="studio-panel studio-panel--left" aria-label="Навигация и идентичность">
+      <div class="brand-block">
+        <a href="{% url 'production_studio:entry' %}" class="back-link">← Другое определение</a>
+        <p class="eyebrow">Foundation · exact ID</p>
+        <h1>Production Studio C</h1>
+      </div>
+
+      <nav aria-label="Разделы определения">
+        <a href="#overview">Обзор</a>
+        <a href="#project">Снимок проекта</a>
+        <a href="#actors" data-show-dataset="actors">Акторы</a>
+        <a href="#analytical-elements" data-show-dataset="analytical-elements">Аналитические элементы</a>
+        <a href="#status-export">Статус и экспорт</a>
+        <a href="#limitations">Ограничения</a>
+      </nav>
+
+      <section class="identity-card" aria-labelledby="identity-title">
+        <h2 id="identity-title">Точная идентичность</h2>
+        <dl>
+          <div><dt>Definition UUID</dt><dd id="definition-id">{{ definition_id }}</dd></div>
+          <div><dt>Project UUID</dt><dd id="project-id">—</dd></div>
+          <div><dt>Manifest SHA-256</dt><dd id="manifest-sha">—</dd></div>
+          <div><dt>ETag</dt><dd id="manifest-etag">—</dd></div>
+        </dl>
+      </section>
+
+      <fieldset class="layout-controls">
+        <legend>Ширина панелей</legend>
+        <label for="left-width-control">Левая: <output id="left-width-output">272</output> px</label>
+        <input id="left-width-control" type="range" min="220" max="420" step="1" value="272">
+        <label for="right-width-control">Правая: <output id="right-width-output">360</output> px</label>
+        <input id="right-width-control" type="range" min="300" max="500" step="1" value="360">
+        <button id="layout-reset" type="button" class="button-secondary">Сбросить раскладку</button>
+      </fieldset>
+    </aside>
+
+    <div id="left-divider" class="panel-divider" role="separator" aria-label="Изменить ширину левой панели" aria-orientation="vertical" aria-valuemin="220" aria-valuemax="420" aria-valuenow="272" tabindex="0"></div>
+
+    <section class="studio-panel studio-panel--main" aria-label="Определение проекта">
+      <section id="studio-state" class="state-card" role="status" aria-live="polite" data-state="LOADING">
+        <h2 id="studio-state-title">Проверяем Foundation…</h2>
+        <p id="studio-state-message">Данные появятся только после проверки UUID, manifest SHA-256 и ETag.</p>
+      </section>
+
+      <div id="definition-content" hidden>
+        <section id="overview" class="content-section" tabindex="-1">
+          <p class="eyebrow">Версия определения</p>
+          <h2 id="definition-label">—</h2>
+          <dl class="metadata-grid">
+            <div><dt>Код</dt><dd id="definition-code">—</dd></div>
+            <div><dt>Версия</dt><dd id="definition-version">—</dd></div>
+            <div><dt>Schema version</dt><dd id="definition-schema-version">—</dd></div>
+            <div><dt>Semantic version</dt><dd id="definition-semantic-version">—</dd></div>
+            <div><dt>Construct version</dt><dd id="definition-construct-version">—</dd></div>
+            <div><dt>Supersedes UUID</dt><dd id="definition-supersedes">—</dd></div>
+          </dl>
+        </section>
+
+        <section id="project" class="content-section" tabindex="-1">
+          <p class="eyebrow">Только manifest.project</p>
+          <h2>Снимок проекта в этой версии</h2>
+          <dl id="project-snapshot" class="metadata-grid"></dl>
+        </section>
+
+        <section class="content-section manifest-browser" aria-labelledby="manifest-browser-title">
+          <span id="actors" class="fragment-target" tabindex="-1"></span>
+          <span id="analytical-elements" class="fragment-target" tabindex="-1"></span>
+          <p class="eyebrow">Авторский порядок · окно не более 100 строк</p>
+          <h2 id="manifest-browser-title">Структура определения</h2>
+          <div class="dataset-switcher" role="group" aria-label="Набор структурных записей">
+            <button id="show-actors" type="button" data-dataset="actors" data-manifest-dataset="actors" aria-pressed="true">Акторы: <span id="actor-count">0</span></button>
+            <button id="show-elements" type="button" data-dataset="analytical-elements" data-manifest-dataset="analytical-elements" aria-pressed="false">Аналитические элементы: <span id="element-count">0</span></button>
+          </div>
+          <p id="manifest-window-description">Показано активное окно записей.</p>
+          <div class="table-scroll" tabindex="0" aria-labelledby="manifest-browser-title" aria-describedby="manifest-window-description">
+            <table>
+              <thead>
+                <tr><th scope="col">Порядок</th><th scope="col">Код и версия</th><th scope="col">Название и тип</th><th scope="col">UUID / родитель</th><th scope="col">Описание / reference statement</th></tr>
+              </thead>
+              <tbody id="manifest-window"></tbody>
+            </table>
+          </div>
+          <div class="window-controls">
+            <button id="window-previous" type="button" class="button-secondary">Предыдущие</button>
+            <span id="window-position" aria-live="polite">0–0 из 0</span>
+            <button id="window-next" type="button" class="button-secondary">Следующие</button>
+          </div>
+        </section>
+
+        <section id="status-export" class="content-section" tabindex="-1">
+          <p class="eyebrow">Буквальный статус Foundation</p>
+          <h2>Статус и экспорт</h2>
+          <p><span id="publication-status" class="lifecycle-label">—</span></p>
+          <dl class="metadata-grid unknown-grid">
+            <div><dt>Текущая версия</dt><dd>UNKNOWN_NOT_EXPOSED_BY_FOUNDATION</dd></div>
+            <div><dt>Результат валидации</dt><dd>UNKNOWN_NOT_EXPOSED_BY_FOUNDATION</dd></div>
+            <div><dt>Кто/когда валидировал</dt><dd>UNKNOWN_NOT_EXPOSED_BY_FOUNDATION</dd></div>
+            <div><dt>Кто/когда опубликовал</dt><dd>UNKNOWN_NOT_EXPOSED_BY_FOUNDATION</dd></div>
+          </dl>
+          <div class="export-card">
+            <button id="export-foundation" type="button">Проверить и скачать Foundation 2.1</button>
+            <p>{{ claim_by_code.EXPORT_STATUS }}</p>
+            <p>Пакет скачивается без изменения только после проверки terminal LF, filename, representation SHA/ETag и semantic payload SHA.</p>
+            <dl>
+              <div><dt>Package representation SHA</dt><dd id="export-representation-sha">—</dd></div>
+              <div><dt>Package semantic SHA</dt><dd id="export-semantic-sha">—</dd></div>
+              <div><dt>Claim contract SHA</dt><dd id="export-claim-sha">{{ claim_sha256 }}</dd></div>
+            </dl>
+            <p id="export-state" role="status" aria-live="polite">Экспорт ещё не запрашивался.</p>
+          </div>
+        </section>
+
+      </div>
+
+      <span id="limitations" class="fragment-target" tabindex="-1"></span>
+      <section id="studio-limitations" class="content-section limitations-card">
+        <h2>Постоянные ограничения</h2>
+        <ul>
+          {% for statement in claim_statements %}
+            <li data-claim-code="{{ statement.code }}">{{ statement.text }}</li>
+          {% endfor %}
+        </ul>
+        <a href="{% url 'production_studio:claim_boundaries_read_only_v1' %}" download="read_only_claim_boundaries_v1.ru.json">Скачать точные 2197 байт контракта</a>
+      </section>
+    </section>
+
+    <div id="right-divider" class="panel-divider" role="separator" aria-label="Изменить ширину правой панели" aria-orientation="vertical" aria-valuemin="300" aria-valuemax="500" aria-valuenow="360" tabindex="0"></div>
+
+    <aside class="studio-panel studio-panel--right" aria-label="Документ, Чат и Справка">
+      <div class="right-tabs" role="tablist" aria-label="Правая панель">
+        <button id="tab-document" type="button" role="tab" aria-controls="panel-document" aria-selected="true" data-right-tab="document">Документ</button>
+        <button id="tab-chat" type="button" role="tab" aria-controls="panel-chat" aria-selected="false" data-right-tab="chat" tabindex="-1">Чат</button>
+        <button id="tab-help" type="button" role="tab" aria-controls="panel-help" aria-selected="false" data-right-tab="help" tabindex="-1">Справка</button>
+      </div>
+
+      <section id="panel-document" role="tabpanel" aria-labelledby="tab-document" data-tab-panel="document">
+        <h2>Документ</h2>
+        <p class="unavailable-state" data-state="DOCUMENT_UNAVAILABLE" data-explicit-unavailable="true">Недоступно в C0: канонический evidence trace появится только в отдельно авторизованном будущем C3.</p>
+        <p>{{ claim_by_code.TRACEABILITY }}</p>
+      </section>
+
+      <section id="panel-chat" role="tabpanel" aria-labelledby="tab-chat" data-tab-panel="chat" hidden>
+        <h2>Чат</h2>
+        <p class="unavailable-state" data-state="CHAT_UNAVAILABLE">Чат, LLM и RAG недоступны. Запросы, сообщения и локальное хранение не выполняются.</p>
+        <button type="button" disabled>Отправка отключена</button>
+      </section>
+
+      <section id="panel-help" role="tabpanel" aria-labelledby="tab-help" data-tab-panel="help" hidden>
+        <h2>Справка Foundation</h2>
+        <p id="help-state" class="unavailable-state" role="status" aria-live="polite" data-state="HELP_NOT_REQUESTED">Точная связка справки ещё не выбрана.</p>
+        <label for="help-binding-select">Точная связка из manifest</label>
+        <select id="help-binding-select" disabled></select>
+        <button id="load-help" type="button" class="button-secondary" disabled>Загрузить точную справку</button>
+        <article id="help-topic" hidden>
+          <h3 id="help-title"></h3>
+          <p id="help-identity"></p>
+          <iframe id="help-content" sandbox="" title="Проверенное содержание справки Foundation"></iframe>
+        </article>
+      </section>
+    </aside>
+  </main>
+
+  <noscript>
+    <section class="noscript-boundary">
+      <h2>Определение не загружено</h2>
+      <p>Без JavaScript невозможно проверить manifest SHA-256, ETag и точные байты экспорта. Никакие данные Foundation не показаны.</p>
+      {% for statement in claim_statements %}<p>{{ statement.text }}</p>{% endfor %}
+    </section>
+  </noscript>
+</body>
+</html>

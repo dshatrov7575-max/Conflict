@@ -1,5 +1,36 @@
 # Conflict Analysis
 
+## Production Studio C0: authenticated read-only
+
+`C0_AUTHENTICATED_READ_ONLY` is a Russian three-panel browser shell mounted at
+`/studio/`. It accepts an exact definition UUID and reads only the accepted
+Foundation endpoints for that object: the definition, its Foundation 2.1
+export and, when the manifest supplies one exact bound tuple, Foundation Help.
+The Project card is a snapshot from that definition's manifest; actor and
+analytical-element lists use a bounded active DOM window.
+
+Studio C0 has no login, logout, session issuance, credential form, model,
+migration, direct ORM access or write endpoint. A Django session must be issued
+before the measured Studio flow by the hosting authentication system. Every
+Foundation request made by C0 is `GET`; `POST`, `PUT`, `PATCH`, `DELETE` and
+`HEAD` Foundation calls are outside C0. Missing exact Help is shown as
+unavailable without local fallback. The `Документ` evidence trace is explicitly
+unavailable until a separately authorized future slice, and Chat and scientific
+controls are disabled.
+
+The only application value persisted in the browser is the bounded layout
+object under `conflict-analysis-studio:read-only-layout:v1`. Project, definition,
+actor, evidence and Help identities are never stored there. Permanent visible
+limitations and the downloadable, checksum-bound claim contract state that
+traceability and lifecycle status are not substantive correctness or scientific
+validation. C0 provides no scalar or ranked Power, aggregate, formula,
+prediction, probability, risk or recommendation.
+
+Deployment and browser-role details are in
+[`docs/production-studio-c-read-only-runtime.md`](docs/production-studio-c-read-only-runtime.md);
+the authority and composition decision is in
+[`docs/adr/0007-production-studio-c-read-only-first.md`](docs/adr/0007-production-studio-c-read-only-first.md).
+
 ## Foundation Studio contract addendum
 
 Production definition authoring uses the single persisted

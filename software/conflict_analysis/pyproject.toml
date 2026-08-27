@@ -24,7 +24,14 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["conflict_analysis*", "domain*"]
+include = ["conflict_analysis*", "domain*", "production_studio*"]
 
 [tool.setuptools.package-data]
 "domain.services" = ["schemas/*.json"]
+"production_studio" = [
+    "contracts/*.json",
+    "contracts/*.sha256",
+    "templates/production_studio/*.html",
+    "static/production_studio/*.css",
+    "static/production_studio/*.js",
+]
