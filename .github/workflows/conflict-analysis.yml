@@ -175,7 +175,7 @@ jobs:
         shell: bash
         run: |
           wheel_dir="${{ runner.temp }}/studio-c0-wheel"
-          python -m pip wheel --no-build-isolation --no-deps --wheel-dir "$wheel_dir" .
+          python -m pip wheel --no-deps --wheel-dir "$wheel_dir" .
           mapfile -t wheels < <(find "$wheel_dir" -maxdepth 1 -type f -name '*.whl' -print)
           test "${#wheels[@]}" -eq 1
           echo "STUDIO_C0_WHEEL=${wheels[0]}" >> "$GITHUB_ENV"
