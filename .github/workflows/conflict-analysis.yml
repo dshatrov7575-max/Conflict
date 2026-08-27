@@ -65,6 +65,8 @@ jobs:
       FD05_BRANCH: codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
       AUTH_MAIN_HEAD: 19690eb3aede8b603a631d7c561fc74f9022537a
       AUTH_MAIN_TREE: 04d5b43fdf96637f58b8fc6f191323fbad302bbc
+      FND_BASE_HEAD: f940a91a92658285063802ee1a43bf84360fc013
+      FND_BASE_TREE: 1125b01a90da3ea324e661d729a845c58febb8e2
       FOUNDATION_B_HEAD: 5f73ebf2fd29a161a34ea047c7eead4fb0c582d4
       FOUNDATION_B_TREE: ea5ff9ab510cb76f0c2b1bfda1c02c1278812aae
       PR67_BASE_HEAD: b8a543c09cc89b1b7378f21215f70afa586b248d
@@ -84,8 +86,11 @@ jobs:
           set -euo pipefail
           delivery_head="$(git rev-parse HEAD)"
           test "$(git rev-parse "$FD01_BASE_HEAD^{tree}")" = "$FD01_BASE_TREE"
+          test "$(git rev-parse "$FND_BASE_HEAD^{tree}")" = "$FND_BASE_TREE"
           test "$(git rev-parse "$FOUNDATION_B_HEAD^{tree}")" = "$FOUNDATION_B_TREE"
           test "$(git rev-parse "$AUTH_MAIN_HEAD^{tree}")" = "$AUTH_MAIN_TREE"
+          git merge-base --is-ancestor "$AUTH_MAIN_HEAD" "$FND_BASE_HEAD"
+          git merge-base --is-ancestor "$FND_BASE_HEAD" "$FOUNDATION_B_HEAD"
           git merge-base --is-ancestor "$AUTH_MAIN_HEAD" "$FOUNDATION_B_HEAD"
           git merge-base --is-ancestor "$FOUNDATION_B_HEAD" "$FD01_BASE_HEAD"
           git merge-base --is-ancestor "$FD01_BASE_HEAD" "$delivery_head"
