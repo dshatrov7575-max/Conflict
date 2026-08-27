@@ -10,12 +10,14 @@ on:
       - main
       - codex/ca-i1-data-001
       - codex/ca-suite-i1-foundation
+      - codex/ca-suite-i1-production-studio-c0-read-only
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: conflict-analysis-${{ github.workflow }}-${{ github.ref }}
@@ -23,7 +25,7 @@ concurrency:
 
 jobs:
   foundation-contract:
-    name: Python 3.12 / PostgreSQL 18 / SQLite regression
+    name: Python 3.12 / PostgreSQL 18 / SQLite / C0 read-only
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -63,6 +65,52 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify C0 authorization drift and synthetic merges
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          C0_BASE_HEAD: 5f73ebf2fd29a161a34ea047c7eead4fb0c582d4
+          C0_BASE_TREE: ea5ff9ab510cb76f0c2b1bfda1c02c1278812aae
+          AUTH_MAIN_HEAD: 19690eb3aede8b603a631d7c561fc74f9022537a
+          AUTH_MAIN_TREE: 04d5b43fdf96637f58b8fc6f191323fbad302bbc
+          PR67_BASE_HEAD: b8a543c09cc89b1b7378f21215f70afa586b248d
+        run: |
+          git fetch --no-tags origin \
+            +refs/heads/main:refs/remotes/origin/main \
+            +refs/heads/codex/ca-suite-i1-foundation-application-gateways:refs/remotes/origin/c0-base \
+            +refs/pull/67/merge:refs/remotes/origin/pr67-merge
+          test "$(git rev-parse "$C0_BASE_HEAD^{tree}")" = "$C0_BASE_TREE"
+          test "$(git rev-parse refs/remotes/origin/c0-base)" = "$C0_BASE_HEAD"
+          test "$(git rev-parse refs/remotes/origin/main)" = "$AUTH_MAIN_HEAD"
+          test "$(git rev-parse "$AUTH_MAIN_HEAD^{tree}")" = "$AUTH_MAIN_TREE"
+          git merge-base --is-ancestor "$AUTH_MAIN_HEAD" "$C0_BASE_HEAD"
+          git merge-base --is-ancestor "$C0_BASE_HEAD" HEAD
+
+          IFS=$'\t' read -r state draft merged head base mergeable <<< "$(
+            gh api "repos/${GITHUB_REPOSITORY}/pulls/67" \
+              --jq '[.state, (.draft|tostring), (.merged|tostring), .head.sha, .base.sha, (.mergeable|tostring)] | @tsv'
+          )"
+          test "$state" = "open"
+          test "$draft" = "true"
+          test "$merged" = "false"
+          test "$head" = "$C0_BASE_HEAD"
+          test "$base" = "$PR67_BASE_HEAD"
+          test "$mergeable" = "true"
+
+          pr67_merge=refs/remotes/origin/pr67-merge
+          test "$(git rev-parse "$pr67_merge^1")" = "$PR67_BASE_HEAD"
+          test "$(git rev-parse "$pr67_merge^2")" = "$C0_BASE_HEAD"
+          test "$(git rev-parse "$pr67_merge^{tree}")" = "$(git merge-tree --write-tree "$PR67_BASE_HEAD" "$C0_BASE_HEAD")"
+
+          if [[ "$GITHUB_EVENT_NAME" = "pull_request" ]]; then
+            test "${{ github.event.pull_request.base.ref }}" = "codex/ca-suite-i1-foundation-application-gateways"
+            test "${{ github.event.pull_request.base.sha }}" = "$C0_BASE_HEAD"
+            test "${{ github.event.pull_request.head.ref }}" = "codex/ca-suite-i1-production-studio-c0-read-only"
+            test "$(git rev-parse HEAD^1)" = "$C0_BASE_HEAD"
+            test "$(git rev-parse HEAD^2)" = "${{ github.event.pull_request.head.sha }}"
+            test "$(git rev-parse 'HEAD^{tree}')" = "$(git merge-tree --write-tree "$C0_BASE_HEAD" "${{ github.event.pull_request.head.sha }}")"
+          fi
+
       - name: Verify accepted stacked base ancestry
         shell: bash
         run: |
@@ -76,15 +124,34 @@ jobs:
           cache: pip
           cache-dependency-path: software/conflict_analysis/pyproject.toml
 
+      - name: Set up Node.js 24 for the CDP browser harness
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Check the browser harness runtime and syntax
+        run: |
+          node --version
+          node --check production_studio/static/production_studio/studio.js
+          node --check production_studio/browser_tests/cdp_client.mjs
+          node --check production_studio/browser_tests/read_only_smoke.mjs
+
       - name: Install application and test dependencies
         run: python -m pip install --disable-pip-version-check -e ".[dev]"
 
       - name: Check installed dependency consistency
         run: python -m pip check
 
+      - name: Verify exact C0 allowlist and frozen Foundation tree
+        run: |
+          python scripts/verify_production_studio_c_allowlist.py \
+            --base-head 5f73ebf2fd29a161a34ea047c7eead4fb0c582d4 \
+            --base-tree ea5ff9ab510cb76f0c2b1bfda1c02c1278812aae
+          git diff --check 5f73ebf2fd29a161a34ea047c7eead4fb0c582d4...HEAD
+
       - name: Check package and bundled schema integrity
         run: |
-          python -m compileall -q conflict_analysis domain
+          python -m compileall -q conflict_analysis domain production_studio
           python -c "import json; from importlib.resources import files; root = files('domain.services').joinpath('schemas'); schemas = sorted((p for p in root.iterdir() if p.name.endswith('.json')), key=lambda p: p.name); assert schemas, 'no packaged JSON schemas'; [json.loads(p.read_text(encoding='utf-8')) for p in schemas]; print('validated schemas:', ', '.join(p.name for p in schemas))"
 
       - name: Reject migration drift
@@ -95,6 +162,23 @@ jobs:
 
       - name: Run Django deployment-independent checks
         run: python manage.py check
+
+      - name: Locate current Chromium for the real browser gate
+        shell: bash
+        run: |
+          chrome="$(command -v google-chrome || command -v chromium || true)"
+          test -n "$chrome"
+          "$chrome" --version
+          echo "STUDIO_CHROME_BIN=$chrome" >> "$GITHUB_ENV"
+
+      - name: Build the C0 wheel for package-aware acceptance
+        shell: bash
+        run: |
+          wheel_dir="${{ runner.temp }}/studio-c0-wheel"
+          python -m pip wheel --no-deps --wheel-dir "$wheel_dir" .
+          mapfile -t wheels < <(find "$wheel_dir" -maxdepth 1 -type f -name '*.whl' -print)
+          test "${#wheels[@]}" -eq 1
+          echo "STUDIO_C0_WHEEL=${wheels[0]}" >> "$GITHUB_ENV"
 
       - name: Scan forbidden scope and public legacy terminology
         env:
@@ -140,7 +224,73 @@ jobs:
           OPENAI_API_KEY: ""
           HF_HUB_OFFLINE: "1"
           TRANSFORMERS_OFFLINE: "1"
-        run: python -m pytest domain/tests
+        run: python -m pytest domain/tests --junitxml="${{ runner.temp }}/postgresql-domain.xml"
+
+      - name: Verify exact PostgreSQL 18 foundation baseline
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree
+
+          report = Path("${{ runner.temp }}/postgresql-domain.xml")
+          cases = list(ElementTree.parse(report).iter("testcase"))
+          skipped = [case for case in cases if case.find("skipped") is not None]
+          assert len(cases) == 175, f"expected 175 Foundation tests, got {len(cases)}"
+          assert not skipped, "PostgreSQL baseline contains unexpected skips"
+          print("PostgreSQL 18 Foundation baseline: 175 passed, 0 skipped")
+          PY
+
+      - name: Run PostgreSQL C0 HTTP static and claim-contract gates
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: >-
+          python -m pytest
+          production_studio/tests/test_read_only_http.py
+          production_studio/tests/test_read_only_static_contracts.py
+          production_studio/tests/test_claim_boundaries.py
+          --junitxml="${{ runner.temp }}/postgresql-c0-core.xml"
+
+      - name: Run real Chromium pre-authenticated zero-write smoke
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: >-
+          python -m pytest
+          production_studio/tests/test_browser_contract.py
+          --junitxml="${{ runner.temp }}/postgresql-c0-browser.xml"
+
+      - name: Reject skipped C0 acceptance tests
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree
+
+          reports = (
+              Path("${{ runner.temp }}/postgresql-c0-core.xml"),
+              Path("${{ runner.temp }}/postgresql-c0-browser.xml"),
+          )
+          total = 0
+          for report in reports:
+              cases = list(ElementTree.parse(report).iter("testcase"))
+              assert cases, f"no C0 tests in {report.name}"
+              skipped = [case for case in cases if case.find("skipped") is not None]
+              assert not skipped, f"skipped C0 tests in {report.name}"
+              total += len(cases)
+          print(f"PostgreSQL C0 acceptance: {total} passed, 0 skipped")
+          PY
 
       - name: Run SQLite regression suite
         env:
@@ -153,4 +303,122 @@ jobs:
           OPENAI_API_KEY: ""
           HF_HUB_OFFLINE: "1"
           TRANSFORMERS_OFFLINE: "1"
-        run: python -m pytest domain/tests
+        run: python -m pytest domain/tests --junitxml="${{ runner.temp }}/sqlite-domain.xml"
+
+      - name: Verify exact SQLite foundation baseline and named skips
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree
+
+          cases = list(ElementTree.parse(Path("${{ runner.temp }}/sqlite-domain.xml")).iter("testcase"))
+          actual = {
+              (case.attrib["classname"], case.attrib["name"])
+              for case in cases
+              if case.find("skipped") is not None
+          }
+          expected = {
+              ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioBootstrapConcurrencyTests", "test_postgresql_concurrent_bootstrap_has_one_winner_and_one_explicit_conflict"),
+              ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioSuccessorConcurrencyTests", "test_postgresql_competing_successors_have_one_winner_and_preserve_old_pin"),
+              ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioApplicationSuccessorConcurrencyTests", "test_postgresql_application_wrapper_has_one_success_and_one_typed_conflict"),
+              ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioFirstProjectApplicationConcurrencyTests", "test_postgresql_application_bootstrap_has_one_complete_winner_and_no_orphans"),
+              ("domain.tests.test_foundation_studio_package.FoundationStudioCrossPathLockOrderTests", "test_postgresql_import_initial_and_successor_paths_share_one_lock_order"),
+              ("domain.tests.test_postgresql_migrations.PostgreSQLMigrationGateTests", "test_clean_test_database_is_at_every_migration_leaf"),
+          }
+          assert len(cases) == 175, f"expected 175 Foundation tests, got {len(cases)}"
+          assert actual == expected, f"SQLite skip set drifted: {sorted(actual)}"
+          assert len(cases) - len(actual) == 169
+          print("SQLite Foundation baseline: 169 passed, exactly 6 named PostgreSQL-only skips")
+          PY
+
+      - name: Run all C0 tests on SQLite without claiming concurrency
+        env:
+          USE_SQLITE: "true"
+          SQLITE_PATH: ${{ runner.temp }}/conflict-analysis-c0.sqlite3
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: >-
+          python -m pytest production_studio/tests
+          --junitxml="${{ runner.temp }}/sqlite-c0.xml"
+
+      - name: Reject skipped SQLite C0 tests
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree
+
+          cases = list(ElementTree.parse(Path("${{ runner.temp }}/sqlite-c0.xml")).iter("testcase"))
+          assert cases, "no SQLite C0 tests collected"
+          skipped = [case for case in cases if case.find("skipped") is not None]
+          assert not skipped, "SQLite C0 suite contains unexpected skips"
+          print(f"SQLite C0 acceptance: {len(cases)} passed, 0 skipped; no concurrency claim")
+          PY
+
+      - name: Inspect the exact C0 wheel contents
+        shell: bash
+        run: |
+          test -f "$STUDIO_C0_WHEEL"
+          python - "$STUDIO_C0_WHEEL" <<'PY'
+          from pathlib import Path
+          import sys
+          from zipfile import ZipFile
+
+          wheel = Path(sys.argv[1])
+          required = {
+              "production_studio/__init__.py",
+              "production_studio/apps.py",
+              "production_studio/claim_boundaries.py",
+              "production_studio/urls.py",
+              "production_studio/views.py",
+              "production_studio/contracts/read_only_claim_boundaries_v1.ru.json",
+              "production_studio/contracts/read_only_claim_boundaries_v1.ru.json.sha256",
+              "production_studio/templates/production_studio/entry.html",
+              "production_studio/templates/production_studio/definition.html",
+              "production_studio/static/production_studio/studio.css",
+              "production_studio/static/production_studio/studio.js",
+          }
+          forbidden = {
+              "production_studio/models.py",
+              "production_studio/session.py",
+              "production_studio/package.py",
+              "production_studio/validation.py",
+              "production_studio/evidence.py",
+          }
+          with ZipFile(wheel) as archive:
+              names = set(archive.namelist())
+              missing = required - names
+              assert not missing, f"wheel runtime assets missing: {sorted(missing)}"
+              assert not (forbidden & names), f"forbidden C0 modules packaged: {sorted(forbidden & names)}"
+              assert not any(name.startswith("production_studio/migrations/") for name in names)
+              for relative in (
+                  "contracts/read_only_claim_boundaries_v1.ru.json",
+                  "contracts/read_only_claim_boundaries_v1.ru.json.sha256",
+              ):
+                  packaged = archive.read(f"production_studio/{relative}")
+                  source = Path("production_studio", relative).read_bytes()
+                  assert packaged == source, f"wheel bytes differ for {relative}"
+          print(f"verified C0 wheel: {wheel.name}")
+          PY
+
+      - name: Recheck static and claim contracts against the built wheel
+        env:
+          USE_SQLITE: "true"
+          SQLITE_PATH: ${{ runner.temp }}/conflict-analysis-wheel.sqlite3
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: >-
+          python -m pytest
+          production_studio/tests/test_read_only_static_contracts.py
+          production_studio/tests/test_claim_boundaries.py
