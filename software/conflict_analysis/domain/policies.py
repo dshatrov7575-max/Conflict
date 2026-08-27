@@ -463,7 +463,7 @@ class FoundationAuditContext:
     ) -> None:
         if _seal is not _FOUNDATION_AUDIT_CONTEXT_SEAL:
             raise ValueError(
-                "FoundationAuditContext must be created by a trusted server factory."
+                "FoundationAuditContext must be created by the trusted server factory."
             )
         resolved_actor_type = AuditActorType(actor_type)
         if resolved_actor_type not in {
@@ -794,6 +794,29 @@ def _typed_help_topic(reference: Mapping[str, Any]) -> HelpTopic | None:
         return None
 
 
+def validate_project_definition_manifest_policy(
+    manifest: Mapping[str, Any],
+    *,
+    project: Project,
+):
+    """Run the sole typed-manifest validator with exact Foundation Help resolution.
+
+    This policy composition is intentionally non-mutating.  Both HTTP preview
+    and the lifecycle validator call this function so no API-local validator or
+    Help resolver can become a second authority.
+    """
+
+    if not isinstance(project, Project) or project.pk is None:
+        raise ValidationError({"project": "A persisted Project is required for validation."})
+    from .services.project_definitions import validate_project_definition_manifest_v1
+
+    return validate_project_definition_manifest_v1(
+        manifest,
+        project=project,
+        help_topic_resolver=_typed_help_topic,
+    )
+
+
 def _lock_project_then_definition(
     definition: ProjectDefinitionVersion,
 ) -> tuple[Project, ProjectDefinitionVersion]:
@@ -863,10 +886,7 @@ def validate_project_definition(
     checksum behavior so their bytes and receipts are never reinterpreted.
     """
 
-    from .services.project_definitions import (
-        identify_typed_project_definition_manifest,
-        validate_project_definition_manifest_v1,
-    )
+    from .services.project_definitions import identify_typed_project_definition_manifest
 
     _, current = _lock_project_then_definition(definition)
     is_typed = identify_typed_project_definition_manifest(current.manifest)
@@ -895,10 +915,9 @@ def validate_project_definition(
             raise ValidationError(
                 {"publication_status": "Only a DRAFT definition can be validated."}
             )
-        report = validate_project_definition_manifest_v1(
+        report = validate_project_definition_manifest_policy(
             current.manifest,
             project=current.project,
-            help_topic_resolver=_typed_help_topic,
         )
         if not report.valid:
             raise ValidationError(
