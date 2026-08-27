@@ -1016,8 +1016,6 @@ class FoundationStudioApplicationGatewayHttpTests(
                 project_id=self.project.pk,
             )
 
-        # Lengthless Basic and valid-session requests may consume only the
-        # sentinel byte that establishes over-budget input, never the remainder.
         for name, session_csrf in (
             ("basic", False),
             ("valid_session_csrf", csrf_token),
@@ -1039,7 +1037,6 @@ class FoundationStudioApplicationGatewayHttpTests(
                 )
                 self.assertEqual(domain_counts(), baseline)
 
-        # Missing/invalid session CSRF is denied before transport admission.
         for name, token in (
             ("missing_session_csrf", None),
             ("invalid_session_csrf", "0" * 64),
@@ -1054,8 +1051,6 @@ class FoundationStudioApplicationGatewayHttpTests(
                 self.assertEqual(stream.bytes_served, 0)
                 self.assertEqual(domain_counts(), baseline)
 
-        # Media admission and a trustworthy known-over-budget length are both
-        # zero-read failures. No full-body raw identity or receipt is created.
         for name, content_type, content_length in (
             (
                 "malformed_charset",
@@ -1082,8 +1077,6 @@ class FoundationStudioApplicationGatewayHttpTests(
                 self.assertEqual(stream.bytes_served, 0)
                 self.assertEqual(domain_counts(), baseline)
 
-        # A declared/observed length mismatch is also an admission failure and
-        # cannot be converted into a durable malformed-package attempt.
         mismatched_stream = _AdversarialBoundedWSGIInput(
             b"{}",
             max_bytes=FOUNDATION_RAW_JSON_MAX_BYTES,
@@ -1100,10 +1093,6 @@ class FoundationStudioApplicationGatewayHttpTests(
         self.assertEqual(mismatched_stream.bytes_served, 2)
         self.assertEqual(domain_counts(), baseline)
 
-        # Django CSRF consults request.POST for POST requests. Unsupported form
-        # media must fail the non-consuming Foundation header gate before CSRF
-        # can invoke form or multipart parsing. Exercise a real authenticated
-        # session for every token state; the hostile stream raises on any read.
         for content_type in (
             "application/x-www-form-urlencoded",
             "multipart/form-data; boundary=foundation-boundary",
@@ -1640,3 +1629,426 @@ class FoundationStudioApplicationGatewayHttpTests(
         )
         self.assertEqual(forbidden_workspace.status_code, 400, forbidden_workspace.data)
         self.assertEqual(ImportRun.objects.count(), receipt_count)
+
+
+class FoundationStudioValidationPreviewHttpTests(
+    FoundationStudioBootstrapMixin,
+    TestCase,
+):
+    def setUp(self) -> None:
+        self.make_contract()
+        user_model = get_user_model()
+        self.editor_user = user_model.objects.create_user(
+            username="fd01-preview-editor",
+            password="test-password",
+        )
+        self.no_save_user = user_model.objects.create_user(
+            username="fd01-preview-viewer",
+            password="test-password",
+        )
+        self.out_of_scope_user = user_model.objects.create_user(
+            username="fd01-preview-out",
+            password="test-password",
+        )
+        permissions = {
+            permission.codename: permission
+            for permission in Permission.objects.filter(
+                content_type__app_label="domain",
+                content_type__model="projectdefinitionversion",
+            )
+        }
+        self.editor_user.user_permissions.add(
+            permissions["studio_read_definition"],
+            permissions["studio_create_definition_draft"],
+            permissions["studio_clone_definition_draft"],
+            permissions["studio_save_definition_draft"],
+        )
+        self.no_save_user.user_permissions.add(
+            permissions["studio_read_definition"],
+        )
+        self.out_of_scope_user.user_permissions.add(
+            permissions["studio_read_definition"],
+            permissions["studio_save_definition_draft"],
+        )
+        scope = Group.objects.create(name=project_access_group_name(self.project.pk))
+        scope.user_set.add(self.editor_user, self.no_save_user)
+        self.definition = self.draft(code="FD01-VALIDATION-PREVIEW")
+        self.url = (
+            f"/api/foundation/definitions/{self.definition.pk}/validation-preview/"
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(self.editor_user)
+
+    def _body(self, manifest: dict | None = None) -> bytes:
+        selected = self.manifest if manifest is None else manifest
+        return json.dumps(
+            {"manifest": selected},
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
+    @staticmethod
+    def _canonical_bytes(value: object) -> bytes:
+        return json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+
+    @staticmethod
+    def _database_fingerprint() -> str:
+        from django.db import connection
+
+        snapshot: dict[str, object] = {}
+        with connection.cursor() as cursor:
+            for table in sorted(connection.introspection.table_names(cursor)):
+                cursor.execute(f"SELECT * FROM {connection.ops.quote_name(table)}")
+                columns = [item[0] for item in cursor.description or ()]
+                rows = sorted(repr(tuple(row)) for row in cursor.fetchall())
+                snapshot[table] = {"columns": columns, "rows": rows}
+        payload = json.dumps(
+            snapshot,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return hashlib.sha256(payload).hexdigest()
+
+    def _post(self, raw: bytes, **headers):
+        return self.client.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            **headers,
+        )
+
+    def test_validation_preview_valid_and_invalid_candidates_return_exact_contract(self):
+        valid_raw = self._body()
+        valid = self._post(valid_raw)
+        self.assertEqual(valid.status_code, 200, getattr(valid, "data", None))
+        self.assertTrue(valid.content.endswith(b"\n"))
+        self.assertFalse(valid.content.endswith(b"\n\n"))
+        valid_payload = json.loads(valid.content)
+        self.assertEqual(
+            valid_payload["contract"],
+            "PROJECT_DEFINITION_MANIFEST_VALIDATION_V1",
+        )
+        self.assertEqual(valid_payload["contract_version"], "1.0.0")
+        self.assertTrue(valid_payload["valid"])
+        self.assertEqual(valid_payload["diagnostics_total"], 0)
+        self.assertEqual(valid_payload["diagnostics"], [])
+        self.assertEqual(
+            valid_payload["request_sha256"],
+            hashlib.sha256(valid_raw).hexdigest(),
+        )
+        self.assertEqual(valid_payload["request_byte_length"], len(valid_raw))
+        self.assertEqual(
+            valid_payload["candidate_sha256"],
+            hashlib.sha256(self._canonical_bytes(self.manifest)).hexdigest(),
+        )
+        self.assertEqual(
+            valid_payload["manifest_sha256"],
+            self.definition.manifest_hash,
+        )
+        response_sha256 = hashlib.sha256(valid.content).hexdigest()
+        self.assertEqual(valid["ETag"], f'"{response_sha256}"')
+        self.assertEqual(valid["Content-Length"], str(len(valid.content)))
+        self.assertEqual(
+            valid["Content-Type"],
+            "application/json; charset=utf-8",
+        )
+
+        invalid_manifest = copy.deepcopy(self.manifest)
+        invalid_manifest["actors"][0].pop("label")
+        invalid = self._post(self._body(invalid_manifest))
+        self.assertEqual(invalid.status_code, 200)
+        invalid_payload = json.loads(invalid.content)
+        self.assertFalse(invalid_payload["valid"])
+        self.assertGreater(invalid_payload["diagnostics_total"], 0)
+        self.assertIn(
+            "FIELD_REQUIRED",
+            {item["code"] for item in invalid_payload["diagnostics"]},
+        )
+
+    def test_validation_preview_matches_validate_policy_help_resolution_and_order(self):
+        from domain.policies import validate_project_definition_manifest_policy
+
+        candidate = copy.deepcopy(self.manifest)
+        candidate["help_bindings"][0]["topic_sha256"] = "0" * 64
+        direct = validate_project_definition_manifest_policy(
+            candidate,
+            project=self.project,
+        )
+        complete = [item.as_dict() for item in direct.diagnostics]
+        response = self._post(self._body(candidate))
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.content)
+        self.assertFalse(payload["valid"])
+        self.assertEqual(payload["diagnostics_total"], len(complete))
+        self.assertEqual(payload["diagnostics_returned"], len(complete))
+        self.assertEqual(
+            [
+                (item["level"], item["code"], item["path"])
+                for item in payload["diagnostics"]
+            ],
+            [
+                (item["level"], item["code"], item["path"])
+                for item in complete
+            ],
+        )
+        self.assertEqual(
+            payload["diagnostics_sha256"],
+            hashlib.sha256(self._canonical_bytes(complete)).hexdigest(),
+        )
+        policies_source = (
+            Path(__file__).resolve().parents[1] / "policies.py"
+        ).read_text(encoding="utf-8")
+        self.assertGreaterEqual(
+            policies_source.count("validate_project_definition_manifest_policy("),
+            2,
+        )
+        self.assertNotIn(
+            "validate_project_definition_manifest_v1(\n            current.manifest",
+            policies_source,
+        )
+
+    def test_validation_preview_bounds_projection_and_hashes_complete_diagnostics(self):
+        from domain.policies import validate_project_definition_manifest_policy
+
+        candidate = copy.deepcopy(self.manifest)
+        candidate["actors"] = [
+            {
+                "id": str(uuid4()),
+                "code": f"FD01-ACTOR-{index:04d}",
+                "version": "1.0.0",
+            }
+            for index in range(1200)
+        ]
+        direct = validate_project_definition_manifest_policy(
+            candidate,
+            project=self.project,
+        )
+        complete = [item.as_dict() for item in direct.diagnostics]
+        self.assertGreater(len(complete), 1000)
+        response = self._post(self._body(candidate))
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.content)
+        self.assertEqual(payload["diagnostics_total"], len(complete))
+        self.assertEqual(payload["diagnostics_returned"], 1000)
+        self.assertTrue(payload["diagnostics_truncated"])
+        self.assertEqual(len(payload["diagnostics"]), 1000)
+        self.assertEqual(
+            payload["diagnostics_sha256"],
+            hashlib.sha256(self._canonical_bytes(complete)).hexdigest(),
+        )
+        for item in payload["diagnostics"]:
+            self.assertLessEqual(len(item["path"].encode("utf-8")), 512)
+            self.assertLessEqual(len(item["message"].encode("utf-8")), 512)
+            self.assertRegex(item["path_sha256"], r"^[0-9a-f]{64}$")
+            self.assertRegex(item["message_sha256"], r"^[0-9a-f]{64}$")
+
+    def test_validation_preview_retry_is_byte_identical_and_changes_no_row(self):
+        raw = self._body()
+        before = self._database_fingerprint()
+        first = self._post(raw)
+        middle = self._database_fingerprint()
+        second = self._post(bytes(bytearray(raw)))
+        after = self._database_fingerprint()
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(first.content, second.content)
+        self.assertEqual(first["ETag"], second["ETag"])
+        self.assertEqual(first["Content-Length"], second["Content-Length"])
+        self.assertEqual(before, middle)
+        self.assertEqual(middle, after)
+
+    def test_validation_preview_auth_scope_and_capability_precede_capture(self):
+        raw = self._body()
+        with patch(
+            "domain.api.studio_definitions.capture_http_json",
+            side_effect=AssertionError("body capture is forbidden"),
+        ) as capture:
+            self.client.force_authenticate(self.out_of_scope_user)
+            inaccessible = self._post(raw)
+            self.assertEqual(inaccessible.status_code, 404)
+            capture.assert_not_called()
+
+        with patch(
+            "domain.api.studio_definitions.capture_http_json",
+            side_effect=AssertionError("body capture is forbidden"),
+        ) as capture:
+            self.client.force_authenticate(self.no_save_user)
+            denied = self._post(raw)
+            self.assertEqual(denied.status_code, 403)
+            capture.assert_not_called()
+
+        anonymous = APIClient()
+        self.assertEqual(
+            anonymous.generic(
+                "POST",
+                self.url,
+                raw,
+                content_type="application/json",
+            ).status_code,
+            401,
+        )
+
+    def test_validation_preview_session_csrf_precedes_capture_and_basic_matches_contract(self):
+        session = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(
+            session.login(
+                username="fd01-preview-editor",
+                password="test-password",
+            )
+        )
+        open_url = f"/api/foundation/definitions/{self.definition.pk}/"
+        self.assertEqual(session.get(open_url).status_code, 200)
+        csrf_token = session.cookies["csrftoken"].value
+        raw = self._body()
+
+        with patch(
+            "domain.api.studio_definitions.capture_http_json",
+            side_effect=AssertionError("body capture is forbidden"),
+        ) as capture:
+            denied = session.generic(
+                "POST",
+                self.url,
+                raw,
+                content_type="application/json",
+            )
+            self.assertEqual(denied.status_code, 403)
+            capture.assert_not_called()
+
+        session_response = session.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(session_response.status_code, 200)
+
+        basic = APIClient()
+        basic.credentials(
+            HTTP_AUTHORIZATION="Basic "
+            + base64.b64encode(
+                b"fd01-preview-editor:test-password"
+            ).decode("ascii")
+        )
+        basic_response = basic.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+        )
+        self.assertEqual(basic_response.status_code, 200)
+        self.assertEqual(basic_response.content, session_response.content)
+        self.assertEqual(basic_response["ETag"], session_response["ETag"])
+
+    def test_validation_preview_reuses_all_raw_json_ingress_vectors(self):
+        manifest_text = json.dumps(
+            self.manifest,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        valid = ('{"manifest":' + manifest_text + "}").encode("utf-8")
+        duplicate = (
+            '{"manifest":'
+            + manifest_text
+            + ',"manifest":'
+            + manifest_text
+            + "}"
+        ).encode("utf-8")
+        deep = (
+            b'{"manifest":{"deep":'
+            + b"[" * (FOUNDATION_RAW_JSON_MAX_NESTING + 1)
+            + b"0"
+            + b"]" * (FOUNDATION_RAW_JSON_MAX_NESTING + 1)
+            + b"}}"
+        )
+        oversized = (
+            b'{"manifest":{"padding":"'
+            + b"x" * FOUNDATION_RAW_JSON_MAX_BYTES
+            + b'"}}'
+        )
+        vectors = (
+            (duplicate, "RAW_JSON_DUPLICATE_KEY"),
+            (b"\xef\xbb\xbf" + valid, "RAW_JSON_BOM_FORBIDDEN"),
+            (valid[:-1] + b"\xff}", "RAW_JSON_INVALID_UTF8"),
+            (valid.replace(b'"order":0', b'"order":NaN', 1), "RAW_JSON_NON_FINITE_NUMBER"),
+            (valid + b"{}", "RAW_JSON_TRAILING_DOCUMENT"),
+            (deep, "RAW_JSON_NESTING_EXCEEDED"),
+            (oversized, "RAW_JSON_BYTE_BUDGET_EXCEEDED"),
+        )
+        before = self._database_fingerprint()
+        for raw, code in vectors:
+            with self.subTest(code=code):
+                response = self._post(raw)
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.data["code"], code)
+        invalid_media = self.client.generic(
+            "POST",
+            self.url,
+            valid,
+            content_type="text/plain",
+        )
+        self.assertEqual(invalid_media.status_code, 400)
+        self.assertEqual(
+            invalid_media.data["code"],
+            "RAW_JSON_MEDIA_TYPE_UNSUPPORTED",
+        )
+        self.assertEqual(self._database_fingerprint(), before)
+
+    def test_validation_preview_rejects_nonexact_envelope_query_headers_and_non_draft(self):
+        raw = self._body()
+        exact_invalid = (
+            b"{}",
+            json.dumps(
+                {"manifest": self.manifest, "extra": True},
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ).encode("utf-8"),
+        )
+        for body in exact_invalid:
+            response = self._post(body)
+            self.assertEqual(response.status_code, 400)
+            self.assertEqual(
+                response.data["code"],
+                "VALIDATION_PREVIEW_ENVELOPE_INVALID",
+            )
+
+        metadata_variants = (
+            (self.url + "?unexpected=1", {}),
+            (self.url, {"HTTP_IF_MATCH": '"' + "0" * 64 + '"'}),
+            (self.url, {"HTTP_IDEMPOTENCY_KEY": str(uuid4())}),
+            (self.url, {"HTTP_X_ACTOR": "spoof"}),
+        )
+        for url, headers in metadata_variants:
+            with self.subTest(url=url, headers=headers):
+                response = self.client.generic(
+                    "POST",
+                    url,
+                    raw,
+                    content_type="application/json",
+                    **headers,
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(
+                    response.data["code"],
+                    "VALIDATION_PREVIEW_ENVELOPE_INVALID",
+                )
+
+        self.assertEqual(self.client.get(self.url).status_code, 405)
+
+        validated = validate_project_definition(
+            self.definition,
+            actor_identifier="fd01-preview-publisher",
+            principal=self.publisher(actor="fd01-preview-publisher"),
+        )
+        self.assertEqual(validated.publication_status, PublicationStatus.VALIDATED)
+        response = self._post(raw)
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.data["code"], "DEFINITION_NOT_DRAFT")
