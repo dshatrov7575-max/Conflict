@@ -1,0 +1,96 @@
+name: V4 Weekly Red-Team V1 Immutable Exposure
+
+on:
+  push:
+    branches:
+      - artifacts/v4-weekly-redteam-v1-exposure
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-expose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact artifact commit
+        uses: actions/checkout@v4
+
+      - name: Reconstruct and verify frozen distribution bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import base64
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          root = Path('.artifact-src/v4-weekly-redteam/v1/chunks')
+          chunk_paths = sorted(root.glob('part*.b64'))
+          assert len(chunk_paths) == 8, chunk_paths
+          encoded = ''.join(path.read_text(encoding='ascii') for path in chunk_paths)
+          assert len(encoded) == 14352, len(encoded)
+          payload = base64.b64decode(encoded, validate=True)
+          expected_zip_sha = 'f9ca9347400b48dc549a3be2280c2995b35611e0c5a4739fdc5ea3c2261acfb0'
+          actual_zip_sha = hashlib.sha256(payload).hexdigest()
+          assert len(payload) == 10762, len(payload)
+          assert actual_zip_sha == expected_zip_sha, actual_zip_sha
+
+          dist = Path('dist')
+          extracted = dist / 'extracted'
+          extracted.mkdir(parents=True, exist_ok=True)
+          zip_path = dist / 'V4_WEEKLY_REDTEAM_DISTRIBUTION_V1.zip'
+          zip_path.write_bytes(payload)
+
+          expected = {
+              'V4_WEEKLY_ASSIGNMENT_RECEIPT_R1_V1.json': ('7ce79231691a692cb6c9d1b4363c293c71847274901dcd0d96e9e8f6c5829ed2', 650),
+              'V4_WEEKLY_ASSIGNMENT_RECEIPT_R2_V1.json': ('64012f7197dfd4315f8746fb60692e1cff24eb6661b1f111cf09032d0fd9fd70', 650),
+              'V4_WEEKLY_ASSIGNMENT_RECEIPT_R3_V1.json': ('84b6d2b7bcc484e94d9a6ce471d71ae4ec4600ba47fac91c13b99f7f890a67ca', 650),
+              'V4_WEEKLY_CHECKPOINT_PACKET_V1.md': ('b017d471dbcf3ce0572854bce52005a48c3fc46782903eac02a22159944afc6e', 12291),
+              'V4_WEEKLY_REVIEW_BINDING_RECEIPT_V1.json': ('43716291c619bdba99112951bd097df24c28b3836a5d15893c1fec2ca4622b20', 710),
+              'V4_WEEKLY_REVIEW_INSTRUCTION_V1.md': ('019c18634ae08c0ea3e3349247952aa378a873f60141ca3c39b9194b352d6b85', 3589),
+              'V4_WEEKLY_REVIEW_MANIFEST_V1.txt': ('81556f464cf0c6cfb751b5cc1392debf70559dc28919f190e97b783d897734ce', 1148),
+          }
+          observed = {}
+          with ZipFile(zip_path) as archive:
+              members = archive.infolist()
+              assert len(members) == 7, len(members)
+              names = [Path(info.filename).name for info in members]
+              assert sorted(names) == sorted(expected), names
+              for info in members:
+                  name = Path(info.filename).name
+                  data = archive.read(info.filename)
+                  digest = hashlib.sha256(data).hexdigest()
+                  expected_sha, expected_size = expected[name]
+                  assert len(data) == expected_size, (name, len(data))
+                  assert digest == expected_sha, (name, digest)
+                  (extracted / name).write_bytes(data)
+                  observed[name] = {'bytes': len(data), 'sha256': digest}
+
+          receipt = {
+              'artifact_id': 'V4_WEEKLY_REDTEAM_GITHUB_EXPOSURE_V1',
+              'source_commit': os.environ.get('GITHUB_SHA', ''),
+              'distribution_zip': {'bytes': len(payload), 'sha256': actual_zip_sha},
+              'members': observed,
+              'verification': 'PASS',
+          }
+          (dist / 'VERIFICATION_RECEIPT_V1.json').write_text(
+              json.dumps(receipt, ensure_ascii=False, indent=2) + '\n',
+              encoding='utf-8',
+              newline='\n',
+          )
+          print(json.dumps(receipt, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Upload immutable verified bytes
+        uses: actions/upload-artifact@v4
+        with:
+          name: V4_WEEKLY_REDTEAM_DISTRIBUTION_V1
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
