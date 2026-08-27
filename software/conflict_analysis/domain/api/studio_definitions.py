@@ -8,6 +8,7 @@ public adapter never accepts a serialized Studio role or SERVICE principal.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from typing import Any, Callable, Mapping
 from uuid import UUID
@@ -42,6 +43,7 @@ from domain.policies import (
     require_studio_capability,
     studio_principal_from_user,
     validate_project_definition,
+    validate_project_definition_manifest_policy,
 )
 from domain.services.help_topics import HelpTopicResolutionError, resolve_help_topic
 from domain.services.foundation_packages import (
@@ -173,9 +175,18 @@ def _definition_payload(definition: ProjectDefinitionVersion) -> dict[str, Any]:
     }
 
 
+class ValidationPreviewEnvelopeError(ValidationError):
+    """Fixed public contract error for FD01 envelope/header/query drift."""
+
+
 def _error_payload(exc: Exception) -> tuple[dict[str, Any], int]:
     if isinstance(exc, RawJSONError):
         return dict(exc.as_dict()), HTTP_400_BAD_REQUEST
+    if isinstance(exc, ValidationPreviewEnvelopeError):
+        return {
+            "code": "VALIDATION_PREVIEW_ENVELOPE_INVALID",
+            "errors": ["Validation preview requires the exact FD01 request contract."],
+        }, HTTP_400_BAD_REQUEST
     if isinstance(exc, PermissionDenied):
         return {
             "code": "STUDIO_CAPABILITY_DENIED",
@@ -457,6 +468,110 @@ def _receipt_payload(receipt_id: object) -> dict[str, Any]:
     }
 
 
+_VALIDATION_PREVIEW_MAX_DIAGNOSTICS = 1000
+_VALIDATION_PREVIEW_TEXT_MAX_BYTES = 512
+_VALIDATION_PREVIEW_TRUNCATED_TEXT = "<TRUNCATED>"
+
+
+def _canonical_json_bytes(value: Any) -> bytes:
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+
+
+def _sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
+
+
+def _sha256_text(value: str) -> str:
+    return _sha256_bytes(value.encode("utf-8"))
+
+
+def _bounded_preview_text(value: str) -> str:
+    return (
+        value
+        if len(value.encode("utf-8")) <= _VALIDATION_PREVIEW_TEXT_MAX_BYTES
+        else _VALIDATION_PREVIEW_TRUNCATED_TEXT
+    )
+
+
+def _validation_preview_metadata_admission(request: Request) -> None:
+    if (
+        request.query_params
+        or "HTTP_IF_MATCH" in request.META
+        or "HTTP_IDEMPOTENCY_KEY" in request.META
+        or any(name in request.META for name in _SPOOF_HEADERS)
+    ):
+        raise ValidationPreviewEnvelopeError(
+            {"request": "Query, authority, If-Match and Idempotency-Key are forbidden."}
+        )
+
+
+def _validation_preview_response(
+    *,
+    definition: ProjectDefinitionVersion,
+    manifest: Mapping[str, Any],
+    request_sha256: str,
+    request_byte_length: int,
+    report: Any,
+) -> HttpResponse:
+    complete_diagnostics = [item.as_dict() for item in report.diagnostics]
+    diagnostics_sha256 = _sha256_bytes(_canonical_json_bytes(complete_diagnostics))
+    projected: list[dict[str, Any]] = []
+    for ordinal, diagnostic in enumerate(complete_diagnostics[:_VALIDATION_PREVIEW_MAX_DIAGNOSTICS]):
+        path = str(diagnostic["path"])
+        message = str(diagnostic["message"])
+        projected.append(
+            {
+                "ordinal": ordinal,
+                "level": str(diagnostic["level"]),
+                "code": str(diagnostic["code"]),
+                "path": _bounded_preview_text(path),
+                "path_sha256": _sha256_text(path),
+                "message": _bounded_preview_text(message),
+                "message_sha256": _sha256_text(message),
+            }
+        )
+    candidate_sha256 = _sha256_bytes(_canonical_json_bytes(manifest))
+    response_core: dict[str, Any] = {
+        "contract": "PROJECT_DEFINITION_MANIFEST_VALIDATION_V1",
+        "contract_version": "1.0.0",
+        "schema_id": str(report.schema_id),
+        "schema_version": str(report.schema_version),
+        "definition_id": str(definition.pk),
+        "project_id": str(definition.project_id),
+        "base_manifest_sha256": definition.manifest_hash,
+        "request_sha256": request_sha256,
+        "request_byte_length": request_byte_length,
+        "candidate_sha256": candidate_sha256,
+        "manifest_sha256": str(report.manifest_sha256),
+        "valid": bool(report.valid),
+        "diagnostics_total": len(complete_diagnostics),
+        "diagnostics_returned": len(projected),
+        "diagnostics_truncated": len(complete_diagnostics) > len(projected),
+        "diagnostics_sha256": diagnostics_sha256,
+        "diagnostics": projected,
+    }
+    validation_report_sha256 = _sha256_bytes(_canonical_json_bytes(response_core))
+    payload = {**response_core, "validation_report_sha256": validation_report_sha256}
+    response_bytes = _canonical_json_bytes(payload) + b"\n"
+    representation_sha256 = _sha256_bytes(response_bytes)
+    response = HttpResponse(
+        response_bytes,
+        status=HTTP_200_OK,
+        content_type="application/json; charset=utf-8",
+    )
+    response["Content-Length"] = str(len(response_bytes))
+    response["ETag"] = f'"{representation_sha256}"'
+    response["Cache-Control"] = "no-store"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
 @api_view(["POST"])
 @authentication_classes(_PUBLIC_AUTHENTICATION)
 @permission_classes([IsAuthenticated])
@@ -555,6 +670,62 @@ def save_definition_draft(request: Request, definition_id: object) -> Response:
     if response.status_code == HTTP_200_OK:
         return _with_etag(response, str(response.data["manifest_hash"]))
     return response
+
+
+@api_view(["POST"])
+@authentication_classes(_PUBLIC_AUTHENTICATION)
+@permission_classes([IsAuthenticated])
+def validation_preview(
+    request: Request,
+    definition_id: object,
+) -> Response | HttpResponse:
+    try:
+        definition = _definition_or_404(request.user, definition_id)
+        principal = _principal(request)
+        require_studio_capability(principal, StudioCapability.DRAFT_SAVE)
+        if definition.publication_status != "DRAFT":
+            raise FoundationStudioApplicationConflict(
+                "DEFINITION_NOT_DRAFT",
+                "Validation preview accepts an exact DRAFT definition only.",
+            )
+        _validation_preview_metadata_admission(request)
+        captured = capture_http_json(request)
+        document = read_http_json(request)
+        payload = dict(document.value)
+        if (
+            set(payload) != {"manifest"}
+            or not isinstance(payload["manifest"], Mapping)
+            or _SPOOF_FIELDS.intersection(payload["manifest"])
+        ):
+            raise ValidationPreviewEnvelopeError(
+                {"body": "Exactly one manifest object is required."}
+            )
+        report = validate_project_definition_manifest_policy(
+            payload["manifest"],
+            project=definition.project,
+        )
+        return _validation_preview_response(
+            definition=definition,
+            manifest=payload["manifest"],
+            request_sha256=captured.identity.sha256,
+            request_byte_length=captured.identity.byte_length,
+            report=report,
+        )
+    except (Http404, ObjectDoesNotExist):
+        return Response(
+            {"code": "STUDIO_RESOURCE_NOT_FOUND", "errors": ["Resource not found."]},
+            status=HTTP_404_NOT_FOUND,
+        )
+    except (
+        PermissionDenied,
+        ProjectDefinitionDraftConflict,
+        RawJSONError,
+        ValidationError,
+        ValueError,
+        TypeError,
+    ) as exc:
+        error, status = _error_payload(exc)
+        return Response(error, status=status)
 
 
 @api_view(["POST"])
