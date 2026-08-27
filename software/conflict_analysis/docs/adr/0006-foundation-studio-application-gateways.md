@@ -140,3 +140,47 @@ view authority without session CSRF.
 Acceptance preserves all accepted FSA tests and adds SQLite and PostgreSQL 18
 route, lifecycle, conflict, raw-byte, receipt, rollback and concurrency gates.
 `makemigrations --check --dry-run` must report no changes.
+
+## FD01 structured validation preview
+
+`CA-SUITE-I1-FOUNDATION-FD01-001` adds one Foundation-owned non-mutating route:
+
+```text
+POST /api/foundation/definitions/<definition_id>/validation-preview/
+body = {"manifest": <one JSON object>}
+```
+
+It is available only for an exact accessible DRAFT and requires HUMAN
+`DRAFT_SAVE`. Query parameters, `If-Match`, `Idempotency-Key` and public authority
+headers are forbidden. The existing 2 MiB raw HTTP ingress limit, nesting limit,
+strict UTF-8 JSON parser, real session CSRF, indistinguishable object-scope 404 and
+capability ordering are reused rather than copied.
+
+The sole semantic composition is
+`validate_project_definition_manifest_policy()`. That policy calls the existing
+`validate_project_definition_manifest_v1()` with the existing exact published
+Help resolver. The HTTP preview and the typed DRAFT -> VALIDATED lifecycle service
+both use the same public policy helper. `domain/services/project_definitions.py`
+remains frozen and is still the only manifest validator; the API has no schema,
+Help or diagnostic-ordering implementation of its own.
+
+Valid and semantic-invalid candidates both return HTTP 200 using canonical UTF-8
+JSON plus exactly one terminal LF. The `PROJECT_DEFINITION_MANIFEST_VALIDATION_V1`
+representation binds the exact request-byte SHA/length, canonical candidate hash,
+base and candidate manifest identities, full ordered diagnostic hash, bounded
+projection, report hash and an ETag over the exact response bytes. The projection
+returns at most 1000 diagnostics. Path and display message are bounded to 512 UTF-8
+bytes; any truncation uses fixed `<TRUNCATED>` while preserving the SHA-256 of the
+untruncated text. Diagnostic identity remains `(diagnostics_sha256, ordinal)` and
+only the stable diagnostic `code` is semantic UI branch authority.
+
+Preview has a strict all-table zero-write contract: no definition lifecycle or
+hash/timestamp update, no `AuditEvent`, no session mutation, no auth-row update and
+no receipt. Repeating byte-identical input against unchanged definition/Project/
+Help snapshots must return byte-identical body and ETag. SQLite verifies sequential
+semantics only; PostgreSQL 18 is the authoritative database regression target.
+
+FD01 changes no model, enum, permission, schema or migration. It does not authorize
+FD05, C1, any SERVICE substitution for HUMAN authoring, scalar Power, formula,
+prediction, recommendation, ranking or risk output. The accepted C0
+`production_studio` subtree remains byte-for-byte frozen.
