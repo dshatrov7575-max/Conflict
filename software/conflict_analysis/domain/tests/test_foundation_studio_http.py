@@ -171,14 +171,20 @@ class FoundationStudioRawIngressTests(TestCase):
                 self.manifest, ensure_ascii=False, separators=(",", ":")
             )
         return (
-            '{"code":"RAW-DRAFT","version":"1.0.0","manifest":'
+            '{"id":"'
+            + str(uuid4())
+            + '","code":"RAW-DRAFT","version":"1.0.0","manifest":'
             + manifest_text
-            + "}"
+            + ',"semantic_version":"1.0.0","construct_version":"1.0.0"}'
         ).encode("utf-8")
 
     def _post_raw(self, payload: bytes, *, content_type: str = "application/json"):
         return self.client.generic(
-            "POST", self.create_url, payload, content_type=content_type
+            "POST",
+            self.create_url,
+            payload,
+            content_type=content_type,
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
         )
 
     def test_raw_ingress_has_one_authoritative_service_module(self):
@@ -249,6 +255,11 @@ class FoundationStudioRawIngressTests(TestCase):
             "trailing": self._create_body() + b"{}",
             "numeric_decimal": self._create_body(numeric_decimal),
             "non_object": b"[]",
+            "lone_surrogate": self._create_body().replace(
+                b'"RAW-DRAFT"',
+                b'"RAW-\\ud800-DRAFT"',
+                1,
+            ),
             "wrong_exact_envelope": self._create_body(
                 manifest_text.replace(
                     '"format":"conflict-analysis-project-definition"',
@@ -261,6 +272,11 @@ class FoundationStudioRawIngressTests(TestCase):
             with self.subTest(name=name):
                 response = self._post_raw(payload)
                 self.assertEqual(response.status_code, 400, response.data)
+                if name == "lone_surrogate":
+                    self.assertEqual(
+                        response.data["code"],
+                        "AUTHORING_ENVELOPE_INVALID",
+                    )
                 self.assertFalse(ProjectDefinitionVersion.objects.exists())
 
         for content_type in (
@@ -371,7 +387,14 @@ class FoundationStudioRawIngressTests(TestCase):
             '"short"',
         )
         for validator in validators:
-            kwargs = {"HTTP_IF_MATCH": validator} if validator is not None else {}
+            kwargs = {
+                "HTTP_IDEMPOTENCY_KEY": str(uuid4()),
+                **(
+                    {"HTTP_IF_MATCH": validator}
+                    if validator is not None
+                    else {}
+                ),
+            }
             response = self.client.generic(
                 "PUT", url, body, content_type="application/json", **kwargs
             )
@@ -393,6 +416,7 @@ class FoundationStudioRawIngressTests(TestCase):
             spoofed_body,
             content_type="application/json",
             HTTP_IF_MATCH=f'"{definition.manifest_hash}"',
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
         )
         self.assertEqual(response.status_code, 400, response.data)
         definition.refresh_from_db()
@@ -405,20 +429,60 @@ class FoundationStudioRawIngressTests(TestCase):
             body,
             content_type="application/json",
             HTTP_IF_MATCH=f'"{stale}"',
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
         )
         self.assertEqual(response.status_code, 409, response.data)
         definition.refresh_from_db()
         self.assertEqual(definition.manifest, self.manifest)
 
+        save_operation_id = uuid4()
         response = self.client.generic(
             "PUT",
             url,
             body,
             content_type="application/json",
             HTTP_IF_MATCH=f'"{definition.manifest_hash}"',
+            HTTP_IDEMPOTENCY_KEY=str(save_operation_id),
         )
         self.assertEqual(response.status_code, 200, response.data)
         self.assertEqual(response["ETag"], f'"{response.data["manifest_hash"]}"')
+        self.assertEqual(response["X-Foundation-Operation-Replayed"], "false")
+        self.assertEqual(
+            response.data["write_receipt"]["operation_id"],
+            str(save_operation_id),
+        )
+        receipt = response.data["write_receipt"]
+        receipt_sha256 = response["X-Foundation-Receipt-SHA256"]
+        etag = response["ETag"]
+        self.assertEqual(AuditEvent.objects.filter(pk=save_operation_id).count(), 1)
+
+        basic = APIClient(enforce_csrf_checks=True)
+        basic_credentials = base64.b64encode(
+            f"{self.editor_user.username}:test-password".encode("utf-8")
+        ).decode("ascii")
+        password_bytes = self.editor_user.password
+        replay = basic.generic(
+            "PUT",
+            url,
+            body,
+            content_type="application/json",
+            HTTP_IF_MATCH=f'"{definition.manifest_hash}"',
+            HTTP_IDEMPOTENCY_KEY=str(save_operation_id),
+            HTTP_AUTHORIZATION=f"Basic {basic_credentials}",
+        )
+        self.assertEqual(replay.status_code, 200, replay.data)
+        self.assertEqual(
+            set(replay.data),
+            {"code", "write_receipt"},
+        )
+        self.assertEqual(replay.data["code"], "WRITE_OPERATION_RECONCILED")
+        self.assertEqual(replay.data["write_receipt"], receipt)
+        self.assertEqual(replay["X-Foundation-Operation-Replayed"], "true")
+        self.assertEqual(replay["X-Foundation-Receipt-SHA256"], receipt_sha256)
+        self.assertEqual(replay["ETag"], etag)
+        self.assertEqual(AuditEvent.objects.filter(pk=save_operation_id).count(), 1)
+        self.editor_user.refresh_from_db()
+        self.assertEqual(self.editor_user.password, password_bytes)
 
     def test_package_bytes_path_and_mapping_share_one_strict_parser(self):
         definition = create_project_definition_draft(
@@ -850,7 +914,13 @@ class FoundationStudioRawIngressTests(TestCase):
             },
         }
         url = "/api/foundation/projects/bootstrap-first-draft/"
-        created = self.client.post(url, payload, format="json")
+        operation_id = uuid4()
+        created = self.client.post(
+            url,
+            payload,
+            format="json",
+            HTTP_IDEMPOTENCY_KEY=str(operation_id),
+        )
         self.assertEqual(created.status_code, 201, created.data)
         self.assertEqual(created.data["project"]["id"], str(project_id))
         self.assertEqual(created.data["definition"]["id"], str(definition_id))
@@ -864,10 +934,25 @@ class FoundationStudioRawIngressTests(TestCase):
             ).exists()
         )
         audit = AuditEvent.objects.get(pk=created.data["audit_event_id"])
+        self.assertEqual(audit.pk, operation_id)
         self.assertEqual(audit.actor_identifier, f"django-user:{self.editor_user.pk}")
         self.assertEqual(audit.action, "CREATE")
+        self.assertEqual(
+            created.data["write_receipt"]["operation_id"],
+            str(operation_id),
+        )
+        self.assertEqual(created["X-Foundation-Operation-Replayed"], "false")
+        self.assertEqual(
+            created["ETag"],
+            f'"{created.data["definition"]["manifest_hash"]}"',
+        )
 
-        repeated = self.client.post(url, payload, format="json")
+        repeated = self.client.post(
+            url,
+            payload,
+            format="json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+        )
         self.assertEqual(repeated.status_code, 409, repeated.data)
         self.assertEqual(repeated.data["code"], "PROJECT_ID_CONFLICT")
         self.assertEqual(Project.objects.filter(pk=project_id).count(), 1)
@@ -1405,6 +1490,7 @@ class FoundationStudioApplicationGatewayHttpTests(
                     "/api/foundation/projects/bootstrap-first-draft/",
                     payload,
                     format="json",
+                    HTTP_IDEMPOTENCY_KEY=str(uuid4()),
                 )
                 self.assertEqual(response.status_code, 400, response.data)
                 self.assertEqual(Project.objects.count(), baseline["projects"])
@@ -1424,6 +1510,32 @@ class FoundationStudioApplicationGatewayHttpTests(
                         name=project_access_group_name(project_id)
                     ).exists()
                 )
+
+        surrogate_payload = copy.deepcopy(base)
+        surrogate_payload["project"]["metadata"] = {"nested": ["\ud800"]}
+        surrogate_response = self.client.generic(
+            "POST",
+            "/api/foundation/projects/bootstrap-first-draft/",
+            json.dumps(
+                surrogate_payload,
+                ensure_ascii=True,
+                separators=(",", ":"),
+            ).encode("utf-8"),
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+        )
+        self.assertEqual(surrogate_response.status_code, 400, surrogate_response.data)
+        self.assertEqual(
+            surrogate_response.data["code"],
+            "AUTHORING_ENVELOPE_INVALID",
+        )
+        self.assertEqual(Project.objects.count(), baseline["projects"])
+        self.assertEqual(Group.objects.count(), baseline["groups"])
+        self.assertEqual(
+            ProjectDefinitionVersion.objects.count(),
+            baseline["definitions"],
+        )
+        self.assertEqual(AuditEvent.objects.count(), baseline["audits"])
 
     def test_retired_http_get_exact_dto_etag_and_lifecycle_mutation_denial(self):
         now = timezone.now()
@@ -1477,8 +1589,10 @@ class FoundationStudioApplicationGatewayHttpTests(
             {"manifest": changed},
             format="json",
             HTTP_IF_MATCH=f'"{manifest_hash}"',
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
         )
-        self.assertEqual(denied.status_code, 400, denied.data)
+        self.assertEqual(denied.status_code, 409, denied.data)
+        self.assertEqual(denied.data["code"], "DEFINITION_NOT_DRAFT")
         retired.refresh_from_db()
         self.assertEqual(retired.publication_status, PublicationStatus.RETIRED)
         self.assertEqual(retired.manifest_hash, manifest_hash)

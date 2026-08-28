@@ -68,6 +68,16 @@ FIXTURE_PATH = (
     / "foundation_studio_definition_vectors_v1.json"
 )
 
+# Shared by the FD05 write-reconciliation suite.  These are the three atomic
+# boundary probes accepted for every audited HUMAN mutation: a fault after the
+# domain change, immediately before the immutable audit append, and immediately
+# after that append must all leave the database at its pre-operation snapshot.
+FD05_HUMAN_WRITE_FAILURE_STAGES = (
+    "after_domain_mutation",
+    "before_audit_insert",
+    "after_audit_insert",
+)
+
 
 def manifest_vector() -> dict:
     fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
@@ -698,11 +708,34 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
         self.create_url = f"/api/foundation/projects/{self.project.pk}/definitions/"
 
     def test_exact_401_403_and_object_scoped_404(self):
-        payload = {"code": "HTTP-DRAFT", "version": "1.0.0", "manifest": self.manifest}
-        self.assertEqual(self.client.post(self.create_url, payload, format="json").status_code, 401)
+        payload = {
+            "id": str(uuid4()),
+            "code": "HTTP-DRAFT",
+            "version": "1.0.0",
+            "manifest": self.manifest,
+            "semantic_version": "1.0.0",
+            "construct_version": "1.0.0",
+        }
+        self.assertEqual(
+            self.client.post(
+                self.create_url,
+                payload,
+                format="json",
+                HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+            ).status_code,
+            401,
+        )
 
         self.client.force_authenticate(self.player)
-        self.assertEqual(self.client.post(self.create_url, payload, format="json").status_code, 403)
+        self.assertEqual(
+            self.client.post(
+                self.create_url,
+                payload,
+                format="json",
+                HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+            ).status_code,
+            403,
+        )
 
         definition = create_project_definition_draft(
             project=self.project,
@@ -748,11 +781,15 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
             self.client.post(
                 f"/api/foundation/projects/{other_project.pk}/definitions/",
                 {
+                    "id": str(uuid4()),
                     "code": "CROSS-PROJECT-CREATE",
                     "version": "2.0.0",
                     "manifest": other_manifest,
+                    "semantic_version": "1.0.0",
+                    "construct_version": "1.0.0",
                 },
                 format="json",
+                HTTP_IDEMPOTENCY_KEY=str(uuid4()),
             ).status_code,
             404,
         )
@@ -767,22 +804,46 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
         )
         definition_url = f"/api/foundation/definitions/{definition.pk}/"
         create_payload = {
+            "id": str(uuid4()),
             "code": "HTTP-ROLE-MATRIX-NEW",
             "version": "2.0.0",
             "manifest": self.manifest,
+            "semantic_version": "1.0.0",
+            "construct_version": "1.0.0",
         }
         mutation_count = ProjectDefinitionVersion.objects.count()
 
         cases = (
             (self.player, "GET", definition_url, None, {}, 403),
-            (self.player, "POST", self.create_url, create_payload, {}, 403),
-            (self.viewer_user, "POST", self.create_url, create_payload, {}, 403),
+            (
+                self.player,
+                "POST",
+                self.create_url,
+                create_payload,
+                {"HTTP_IDEMPOTENCY_KEY": str(uuid4())},
+                403,
+            ),
+            (
+                self.viewer_user,
+                "POST",
+                self.create_url,
+                create_payload,
+                {"HTTP_IDEMPOTENCY_KEY": str(uuid4())},
+                403,
+            ),
             (
                 self.viewer_user,
                 "POST",
                 f"{definition_url}clone/",
-                {"code": "VIEWER-CLONE", "version": "3.0.0"},
-                {},
+                {
+                    "id": str(uuid4()),
+                    "code": "VIEWER-CLONE",
+                    "version": "3.0.0",
+                },
+                {
+                    "HTTP_IDEMPOTENCY_KEY": str(uuid4()),
+                    "HTTP_IF_MATCH": f'"{definition.manifest_hash}"',
+                },
                 403,
             ),
             (
@@ -790,10 +851,23 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
                 "PUT",
                 f"{definition_url}draft/",
                 {"manifest": self.manifest},
-                {"HTTP_IF_MATCH": f'"{definition.manifest_hash}"'},
+                {
+                    "HTTP_IDEMPOTENCY_KEY": str(uuid4()),
+                    "HTTP_IF_MATCH": f'"{definition.manifest_hash}"',
+                },
                 403,
             ),
-            (self.viewer_user, "POST", f"{definition_url}validate/", {}, {}, 403),
+            (
+                self.viewer_user,
+                "POST",
+                f"{definition_url}validate/",
+                {},
+                {
+                    "HTTP_IDEMPOTENCY_KEY": str(uuid4()),
+                    "HTTP_IF_MATCH": f'"{definition.manifest_hash}"',
+                },
+                403,
+            ),
             (
                 self.viewer_user,
                 "POST",
@@ -802,7 +876,17 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
                 {},
                 403,
             ),
-            (self.editor_user, "POST", f"{definition_url}validate/", {}, {}, 403),
+            (
+                self.editor_user,
+                "POST",
+                f"{definition_url}validate/",
+                {},
+                {
+                    "HTTP_IDEMPOTENCY_KEY": str(uuid4()),
+                    "HTTP_IF_MATCH": f'"{definition.manifest_hash}"',
+                },
+                403,
+            ),
             (
                 self.editor_user,
                 "POST",
@@ -811,13 +895,27 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
                 {},
                 403,
             ),
-            (self.publisher_user, "POST", self.create_url, create_payload, {}, 403),
+            (
+                self.publisher_user,
+                "POST",
+                self.create_url,
+                create_payload,
+                {"HTTP_IDEMPOTENCY_KEY": str(uuid4())},
+                403,
+            ),
             (
                 self.publisher_user,
                 "POST",
                 f"{definition_url}clone/",
-                {"code": "PUBLISHER-CLONE", "version": "4.0.0"},
-                {},
+                {
+                    "id": str(uuid4()),
+                    "code": "PUBLISHER-CLONE",
+                    "version": "4.0.0",
+                },
+                {
+                    "HTTP_IDEMPOTENCY_KEY": str(uuid4()),
+                    "HTTP_IF_MATCH": f'"{definition.manifest_hash}"',
+                },
                 403,
             ),
             (
@@ -825,7 +923,10 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
                 "PUT",
                 f"{definition_url}draft/",
                 {"manifest": self.manifest},
-                {"HTTP_IF_MATCH": f'"{definition.manifest_hash}"'},
+                {
+                    "HTTP_IDEMPOTENCY_KEY": str(uuid4()),
+                    "HTTP_IF_MATCH": f'"{definition.manifest_hash}"',
+                },
                 403,
             ),
         )
@@ -879,11 +980,19 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
     def test_server_authority_spoof_vectors_reject_without_mutation(self):
         self.client.force_authenticate(self.editor_user)
         baseline = ProjectDefinitionVersion.objects.count()
-        base = {"code": "SPOOF-DRAFT", "version": "1.0.0", "manifest": self.manifest}
+        base = {
+            "id": str(uuid4()),
+            "code": "SPOOF-DRAFT",
+            "version": "1.0.0",
+            "manifest": self.manifest,
+            "semantic_version": "1.0.0",
+            "construct_version": "1.0.0",
+        }
         body_spoof = self.client.post(
             self.create_url,
             {**base, "actor_identifier": "spoof", "role": "STUDIO_PUBLISHER"},
             format="json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
         )
         service_spoof = self.client.post(
             self.create_url,
@@ -896,17 +1005,20 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
                 },
             },
             format="json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
         )
         header_spoof = self.client.post(
             self.create_url,
             base,
             format="json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
             HTTP_X_STUDIO_ROLE="STUDIO_EDITOR",
         )
         query_spoof = self.client.post(
             f"{self.create_url}?capability=DRAFT_CREATE",
             base,
             format="json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
         )
         self.assertEqual(
             [
@@ -921,21 +1033,35 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
 
     def test_editor_viewer_publisher_matrix_and_exact_routes(self):
         self.client.force_authenticate(self.editor_user)
+        create_id = uuid4()
         create_response = self.client.post(
             self.create_url,
-            {"code": "HTTP-DRAFT", "version": "1.0.0", "manifest": self.manifest},
+            {
+                "id": str(create_id),
+                "code": "HTTP-DRAFT",
+                "version": "1.0.0",
+                "manifest": self.manifest,
+                "semantic_version": "1.0.0",
+                "construct_version": "1.0.0",
+            },
             format="json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
         )
         self.assertEqual(create_response.status_code, 201, create_response.data)
+        self.assertEqual(create_response.data["id"], str(create_id))
         self.assertEqual(create_response["ETag"], f'"{create_response.data["manifest_hash"]}"')
         definition_url = f"/api/foundation/definitions/{create_response.data['id']}/"
 
+        clone_id = uuid4()
         clone_response = self.client.post(
             f"{definition_url}clone/",
-            {"code": "HTTP-CLONE", "version": "2.0.0"},
+            {"id": str(clone_id), "code": "HTTP-CLONE", "version": "2.0.0"},
             format="json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+            HTTP_IF_MATCH=f'"{create_response.data["manifest_hash"]}"',
         )
         self.assertEqual(clone_response.status_code, 201, clone_response.data)
+        self.assertEqual(clone_response.data["id"], str(clone_id))
         changed_manifest = copy.deepcopy(self.manifest)
         changed_manifest["project"]["name"] = "Changed snapshot description"
         save_response = self.client.put(
@@ -943,6 +1069,7 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
             {"manifest": changed_manifest},
             format="json",
             HTTP_IF_MATCH=f'"{clone_response.data["manifest_hash"]}"',
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
         )
         self.assertEqual(save_response.status_code, 200, save_response.data)
 
@@ -954,6 +1081,7 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
                 {"manifest": self.manifest},
                 format="json",
                 HTTP_IF_MATCH=f'"{create_response.data["manifest_hash"]}"',
+                HTTP_IDEMPOTENCY_KEY=str(uuid4()),
             ).status_code,
             403,
         )
@@ -969,7 +1097,10 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
         self.assertEqual(ProjectWorkspace.objects.count(), 1)
         self.assertEqual(
             set(AuditEvent.objects.values_list("actor_identifier", flat=True)),
-            {f"django-user:{self.publisher_user.pk}"},
+            {
+                f"django-user:{self.editor_user.pk}",
+                f"django-user:{self.publisher_user.pk}",
+            },
         )
         self.assertEqual(self.client.post(self.create_url, {}, format="json").status_code, 403)
 
@@ -1010,6 +1141,7 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
             {"manifest": changed},
             format="json",
             HTTP_IF_MATCH=f'"{definition.manifest_hash}"',
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
             HTTP_X_CSRFTOKEN=token,
         )
         self.assertEqual(accepted.status_code, 200, accepted.data)

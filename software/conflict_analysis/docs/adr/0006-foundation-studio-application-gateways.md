@@ -199,3 +199,80 @@ FD01 changes no model, enum, permission, schema or migration. It does not author
 FD05, C1, any SERVICE substitution for HUMAN authoring, scalar Power, formula,
 prediction, recommendation, ranking or risk output. The accepted C0
 `production_studio` subtree remains byte-for-byte frozen.
+
+## FD05 audited HUMAN write reconciliation
+
+`CA-SUITE-I1-FOUNDATION-FD05-AUDITED-WRITE-RECONCILIATION-001` makes the
+existing bootstrap, create, clone, save and validate routes prospective audited
+write gateways. It does not add a route, model, enum, permission, schema or
+migration. The five routes execute under the authenticated persisted HUMAN
+principal; a SERVICE principal cannot substitute for that actor.
+
+Every request requires `Idempotency-Key` to be a canonical lowercase RFC 4122
+UUIDv4. That UUID is the operation identity, the `AuditEvent` primary key and the
+immutable receipt identity. Bootstrap, create and clone forbid or require tokens
+as follows: bootstrap and create forbid `If-Match`; clone, save and validate
+require one strong quoted lowercase SHA-256 token. All five operations reject a
+missing or invalid operation key before body capture. Public body, query and
+headers cannot select actor, role, capability, service context or audit identity.
+
+The lock order is always Project first and then the source or target definition
+when one applies. The domain mutation and one DEFINITION-scope HUMAN audit share
+one atomic boundary. The audit action is CREATE for bootstrap, create and clone,
+UPDATE for save and VALIDATE for validation. The exact operation UUID is used as
+the audit UUID, and the stable audit code is derived from its lowercase UUID hex.
+Faults after any Project, group, membership, definition, lifecycle or audit stage
+roll back the complete graph, including the operation identity; there is no
+pending-operation row and no orphan receipt.
+
+The audit preserves a complete immutable
+`FOUNDATION_AUDITED_DEFINITION_WRITE_V1` receipt. Every key is present, with
+operation-inapplicable values represented by `null`. It binds:
+
+- operation, operation/audit UUID, action and persisted HUMAN actor;
+- project, source, exact before and exact after definition identities;
+- bootstrap Project/group/membership identities where applicable;
+- validation report identity from the accepted FD01 policy composition;
+- method, normalized route, targets, normalized content type, exact raw-body
+  SHA/length and accepted `If-Match` in one canonical request identity;
+- occurrence time and original success status.
+
+Definition receipt identities deliberately exclude mutable `updated_at`, but
+include lifecycle, manifest and validation identities. Fresh success adds the
+receipt to the existing operation response, returns
+`X-Foundation-Operation-Replayed: false`, the canonical receipt SHA in
+`X-Foundation-Receipt-SHA256`, and the after-manifest ETag.
+
+After authentication, object scope, capability, no-query/no-spoof admission,
+operation-key validation, bounded one-shot body capture and request-identity
+calculation, the transaction locks Project first and looks up the exact audit UUID.
+An exact actor, operation, route/target, raw identity and token match reconciles
+before stale, lifecycle or duplicate checks. Reconciliation returns HTTP 200,
+`WRITE_OPERATION_RECONCILED`, `X-Foundation-Operation-Replayed: true`, the same
+receipt SHA and the original after ETag. It reconstructs the receipt only from the
+immutable audit snapshot, never from the current mutable definition, and performs
+zero writes or timestamp touches.
+
+Reuse of the UUID with changed actor, operation, method, route, target, exact body
+bytes or token returns typed `WRITE_OPERATION_KEY_REUSED`. A different UUID aimed
+at an already-used create/clone identity returns the stable Project, group,
+definition UUID/code/version conflict chosen by persisted precedence. Clone source
+drift is `CLONE_SOURCE_STALE`; competing saves are `DRAFT_STALE`; validate with a
+new key on VALIDATED is `DEFINITION_ALREADY_VALIDATED`, and other non-DRAFT
+lifecycle states are `DEFINITION_NOT_DRAFT`. Validation failure returns the
+accepted FD01 report identity and projection as `DEFINITION_VALIDATION_FAILED`.
+No branch classifies a conflict from exception prose.
+
+An `IntegrityError` leaves the broken transaction before classification. Only
+after rollback may the gateway read a committed winner and either reconcile an
+exact same-key request or classify a different-key identity conflict. PostgreSQL
+18 is the authoritative same-key, different-key, stale-save and save/validate
+race oracle; SQLite verifies sequential receipt/replay semantics and skips exactly
+those five concurrency nodes.
+
+The operation key never restores lost authority: replay still requires the current
+HUMAN authentication, scope and capability. Bootstrap replay additionally proves
+current scope to the created Project before revealing its receipt. Exact replay is
+idempotency reconciliation only, not cross-key deduplication, publication recovery
+or evidence of substantive authorship. FD05 changes no `production_studio` or C1
+surface and makes no formula, prediction, recommendation, ranking or risk claim.
