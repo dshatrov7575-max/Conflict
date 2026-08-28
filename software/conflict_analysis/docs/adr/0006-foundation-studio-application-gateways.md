@@ -276,3 +276,59 @@ current scope to the created Project before revealing its receipt. Exact replay 
 idempotency reconciliation only, not cross-key deduplication, publication recovery
 or evidence of substantive authorship. FD05 changes no `production_studio` or C1
 surface and makes no formula, prediction, recommendation, ranking or risk claim.
+
+## FD02 exact Russian Studio Help provisioning
+
+`CA-SUITE-I1-FOUNDATION-FD02-STUDIO-HELP-PROVISIONING-001` supplies the
+Foundation-owned Help content required by Studio without adding a model,
+migration, permission, schema, route or Studio-local content authority. The sole
+content authority is the committed external artifact
+`domain/content/studio_help_ru_v1.json`, identified by catalog ID
+`FOUNDATION_STUDIO_HELP_RU_V1`, version `1.0.0`, exact length `4742` bytes and
+SHA-256
+`1ca03e1672737101e10780135ec228b4ba0b8812d272c3a0d6cb00dd2de2d81e`.
+
+The loader and provisioning service require an explicit bytes-like value or
+filesystem path. They never search the current working directory, infer a
+repository checkout, fall back to another locale/version, or embed a second
+catalog copy. A string is deliberately not a path contract. The management
+command consequently requires the positional form:
+
+```text
+python manage.py provision_studio_help <catalog-path>
+```
+
+There is no implicit catalog argument and no database selector. The installed
+wheel contains the service and command but deliberately does not contain the JSON
+artifact because the accepted package-data surface is frozen. Deployment must
+supply a byte-identical copy explicitly. Wheel acceptance runs from outside the
+source checkout, imports the installed service and command, verifies that the
+catalog is absent from the wheel, passes an external exact-byte copy, and proves
+both the first provision and exact repeat result.
+
+The exact catalog declares four ordered Russian (`ru`) `STUDIO` topics and four
+global bindings at version `1.0.0`: `studio.welcome`,
+`studio.project.create`, `studio.definition.validation` and
+`studio.definition.publication`. Topic UUID/code, stable key, application,
+locale, version, canonical sanitized HTML and content SHA are all identity. Each
+binding similarly fixes UUID/code, global workspace, application, UI key,
+locale, version and exact topic UUID. Every topic is `PUBLISHED` at the catalog's
+single UTC timestamp. The existing `HelpTopic`, `UIHelpBinding` and
+`resolve_help_topic()` contracts remain the only persistence and resolution
+authority.
+
+Provisioning locks and classifies all relevant identities inside one transaction.
+An empty database receives the exact 4+4 graph. A complete byte- and
+field-identical repeat returns zero created rows without touching immutable
+timestamps. A partial graph, UUID/code/exact-tuple collision, content drift or
+injected write failure fails atomically with no partial additions. If a concurrent
+writer wins after the initial read or between the topic and binding snapshots,
+classification occurs only after the failed atomic block exits; only a complete
+exact persisted 4+4 graph is reconciled as the zero-create repeat. Partial or
+drifted truth remains a stable failure.
+
+Resolution stays exact on `(application_scope, ui_key, locale, version)` and
+returns the canonical persisted HTML bytes and SHA only for the declared published
+binding. Wrong application, UI key, locale or version is an exact 404 through the
+accepted Foundation gateway; there is no local or locale fallback. FD02 keeps all
+accepted FD01, FD05, C0 and C1 assets and behavior byte-for-byte frozen.
