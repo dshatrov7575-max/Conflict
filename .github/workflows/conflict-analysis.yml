@@ -12,6 +12,7 @@ on:
       - codex/ca-suite-i1-foundation
       - codex/ca-suite-i1-production-studio-c0-read-only
       - codex/ca-suite-i1-foundation-fd01-validation-preview
+      - codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -26,7 +27,7 @@ concurrency:
 
 jobs:
   foundation-contract:
-    name: Python 3.12 / PostgreSQL 18 / SQLite / FD01
+    name: Python 3.12 / PostgreSQL 18 / SQLite / FD01-FD05 slice gate
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -63,6 +64,9 @@ jobs:
       FD01_BASE_TREE: 914e3b0895e404cf699d651c8148da875528b4e7
       FD01_RC1_START_HEAD: 1e2fd10878236ee8f0a01a62773894dd9c0d5c40
       FD01_RC1_START_TREE: 671c0777cee1d4542ebe4eeb1128c0e0fecac4b3
+      FD01_RC2_START_HEAD: 2bf40798dc2c4ba0ea3c742bf86b88fda4bde8d0
+      FD01_RC2_START_TREE: 23161d6d2ba575d1ca92149f468e086ce43df129
+      C0_BRANCH: codex/ca-suite-i1-production-studio-c0-read-only
       FD01_BRANCH: codex/ca-suite-i1-foundation-fd01-validation-preview
       FD05_BRANCH: codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
       AUTH_MAIN_HEAD: 19690eb3aede8b603a631d7c561fc74f9022537a
@@ -80,7 +84,97 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - name: Verify FD01 authorization drift, ancestry and synthetic merge
+      - name: Resolve exact prerequisite slice from GitHub event refs
+        shell: bash
+        env:
+          EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          EVENT_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          EVENT_BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
+        run: |
+          set -euo pipefail
+          delivery_head="$(git rev-parse HEAD)"
+          active_pr_number=""
+
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              test "$EVENT_HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"
+              test "$EVENT_BASE_REPOSITORY" = "$GITHUB_REPOSITORY"
+              test "$EVENT_HEAD_SHA" = "$delivery_head"
+              [[ "$EVENT_PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+              active_pr_number="$EVENT_PR_NUMBER"
+              case "${EVENT_HEAD_REF}|${EVENT_BASE_REF}" in
+                "${FD01_BRANCH}|${C0_BRANCH}")
+                  test "$EVENT_PR_NUMBER" = "71"
+                  active_slice="FD01"
+                  slice_base_head="$FD01_BASE_HEAD"
+                  test "$EVENT_BASE_SHA" = "$slice_base_head"
+                  ;;
+                "${FD05_BRANCH}|${FD01_BRANCH}")
+                  active_slice="FD05"
+                  slice_base_head="$EVENT_BASE_SHA"
+                  ;;
+                *)
+                  echo "unsupported prerequisite pull-request ref pair: ${EVENT_HEAD_REF} -> ${EVENT_BASE_REF}" >&2
+                  exit 1
+                  ;;
+              esac
+              active_head_ref="$EVENT_HEAD_REF"
+              active_base_ref="$EVENT_BASE_REF"
+              ;;
+            push)
+              test "$GITHUB_SHA" = "$delivery_head"
+              case "$GITHUB_REF" in
+                "refs/heads/${FD01_BRANCH}")
+                  active_slice="FD01"
+                  slice_base_head="$FD01_BASE_HEAD"
+                  active_head_ref="$FD01_BRANCH"
+                  active_base_ref="$C0_BRANCH"
+                  ;;
+                "refs/heads/${FD05_BRANCH}")
+                  active_slice="FD05"
+                  git fetch --no-tags origin \
+                    "+refs/heads/${FD01_BRANCH}:refs/remotes/origin/fd01-target"
+                  slice_base_head="$(git rev-parse refs/remotes/origin/fd01-target)"
+                  active_head_ref="$FD05_BRANCH"
+                  active_base_ref="$FD01_BRANCH"
+                  ;;
+                *)
+                  echo "unsupported prerequisite push ref: $GITHUB_REF" >&2
+                  exit 1
+                  ;;
+              esac
+              ;;
+            *)
+              echo "unsupported prerequisite event: $GITHUB_EVENT_NAME" >&2
+              exit 1
+              ;;
+          esac
+
+          [[ "$delivery_head" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$slice_base_head" =~ ^[0-9a-f]{40}$ ]]
+          git cat-file -e "$slice_base_head^{commit}"
+          slice_base_tree="$(git rev-parse "$slice_base_head^{tree}")"
+          [[ "$slice_base_tree" =~ ^[0-9a-f]{40}$ ]]
+          if [[ "$active_slice" = FD01 ]]; then
+            test "$slice_base_tree" = "$FD01_BASE_TREE"
+          else
+            echo "FD05 base is event/live-target relational only; exact accepted H1/T1 equality remains an external MAIN oracle."
+          fi
+
+          {
+            echo "ACTIVE_SLICE=$active_slice"
+            echo "SLICE_BASE_HEAD=$slice_base_head"
+            echo "SLICE_BASE_TREE=$slice_base_tree"
+            echo "SLICE_HEAD_REF=$active_head_ref"
+            echo "SLICE_BASE_REF=$active_base_ref"
+            echo "SLICE_PR_NUMBER=$active_pr_number"
+          } >> "$GITHUB_ENV"
+
+      - name: Verify active-slice authorization drift, ancestry and synthetic merge
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -89,6 +183,8 @@ jobs:
           delivery_head="$(git rev-parse HEAD)"
           test "$(git rev-parse "$FD01_BASE_HEAD^{tree}")" = "$FD01_BASE_TREE"
           test "$(git rev-parse "$FD01_RC1_START_HEAD^{tree}")" = "$FD01_RC1_START_TREE"
+          test "$(git rev-parse "$FD01_RC2_START_HEAD^{tree}")" = "$FD01_RC2_START_TREE"
+          test "$(git rev-parse "$SLICE_BASE_HEAD^{tree}")" = "$SLICE_BASE_TREE"
           test "$(git rev-parse "$FND_BASE_HEAD^{tree}")" = "$FND_BASE_TREE"
           test "$(git rev-parse "$FOUNDATION_B_HEAD^{tree}")" = "$FOUNDATION_B_TREE"
           test "$(git rev-parse "$AUTH_MAIN_HEAD^{tree}")" = "$AUTH_MAIN_TREE"
@@ -97,19 +193,33 @@ jobs:
           git merge-base --is-ancestor "$AUTH_MAIN_HEAD" "$FOUNDATION_B_HEAD"
           git merge-base --is-ancestor "$FOUNDATION_B_HEAD" "$FD01_BASE_HEAD"
           git merge-base --is-ancestor "$FD01_BASE_HEAD" "$FD01_RC1_START_HEAD"
-          git merge-base --is-ancestor "$FD01_RC1_START_HEAD" "$delivery_head"
-          git merge-base --is-ancestor "$FD01_BASE_HEAD" "$delivery_head"
+          git merge-base --is-ancestor "$FD01_RC1_START_HEAD" "$FD01_RC2_START_HEAD"
+          git merge-base --is-ancestor "$FD01_RC2_START_HEAD" "$delivery_head"
+          git merge-base --is-ancestor "$SLICE_BASE_HEAD" "$delivery_head"
           test -z "$(git rev-list --merges "$FD01_BASE_HEAD..$delivery_head")"
+          if [[ "$ACTIVE_SLICE" = FD01 ]]; then
+            test "$SLICE_BASE_HEAD" = "$FD01_BASE_HEAD"
+            test "$SLICE_BASE_TREE" = "$FD01_BASE_TREE"
+          else
+            test "$ACTIVE_SLICE" = FD05
+            git merge-base --is-ancestor "$FD01_RC2_START_HEAD" "$SLICE_BASE_HEAD"
+          fi
 
           git fetch --no-tags origin \
             +refs/heads/main:refs/remotes/origin/main \
             +refs/heads/codex/ca-suite-i1-foundation-application-gateways:refs/remotes/origin/foundation-b \
             +refs/heads/codex/ca-suite-i1-production-studio-c0-read-only:refs/remotes/origin/c0 \
+            +refs/heads/codex/ca-suite-i1-foundation-fd01-validation-preview:refs/remotes/origin/fd01-target \
             +refs/pull/67/merge:refs/remotes/origin/pr67-merge \
             +refs/pull/69/merge:refs/remotes/origin/pr69-merge
           test "$(git rev-parse refs/remotes/origin/main)" = "$AUTH_MAIN_HEAD"
           test "$(git rev-parse refs/remotes/origin/foundation-b)" = "$FOUNDATION_B_HEAD"
           test "$(git rev-parse refs/remotes/origin/c0)" = "$FD01_BASE_HEAD"
+          if [[ "$ACTIVE_SLICE" = FD01 ]]; then
+            test "$(git rev-parse refs/remotes/origin/fd01-target)" = "$delivery_head"
+          else
+            test "$(git rev-parse refs/remotes/origin/fd01-target)" = "$SLICE_BASE_HEAD"
+          fi
 
           IFS=$'\t' read -r state67 draft67 merged67 head67 base67 mergeable67 <<< "$(
             gh api "repos/${GITHUB_REPOSITORY}/pulls/67" \
@@ -139,35 +249,30 @@ jobs:
           test "$(git rev-parse refs/remotes/origin/pr69-merge^2)" = "$FD01_BASE_HEAD"
           test "$(git rev-parse refs/remotes/origin/pr69-merge^{tree})" = "$FD01_BASE_TREE"
 
-          if gh api "repos/${GITHUB_REPOSITORY}/branches/${FD05_BRANCH//\//%2F}" >/dev/null 2>&1; then
-            echo "FD05 branch exists before authorization" >&2
-            exit 1
-          fi
-
           if [[ "$GITHUB_EVENT_NAME" = pull_request ]]; then
-            test "${{ github.event.pull_request.number }}" = "71"
-            test "${{ github.event.pull_request.base.ref }}" = "codex/ca-suite-i1-production-studio-c0-read-only"
-            test "${{ github.event.pull_request.base.sha }}" = "$FD01_BASE_HEAD"
-            test "${{ github.event.pull_request.head.ref }}" = "$FD01_BRANCH"
-            test "${{ github.event.pull_request.head.sha }}" = "$delivery_head"
+            if [[ "$ACTIVE_SLICE" = FD01 ]]; then
+              test "$SLICE_PR_NUMBER" = "71"
+            fi
 
-            IFS=$'\t' read -r state71 draft71 merged71 head71 headref71 base71 baseref71 <<< "$(
-              gh api "repos/${GITHUB_REPOSITORY}/pulls/71" \
-                --jq '[.state, (.draft|tostring), (.merged|tostring), .head.sha, .head.ref, .base.sha, .base.ref] | @tsv'
+            IFS=$'\t' read -r state_slice draft_slice merged_slice head_slice headref_slice headrepo_slice base_slice baseref_slice <<< "$(
+              gh api "repos/${GITHUB_REPOSITORY}/pulls/${SLICE_PR_NUMBER}" \
+                --jq '[.state, (.draft|tostring), (.merged|tostring), .head.sha, .head.ref, .head.repo.full_name, .base.sha, .base.ref] | @tsv'
             )"
-            test "$state71" = open
-            test "$draft71" = true
-            test "$merged71" = false
-            test "$head71" = "$delivery_head"
-            test "$headref71" = "$FD01_BRANCH"
-            test "$base71" = "$FD01_BASE_HEAD"
-            test "$baseref71" = "codex/ca-suite-i1-production-studio-c0-read-only"
+            test "$state_slice" = open
+            test "$draft_slice" = true
+            test "$merged_slice" = false
+            test "$head_slice" = "$delivery_head"
+            test "$headref_slice" = "$SLICE_HEAD_REF"
+            test "$headrepo_slice" = "$GITHUB_REPOSITORY"
+            test "$base_slice" = "$SLICE_BASE_HEAD"
+            test "$baseref_slice" = "$SLICE_BASE_REF"
 
-            git fetch --no-tags origin "+refs/pull/71/merge:refs/remotes/origin/fd01-merge"
-            test "$(git rev-parse refs/remotes/origin/fd01-merge^1)" = "$FD01_BASE_HEAD"
-            test "$(git rev-parse refs/remotes/origin/fd01-merge^2)" = "$delivery_head"
-            test "$(git rev-parse refs/remotes/origin/fd01-merge^{tree})" = "$(git rev-parse "$delivery_head^{tree}")"
-            test "$(git rev-parse refs/remotes/origin/fd01-merge^{tree})" = "$(git merge-tree --write-tree "$FD01_BASE_HEAD" "$delivery_head")"
+            git fetch --no-tags origin \
+              "+refs/pull/${SLICE_PR_NUMBER}/merge:refs/remotes/origin/active-slice-merge"
+            test "$(git rev-parse refs/remotes/origin/active-slice-merge^1)" = "$SLICE_BASE_HEAD"
+            test "$(git rev-parse refs/remotes/origin/active-slice-merge^2)" = "$delivery_head"
+            test "$(git rev-parse refs/remotes/origin/active-slice-merge^{tree})" = "$(git rev-parse "$delivery_head^{tree}")"
+            test "$(git rev-parse refs/remotes/origin/active-slice-merge^{tree})" = "$(git merge-tree --write-tree "$SLICE_BASE_HEAD" "$delivery_head")"
           fi
 
       - name: Set up Python 3.12
@@ -176,6 +281,9 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: software/conflict_analysis/pyproject.toml
+
+      - name: Run offline deterministic FD01 and FD05 verifier contract self-check
+        run: python scripts/verify_foundation_c1_prerequisites_allowlist.py --self-check-contracts
 
       - name: Set up Node.js 24 for Chromium harness
         uses: actions/setup-node@v4
@@ -190,13 +298,13 @@ jobs:
           node --check production_studio/browser_tests/cdp_client.mjs
           node --check production_studio/browser_tests/read_only_smoke.mjs
 
-      - name: Verify exact FD01 allowlist and frozen accepted C0 surfaces
+      - name: Verify exact active-slice allowlist and frozen accepted surfaces
         run: |
           python scripts/verify_foundation_c1_prerequisites_allowlist.py \
-            --slice FD01 \
-            --base-head "$FD01_BASE_HEAD" \
-            --base-tree "$FD01_BASE_TREE"
-          git diff --check "$FD01_BASE_HEAD...HEAD"
+            --slice "$ACTIVE_SLICE" \
+            --base-head "$SLICE_BASE_HEAD" \
+            --base-tree "$SLICE_BASE_TREE"
+          git diff --check "$SLICE_BASE_HEAD...HEAD"
 
       - name: Check package, schema, migrations and Django
         run: |
@@ -213,7 +321,7 @@ jobs:
           test -n "$chrome"
           "$chrome" --version
           echo "STUDIO_CHROME_BIN=$chrome" >> "$GITHUB_ENV"
-          wheel_dir="${{ runner.temp }}/fd01-wheel"
+          wheel_dir="${{ runner.temp }}/foundation-prerequisite-wheel"
           python -m pip wheel --no-deps --wheel-dir "$wheel_dir" .
           mapfile -t wheels < <(find "$wheel_dir" -maxdepth 1 -type f -name '*.whl' -print)
           test "${#wheels[@]}" -eq 1
@@ -230,16 +338,19 @@ jobs:
           TRANSFORMERS_OFFLINE: "1"
         run: python -m pytest domain/tests --junitxml="${{ runner.temp }}/postgresql-domain.xml"
 
-      - name: Verify exact PostgreSQL 18 FD01 baseline
+      - name: Verify exact PostgreSQL 18 active-slice baseline
         run: |
           python - <<'PY'
+          import os
           from pathlib import Path
           from xml.etree import ElementTree
+          active_slice=os.environ["ACTIVE_SLICE"]
+          expected_total={"FD01":183,"FD05":200}[active_slice]
           cases=list(ElementTree.parse(Path("${{ runner.temp }}/postgresql-domain.xml")).iter("testcase"))
           skipped=[c for c in cases if c.find("skipped") is not None]
-          assert len(cases)==183, f"expected 183 Foundation tests, got {len(cases)}"
+          assert len(cases)==expected_total, f"expected {expected_total} Foundation tests for {active_slice}, got {len(cases)}"
           assert not skipped, f"unexpected PostgreSQL skips: {len(skipped)}"
-          print("PostgreSQL 18 Foundation FD01: 183 passed, 0 skipped")
+          print(f"PostgreSQL 18 Foundation {active_slice}: {expected_total} passed, 0 skipped")
           PY
 
       - name: Run PostgreSQL C0 core and real Chromium zero-write regression
@@ -268,7 +379,7 @@ jobs:
       - name: Run SQLite Foundation suite
         env:
           USE_SQLITE: "true"
-          SQLITE_PATH: ${{ runner.temp }}/conflict-analysis-fd01.sqlite3
+          SQLITE_PATH: ${{ runner.temp }}/conflict-analysis-foundation-slice.sqlite3
           HTTP_PROXY: "http://127.0.0.1:9"
           HTTPS_PROXY: "http://127.0.0.1:9"
           ALL_PROXY: "http://127.0.0.1:9"
@@ -278,14 +389,16 @@ jobs:
           TRANSFORMERS_OFFLINE: "1"
         run: python -m pytest domain/tests --junitxml="${{ runner.temp }}/sqlite-domain.xml"
 
-      - name: Verify exact SQLite FD01 baseline and six named skips
+      - name: Verify exact SQLite active-slice baseline and named skips
         run: |
           python - <<'PY'
+          import os
           from pathlib import Path
           from xml.etree import ElementTree
+          active_slice=os.environ["ACTIVE_SLICE"]
           cases=list(ElementTree.parse(Path("${{ runner.temp }}/sqlite-domain.xml")).iter("testcase"))
           actual={(c.attrib["classname"],c.attrib["name"]) for c in cases if c.find("skipped") is not None}
-          expected={
+          accepted_six={
             ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioBootstrapConcurrencyTests","test_postgresql_concurrent_bootstrap_has_one_winner_and_one_explicit_conflict"),
             ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioSuccessorConcurrencyTests","test_postgresql_competing_successors_have_one_winner_and_preserve_old_pin"),
             ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioApplicationSuccessorConcurrencyTests","test_postgresql_application_wrapper_has_one_success_and_one_typed_conflict"),
@@ -293,10 +406,20 @@ jobs:
             ("domain.tests.test_foundation_studio_package.FoundationStudioCrossPathLockOrderTests","test_postgresql_import_initial_and_successor_paths_share_one_lock_order"),
             ("domain.tests.test_postgresql_migrations.PostgreSQLMigrationGateTests","test_clean_test_database_is_at_every_migration_leaf"),
           }
-          assert len(cases)==183, f"expected 183 Foundation tests, got {len(cases)}"
+          fd05_five={
+            ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_concurrent_bootstrap_same_key_has_one_graph_one_audit_one_reconcile"),
+            ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_concurrent_create_same_key_has_one_commit_one_reconcile"),
+            ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_different_keys_same_create_or_clone_identity_have_one_typed_loser"),
+            ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_concurrent_stale_saves_have_one_commit_one_draft_stale"),
+            ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_save_validate_race_obeys_project_first_lock_order"),
+          }
+          expected_total={"FD01":183,"FD05":200}[active_slice]
+          expected_passed={"FD01":177,"FD05":189}[active_slice]
+          expected=accepted_six if active_slice=="FD01" else accepted_six|fd05_five
+          assert len(cases)==expected_total, f"expected {expected_total} Foundation tests for {active_slice}, got {len(cases)}"
           assert actual==expected, f"SQLite skip drift: {sorted(actual)}"
-          assert len(cases)-len(actual)==177
-          print("SQLite Foundation FD01: 177 passed, exact 6 PostgreSQL-only skips")
+          assert len(cases)-len(actual)==expected_passed
+          print(f"SQLite Foundation {active_slice}: {expected_passed} passed, exact {len(expected)} PostgreSQL-only skips")
           PY
 
       - name: Run and verify SQLite C0 remains 19/19
@@ -365,7 +488,7 @@ jobs:
           PY
           python -m pytest production_studio/tests/test_read_only_static_contracts.py production_studio/tests/test_claim_boundaries.py
 
-          isolated_venv="${{ runner.temp }}/fd01-installed-wheel-venv"
+          isolated_venv="${{ runner.temp }}/foundation-prerequisite-installed-wheel-venv"
           python -m venv "$isolated_venv"
           "$isolated_venv/bin/python" -m pip install \
             --disable-pip-version-check \
@@ -373,7 +496,7 @@ jobs:
           cd "${{ runner.temp }}"
           unset PYTHONPATH
           USE_SQLITE=true \
-          SQLITE_PATH="${{ runner.temp }}/fd01-installed-wheel.sqlite3" \
+          SQLITE_PATH="${{ runner.temp }}/foundation-prerequisite-installed-wheel.sqlite3" \
           DJANGO_SETTINGS_MODULE=conflict_analysis.settings \
             "$isolated_venv/bin/python" - "$isolated_venv" "$source_root" <<'PY'
           from __future__ import annotations
