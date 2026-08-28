@@ -5,6 +5,7 @@ on:
     branches:
       - codex/ca-suite-i1-production-studio-c0-read-only
       - codex/ca-suite-i1-foundation-fd01-validation-preview
+      - codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -12,6 +13,7 @@ on:
     branches:
       - codex/ca-suite-i1-foundation-fd01-validation-preview
       - codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
+      - codex/ca-suite-i1-production-studio-c1-r0-ci-pin
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -26,7 +28,7 @@ concurrency:
 
 jobs:
   foundation-contract:
-    name: Python 3.12 / PostgreSQL 18 / SQLite / FD01-FD05 slice gate
+    name: Python 3.12 / PostgreSQL 18 / SQLite / FD01-FD05-R0 slice gate
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -69,9 +71,14 @@ jobs:
       FD01_RC3_START_TREE: d527e34b8e9d3d67802be0118ac4928821cfd60b
       FD01_ACCEPTED_HEAD: "${{ vars.FD01_ACCEPTED_HEAD }}"
       FD01_ACCEPTED_TREE: "${{ vars.FD01_ACCEPTED_TREE }}"
+      FD05_ACCEPTED_HEAD: "${{ vars.FD05_ACCEPTED_HEAD }}"
+      FD05_ACCEPTED_TREE: "${{ vars.FD05_ACCEPTED_TREE }}"
+      R0_AUTH_BASE_HEAD: ca16f7a99ff044f7fbccb83354d5a9112c99027a
+      R0_AUTH_BASE_TREE: c25848dbbb19aabd5a2d4d642b69c66254879059
       C0_BRANCH: codex/ca-suite-i1-production-studio-c0-read-only
       FD01_BRANCH: codex/ca-suite-i1-foundation-fd01-validation-preview
       FD05_BRANCH: codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
+      R0_BRANCH: codex/ca-suite-i1-production-studio-c1-r0-ci-pin
       AUTH_MAIN_HEAD: 19690eb3aede8b603a631d7c561fc74f9022537a
       AUTH_MAIN_TREE: 04d5b43fdf96637f58b8fc6f191323fbad302bbc
       FND_BASE_HEAD: f940a91a92658285063802ee1a43bf84360fc013
@@ -130,6 +137,10 @@ jobs:
                     active_slice="FD05"
                     slice_base_source="EVENT_FD01"
                     ;;
+                  "${R0_BRANCH}|${FD05_BRANCH}")
+                    active_slice="R0"
+                    slice_base_source="EVENT_FD05"
+                    ;;
                   *)
                     echo "unsupported prerequisite pull-request ref pair: ${head_ref} -> ${base_ref}" >&2
                     return 1
@@ -152,6 +163,12 @@ jobs:
                     slice_base_source="LIVE_FD01"
                     active_head_ref="$FD05_BRANCH"
                     active_base_ref="$FD01_BRANCH"
+                    ;;
+                  "refs/heads/${R0_BRANCH}")
+                    active_slice="R0"
+                    slice_base_source="LIVE_FD05"
+                    active_head_ref="$R0_BRANCH"
+                    active_base_ref="$FD05_BRANCH"
                     ;;
                   *)
                     echo "unsupported prerequisite push ref: $event_ref" >&2
@@ -189,6 +206,55 @@ jobs:
             }
           }
 
+          verify_r0_pin() {
+            local authorized_head="$1"
+            local authorized_tree="$2"
+            local accepted_head="$3"
+            local accepted_tree="$4"
+            local actual_head="$5"
+            local actual_tree="$6"
+            [[ "$authorized_head" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "R0 authorized base HEAD must be an exact lowercase 40-hex commit id" >&2
+              return 1
+            }
+            [[ "$authorized_tree" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "R0 authorized base TREE must be an exact lowercase 40-hex tree id" >&2
+              return 1
+            }
+            [[ "$accepted_head" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "FD05_ACCEPTED_HEAD must be an exact lowercase 40-hex commit id" >&2
+              return 1
+            }
+            [[ "$accepted_tree" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "FD05_ACCEPTED_TREE must be an exact lowercase 40-hex tree id" >&2
+              return 1
+            }
+            [[ "$actual_head" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "R0 event/live base HEAD must be an exact lowercase 40-hex commit id" >&2
+              return 1
+            }
+            [[ "$actual_tree" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "R0 event/live base TREE must be an exact lowercase 40-hex tree id" >&2
+              return 1
+            }
+            test "$accepted_head" = "$authorized_head" || {
+              echo "FD05_ACCEPTED_HEAD does not match the exact R0 authorized base HEAD" >&2
+              return 1
+            }
+            test "$accepted_tree" = "$authorized_tree" || {
+              echo "FD05_ACCEPTED_TREE does not match the exact R0 authorized base TREE" >&2
+              return 1
+            }
+            test "$actual_head" = "$accepted_head" || {
+              echo "R0 event/live base HEAD does not match FD05_ACCEPTED_HEAD" >&2
+              return 1
+            }
+            test "$actual_tree" = "$accepted_tree" || {
+              echo "R0 event/live base TREE does not match FD05_ACCEPTED_TREE" >&2
+              return 1
+            }
+          }
+
           assert_route() {
             local expected="$1"
             shift
@@ -211,6 +277,13 @@ jobs:
             fi
           }
 
+          assert_r0_pin_failure() {
+            if verify_r0_pin "$@" >/dev/null 2>&1; then
+              echo "R0 pin self-check unexpectedly accepted invalid inputs" >&2
+              return 1
+            fi
+          }
+
           pin_head="$(printf 'a%.0s' {1..40})"
           pin_tree="$(printf 'b%.0s' {1..40})"
           other_head="$(printf 'c%.0s' {1..40})"
@@ -219,13 +292,20 @@ jobs:
             push "refs/heads/${FD01_BRANCH}" "" "" ""
           assert_route "FD05|LIVE_FD01|${FD05_BRANCH}|${FD01_BRANCH}|" \
             push "refs/heads/${FD05_BRANCH}" "" "" ""
+          assert_route "R0|LIVE_FD05|${R0_BRANCH}|${FD05_BRANCH}|" \
+            push "refs/heads/${R0_BRANCH}" "" "" ""
           assert_route "FD01|PINNED_C0|${FD01_BRANCH}|${C0_BRANCH}|71" \
             pull_request "" "71" "$FD01_BRANCH" "$C0_BRANCH"
           assert_route "FD05|EVENT_FD01|${FD05_BRANCH}|${FD01_BRANCH}|72" \
             pull_request "" "72" "$FD05_BRANCH" "$FD01_BRANCH"
+          assert_route "R0|EVENT_FD05|${R0_BRANCH}|${FD05_BRANCH}|73" \
+            pull_request "" "73" "$R0_BRANCH" "$FD05_BRANCH"
           assert_route_failure push refs/heads/main "" "" ""
           assert_route_failure pull_request "" 72 "$FD01_BRANCH" "$C0_BRANCH"
           assert_route_failure pull_request "" 72 unrelated-head "$C0_BRANCH"
+          assert_route_failure pull_request "" 73 "$R0_BRANCH" "$FD01_BRANCH"
+          assert_route_failure pull_request "" 73 "$FD05_BRANCH" "$FD05_BRANCH"
+          assert_route_failure push "refs/heads/${R0_BRANCH}-unexpected" "" "" ""
           assert_route_failure workflow_dispatch "" "" "" ""
           verify_fd05_pin "$pin_head" "$pin_tree" "$pin_head" "$pin_tree"
           assert_pin_failure "" "$pin_tree" "$pin_head" "$pin_tree"
@@ -234,8 +314,19 @@ jobs:
           assert_pin_failure "$pin_head" BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB "$pin_head" "$pin_tree"
           assert_pin_failure "$pin_head" "$pin_tree" "$other_head" "$pin_tree"
           assert_pin_failure "$pin_head" "$pin_tree" "$pin_head" "$other_tree"
+          verify_r0_pin "$pin_head" "$pin_tree" "$pin_head" "$pin_tree" "$pin_head" "$pin_tree"
+          assert_r0_pin_failure "$pin_head" "$pin_tree" "" "" "$pin_head" "$pin_tree"
+          assert_r0_pin_failure "$pin_head" "$pin_tree" "$pin_head" "" "$pin_head" "$pin_tree"
+          assert_r0_pin_failure "$pin_head" "$pin_tree" "" "$pin_tree" "$pin_head" "$pin_tree"
+          assert_r0_pin_failure "$pin_head" "$pin_tree" AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA "$pin_tree" "$pin_head" "$pin_tree"
+          assert_r0_pin_failure "$pin_head" "$pin_tree" "$pin_head" BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB "$pin_head" "$pin_tree"
+          assert_r0_pin_failure "$pin_head" "$pin_tree" "$other_head" "$pin_tree" "$pin_head" "$pin_tree"
+          assert_r0_pin_failure "$pin_head" "$pin_tree" "$pin_head" "$other_tree" "$pin_head" "$pin_tree"
+          assert_r0_pin_failure "$pin_head" "$pin_tree" "$pin_head" "$pin_tree" "$other_head" "$pin_tree"
+          assert_r0_pin_failure "$pin_head" "$pin_tree" "$pin_head" "$pin_tree" "$pin_head" "$other_tree"
           echo "ROUTING_MATRIX_SELF_CHECK=PASS"
           echo "FD05_EXTERNAL_PIN_SELF_CHECK=PASS"
+          echo "R0_EXTERNAL_PIN_SELF_CHECK=PASS"
 
           delivery_head="$(git rev-parse HEAD)"
           case "$GITHUB_EVENT_NAME" in
@@ -270,6 +361,14 @@ jobs:
                 "+refs/heads/${FD01_BRANCH}:refs/remotes/origin/fd01-target"
               slice_base_head="$(git rev-parse refs/remotes/origin/fd01-target)"
               ;;
+            EVENT_FD05)
+              slice_base_head="$EVENT_BASE_SHA"
+              ;;
+            LIVE_FD05)
+              git fetch --no-tags origin \
+                "+refs/heads/${FD05_BRANCH}:refs/remotes/origin/fd05-target"
+              slice_base_head="$(git rev-parse refs/remotes/origin/fd05-target)"
+              ;;
             *)
               echo "unsupported slice base source: $slice_base_source" >&2
               exit 1
@@ -281,18 +380,37 @@ jobs:
           git cat-file -e "$slice_base_head^{commit}"
           slice_base_tree="$(git rev-parse "$slice_base_head^{tree}")"
           [[ "$slice_base_tree" =~ ^[0-9a-f]{40}$ ]]
-          if [[ "$active_slice" = FD01 ]]; then
-            test "$slice_base_tree" = "$FD01_BASE_TREE"
-            fd05_base_pin="NOT_APPLICABLE_CURRENT_FD01"
-          else
-            test "$active_slice" = FD05
-            verify_fd05_pin \
-              "$FD01_ACCEPTED_HEAD" \
-              "$FD01_ACCEPTED_TREE" \
-              "$slice_base_head" \
-              "$slice_base_tree"
-            fd05_base_pin="PIN_VERIFIED_EXTERNAL"
-          fi
+          case "$active_slice" in
+            FD01)
+              test "$slice_base_tree" = "$FD01_BASE_TREE"
+              fd05_base_pin="NOT_APPLICABLE_CURRENT_FD01"
+              r0_base_pin="NOT_APPLICABLE_CURRENT_FD01"
+              ;;
+            FD05)
+              verify_fd05_pin \
+                "$FD01_ACCEPTED_HEAD" \
+                "$FD01_ACCEPTED_TREE" \
+                "$slice_base_head" \
+                "$slice_base_tree"
+              fd05_base_pin="PIN_VERIFIED_EXTERNAL"
+              r0_base_pin="NOT_APPLICABLE_CURRENT_FD05"
+              ;;
+            R0)
+              verify_r0_pin \
+                "$R0_AUTH_BASE_HEAD" \
+                "$R0_AUTH_BASE_TREE" \
+                "$FD05_ACCEPTED_HEAD" \
+                "$FD05_ACCEPTED_TREE" \
+                "$slice_base_head" \
+                "$slice_base_tree"
+              fd05_base_pin="PIN_VERIFIED_EXTERNAL"
+              r0_base_pin="PIN_VERIFIED_EXTERNAL"
+              ;;
+            *)
+              echo "unsupported active slice: $active_slice" >&2
+              exit 1
+              ;;
+          esac
 
           {
             echo "ACTIVE_SLICE=$active_slice"
@@ -303,8 +421,10 @@ jobs:
             echo "SLICE_BASE_REF=$active_base_ref"
             echo "SLICE_PR_NUMBER=$active_pr_number"
             echo "FD05_BASE_PIN=$fd05_base_pin"
+            echo "R0_BASE_PIN=$r0_base_pin"
           } >> "$GITHUB_ENV"
           echo "FD05_BASE_PIN=$fd05_base_pin"
+          echo "R0_BASE_PIN=$r0_base_pin"
 
       - name: Verify active-slice authorization drift, ancestry and synthetic merge
         shell: bash
@@ -332,25 +452,69 @@ jobs:
           git merge-base --is-ancestor "$FD01_RC2_START_HEAD" "$delivery_head"
           git merge-base --is-ancestor "$SLICE_BASE_HEAD" "$delivery_head"
           test -z "$(git rev-list --merges "$FD01_BASE_HEAD..$delivery_head")"
-          if [[ "$ACTIVE_SLICE" = FD01 ]]; then
-            test "$SLICE_BASE_HEAD" = "$FD01_BASE_HEAD"
-            test "$SLICE_BASE_TREE" = "$FD01_BASE_TREE"
-            test "$SLICE_BASE_SOURCE" = "PINNED_C0"
-            test "$FD05_BASE_PIN" = "NOT_APPLICABLE_CURRENT_FD01"
-            test "$(git rev-list --count "$FD01_RC3_START_HEAD..$delivery_head")" = "1"
-            test "$(git rev-parse "$delivery_head^")" = "$FD01_RC3_START_HEAD"
-          else
-            test "$ACTIVE_SLICE" = FD05
-            case "$SLICE_BASE_SOURCE" in
-              EVENT_FD01|LIVE_FD01) ;;
-              *) exit 1 ;;
-            esac
-            test "$FD05_BASE_PIN" = "PIN_VERIFIED_EXTERNAL"
-            test "$SLICE_BASE_HEAD" = "$FD01_ACCEPTED_HEAD"
-            test "$SLICE_BASE_TREE" = "$FD01_ACCEPTED_TREE"
-            git merge-base --is-ancestor "$FD01_RC2_START_HEAD" "$SLICE_BASE_HEAD"
-            git merge-base --is-ancestor "$FD01_RC3_START_HEAD" "$SLICE_BASE_HEAD"
-          fi
+          case "$ACTIVE_SLICE" in
+            FD01)
+              test "$SLICE_BASE_HEAD" = "$FD01_BASE_HEAD"
+              test "$SLICE_BASE_TREE" = "$FD01_BASE_TREE"
+              test "$SLICE_BASE_SOURCE" = "PINNED_C0"
+              test "$FD05_BASE_PIN" = "NOT_APPLICABLE_CURRENT_FD01"
+              test "$R0_BASE_PIN" = "NOT_APPLICABLE_CURRENT_FD01"
+              test "$(git rev-list --count "$FD01_RC3_START_HEAD..$delivery_head")" = "1"
+              test "$(git rev-parse "$delivery_head^")" = "$FD01_RC3_START_HEAD"
+              ;;
+            FD05)
+              case "$SLICE_BASE_SOURCE" in
+                EVENT_FD01|LIVE_FD01) ;;
+                *) exit 1 ;;
+              esac
+              test "$FD05_BASE_PIN" = "PIN_VERIFIED_EXTERNAL"
+              test "$R0_BASE_PIN" = "NOT_APPLICABLE_CURRENT_FD05"
+              test "$SLICE_BASE_HEAD" = "$FD01_ACCEPTED_HEAD"
+              test "$SLICE_BASE_TREE" = "$FD01_ACCEPTED_TREE"
+              git merge-base --is-ancestor "$FD01_RC2_START_HEAD" "$SLICE_BASE_HEAD"
+              git merge-base --is-ancestor "$FD01_RC3_START_HEAD" "$SLICE_BASE_HEAD"
+              ;;
+            R0)
+              case "$SLICE_BASE_SOURCE" in
+                EVENT_FD05|LIVE_FD05) ;;
+                *) exit 1 ;;
+              esac
+              test "$FD05_BASE_PIN" = "PIN_VERIFIED_EXTERNAL"
+              test "$R0_BASE_PIN" = "PIN_VERIFIED_EXTERNAL"
+              test "$SLICE_BASE_HEAD" = "$R0_AUTH_BASE_HEAD"
+              test "$SLICE_BASE_TREE" = "$R0_AUTH_BASE_TREE"
+              test "$SLICE_BASE_HEAD" = "$FD05_ACCEPTED_HEAD"
+              test "$SLICE_BASE_TREE" = "$FD05_ACCEPTED_TREE"
+              test "$(git merge-base "$SLICE_BASE_HEAD" "$delivery_head")" = "$SLICE_BASE_HEAD"
+              test -z "$(git rev-list --merges "$SLICE_BASE_HEAD..$delivery_head")"
+              r0_workflow_seen=false
+              r0_verifier_seen=false
+              mapfile -t r0_changed_paths < <(
+                git diff --name-only "$SLICE_BASE_HEAD...$delivery_head" --
+              )
+              test "${#r0_changed_paths[@]}" -eq 2
+              for changed_path in "${r0_changed_paths[@]}"; do
+                case "$changed_path" in
+                  .github/workflows/conflict-analysis.yml)
+                    r0_workflow_seen=true
+                    ;;
+                  software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py)
+                    r0_verifier_seen=true
+                    ;;
+                  *)
+                    echo "R0 changed path outside the exact two-path allowlist: $changed_path" >&2
+                    exit 1
+                    ;;
+                esac
+              done
+              test "$r0_workflow_seen" = true
+              test "$r0_verifier_seen" = true
+              ;;
+            *)
+              echo "unsupported active slice: $ACTIVE_SLICE" >&2
+              exit 1
+              ;;
+          esac
 
           git fetch --no-tags origin \
             +refs/heads/main:refs/remotes/origin/main \
@@ -362,10 +526,37 @@ jobs:
           test "$(git rev-parse refs/remotes/origin/main)" = "$AUTH_MAIN_HEAD"
           test "$(git rev-parse refs/remotes/origin/foundation-b)" = "$FOUNDATION_B_HEAD"
           test "$(git rev-parse refs/remotes/origin/c0)" = "$FD01_BASE_HEAD"
-          if [[ "$ACTIVE_SLICE" = FD01 ]]; then
-            test "$(git rev-parse refs/remotes/origin/fd01-target)" = "$delivery_head"
-          else
-            test "$(git rev-parse refs/remotes/origin/fd01-target)" = "$SLICE_BASE_HEAD"
+          case "$ACTIVE_SLICE" in
+            FD01)
+              test "$(git rev-parse refs/remotes/origin/fd01-target)" = "$delivery_head"
+              ;;
+            FD05)
+              test "$(git rev-parse refs/remotes/origin/fd01-target)" = "$SLICE_BASE_HEAD"
+              ;;
+            R0)
+              test "$(git rev-parse refs/remotes/origin/fd01-target)" = "$FD01_ACCEPTED_HEAD"
+              ;;
+          esac
+
+          if [[ "$ACTIVE_SLICE" = R0 ]]; then
+            git fetch --no-tags origin \
+              "+refs/heads/${FD05_BRANCH}:refs/remotes/origin/fd05-target" \
+              +refs/pull/72/merge:refs/remotes/origin/pr72-merge
+            test "$(git rev-parse refs/remotes/origin/fd05-target)" = "$SLICE_BASE_HEAD"
+            IFS=$'\t' read -r state72 draft72 merged72 head72 headref72 base72 baseref72 <<< "$(
+              gh api "repos/${GITHUB_REPOSITORY}/pulls/72" \
+                --jq '[.state, (.draft|tostring), (.merged|tostring), .head.sha, .head.ref, .base.sha, .base.ref] | @tsv'
+            )"
+            test "$state72" = open
+            test "$draft72" = true
+            test "$merged72" = false
+            test "$head72" = "$FD05_ACCEPTED_HEAD"
+            test "$headref72" = "$FD05_BRANCH"
+            test "$base72" = "$FD01_ACCEPTED_HEAD"
+            test "$baseref72" = "$FD01_BRANCH"
+            test "$(git rev-parse refs/remotes/origin/pr72-merge^1)" = "$FD01_ACCEPTED_HEAD"
+            test "$(git rev-parse refs/remotes/origin/pr72-merge^2)" = "$FD05_ACCEPTED_HEAD"
+            test "$(git rev-parse refs/remotes/origin/pr72-merge^{tree})" = "$FD05_ACCEPTED_TREE"
           fi
 
           IFS=$'\t' read -r state67 draft67 merged67 head67 base67 mergeable67 <<< "$(
@@ -429,8 +620,10 @@ jobs:
           cache: pip
           cache-dependency-path: software/conflict_analysis/pyproject.toml
 
-      - name: Run offline deterministic FD01 and FD05 verifier contract self-check
-        run: python scripts/verify_foundation_c1_prerequisites_allowlist.py --self-check-contracts
+      - name: Run offline deterministic verifier contract self-checks
+        run: |
+          python scripts/verify_foundation_c1_prerequisites_allowlist.py --self-check-contracts
+          python scripts/verify_production_studio_c_allowlist.py --self-check
 
       - name: Set up Node.js 24 for Chromium harness
         uses: actions/setup-node@v4
@@ -447,18 +640,28 @@ jobs:
 
       - name: Verify exact active-slice allowlist and frozen accepted surfaces
         run: |
-          verifier_args=(
-            --slice "$ACTIVE_SLICE"
-            --base-head "$SLICE_BASE_HEAD"
-            --base-tree "$SLICE_BASE_TREE"
-          )
-          if [[ "$ACTIVE_SLICE" = FD05 ]]; then
-            verifier_args+=(
-              --fd01-accepted-head "$FD01_ACCEPTED_HEAD"
-              --fd01-accepted-tree "$FD01_ACCEPTED_TREE"
+          if [[ "$ACTIVE_SLICE" = R0 ]]; then
+            python scripts/verify_production_studio_c_allowlist.py \
+              --slice R0 \
+              --base-head "$SLICE_BASE_HEAD" \
+              --base-tree "$SLICE_BASE_TREE" \
+              --fd05-accepted-head "$FD05_ACCEPTED_HEAD" \
+              --fd05-accepted-tree "$FD05_ACCEPTED_TREE" \
+              --repo "$GITHUB_WORKSPACE"
+          else
+            verifier_args=(
+              --slice "$ACTIVE_SLICE"
+              --base-head "$SLICE_BASE_HEAD"
+              --base-tree "$SLICE_BASE_TREE"
             )
+            if [[ "$ACTIVE_SLICE" = FD05 ]]; then
+              verifier_args+=(
+                --fd01-accepted-head "$FD01_ACCEPTED_HEAD"
+                --fd01-accepted-tree "$FD01_ACCEPTED_TREE"
+              )
+            fi
+            python scripts/verify_foundation_c1_prerequisites_allowlist.py "${verifier_args[@]}"
           fi
-          python scripts/verify_foundation_c1_prerequisites_allowlist.py "${verifier_args[@]}"
           git diff --check "$SLICE_BASE_HEAD...HEAD"
 
       - name: Check package, schema, migrations and Django
@@ -500,7 +703,7 @@ jobs:
           from pathlib import Path
           from xml.etree import ElementTree
           active_slice=os.environ["ACTIVE_SLICE"]
-          expected_total={"FD01":183,"FD05":200}[active_slice]
+          expected_total={"FD01":183,"FD05":200,"R0":200}[active_slice]
           cases=list(ElementTree.parse(Path("${{ runner.temp }}/postgresql-domain.xml")).iter("testcase"))
           skipped=[c for c in cases if c.find("skipped") is not None]
           assert len(cases)==expected_total, f"expected {expected_total} Foundation tests for {active_slice}, got {len(cases)}"
@@ -568,8 +771,8 @@ jobs:
             ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_concurrent_stale_saves_have_one_commit_one_draft_stale"),
             ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_save_validate_race_obeys_project_first_lock_order"),
           }
-          expected_total={"FD01":183,"FD05":200}[active_slice]
-          expected_passed={"FD01":177,"FD05":189}[active_slice]
+          expected_total={"FD01":183,"FD05":200,"R0":200}[active_slice]
+          expected_passed={"FD01":177,"FD05":189,"R0":189}[active_slice]
           expected=accepted_six if active_slice=="FD01" else accepted_six|fd05_five
           assert len(cases)==expected_total, f"expected {expected_total} Foundation tests for {active_slice}, got {len(cases)}"
           assert actual==expected, f"SQLite skip drift: {sorted(actual)}"
