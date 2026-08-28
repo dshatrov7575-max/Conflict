@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the exact Production Studio C0 or infrastructure-only R0 boundary."""
+"""Verify the exact Production Studio C0, R0, or authenticated-draft C1 boundary."""
 
 from __future__ import annotations
 
@@ -23,6 +23,8 @@ PINNED_R0_PRODUCTION_STUDIO_TREE = "87d8e93ec09a18b87ae016977f0fb5fbf67d4104"
 PINNED_R0_MODELS_BLOB = "c6c5c2419989e7b0cf40bd1242ab65d37cc2e162"
 PINNED_R0_ENUMS_BLOB = "a701c3c83511b7d1706519d40fab4580d0a0d63e"
 PINNED_R0_CLAIM_CONTRACTS_TREE = "737ff552664913fd87496bc2dfb0499389cea3c4"
+PINNED_C1_START_HEAD = "bd6e88c2a5f6552e057ea5b49fc63a1eb77ef4c6"
+PINNED_C1_START_TREE = "e1124839da8571408c258517c8afdf24622f1655"
 _LOWER_HEX_40 = re.compile(r"[0-9a-f]{40}\Z")
 
 ACTIVE_C0_ALLOWLIST = frozenset(
@@ -61,6 +63,56 @@ ACTIVE_R0_ALLOWLIST = frozenset(
         ".github/workflows/conflict-analysis.yml",
         "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
     }
+)
+
+# Sealed exact 16-path delta against the accepted R0 authorization point;
+# additions are not accepted through directory-prefix matching.
+ACTIVE_C1_ALLOWLIST = frozenset(
+    {
+        ".github/workflows/conflict-analysis.yml",
+        "software/conflict_analysis/README.md",
+        "software/conflict_analysis/docs/adr/0008-production-studio-c-audited-draft.md",
+        "software/conflict_analysis/docs/production-studio-c-read-only-runtime.md",
+        "software/conflict_analysis/production_studio/authoring_claim_boundaries.py",
+        "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs",
+        "software/conflict_analysis/production_studio/contracts/audited_draft_claim_boundaries_v1.ru.json",
+        "software/conflict_analysis/production_studio/contracts/audited_draft_claim_boundaries_v1.ru.json.sha256",
+        "software/conflict_analysis/production_studio/static/production_studio/audited_draft.css",
+        "software/conflict_analysis/production_studio/static/production_studio/audited_draft.js",
+        "software/conflict_analysis/production_studio/templates/production_studio/audited_draft_definition.html",
+        "software/conflict_analysis/production_studio/templates/production_studio/audited_draft_entry.html",
+        "software/conflict_analysis/production_studio/tests/test_audited_authoring.py",
+        "software/conflict_analysis/production_studio/urls.py",
+        "software/conflict_analysis/production_studio/views.py",
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+    }
+)
+
+C1_FROZEN_PATHS = (
+    "software/conflict_analysis/domain",
+    "software/conflict_analysis/domain/migrations",
+    "software/conflict_analysis/domain/models.py",
+    "software/conflict_analysis/domain/enums.py",
+    "software/conflict_analysis/domain/policies.py",
+    "software/conflict_analysis/domain/services/foundation_packages.py",
+    "software/conflict_analysis/domain/services/project_definitions.py",
+    "software/conflict_analysis/domain/services/schemas",
+    "software/conflict_analysis/production_studio/__init__.py",
+    "software/conflict_analysis/production_studio/apps.py",
+    "software/conflict_analysis/production_studio/browser_tests/cdp_client.mjs",
+    "software/conflict_analysis/production_studio/claim_boundaries.py",
+    "software/conflict_analysis/production_studio/contracts/read_only_claim_boundaries_v1.ru.json",
+    "software/conflict_analysis/production_studio/contracts/read_only_claim_boundaries_v1.ru.json.sha256",
+    "software/conflict_analysis/production_studio/static/production_studio/studio.css",
+    "software/conflict_analysis/production_studio/static/production_studio/studio.js",
+    "software/conflict_analysis/production_studio/templates/production_studio/definition.html",
+    "software/conflict_analysis/production_studio/templates/production_studio/entry.html",
+    "software/conflict_analysis/production_studio/browser_tests/read_only_smoke.mjs",
+    "software/conflict_analysis/production_studio/tests/__init__.py",
+    "software/conflict_analysis/production_studio/tests/test_browser_contract.py",
+    "software/conflict_analysis/production_studio/tests/test_claim_boundaries.py",
+    "software/conflict_analysis/production_studio/tests/test_read_only_http.py",
+    "software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py",
 )
 
 PINNED_MIGRATIONS = (
@@ -166,8 +218,11 @@ def _resolve_slice_contract(
             "exact_changed_paths": False,
             "domain_tree": PINNED_DOMAIN_TREE,
             "fd05_base_pin": "NOT_APPLICABLE_CURRENT_C0",
+            "fd05_accepted_head": None,
+            "fd05_accepted_tree": None,
+            "r0_start_pin": "NOT_APPLICABLE_CURRENT_C0",
         }
-    if active_slice != "R0":
+    if active_slice not in {"R0", "C1"}:
         raise VerificationError(f"unsupported Production Studio verifier slice: {active_slice!r}")
 
     accepted_head = _require_exact_object_id(
@@ -180,15 +235,62 @@ def _resolve_slice_contract(
     )
     if accepted_head != PINNED_R0_BASE_HEAD or accepted_tree != PINNED_R0_BASE_TREE:
         raise VerificationError("external FD05 pin does not match authorized H2/T2")
-    if base_head != accepted_head or base_tree != accepted_tree:
-        raise VerificationError("R0 base HEAD/TREE does not match the external FD05 pin")
+    if active_slice == "R0":
+        if base_head != accepted_head or base_tree != accepted_tree:
+            raise VerificationError("R0 base HEAD/TREE does not match the external FD05 pin")
+        return {
+            "active_slice": active_slice,
+            "allowlist": ACTIVE_R0_ALLOWLIST,
+            "exact_changed_paths": True,
+            "domain_tree": PINNED_R0_DOMAIN_TREE,
+            "fd05_base_pin": "PIN_VERIFIED_EXTERNAL",
+            "fd05_accepted_head": accepted_head,
+            "fd05_accepted_tree": accepted_tree,
+            "r0_start_pin": "NOT_APPLICABLE_CURRENT_R0",
+        }
+
+    if base_head != PINNED_C1_START_HEAD or base_tree != PINNED_C1_START_TREE:
+        raise VerificationError("C1 accepts only the exact authorized R0 START HEAD/TREE")
     return {
         "active_slice": active_slice,
-        "allowlist": ACTIVE_R0_ALLOWLIST,
+        "allowlist": ACTIVE_C1_ALLOWLIST,
         "exact_changed_paths": True,
         "domain_tree": PINNED_R0_DOMAIN_TREE,
         "fd05_base_pin": "PIN_VERIFIED_EXTERNAL",
+        "fd05_accepted_head": accepted_head,
+        "fd05_accepted_tree": accepted_tree,
+        "r0_start_pin": "PIN_VERIFIED_AUTHORIZATION",
     }
+
+
+def _require_changed_path_contract(
+    *,
+    active_slice: str,
+    changed: frozenset[str] | set[str],
+    allowlist: frozenset[str],
+    exact_changed_paths: bool,
+) -> None:
+    outside = sorted(changed - allowlist)
+    if outside:
+        raise VerificationError(
+            f"changed path(s) outside ACTIVE {active_slice} EXACT ALLOWLIST: "
+            + ", ".join(outside)
+        )
+    if exact_changed_paths and changed != allowlist:
+        missing = sorted(allowlist - changed)
+        raise VerificationError(
+            f"{active_slice} changed paths must equal the exact delivered allowlist; "
+            "missing: "
+            + ", ".join(missing)
+        )
+
+
+def _require_merge_free(active_slice: str, merge_commits: tuple[str, ...]) -> None:
+    if merge_commits:
+        raise VerificationError(
+            f"merge commits are forbidden after the exact {active_slice} base: "
+            + ", ".join(merge_commits)
+        )
 
 
 def self_check() -> dict[str, object]:
@@ -205,6 +307,13 @@ def self_check() -> dict[str, object]:
         active_slice="R0",
         base_head=PINNED_R0_BASE_HEAD,
         base_tree=PINNED_R0_BASE_TREE,
+        fd05_accepted_head=PINNED_R0_BASE_HEAD,
+        fd05_accepted_tree=PINNED_R0_BASE_TREE,
+    )
+    c1 = _resolve_slice_contract(
+        active_slice="C1",
+        base_head=PINNED_C1_START_HEAD,
+        base_tree=PINNED_C1_START_TREE,
         fd05_accepted_head=PINNED_R0_BASE_HEAD,
         fd05_accepted_tree=PINNED_R0_BASE_TREE,
     )
@@ -291,6 +400,104 @@ def self_check() -> dict[str, object]:
                 f"offline self-check unexpectedly accepted {label!r}"
             )
 
+    valid_c1 = {
+        "active_slice": "C1",
+        "base_head": PINNED_C1_START_HEAD,
+        "base_tree": PINNED_C1_START_TREE,
+        "fd05_accepted_head": PINNED_R0_BASE_HEAD,
+        "fd05_accepted_tree": PINNED_R0_BASE_TREE,
+    }
+    invalid_c1_contracts = (
+        (
+            "C1 H2 substituted for R0 start",
+            {"base_head": PINNED_R0_BASE_HEAD, "base_tree": PINNED_R0_BASE_TREE},
+            "exact authorized R0 START HEAD/TREE",
+        ),
+        (
+            "C1 mismatched R0 start head",
+            {"base_head": other_head},
+            "exact authorized R0 START HEAD/TREE",
+        ),
+        (
+            "C1 mismatched R0 start tree",
+            {"base_tree": other_tree},
+            "exact authorized R0 START HEAD/TREE",
+        ),
+        (
+            "C1 missing H2 head pin",
+            {"fd05_accepted_head": None},
+            "FD05_ACCEPTED_HEAD",
+        ),
+        (
+            "C1 mismatched H2 tree pin",
+            {"fd05_accepted_tree": other_tree},
+            "authorized H2/T2",
+        ),
+    )
+    for label, overrides, expected_error in invalid_c1_contracts:
+        candidate = {**valid_c1, **overrides}
+        try:
+            _resolve_slice_contract(**candidate)  # type: ignore[arg-type]
+        except VerificationError as exc:
+            if expected_error not in str(exc):
+                raise VerificationError(
+                    f"offline self-check {label!r} failed for the wrong reason: {exc}"
+                ) from exc
+        else:
+            raise VerificationError(
+                f"offline self-check unexpectedly accepted {label!r}"
+            )
+
+    _require_changed_path_contract(
+        active_slice="C1",
+        changed=ACTIVE_C1_ALLOWLIST,
+        allowlist=ACTIVE_C1_ALLOWLIST,
+        exact_changed_paths=True,
+    )
+    _require_merge_free("C1", ())
+    path_negative_cases = 0
+    for label, changed, expected_error in (
+        (
+            "C1 path outside allowlist",
+            ACTIVE_C1_ALLOWLIST | {"software/conflict_analysis/domain/models.py"},
+            "outside ACTIVE C1 EXACT ALLOWLIST",
+        ),
+        (
+            "C1 missing delivered path",
+            ACTIVE_C1_ALLOWLIST
+            - {"software/conflict_analysis/production_studio/views.py"},
+            "C1 changed paths must equal",
+        ),
+    ):
+        path_negative_cases += 1
+        try:
+            _require_changed_path_contract(
+                active_slice="C1",
+                changed=frozenset(changed),
+                allowlist=ACTIVE_C1_ALLOWLIST,
+                exact_changed_paths=True,
+            )
+        except VerificationError as exc:
+            if expected_error not in str(exc):
+                raise VerificationError(
+                    f"offline self-check {label!r} failed for the wrong reason: {exc}"
+                ) from exc
+        else:
+            raise VerificationError(
+                f"offline self-check unexpectedly accepted {label!r}"
+            )
+    try:
+        _require_merge_free("C1", ("synthetic-merge-object",))
+    except VerificationError as exc:
+        if "merge commits are forbidden after the exact C1 base" not in str(exc):
+            raise VerificationError(
+                "offline C1 merge-topology self-check failed for the wrong reason"
+            ) from exc
+    else:
+        raise VerificationError(
+            "offline self-check unexpectedly accepted a C1 merge commit"
+        )
+
     try:
         _resolve_slice_contract(
             active_slice="C0",
@@ -309,10 +516,20 @@ def self_check() -> dict[str, object]:
 
     return {
         "marker": "PRODUCTION_STUDIO_R0_VERIFIER_SELF_CHECK=PASS",
+        "c1_marker": "PRODUCTION_STUDIO_C1_VERIFIER_SELF_CHECK=PASS",
         "network_access": False,
         "repository_access": False,
-        "positive_slices": [c0["active_slice"], r0["active_slice"]],
-        "negative_cases": len(invalid_contracts) + 1,
+        "positive_slices": [
+            c0["active_slice"],
+            r0["active_slice"],
+            c1["active_slice"],
+        ],
+        "negative_cases": (
+            len(invalid_contracts)
+            + len(invalid_c1_contracts)
+            + path_negative_cases
+            + 2
+        ),
     }
 
 
@@ -342,7 +559,38 @@ def verify(
             f"HEAD is not a descendant of the exact {active_slice} base"
         )
 
-    if active_slice == "R0":
+    if active_slice == "C1":
+        accepted_head = contract["fd05_accepted_head"]
+        accepted_tree = contract["fd05_accepted_tree"]
+        if not isinstance(accepted_head, str) or not isinstance(accepted_tree, str):
+            raise VerificationError("internal C1 FD05 accepted-pin contract is invalid")
+        resolved_accepted_tree = _git(
+            repo,
+            "rev-parse",
+            f"{accepted_head}^{{tree}}",
+        )
+        if resolved_accepted_tree != accepted_tree:
+            raise VerificationError(
+                "FD05 accepted tree mismatch: "
+                f"expected {accepted_tree}, resolved {resolved_accepted_tree}"
+            )
+        if _git(repo, "merge-base", accepted_head, base_head) != accepted_head:
+            raise VerificationError(
+                "the exact C1 R0 START is not a descendant of accepted FD05 H2"
+            )
+        accepted_to_start_merges = tuple(
+            item
+            for item in _git(
+                repo,
+                "rev-list",
+                "--merges",
+                f"{accepted_head}..{base_head}",
+            ).splitlines()
+            if item
+        )
+        _require_merge_free("C1 accepted H2-to-R0 START", accepted_to_start_merges)
+
+    if active_slice in {"R0", "C1"}:
         merge_commits = tuple(
             item
             for item in _git(
@@ -353,28 +601,21 @@ def verify(
             ).splitlines()
             if item
         )
-        if merge_commits:
-            raise VerificationError(
-                "merge commits are forbidden after the exact R0 base: "
-                + ", ".join(merge_commits)
-            )
+        _require_merge_free(active_slice, merge_commits)
 
     changed = _changed_paths(repo, base_head)
     allowlist = contract["allowlist"]
     if not isinstance(allowlist, frozenset):
         raise VerificationError("internal slice allowlist contract is invalid")
-    outside = sorted(changed - allowlist)
-    if outside:
-        raise VerificationError(
-            f"changed path(s) outside ACTIVE {active_slice} EXACT ALLOWLIST: "
-            + ", ".join(outside)
-        )
-    if contract["exact_changed_paths"] and changed != allowlist:
-        missing = sorted(allowlist - changed)
-        raise VerificationError(
-            "R0 changed paths must equal the exact two-path allowlist; missing: "
-            + ", ".join(missing)
-        )
+    exact_changed_paths = contract["exact_changed_paths"]
+    if not isinstance(exact_changed_paths, bool):
+        raise VerificationError("internal exact changed-path contract is invalid")
+    _require_changed_path_contract(
+        active_slice=active_slice,
+        changed=changed,
+        allowlist=allowlist,
+        exact_changed_paths=exact_changed_paths,
+    )
 
     domain_prefix = "software/conflict_analysis/domain/"
     changed_domain = sorted(path for path in changed if path.startswith(domain_prefix))
@@ -442,6 +683,16 @@ def verify(
                     f"expected {expected_object}, base {base_object}, HEAD {head_object}"
                 )
             frozen_objects[path] = expected_object
+    elif active_slice == "C1":
+        for path in C1_FROZEN_PATHS:
+            start_object = _git(repo, "rev-parse", f"{base_head}:{path}")
+            head_object = _git(repo, "rev-parse", f"HEAD:{path}")
+            if head_object != start_object:
+                raise VerificationError(
+                    f"C1 frozen object drift at {path}: "
+                    f"R0 start {start_object}, HEAD {head_object}"
+                )
+            frozen_objects[path] = start_object
 
     return {
         "active_slice": active_slice,
@@ -451,17 +702,20 @@ def verify(
         "changed_paths": sorted(changed),
         "domain_tree": domain_tree,
         "domain_tree_unchanged": True,
-        "exact_changed_paths": changed == allowlist if active_slice == "R0" else None,
+        "exact_changed_paths": changed == allowlist if exact_changed_paths else None,
         "fd05_base_pin": contract["fd05_base_pin"],
+        "fd05_accepted_head": contract["fd05_accepted_head"],
+        "fd05_accepted_tree": contract["fd05_accepted_tree"],
         "frozen_objects": frozen_objects,
-        "merge_commits_absent": True if active_slice == "R0" else None,
+        "merge_commits_absent": True if active_slice in {"R0", "C1"} else None,
         "migration_filenames_unchanged": True,
+        "r0_start_pin": contract["r0_start_pin"],
     }
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--slice", choices=("C0", "R0"), default="C0")
+    parser.add_argument("--slice", choices=("C0", "R0", "C1"), default="C0")
     parser.add_argument("--base-head", default=PINNED_BASE_HEAD)
     parser.add_argument("--base-tree", default=PINNED_BASE_TREE)
     parser.add_argument("--fd05-accepted-head")
@@ -486,6 +740,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if args.self_check:
         print(result["marker"])
+        print(result["c1_marker"])
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
