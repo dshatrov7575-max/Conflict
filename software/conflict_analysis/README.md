@@ -1,5 +1,40 @@
 # Conflict Analysis
 
+## Production Studio C1: authenticated audited DRAFT
+
+`C1_AUTHENTICATED_DRAFT` adds a testable Russian authoring shell without
+creating a second persistence or validation authority. A pre-issued Django
+session opens `/studio/drafts/` to bootstrap the first Project/DRAFT through
+Foundation, or opens an exact existing UUID at
+`/studio/drafts/definitions/<UUID>/`. The Studio server views remain GET-only;
+browser writes go directly to the accepted same-origin Foundation HTTP
+gateways.
+
+The editor keeps one proposal in memory and exposes bounded windows for more
+than 500 actors and analytical elements. It can rename, add, delete and reorder
+those records, edit the Project snapshot, request canonical non-mutating
+validation preview, and save with a strong Foundation ETag and a fresh UUIDv4
+`Idempotency-Key`. A typed stale conflict is shown without force overwrite or
+automatic retry. Manual reconciliation is available only for an ambiguous
+outcome and repeats the exact operation key, raw body and `If-Match` token.
+Successful saves display the immutable Foundation write receipt and survive an
+exact-ID reload.
+
+Foundation remains the sole persistence, lifecycle, authorization, validation,
+audit, Help and package authority. Studio has no authoring model, migration,
+session issuer, package implementation, validator or `/api/studio` mutation
+alias. Browser persistence is limited to the bounded layout value under
+`conflict-analysis-studio:audited-draft-layout:v1`; manifests, receipts,
+operation keys and identities are never cached. Document, Chat, scientific
+formula, scalar Power, prediction, risk and recommendation controls remain
+disabled. The public checksum-bound C1 claim contract is available at
+`/studio/claim-boundaries/audited-draft/v1/`.
+
+The operational contract is documented in
+[`docs/production-studio-c-read-only-runtime.md`](docs/production-studio-c-read-only-runtime.md),
+and the C1 decision in
+[`docs/adr/0008-production-studio-c-audited-draft.md`](docs/adr/0008-production-studio-c-audited-draft.md).
+
 ## Production Studio C0: authenticated read-only
 
 `C0_AUTHENTICATED_READ_ONLY` is a Russian three-panel browser shell mounted at

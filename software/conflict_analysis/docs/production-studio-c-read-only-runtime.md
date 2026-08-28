@@ -1,7 +1,9 @@
-# Production Studio C0 read-only runtime
+# Production Studio C0 read-only and C1 audited-DRAFT runtime
 
-This runbook applies only to `C0_AUTHENTICATED_READ_ONLY`. It does not authorize
-C1, C2, C3, a Foundation dependency task, a release or a write-capable Studio.
+This runbook applies to the accepted `C0_AUTHENTICATED_READ_ONLY` boundary and
+the separately authorized `C1_AUTHENTICATED_DRAFT` composition. It does not
+authorize C2, C3, a release or any Studio-local persistence, validation,
+authorization, lifecycle, audit, Help or package authority.
 
 ## Hosted authority
 
@@ -49,6 +51,48 @@ nor changes session state. Do not make a Studio shell view create, rotate or
 refresh a session. The measured flow must leave `django_session`,
 `auth_user.last_login`, every `domain_*` row and every AuditEvent unchanged.
 
+C1 uses the same pre-issued-session hand-off and never renders a credential
+form or login/logout route:
+
+```text
+GET /studio/drafts/
+GET /studio/drafts/definitions/<exact UUID>/
+```
+
+Those server views are still GET-only composition. They may ensure a CSRF
+cookie for the already authenticated session, but they do not issue, rotate or
+refresh the session. The entry shell either accepts an exact DRAFT UUID or asks
+Foundation to create the first Project and DRAFT with preselected canonical
+UUIDs. The definition shell accepts only an exact UUID and lets Foundation
+perform all object-scope and capability decisions.
+
+## C1 Foundation authoring boundary
+
+The C1 browser may use only these same-origin Foundation operations:
+
+| Method and path | Exact purpose |
+| --- | --- |
+| `POST /api/foundation/projects/bootstrap-first-draft/` | Create the first Project, DRAFT, scope membership, audit and receipt atomically |
+| `GET /api/foundation/definitions/<UUID>/` | Open the exact accessible definition and obtain its strong manifest ETag |
+| `POST /api/foundation/definitions/<UUID>/validation-preview/` | Canonical, bounded, non-mutating preview of the in-memory proposal |
+| `PUT /api/foundation/definitions/<UUID>/draft/` | Audited save using one strong `If-Match` and one canonical UUIDv4 `Idempotency-Key` |
+| `GET /api/foundation/help/<ui_key>/?application=STUDIO&locale=<locale>&version=<version>` | Resolve one exact Foundation Help binding |
+
+Bootstrap sends the exact `{project, definition}` envelope. Save sends exactly
+`{manifest}`. Preview sends exactly `{manifest}` and must not carry
+`Idempotency-Key` or `If-Match`. All mutations require real session CSRF, exact
+JSON media type and Foundation's bounded raw-ingress parser. Actor, role,
+capability, project scope and stale-token authority are never accepted from the
+browser body, query or spoofable headers.
+
+The open ETag identifies the persisted manifest. A successful save returns a
+new ETag and immutable `write_receipt`. `DRAFT_STALE` and other typed 409
+responses are visible conflict states; the UI neither force-overwrites nor
+automatically retries. Manual reconciliation is enabled only after an ambiguous
+outcome and must repeat the identical raw body, operation key and `If-Match`.
+An exact replay may return `WRITE_OPERATION_RECONCILED`; changing any request
+identity with a reused key is a typed key-reuse conflict.
+
 ## Read-only network boundary
 
 The client reads the exact definition through
@@ -86,6 +130,38 @@ operational boundary. Do not remove or hide them. C0 does not claim substantive
 correctness or scientific validation and offers no aggregation/ranking,
 formula, scalar Power, prediction, probability, risk or recommendation.
 
+C1 has a distinct and equally bounded layout key:
+
+```text
+localStorage["conflict-analysis-studio:audited-draft-layout:v1"] =
+{
+  version: "STUDIO_AUDITED_DRAFT_LAYOUT_V1",
+  left: 220..420,
+  right: 300..500,
+  activeRightTab: "help"
+}
+```
+
+Defaults are `left=272`, `right=360`, `activeRightTab="help"`; the exact keys
+and UTF-8 JSON are limited to 256 bytes. Invalid, extra-key or out-of-range
+state is removed. The in-memory DRAFT, manifest, Foundation ETag, operation
+UUID, receipt, conflict and Help content must never be written to localStorage,
+sessionStorage, IndexedDB, Cache Storage or a service worker.
+
+The C1 editor renders at most 100 active actor rows and 100 analytical-element
+rows even when each collection exceeds 500 items. It does not allocate an
+actor-by-element matrix, aggregate/rank rows or a cross-component magnitude.
+Document, Chat, scientific formula, scalar Power, prediction, probability,
+risk and recommendation controls remain disabled. Exact Foundation Help is the
+only help content promoted to authoritative UI.
+
+The immutable public C1 boundary is
+`GET /studio/claim-boundaries/audited-draft/v1/`. Its committed UTF-8 bytes and
+SHA-256 sidecar must verify before either C1 shell renders. The boundary states
+that the browser holds a proposal only, Foundation remains the sole authority,
+validation is not substantive correctness, and reconciliation is not an
+automatic retry.
+
 ## Platform roles and verification
 
 The supported Windows partner role for C0 is a current Chromium browser only,
@@ -95,14 +171,17 @@ real current Chromium against a pre-issued session and checks GET-only traffic,
 bounded DOM/storage, exact downloads, permanent claims and a byte-identical
 database snapshot.
 
-SQLite is an explicit local/test convenience only. Its accepted C0 run preserves
-169 Foundation passes and exactly six named PostgreSQL-only skips, but SQLite
+SQLite is an explicit local/test convenience only. The accepted current run
+collects 200 Foundation nodes, with 189 passes and exactly eleven named
+PostgreSQL-only skips; SQLite
 does not prove row-locking, transaction interleaving or any other PostgreSQL
 concurrency semantics. Delivery still requires the clean PostgreSQL 18 gate:
-the 175-test Foundation baseline with no unexpected skips plus all C0 tests.
+200 Foundation passes with no skips, the unchanged 19-node C0 regression on
+both databases, all eight portable C1 contract nodes on both databases, and the
+single real-Chromium C1 edit/save/reload node on PostgreSQL.
 
 Before delivery, verify the pinned base/allowlist and unchanged `domain/` tree,
 compile all packages, run Django checks and migration drift detection, execute
 both database suites, validate the claim contract hash, run the Chromium smoke,
 and inspect the wheel for every runtime template/static/contract asset. A failed
-gate is not permission to widen C0.
+gate is not permission to widen C0 or C1.

@@ -1,0 +1,177 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Production Studio C1 — DRAFT {{ definition_id }}</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="{% static 'production_studio/audited_draft.css' %}">
+  <script src="{% static 'production_studio/audited_draft.js' %}" defer></script>
+</head>
+<body data-studio-page="audited-draft-definition">
+  <header
+    id="audited-draft-boundary-banner"
+    class="authoring-boundary"
+    data-claim-contract="{{ authoring_claim_contract }}"
+    data-claim-version="{{ authoring_claim_contract_version }}"
+    data-claim-sha256="{{ authoring_claim_sha256 }}"
+    data-claim-bytes="{{ authoring_claim_payload_bytes }}"
+    data-claim-url="{% url 'production_studio:claim_boundaries_audited_draft_v1' %}"
+  >
+    <p><strong>{{ authoring_claim_by_code.STATUS }}</strong></p>
+    <p>{{ authoring_claim_by_code.AUTHORITY }}</p>
+    <p>{{ authoring_claim_by_code.RECONCILIATION }}</p>
+    <a href="{% url 'production_studio:claim_boundaries_audited_draft_v1' %}" download="audited_draft_claim_boundaries_v1.ru.json">Скачать проверенный контракт ограничений</a>
+    <code>SHA-256 {{ authoring_claim_sha256 }}</code>
+  </header>
+
+  <main
+    id="audited-draft-app"
+    class="authoring-app"
+    data-authenticated="{{ studio_authenticated|yesno:'true,false' }}"
+    data-definition-id="{{ definition_id }}"
+    data-open-url="{{ foundation_open_url }}"
+    data-save-url="{{ foundation_save_url }}"
+    data-preview-url="{{ foundation_validation_preview_url }}"
+    data-help-base="{{ foundation_help_base }}"
+  >
+    {% if studio_authenticated %}
+      <section class="authoring-toolbar" aria-label="Операции черновика">
+        <a class="button-link" href="{% url 'production_studio:audited_draft_entry' %}">Другой проект</a>
+        <label for="left-width-control">Проект <output id="left-width-output">272</output> px</label>
+        <input id="left-width-control" type="range" min="220" max="420" step="4" value="272">
+        <label for="right-width-control">Справка <output id="right-width-output">360</output> px</label>
+        <input id="right-width-control" type="range" min="300" max="500" step="4" value="360">
+        <button id="preview-validation" type="button" disabled>Проверить без записи</button>
+        <button id="save-draft" type="button" disabled>Сохранить DRAFT</button>
+        <button id="manual-reconcile" type="button" hidden disabled>Ручная сверка тем же запросом</button>
+        <span>Ключ: <code id="authoring-operation-key">—</code></span>
+        <span>Квитанция: <code id="last-receipt-sha">—</code></span>
+      </section>
+
+      <section id="authoring-state" class="authoring-state" role="status" aria-live="polite">
+        <strong id="authoring-state-code">LOADING</strong>
+        <span id="authoring-state-message">Проверяется контракт и загружается точное определение Foundation.</span>
+      </section>
+
+      <div class="authoring-panels">
+        <aside id="authoring-left-panel" class="authoring-panel authoring-panel--left" aria-labelledby="project-snapshot-title">
+          <h1 id="project-snapshot-title">Проект</h1>
+          <dl class="identity-list">
+            <dt>Project UUID</dt><dd><code id="project-id">—</code></dd>
+            <dt>Код</dt><dd><code id="project-code">—</code></dd>
+            <dt>Версия</dt><dd><code id="project-version">—</code></dd>
+            <dt>Definition UUID</dt><dd><code id="definition-id">{{ definition_id }}</code></dd>
+            <dt>Статус</dt><dd><code id="definition-status">—</code></dd>
+            <dt>ETag</dt><dd><code id="definition-etag">—</code></dd>
+          </dl>
+          <label for="project-name">Название проекта</label>
+          <input id="project-name" type="text" maxlength="255" disabled>
+          <label for="project-description">Описание</label>
+          <textarea id="project-description" rows="5" disabled></textarea>
+          <p class="field-note">Изменения остаются в памяти до явного сохранения.</p>
+
+          <nav aria-label="Разделы определения">
+            <button id="authoring-actors" type="button" data-authoring-section="actors" disabled>Акторы <span id="actor-count">0</span></button>
+            <button id="authoring-elements" type="button" data-authoring-section="analytical_elements" disabled>Элементы <span id="element-count">0</span></button>
+          </nav>
+
+          <details class="claim-details">
+            <summary>Все ограничения C1</summary>
+            <ul>
+              {% for statement in authoring_claim_statements %}
+                <li data-claim-code="{{ statement.code }}">{{ statement.text }}</li>
+              {% endfor %}
+            </ul>
+          </details>
+        </aside>
+
+        <div id="authoring-left-resizer" class="panel-resizer" role="separator" aria-label="Ширина панели проекта" aria-orientation="vertical" aria-valuemin="220" aria-valuemax="420" aria-valuenow="272" tabindex="0"></div>
+
+        <section id="authoring-center-panel" class="authoring-panel authoring-panel--center" aria-labelledby="structure-title">
+          <header class="section-heading">
+            <div>
+              <p class="eyebrow">Активное окно: не более 100 строк</p>
+              <h2 id="structure-title">Акторы</h2>
+            </div>
+            <div class="button-row">
+              <button id="add-actor" type="button" disabled>Добавить актора</button>
+              <button id="add-element" type="button" hidden disabled>Добавить элемент</button>
+            </div>
+          </header>
+
+          <div id="authoring-window-summary" class="window-summary">Строки 0–0 из 0</div>
+          <div class="table-scroll">
+            <table aria-describedby="authoring-window-summary">
+              <thead>
+                <tr>
+                  <th scope="col">Порядок</th>
+                  <th scope="col">Код и тип</th>
+                  <th scope="col">Название</th>
+                  <th scope="col">Описание / утверждение</th>
+                  <th scope="col">Действия</th>
+                </tr>
+              </thead>
+              <tbody id="authoring-window"></tbody>
+            </table>
+          </div>
+          <div class="window-controls">
+            <button id="authoring-window-prev" type="button" disabled>Предыдущие 100</button>
+            <span id="authoring-window-page">Окно 0 из 0</span>
+            <button id="authoring-window-next" type="button" disabled>Следующие 100</button>
+          </div>
+
+          <section id="validation-summary" class="validation-summary" aria-labelledby="validation-title" hidden>
+            <h3 id="validation-title">Канонический отчёт Foundation</h3>
+            <p><strong id="validation-state">—</strong> · всего <span id="validation-total">0</span> · показано <span id="validation-rendered">0</span></p>
+            <p>Report SHA-256 <code id="validation-report-sha">—</code></p>
+            <ol id="validation-diagnostics"></ol>
+          </section>
+        </section>
+
+        <div id="authoring-right-resizer" class="panel-resizer" role="separator" aria-label="Ширина панели справки" aria-orientation="vertical" aria-valuemin="300" aria-valuemax="500" aria-valuenow="360" tabindex="0"></div>
+
+        <aside id="authoring-right-panel" class="authoring-panel authoring-panel--right" aria-labelledby="right-panel-title">
+          <h2 id="right-panel-title">Документ · Чат · Справка</h2>
+          <div class="right-tabs" role="tablist" aria-label="Вспомогательная панель">
+            <button id="document-control" type="button" role="tab" data-right-tab="document" disabled aria-disabled="true">Документ</button>
+            <button id="chat-control" type="button" role="tab" data-right-tab="chat" disabled aria-disabled="true">Чат</button>
+            <button id="help-control" type="button" role="tab" data-right-tab="help" aria-selected="true">Справка</button>
+          </div>
+          <p class="unavailable-note">Документ и Чат недоступны: канонического evidence/chat gateway в C1 нет.</p>
+
+          <section id="help-panel" aria-labelledby="help-title">
+            <h3 id="help-title">Точная Foundation Help</h3>
+            <label for="help-binding-select">Привязка из manifest</label>
+            <select id="help-binding-select" disabled></select>
+            <button id="load-help" type="button" disabled>Загрузить точную версию</button>
+            <p id="help-state">Справка ещё не запрошена.</p>
+            <iframe id="help-frame" title="Проверенная справка Foundation" sandbox hidden></iframe>
+          </section>
+
+          <section id="disabled-scientific-controls" aria-labelledby="disabled-title">
+            <h3 id="disabled-title">Недоступные функции</h3>
+            <button id="scientific-control" type="button" disabled>Формулы / scalar Power</button>
+            <button id="prediction-control" type="button" disabled>Прогноз / риск</button>
+            <button id="recommendation-control" type="button" disabled>Рекомендации / ранжирование</button>
+          </section>
+        </aside>
+      </div>
+    {% else %}
+      <section class="authoring-card authoring-state--attention" role="status" data-state="AUTHENTICATION_REQUIRED">
+        <h1>Требуется заранее выданная сессия</h1>
+        <p>Studio не выдаёт сессию и не принимает учётные данные. Ни один запрос Foundation не выполнен.</p>
+      </section>
+    {% endif %}
+  </main>
+
+  <noscript>
+    <section class="noscript-boundary">
+      <h2>JavaScript отключён</h2>
+      <p>Черновик не загружен; Foundation не изменён.</p>
+      {% for statement in authoring_claim_statements %}<p>{{ statement.text }}</p>{% endfor %}
+    </section>
+  </noscript>
+</body>
+</html>

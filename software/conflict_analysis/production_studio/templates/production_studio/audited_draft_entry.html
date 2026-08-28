@@ -1,0 +1,115 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Production Studio C1 — аудируемый черновик</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="{% static 'production_studio/audited_draft.css' %}">
+  <script src="{% static 'production_studio/audited_draft.js' %}" defer></script>
+</head>
+<body data-studio-page="audited-draft-entry">
+  <header
+    id="audited-draft-boundary-banner"
+    class="authoring-boundary"
+    data-claim-contract="{{ authoring_claim_contract }}"
+    data-claim-version="{{ authoring_claim_contract_version }}"
+    data-claim-sha256="{{ authoring_claim_sha256 }}"
+    data-claim-bytes="{{ authoring_claim_payload_bytes }}"
+    data-claim-url="{% url 'production_studio:claim_boundaries_audited_draft_v1' %}"
+  >
+    <p><strong>{{ authoring_claim_by_code.STATUS }}</strong></p>
+    <p>{{ authoring_claim_by_code.AUTHORITY }}</p>
+    <p>{{ authoring_claim_by_code.DRAFT_MEMORY }}</p>
+    <a href="{% url 'production_studio:claim_boundaries_audited_draft_v1' %}" download="audited_draft_claim_boundaries_v1.ru.json">Скачать проверенный контракт ограничений</a>
+    <code>SHA-256 {{ authoring_claim_sha256 }}</code>
+  </header>
+
+  <main
+    id="audited-draft-entry"
+    class="authoring-entry"
+    data-authenticated="{{ studio_authenticated|yesno:'true,false' }}"
+    data-bootstrap-url="{{ foundation_bootstrap_url }}"
+    data-definition-base="{{ audited_draft_definition_base }}"
+  >
+    {% if studio_authenticated %}
+      <section class="authoring-card" aria-labelledby="bootstrap-title">
+        <p class="eyebrow">Pre-authenticated · HUMAN audited write</p>
+        <h1 id="bootstrap-title">Новый проект и первый черновик</h1>
+        <p>Идентификаторы и ключ операции выбираются до запроса. После неопределённого результата доступна только ручная сверка с теми же байтами.</p>
+        <form id="bootstrap-draft-form" novalidate>
+          <fieldset>
+            <legend>Проект</legend>
+            <label for="bootstrap-project-id">UUID проекта</label>
+            <input id="bootstrap-project-id" name="project-id" type="text" autocomplete="off" spellcheck="false" required>
+            <label for="bootstrap-project-code">Код</label>
+            <input id="bootstrap-project-code" name="project-code" type="text" value="PROJECT-STUDIO-C1" maxlength="128" required>
+            <label for="bootstrap-project-version">Версия</label>
+            <input id="bootstrap-project-version" name="project-version" type="text" value="1.0.0" maxlength="64" required>
+            <label for="bootstrap-project-name">Название</label>
+            <input id="bootstrap-project-name" name="project-name" type="text" value="Новый проект анализа конфликта" maxlength="255" required>
+            <label for="bootstrap-project-description">Описание</label>
+            <textarea id="bootstrap-project-description" name="project-description" rows="3"></textarea>
+          </fieldset>
+          <fieldset>
+            <legend>Первый DRAFT</legend>
+            <label for="bootstrap-definition-id">UUID определения</label>
+            <input id="bootstrap-definition-id" name="definition-id" type="text" autocomplete="off" spellcheck="false" required>
+            <label for="bootstrap-definition-code">Код</label>
+            <input id="bootstrap-definition-code" name="definition-code" type="text" value="DRAFT-STUDIO-C1" maxlength="128" required>
+            <label for="bootstrap-definition-version">Версия</label>
+            <input id="bootstrap-definition-version" name="definition-version" type="text" value="1.0.0" maxlength="64" required>
+            <label for="bootstrap-semantic-version">Semantic version</label>
+            <input id="bootstrap-semantic-version" name="semantic-version" type="text" value="1.0.0" maxlength="64" required>
+            <label for="bootstrap-construct-version">Construct version</label>
+            <input id="bootstrap-construct-version" name="construct-version" type="text" value="1.0.0" maxlength="64" required>
+          </fieldset>
+          <label for="bootstrap-operation-key">Idempotency-Key UUIDv4</label>
+          <input id="bootstrap-operation-key" type="text" readonly aria-readonly="true">
+          <div class="button-row">
+            <button id="bootstrap-draft" type="submit">Создать проект и DRAFT</button>
+            <button id="bootstrap-manual-reconcile" type="button" hidden disabled>Ручная сверка тем же запросом</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="authoring-card" aria-labelledby="existing-title">
+        <h2 id="existing-title">Открыть существующий DRAFT</h2>
+        <form id="open-existing-draft-form" novalidate>
+          <label for="existing-definition-id">UUID определения</label>
+          <input id="existing-definition-id" type="text" autocomplete="off" spellcheck="false" required>
+          <button id="open-existing-draft" type="submit">Открыть точный UUID</button>
+        </form>
+      </section>
+
+      <section id="entry-state" class="authoring-state" role="status" aria-live="polite">
+        <strong id="entry-state-code">READY</strong>
+        <span id="entry-state-message">Готово к точному bootstrap или открытию UUID.</span>
+      </section>
+    {% else %}
+      <section class="authoring-card authoring-state--attention" role="status" data-state="AUTHENTICATION_REQUIRED">
+        <h1>Требуется заранее выданная сессия</h1>
+        <p>Studio не выдаёт сессию, не принимает пароль и не предлагает вход. Получите доступ в среде развёртывания и откройте страницу снова.</p>
+      </section>
+    {% endif %}
+
+    <aside class="authoring-limitations" aria-labelledby="authoring-limitations-title">
+      <h2 id="authoring-limitations-title">Постоянные ограничения</h2>
+      <ul>
+        {% for statement in authoring_claim_statements %}
+          <li data-claim-code="{{ statement.code }}">{{ statement.text }}</li>
+        {% endfor %}
+      </ul>
+    </aside>
+  </main>
+
+  <noscript>
+    <section class="noscript-boundary">
+      <h2>JavaScript отключён</h2>
+      <p>Запросы Foundation не выполнялись; создание и открытие черновика недоступны.</p>
+      {% for statement in authoring_claim_statements %}<p>{{ statement.text }}</p>{% endfor %}
+    </section>
+  </noscript>
+</body>
+</html>
