@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import subprocess
 import sys
@@ -12,6 +13,8 @@ from pathlib import Path, PurePosixPath
 
 FD01_BASE_HEAD = "c0b773573c8d37faf7b1b71e910f7a8d356000f4"
 FD01_BASE_TREE = "914e3b0895e404cf699d651c8148da875528b4e7"
+FD01_RC1_START_HEAD = "1e2fd10878236ee8f0a01a62773894dd9c0d5c40"
+FD01_RC1_START_TREE = "671c0777cee1d4542ebe4eeb1128c0e0fecac4b3"
 PINNED_PRODUCTION_STUDIO_TREE = "87d8e93ec09a18b87ae016977f0fb5fbf67d4104"
 PINNED_MODELS_BLOB = "c6c5c2419989e7b0cf40bd1242ab65d37cc2e162"
 PINNED_ENUMS_BLOB = "a701c3c83511b7d1706519d40fab4580d0a0d63e"
@@ -28,6 +31,21 @@ FD01_ALLOWLIST = frozenset(
         "software/conflict_analysis/docs/adr/0006-foundation-studio-application-gateways.md",
         "software/conflict_analysis/scripts/verify_foundation_c1_prerequisites_allowlist.py",
     }
+)
+
+FD01_TEST_CLASS = "FoundationStudioValidationPreviewHttpTests"
+FD01_TEST_METHODS = (
+    "test_validation_preview_valid_and_invalid_candidates_return_exact_contract",
+    "test_validation_preview_matches_validate_policy_help_resolution_and_order",
+    "test_validation_preview_bounds_projection_and_hashes_complete_diagnostics",
+    "test_validation_preview_retry_is_byte_identical_and_changes_no_row",
+    "test_validation_preview_auth_scope_and_capability_precede_capture",
+    "test_validation_preview_session_csrf_precedes_capture_and_basic_matches_contract",
+    "test_validation_preview_reuses_all_raw_json_ingress_vectors",
+    "test_validation_preview_rejects_nonexact_envelope_query_headers_and_non_draft",
+)
+FD01_TEST_MODULE = Path(
+    "software/conflict_analysis/domain/tests/test_foundation_studio_http.py"
 )
 
 # This is a path/test contract only.  It deliberately contains no future FD01 H1/T1
@@ -115,21 +133,74 @@ def _object(repo: Path, spec: str) -> str:
     return _git(repo, "rev-parse", spec)
 
 
+def _verify_fd01_test_nodes(repo: Path) -> tuple[str, ...]:
+    test_path = repo / FD01_TEST_MODULE
+    try:
+        module = ast.parse(
+            test_path.read_text(encoding="utf-8"),
+            filename=str(test_path),
+        )
+    except (OSError, SyntaxError, UnicodeError) as exc:
+        raise VerificationError(f"cannot parse FD01 test module: {exc}") from exc
+
+    classes = [
+        node
+        for node in module.body
+        if isinstance(node, ast.ClassDef) and node.name == FD01_TEST_CLASS
+    ]
+    if len(classes) != 1:
+        raise VerificationError(
+            f"expected exactly one {FD01_TEST_CLASS} class, got {len(classes)}"
+        )
+    actual = tuple(
+        node.name
+        for node in classes[0].body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+    )
+    if actual != FD01_TEST_METHODS:
+        raise VerificationError(
+            "FD01 test-node topology changed: "
+            + json.dumps(
+                {"expected": FD01_TEST_METHODS, "actual": actual},
+                ensure_ascii=False,
+            )
+        )
+    return actual
+
+
 def verify_fd01(repo: Path, *, base_head: str, base_tree: str) -> dict[str, object]:
     if base_head != FD01_BASE_HEAD or base_tree != FD01_BASE_TREE:
         raise VerificationError("FD01 accepts only the MAIN-authorized C0 HEAD/TREE")
     if _object(repo, f"{base_head}^{{tree}}") != base_tree:
         raise VerificationError("FD01 base tree does not match the pinned C0 tree")
+    if _object(repo, f"{FD01_RC1_START_HEAD}^{{tree}}") != FD01_RC1_START_TREE:
+        raise VerificationError("FD01 RC1 start tree does not match the MAIN pin")
     if _git(repo, "merge-base", base_head, "HEAD") != base_head:
         raise VerificationError("HEAD is not a descendant of the exact FD01 base")
+    if (
+        _git(repo, "merge-base", FD01_RC1_START_HEAD, "HEAD")
+        != FD01_RC1_START_HEAD
+    ):
+        raise VerificationError("HEAD is not a fast-forward descendant of the RC1 start")
     merge_commits = _git(repo, "rev-list", "--merges", f"{base_head}..HEAD")
     if merge_commits:
         raise VerificationError("merge commits are forbidden inside the FD01 slice")
 
     changed = _changed_paths(repo, base_head)
-    outside = sorted(changed - FD01_ALLOWLIST)
-    if outside:
-        raise VerificationError("FD01 changed path(s) outside exact allowlist: " + ", ".join(outside))
+    if changed != FD01_ALLOWLIST:
+        raise VerificationError(
+            "FD01 changed paths are not the exact seven-path allowlist: "
+            + json.dumps(
+                {
+                    "missing": sorted(FD01_ALLOWLIST - changed),
+                    "extra": sorted(changed - FD01_ALLOWLIST),
+                },
+                ensure_ascii=False,
+            )
+        )
+
+    test_nodes = _verify_fd01_test_nodes(repo)
 
     freeze_specs = {
         "production_studio_tree": (
@@ -189,7 +260,13 @@ def verify_fd01(repo: Path, *, base_head: str, base_tree: str) -> dict[str, obje
         "slice": "FD01",
         "base_head": base_head,
         "base_tree": base_tree,
+        "rc1_start_head": FD01_RC1_START_HEAD,
+        "rc1_start_tree": FD01_RC1_START_TREE,
+        "rc1_start_is_ancestor": True,
         "changed_paths": sorted(changed),
+        "test_class": FD01_TEST_CLASS,
+        "test_nodes": list(test_nodes),
+        "test_node_count": len(test_nodes),
         "freeze": resolved,
         "migration_filenames_unchanged": True,
         "fd05_path_contract_predeclared": sorted(FD05_ALLOWLIST),

@@ -10,11 +10,15 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from functools import wraps
 from typing import Any, Callable, Mapping
 from uuid import UUID
 
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied, ValidationError
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseNotAllowed
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
@@ -23,7 +27,7 @@ from rest_framework.decorators import (
     authentication_classes,
     permission_classes,
 )
-from rest_framework.exceptions import ParseError
+from rest_framework.exceptions import AuthenticationFailed, ParseError
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -105,7 +109,32 @@ class _RawJSONSessionAuthentication(SessionAuthentication):
         return user, None
 
 
+class _ReadOnlyBasicAuthentication(BasicAuthentication):
+    """Authenticate preview credentials without a password-upgrade write path."""
+
+    _failure = "Invalid username/password."
+
+    def authenticate_credentials(self, userid, password, request=None):
+        user_model = get_user_model()
+        try:
+            user = user_model._default_manager.get_by_natural_key(userid)
+        except user_model.DoesNotExist:
+            # Match the current-hasher work factor without creating a row.
+            dummy = user_model()
+            dummy.set_password(password)
+            raise AuthenticationFailed(self._failure)
+        if not check_password(password, user.password, setter=None):
+            raise AuthenticationFailed(self._failure)
+        if not user.is_active:
+            raise AuthenticationFailed(self._failure)
+        return user, None
+
+
 _PUBLIC_AUTHENTICATION = (BasicAuthentication, _RawJSONSessionAuthentication)
+_VALIDATION_PREVIEW_AUTHENTICATION = (
+    _ReadOnlyBasicAuthentication,
+    _RawJSONSessionAuthentication,
+)
 _SPOOF_FIELDS = frozenset(
     {
         "actor",
@@ -471,6 +500,9 @@ def _receipt_payload(receipt_id: object) -> dict[str, Any]:
 _VALIDATION_PREVIEW_MAX_DIAGNOSTICS = 1000
 _VALIDATION_PREVIEW_TEXT_MAX_BYTES = 512
 _VALIDATION_PREVIEW_TRUNCATED_TEXT = "<TRUNCATED>"
+_VALIDATION_PREVIEW_UNICODE_ERROR = (
+    "JSON object keys and string values must contain only Unicode scalar values."
+)
 
 
 def _canonical_json_bytes(value: Any) -> bytes:
@@ -509,6 +541,59 @@ def _validation_preview_metadata_admission(request: Request) -> None:
         raise ValidationPreviewEnvelopeError(
             {"request": "Query, authority, If-Match and Idempotency-Key are forbidden."}
         )
+
+
+def _require_validation_preview_unicode_scalars(value: Any) -> None:
+    if isinstance(value, str):
+        if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
+            raise RawJSONError(
+                "RAW_JSON_UNICODE_SCALAR_INVALID",
+                _VALIDATION_PREVIEW_UNICODE_ERROR,
+                path="$",
+            )
+        return
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            _require_validation_preview_unicode_scalars(key)
+            _require_validation_preview_unicode_scalars(item)
+        return
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            _require_validation_preview_unicode_scalars(item)
+
+
+def _suppress_validation_preview_cookie_mutation(request, response=None) -> None:
+    # SessionMiddleware has already bound the SessionStore before view dispatch.
+    # Removing only the raw cookie prevents its response phase from emitting a
+    # deletion for malformed/expired keys without weakening valid-session auth.
+    request.COOKIES.pop(settings.SESSION_COOKIE_NAME, None)
+    request.META["CSRF_COOKIE_NEEDS_UPDATE"] = False
+    session = getattr(request, "session", None)
+    if session is not None:
+        session.accessed = False
+        session.modified = False
+    if response is not None:
+        response.cookies.clear()
+
+
+def _validation_preview_http_boundary(view):
+    """Run the exact method/cookie boundary before DRF authentication."""
+
+    @wraps(view)
+    def boundary(request, *args, **kwargs):
+        response = None
+        _suppress_validation_preview_cookie_mutation(request)
+        try:
+            if request.method != "POST":
+                response = HttpResponseNotAllowed(["POST"])
+                response["Content-Length"] = "0"
+                return response
+            response = view(request, *args, **kwargs)
+            return response
+        finally:
+            _suppress_validation_preview_cookie_mutation(request, response)
+
+    return boundary
 
 
 def _validation_preview_response(
@@ -672,8 +757,9 @@ def save_definition_draft(request: Request, definition_id: object) -> Response:
     return response
 
 
+@_validation_preview_http_boundary
 @api_view(["POST"])
-@authentication_classes(_PUBLIC_AUTHENTICATION)
+@authentication_classes(_VALIDATION_PREVIEW_AUTHENTICATION)
 @permission_classes([IsAuthenticated])
 def validation_preview(
     request: Request,
@@ -700,6 +786,7 @@ def validation_preview(
             raise ValidationPreviewEnvelopeError(
                 {"body": "Exactly one manifest object is required."}
             )
+        _require_validation_preview_unicode_scalars(payload["manifest"])
         report = validate_project_definition_manifest_policy(
             payload["manifest"],
             project=definition.project,

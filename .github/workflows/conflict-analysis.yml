@@ -61,6 +61,8 @@ jobs:
       PYTHONUNBUFFERED: "1"
       FD01_BASE_HEAD: c0b773573c8d37faf7b1b71e910f7a8d356000f4
       FD01_BASE_TREE: 914e3b0895e404cf699d651c8148da875528b4e7
+      FD01_RC1_START_HEAD: 1e2fd10878236ee8f0a01a62773894dd9c0d5c40
+      FD01_RC1_START_TREE: 671c0777cee1d4542ebe4eeb1128c0e0fecac4b3
       FD01_BRANCH: codex/ca-suite-i1-foundation-fd01-validation-preview
       FD05_BRANCH: codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
       AUTH_MAIN_HEAD: 19690eb3aede8b603a631d7c561fc74f9022537a
@@ -86,6 +88,7 @@ jobs:
           set -euo pipefail
           delivery_head="$(git rev-parse HEAD)"
           test "$(git rev-parse "$FD01_BASE_HEAD^{tree}")" = "$FD01_BASE_TREE"
+          test "$(git rev-parse "$FD01_RC1_START_HEAD^{tree}")" = "$FD01_RC1_START_TREE"
           test "$(git rev-parse "$FND_BASE_HEAD^{tree}")" = "$FND_BASE_TREE"
           test "$(git rev-parse "$FOUNDATION_B_HEAD^{tree}")" = "$FOUNDATION_B_TREE"
           test "$(git rev-parse "$AUTH_MAIN_HEAD^{tree}")" = "$AUTH_MAIN_TREE"
@@ -93,6 +96,8 @@ jobs:
           git merge-base --is-ancestor "$FND_BASE_HEAD" "$FOUNDATION_B_HEAD"
           git merge-base --is-ancestor "$AUTH_MAIN_HEAD" "$FOUNDATION_B_HEAD"
           git merge-base --is-ancestor "$FOUNDATION_B_HEAD" "$FD01_BASE_HEAD"
+          git merge-base --is-ancestor "$FD01_BASE_HEAD" "$FD01_RC1_START_HEAD"
+          git merge-base --is-ancestor "$FD01_RC1_START_HEAD" "$delivery_head"
           git merge-base --is-ancestor "$FD01_BASE_HEAD" "$delivery_head"
           test -z "$(git rev-list --merges "$FD01_BASE_HEAD..$delivery_head")"
 
@@ -140,11 +145,25 @@ jobs:
           fi
 
           if [[ "$GITHUB_EVENT_NAME" = pull_request ]]; then
+            test "${{ github.event.pull_request.number }}" = "71"
             test "${{ github.event.pull_request.base.ref }}" = "codex/ca-suite-i1-production-studio-c0-read-only"
             test "${{ github.event.pull_request.base.sha }}" = "$FD01_BASE_HEAD"
             test "${{ github.event.pull_request.head.ref }}" = "$FD01_BRANCH"
             test "${{ github.event.pull_request.head.sha }}" = "$delivery_head"
-            git fetch --no-tags origin "+refs/pull/${{ github.event.pull_request.number }}/merge:refs/remotes/origin/fd01-merge"
+
+            IFS=$'\t' read -r state71 draft71 merged71 head71 headref71 base71 baseref71 <<< "$(
+              gh api "repos/${GITHUB_REPOSITORY}/pulls/71" \
+                --jq '[.state, (.draft|tostring), (.merged|tostring), .head.sha, .head.ref, .base.sha, .base.ref] | @tsv'
+            )"
+            test "$state71" = open
+            test "$draft71" = true
+            test "$merged71" = false
+            test "$head71" = "$delivery_head"
+            test "$headref71" = "$FD01_BRANCH"
+            test "$base71" = "$FD01_BASE_HEAD"
+            test "$baseref71" = "codex/ca-suite-i1-production-studio-c0-read-only"
+
+            git fetch --no-tags origin "+refs/pull/71/merge:refs/remotes/origin/fd01-merge"
             test "$(git rev-parse refs/remotes/origin/fd01-merge^1)" = "$FD01_BASE_HEAD"
             test "$(git rev-parse refs/remotes/origin/fd01-merge^2)" = "$delivery_head"
             test "$(git rev-parse refs/remotes/origin/fd01-merge^{tree})" = "$(git rev-parse "$delivery_head^{tree}")"
@@ -303,7 +322,9 @@ jobs:
           PY
 
       - name: Inspect exact wheel and checksum-bound C0 assets
+        shell: bash
         run: |
+          source_root="$PWD"
           test -f "$STUDIO_C0_WHEEL"
           python - "$STUDIO_C0_WHEEL" <<'PY'
           from pathlib import Path
@@ -343,3 +364,82 @@ jobs:
           print(f"verified wheel: {wheel.name}")
           PY
           python -m pytest production_studio/tests/test_read_only_static_contracts.py production_studio/tests/test_claim_boundaries.py
+
+          isolated_venv="${{ runner.temp }}/fd01-installed-wheel-venv"
+          python -m venv "$isolated_venv"
+          "$isolated_venv/bin/python" -m pip install \
+            --disable-pip-version-check \
+            "$STUDIO_C0_WHEEL"
+          cd "${{ runner.temp }}"
+          unset PYTHONPATH
+          USE_SQLITE=true \
+          SQLITE_PATH="${{ runner.temp }}/fd01-installed-wheel.sqlite3" \
+          DJANGO_SETTINGS_MODULE=conflict_analysis.settings \
+            "$isolated_venv/bin/python" - "$isolated_venv" "$source_root" <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import importlib
+          import os
+          import sys
+          from pathlib import Path
+          from uuid import UUID
+
+          venv_root = Path(sys.argv[1]).resolve()
+          source_root = Path(sys.argv[2]).resolve()
+          assert Path.cwd().resolve() != source_root
+          assert "PYTHONPATH" not in os.environ
+
+          import django
+
+          django.setup()
+
+          imported = {}
+          for module_name in (
+              "conflict_analysis",
+              "domain",
+              "domain.api.studio_definitions",
+              "domain.policies",
+              "production_studio",
+          ):
+              module = importlib.import_module(module_name)
+              module_path = Path(module.__file__).resolve()
+              assert venv_root in module_path.parents, (module_name, module_path)
+              assert source_root not in module_path.parents, (module_name, module_path)
+              imported[module_name] = str(module_path)
+
+          from django.urls import reverse
+          from production_studio.claim_boundaries import load_claim_boundaries
+
+          marker = UUID("00000000-0000-0000-0000-000000000000")
+          assert reverse(
+              "foundation-definition-validation-preview",
+              kwargs={"definition_id": marker},
+          ) == (
+              "/api/foundation/definitions/"
+              "00000000-0000-0000-0000-000000000000/validation-preview/"
+          )
+
+          installed_claim = load_claim_boundaries()
+          source_contract = (
+              source_root
+              / "production_studio/contracts/read_only_claim_boundaries_v1.ru.json"
+          ).read_bytes()
+          source_sidecar = (
+              source_root
+              / "production_studio/contracts/read_only_claim_boundaries_v1.ru.json.sha256"
+          ).read_bytes()
+          installed_contract_path = (
+              Path(imported["production_studio"]).parent
+              / "contracts/read_only_claim_boundaries_v1.ru.json"
+          )
+          installed_sidecar_path = installed_contract_path.with_suffix(
+              installed_contract_path.suffix + ".sha256"
+          )
+          assert installed_contract_path.read_bytes() == source_contract
+          assert installed_sidecar_path.read_bytes() == source_sidecar
+          assert installed_claim.payload == source_contract
+          assert installed_claim.sha256 == hashlib.sha256(source_contract).hexdigest()
+          print("isolated installed-wheel imports:", imported)
+          print("isolated installed-wheel route and claim bytes: PASS")
+          PY

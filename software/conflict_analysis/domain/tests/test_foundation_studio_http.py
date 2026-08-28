@@ -10,8 +10,12 @@ from unittest.mock import patch
 from urllib.parse import urlencode
 from uuid import uuid4
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import PBKDF2PasswordHasher
 from django.contrib.auth.models import Group, Permission
+from django.contrib.sessions.backends.db import SessionStore
+from django.contrib.sessions.models import Session
 from django.test import TestCase
 from django.urls import Resolver404, resolve
 from django.utils import timezone
@@ -1725,7 +1729,21 @@ class FoundationStudioValidationPreviewHttpTests(
             **headers,
         )
 
+    @staticmethod
+    def _basic_authorization(username: str, password: str = "test-password") -> str:
+        encoded = base64.b64encode(f"{username}:{password}".encode("utf-8"))
+        return "Basic " + encoded.decode("ascii")
+
+    def _assert_no_response_cookie_mutation(self, response) -> None:
+        self.assertFalse(response.cookies)
+        self.assertEqual(response.cookies.output(), "")
+        self.assertNotIn("Set-Cookie", response.headers)
+        self.assertFalse(
+            response.wsgi_request.META.get("CSRF_COOKIE_NEEDS_UPDATE", False)
+        )
+
     def test_validation_preview_valid_and_invalid_candidates_return_exact_contract(self):
+        baseline = self._database_fingerprint()
         valid_raw = self._body()
         valid = self._post(valid_raw)
         self.assertEqual(valid.status_code, 200, getattr(valid, "data", None))
@@ -1760,6 +1778,7 @@ class FoundationStudioValidationPreviewHttpTests(
             valid["Content-Type"],
             "application/json; charset=utf-8",
         )
+        self.assertEqual(self._database_fingerprint(), baseline)
 
         invalid_manifest = copy.deepcopy(self.manifest)
         invalid_manifest["actors"][0].pop("label")
@@ -1772,6 +1791,7 @@ class FoundationStudioValidationPreviewHttpTests(
             "FIELD_REQUIRED",
             {item["code"] for item in invalid_payload["diagnostics"]},
         )
+        self.assertEqual(self._database_fingerprint(), baseline)
 
     def test_validation_preview_matches_validate_policy_help_resolution_and_order(self):
         from domain.policies import validate_project_definition_manifest_policy
@@ -1867,6 +1887,7 @@ class FoundationStudioValidationPreviewHttpTests(
 
     def test_validation_preview_auth_scope_and_capability_precede_capture(self):
         raw = self._body()
+        baseline = self._database_fingerprint()
         with patch(
             "domain.api.studio_definitions.capture_http_json",
             side_effect=AssertionError("body capture is forbidden"),
@@ -1885,6 +1906,41 @@ class FoundationStudioValidationPreviewHttpTests(
             self.assertEqual(denied.status_code, 403)
             capture.assert_not_called()
 
+        for name, user, expected_status in (
+            ("basic_out_of_scope", self.out_of_scope_user, 404),
+            ("basic_no_capability", self.no_save_user, 403),
+        ):
+            with self.subTest(name=name), patch(
+                "domain.api.studio_definitions.capture_http_json",
+                side_effect=AssertionError("body capture is forbidden"),
+            ) as capture:
+                basic = APIClient()
+                response = basic.generic(
+                    "POST",
+                    self.url,
+                    raw,
+                    content_type="text/plain",
+                    HTTP_AUTHORIZATION=self._basic_authorization(user.username),
+                )
+                self.assertEqual(response.status_code, expected_status)
+                capture.assert_not_called()
+
+        authorized_basic = APIClient()
+        invalid_media = authorized_basic.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="text/plain",
+            HTTP_AUTHORIZATION=self._basic_authorization(
+                self.editor_user.username
+            ),
+        )
+        self.assertEqual(invalid_media.status_code, 400, invalid_media.data)
+        self.assertEqual(
+            invalid_media.data["code"],
+            "RAW_JSON_MEDIA_TYPE_UNSUPPORTED",
+        )
+
         anonymous = APIClient()
         self.assertEqual(
             anonymous.generic(
@@ -1895,6 +1951,7 @@ class FoundationStudioValidationPreviewHttpTests(
             ).status_code,
             401,
         )
+        self.assertEqual(self._database_fingerprint(), baseline)
 
     def test_validation_preview_session_csrf_precedes_capture_and_basic_matches_contract(self):
         session = APIClient(enforce_csrf_checks=True)
@@ -1908,18 +1965,61 @@ class FoundationStudioValidationPreviewHttpTests(
         self.assertEqual(session.get(open_url).status_code, 200)
         csrf_token = session.cookies["csrftoken"].value
         raw = self._body()
+        session_baseline = self._database_fingerprint()
 
         with patch(
             "domain.api.studio_definitions.capture_http_json",
             side_effect=AssertionError("body capture is forbidden"),
         ) as capture:
-            denied = session.generic(
-                "POST",
-                self.url,
-                raw,
-                content_type="application/json",
-            )
-            self.assertEqual(denied.status_code, 403)
+            for name, content_type, csrf_header, expected_status, code in (
+                (
+                    "missing_csrf",
+                    "application/json",
+                    None,
+                    403,
+                    None,
+                ),
+                (
+                    "invalid_csrf",
+                    "application/json",
+                    "0" * 64,
+                    403,
+                    None,
+                ),
+                (
+                    "media_before_missing_csrf",
+                    "text/plain",
+                    None,
+                    400,
+                    "RAW_JSON_MEDIA_TYPE_UNSUPPORTED",
+                ),
+                (
+                    "media_before_invalid_csrf",
+                    "text/plain",
+                    "0" * 64,
+                    400,
+                    "RAW_JSON_MEDIA_TYPE_UNSUPPORTED",
+                ),
+            ):
+                with self.subTest(name=name):
+                    headers = {}
+                    if csrf_header is not None:
+                        headers["HTTP_X_CSRFTOKEN"] = csrf_header
+                    denied = session.generic(
+                        "POST",
+                        self.url,
+                        raw,
+                        content_type=content_type,
+                        **headers,
+                    )
+                    self.assertEqual(denied.status_code, expected_status)
+                    if code is not None:
+                        self.assertEqual(denied.data["code"], code)
+                    self._assert_no_response_cookie_mutation(denied)
+                    self.assertEqual(
+                        self._database_fingerprint(),
+                        session_baseline,
+                    )
             capture.assert_not_called()
 
         session_response = session.generic(
@@ -1930,23 +2030,110 @@ class FoundationStudioValidationPreviewHttpTests(
             HTTP_X_CSRFTOKEN=csrf_token,
         )
         self.assertEqual(session_response.status_code, 200)
+        self._assert_no_response_cookie_mutation(session_response)
+        self.assertEqual(self._database_fingerprint(), session_baseline)
+
+        expired_store = SessionStore()
+        expired_store["fd01-expired"] = True
+        expired_store.set_expiry(-60)
+        expired_store.create()
+        expired_key = expired_store.session_key
+        self.assertIsNotNone(expired_key)
+        self.assertTrue(Session.objects.filter(pk=expired_key).exists())
+
+        valid_session_key = session.cookies[settings.SESSION_COOKIE_NAME].value
+        cookie_cases = []
+
+        missing = APIClient(enforce_csrf_checks=True)
+        cookie_cases.append(("missing_session_and_csrf", missing, 401))
+
+        malformed_session = APIClient(enforce_csrf_checks=True)
+        malformed_session.cookies[settings.SESSION_COOKIE_NAME] = "not-a-session"
+        malformed_session.cookies[settings.CSRF_COOKIE_NAME] = "bad"
+        cookie_cases.append(("malformed_session", malformed_session, 401))
+
+        expired_session = APIClient(enforce_csrf_checks=True)
+        expired_session.cookies[settings.SESSION_COOKIE_NAME] = expired_key
+        cookie_cases.append(("expired_session", expired_session, 401))
+
+        missing_csrf = APIClient(enforce_csrf_checks=True)
+        missing_csrf.cookies[settings.SESSION_COOKIE_NAME] = valid_session_key
+        cookie_cases.append(("valid_session_missing_csrf", missing_csrf, 403))
+
+        malformed_csrf = APIClient(enforce_csrf_checks=True)
+        malformed_csrf.cookies[settings.SESSION_COOKIE_NAME] = valid_session_key
+        malformed_csrf.cookies[settings.CSRF_COOKIE_NAME] = "bad"
+        cookie_cases.append(("valid_session_malformed_csrf", malformed_csrf, 403))
+
+        cookie_baseline = self._database_fingerprint()
+        with patch(
+            "domain.api.studio_definitions.capture_http_json",
+            side_effect=AssertionError("body capture is forbidden"),
+        ) as capture:
+            for name, denied_client, expected_status in cookie_cases:
+                with self.subTest(cookie_case=name):
+                    request_cookies = {
+                        key: morsel.value
+                        for key, morsel in denied_client.cookies.items()
+                    }
+                    denied = denied_client.generic(
+                        "POST",
+                        self.url,
+                        raw,
+                        content_type="application/json",
+                    )
+                    self.assertEqual(denied.status_code, expected_status)
+                    self._assert_no_response_cookie_mutation(denied)
+                    self.assertEqual(
+                        {
+                            key: morsel.value
+                            for key, morsel in denied_client.cookies.items()
+                        },
+                        request_cookies,
+                    )
+                    self.assertEqual(
+                        self._database_fingerprint(),
+                        cookie_baseline,
+                    )
+            capture.assert_not_called()
+
+        password_hasher = PBKDF2PasswordHasher()
+        upgrade_eligible = password_hasher.encode(
+            "test-password",
+            password_hasher.salt(),
+            iterations=1,
+        )
+        self.assertTrue(password_hasher.must_update(upgrade_eligible))
+        get_user_model().objects.filter(pk=self.editor_user.pk).update(
+            password=upgrade_eligible
+        )
+        stored_password = get_user_model().objects.values_list(
+            "password", flat=True
+        ).get(pk=self.editor_user.pk)
+        self.assertEqual(stored_password, upgrade_eligible)
+        basic_baseline = self._database_fingerprint()
 
         basic = APIClient()
-        basic.credentials(
-            HTTP_AUTHORIZATION="Basic "
-            + base64.b64encode(
-                b"fd01-preview-editor:test-password"
-            ).decode("ascii")
-        )
         basic_response = basic.generic(
             "POST",
             self.url,
             raw,
             content_type="application/json",
+            HTTP_AUTHORIZATION=self._basic_authorization(
+                self.editor_user.username
+            ),
         )
         self.assertEqual(basic_response.status_code, 200)
         self.assertEqual(basic_response.content, session_response.content)
         self.assertEqual(basic_response["ETag"], session_response["ETag"])
+        self._assert_no_response_cookie_mutation(basic_response)
+        self.assertEqual(
+            get_user_model().objects.values_list("password", flat=True).get(
+                pk=self.editor_user.pk
+            ),
+            stored_password,
+        )
+        self.assertEqual(self._database_fingerprint(), basic_baseline)
 
     def test_validation_preview_reuses_all_raw_json_ingress_vectors(self):
         manifest_text = json.dumps(
@@ -1974,6 +2161,19 @@ class FoundationStudioValidationPreviewHttpTests(
             + b"x" * FOUNDATION_RAW_JSON_MAX_BYTES
             + b'"}}'
         )
+        exact_prefix = b'{"manifest":{"padding":"'
+        exact_suffix = b'"}}'
+        exact_limit = (
+            exact_prefix
+            + b"x"
+            * (
+                FOUNDATION_RAW_JSON_MAX_BYTES
+                - len(exact_prefix)
+                - len(exact_suffix)
+            )
+            + exact_suffix
+        )
+        self.assertEqual(len(exact_limit), FOUNDATION_RAW_JSON_MAX_BYTES)
         vectors = (
             (duplicate, "RAW_JSON_DUPLICATE_KEY"),
             (b"\xef\xbb\xbf" + valid, "RAW_JSON_BOM_FORBIDDEN"),
@@ -1984,11 +2184,49 @@ class FoundationStudioValidationPreviewHttpTests(
             (oversized, "RAW_JSON_BYTE_BUDGET_EXCEEDED"),
         )
         before = self._database_fingerprint()
+
+        boundary = self._post(exact_limit)
+        self.assertEqual(boundary.status_code, 200)
+        boundary_payload = json.loads(boundary.content)
+        self.assertEqual(
+            boundary_payload["request_byte_length"],
+            FOUNDATION_RAW_JSON_MAX_BYTES,
+        )
+        self.assertFalse(boundary_payload["valid"])
+        self.assertEqual(self._database_fingerprint(), before)
+
         for raw, code in vectors:
             with self.subTest(code=code):
                 response = self._post(raw)
                 self.assertEqual(response.status_code, 400)
                 self.assertEqual(response.data["code"], code)
+
+        unicode_vectors = (
+            b'{"manifest":{"outer":[{"value":"\\ud800"}]}}',
+            b'{"manifest":{"outer":[{"\\udfff":"value"}]}}',
+        )
+        expected_unicode_error = {
+            "code": "RAW_JSON_UNICODE_SCALAR_INVALID",
+            "path": "$",
+            "message": (
+                "JSON object keys and string values must contain only "
+                "Unicode scalar values."
+            ),
+        }
+        with patch(
+            "domain.api.studio_definitions."
+            "validate_project_definition_manifest_policy",
+            side_effect=AssertionError("policy must not receive lone surrogates"),
+        ) as policy:
+            for raw in unicode_vectors:
+                with self.subTest(unicode_raw=raw):
+                    response = self._post(raw)
+                    self.assertEqual(response.status_code, 400, response.data)
+                    self.assertEqual(response.data, expected_unicode_error)
+                    self.assertNotIn("detail_sha256", response.data)
+                    self.assertEqual(self._database_fingerprint(), before)
+            policy.assert_not_called()
+
         invalid_media = self.client.generic(
             "POST",
             self.url,
@@ -2041,7 +2279,93 @@ class FoundationStudioValidationPreviewHttpTests(
                     "VALIDATION_PREVIEW_ENVELOPE_INVALID",
                 )
 
-        self.assertEqual(self.client.get(self.url).status_code, 405)
+        anonymous = APIClient(enforce_csrf_checks=True)
+        session = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(
+            session.login(
+                username=self.editor_user.username,
+                password="test-password",
+            )
+        )
+        basic = APIClient(enforce_csrf_checks=True)
+        basic.credentials(
+            HTTP_AUTHORIZATION=self._basic_authorization(
+                self.editor_user.username
+            )
+        )
+        method_baseline = self._database_fingerprint()
+        exact_response = None
+        with patch(
+            "domain.api.studio_definitions."
+            "_ReadOnlyBasicAuthentication.authenticate",
+            side_effect=AssertionError("method gate must precede Basic auth"),
+        ) as basic_auth, patch(
+            "domain.api.studio_definitions."
+            "_RawJSONSessionAuthentication.authenticate",
+            side_effect=AssertionError("method gate must precede session auth"),
+        ) as session_auth, patch(
+            "domain.api.studio_definitions.capture_http_json",
+            side_effect=AssertionError("method gate must precede body capture"),
+        ) as capture:
+            for principal_name, method_client in (
+                ("anonymous", anonymous),
+                ("session", session),
+                ("basic", basic),
+            ):
+                for method in (
+                    "GET",
+                    "PUT",
+                    "PATCH",
+                    "DELETE",
+                    "HEAD",
+                    "OPTIONS",
+                    "TRACE",
+                    "CONNECT",
+                ):
+                    with self.subTest(principal=principal_name, method=method):
+                        stream = _ZeroReadWSGIInput()
+                        request_cookies = {
+                            key: morsel.value
+                            for key, morsel in method_client.cookies.items()
+                        }
+                        response = method_client.request(
+                            PATH_INFO=self.url,
+                            REQUEST_METHOD=method,
+                            CONTENT_TYPE="application/json",
+                            CONTENT_LENGTH="64",
+                            **{"wsgi.input": stream},
+                        )
+                        self.assertEqual(response.status_code, 405)
+                        self.assertEqual(response["Allow"], "POST")
+                        self.assertEqual(response["Content-Length"], "0")
+                        self.assertEqual(response.content, b"")
+                        self.assertEqual(stream.read_attempts, 0)
+                        self.assertEqual(stream.bytes_served, 0)
+                        self._assert_no_response_cookie_mutation(response)
+                        self.assertEqual(
+                            {
+                                key: morsel.value
+                                for key, morsel in method_client.cookies.items()
+                            },
+                            request_cookies,
+                        )
+                        response_identity = (
+                            response.status_code,
+                            response.content,
+                            response["Allow"],
+                            response["Content-Length"],
+                            response["Content-Type"],
+                        )
+                        if exact_response is None:
+                            exact_response = response_identity
+                        self.assertEqual(response_identity, exact_response)
+                        self.assertEqual(
+                            self._database_fingerprint(),
+                            method_baseline,
+                        )
+            basic_auth.assert_not_called()
+            session_auth.assert_not_called()
+            capture.assert_not_called()
 
         validated = validate_project_definition(
             self.definition,

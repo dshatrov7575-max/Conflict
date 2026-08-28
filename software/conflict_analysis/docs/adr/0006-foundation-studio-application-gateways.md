@@ -180,6 +180,21 @@ no receipt. Repeating byte-identical input against unchanged definition/Project/
 Help snapshots must return byte-identical body and ETag. SQLite verifies sequential
 semantics only; PostgreSQL 18 is the authoritative database regression target.
 
+The RC1 boundary makes that contract true even on denied transport paths. An
+outer wrapper returns one empty `405` with `Allow: POST` before DRF
+authentication, permission evaluation or body access. Preview alone uses a
+read-only Basic verifier: it checks stored password bytes without a setter, so
+an upgrade-eligible hash cannot be persisted. After real session CSRF has made
+its decision, the wrapper suppresses response-only session/CSRF cookie repair,
+deletion and rotation; it does not bypass valid-session CSRF. Finally, parsed
+JSON is recursively checked for Unicode scalar values before policy invocation
+or canonical hashing. A lone surrogate in any nested key or string value returns
+the fixed `RAW_JSON_UNICODE_SCALAR_INVALID` raw-ingress contract with zero writes.
+
+RC1 delivery is also bound to the separately authorized start commit/tree. The
+allowlist verifier requires the final head to descend from that exact start,
+retains the exact eight FD01 test names and still freezes every non-FD01 surface.
+
 FD01 changes no model, enum, permission, schema or migration. It does not authorize
 FD05, C1, any SERVICE substitution for HUMAN authoring, scalar Power, formula,
 prediction, recommendation, ranking or risk output. The accepted C0
