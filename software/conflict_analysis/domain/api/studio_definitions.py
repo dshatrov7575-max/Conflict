@@ -12,7 +12,7 @@ import json
 import re
 from functools import wraps
 from typing import Any, Callable, Mapping
-from uuid import UUID
+from uuid import RFC_4122, UUID
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -46,7 +46,6 @@ from domain.policies import (
     bootstrap_initial_project_definition,
     require_studio_capability,
     studio_principal_from_user,
-    validate_project_definition,
     validate_project_definition_manifest_policy,
 )
 from domain.services.help_topics import HelpTopicResolutionError, resolve_help_topic
@@ -65,18 +64,21 @@ from domain.services.foundation_packages import (
     validate_json_content_type,
 )
 from domain.services.project_definitions import (
+    FoundationHumanWriteError,
+    FoundationHumanWriteOperation,
+    FoundationHumanWriteRequestIdentity,
+    FoundationHumanWriteResult,
     FoundationStudioApplicationConflict,
     ProjectDefinitionDraftConflict,
-    bootstrap_project_definition_draft,
-    clone_project_definition_draft,
-    create_project_definition_draft,
+    bootstrap_project_definition_draft_human_write,
+    clone_project_definition_draft_human_write,
+    create_project_definition_draft_human_write,
     open_project_definition,
     project_access_group_name as canonical_project_access_group_name,
     publish_successor_project_definition,
-    save_project_definition_draft,
+    save_project_definition_draft_human_write,
+    validate_project_definition_human_write,
 )
-
-
 
 
 class _RawJSONSessionAuthentication(SessionAuthentication):
@@ -135,6 +137,7 @@ _VALIDATION_PREVIEW_AUTHENTICATION = (
     _ReadOnlyBasicAuthentication,
     _RawJSONSessionAuthentication,
 )
+_HUMAN_WRITE_AUTHENTICATION = _VALIDATION_PREVIEW_AUTHENTICATION
 _SPOOF_FIELDS = frozenset(
     {
         "actor",
@@ -178,6 +181,26 @@ _PACKAGE_BOOTSTRAP_QUERY_KEYS = frozenset(
     }
 )
 _LOCALE_PATTERN = re.compile(r"^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$")
+_CANONICAL_UUID_PATTERN = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+)
+
+_HUMAN_WRITE_ERROR_MESSAGES = {
+    "WRITE_OPERATION_KEY_REQUIRED": "Idempotency-Key is required for Foundation authoring.",
+    "WRITE_OPERATION_KEY_INVALID": (
+        "Idempotency-Key must be one canonical lowercase RFC 4122 UUIDv4."
+    ),
+    "AUTHORING_ENVELOPE_INVALID": (
+        "The request must match the exact Foundation authoring envelope."
+    ),
+    "IF_MATCH_REQUIRED": "This Foundation operation requires one strong If-Match validator.",
+    "IF_MATCH_INVALID": (
+        "If-Match must contain exactly one strong quoted lowercase SHA-256 validator."
+    ),
+    "DEFINITION_VALIDATION_FAILED": (
+        "The DRAFT failed canonical Foundation definition validation."
+    ),
+}
 
 
 def project_access_group_name(project_id: object) -> str:
@@ -208,9 +231,24 @@ class ValidationPreviewEnvelopeError(ValidationError):
     """Fixed public contract error for FD01 envelope/header/query drift."""
 
 
+class FoundationHumanWriteAdmissionError(ValidationError):
+    """Fixed public failure raised before an FD05 body is captured."""
+
+    def __init__(self, error_code: str) -> None:
+        self.error_code = error_code
+        super().__init__({"request": _HUMAN_WRITE_ERROR_MESSAGES[error_code]})
+
+
 def _error_payload(exc: Exception) -> tuple[dict[str, Any], int]:
     if isinstance(exc, RawJSONError):
         return dict(exc.as_dict()), HTTP_400_BAD_REQUEST
+    if isinstance(exc, (FoundationHumanWriteAdmissionError, FoundationHumanWriteError)):
+        error_code = exc.error_code
+        payload: dict[str, Any] = {
+            "code": error_code,
+            "errors": [_HUMAN_WRITE_ERROR_MESSAGES[error_code]],
+        }
+        return payload, HTTP_400_BAD_REQUEST
     if isinstance(exc, ValidationPreviewEnvelopeError):
         return {
             "code": "VALIDATION_PREVIEW_ENVELOPE_INVALID",
@@ -242,7 +280,11 @@ def _error_payload(exc: Exception) -> tuple[dict[str, Any], int]:
     }, status
 
 
-def _execute(operation: Callable[[], Any], *, success_status: int = HTTP_200_OK) -> Response:
+def _execute(
+    operation: Callable[[], Any],
+    *,
+    success_status: int = HTTP_200_OK,
+) -> Response:
     try:
         value = operation()
     except (Http404, ObjectDoesNotExist):
@@ -252,6 +294,7 @@ def _execute(operation: Callable[[], Any], *, success_status: int = HTTP_200_OK)
         )
     except (
         PermissionDenied,
+        FoundationHumanWriteError,
         ProjectDefinitionDraftConflict,
         RawJSONError,
         ValidationError,
@@ -260,6 +303,8 @@ def _execute(operation: Callable[[], Any], *, success_status: int = HTTP_200_OK)
     ) as exc:
         payload, status = _error_payload(exc)
         return Response(payload, status=status)
+    if isinstance(value, Response):
+        return value
     return Response(value, status=success_status)
 
 
@@ -332,6 +377,139 @@ def _json_payload(request: Request, *, allow_if_match: bool = False) -> dict[str
         allow_if_match=allow_if_match,
     )
     return payload
+
+
+def _canonical_entity_uuid(value: object) -> UUID:
+    if not isinstance(value, str) or _CANONICAL_UUID_PATTERN.fullmatch(value) is None:
+        raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
+    try:
+        resolved = UUID(value)
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise FoundationHumanWriteAdmissionError(
+            "AUTHORING_ENVELOPE_INVALID"
+        ) from exc
+    if str(resolved) != value:
+        raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
+    return resolved
+
+
+def _foundation_operation_id(request: Request) -> UUID:
+    value = request.META.get("HTTP_IDEMPOTENCY_KEY")
+    if value is None or value == "":
+        raise FoundationHumanWriteAdmissionError("WRITE_OPERATION_KEY_REQUIRED")
+    if not isinstance(value, str) or _CANONICAL_UUID_PATTERN.fullmatch(value) is None:
+        raise FoundationHumanWriteAdmissionError("WRITE_OPERATION_KEY_INVALID")
+    try:
+        operation_id = UUID(value)
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise FoundationHumanWriteAdmissionError(
+            "WRITE_OPERATION_KEY_INVALID"
+        ) from exc
+    if (
+        str(operation_id) != value
+        or operation_id.version != 4
+        or operation_id.variant != RFC_4122
+    ):
+        raise FoundationHumanWriteAdmissionError("WRITE_OPERATION_KEY_INVALID")
+    return operation_id
+
+
+def _human_write_admission(
+    request: Request,
+    *,
+    operation: FoundationHumanWriteOperation,
+    allow_if_match: bool,
+) -> tuple[UUID, str | None, Any, dict[str, Any]]:
+    """Admit metadata/key/token before one authoritative HTTP body capture."""
+
+    try:
+        _reject_spoofed_authority(request, {}, allow_if_match=allow_if_match)
+    except ValidationError as exc:
+        raise FoundationHumanWriteAdmissionError(
+            "AUTHORING_ENVELOPE_INVALID"
+        ) from exc
+    if request.query_params:
+        raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
+
+    operation_id = _foundation_operation_id(request)
+    if allow_if_match:
+        if_match = parse_strong_manifest_if_match(
+            request.META.get("HTTP_IF_MATCH"),
+            operation=operation.value,
+        )
+    else:
+        if_match = None
+
+    captured = capture_http_json(request)
+    payload = dict(read_http_json(request).value)
+    try:
+        _reject_spoofed_authority(
+            request,
+            payload,
+            allow_if_match=allow_if_match,
+        )
+    except ValidationError as exc:
+        raise FoundationHumanWriteAdmissionError(
+            "AUTHORING_ENVELOPE_INVALID"
+        ) from exc
+    _require_human_write_unicode_scalars(payload)
+    return operation_id, if_match, captured, payload
+
+
+def _human_write_request_identity(
+    *,
+    operation: FoundationHumanWriteOperation,
+    operation_id: UUID,
+    request: Request,
+    principal: object,
+    captured: Any,
+    project_id: UUID | None,
+    source_definition_id: UUID | None,
+    target_definition_id: UUID | None,
+    if_match: str | None,
+) -> FoundationHumanWriteRequestIdentity:
+    return FoundationHumanWriteRequestIdentity.build(
+        operation=operation,
+        operation_id=operation_id,
+        method=request.method,
+        route=request.path,
+        actor_identifier=principal.actor_identifier,
+        project_id=project_id,
+        source_definition_id=source_definition_id,
+        target_definition_id=target_definition_id,
+        content_type="application/json",
+        raw_input_sha256=captured.identity.sha256,
+        raw_input_byte_length=captured.identity.byte_length,
+        if_match=if_match,
+    )
+
+
+def _human_write_response(
+    result: FoundationHumanWriteResult,
+    *,
+    fresh_payload: Mapping[str, Any] | None,
+    fresh_status: int,
+) -> Response:
+    receipt = result.receipt.as_dict()
+    if result.replayed:
+        payload: dict[str, Any] = {
+            "code": "WRITE_OPERATION_RECONCILED",
+            "write_receipt": receipt,
+        }
+        status = HTTP_200_OK
+    else:
+        if fresh_payload is None:
+            raise RuntimeError("A fresh Foundation HUMAN write requires its operation payload.")
+        payload = {**dict(fresh_payload), "write_receipt": receipt}
+        status = fresh_status
+
+    response = Response(payload, status=status)
+    response["X-Foundation-Operation-Replayed"] = (
+        "true" if result.replayed else "false"
+    )
+    response["X-Foundation-Receipt-SHA256"] = result.receipt.sha256
+    response["ETag"] = f'"{result.receipt.after_definition["manifest_hash"]}"'
+    return response
 
 
 def _with_etag(response: Response, manifest_hash: str) -> Response:
@@ -543,23 +721,32 @@ def _validation_preview_metadata_admission(request: Request) -> None:
         )
 
 
-def _require_validation_preview_unicode_scalars(value: Any) -> None:
+def _contains_lone_unicode_surrogate(value: Any) -> bool:
     if isinstance(value, str):
-        if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
-            raise RawJSONError(
-                "RAW_JSON_UNICODE_SCALAR_INVALID",
-                _VALIDATION_PREVIEW_UNICODE_ERROR,
-                path="$",
-            )
-        return
+        return any(0xD800 <= ord(character) <= 0xDFFF for character in value)
     if isinstance(value, Mapping):
-        for key, item in value.items():
-            _require_validation_preview_unicode_scalars(key)
-            _require_validation_preview_unicode_scalars(item)
-        return
+        return any(
+            _contains_lone_unicode_surrogate(key)
+            or _contains_lone_unicode_surrogate(item)
+            for key, item in value.items()
+        )
     if isinstance(value, (list, tuple)):
-        for item in value:
-            _require_validation_preview_unicode_scalars(item)
+        return any(_contains_lone_unicode_surrogate(item) for item in value)
+    return False
+
+
+def _require_validation_preview_unicode_scalars(value: Any) -> None:
+    if _contains_lone_unicode_surrogate(value):
+        raise RawJSONError(
+            "RAW_JSON_UNICODE_SCALAR_INVALID",
+            _VALIDATION_PREVIEW_UNICODE_ERROR,
+            path="$",
+        )
+
+
+def _require_human_write_unicode_scalars(value: Any) -> None:
+    if _contains_lone_unicode_surrogate(value):
+        raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
 
 
 def _suppress_validation_preview_cookie_mutation(request, response=None) -> None:
@@ -596,15 +783,32 @@ def _validation_preview_http_boundary(view):
     return boundary
 
 
-def _validation_preview_response(
+def _validation_report_projection(
     *,
     definition: ProjectDefinitionVersion,
     manifest: Mapping[str, Any],
     request_sha256: str,
     request_byte_length: int,
     report: Any,
-) -> HttpResponse:
-    complete_diagnostics = [item.as_dict() for item in report.diagnostics]
+) -> dict[str, Any]:
+    """Build the sole bounded FD01 report identity for public HTTP responses."""
+
+    if isinstance(report, Mapping):
+        raw_diagnostics = report["diagnostics"]
+        schema_id = report["schema_id"]
+        schema_version = report["schema_version"]
+        manifest_sha256 = report["manifest_sha256"]
+        valid = report["valid"]
+    else:
+        raw_diagnostics = report.diagnostics
+        schema_id = report.schema_id
+        schema_version = report.schema_version
+        manifest_sha256 = report.manifest_sha256
+        valid = report.valid
+    complete_diagnostics = [
+        dict(item) if isinstance(item, Mapping) else item.as_dict()
+        for item in raw_diagnostics
+    ]
     diagnostics_sha256 = _sha256_bytes(_canonical_json_bytes(complete_diagnostics))
     projected: list[dict[str, Any]] = []
     for ordinal, diagnostic in enumerate(complete_diagnostics[:_VALIDATION_PREVIEW_MAX_DIAGNOSTICS]):
@@ -625,16 +829,16 @@ def _validation_preview_response(
     response_core: dict[str, Any] = {
         "contract": "PROJECT_DEFINITION_MANIFEST_VALIDATION_V1",
         "contract_version": "1.0.0",
-        "schema_id": str(report.schema_id),
-        "schema_version": str(report.schema_version),
+        "schema_id": str(schema_id),
+        "schema_version": str(schema_version),
         "definition_id": str(definition.pk),
         "project_id": str(definition.project_id),
         "base_manifest_sha256": definition.manifest_hash,
         "request_sha256": request_sha256,
         "request_byte_length": request_byte_length,
         "candidate_sha256": candidate_sha256,
-        "manifest_sha256": str(report.manifest_sha256),
-        "valid": bool(report.valid),
+        "manifest_sha256": str(manifest_sha256),
+        "valid": bool(valid),
         "diagnostics_total": len(complete_diagnostics),
         "diagnostics_returned": len(projected),
         "diagnostics_truncated": len(complete_diagnostics) > len(projected),
@@ -642,7 +846,24 @@ def _validation_preview_response(
         "diagnostics": projected,
     }
     validation_report_sha256 = _sha256_bytes(_canonical_json_bytes(response_core))
-    payload = {**response_core, "validation_report_sha256": validation_report_sha256}
+    return {**response_core, "validation_report_sha256": validation_report_sha256}
+
+
+def _validation_preview_response(
+    *,
+    definition: ProjectDefinitionVersion,
+    manifest: Mapping[str, Any],
+    request_sha256: str,
+    request_byte_length: int,
+    report: Any,
+) -> HttpResponse:
+    payload = _validation_report_projection(
+        definition=definition,
+        manifest=manifest,
+        request_sha256=request_sha256,
+        request_byte_length=request_byte_length,
+        report=report,
+    )
     response_bytes = _canonical_json_bytes(payload) + b"\n"
     representation_sha256 = _sha256_bytes(response_bytes)
     response = HttpResponse(
@@ -658,30 +879,76 @@ def _validation_preview_response(
 
 
 @api_view(["POST"])
-@authentication_classes(_PUBLIC_AUTHENTICATION)
+@authentication_classes(_HUMAN_WRITE_AUTHENTICATION)
 @permission_classes([IsAuthenticated])
 def create_definition_draft(request: Request, project_id: object) -> Response:
-    def operation() -> dict[str, Any]:
+    def operation() -> Response:
         project = _project_or_404(request.user, project_id)
         principal = _principal(request)
         require_studio_capability(principal, StudioCapability.DRAFT_CREATE)
-        payload = _json_payload(request)
-        definition = create_project_definition_draft(
+        operation_name = FoundationHumanWriteOperation.CREATE_DRAFT
+        operation_id, if_match, captured, payload = _human_write_admission(
+            request,
+            operation=operation_name,
+            allow_if_match=False,
+        )
+        expected_keys = {
+            "id",
+            "code",
+            "version",
+            "manifest",
+            "semantic_version",
+            "construct_version",
+        }
+        if (
+            set(payload) != expected_keys
+            or not isinstance(payload["manifest"], Mapping)
+            or any(
+                not isinstance(payload[field], str)
+                for field in (
+                    "id",
+                    "code",
+                    "version",
+                    "semantic_version",
+                    "construct_version",
+                )
+            )
+        ):
+            raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
+        definition_id = _canonical_entity_uuid(payload["id"])
+        request_identity = _human_write_request_identity(
+            operation=operation_name,
+            operation_id=operation_id,
+            request=request,
+            principal=principal,
+            captured=captured,
+            project_id=project.pk,
+            source_definition_id=None,
+            target_definition_id=definition_id,
+            if_match=if_match,
+        )
+        result = create_project_definition_draft_human_write(
+            request_identity=request_identity,
             project=project,
-            definition_id=payload.get("id"),
-            code=payload.get("code", ""),
-            version=payload.get("version", ""),
-            manifest=payload.get("manifest"),
-            semantic_version=payload.get("semantic_version", "1.0.0"),
-            construct_version=payload.get("construct_version", "1.0.0"),
+            definition_id=definition_id,
+            code=payload["code"],
+            version=payload["version"],
+            manifest=payload["manifest"],
+            semantic_version=payload["semantic_version"],
+            construct_version=payload["construct_version"],
             principal=principal,
         )
-        return _definition_payload(definition)
+        return _human_write_response(
+            result,
+            fresh_payload=(
+                _definition_payload(result.definition)
+                if result.definition is not None
+                else None
+            ),
+            fresh_status=HTTP_201_CREATED,
+        )
 
-    response = _execute(operation, success_status=HTTP_201_CREATED)
-    if response.status_code == HTTP_201_CREATED:
-        return _with_etag(response, str(response.data["manifest_hash"]))
-    return response
+    return _execute(operation)
 
 
 @ensure_csrf_cookie
@@ -704,57 +971,108 @@ def open_definition(request: Request, definition_id: object) -> Response:
 
 
 @api_view(["POST"])
-@authentication_classes(_PUBLIC_AUTHENTICATION)
+@authentication_classes(_HUMAN_WRITE_AUTHENTICATION)
 @permission_classes([IsAuthenticated])
 def clone_definition(request: Request, definition_id: object) -> Response:
-    def operation() -> dict[str, Any]:
+    def operation() -> Response:
         source = _definition_or_404(request.user, definition_id)
         principal = _principal(request)
         require_studio_capability(principal, StudioCapability.DRAFT_CLONE)
-        payload = _json_payload(request)
-        definition = clone_project_definition_draft(
-            source,
-            definition_id=payload.get("id"),
-            code=payload.get("code", ""),
-            version=payload.get("version", ""),
+        operation_name = FoundationHumanWriteOperation.CLONE_DRAFT
+        operation_id, if_match, captured, payload = _human_write_admission(
+            request,
+            operation=operation_name,
+            allow_if_match=True,
+        )
+        if (
+            set(payload) != {"id", "code", "version"}
+            or any(
+                not isinstance(payload[field], str)
+                for field in ("id", "code", "version")
+            )
+        ):
+            raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
+        successor_id = _canonical_entity_uuid(payload["id"])
+        request_identity = _human_write_request_identity(
+            operation=operation_name,
+            operation_id=operation_id,
+            request=request,
+            principal=principal,
+            captured=captured,
+            project_id=source.project_id,
+            source_definition_id=source.pk,
+            target_definition_id=successor_id,
+            if_match=if_match,
+        )
+        result = clone_project_definition_draft_human_write(
+            request_identity=request_identity,
+            source=source,
+            definition_id=successor_id,
+            code=payload["code"],
+            version=payload["version"],
+            expected_manifest_hash=if_match,
             principal=principal,
         )
-        return _definition_payload(definition)
+        return _human_write_response(
+            result,
+            fresh_payload=(
+                _definition_payload(result.definition)
+                if result.definition is not None
+                else None
+            ),
+            fresh_status=HTTP_201_CREATED,
+        )
 
-    response = _execute(operation, success_status=HTTP_201_CREATED)
-    if response.status_code == HTTP_201_CREATED:
-        return _with_etag(response, str(response.data["manifest_hash"]))
-    return response
+    return _execute(operation)
 
 
 @api_view(["PUT"])
-@authentication_classes(_PUBLIC_AUTHENTICATION)
+@authentication_classes(_HUMAN_WRITE_AUTHENTICATION)
 @permission_classes([IsAuthenticated])
 def save_definition_draft(request: Request, definition_id: object) -> Response:
-    def operation() -> dict[str, Any]:
+    def operation() -> Response:
         definition = _definition_or_404(request.user, definition_id)
         principal = _principal(request)
         require_studio_capability(principal, StudioCapability.DRAFT_SAVE)
-        expected_hash = parse_strong_manifest_if_match(
-            request.META.get("HTTP_IF_MATCH")
+        operation_name = FoundationHumanWriteOperation.SAVE_DRAFT
+        operation_id, if_match, captured, payload = _human_write_admission(
+            request,
+            operation=operation_name,
+            allow_if_match=True,
         )
-        payload = _json_payload(request, allow_if_match=True)
-        if set(payload) != {"manifest"}:
-            raise ValidationError(
-                {"body": "Draft save accepts exactly one manifest object; If-Match is the sole stale token."}
-            )
-        saved = save_project_definition_draft(
-            definition,
+        if set(payload) != {"manifest"} or not isinstance(
+            payload["manifest"], Mapping
+        ):
+            raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
+        request_identity = _human_write_request_identity(
+            operation=operation_name,
+            operation_id=operation_id,
+            request=request,
+            principal=principal,
+            captured=captured,
+            project_id=definition.project_id,
+            source_definition_id=None,
+            target_definition_id=definition.pk,
+            if_match=if_match,
+        )
+        result = save_project_definition_draft_human_write(
+            request_identity=request_identity,
+            definition=definition,
             manifest=payload["manifest"],
-            expected_manifest_hash=expected_hash,
+            expected_manifest_hash=if_match,
             principal=principal,
         )
-        return _definition_payload(saved)
+        return _human_write_response(
+            result,
+            fresh_payload=(
+                _definition_payload(result.definition)
+                if result.definition is not None
+                else None
+            ),
+            fresh_status=HTTP_200_OK,
+        )
 
-    response = _execute(operation)
-    if response.status_code == HTTP_200_OK:
-        return _with_etag(response, str(response.data["manifest_hash"]))
-    return response
+    return _execute(operation)
 
 
 @_validation_preview_http_boundary
@@ -816,23 +1134,67 @@ def validation_preview(
 
 
 @api_view(["POST"])
-@authentication_classes(_PUBLIC_AUTHENTICATION)
+@authentication_classes(_HUMAN_WRITE_AUTHENTICATION)
 @permission_classes([IsAuthenticated])
 def validate_definition(request: Request, definition_id: object) -> Response:
-    def operation() -> dict[str, Any]:
+    def operation() -> Response:
         definition = _definition_or_404(request.user, definition_id)
         principal = _principal(request)
         require_studio_capability(principal, StudioCapability.DEFINITION_VALIDATE)
-        payload = _json_payload(request)
-        _reject_spoofed_authority(request, payload)
-        if payload:
-            raise ValidationError({"body": "Validation accepts an empty JSON object only."})
-        validated = validate_project_definition(
-            definition,
-            actor_identifier=principal.actor_identifier,
-            principal=principal,
+        operation_name = FoundationHumanWriteOperation.VALIDATE_DEFINITION
+        operation_id, if_match, captured, payload = _human_write_admission(
+            request,
+            operation=operation_name,
+            allow_if_match=True,
         )
-        return _definition_payload(validated)
+        if payload:
+            raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
+        request_identity = _human_write_request_identity(
+            operation=operation_name,
+            operation_id=operation_id,
+            request=request,
+            principal=principal,
+            captured=captured,
+            project_id=definition.project_id,
+            source_definition_id=None,
+            target_definition_id=definition.pk,
+            if_match=if_match,
+        )
+        try:
+            result = validate_project_definition_human_write(
+                request_identity=request_identity,
+                definition=definition,
+                expected_manifest_hash=if_match,
+                principal=principal,
+            )
+        except FoundationHumanWriteError as exc:
+            if (
+                exc.error_code != "DEFINITION_VALIDATION_FAILED"
+                or not isinstance(exc.report, Mapping)
+            ):
+                raise
+            return Response(
+                {
+                    "code": exc.error_code,
+                    "validation": _validation_report_projection(
+                        definition=definition,
+                        manifest=definition.manifest,
+                        request_sha256=captured.identity.sha256,
+                        request_byte_length=captured.identity.byte_length,
+                        report=exc.report,
+                    ),
+                },
+                status=HTTP_400_BAD_REQUEST,
+            )
+        return _human_write_response(
+            result,
+            fresh_payload=(
+                _definition_payload(result.definition)
+                if result.definition is not None
+                else None
+            ),
+            fresh_status=HTTP_200_OK,
+        )
 
     return _execute(operation)
 
@@ -1031,18 +1393,20 @@ def export_definition_package_2_1(
 
 
 @api_view(["POST"])
-@authentication_classes(_PUBLIC_AUTHENTICATION)
+@authentication_classes(_HUMAN_WRITE_AUTHENTICATION)
 @permission_classes([IsAuthenticated])
 def bootstrap_first_definition_draft(request: Request) -> Response:
-    def operation() -> dict[str, Any]:
+    def operation() -> Response:
         principal = _principal(request)
         require_studio_capability(principal, StudioCapability.DRAFT_CREATE)
-        _require_no_query(request)
-        payload = _json_payload(request)
+        operation_name = FoundationHumanWriteOperation.BOOTSTRAP_DRAFT
+        operation_id, if_match, captured, payload = _human_write_admission(
+            request,
+            operation=operation_name,
+            allow_if_match=False,
+        )
         if set(payload) != {"project", "definition"}:
-            raise ValidationError(
-                {"body": "Bootstrap requires exactly project and definition objects."}
-            )
+            raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
         project = payload["project"]
         definition = payload["definition"]
         project_keys = {
@@ -1062,19 +1426,15 @@ def bootstrap_first_definition_draft(request: Request) -> Response:
             "construct_version",
         }
         if not isinstance(project, Mapping) or set(project) != project_keys:
-            raise ValidationError({"project": "Exact Project envelope is required."})
+            raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
         if not isinstance(definition, Mapping) or set(definition) != definition_keys:
-            raise ValidationError(
-                {"definition": "Exact first-definition envelope is required."}
-            )
-        for section_name, section, string_fields in (
+            raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
+        for section, string_fields in (
             (
-                "project",
                 project,
                 ("id", "code", "version", "name", "description"),
             ),
             (
-                "definition",
                 definition,
                 (
                     "id",
@@ -1087,34 +1447,28 @@ def bootstrap_first_definition_draft(request: Request) -> Response:
         ):
             for field_name in string_fields:
                 if not isinstance(section[field_name], str):
-                    raise ValidationError(
-                        {
-                            f"{section_name}.{field_name}": (
-                                "The exact bootstrap DTO requires a JSON string."
-                            )
-                        }
+                    raise FoundationHumanWriteAdmissionError(
+                        "AUTHORING_ENVELOPE_INVALID"
                     )
         if not isinstance(project["metadata"], Mapping):
-            raise ValidationError(
-                {"project.metadata": "Project metadata must be one exact JSON object."}
-            )
+            raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
         if not isinstance(definition["manifest"], Mapping):
-            raise ValidationError(
-                {"definition.manifest": "Definition manifest must be one exact JSON object."}
-            )
-        project_id = project["id"]
-        definition_id = definition["id"]
-        for field_name, value in (
-            ("project.id", project_id),
-            ("definition.id", definition_id),
-        ):
-            try:
-                UUID(value)
-            except (TypeError, ValueError, AttributeError) as exc:
-                raise ValidationError(
-                    {field_name: "A valid UUID string is required."}
-                ) from exc
-        result = bootstrap_project_definition_draft(
+            raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
+        project_id = _canonical_entity_uuid(project["id"])
+        definition_id = _canonical_entity_uuid(definition["id"])
+        request_identity = _human_write_request_identity(
+            operation=operation_name,
+            operation_id=operation_id,
+            request=request,
+            principal=principal,
+            captured=captured,
+            project_id=project_id,
+            source_definition_id=None,
+            target_definition_id=definition_id,
+            if_match=if_match,
+        )
+        result = bootstrap_project_definition_draft_human_write(
+            request_identity=request_identity,
             project_id=project_id,
             project_code=project["code"],
             project_version=project["version"],
@@ -1130,27 +1484,32 @@ def bootstrap_first_definition_draft(request: Request) -> Response:
             principal=principal,
             user=request.user,
         )
-        return {
-            "project": {
-                "id": str(result.project.pk),
-                "code": result.project.code,
-                "version": result.project.version,
-                "name": result.project.name,
-                "description": result.project.description,
-                "metadata": result.project.metadata,
-            },
-            "definition": _definition_payload(result.definition),
-            "object_scope_group": result.scope_group.name,
-            "audit_event_id": str(result.audit_event.pk),
-        }
-
-    response = _execute(operation, success_status=HTTP_201_CREATED)
-    if response.status_code == HTTP_201_CREATED:
-        return _with_etag(
-            response,
-            str(response.data["definition"]["manifest_hash"]),
+        fresh_payload = None
+        if (
+            result.project is not None
+            and result.definition is not None
+            and result.scope_group is not None
+        ):
+            fresh_payload = {
+                "project": {
+                    "id": str(result.project.pk),
+                    "code": result.project.code,
+                    "version": result.project.version,
+                    "name": result.project.name,
+                    "description": result.project.description,
+                    "metadata": result.project.metadata,
+                },
+                "definition": _definition_payload(result.definition),
+                "object_scope_group": result.scope_group.name,
+                "audit_event_id": str(result.audit_event.pk),
+            }
+        return _human_write_response(
+            result,
+            fresh_payload=fresh_payload,
+            fresh_status=HTTP_201_CREATED,
         )
-    return response
+
+    return _execute(operation)
 
 
 @ensure_csrf_cookie

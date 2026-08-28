@@ -606,13 +606,32 @@ def read_http_json(
     )
 
 
-def parse_strong_manifest_if_match(value: str | None) -> str:
-    """Accept one exact strong ETag: a quoted lowercase SHA-256 digest."""
+def parse_strong_manifest_if_match(
+    value: str | None,
+    *,
+    operation: str = "SAVE_DRAFT",
+) -> str:
+    """Accept one exact strong ETag with operation-correct fixed diagnostics.
+
+    This remains the sole Foundation parser for clone/save/validate optimistic
+    validators.  The operation label affects only bounded public diagnostics;
+    the accepted wire grammar is identical for every caller.
+    """
+
+    operation_labels = {
+        "CLONE_DRAFT": "Draft clone",
+        "SAVE_DRAFT": "Draft save",
+        "VALIDATE_DEFINITION": "Definition validation",
+    }
+    try:
+        operation_label = operation_labels[operation]
+    except KeyError as exc:
+        raise ValueError("Unknown Foundation strong If-Match operation.") from exc
 
     if value is None or value == "":
         raise _error(
             "IF_MATCH_REQUIRED",
-            'Draft save requires If-Match: "<lowercase-sha256>".',
+            f'{operation_label} requires If-Match: "<lowercase-sha256>".',
         )
     match = STRONG_MANIFEST_ETAG_PATTERN.fullmatch(value)
     if match is None:

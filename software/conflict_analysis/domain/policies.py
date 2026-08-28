@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import StrEnum
 from types import MappingProxyType
 from typing import Any, Mapping
@@ -434,6 +435,55 @@ def _audit_code(prefix: str) -> str:
 
 _FOUNDATION_AUDIT_CONTEXT_SEAL = object()
 _FOUNDATION_AUDIT_ATTRIBUTION_KEY = "foundation_audit_context"
+FOUNDATION_HUMAN_OPERATION_AUDIT_KEY = "foundation_human_operation"
+_FOUNDATION_HUMAN_RECEIPT_KEYS = frozenset(
+    {
+        "contract",
+        "version",
+        "operation",
+        "operation_id",
+        "audit_event_id",
+        "audit_action",
+        "actor_type",
+        "actor_identifier",
+        "project_id",
+        "source_definition",
+        "before_definition",
+        "after_definition",
+        "bootstrap_result",
+        "validation",
+        "request",
+        "occurred_at",
+        "original_http_status",
+    }
+)
+_FOUNDATION_HUMAN_REQUEST_KEYS = frozenset(
+    {
+        "contract",
+        "sha256",
+        "raw_input_sha256",
+        "raw_input_byte_length",
+        "if_match",
+    }
+)
+_FOUNDATION_HUMAN_OPERATION_ACTIONS = MappingProxyType(
+    {
+        "BOOTSTRAP_DRAFT": AuditAction.CREATE,
+        "CREATE_DRAFT": AuditAction.CREATE,
+        "CLONE_DRAFT": AuditAction.CREATE,
+        "SAVE_DRAFT": AuditAction.UPDATE,
+        "VALIDATE_DEFINITION": AuditAction.VALIDATE,
+    }
+)
+_FOUNDATION_HUMAN_OPERATION_STATUSES = MappingProxyType(
+    {
+        "BOOTSTRAP_DRAFT": 201,
+        "CREATE_DRAFT": 201,
+        "CLONE_DRAFT": 201,
+        "SAVE_DRAFT": 200,
+        "VALIDATE_DEFINITION": 200,
+    }
+)
 
 
 @dataclass(frozen=True, slots=True, init=False)
@@ -732,32 +782,131 @@ def record_definition_audit(
     entity_id: object,
     before: dict | None = None,
     after: dict | None = None,
+    event_id: UUID | None = None,
+    occurred_at: datetime | None = None,
+    foundation_human_operation: Mapping[str, Any] | None = None,
 ) -> AuditEvent:
-    """Append one DEFINITION event from a sealed, server-created context."""
+    """Append one DEFINITION event from a sealed, server-created context.
+
+    ``event_id`` is optional for backwards compatibility.  Prospective FD05
+    HUMAN writes bind it to the canonical idempotency UUID and persist their
+    immutable reconciliation receipt under one reserved server-only key.
+    """
 
     context = _require_audit_context(context, scope=AuditScope.DEFINITION)
     definition = ProjectDefinitionVersion.objects.select_related("project").get(
         pk=context.definition_version_id,
         project_id=context.project_id,
     )
+    event_after = dict(after) if after is not None else {}
+    if FOUNDATION_HUMAN_OPERATION_AUDIT_KEY in event_after:
+        raise ValidationError(
+            {
+                "after": (
+                    f"{FOUNDATION_HUMAN_OPERATION_AUDIT_KEY} is reserved for "
+                    "server-authored HUMAN write receipts."
+                )
+            }
+        )
+    resolved_event_id: UUID | None = None
+    if event_id is not None:
+        resolved_event_id = UUID(str(event_id))
+        if resolved_event_id.version != 4 or str(resolved_event_id) != str(event_id):
+            raise ValidationError(
+                {"event_id": "Definition operation id must be a canonical UUIDv4."}
+            )
+    if foundation_human_operation is not None:
+        if resolved_event_id is None:
+            raise ValidationError(
+                {"event_id": "A HUMAN write receipt requires its operation UUID."}
+            )
+        if context.actor_type != AuditActorType.HUMAN:
+            raise ValidationError(
+                {"audit_context": "Public definition writes require HUMAN attribution."}
+            )
+        try:
+            receipt = json.loads(
+                json.dumps(
+                    dict(foundation_human_operation),
+                    ensure_ascii=False,
+                    allow_nan=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValidationError(
+                {"foundation_human_operation": "Receipt must contain exact JSON values."}
+            ) from exc
+        operation = receipt.get("operation")
+        expected_action = _FOUNDATION_HUMAN_OPERATION_ACTIONS.get(operation)
+        expected_status = _FOUNDATION_HUMAN_OPERATION_STATUSES.get(operation)
+        request_identity = receipt.get("request")
+        after_definition = receipt.get("after_definition")
+        if (
+            set(receipt) != _FOUNDATION_HUMAN_RECEIPT_KEYS
+            or receipt.get("contract") != "FOUNDATION_AUDITED_DEFINITION_WRITE_V1"
+            or receipt.get("version") != "1.0.0"
+            or expected_action is None
+            or str(action) != expected_action
+            or receipt.get("operation_id") != str(resolved_event_id)
+            or receipt.get("audit_event_id") != str(resolved_event_id)
+            or receipt.get("actor_type") != AuditActorType.HUMAN
+            or receipt.get("actor_identifier") != context.actor_identifier
+            or receipt.get("project_id") != str(definition.project_id)
+            or receipt.get("before_definition") != before
+            or not isinstance(after_definition, Mapping)
+            or after_definition.get("id") != str(definition.pk)
+            or after_definition.get("project_id") != str(definition.project_id)
+            or str(entity_id) != str(definition.pk)
+            or receipt.get("audit_action") != expected_action
+            or isinstance(receipt.get("original_http_status"), bool)
+            or receipt.get("original_http_status") != expected_status
+            or not isinstance(request_identity, Mapping)
+            or set(request_identity) != _FOUNDATION_HUMAN_REQUEST_KEYS
+            or request_identity.get("contract")
+            != "FOUNDATION_HUMAN_WRITE_REQUEST_IDENTITY_V1"
+        ):
+            raise ValidationError(
+                {
+                    "foundation_human_operation": (
+                        "Receipt identity must equal its HUMAN audit context and UUID."
+                    )
+                }
+            )
+        event_after[FOUNDATION_HUMAN_OPERATION_AUDIT_KEY] = receipt
+    event_kwargs: dict[str, Any] = {}
+    if resolved_event_id is not None:
+        event_kwargs["id"] = resolved_event_id
+    if occurred_at is not None:
+        event_kwargs["occurred_at"] = occurred_at
     event = AuditEvent(
+        **event_kwargs,
         project=definition.project,
         workspace=None,
         definition_version=definition,
         scope=AuditScope.DEFINITION,
         assessment_set=None,
         parameter_value=None,
-        code=_audit_code("AUD-DEF"),
+        code=(
+            f"AUD-DEF-OP-{resolved_event_id.hex}"
+            if resolved_event_id is not None
+            else _audit_code("AUD-DEF")
+        ),
         action=action,
         actor_type=context.actor_type,
         actor_identifier=context.actor_identifier,
         entity_type=entity_type,
         entity_id=entity_id,
         before=before,
-        after=_audit_after_payload(context, after),
+        after=_audit_after_payload(context, event_after or None),
     )
     event.full_clean()
     event.save(force_insert=True)
+    if foundation_human_operation is not None:
+        # JSONB can normalize valid JSON values during persistence.  A fresh
+        # FD05 response must use the same immutable receipt bytes as replay.
+        event.refresh_from_db()
     return event
 
 
