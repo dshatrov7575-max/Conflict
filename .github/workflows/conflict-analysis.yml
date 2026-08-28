@@ -2,15 +2,14 @@ name: Conflict Analysis Foundation
 
 on:
   pull_request:
+    branches:
+      - codex/ca-suite-i1-production-studio-c0-read-only
+      - codex/ca-suite-i1-foundation-fd01-validation-preview
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
   push:
     branches:
-      - main
-      - codex/ca-i1-data-001
-      - codex/ca-suite-i1-foundation
-      - codex/ca-suite-i1-production-studio-c0-read-only
       - codex/ca-suite-i1-foundation-fd01-validation-preview
       - codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
     paths:
@@ -66,6 +65,10 @@ jobs:
       FD01_RC1_START_TREE: 671c0777cee1d4542ebe4eeb1128c0e0fecac4b3
       FD01_RC2_START_HEAD: 2bf40798dc2c4ba0ea3c742bf86b88fda4bde8d0
       FD01_RC2_START_TREE: 23161d6d2ba575d1ca92149f468e086ce43df129
+      FD01_RC3_START_HEAD: 6b502c985094799050e0970a7c40d5a4f9cd0724
+      FD01_RC3_START_TREE: d527e34b8e9d3d67802be0118ac4928821cfd60b
+      FD01_ACCEPTED_HEAD: "${{ vars.FD01_ACCEPTED_HEAD }}"
+      FD01_ACCEPTED_TREE: "${{ vars.FD01_ACCEPTED_TREE }}"
       C0_BRANCH: codex/ca-suite-i1-production-studio-c0-read-only
       FD01_BRANCH: codex/ca-suite-i1-foundation-fd01-validation-preview
       FD05_BRANCH: codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
@@ -96,60 +99,179 @@ jobs:
           EVENT_BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
         run: |
           set -euo pipefail
-          delivery_head="$(git rev-parse HEAD)"
-          active_pr_number=""
+          resolve_route() {
+            local event_name="$1"
+            local event_ref="$2"
+            local pr_number="$3"
+            local head_ref="$4"
+            local base_ref="$5"
 
+            active_slice=""
+            slice_base_source=""
+            active_head_ref=""
+            active_base_ref=""
+            active_pr_number=""
+            case "$event_name" in
+              pull_request)
+                [[ "$pr_number" =~ ^[1-9][0-9]*$ ]] || {
+                  echo "invalid prerequisite pull-request number: $pr_number" >&2
+                  return 1
+                }
+                case "${head_ref}|${base_ref}" in
+                  "${FD01_BRANCH}|${C0_BRANCH}")
+                    test "$pr_number" = "71" || {
+                      echo "FD01 delivery is authorized only through PR #71" >&2
+                      return 1
+                    }
+                    active_slice="FD01"
+                    slice_base_source="PINNED_C0"
+                    ;;
+                  "${FD05_BRANCH}|${FD01_BRANCH}")
+                    active_slice="FD05"
+                    slice_base_source="EVENT_FD01"
+                    ;;
+                  *)
+                    echo "unsupported prerequisite pull-request ref pair: ${head_ref} -> ${base_ref}" >&2
+                    return 1
+                    ;;
+                esac
+                active_head_ref="$head_ref"
+                active_base_ref="$base_ref"
+                active_pr_number="$pr_number"
+                ;;
+              push)
+                case "$event_ref" in
+                  "refs/heads/${FD01_BRANCH}")
+                    active_slice="FD01"
+                    slice_base_source="PINNED_C0"
+                    active_head_ref="$FD01_BRANCH"
+                    active_base_ref="$C0_BRANCH"
+                    ;;
+                  "refs/heads/${FD05_BRANCH}")
+                    active_slice="FD05"
+                    slice_base_source="LIVE_FD01"
+                    active_head_ref="$FD05_BRANCH"
+                    active_base_ref="$FD01_BRANCH"
+                    ;;
+                  *)
+                    echo "unsupported prerequisite push ref: $event_ref" >&2
+                    return 1
+                    ;;
+                esac
+                ;;
+              *)
+                echo "unsupported prerequisite event: $event_name" >&2
+                return 1
+                ;;
+            esac
+          }
+
+          verify_fd05_pin() {
+            local accepted_head="$1"
+            local accepted_tree="$2"
+            local actual_head="$3"
+            local actual_tree="$4"
+            [[ "$accepted_head" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "FD01_ACCEPTED_HEAD must be an exact lowercase 40-hex commit id" >&2
+              return 1
+            }
+            [[ "$accepted_tree" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "FD01_ACCEPTED_TREE must be an exact lowercase 40-hex tree id" >&2
+              return 1
+            }
+            test "$actual_head" = "$accepted_head" || {
+              echo "FD05 event/live base HEAD does not match FD01_ACCEPTED_HEAD" >&2
+              return 1
+            }
+            test "$actual_tree" = "$accepted_tree" || {
+              echo "FD05 event/live base TREE does not match FD01_ACCEPTED_TREE" >&2
+              return 1
+            }
+          }
+
+          assert_route() {
+            local expected="$1"
+            shift
+            resolve_route "$@"
+            local actual="${active_slice}|${slice_base_source}|${active_head_ref}|${active_base_ref}|${active_pr_number}"
+            test "$actual" = "$expected"
+          }
+
+          assert_route_failure() {
+            if resolve_route "$@" >/dev/null 2>&1; then
+              echo "routing self-check unexpectedly accepted an unsupported event" >&2
+              return 1
+            fi
+          }
+
+          assert_pin_failure() {
+            if verify_fd05_pin "$@" >/dev/null 2>&1; then
+              echo "FD05 pin self-check unexpectedly accepted invalid inputs" >&2
+              return 1
+            fi
+          }
+
+          pin_head="$(printf 'a%.0s' {1..40})"
+          pin_tree="$(printf 'b%.0s' {1..40})"
+          other_head="$(printf 'c%.0s' {1..40})"
+          other_tree="$(printf 'd%.0s' {1..40})"
+          assert_route "FD01|PINNED_C0|${FD01_BRANCH}|${C0_BRANCH}|" \
+            push "refs/heads/${FD01_BRANCH}" "" "" ""
+          assert_route "FD05|LIVE_FD01|${FD05_BRANCH}|${FD01_BRANCH}|" \
+            push "refs/heads/${FD05_BRANCH}" "" "" ""
+          assert_route "FD01|PINNED_C0|${FD01_BRANCH}|${C0_BRANCH}|71" \
+            pull_request "" "71" "$FD01_BRANCH" "$C0_BRANCH"
+          assert_route "FD05|EVENT_FD01|${FD05_BRANCH}|${FD01_BRANCH}|72" \
+            pull_request "" "72" "$FD05_BRANCH" "$FD01_BRANCH"
+          assert_route_failure push refs/heads/main "" "" ""
+          assert_route_failure pull_request "" 72 "$FD01_BRANCH" "$C0_BRANCH"
+          assert_route_failure pull_request "" 72 unrelated-head "$C0_BRANCH"
+          assert_route_failure workflow_dispatch "" "" "" ""
+          verify_fd05_pin "$pin_head" "$pin_tree" "$pin_head" "$pin_tree"
+          assert_pin_failure "" "$pin_tree" "$pin_head" "$pin_tree"
+          assert_pin_failure "$pin_head" "" "$pin_head" "$pin_tree"
+          assert_pin_failure AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA "$pin_tree" "$pin_head" "$pin_tree"
+          assert_pin_failure "$pin_head" BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB "$pin_head" "$pin_tree"
+          assert_pin_failure "$pin_head" "$pin_tree" "$other_head" "$pin_tree"
+          assert_pin_failure "$pin_head" "$pin_tree" "$pin_head" "$other_tree"
+          echo "ROUTING_MATRIX_SELF_CHECK=PASS"
+          echo "FD05_EXTERNAL_PIN_SELF_CHECK=PASS"
+
+          delivery_head="$(git rev-parse HEAD)"
           case "$GITHUB_EVENT_NAME" in
             pull_request)
               test "$EVENT_HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"
               test "$EVENT_BASE_REPOSITORY" = "$GITHUB_REPOSITORY"
               test "$EVENT_HEAD_SHA" = "$delivery_head"
-              [[ "$EVENT_PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
-              active_pr_number="$EVENT_PR_NUMBER"
-              case "${EVENT_HEAD_REF}|${EVENT_BASE_REF}" in
-                "${FD01_BRANCH}|${C0_BRANCH}")
-                  test "$EVENT_PR_NUMBER" = "71"
-                  active_slice="FD01"
-                  slice_base_head="$FD01_BASE_HEAD"
-                  test "$EVENT_BASE_SHA" = "$slice_base_head"
-                  ;;
-                "${FD05_BRANCH}|${FD01_BRANCH}")
-                  active_slice="FD05"
-                  slice_base_head="$EVENT_BASE_SHA"
-                  ;;
-                *)
-                  echo "unsupported prerequisite pull-request ref pair: ${EVENT_HEAD_REF} -> ${EVENT_BASE_REF}" >&2
-                  exit 1
-                  ;;
-              esac
-              active_head_ref="$EVENT_HEAD_REF"
-              active_base_ref="$EVENT_BASE_REF"
               ;;
             push)
               test "$GITHUB_SHA" = "$delivery_head"
-              case "$GITHUB_REF" in
-                "refs/heads/${FD01_BRANCH}")
-                  active_slice="FD01"
-                  slice_base_head="$FD01_BASE_HEAD"
-                  active_head_ref="$FD01_BRANCH"
-                  active_base_ref="$C0_BRANCH"
-                  ;;
-                "refs/heads/${FD05_BRANCH}")
-                  active_slice="FD05"
-                  git fetch --no-tags origin \
-                    "+refs/heads/${FD01_BRANCH}:refs/remotes/origin/fd01-target"
-                  slice_base_head="$(git rev-parse refs/remotes/origin/fd01-target)"
-                  active_head_ref="$FD05_BRANCH"
-                  active_base_ref="$FD01_BRANCH"
-                  ;;
-                *)
-                  echo "unsupported prerequisite push ref: $GITHUB_REF" >&2
-                  exit 1
-                  ;;
-              esac
+              ;;
+          esac
+          resolve_route \
+            "$GITHUB_EVENT_NAME" \
+            "$GITHUB_REF" \
+            "$EVENT_PR_NUMBER" \
+            "$EVENT_HEAD_REF" \
+            "$EVENT_BASE_REF"
+
+          case "$slice_base_source" in
+            PINNED_C0)
+              slice_base_head="$FD01_BASE_HEAD"
+              if [[ "$GITHUB_EVENT_NAME" = pull_request ]]; then
+                test "$EVENT_BASE_SHA" = "$slice_base_head"
+              fi
+              ;;
+            EVENT_FD01)
+              slice_base_head="$EVENT_BASE_SHA"
+              ;;
+            LIVE_FD01)
+              git fetch --no-tags origin \
+                "+refs/heads/${FD01_BRANCH}:refs/remotes/origin/fd01-target"
+              slice_base_head="$(git rev-parse refs/remotes/origin/fd01-target)"
               ;;
             *)
-              echo "unsupported prerequisite event: $GITHUB_EVENT_NAME" >&2
+              echo "unsupported slice base source: $slice_base_source" >&2
               exit 1
               ;;
           esac
@@ -161,18 +283,28 @@ jobs:
           [[ "$slice_base_tree" =~ ^[0-9a-f]{40}$ ]]
           if [[ "$active_slice" = FD01 ]]; then
             test "$slice_base_tree" = "$FD01_BASE_TREE"
+            fd05_base_pin="NOT_APPLICABLE_CURRENT_FD01"
           else
-            echo "FD05 base is event/live-target relational only; exact accepted H1/T1 equality remains an external MAIN oracle."
+            test "$active_slice" = FD05
+            verify_fd05_pin \
+              "$FD01_ACCEPTED_HEAD" \
+              "$FD01_ACCEPTED_TREE" \
+              "$slice_base_head" \
+              "$slice_base_tree"
+            fd05_base_pin="PIN_VERIFIED_EXTERNAL"
           fi
 
           {
             echo "ACTIVE_SLICE=$active_slice"
             echo "SLICE_BASE_HEAD=$slice_base_head"
             echo "SLICE_BASE_TREE=$slice_base_tree"
+            echo "SLICE_BASE_SOURCE=$slice_base_source"
             echo "SLICE_HEAD_REF=$active_head_ref"
             echo "SLICE_BASE_REF=$active_base_ref"
             echo "SLICE_PR_NUMBER=$active_pr_number"
+            echo "FD05_BASE_PIN=$fd05_base_pin"
           } >> "$GITHUB_ENV"
+          echo "FD05_BASE_PIN=$fd05_base_pin"
 
       - name: Verify active-slice authorization drift, ancestry and synthetic merge
         shell: bash
@@ -184,6 +316,7 @@ jobs:
           test "$(git rev-parse "$FD01_BASE_HEAD^{tree}")" = "$FD01_BASE_TREE"
           test "$(git rev-parse "$FD01_RC1_START_HEAD^{tree}")" = "$FD01_RC1_START_TREE"
           test "$(git rev-parse "$FD01_RC2_START_HEAD^{tree}")" = "$FD01_RC2_START_TREE"
+          test "$(git rev-parse "$FD01_RC3_START_HEAD^{tree}")" = "$FD01_RC3_START_TREE"
           test "$(git rev-parse "$SLICE_BASE_HEAD^{tree}")" = "$SLICE_BASE_TREE"
           test "$(git rev-parse "$FND_BASE_HEAD^{tree}")" = "$FND_BASE_TREE"
           test "$(git rev-parse "$FOUNDATION_B_HEAD^{tree}")" = "$FOUNDATION_B_TREE"
@@ -194,15 +327,29 @@ jobs:
           git merge-base --is-ancestor "$FOUNDATION_B_HEAD" "$FD01_BASE_HEAD"
           git merge-base --is-ancestor "$FD01_BASE_HEAD" "$FD01_RC1_START_HEAD"
           git merge-base --is-ancestor "$FD01_RC1_START_HEAD" "$FD01_RC2_START_HEAD"
+          git merge-base --is-ancestor "$FD01_RC2_START_HEAD" "$FD01_RC3_START_HEAD"
+          git merge-base --is-ancestor "$FD01_RC3_START_HEAD" "$delivery_head"
           git merge-base --is-ancestor "$FD01_RC2_START_HEAD" "$delivery_head"
           git merge-base --is-ancestor "$SLICE_BASE_HEAD" "$delivery_head"
           test -z "$(git rev-list --merges "$FD01_BASE_HEAD..$delivery_head")"
           if [[ "$ACTIVE_SLICE" = FD01 ]]; then
             test "$SLICE_BASE_HEAD" = "$FD01_BASE_HEAD"
             test "$SLICE_BASE_TREE" = "$FD01_BASE_TREE"
+            test "$SLICE_BASE_SOURCE" = "PINNED_C0"
+            test "$FD05_BASE_PIN" = "NOT_APPLICABLE_CURRENT_FD01"
+            test "$(git rev-list --count "$FD01_RC3_START_HEAD..$delivery_head")" = "1"
+            test "$(git rev-parse "$delivery_head^")" = "$FD01_RC3_START_HEAD"
           else
             test "$ACTIVE_SLICE" = FD05
+            case "$SLICE_BASE_SOURCE" in
+              EVENT_FD01|LIVE_FD01) ;;
+              *) exit 1 ;;
+            esac
+            test "$FD05_BASE_PIN" = "PIN_VERIFIED_EXTERNAL"
+            test "$SLICE_BASE_HEAD" = "$FD01_ACCEPTED_HEAD"
+            test "$SLICE_BASE_TREE" = "$FD01_ACCEPTED_TREE"
             git merge-base --is-ancestor "$FD01_RC2_START_HEAD" "$SLICE_BASE_HEAD"
+            git merge-base --is-ancestor "$FD01_RC3_START_HEAD" "$SLICE_BASE_HEAD"
           fi
 
           git fetch --no-tags origin \
@@ -300,10 +447,18 @@ jobs:
 
       - name: Verify exact active-slice allowlist and frozen accepted surfaces
         run: |
-          python scripts/verify_foundation_c1_prerequisites_allowlist.py \
-            --slice "$ACTIVE_SLICE" \
-            --base-head "$SLICE_BASE_HEAD" \
+          verifier_args=(
+            --slice "$ACTIVE_SLICE"
+            --base-head "$SLICE_BASE_HEAD"
             --base-tree "$SLICE_BASE_TREE"
+          )
+          if [[ "$ACTIVE_SLICE" = FD05 ]]; then
+            verifier_args+=(
+              --fd01-accepted-head "$FD01_ACCEPTED_HEAD"
+              --fd01-accepted-tree "$FD01_ACCEPTED_TREE"
+            )
+          fi
+          python scripts/verify_foundation_c1_prerequisites_allowlist.py "${verifier_args[@]}"
           git diff --check "$SLICE_BASE_HEAD...HEAD"
 
       - name: Check package, schema, migrations and Django

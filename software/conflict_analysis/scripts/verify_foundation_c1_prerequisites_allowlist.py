@@ -9,6 +9,7 @@ import json
 import re
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path, PurePosixPath
 
 
@@ -18,6 +19,8 @@ FD01_RC1_START_HEAD = "1e2fd10878236ee8f0a01a62773894dd9c0d5c40"
 FD01_RC1_START_TREE = "671c0777cee1d4542ebe4eeb1128c0e0fecac4b3"
 FD01_RC2_START_HEAD = "2bf40798dc2c4ba0ea3c742bf86b88fda4bde8d0"
 FD01_RC2_START_TREE = "23161d6d2ba575d1ca92149f468e086ce43df129"
+FD01_RC3_START_HEAD = "6b502c985094799050e0970a7c40d5a4f9cd0724"
+FD01_RC3_START_TREE = "d527e34b8e9d3d67802be0118ac4928821cfd60b"
 PINNED_PRODUCTION_STUDIO_TREE = "87d8e93ec09a18b87ae016977f0fb5fbf67d4104"
 PINNED_MODELS_BLOB = "c6c5c2419989e7b0cf40bd1242ab65d37cc2e162"
 PINNED_ENUMS_BLOB = "a701c3c83511b7d1706519d40fab4580d0a0d63e"
@@ -42,6 +45,19 @@ FD01_RC2_ALLOWLIST = frozenset(
         "software/conflict_analysis/scripts/verify_foundation_c1_prerequisites_allowlist.py",
     }
 )
+
+# RC3 is another gate-only correction over the same two inherited gate files.
+FD01_RC3_ALLOWLIST = FD01_RC2_ALLOWLIST
+
+C0_BRANCH = "codex/ca-suite-i1-production-studio-c0-read-only"
+FD01_BRANCH = "codex/ca-suite-i1-foundation-fd01-validation-preview"
+FD05_BRANCH = "codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation"
+ROUTE_MATRIX = {
+    ("pull_request", FD01_BRANCH, C0_BRANCH): "FD01",
+    ("pull_request", FD05_BRANCH, FD01_BRANCH): "FD05",
+    ("push", FD01_BRANCH, ""): "FD01",
+    ("push", FD05_BRANCH, ""): "FD05",
+}
 
 FD01_TEST_CLASS = "FoundationStudioValidationPreviewHttpTests"
 FD01_TEST_METHODS = (
@@ -269,6 +285,78 @@ def _validate_external_sha(value: str, *, label: str) -> None:
         raise VerificationError(f"{label} must be an exact lowercase 40-hex object id")
 
 
+def _select_slice_from_refs(
+    *,
+    event_name: str,
+    head_ref: str,
+    base_ref: str,
+) -> str:
+    try:
+        return ROUTE_MATRIX[(event_name, head_ref, base_ref)]
+    except KeyError as exc:
+        raise VerificationError(
+            "unsupported prerequisite route: "
+            f"{event_name}|{head_ref}|{base_ref}"
+        ) from exc
+
+
+def _verify_external_fd01_pin(
+    *,
+    slice_name: str,
+    base_head: str,
+    base_tree: str,
+    accepted_head: str | None,
+    accepted_tree: str | None,
+) -> str:
+    """Validate the external MAIN pin separately from the event/live base."""
+
+    if slice_name == "FD01":
+        return "NOT_APPLICABLE"
+    if slice_name != "FD05":
+        raise VerificationError(f"unsupported prerequisite slice: {slice_name}")
+
+    missing = [
+        label
+        for label, value in (
+            ("--fd01-accepted-head", accepted_head),
+            ("--fd01-accepted-tree", accepted_tree),
+        )
+        if not value
+    ]
+    if missing:
+        raise VerificationError(
+            "FD05 requires externally supplied " + " and ".join(missing)
+        )
+
+    _validate_external_sha(base_head, label="FD05 --base-head")
+    _validate_external_sha(base_tree, label="FD05 --base-tree")
+    _validate_external_sha(
+        accepted_head,
+        label="FD05 --fd01-accepted-head",
+    )
+    _validate_external_sha(
+        accepted_tree,
+        label="FD05 --fd01-accepted-tree",
+    )
+    if base_head != accepted_head:
+        raise VerificationError(
+            "FD05 event/live base HEAD does not match external FD01 accepted HEAD"
+        )
+    if base_tree != accepted_tree:
+        raise VerificationError(
+            "FD05 event/live base TREE does not match external FD01 accepted TREE"
+        )
+    return "PIN_VERIFIED_EXTERNAL"
+
+
+def _expect_verification_error(operation: Callable[[], object]) -> bool:
+    try:
+        operation()
+    except VerificationError:
+        return True
+    return False
+
+
 def _parse_module(repo: Path, module_path: Path, *, label: str) -> ast.Module:
     test_path = repo / module_path
     try:
@@ -359,6 +447,28 @@ def _verify_exact_paths(
         )
 
 
+def _verify_bounded_paths(
+    *,
+    actual: set[str],
+    required: frozenset[str],
+    allowed: frozenset[str],
+    label: str,
+) -> None:
+    missing = required - actual
+    extra = actual - allowed
+    if missing or extra:
+        raise VerificationError(
+            f"{label} changed paths violate required/allowed bounds: "
+            + json.dumps(
+                {
+                    "missing_required": sorted(missing),
+                    "outside_allowlist": sorted(extra),
+                },
+                ensure_ascii=False,
+            )
+        )
+
+
 def _verify_pinned_start(
     repo: Path,
     *,
@@ -443,6 +553,16 @@ def _verify_common_freezes(repo: Path, *, base_head: str) -> dict[str, str]:
 
 
 def _contract_self_check() -> dict[str, object]:
+    pin_head = "a" * 40
+    pin_tree = "b" * 40
+    other_object = "c" * 40
+    relaxed_allowed_path = "software/conflict_analysis/domain/urls.py"
+    fd01_totals = SLICE_TOTALS["FD01"]
+    fd05_totals = SLICE_TOTALS["FD05"]
+    fd05_added_nodes = len(FD05_PORTABLE_TEST_METHODS) + len(
+        FD05_POSTGRESQL_TEST_METHODS
+    )
+
     checks = {
         "fd01_allowlist_count": len(FD01_ALLOWLIST) == 7,
         "fd01_rc2_allowlist_count": len(FD01_RC2_ALLOWLIST) == 2,
@@ -472,45 +592,223 @@ def _contract_self_check() -> dict[str, object]:
         and len(set(BASELINE_SQLITE_SKIPS)) == 6,
         "fd05_sqlite_skips_exact_eleven": len(FD05_SQLITE_SKIPS) == 11
         and len(set(FD05_SQLITE_SKIPS)) == 11,
-        "fd01_totals_exact": SLICE_TOTALS["FD01"]
-        == {
-            "postgresql_collected": 183,
-            "postgresql_passed": 183,
-            "postgresql_skipped": 0,
-            "sqlite_collected": 183,
-            "sqlite_passed": 177,
-            "sqlite_skipped": 6,
-            "c0_postgresql_passed": 19,
-            "c0_sqlite_passed": 19,
-        },
-        "fd05_totals_exact": SLICE_TOTALS["FD05"]
-        == {
-            "postgresql_collected": 200,
-            "postgresql_passed": 200,
-            "postgresql_skipped": 0,
-            "sqlite_collected": 200,
-            "sqlite_passed": 189,
-            "sqlite_skipped": 11,
-            "c0_postgresql_passed": 19,
-            "c0_sqlite_passed": 19,
-        },
-        "fd01_totals_derive_from_accepted_baseline": (
-            175 + len(FD01_TEST_METHODS) == 183
-            and 169 + len(FD01_TEST_METHODS) == 177
-            and 6 == SLICE_TOTALS["FD01"]["sqlite_skipped"]
+        "fd01_postgresql_total_partition_is_consistent": (
+            fd01_totals["postgresql_collected"]
+            == fd01_totals["postgresql_passed"]
+            + fd01_totals["postgresql_skipped"]
+            and fd01_totals["postgresql_skipped"] == 0
         ),
-        "fd05_totals_derive_from_fd01": (
-            183
+        "fd01_sqlite_total_partition_is_consistent": (
+            fd01_totals["sqlite_collected"]
+            == fd01_totals["sqlite_passed"] + fd01_totals["sqlite_skipped"]
+            and fd01_totals["sqlite_skipped"] == len(BASELINE_SQLITE_SKIPS)
+            and fd01_totals["sqlite_collected"]
+            == fd01_totals["postgresql_collected"]
+        ),
+        "fd01_totals_derive_from_pre_preview_baseline": (
+            fd01_totals["postgresql_collected"]
+            == 175 + len(FD01_TEST_METHODS)
+            and fd01_totals["postgresql_passed"]
+            == 175 + len(FD01_TEST_METHODS)
+            and fd01_totals["sqlite_passed"]
+            == 169 + len(FD01_TEST_METHODS)
+        ),
+        "fd05_postgresql_totals_derive_from_fd01_nodes": (
+            fd05_totals["postgresql_collected"]
+            == fd01_totals["postgresql_collected"] + fd05_added_nodes
+            and fd05_totals["postgresql_passed"]
+            == fd01_totals["postgresql_passed"] + fd05_added_nodes
+            and fd05_totals["postgresql_skipped"]
+            == fd01_totals["postgresql_skipped"]
+        ),
+        "fd05_sqlite_totals_derive_from_fd01_nodes": (
+            fd05_totals["sqlite_collected"]
+            == fd01_totals["sqlite_collected"] + fd05_added_nodes
+            and fd05_totals["sqlite_passed"]
+            == fd01_totals["sqlite_passed"]
             + len(FD05_PORTABLE_TEST_METHODS)
+            and fd05_totals["sqlite_skipped"]
+            == fd01_totals["sqlite_skipped"]
             + len(FD05_POSTGRESQL_TEST_METHODS)
-            == 200
-            and 177 + len(FD05_PORTABLE_TEST_METHODS) == 189
-            and 6 + len(FD05_POSTGRESQL_TEST_METHODS) == 11
         ),
-        "c0_totals_remain_19_on_both_backends": all(
-            totals["c0_postgresql_passed"] == 19
-            and totals["c0_sqlite_passed"] == 19
-            for totals in SLICE_TOTALS.values()
+        "c0_totals_are_cross_slice_and_cross_backend_invariant": (
+            fd01_totals["c0_postgresql_passed"]
+            == fd01_totals["c0_sqlite_passed"]
+            == fd05_totals["c0_postgresql_passed"]
+            == fd05_totals["c0_sqlite_passed"]
+            == 19
+        ),
+        "routing_matrix_has_exact_four_entries": len(ROUTE_MATRIX) == 4,
+        "route_fd01_pull_request": _select_slice_from_refs(
+            event_name="pull_request",
+            head_ref=FD01_BRANCH,
+            base_ref=C0_BRANCH,
+        )
+        == "FD01",
+        "route_fd05_pull_request": _select_slice_from_refs(
+            event_name="pull_request",
+            head_ref=FD05_BRANCH,
+            base_ref=FD01_BRANCH,
+        )
+        == "FD05",
+        "route_fd01_push": _select_slice_from_refs(
+            event_name="push",
+            head_ref=FD01_BRANCH,
+            base_ref="",
+        )
+        == "FD01",
+        "route_fd05_push": _select_slice_from_refs(
+            event_name="push",
+            head_ref=FD05_BRANCH,
+            base_ref="",
+        )
+        == "FD05",
+        "route_rejects_main_push": _expect_verification_error(
+            lambda: _select_slice_from_refs(
+                event_name="push",
+                head_ref="main",
+                base_ref="",
+            )
+        ),
+        "route_rejects_fd05_to_c0_pull_request": _expect_verification_error(
+            lambda: _select_slice_from_refs(
+                event_name="pull_request",
+                head_ref=FD05_BRANCH,
+                base_ref=C0_BRANCH,
+            )
+        ),
+        "route_rejects_unrelated_pull_request": _expect_verification_error(
+            lambda: _select_slice_from_refs(
+                event_name="pull_request",
+                head_ref="unrelated",
+                base_ref=FD01_BRANCH,
+            )
+        ),
+        "route_rejects_unsupported_event": _expect_verification_error(
+            lambda: _select_slice_from_refs(
+                event_name="workflow_dispatch",
+                head_ref=FD01_BRANCH,
+                base_ref=C0_BRANCH,
+            )
+        ),
+        "fd01_external_pin_is_not_applicable": _verify_external_fd01_pin(
+            slice_name="FD01",
+            base_head="",
+            base_tree="",
+            accepted_head=None,
+            accepted_tree=None,
+        )
+        == "NOT_APPLICABLE",
+        "fd05_exact_external_pin_is_accepted": _verify_external_fd01_pin(
+            slice_name="FD05",
+            base_head=pin_head,
+            base_tree=pin_tree,
+            accepted_head=pin_head,
+            accepted_tree=pin_tree,
+        )
+        == "PIN_VERIFIED_EXTERNAL",
+        "fd05_missing_external_head_is_rejected": _expect_verification_error(
+            lambda: _verify_external_fd01_pin(
+                slice_name="FD05",
+                base_head=pin_head,
+                base_tree=pin_tree,
+                accepted_head=None,
+                accepted_tree=pin_tree,
+            )
+        ),
+        "fd05_missing_external_pair_is_rejected": _expect_verification_error(
+            lambda: _verify_external_fd01_pin(
+                slice_name="FD05",
+                base_head=pin_head,
+                base_tree=pin_tree,
+                accepted_head=None,
+                accepted_tree=None,
+            )
+        ),
+        "fd05_missing_external_tree_is_rejected": _expect_verification_error(
+            lambda: _verify_external_fd01_pin(
+                slice_name="FD05",
+                base_head=pin_head,
+                base_tree=pin_tree,
+                accepted_head=pin_head,
+                accepted_tree=None,
+            )
+        ),
+        "fd05_malformed_external_head_is_rejected": _expect_verification_error(
+            lambda: _verify_external_fd01_pin(
+                slice_name="FD05",
+                base_head=pin_head,
+                base_tree=pin_tree,
+                accepted_head="A" * 40,
+                accepted_tree=pin_tree,
+            )
+        ),
+        "fd05_malformed_external_tree_is_rejected": _expect_verification_error(
+            lambda: _verify_external_fd01_pin(
+                slice_name="FD05",
+                base_head=pin_head,
+                base_tree=pin_tree,
+                accepted_head=pin_head,
+                accepted_tree="z" * 40,
+            )
+        ),
+        "fd05_external_head_mismatch_is_rejected": _expect_verification_error(
+            lambda: _verify_external_fd01_pin(
+                slice_name="FD05",
+                base_head=pin_head,
+                base_tree=pin_tree,
+                accepted_head=other_object,
+                accepted_tree=pin_tree,
+            )
+        ),
+        "fd05_external_tree_mismatch_is_rejected": _expect_verification_error(
+            lambda: _verify_external_fd01_pin(
+                slice_name="FD05",
+                base_head=pin_head,
+                base_tree=pin_tree,
+                accepted_head=pin_head,
+                accepted_tree=other_object,
+            )
+        ),
+        "future_h1_exact_required_paths_are_accepted": not _expect_verification_error(
+            lambda: _verify_bounded_paths(
+                actual=set(FD01_RC2_ALLOWLIST),
+                required=FD01_RC2_ALLOWLIST,
+                allowed=FD01_ALLOWLIST,
+                label="self-check future H1",
+            )
+        ),
+        "future_h1_relaxed_allowed_superset_is_accepted": not _expect_verification_error(
+            lambda: _verify_bounded_paths(
+                actual=set(FD01_RC2_ALLOWLIST) | {relaxed_allowed_path},
+                required=FD01_RC2_ALLOWLIST,
+                allowed=FD01_ALLOWLIST,
+                label="self-check future H1",
+            )
+        ),
+        "future_h1_full_fd01_allowlist_is_accepted": not _expect_verification_error(
+            lambda: _verify_bounded_paths(
+                actual=set(FD01_ALLOWLIST),
+                required=FD01_RC2_ALLOWLIST,
+                allowed=FD01_ALLOWLIST,
+                label="self-check future H1",
+            )
+        ),
+        "future_h1_missing_required_path_is_rejected": _expect_verification_error(
+            lambda: _verify_bounded_paths(
+                actual={WORKFLOW_PATH},
+                required=FD01_RC2_ALLOWLIST,
+                allowed=FD01_ALLOWLIST,
+                label="self-check future H1",
+            )
+        ),
+        "future_h1_outside_allowlist_path_is_rejected": _expect_verification_error(
+            lambda: _verify_bounded_paths(
+                actual=set(FD01_RC2_ALLOWLIST) | {"README.md"},
+                required=FD01_RC2_ALLOWLIST,
+                allowed=FD01_ALLOWLIST,
+                label="self-check future H1",
+            )
         ),
     }
     failed = sorted(label for label, passed in checks.items() if not passed)
@@ -520,23 +818,27 @@ def _contract_self_check() -> dict[str, object]:
             + json.dumps(failed, ensure_ascii=False)
         )
     return {
-        "allowlist_result": "PASS",
-        "contract_self_check": "PASS",
+        "contract_self_check_only": "PASS",
+        "repository_access": "NOT_USED",
         "network_access": "NOT_USED",
-        "future_fd01_head_tree_pin": "EXTERNAL_MAIN_ORACLE_REQUIRED",
+        "future_fd01_accepted_pin": "EXTERNAL_MAIN_ORACLE_REQUIRED",
         "checks": checks,
         "slices": {
             "FD01": {
                 "allowlist": sorted(FD01_ALLOWLIST),
                 "rc2_incremental_allowlist": sorted(FD01_RC2_ALLOWLIST),
+                "rc3_incremental_allowlist": sorted(FD01_RC3_ALLOWLIST),
                 "test_class": FD01_TEST_CLASS,
                 "test_nodes": list(FD01_TEST_METHODS),
                 "totals": SLICE_TOTALS["FD01"],
                 "sqlite_skips": [list(item) for item in BASELINE_SQLITE_SKIPS],
             },
             "FD05": {
+                "path_contract_status": "PREDECLARED_NOT_IMPLEMENTED",
+                "test_node_contract_status": "PREDECLARED_NOT_IMPLEMENTED",
+                "totals_status": "PREDECLARED_NOT_IMPLEMENTED",
                 "allowlist": sorted(FD05_ALLOWLIST),
-                "base_pin": "EXTERNALLY_SUPPLIED_MAIN_ORACLE_REQUIRED",
+                "base_pin": "EXTERNAL_MAIN_ORACLE_REQUIRED",
                 "portable_test_class": FD05_PORTABLE_TEST_CLASS,
                 "portable_test_nodes": list(FD05_PORTABLE_TEST_METHODS),
                 "postgresql_test_class": FD05_POSTGRESQL_TEST_CLASS,
@@ -565,6 +867,12 @@ def verify_fd01(repo: Path, *, base_head: str, base_tree: str) -> dict[str, obje
         tree=FD01_RC2_START_TREE,
         label="FD01 RC2 start",
     )
+    _verify_pinned_start(
+        repo,
+        head=FD01_RC3_START_HEAD,
+        tree=FD01_RC3_START_TREE,
+        label="FD01 RC3 start",
+    )
     _verify_ancestor(repo, base_head, "HEAD", label="FD01 base -> HEAD")
     _verify_ancestor(
         repo,
@@ -577,6 +885,12 @@ def verify_fd01(repo: Path, *, base_head: str, base_tree: str) -> dict[str, obje
         FD01_RC2_START_HEAD,
         "HEAD",
         label="FD01 RC2 start -> HEAD",
+    )
+    _verify_ancestor(
+        repo,
+        FD01_RC3_START_HEAD,
+        "HEAD",
+        label="FD01 RC3 start -> HEAD",
     )
     _verify_no_merges(repo, base_head, "HEAD", label="the FD01 slice")
 
@@ -591,6 +905,12 @@ def verify_fd01(repo: Path, *, base_head: str, base_tree: str) -> dict[str, obje
         actual=rc2_changed,
         expected=FD01_RC2_ALLOWLIST,
         label="FD01 RC2 incremental",
+    )
+    rc3_changed = _changed_paths(repo, FD01_RC3_START_HEAD)
+    _verify_exact_paths(
+        actual=rc3_changed,
+        expected=FD01_RC3_ALLOWLIST,
+        label="FD01 RC3 incremental",
     )
 
     test_nodes = _verify_fd01_test_nodes(repo)
@@ -625,8 +945,12 @@ def verify_fd01(repo: Path, *, base_head: str, base_tree: str) -> dict[str, obje
         "rc2_start_head": FD01_RC2_START_HEAD,
         "rc2_start_tree": FD01_RC2_START_TREE,
         "rc2_start_is_ancestor": True,
+        "rc3_start_head": FD01_RC3_START_HEAD,
+        "rc3_start_tree": FD01_RC3_START_TREE,
+        "rc3_start_is_ancestor": True,
         "changed_paths": sorted(changed),
         "rc2_incremental_changed_paths": sorted(rc2_changed),
+        "rc3_incremental_changed_paths": sorted(rc3_changed),
         "test_class": FD01_TEST_CLASS,
         "test_nodes": list(test_nodes),
         "test_node_count": len(test_nodes),
@@ -639,19 +963,35 @@ def verify_fd01(repo: Path, *, base_head: str, base_tree: str) -> dict[str, obje
     }
 
 
-def verify_fd05(repo: Path, *, base_head: str, base_tree: str) -> dict[str, object]:
-    _validate_external_sha(base_head, label="FD05 --base-head")
-    _validate_external_sha(base_tree, label="FD05 --base-tree")
-    resolved_base = _git(
+def verify_fd05(
+    repo: Path,
+    *,
+    base_head: str,
+    base_tree: str,
+    accepted_head: str,
+    accepted_tree: str,
+) -> dict[str, object]:
+    pin_status = _verify_external_fd01_pin(
+        slice_name="FD05",
+        base_head=base_head,
+        base_tree=base_tree,
+        accepted_head=accepted_head,
+        accepted_tree=accepted_tree,
+    )
+    resolved_accepted = _git(
         repo,
         "rev-parse",
         "--verify",
-        f"{base_head}^{{commit}}",
+        f"{accepted_head}^{{commit}}",
     )
-    if resolved_base != base_head:
-        raise VerificationError("FD05 --base-head does not resolve to the exact commit")
-    if _object(repo, f"{base_head}^{{tree}}") != base_tree:
-        raise VerificationError("FD05 external base tree does not match its base HEAD")
+    if resolved_accepted != accepted_head:
+        raise VerificationError(
+            "FD05 external accepted HEAD does not resolve to the exact commit"
+        )
+    if _object(repo, f"{accepted_head}^{{tree}}") != accepted_tree:
+        raise VerificationError(
+            "FD05 external accepted TREE does not match its accepted HEAD"
+        )
     if _object(repo, f"{FD01_BASE_HEAD}^{{tree}}") != FD01_BASE_TREE:
         raise VerificationError("accepted C0 tree does not match its pinned HEAD")
     _verify_pinned_start(
@@ -659,6 +999,12 @@ def verify_fd05(repo: Path, *, base_head: str, base_tree: str) -> dict[str, obje
         head=FD01_RC2_START_HEAD,
         tree=FD01_RC2_START_TREE,
         label="FD01 RC2 start",
+    )
+    _verify_pinned_start(
+        repo,
+        head=FD01_RC3_START_HEAD,
+        tree=FD01_RC3_START_TREE,
+        label="FD01 RC3 start",
     )
     _verify_ancestor(
         repo,
@@ -671,6 +1017,12 @@ def verify_fd05(repo: Path, *, base_head: str, base_tree: str) -> dict[str, obje
         FD01_RC2_START_HEAD,
         base_head,
         label="FD01 RC2 start -> external FD01 base",
+    )
+    _verify_ancestor(
+        repo,
+        FD01_RC3_START_HEAD,
+        base_head,
+        label="FD01 RC3 start -> external FD01 base",
     )
     _verify_ancestor(repo, base_head, "HEAD", label="external FD01 base -> FD05 HEAD")
     _verify_no_merges(
@@ -691,15 +1043,16 @@ def verify_fd05(repo: Path, *, base_head: str, base_tree: str) -> dict[str, obje
         expected=FD01_ALLOWLIST,
         label="external FD01 base aggregate",
     )
-    base_rc2_changed = _committed_changed_paths(
+    base_post_rc2_changed = _committed_changed_paths(
         repo,
         FD01_RC2_START_HEAD,
         base_head,
     )
-    _verify_exact_paths(
-        actual=base_rc2_changed,
-        expected=FD01_RC2_ALLOWLIST,
-        label="external FD01 base RC2 incremental",
+    _verify_bounded_paths(
+        actual=base_post_rc2_changed,
+        required=FD01_RC2_ALLOWLIST,
+        allowed=FD01_ALLOWLIST,
+        label="external FD01 base post-RC2",
     )
     changed = _changed_paths(repo, base_head)
     _verify_exact_paths(
@@ -746,11 +1099,15 @@ def verify_fd05(repo: Path, *, base_head: str, base_tree: str) -> dict[str, obje
         "slice": "FD05",
         "base_head": base_head,
         "base_tree": base_tree,
-        "base_pin_authority": "EXTERNAL_MAIN_ORACLE_REQUIRED",
+        "fd01_accepted_head": accepted_head,
+        "fd01_accepted_tree": accepted_tree,
+        "FD05_BASE_PIN": pin_status,
         "base_head_tree_relation": "PASS",
         "base_is_descendant_of_rc2_start": True,
+        "base_is_descendant_of_rc3_start": True,
         "base_aggregate_changed_paths": sorted(base_aggregate_changed),
-        "base_rc2_incremental_changed_paths": sorted(base_rc2_changed),
+        "base_post_rc2_changed_paths": sorted(base_post_rc2_changed),
+        "base_post_rc2_path_bounds": "PASS",
         "base_project_definitions_blob": base_project_definitions_blob,
         "write_reconciliation_test_module_absent_at_base": True,
         "changed_paths": sorted(changed),
@@ -776,6 +1133,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--slice", choices=("FD01", "FD05"), default="FD01")
     parser.add_argument("--base-head")
     parser.add_argument("--base-tree")
+    parser.add_argument("--fd01-accepted-head")
+    parser.add_argument("--fd01-accepted-tree")
     parser.add_argument("--repo", type=Path, default=Path.cwd())
     parser.add_argument(
         "--self-check",
@@ -789,6 +1148,18 @@ def main(argv: list[str] | None = None) -> int:
         if args.self_check_contracts:
             result = _contract_self_check()
         else:
+            if args.slice == "FD05":
+                if not args.base_head or not args.base_tree:
+                    raise VerificationError(
+                        "FD05 requires event/live --base-head and --base-tree"
+                    )
+                _verify_external_fd01_pin(
+                    slice_name="FD05",
+                    base_head=args.base_head,
+                    base_tree=args.base_tree,
+                    accepted_head=args.fd01_accepted_head,
+                    accepted_tree=args.fd01_accepted_tree,
+                )
             repo = _repo_root(args.repo.resolve())
             if args.slice == "FD01":
                 result = verify_fd01(
@@ -797,17 +1168,20 @@ def main(argv: list[str] | None = None) -> int:
                     base_tree=args.base_tree or FD01_BASE_TREE,
                 )
             else:
-                if args.base_head is None or args.base_tree is None:
-                    raise VerificationError(
-                        "FD05 requires externally supplied --base-head and --base-tree"
-                    )
                 result = verify_fd05(
                     repo,
                     base_head=args.base_head,
                     base_tree=args.base_tree,
+                    accepted_head=args.fd01_accepted_head,
+                    accepted_tree=args.fd01_accepted_tree,
                 )
     except VerificationError as exc:
-        print(json.dumps({"allowlist_result": "FAIL", "error": str(exc)}, ensure_ascii=False))
+        result_key = (
+            "contract_self_check_only"
+            if args.self_check_contracts
+            else "allowlist_result"
+        )
+        print(json.dumps({result_key: "FAIL", "error": str(exc)}, ensure_ascii=False))
         return 1
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
