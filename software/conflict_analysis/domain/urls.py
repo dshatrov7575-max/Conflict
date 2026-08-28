@@ -42,6 +42,11 @@ urlpatterns = [
         name="foundation-definition-save-draft",
     ),
     path(
+        "definitions/<uuid:definition_id>/validation-preview/",
+        studio_definitions.validation_preview,
+        name="foundation-definition-validation-preview",
+    ),
+    path(
         "definitions/<uuid:definition_id>/validate/",
         studio_definitions.validate_definition,
         name="foundation-definition-validate",

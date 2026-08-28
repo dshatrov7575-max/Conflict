@@ -2,15 +2,16 @@ name: Conflict Analysis Foundation
 
 on:
   pull_request:
+    branches:
+      - codex/ca-suite-i1-production-studio-c0-read-only
+      - codex/ca-suite-i1-foundation-fd01-validation-preview
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
   push:
     branches:
-      - main
-      - codex/ca-i1-data-001
-      - codex/ca-suite-i1-foundation
-      - codex/ca-suite-i1-production-studio-c0-read-only
+      - codex/ca-suite-i1-foundation-fd01-validation-preview
+      - codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -25,9 +26,9 @@ concurrency:
 
 jobs:
   foundation-contract:
-    name: Python 3.12 / PostgreSQL 18 / SQLite / C0 read-only
+    name: Python 3.12 / PostgreSQL 18 / SQLite / FD01-FD05 slice gate
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     services:
       postgres:
@@ -58,64 +59,368 @@ jobs:
       POSTGRES_CONN_MAX_AGE: "0"
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"
+      FD01_BASE_HEAD: c0b773573c8d37faf7b1b71e910f7a8d356000f4
+      FD01_BASE_TREE: 914e3b0895e404cf699d651c8148da875528b4e7
+      FD01_RC1_START_HEAD: 1e2fd10878236ee8f0a01a62773894dd9c0d5c40
+      FD01_RC1_START_TREE: 671c0777cee1d4542ebe4eeb1128c0e0fecac4b3
+      FD01_RC2_START_HEAD: 2bf40798dc2c4ba0ea3c742bf86b88fda4bde8d0
+      FD01_RC2_START_TREE: 23161d6d2ba575d1ca92149f468e086ce43df129
+      FD01_RC3_START_HEAD: 6b502c985094799050e0970a7c40d5a4f9cd0724
+      FD01_RC3_START_TREE: d527e34b8e9d3d67802be0118ac4928821cfd60b
+      FD01_ACCEPTED_HEAD: "${{ vars.FD01_ACCEPTED_HEAD }}"
+      FD01_ACCEPTED_TREE: "${{ vars.FD01_ACCEPTED_TREE }}"
+      C0_BRANCH: codex/ca-suite-i1-production-studio-c0-read-only
+      FD01_BRANCH: codex/ca-suite-i1-foundation-fd01-validation-preview
+      FD05_BRANCH: codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
+      AUTH_MAIN_HEAD: 19690eb3aede8b603a631d7c561fc74f9022537a
+      AUTH_MAIN_TREE: 04d5b43fdf96637f58b8fc6f191323fbad302bbc
+      FND_BASE_HEAD: f940a91a92658285063802ee1a43bf84360fc013
+      FND_BASE_TREE: 1125b01a90da3ea324e661d729a845c58febb8e2
+      FOUNDATION_B_HEAD: 5f73ebf2fd29a161a34ea047c7eead4fb0c582d4
+      FOUNDATION_B_TREE: ea5ff9ab510cb76f0c2b1bfda1c02c1278812aae
+      PR67_BASE_HEAD: b8a543c09cc89b1b7378f21215f70afa586b248d
 
     steps:
-      - name: Check out exact delivery tree
+      - name: Check out exact delivery head
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - name: Verify C0 authorization drift and synthetic merges
+      - name: Resolve exact prerequisite slice from GitHub event refs
+        shell: bash
+        env:
+          EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          EVENT_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          EVENT_BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
+        run: |
+          set -euo pipefail
+          resolve_route() {
+            local event_name="$1"
+            local event_ref="$2"
+            local pr_number="$3"
+            local head_ref="$4"
+            local base_ref="$5"
+
+            active_slice=""
+            slice_base_source=""
+            active_head_ref=""
+            active_base_ref=""
+            active_pr_number=""
+            case "$event_name" in
+              pull_request)
+                [[ "$pr_number" =~ ^[1-9][0-9]*$ ]] || {
+                  echo "invalid prerequisite pull-request number: $pr_number" >&2
+                  return 1
+                }
+                case "${head_ref}|${base_ref}" in
+                  "${FD01_BRANCH}|${C0_BRANCH}")
+                    test "$pr_number" = "71" || {
+                      echo "FD01 delivery is authorized only through PR #71" >&2
+                      return 1
+                    }
+                    active_slice="FD01"
+                    slice_base_source="PINNED_C0"
+                    ;;
+                  "${FD05_BRANCH}|${FD01_BRANCH}")
+                    active_slice="FD05"
+                    slice_base_source="EVENT_FD01"
+                    ;;
+                  *)
+                    echo "unsupported prerequisite pull-request ref pair: ${head_ref} -> ${base_ref}" >&2
+                    return 1
+                    ;;
+                esac
+                active_head_ref="$head_ref"
+                active_base_ref="$base_ref"
+                active_pr_number="$pr_number"
+                ;;
+              push)
+                case "$event_ref" in
+                  "refs/heads/${FD01_BRANCH}")
+                    active_slice="FD01"
+                    slice_base_source="PINNED_C0"
+                    active_head_ref="$FD01_BRANCH"
+                    active_base_ref="$C0_BRANCH"
+                    ;;
+                  "refs/heads/${FD05_BRANCH}")
+                    active_slice="FD05"
+                    slice_base_source="LIVE_FD01"
+                    active_head_ref="$FD05_BRANCH"
+                    active_base_ref="$FD01_BRANCH"
+                    ;;
+                  *)
+                    echo "unsupported prerequisite push ref: $event_ref" >&2
+                    return 1
+                    ;;
+                esac
+                ;;
+              *)
+                echo "unsupported prerequisite event: $event_name" >&2
+                return 1
+                ;;
+            esac
+          }
+
+          verify_fd05_pin() {
+            local accepted_head="$1"
+            local accepted_tree="$2"
+            local actual_head="$3"
+            local actual_tree="$4"
+            [[ "$accepted_head" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "FD01_ACCEPTED_HEAD must be an exact lowercase 40-hex commit id" >&2
+              return 1
+            }
+            [[ "$accepted_tree" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "FD01_ACCEPTED_TREE must be an exact lowercase 40-hex tree id" >&2
+              return 1
+            }
+            test "$actual_head" = "$accepted_head" || {
+              echo "FD05 event/live base HEAD does not match FD01_ACCEPTED_HEAD" >&2
+              return 1
+            }
+            test "$actual_tree" = "$accepted_tree" || {
+              echo "FD05 event/live base TREE does not match FD01_ACCEPTED_TREE" >&2
+              return 1
+            }
+          }
+
+          assert_route() {
+            local expected="$1"
+            shift
+            resolve_route "$@"
+            local actual="${active_slice}|${slice_base_source}|${active_head_ref}|${active_base_ref}|${active_pr_number}"
+            test "$actual" = "$expected"
+          }
+
+          assert_route_failure() {
+            if resolve_route "$@" >/dev/null 2>&1; then
+              echo "routing self-check unexpectedly accepted an unsupported event" >&2
+              return 1
+            fi
+          }
+
+          assert_pin_failure() {
+            if verify_fd05_pin "$@" >/dev/null 2>&1; then
+              echo "FD05 pin self-check unexpectedly accepted invalid inputs" >&2
+              return 1
+            fi
+          }
+
+          pin_head="$(printf 'a%.0s' {1..40})"
+          pin_tree="$(printf 'b%.0s' {1..40})"
+          other_head="$(printf 'c%.0s' {1..40})"
+          other_tree="$(printf 'd%.0s' {1..40})"
+          assert_route "FD01|PINNED_C0|${FD01_BRANCH}|${C0_BRANCH}|" \
+            push "refs/heads/${FD01_BRANCH}" "" "" ""
+          assert_route "FD05|LIVE_FD01|${FD05_BRANCH}|${FD01_BRANCH}|" \
+            push "refs/heads/${FD05_BRANCH}" "" "" ""
+          assert_route "FD01|PINNED_C0|${FD01_BRANCH}|${C0_BRANCH}|71" \
+            pull_request "" "71" "$FD01_BRANCH" "$C0_BRANCH"
+          assert_route "FD05|EVENT_FD01|${FD05_BRANCH}|${FD01_BRANCH}|72" \
+            pull_request "" "72" "$FD05_BRANCH" "$FD01_BRANCH"
+          assert_route_failure push refs/heads/main "" "" ""
+          assert_route_failure pull_request "" 72 "$FD01_BRANCH" "$C0_BRANCH"
+          assert_route_failure pull_request "" 72 unrelated-head "$C0_BRANCH"
+          assert_route_failure workflow_dispatch "" "" "" ""
+          verify_fd05_pin "$pin_head" "$pin_tree" "$pin_head" "$pin_tree"
+          assert_pin_failure "" "$pin_tree" "$pin_head" "$pin_tree"
+          assert_pin_failure "$pin_head" "" "$pin_head" "$pin_tree"
+          assert_pin_failure AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA "$pin_tree" "$pin_head" "$pin_tree"
+          assert_pin_failure "$pin_head" BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB "$pin_head" "$pin_tree"
+          assert_pin_failure "$pin_head" "$pin_tree" "$other_head" "$pin_tree"
+          assert_pin_failure "$pin_head" "$pin_tree" "$pin_head" "$other_tree"
+          echo "ROUTING_MATRIX_SELF_CHECK=PASS"
+          echo "FD05_EXTERNAL_PIN_SELF_CHECK=PASS"
+
+          delivery_head="$(git rev-parse HEAD)"
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              test "$EVENT_HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"
+              test "$EVENT_BASE_REPOSITORY" = "$GITHUB_REPOSITORY"
+              test "$EVENT_HEAD_SHA" = "$delivery_head"
+              ;;
+            push)
+              test "$GITHUB_SHA" = "$delivery_head"
+              ;;
+          esac
+          resolve_route \
+            "$GITHUB_EVENT_NAME" \
+            "$GITHUB_REF" \
+            "$EVENT_PR_NUMBER" \
+            "$EVENT_HEAD_REF" \
+            "$EVENT_BASE_REF"
+
+          case "$slice_base_source" in
+            PINNED_C0)
+              slice_base_head="$FD01_BASE_HEAD"
+              if [[ "$GITHUB_EVENT_NAME" = pull_request ]]; then
+                test "$EVENT_BASE_SHA" = "$slice_base_head"
+              fi
+              ;;
+            EVENT_FD01)
+              slice_base_head="$EVENT_BASE_SHA"
+              ;;
+            LIVE_FD01)
+              git fetch --no-tags origin \
+                "+refs/heads/${FD01_BRANCH}:refs/remotes/origin/fd01-target"
+              slice_base_head="$(git rev-parse refs/remotes/origin/fd01-target)"
+              ;;
+            *)
+              echo "unsupported slice base source: $slice_base_source" >&2
+              exit 1
+              ;;
+          esac
+
+          [[ "$delivery_head" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$slice_base_head" =~ ^[0-9a-f]{40}$ ]]
+          git cat-file -e "$slice_base_head^{commit}"
+          slice_base_tree="$(git rev-parse "$slice_base_head^{tree}")"
+          [[ "$slice_base_tree" =~ ^[0-9a-f]{40}$ ]]
+          if [[ "$active_slice" = FD01 ]]; then
+            test "$slice_base_tree" = "$FD01_BASE_TREE"
+            fd05_base_pin="NOT_APPLICABLE_CURRENT_FD01"
+          else
+            test "$active_slice" = FD05
+            verify_fd05_pin \
+              "$FD01_ACCEPTED_HEAD" \
+              "$FD01_ACCEPTED_TREE" \
+              "$slice_base_head" \
+              "$slice_base_tree"
+            fd05_base_pin="PIN_VERIFIED_EXTERNAL"
+          fi
+
+          {
+            echo "ACTIVE_SLICE=$active_slice"
+            echo "SLICE_BASE_HEAD=$slice_base_head"
+            echo "SLICE_BASE_TREE=$slice_base_tree"
+            echo "SLICE_BASE_SOURCE=$slice_base_source"
+            echo "SLICE_HEAD_REF=$active_head_ref"
+            echo "SLICE_BASE_REF=$active_base_ref"
+            echo "SLICE_PR_NUMBER=$active_pr_number"
+            echo "FD05_BASE_PIN=$fd05_base_pin"
+          } >> "$GITHUB_ENV"
+          echo "FD05_BASE_PIN=$fd05_base_pin"
+
+      - name: Verify active-slice authorization drift, ancestry and synthetic merge
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          C0_BASE_HEAD: 5f73ebf2fd29a161a34ea047c7eead4fb0c582d4
-          C0_BASE_TREE: ea5ff9ab510cb76f0c2b1bfda1c02c1278812aae
-          AUTH_MAIN_HEAD: 19690eb3aede8b603a631d7c561fc74f9022537a
-          AUTH_MAIN_TREE: 04d5b43fdf96637f58b8fc6f191323fbad302bbc
-          PR67_BASE_HEAD: b8a543c09cc89b1b7378f21215f70afa586b248d
         run: |
+          set -euo pipefail
+          delivery_head="$(git rev-parse HEAD)"
+          test "$(git rev-parse "$FD01_BASE_HEAD^{tree}")" = "$FD01_BASE_TREE"
+          test "$(git rev-parse "$FD01_RC1_START_HEAD^{tree}")" = "$FD01_RC1_START_TREE"
+          test "$(git rev-parse "$FD01_RC2_START_HEAD^{tree}")" = "$FD01_RC2_START_TREE"
+          test "$(git rev-parse "$FD01_RC3_START_HEAD^{tree}")" = "$FD01_RC3_START_TREE"
+          test "$(git rev-parse "$SLICE_BASE_HEAD^{tree}")" = "$SLICE_BASE_TREE"
+          test "$(git rev-parse "$FND_BASE_HEAD^{tree}")" = "$FND_BASE_TREE"
+          test "$(git rev-parse "$FOUNDATION_B_HEAD^{tree}")" = "$FOUNDATION_B_TREE"
+          test "$(git rev-parse "$AUTH_MAIN_HEAD^{tree}")" = "$AUTH_MAIN_TREE"
+          git merge-base --is-ancestor "$AUTH_MAIN_HEAD" "$FND_BASE_HEAD"
+          git merge-base --is-ancestor "$FND_BASE_HEAD" "$FOUNDATION_B_HEAD"
+          git merge-base --is-ancestor "$AUTH_MAIN_HEAD" "$FOUNDATION_B_HEAD"
+          git merge-base --is-ancestor "$FOUNDATION_B_HEAD" "$FD01_BASE_HEAD"
+          git merge-base --is-ancestor "$FD01_BASE_HEAD" "$FD01_RC1_START_HEAD"
+          git merge-base --is-ancestor "$FD01_RC1_START_HEAD" "$FD01_RC2_START_HEAD"
+          git merge-base --is-ancestor "$FD01_RC2_START_HEAD" "$FD01_RC3_START_HEAD"
+          git merge-base --is-ancestor "$FD01_RC3_START_HEAD" "$delivery_head"
+          git merge-base --is-ancestor "$FD01_RC2_START_HEAD" "$delivery_head"
+          git merge-base --is-ancestor "$SLICE_BASE_HEAD" "$delivery_head"
+          test -z "$(git rev-list --merges "$FD01_BASE_HEAD..$delivery_head")"
+          if [[ "$ACTIVE_SLICE" = FD01 ]]; then
+            test "$SLICE_BASE_HEAD" = "$FD01_BASE_HEAD"
+            test "$SLICE_BASE_TREE" = "$FD01_BASE_TREE"
+            test "$SLICE_BASE_SOURCE" = "PINNED_C0"
+            test "$FD05_BASE_PIN" = "NOT_APPLICABLE_CURRENT_FD01"
+            test "$(git rev-list --count "$FD01_RC3_START_HEAD..$delivery_head")" = "1"
+            test "$(git rev-parse "$delivery_head^")" = "$FD01_RC3_START_HEAD"
+          else
+            test "$ACTIVE_SLICE" = FD05
+            case "$SLICE_BASE_SOURCE" in
+              EVENT_FD01|LIVE_FD01) ;;
+              *) exit 1 ;;
+            esac
+            test "$FD05_BASE_PIN" = "PIN_VERIFIED_EXTERNAL"
+            test "$SLICE_BASE_HEAD" = "$FD01_ACCEPTED_HEAD"
+            test "$SLICE_BASE_TREE" = "$FD01_ACCEPTED_TREE"
+            git merge-base --is-ancestor "$FD01_RC2_START_HEAD" "$SLICE_BASE_HEAD"
+            git merge-base --is-ancestor "$FD01_RC3_START_HEAD" "$SLICE_BASE_HEAD"
+          fi
+
           git fetch --no-tags origin \
             +refs/heads/main:refs/remotes/origin/main \
-            +refs/heads/codex/ca-suite-i1-foundation-application-gateways:refs/remotes/origin/c0-base \
-            +refs/pull/67/merge:refs/remotes/origin/pr67-merge
-          test "$(git rev-parse "$C0_BASE_HEAD^{tree}")" = "$C0_BASE_TREE"
-          test "$(git rev-parse refs/remotes/origin/c0-base)" = "$C0_BASE_HEAD"
+            +refs/heads/codex/ca-suite-i1-foundation-application-gateways:refs/remotes/origin/foundation-b \
+            +refs/heads/codex/ca-suite-i1-production-studio-c0-read-only:refs/remotes/origin/c0 \
+            +refs/heads/codex/ca-suite-i1-foundation-fd01-validation-preview:refs/remotes/origin/fd01-target \
+            +refs/pull/67/merge:refs/remotes/origin/pr67-merge \
+            +refs/pull/69/merge:refs/remotes/origin/pr69-merge
           test "$(git rev-parse refs/remotes/origin/main)" = "$AUTH_MAIN_HEAD"
-          test "$(git rev-parse "$AUTH_MAIN_HEAD^{tree}")" = "$AUTH_MAIN_TREE"
-          git merge-base --is-ancestor "$AUTH_MAIN_HEAD" "$C0_BASE_HEAD"
-          git merge-base --is-ancestor "$C0_BASE_HEAD" HEAD
+          test "$(git rev-parse refs/remotes/origin/foundation-b)" = "$FOUNDATION_B_HEAD"
+          test "$(git rev-parse refs/remotes/origin/c0)" = "$FD01_BASE_HEAD"
+          if [[ "$ACTIVE_SLICE" = FD01 ]]; then
+            test "$(git rev-parse refs/remotes/origin/fd01-target)" = "$delivery_head"
+          else
+            test "$(git rev-parse refs/remotes/origin/fd01-target)" = "$SLICE_BASE_HEAD"
+          fi
 
-          IFS=$'\t' read -r state draft merged head base mergeable <<< "$(
+          IFS=$'\t' read -r state67 draft67 merged67 head67 base67 mergeable67 <<< "$(
             gh api "repos/${GITHUB_REPOSITORY}/pulls/67" \
               --jq '[.state, (.draft|tostring), (.merged|tostring), .head.sha, .base.sha, (.mergeable|tostring)] | @tsv'
           )"
-          test "$state" = "open"
-          test "$draft" = "true"
-          test "$merged" = "false"
-          test "$head" = "$C0_BASE_HEAD"
-          test "$base" = "$PR67_BASE_HEAD"
-          test "$mergeable" = "true"
+          test "$state67" = open
+          test "$draft67" = true
+          test "$merged67" = false
+          test "$head67" = "$FOUNDATION_B_HEAD"
+          test "$base67" = "$PR67_BASE_HEAD"
+          test "$mergeable67" = true
+          test "$(git rev-parse refs/remotes/origin/pr67-merge^1)" = "$PR67_BASE_HEAD"
+          test "$(git rev-parse refs/remotes/origin/pr67-merge^2)" = "$FOUNDATION_B_HEAD"
+          test "$(git rev-parse refs/remotes/origin/pr67-merge^{tree})" = "$FOUNDATION_B_TREE"
 
-          pr67_merge=refs/remotes/origin/pr67-merge
-          test "$(git rev-parse "$pr67_merge^1")" = "$PR67_BASE_HEAD"
-          test "$(git rev-parse "$pr67_merge^2")" = "$C0_BASE_HEAD"
-          test "$(git rev-parse "$pr67_merge^{tree}")" = "$(git merge-tree --write-tree "$PR67_BASE_HEAD" "$C0_BASE_HEAD")"
+          IFS=$'\t' read -r state69 draft69 merged69 head69 base69 mergeable69 <<< "$(
+            gh api "repos/${GITHUB_REPOSITORY}/pulls/69" \
+              --jq '[.state, (.draft|tostring), (.merged|tostring), .head.sha, .base.sha, (.mergeable|tostring)] | @tsv'
+          )"
+          test "$state69" = open
+          test "$draft69" = true
+          test "$merged69" = false
+          test "$head69" = "$FD01_BASE_HEAD"
+          test "$base69" = "$FOUNDATION_B_HEAD"
+          test "$mergeable69" = true
+          test "$(git rev-parse refs/remotes/origin/pr69-merge^1)" = "$FOUNDATION_B_HEAD"
+          test "$(git rev-parse refs/remotes/origin/pr69-merge^2)" = "$FD01_BASE_HEAD"
+          test "$(git rev-parse refs/remotes/origin/pr69-merge^{tree})" = "$FD01_BASE_TREE"
 
-          if [[ "$GITHUB_EVENT_NAME" = "pull_request" ]]; then
-            test "${{ github.event.pull_request.base.ref }}" = "codex/ca-suite-i1-foundation-application-gateways"
-            test "${{ github.event.pull_request.base.sha }}" = "$C0_BASE_HEAD"
-            test "${{ github.event.pull_request.head.ref }}" = "codex/ca-suite-i1-production-studio-c0-read-only"
-            test "$(git rev-parse HEAD^1)" = "$C0_BASE_HEAD"
-            test "$(git rev-parse HEAD^2)" = "${{ github.event.pull_request.head.sha }}"
-            test "$(git rev-parse 'HEAD^{tree}')" = "$(git merge-tree --write-tree "$C0_BASE_HEAD" "${{ github.event.pull_request.head.sha }}")"
+          if [[ "$GITHUB_EVENT_NAME" = pull_request ]]; then
+            if [[ "$ACTIVE_SLICE" = FD01 ]]; then
+              test "$SLICE_PR_NUMBER" = "71"
+            fi
+
+            IFS=$'\t' read -r state_slice draft_slice merged_slice head_slice headref_slice headrepo_slice base_slice baseref_slice <<< "$(
+              gh api "repos/${GITHUB_REPOSITORY}/pulls/${SLICE_PR_NUMBER}" \
+                --jq '[.state, (.draft|tostring), (.merged|tostring), .head.sha, .head.ref, .head.repo.full_name, .base.sha, .base.ref] | @tsv'
+            )"
+            test "$state_slice" = open
+            test "$draft_slice" = true
+            test "$merged_slice" = false
+            test "$head_slice" = "$delivery_head"
+            test "$headref_slice" = "$SLICE_HEAD_REF"
+            test "$headrepo_slice" = "$GITHUB_REPOSITORY"
+            test "$base_slice" = "$SLICE_BASE_HEAD"
+            test "$baseref_slice" = "$SLICE_BASE_REF"
+
+            git fetch --no-tags origin \
+              "+refs/pull/${SLICE_PR_NUMBER}/merge:refs/remotes/origin/active-slice-merge"
+            test "$(git rev-parse refs/remotes/origin/active-slice-merge^1)" = "$SLICE_BASE_HEAD"
+            test "$(git rev-parse refs/remotes/origin/active-slice-merge^2)" = "$delivery_head"
+            test "$(git rev-parse refs/remotes/origin/active-slice-merge^{tree})" = "$(git rev-parse "$delivery_head^{tree}")"
+            test "$(git rev-parse refs/remotes/origin/active-slice-merge^{tree})" = "$(git merge-tree --write-tree "$SLICE_BASE_HEAD" "$delivery_head")"
           fi
-
-      - name: Verify accepted stacked base ancestry
-        shell: bash
-        run: |
-          test "$(git rev-parse f940a91a92658285063802ee1a43bf84360fc013^{tree})" = "1125b01a90da3ea324e661d729a845c58febb8e2"
-          git merge-base --is-ancestor f940a91a92658285063802ee1a43bf84360fc013 HEAD
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -124,98 +429,60 @@ jobs:
           cache: pip
           cache-dependency-path: software/conflict_analysis/pyproject.toml
 
-      - name: Set up Node.js 24 for the CDP browser harness
+      - name: Run offline deterministic FD01 and FD05 verifier contract self-check
+        run: python scripts/verify_foundation_c1_prerequisites_allowlist.py --self-check-contracts
+
+      - name: Set up Node.js 24 for Chromium harness
         uses: actions/setup-node@v4
         with:
           node-version: "24"
 
-      - name: Check the browser harness runtime and syntax
+      - name: Install application and test dependencies
         run: |
-          node --version
+          python -m pip install --disable-pip-version-check -e ".[dev]"
+          python -m pip check
           node --check production_studio/static/production_studio/studio.js
           node --check production_studio/browser_tests/cdp_client.mjs
           node --check production_studio/browser_tests/read_only_smoke.mjs
 
-      - name: Install application and test dependencies
-        run: python -m pip install --disable-pip-version-check -e ".[dev]"
-
-      - name: Check installed dependency consistency
-        run: python -m pip check
-
-      - name: Verify exact C0 allowlist and frozen Foundation tree
+      - name: Verify exact active-slice allowlist and frozen accepted surfaces
         run: |
-          python scripts/verify_production_studio_c_allowlist.py \
-            --base-head 5f73ebf2fd29a161a34ea047c7eead4fb0c582d4 \
-            --base-tree ea5ff9ab510cb76f0c2b1bfda1c02c1278812aae
-          git diff --check 5f73ebf2fd29a161a34ea047c7eead4fb0c582d4...HEAD
+          verifier_args=(
+            --slice "$ACTIVE_SLICE"
+            --base-head "$SLICE_BASE_HEAD"
+            --base-tree "$SLICE_BASE_TREE"
+          )
+          if [[ "$ACTIVE_SLICE" = FD05 ]]; then
+            verifier_args+=(
+              --fd01-accepted-head "$FD01_ACCEPTED_HEAD"
+              --fd01-accepted-tree "$FD01_ACCEPTED_TREE"
+            )
+          fi
+          python scripts/verify_foundation_c1_prerequisites_allowlist.py "${verifier_args[@]}"
+          git diff --check "$SLICE_BASE_HEAD...HEAD"
 
-      - name: Check package and bundled schema integrity
+      - name: Check package, schema, migrations and Django
         run: |
           python -m compileall -q conflict_analysis domain production_studio
-          python -c "import json; from importlib.resources import files; root = files('domain.services').joinpath('schemas'); schemas = sorted((p for p in root.iterdir() if p.name.endswith('.json')), key=lambda p: p.name); assert schemas, 'no packaged JSON schemas'; [json.loads(p.read_text(encoding='utf-8')) for p in schemas]; print('validated schemas:', ', '.join(p.name for p in schemas))"
+          python -c "import json; from importlib.resources import files; root=files('domain.services').joinpath('schemas'); schemas=sorted((p for p in root.iterdir() if p.name.endswith('.json')), key=lambda p:p.name); assert schemas; [json.loads(p.read_text(encoding='utf-8')) for p in schemas]"
+          python manage.py makemigrations --check --dry-run
+          python manage.py migrate --noinput
+          python manage.py check
 
-      - name: Reject migration drift
-        run: python manage.py makemigrations --check --dry-run
-
-      - name: Apply all migrations to clean PostgreSQL 18
-        run: python manage.py migrate --noinput
-
-      - name: Run Django deployment-independent checks
-        run: python manage.py check
-
-      - name: Locate current Chromium for the real browser gate
+      - name: Locate current Chromium and build isolated wheel
         shell: bash
         run: |
           chrome="$(command -v google-chrome || command -v chromium || true)"
           test -n "$chrome"
           "$chrome" --version
           echo "STUDIO_CHROME_BIN=$chrome" >> "$GITHUB_ENV"
-
-      - name: Build the C0 wheel for package-aware acceptance
-        shell: bash
-        run: |
-          wheel_dir="${{ runner.temp }}/studio-c0-wheel"
+          wheel_dir="${{ runner.temp }}/foundation-prerequisite-wheel"
           python -m pip wheel --no-deps --wheel-dir "$wheel_dir" .
           mapfile -t wheels < <(find "$wheel_dir" -maxdepth 1 -type f -name '*.whl' -print)
           test "${#wheels[@]}" -eq 1
           echo "STUDIO_C0_WHEEL=${wheels[0]}" >> "$GITHUB_ENV"
 
-      - name: Scan forbidden scope and public legacy terminology
-        env:
-          HTTP_PROXY: "http://127.0.0.1:9"
-          HTTPS_PROXY: "http://127.0.0.1:9"
-          ALL_PROXY: "http://127.0.0.1:9"
-          NO_PROXY: "127.0.0.1,localhost"
-          OPENAI_API_KEY: ""
-          HF_HUB_OFFLINE: "1"
-          TRANSFORMERS_OFFLINE: "1"
-        run: python -m pytest domain/tests/test_v4_foundation_contracts.py::PublicContractStaticTests
-
-      - name: Run focused deterministic JSON and XLSX fixture gates
-        env:
-          HTTP_PROXY: "http://127.0.0.1:9"
-          HTTPS_PROXY: "http://127.0.0.1:9"
-          ALL_PROXY: "http://127.0.0.1:9"
-          NO_PROXY: "127.0.0.1,localhost"
-          OPENAI_API_KEY: ""
-          HF_HUB_OFFLINE: "1"
-          TRANSFORMERS_OFFLINE: "1"
-        run: >-
-          python -m pytest
-          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_materialized_zhanaozen_trace_fixture_imports_exact_graph_and_round_trips
-          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_real_xlsx_assessment_import_matches_json_dto_and_rejects_formula_cells
-          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_pre_freeze_meta_assessments_profile_selects_exact_human_ai_lanes_atomically
-          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_pending_ingest_fragment_preserves_exact_whitespace_and_hash_without_claiming_anchor
-          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_confirmed_records_without_complete_exact_evidence_chain_fail_preview_atomically
-          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_structured_preview_reports_invalid_boundaries_and_valid_intended_changes_without_mutation
-          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_scalar_power_identifiers_are_rejected_as_numeric_lane_identity_at_preview
-          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_materialized_atomic_human_ai_lanes_are_stable_order_independent_and_fail_closed
-          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_selected_lane_receipt_correction_lineage_and_frozen_child_guard_are_exact
-          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_import_export_import_round_trip_preserves_exact_document_version_identity
-          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_atomic_commit_rolls_back_then_records_complete_append_only_receipt_without_overwrite
-          domain/tests/test_v4_foundation_contracts.py::ImportBoundaryContractTests::test_import_attempt_orchestrator_records_rejection_after_rollback_and_allows_exact_retry
-
-      - name: Run PostgreSQL foundation and PR 21 regression suite
+      - name: Run PostgreSQL 18 Foundation suite
         env:
           HTTP_PROXY: "http://127.0.0.1:9"
           HTTPS_PROXY: "http://127.0.0.1:9"
@@ -226,22 +493,22 @@ jobs:
           TRANSFORMERS_OFFLINE: "1"
         run: python -m pytest domain/tests --junitxml="${{ runner.temp }}/postgresql-domain.xml"
 
-      - name: Verify exact PostgreSQL 18 foundation baseline
-        shell: bash
+      - name: Verify exact PostgreSQL 18 active-slice baseline
         run: |
           python - <<'PY'
+          import os
           from pathlib import Path
           from xml.etree import ElementTree
-
-          report = Path("${{ runner.temp }}/postgresql-domain.xml")
-          cases = list(ElementTree.parse(report).iter("testcase"))
-          skipped = [case for case in cases if case.find("skipped") is not None]
-          assert len(cases) == 175, f"expected 175 Foundation tests, got {len(cases)}"
-          assert not skipped, "PostgreSQL baseline contains unexpected skips"
-          print("PostgreSQL 18 Foundation baseline: 175 passed, 0 skipped")
+          active_slice=os.environ["ACTIVE_SLICE"]
+          expected_total={"FD01":183,"FD05":200}[active_slice]
+          cases=list(ElementTree.parse(Path("${{ runner.temp }}/postgresql-domain.xml")).iter("testcase"))
+          skipped=[c for c in cases if c.find("skipped") is not None]
+          assert len(cases)==expected_total, f"expected {expected_total} Foundation tests for {active_slice}, got {len(cases)}"
+          assert not skipped, f"unexpected PostgreSQL skips: {len(skipped)}"
+          print(f"PostgreSQL 18 Foundation {active_slice}: {expected_total} passed, 0 skipped")
           PY
 
-      - name: Run PostgreSQL C0 HTTP static and claim-contract gates
+      - name: Run PostgreSQL C0 core and real Chromium zero-write regression
         env:
           HTTP_PROXY: "http://127.0.0.1:9"
           HTTPS_PROXY: "http://127.0.0.1:9"
@@ -250,52 +517,24 @@ jobs:
           OPENAI_API_KEY: ""
           HF_HUB_OFFLINE: "1"
           TRANSFORMERS_OFFLINE: "1"
-        run: >-
-          python -m pytest
-          production_studio/tests/test_read_only_http.py
-          production_studio/tests/test_read_only_static_contracts.py
-          production_studio/tests/test_claim_boundaries.py
-          --junitxml="${{ runner.temp }}/postgresql-c0-core.xml"
+        run: python -m pytest production_studio/tests --junitxml="${{ runner.temp }}/postgresql-c0.xml"
 
-      - name: Run real Chromium pre-authenticated zero-write smoke
-        env:
-          HTTP_PROXY: "http://127.0.0.1:9"
-          HTTPS_PROXY: "http://127.0.0.1:9"
-          ALL_PROXY: "http://127.0.0.1:9"
-          NO_PROXY: "127.0.0.1,localhost"
-          OPENAI_API_KEY: ""
-          HF_HUB_OFFLINE: "1"
-          TRANSFORMERS_OFFLINE: "1"
-        run: >-
-          python -m pytest
-          production_studio/tests/test_browser_contract.py
-          --junitxml="${{ runner.temp }}/postgresql-c0-browser.xml"
-
-      - name: Reject skipped C0 acceptance tests
-        shell: bash
+      - name: Verify PostgreSQL C0 remains 19/19
         run: |
           python - <<'PY'
           from pathlib import Path
           from xml.etree import ElementTree
-
-          reports = (
-              Path("${{ runner.temp }}/postgresql-c0-core.xml"),
-              Path("${{ runner.temp }}/postgresql-c0-browser.xml"),
-          )
-          total = 0
-          for report in reports:
-              cases = list(ElementTree.parse(report).iter("testcase"))
-              assert cases, f"no C0 tests in {report.name}"
-              skipped = [case for case in cases if case.find("skipped") is not None]
-              assert not skipped, f"skipped C0 tests in {report.name}"
-              total += len(cases)
-          print(f"PostgreSQL C0 acceptance: {total} passed, 0 skipped")
+          cases=list(ElementTree.parse(Path("${{ runner.temp }}/postgresql-c0.xml")).iter("testcase"))
+          skipped=[c for c in cases if c.find("skipped") is not None]
+          assert len(cases)==19, f"expected 19 C0 tests, got {len(cases)}"
+          assert not skipped
+          print("PostgreSQL C0 regression: 19 passed, 0 skipped")
           PY
 
-      - name: Run SQLite regression suite
+      - name: Run SQLite Foundation suite
         env:
           USE_SQLITE: "true"
-          SQLITE_PATH: ${{ runner.temp }}/conflict-analysis.sqlite3
+          SQLITE_PATH: ${{ runner.temp }}/conflict-analysis-foundation-slice.sqlite3
           HTTP_PROXY: "http://127.0.0.1:9"
           HTTPS_PROXY: "http://127.0.0.1:9"
           ALL_PROXY: "http://127.0.0.1:9"
@@ -305,34 +544,40 @@ jobs:
           TRANSFORMERS_OFFLINE: "1"
         run: python -m pytest domain/tests --junitxml="${{ runner.temp }}/sqlite-domain.xml"
 
-      - name: Verify exact SQLite foundation baseline and named skips
-        shell: bash
+      - name: Verify exact SQLite active-slice baseline and named skips
         run: |
           python - <<'PY'
+          import os
           from pathlib import Path
           from xml.etree import ElementTree
-
-          cases = list(ElementTree.parse(Path("${{ runner.temp }}/sqlite-domain.xml")).iter("testcase"))
-          actual = {
-              (case.attrib["classname"], case.attrib["name"])
-              for case in cases
-              if case.find("skipped") is not None
+          active_slice=os.environ["ACTIVE_SLICE"]
+          cases=list(ElementTree.parse(Path("${{ runner.temp }}/sqlite-domain.xml")).iter("testcase"))
+          actual={(c.attrib["classname"],c.attrib["name"]) for c in cases if c.find("skipped") is not None}
+          accepted_six={
+            ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioBootstrapConcurrencyTests","test_postgresql_concurrent_bootstrap_has_one_winner_and_one_explicit_conflict"),
+            ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioSuccessorConcurrencyTests","test_postgresql_competing_successors_have_one_winner_and_preserve_old_pin"),
+            ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioApplicationSuccessorConcurrencyTests","test_postgresql_application_wrapper_has_one_success_and_one_typed_conflict"),
+            ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioFirstProjectApplicationConcurrencyTests","test_postgresql_application_bootstrap_has_one_complete_winner_and_no_orphans"),
+            ("domain.tests.test_foundation_studio_package.FoundationStudioCrossPathLockOrderTests","test_postgresql_import_initial_and_successor_paths_share_one_lock_order"),
+            ("domain.tests.test_postgresql_migrations.PostgreSQLMigrationGateTests","test_clean_test_database_is_at_every_migration_leaf"),
           }
-          expected = {
-              ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioBootstrapConcurrencyTests", "test_postgresql_concurrent_bootstrap_has_one_winner_and_one_explicit_conflict"),
-              ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioSuccessorConcurrencyTests", "test_postgresql_competing_successors_have_one_winner_and_preserve_old_pin"),
-              ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioApplicationSuccessorConcurrencyTests", "test_postgresql_application_wrapper_has_one_success_and_one_typed_conflict"),
-              ("domain.tests.test_foundation_studio_bootstrap.FoundationStudioFirstProjectApplicationConcurrencyTests", "test_postgresql_application_bootstrap_has_one_complete_winner_and_no_orphans"),
-              ("domain.tests.test_foundation_studio_package.FoundationStudioCrossPathLockOrderTests", "test_postgresql_import_initial_and_successor_paths_share_one_lock_order"),
-              ("domain.tests.test_postgresql_migrations.PostgreSQLMigrationGateTests", "test_clean_test_database_is_at_every_migration_leaf"),
+          fd05_five={
+            ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_concurrent_bootstrap_same_key_has_one_graph_one_audit_one_reconcile"),
+            ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_concurrent_create_same_key_has_one_commit_one_reconcile"),
+            ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_different_keys_same_create_or_clone_identity_have_one_typed_loser"),
+            ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_concurrent_stale_saves_have_one_commit_one_draft_stale"),
+            ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_save_validate_race_obeys_project_first_lock_order"),
           }
-          assert len(cases) == 175, f"expected 175 Foundation tests, got {len(cases)}"
-          assert actual == expected, f"SQLite skip set drifted: {sorted(actual)}"
-          assert len(cases) - len(actual) == 169
-          print("SQLite Foundation baseline: 169 passed, exactly 6 named PostgreSQL-only skips")
+          expected_total={"FD01":183,"FD05":200}[active_slice]
+          expected_passed={"FD01":177,"FD05":189}[active_slice]
+          expected=accepted_six if active_slice=="FD01" else accepted_six|fd05_five
+          assert len(cases)==expected_total, f"expected {expected_total} Foundation tests for {active_slice}, got {len(cases)}"
+          assert actual==expected, f"SQLite skip drift: {sorted(actual)}"
+          assert len(cases)-len(actual)==expected_passed
+          print(f"SQLite Foundation {active_slice}: {expected_passed} passed, exact {len(expected)} PostgreSQL-only skips")
           PY
 
-      - name: Run all C0 tests on SQLite without claiming concurrency
+      - name: Run and verify SQLite C0 remains 19/19
         env:
           USE_SQLITE: "true"
           SQLITE_PATH: ${{ runner.temp }}/conflict-analysis-c0.sqlite3
@@ -343,82 +588,136 @@ jobs:
           OPENAI_API_KEY: ""
           HF_HUB_OFFLINE: "1"
           TRANSFORMERS_OFFLINE: "1"
-        run: >-
-          python -m pytest production_studio/tests
-          --junitxml="${{ runner.temp }}/sqlite-c0.xml"
-
-      - name: Reject skipped SQLite C0 tests
-        shell: bash
         run: |
+          python -m pytest production_studio/tests --junitxml="${{ runner.temp }}/sqlite-c0.xml"
           python - <<'PY'
           from pathlib import Path
           from xml.etree import ElementTree
-
-          cases = list(ElementTree.parse(Path("${{ runner.temp }}/sqlite-c0.xml")).iter("testcase"))
-          assert cases, "no SQLite C0 tests collected"
-          skipped = [case for case in cases if case.find("skipped") is not None]
-          assert not skipped, "SQLite C0 suite contains unexpected skips"
-          print(f"SQLite C0 acceptance: {len(cases)} passed, 0 skipped; no concurrency claim")
+          cases=list(ElementTree.parse(Path("${{ runner.temp }}/sqlite-c0.xml")).iter("testcase"))
+          assert len(cases)==19
+          assert not [c for c in cases if c.find("skipped") is not None]
+          print("SQLite C0 regression: 19 passed, 0 skipped; no concurrency claim")
           PY
 
-      - name: Inspect the exact C0 wheel contents
+      - name: Inspect exact wheel and checksum-bound C0 assets
         shell: bash
         run: |
+          source_root="$PWD"
           test -f "$STUDIO_C0_WHEEL"
           python - "$STUDIO_C0_WHEEL" <<'PY'
           from pathlib import Path
           import sys
           from zipfile import ZipFile
-
-          wheel = Path(sys.argv[1])
-          required = {
-              "production_studio/__init__.py",
-              "production_studio/apps.py",
-              "production_studio/claim_boundaries.py",
-              "production_studio/urls.py",
-              "production_studio/views.py",
-              "production_studio/contracts/read_only_claim_boundaries_v1.ru.json",
-              "production_studio/contracts/read_only_claim_boundaries_v1.ru.json.sha256",
-              "production_studio/templates/production_studio/entry.html",
-              "production_studio/templates/production_studio/definition.html",
-              "production_studio/static/production_studio/studio.css",
-              "production_studio/static/production_studio/studio.js",
+          wheel=Path(sys.argv[1])
+          required={
+            "production_studio/__init__.py",
+            "production_studio/apps.py",
+            "production_studio/claim_boundaries.py",
+            "production_studio/urls.py",
+            "production_studio/views.py",
+            "production_studio/contracts/read_only_claim_boundaries_v1.ru.json",
+            "production_studio/contracts/read_only_claim_boundaries_v1.ru.json.sha256",
+            "production_studio/templates/production_studio/entry.html",
+            "production_studio/templates/production_studio/definition.html",
+            "production_studio/static/production_studio/studio.css",
+            "production_studio/static/production_studio/studio.js",
           }
-          forbidden = {
-              "production_studio/models.py",
-              "production_studio/session.py",
-              "production_studio/package.py",
-              "production_studio/validation.py",
-              "production_studio/evidence.py",
+          forbidden={
+            "production_studio/models.py",
+            "production_studio/session.py",
+            "production_studio/package.py",
+            "production_studio/validation.py",
+            "production_studio/evidence.py",
           }
           with ZipFile(wheel) as archive:
-              names = set(archive.namelist())
-              missing = required - names
-              assert not missing, f"wheel runtime assets missing: {sorted(missing)}"
-              assert not (forbidden & names), f"forbidden C0 modules packaged: {sorted(forbidden & names)}"
-              assert not any(name.startswith("production_studio/migrations/") for name in names)
-              for relative in (
-                  "contracts/read_only_claim_boundaries_v1.ru.json",
-                  "contracts/read_only_claim_boundaries_v1.ru.json.sha256",
-              ):
-                  packaged = archive.read(f"production_studio/{relative}")
-                  source = Path("production_studio", relative).read_bytes()
-                  assert packaged == source, f"wheel bytes differ for {relative}"
-          print(f"verified C0 wheel: {wheel.name}")
+            names=set(archive.namelist())
+            assert not (required-names), sorted(required-names)
+            assert not (forbidden&names), sorted(forbidden&names)
+            assert not any(n.startswith("production_studio/migrations/") for n in names)
+            for relative in (
+              "contracts/read_only_claim_boundaries_v1.ru.json",
+              "contracts/read_only_claim_boundaries_v1.ru.json.sha256",
+            ):
+              assert archive.read(f"production_studio/{relative}")==Path("production_studio",relative).read_bytes()
+          print(f"verified wheel: {wheel.name}")
           PY
+          python -m pytest production_studio/tests/test_read_only_static_contracts.py production_studio/tests/test_claim_boundaries.py
 
-      - name: Recheck static and claim contracts against the built wheel
-        env:
-          USE_SQLITE: "true"
-          SQLITE_PATH: ${{ runner.temp }}/conflict-analysis-wheel.sqlite3
-          HTTP_PROXY: "http://127.0.0.1:9"
-          HTTPS_PROXY: "http://127.0.0.1:9"
-          ALL_PROXY: "http://127.0.0.1:9"
-          NO_PROXY: "127.0.0.1,localhost"
-          OPENAI_API_KEY: ""
-          HF_HUB_OFFLINE: "1"
-          TRANSFORMERS_OFFLINE: "1"
-        run: >-
-          python -m pytest
-          production_studio/tests/test_read_only_static_contracts.py
-          production_studio/tests/test_claim_boundaries.py
+          isolated_venv="${{ runner.temp }}/foundation-prerequisite-installed-wheel-venv"
+          python -m venv "$isolated_venv"
+          "$isolated_venv/bin/python" -m pip install \
+            --disable-pip-version-check \
+            "$STUDIO_C0_WHEEL"
+          cd "${{ runner.temp }}"
+          unset PYTHONPATH
+          USE_SQLITE=true \
+          SQLITE_PATH="${{ runner.temp }}/foundation-prerequisite-installed-wheel.sqlite3" \
+          DJANGO_SETTINGS_MODULE=conflict_analysis.settings \
+            "$isolated_venv/bin/python" - "$isolated_venv" "$source_root" <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import importlib
+          import os
+          import sys
+          from pathlib import Path
+          from uuid import UUID
+
+          venv_root = Path(sys.argv[1]).resolve()
+          source_root = Path(sys.argv[2]).resolve()
+          assert Path.cwd().resolve() != source_root
+          assert "PYTHONPATH" not in os.environ
+
+          import django
+
+          django.setup()
+
+          imported = {}
+          for module_name in (
+              "conflict_analysis",
+              "domain",
+              "domain.api.studio_definitions",
+              "domain.policies",
+              "production_studio",
+          ):
+              module = importlib.import_module(module_name)
+              module_path = Path(module.__file__).resolve()
+              assert venv_root in module_path.parents, (module_name, module_path)
+              assert source_root not in module_path.parents, (module_name, module_path)
+              imported[module_name] = str(module_path)
+
+          from django.urls import reverse
+          from production_studio.claim_boundaries import load_claim_boundaries
+
+          marker = UUID("00000000-0000-0000-0000-000000000000")
+          assert reverse(
+              "foundation-definition-validation-preview",
+              kwargs={"definition_id": marker},
+          ) == (
+              "/api/foundation/definitions/"
+              "00000000-0000-0000-0000-000000000000/validation-preview/"
+          )
+
+          installed_claim = load_claim_boundaries()
+          source_contract = (
+              source_root
+              / "production_studio/contracts/read_only_claim_boundaries_v1.ru.json"
+          ).read_bytes()
+          source_sidecar = (
+              source_root
+              / "production_studio/contracts/read_only_claim_boundaries_v1.ru.json.sha256"
+          ).read_bytes()
+          installed_contract_path = (
+              Path(imported["production_studio"]).parent
+              / "contracts/read_only_claim_boundaries_v1.ru.json"
+          )
+          installed_sidecar_path = installed_contract_path.with_suffix(
+              installed_contract_path.suffix + ".sha256"
+          )
+          assert installed_contract_path.read_bytes() == source_contract
+          assert installed_sidecar_path.read_bytes() == source_sidecar
+          assert installed_claim.payload == source_contract
+          assert installed_claim.sha256 == hashlib.sha256(source_contract).hexdigest()
+          print("isolated installed-wheel imports:", imported)
+          print("isolated installed-wheel route and claim bytes: PASS")
+          PY

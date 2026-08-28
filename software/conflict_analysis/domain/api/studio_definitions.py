@@ -8,12 +8,17 @@ public adapter never accepts a serialized Studio role or SERVICE principal.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
+from functools import wraps
 from typing import Any, Callable, Mapping
 from uuid import UUID
 
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied, ValidationError
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseNotAllowed
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
@@ -22,7 +27,7 @@ from rest_framework.decorators import (
     authentication_classes,
     permission_classes,
 )
-from rest_framework.exceptions import ParseError
+from rest_framework.exceptions import AuthenticationFailed, ParseError
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -42,6 +47,7 @@ from domain.policies import (
     require_studio_capability,
     studio_principal_from_user,
     validate_project_definition,
+    validate_project_definition_manifest_policy,
 )
 from domain.services.help_topics import HelpTopicResolutionError, resolve_help_topic
 from domain.services.foundation_packages import (
@@ -103,7 +109,32 @@ class _RawJSONSessionAuthentication(SessionAuthentication):
         return user, None
 
 
+class _ReadOnlyBasicAuthentication(BasicAuthentication):
+    """Authenticate preview credentials without a password-upgrade write path."""
+
+    _failure = "Invalid username/password."
+
+    def authenticate_credentials(self, userid, password, request=None):
+        user_model = get_user_model()
+        try:
+            user = user_model._default_manager.get_by_natural_key(userid)
+        except user_model.DoesNotExist:
+            # Match the current-hasher work factor without creating a row.
+            dummy = user_model()
+            dummy.set_password(password)
+            raise AuthenticationFailed(self._failure)
+        if not check_password(password, user.password, setter=None):
+            raise AuthenticationFailed(self._failure)
+        if not user.is_active:
+            raise AuthenticationFailed(self._failure)
+        return user, None
+
+
 _PUBLIC_AUTHENTICATION = (BasicAuthentication, _RawJSONSessionAuthentication)
+_VALIDATION_PREVIEW_AUTHENTICATION = (
+    _ReadOnlyBasicAuthentication,
+    _RawJSONSessionAuthentication,
+)
 _SPOOF_FIELDS = frozenset(
     {
         "actor",
@@ -173,9 +204,18 @@ def _definition_payload(definition: ProjectDefinitionVersion) -> dict[str, Any]:
     }
 
 
+class ValidationPreviewEnvelopeError(ValidationError):
+    """Fixed public contract error for FD01 envelope/header/query drift."""
+
+
 def _error_payload(exc: Exception) -> tuple[dict[str, Any], int]:
     if isinstance(exc, RawJSONError):
         return dict(exc.as_dict()), HTTP_400_BAD_REQUEST
+    if isinstance(exc, ValidationPreviewEnvelopeError):
+        return {
+            "code": "VALIDATION_PREVIEW_ENVELOPE_INVALID",
+            "errors": ["Validation preview requires the exact FD01 request contract."],
+        }, HTTP_400_BAD_REQUEST
     if isinstance(exc, PermissionDenied):
         return {
             "code": "STUDIO_CAPABILITY_DENIED",
@@ -457,6 +497,166 @@ def _receipt_payload(receipt_id: object) -> dict[str, Any]:
     }
 
 
+_VALIDATION_PREVIEW_MAX_DIAGNOSTICS = 1000
+_VALIDATION_PREVIEW_TEXT_MAX_BYTES = 512
+_VALIDATION_PREVIEW_TRUNCATED_TEXT = "<TRUNCATED>"
+_VALIDATION_PREVIEW_UNICODE_ERROR = (
+    "JSON object keys and string values must contain only Unicode scalar values."
+)
+
+
+def _canonical_json_bytes(value: Any) -> bytes:
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+
+
+def _sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
+
+
+def _sha256_text(value: str) -> str:
+    return _sha256_bytes(value.encode("utf-8"))
+
+
+def _bounded_preview_text(value: str) -> str:
+    return (
+        value
+        if len(value.encode("utf-8")) <= _VALIDATION_PREVIEW_TEXT_MAX_BYTES
+        else _VALIDATION_PREVIEW_TRUNCATED_TEXT
+    )
+
+
+def _validation_preview_metadata_admission(request: Request) -> None:
+    if (
+        request.query_params
+        or "HTTP_IF_MATCH" in request.META
+        or "HTTP_IDEMPOTENCY_KEY" in request.META
+        or any(name in request.META for name in _SPOOF_HEADERS)
+    ):
+        raise ValidationPreviewEnvelopeError(
+            {"request": "Query, authority, If-Match and Idempotency-Key are forbidden."}
+        )
+
+
+def _require_validation_preview_unicode_scalars(value: Any) -> None:
+    if isinstance(value, str):
+        if any(0xD800 <= ord(character) <= 0xDFFF for character in value):
+            raise RawJSONError(
+                "RAW_JSON_UNICODE_SCALAR_INVALID",
+                _VALIDATION_PREVIEW_UNICODE_ERROR,
+                path="$",
+            )
+        return
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            _require_validation_preview_unicode_scalars(key)
+            _require_validation_preview_unicode_scalars(item)
+        return
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            _require_validation_preview_unicode_scalars(item)
+
+
+def _suppress_validation_preview_cookie_mutation(request, response=None) -> None:
+    # SessionMiddleware has already bound the SessionStore before view dispatch.
+    # Removing only the raw cookie prevents its response phase from emitting a
+    # deletion for malformed/expired keys without weakening valid-session auth.
+    request.COOKIES.pop(settings.SESSION_COOKIE_NAME, None)
+    request.META["CSRF_COOKIE_NEEDS_UPDATE"] = False
+    session = getattr(request, "session", None)
+    if session is not None:
+        session.accessed = False
+        session.modified = False
+    if response is not None:
+        response.cookies.clear()
+
+
+def _validation_preview_http_boundary(view):
+    """Run the exact method/cookie boundary before DRF authentication."""
+
+    @wraps(view)
+    def boundary(request, *args, **kwargs):
+        response = None
+        _suppress_validation_preview_cookie_mutation(request)
+        try:
+            if request.method != "POST":
+                response = HttpResponseNotAllowed(["POST"])
+                response["Content-Length"] = "0"
+                return response
+            response = view(request, *args, **kwargs)
+            return response
+        finally:
+            _suppress_validation_preview_cookie_mutation(request, response)
+
+    return boundary
+
+
+def _validation_preview_response(
+    *,
+    definition: ProjectDefinitionVersion,
+    manifest: Mapping[str, Any],
+    request_sha256: str,
+    request_byte_length: int,
+    report: Any,
+) -> HttpResponse:
+    complete_diagnostics = [item.as_dict() for item in report.diagnostics]
+    diagnostics_sha256 = _sha256_bytes(_canonical_json_bytes(complete_diagnostics))
+    projected: list[dict[str, Any]] = []
+    for ordinal, diagnostic in enumerate(complete_diagnostics[:_VALIDATION_PREVIEW_MAX_DIAGNOSTICS]):
+        path = str(diagnostic["path"])
+        message = str(diagnostic["message"])
+        projected.append(
+            {
+                "ordinal": ordinal,
+                "level": str(diagnostic["level"]),
+                "code": str(diagnostic["code"]),
+                "path": _bounded_preview_text(path),
+                "path_sha256": _sha256_text(path),
+                "message": _bounded_preview_text(message),
+                "message_sha256": _sha256_text(message),
+            }
+        )
+    candidate_sha256 = _sha256_bytes(_canonical_json_bytes(manifest))
+    response_core: dict[str, Any] = {
+        "contract": "PROJECT_DEFINITION_MANIFEST_VALIDATION_V1",
+        "contract_version": "1.0.0",
+        "schema_id": str(report.schema_id),
+        "schema_version": str(report.schema_version),
+        "definition_id": str(definition.pk),
+        "project_id": str(definition.project_id),
+        "base_manifest_sha256": definition.manifest_hash,
+        "request_sha256": request_sha256,
+        "request_byte_length": request_byte_length,
+        "candidate_sha256": candidate_sha256,
+        "manifest_sha256": str(report.manifest_sha256),
+        "valid": bool(report.valid),
+        "diagnostics_total": len(complete_diagnostics),
+        "diagnostics_returned": len(projected),
+        "diagnostics_truncated": len(complete_diagnostics) > len(projected),
+        "diagnostics_sha256": diagnostics_sha256,
+        "diagnostics": projected,
+    }
+    validation_report_sha256 = _sha256_bytes(_canonical_json_bytes(response_core))
+    payload = {**response_core, "validation_report_sha256": validation_report_sha256}
+    response_bytes = _canonical_json_bytes(payload) + b"\n"
+    representation_sha256 = _sha256_bytes(response_bytes)
+    response = HttpResponse(
+        response_bytes,
+        status=HTTP_200_OK,
+        content_type="application/json; charset=utf-8",
+    )
+    response["Content-Length"] = str(len(response_bytes))
+    response["ETag"] = f'"{representation_sha256}"'
+    response["Cache-Control"] = "no-store"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
 @api_view(["POST"])
 @authentication_classes(_PUBLIC_AUTHENTICATION)
 @permission_classes([IsAuthenticated])
@@ -555,6 +755,64 @@ def save_definition_draft(request: Request, definition_id: object) -> Response:
     if response.status_code == HTTP_200_OK:
         return _with_etag(response, str(response.data["manifest_hash"]))
     return response
+
+
+@_validation_preview_http_boundary
+@api_view(["POST"])
+@authentication_classes(_VALIDATION_PREVIEW_AUTHENTICATION)
+@permission_classes([IsAuthenticated])
+def validation_preview(
+    request: Request,
+    definition_id: object,
+) -> Response | HttpResponse:
+    try:
+        definition = _definition_or_404(request.user, definition_id)
+        principal = _principal(request)
+        require_studio_capability(principal, StudioCapability.DRAFT_SAVE)
+        if definition.publication_status != "DRAFT":
+            raise FoundationStudioApplicationConflict(
+                "DEFINITION_NOT_DRAFT",
+                "Validation preview accepts an exact DRAFT definition only.",
+            )
+        _validation_preview_metadata_admission(request)
+        captured = capture_http_json(request)
+        document = read_http_json(request)
+        payload = dict(document.value)
+        if (
+            set(payload) != {"manifest"}
+            or not isinstance(payload["manifest"], Mapping)
+            or _SPOOF_FIELDS.intersection(payload["manifest"])
+        ):
+            raise ValidationPreviewEnvelopeError(
+                {"body": "Exactly one manifest object is required."}
+            )
+        _require_validation_preview_unicode_scalars(payload["manifest"])
+        report = validate_project_definition_manifest_policy(
+            payload["manifest"],
+            project=definition.project,
+        )
+        return _validation_preview_response(
+            definition=definition,
+            manifest=payload["manifest"],
+            request_sha256=captured.identity.sha256,
+            request_byte_length=captured.identity.byte_length,
+            report=report,
+        )
+    except (Http404, ObjectDoesNotExist):
+        return Response(
+            {"code": "STUDIO_RESOURCE_NOT_FOUND", "errors": ["Resource not found."]},
+            status=HTTP_404_NOT_FOUND,
+        )
+    except (
+        PermissionDenied,
+        ProjectDefinitionDraftConflict,
+        RawJSONError,
+        ValidationError,
+        ValueError,
+        TypeError,
+    ) as exc:
+        error, status = _error_payload(exc)
+        return Response(error, status=status)
 
 
 @api_view(["POST"])
