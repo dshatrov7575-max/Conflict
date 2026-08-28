@@ -6,6 +6,7 @@ on:
       - codex/ca-suite-i1-production-studio-c0-read-only
       - codex/ca-suite-i1-foundation-fd01-validation-preview
       - codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
+      - codex/ca-suite-i1-production-studio-c1-authenticated-draft
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -15,6 +16,7 @@ on:
       - codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
       - codex/ca-suite-i1-production-studio-c1-r0-ci-pin
       - codex/ca-suite-i1-production-studio-c1-authenticated-draft
+      - codex/ca-suite-i1-foundation-fd02-studio-help-provisioning
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -29,7 +31,7 @@ concurrency:
 
 jobs:
   foundation-contract:
-    name: Python 3.12 / PostgreSQL 18 / SQLite / FD01-FD05-R0-C1 slice gate
+    name: Python 3.12 / PostgreSQL 18 / SQLite / FD01-FD05-R0-C1-FD02 slice gate
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -78,11 +80,14 @@ jobs:
       R0_AUTH_BASE_TREE: c25848dbbb19aabd5a2d4d642b69c66254879059
       C1_R0_START_HEAD: bd6e88c2a5f6552e057ea5b49fc63a1eb77ef4c6
       C1_R0_START_TREE: e1124839da8571408c258517c8afdf24622f1655
+      FD02_BASE_HEAD: bbe852d2f30f1be042e9cd8c35a52fd120d65ae4
+      FD02_BASE_TREE: 838364d0f10a9517160a6bb0a81b547f121e2447
       C0_BRANCH: codex/ca-suite-i1-production-studio-c0-read-only
       FD01_BRANCH: codex/ca-suite-i1-foundation-fd01-validation-preview
       FD05_BRANCH: codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
       R0_BRANCH: codex/ca-suite-i1-production-studio-c1-r0-ci-pin
       C1_BRANCH: codex/ca-suite-i1-production-studio-c1-authenticated-draft
+      FD02_BRANCH: codex/ca-suite-i1-foundation-fd02-studio-help-provisioning
       AUTH_MAIN_HEAD: 19690eb3aede8b603a631d7c561fc74f9022537a
       AUTH_MAIN_TREE: 04d5b43fdf96637f58b8fc6f191323fbad302bbc
       FND_BASE_HEAD: f940a91a92658285063802ee1a43bf84360fc013
@@ -149,6 +154,10 @@ jobs:
                     active_slice="C1"
                     slice_base_source="EVENT_FD05"
                     ;;
+                  "${FD02_BRANCH}|${C1_BRANCH}")
+                    active_slice="FD02"
+                    slice_base_source="EVENT_C1"
+                    ;;
                   *)
                     echo "unsupported prerequisite pull-request ref pair: ${head_ref} -> ${base_ref}" >&2
                     return 1
@@ -183,6 +192,12 @@ jobs:
                     slice_base_source="LIVE_FD05"
                     active_head_ref="$C1_BRANCH"
                     active_base_ref="$FD05_BRANCH"
+                    ;;
+                  "refs/heads/${FD02_BRANCH}")
+                    active_slice="FD02"
+                    slice_base_source="LIVE_C1"
+                    active_head_ref="$FD02_BRANCH"
+                    active_base_ref="$C1_BRANCH"
                     ;;
                   *)
                     echo "unsupported prerequisite push ref: $event_ref" >&2
@@ -292,6 +307,37 @@ jobs:
             }
           }
 
+          verify_fd02_base_pin() {
+            local authorized_head="$1"
+            local authorized_tree="$2"
+            local actual_head="$3"
+            local actual_tree="$4"
+            [[ "$authorized_head" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "FD02 authorized C1 base HEAD must be exact lowercase 40-hex" >&2
+              return 1
+            }
+            [[ "$authorized_tree" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "FD02 authorized C1 base TREE must be exact lowercase 40-hex" >&2
+              return 1
+            }
+            [[ "$actual_head" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "FD02 event/live C1 base HEAD must be exact lowercase 40-hex" >&2
+              return 1
+            }
+            [[ "$actual_tree" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "FD02 event/live C1 base TREE must be exact lowercase 40-hex" >&2
+              return 1
+            }
+            test "$actual_head" = "$authorized_head" || {
+              echo "FD02 event/live base HEAD does not match accepted C1 HEAD" >&2
+              return 1
+            }
+            test "$actual_tree" = "$authorized_tree" || {
+              echo "FD02 event/live base TREE does not match accepted C1 TREE" >&2
+              return 1
+            }
+          }
+
           assert_route() {
             local expected="$1"
             shift
@@ -328,6 +374,13 @@ jobs:
             fi
           }
 
+          assert_fd02_base_pin_failure() {
+            if verify_fd02_base_pin "$@" >/dev/null 2>&1; then
+              echo "FD02 C1 base pin self-check unexpectedly accepted invalid inputs" >&2
+              return 1
+            fi
+          }
+
           pin_head="$(printf 'a%.0s' {1..40})"
           pin_tree="$(printf 'b%.0s' {1..40})"
           other_head="$(printf 'c%.0s' {1..40})"
@@ -340,6 +393,8 @@ jobs:
             push "refs/heads/${R0_BRANCH}" "" "" ""
           assert_route "C1|LIVE_FD05|${C1_BRANCH}|${FD05_BRANCH}|" \
             push "refs/heads/${C1_BRANCH}" "" "" ""
+          assert_route "FD02|LIVE_C1|${FD02_BRANCH}|${C1_BRANCH}|" \
+            push "refs/heads/${FD02_BRANCH}" "" "" ""
           assert_route "FD01|PINNED_C0|${FD01_BRANCH}|${C0_BRANCH}|71" \
             pull_request "" "71" "$FD01_BRANCH" "$C0_BRANCH"
           assert_route "FD05|EVENT_FD01|${FD05_BRANCH}|${FD01_BRANCH}|72" \
@@ -348,6 +403,8 @@ jobs:
             pull_request "" "73" "$R0_BRANCH" "$FD05_BRANCH"
           assert_route "C1|EVENT_FD05|${C1_BRANCH}|${FD05_BRANCH}|74" \
             pull_request "" "74" "$C1_BRANCH" "$FD05_BRANCH"
+          assert_route "FD02|EVENT_C1|${FD02_BRANCH}|${C1_BRANCH}|75" \
+            pull_request "" "75" "$FD02_BRANCH" "$C1_BRANCH"
           assert_route_failure push refs/heads/main "" "" ""
           assert_route_failure pull_request "" 72 "$FD01_BRANCH" "$C0_BRANCH"
           assert_route_failure pull_request "" 72 unrelated-head "$C0_BRANCH"
@@ -355,8 +412,11 @@ jobs:
           assert_route_failure pull_request "" 73 "$FD05_BRANCH" "$FD05_BRANCH"
           assert_route_failure pull_request "" 74 "$C1_BRANCH" "$R0_BRANCH"
           assert_route_failure pull_request "" 74 "$C1_BRANCH" "$FD01_BRANCH"
+          assert_route_failure pull_request "" 75 "$FD02_BRANCH" "$FD05_BRANCH"
+          assert_route_failure pull_request "" 75 "$C1_BRANCH" "$C1_BRANCH"
           assert_route_failure push "refs/heads/${R0_BRANCH}-unexpected" "" "" ""
           assert_route_failure push "refs/heads/${C1_BRANCH}-unexpected" "" "" ""
+          assert_route_failure push "refs/heads/${FD02_BRANCH}-unexpected" "" "" ""
           assert_route_failure workflow_dispatch "" "" "" ""
           verify_fd05_pin "$pin_head" "$pin_tree" "$pin_head" "$pin_tree"
           assert_pin_failure "" "$pin_tree" "$pin_head" "$pin_tree"
@@ -382,11 +442,20 @@ jobs:
           assert_c1_start_pin_failure "$pin_head" BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB "$pin_head" "$pin_tree"
           assert_c1_start_pin_failure "$pin_head" "$pin_tree" "$other_head" "$pin_tree"
           assert_c1_start_pin_failure "$pin_head" "$pin_tree" "$pin_head" "$other_tree"
+          verify_fd02_base_pin "$pin_head" "$pin_tree" "$pin_head" "$pin_tree"
+          assert_fd02_base_pin_failure "" "$pin_tree" "$pin_head" "$pin_tree"
+          assert_fd02_base_pin_failure "$pin_head" "" "$pin_head" "$pin_tree"
+          assert_fd02_base_pin_failure AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA "$pin_tree" "$pin_head" "$pin_tree"
+          assert_fd02_base_pin_failure "$pin_head" BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB "$pin_head" "$pin_tree"
+          assert_fd02_base_pin_failure "$pin_head" "$pin_tree" "$other_head" "$pin_tree"
+          assert_fd02_base_pin_failure "$pin_head" "$pin_tree" "$pin_head" "$other_tree"
           echo "ROUTING_MATRIX_SELF_CHECK=PASS"
           echo "FD05_EXTERNAL_PIN_SELF_CHECK=PASS"
           echo "R0_EXTERNAL_PIN_SELF_CHECK=PASS"
           echo "C1_ROUTING_SELF_CHECK=PASS"
           echo "C1_R0_START_PIN_SELF_CHECK=PASS"
+          echo "FD02_ROUTING_SELF_CHECK=PASS"
+          echo "FD02_C1_BASE_PIN_SELF_CHECK=PASS"
 
           delivery_head="$(git rev-parse HEAD)"
           case "$GITHUB_EVENT_NAME" in
@@ -429,6 +498,14 @@ jobs:
                 "+refs/heads/${FD05_BRANCH}:refs/remotes/origin/fd05-target"
               slice_base_head="$(git rev-parse refs/remotes/origin/fd05-target)"
               ;;
+            EVENT_C1)
+              slice_base_head="$EVENT_BASE_SHA"
+              ;;
+            LIVE_C1)
+              git fetch --no-tags origin \
+                "+refs/heads/${C1_BRANCH}:refs/remotes/origin/c1-target"
+              slice_base_head="$(git rev-parse refs/remotes/origin/c1-target)"
+              ;;
             *)
               echo "unsupported slice base source: $slice_base_source" >&2
               exit 1
@@ -445,6 +522,7 @@ jobs:
               test "$slice_base_tree" = "$FD01_BASE_TREE"
               fd05_base_pin="NOT_APPLICABLE_CURRENT_FD01"
               r0_base_pin="NOT_APPLICABLE_CURRENT_FD01"
+              c1_base_pin="NOT_APPLICABLE_CURRENT_FD01"
               ;;
             FD05)
               verify_fd05_pin \
@@ -454,6 +532,7 @@ jobs:
                 "$slice_base_tree"
               fd05_base_pin="PIN_VERIFIED_EXTERNAL"
               r0_base_pin="NOT_APPLICABLE_CURRENT_FD05"
+              c1_base_pin="NOT_APPLICABLE_CURRENT_FD05"
               ;;
             R0)
               verify_r0_pin \
@@ -465,6 +544,7 @@ jobs:
                 "$slice_base_tree"
               fd05_base_pin="PIN_VERIFIED_EXTERNAL"
               r0_base_pin="PIN_VERIFIED_EXTERNAL"
+              c1_base_pin="NOT_APPLICABLE_CURRENT_R0"
               ;;
             C1)
               verify_r0_pin \
@@ -490,6 +570,17 @@ jobs:
                 "$(git rev-parse "$C1_R0_START_HEAD^{tree}")"
               fd05_base_pin="PIN_VERIFIED_EXTERNAL"
               r0_base_pin="PIN_VERIFIED_AUTHORIZATION"
+              c1_base_pin="NOT_APPLICABLE_CURRENT_C1"
+              ;;
+            FD02)
+              verify_fd02_base_pin \
+                "$FD02_BASE_HEAD" \
+                "$FD02_BASE_TREE" \
+                "$slice_base_head" \
+                "$slice_base_tree"
+              fd05_base_pin="NOT_APPLICABLE_CURRENT_FD02"
+              r0_base_pin="NOT_APPLICABLE_CURRENT_FD02"
+              c1_base_pin="PIN_VERIFIED_AUTHORIZATION"
               ;;
             *)
               echo "unsupported active slice: $active_slice" >&2
@@ -507,9 +598,11 @@ jobs:
             echo "SLICE_PR_NUMBER=$active_pr_number"
             echo "FD05_BASE_PIN=$fd05_base_pin"
             echo "R0_BASE_PIN=$r0_base_pin"
+            echo "C1_BASE_PIN=$c1_base_pin"
           } >> "$GITHUB_ENV"
           echo "FD05_BASE_PIN=$fd05_base_pin"
           echo "R0_BASE_PIN=$r0_base_pin"
+          echo "C1_BASE_PIN=$c1_base_pin"
 
       - name: Verify active-slice authorization drift, ancestry and synthetic merge
         shell: bash
@@ -544,6 +637,7 @@ jobs:
               test "$SLICE_BASE_SOURCE" = "PINNED_C0"
               test "$FD05_BASE_PIN" = "NOT_APPLICABLE_CURRENT_FD01"
               test "$R0_BASE_PIN" = "NOT_APPLICABLE_CURRENT_FD01"
+              test "$C1_BASE_PIN" = "NOT_APPLICABLE_CURRENT_FD01"
               test "$(git rev-list --count "$FD01_RC3_START_HEAD..$delivery_head")" = "1"
               test "$(git rev-parse "$delivery_head^")" = "$FD01_RC3_START_HEAD"
               ;;
@@ -554,6 +648,7 @@ jobs:
               esac
               test "$FD05_BASE_PIN" = "PIN_VERIFIED_EXTERNAL"
               test "$R0_BASE_PIN" = "NOT_APPLICABLE_CURRENT_FD05"
+              test "$C1_BASE_PIN" = "NOT_APPLICABLE_CURRENT_FD05"
               test "$SLICE_BASE_HEAD" = "$FD01_ACCEPTED_HEAD"
               test "$SLICE_BASE_TREE" = "$FD01_ACCEPTED_TREE"
               git merge-base --is-ancestor "$FD01_RC2_START_HEAD" "$SLICE_BASE_HEAD"
@@ -566,6 +661,7 @@ jobs:
               esac
               test "$FD05_BASE_PIN" = "PIN_VERIFIED_EXTERNAL"
               test "$R0_BASE_PIN" = "PIN_VERIFIED_EXTERNAL"
+              test "$C1_BASE_PIN" = "NOT_APPLICABLE_CURRENT_R0"
               test "$SLICE_BASE_HEAD" = "$R0_AUTH_BASE_HEAD"
               test "$SLICE_BASE_TREE" = "$R0_AUTH_BASE_TREE"
               test "$SLICE_BASE_HEAD" = "$FD05_ACCEPTED_HEAD"
@@ -602,6 +698,7 @@ jobs:
               esac
               test "$FD05_BASE_PIN" = "PIN_VERIFIED_EXTERNAL"
               test "$R0_BASE_PIN" = "PIN_VERIFIED_AUTHORIZATION"
+              test "$C1_BASE_PIN" = "NOT_APPLICABLE_CURRENT_C1"
               test "$SLICE_BASE_HEAD" = "$FD05_ACCEPTED_HEAD"
               test "$SLICE_BASE_TREE" = "$FD05_ACCEPTED_TREE"
               test "$SLICE_BASE_HEAD" = "$R0_AUTH_BASE_HEAD"
@@ -642,6 +739,43 @@ jobs:
               echo "C1_EXACT_16_PATH_ALLOWLIST=PASS"
               echo "C1_R0_START_PIN=PASS"
               ;;
+            FD02)
+              case "$SLICE_BASE_SOURCE" in
+                EVENT_C1|LIVE_C1) ;;
+                *) exit 1 ;;
+              esac
+              test "$FD05_BASE_PIN" = "NOT_APPLICABLE_CURRENT_FD02"
+              test "$R0_BASE_PIN" = "NOT_APPLICABLE_CURRENT_FD02"
+              test "$C1_BASE_PIN" = "PIN_VERIFIED_AUTHORIZATION"
+              test "$SLICE_BASE_HEAD" = "$FD02_BASE_HEAD"
+              test "$SLICE_BASE_TREE" = "$FD02_BASE_TREE"
+              test "$(git merge-base "$SLICE_BASE_HEAD" "$delivery_head")" = "$SLICE_BASE_HEAD"
+              test -z "$(git rev-list --merges "$SLICE_BASE_HEAD..$delivery_head")"
+              test "$(git rev-list --count "$SLICE_BASE_HEAD..$delivery_head")" = "1"
+              test "$(git rev-parse "$delivery_head^")" = "$SLICE_BASE_HEAD"
+              mapfile -t fd02_changed_paths < <(
+                git diff --name-only "$SLICE_BASE_HEAD...$delivery_head" --
+              )
+              test "${#fd02_changed_paths[@]}" -eq 7
+              for changed_path in "${fd02_changed_paths[@]}"; do
+                case "$changed_path" in
+                  .github/workflows/conflict-analysis.yml|\
+                  software/conflict_analysis/docs/adr/0006-foundation-studio-application-gateways.md|\
+                  software/conflict_analysis/domain/content/studio_help_ru_v1.json|\
+                  software/conflict_analysis/domain/management/commands/provision_studio_help.py|\
+                  software/conflict_analysis/domain/services/studio_help_catalog.py|\
+                  software/conflict_analysis/domain/tests/test_foundation_studio_help_provisioning.py|\
+                  software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py)
+                    ;;
+                  *)
+                    echo "FD02 changed path outside the exact seven-path allowlist: $changed_path" >&2
+                    exit 1
+                    ;;
+                esac
+              done
+              echo "FD02_EXACT_7_PATH_ALLOWLIST=PASS"
+              echo "FD02_C1_BASE_PIN=PASS"
+              ;;
             *)
               echo "unsupported active slice: $ACTIVE_SLICE" >&2
               exit 1
@@ -665,19 +799,16 @@ jobs:
             FD05)
               test "$(git rev-parse refs/remotes/origin/fd01-target)" = "$SLICE_BASE_HEAD"
               ;;
-            R0)
-              test "$(git rev-parse refs/remotes/origin/fd01-target)" = "$FD01_ACCEPTED_HEAD"
-              ;;
-            C1)
+            R0|C1|FD02)
               test "$(git rev-parse refs/remotes/origin/fd01-target)" = "$FD01_ACCEPTED_HEAD"
               ;;
           esac
 
-          if [[ "$ACTIVE_SLICE" = R0 || "$ACTIVE_SLICE" = C1 ]]; then
+          if [[ "$ACTIVE_SLICE" = R0 || "$ACTIVE_SLICE" = C1 || "$ACTIVE_SLICE" = FD02 ]]; then
             git fetch --no-tags origin \
               "+refs/heads/${FD05_BRANCH}:refs/remotes/origin/fd05-target" \
               +refs/pull/72/merge:refs/remotes/origin/pr72-merge
-            test "$(git rev-parse refs/remotes/origin/fd05-target)" = "$SLICE_BASE_HEAD"
+            test "$(git rev-parse refs/remotes/origin/fd05-target)" = "$FD05_ACCEPTED_HEAD"
             IFS=$'\t' read -r state72 draft72 merged72 head72 headref72 base72 baseref72 <<< "$(
               gh api "repos/${GITHUB_REPOSITORY}/pulls/72" \
                 --jq '[.state, (.draft|tostring), (.merged|tostring), .head.sha, .head.ref, .base.sha, .base.ref] | @tsv'
@@ -694,7 +825,7 @@ jobs:
             test "$(git rev-parse refs/remotes/origin/pr72-merge^{tree})" = "$FD05_ACCEPTED_TREE"
           fi
 
-          if [[ "$ACTIVE_SLICE" = C1 ]]; then
+          if [[ "$ACTIVE_SLICE" = C1 || "$ACTIVE_SLICE" = FD02 ]]; then
             git fetch --no-tags origin \
               "+refs/heads/${R0_BRANCH}:refs/remotes/origin/r0-start" \
               +refs/pull/73/merge:refs/remotes/origin/pr73-merge
@@ -715,6 +846,29 @@ jobs:
             test "$(git rev-parse refs/remotes/origin/pr73-merge^2)" = "$C1_R0_START_HEAD"
             test "$(git rev-parse refs/remotes/origin/pr73-merge^{tree})" = "$C1_R0_START_TREE"
             echo "C1_ACCEPTED_R0_REF_AND_PR73=PASS"
+          fi
+
+          if [[ "$ACTIVE_SLICE" = FD02 ]]; then
+            git fetch --no-tags origin \
+              "+refs/heads/${C1_BRANCH}:refs/remotes/origin/c1-accepted" \
+              +refs/pull/74/merge:refs/remotes/origin/pr74-merge
+            test "$(git rev-parse refs/remotes/origin/c1-accepted)" = "$FD02_BASE_HEAD"
+            test "$(git rev-parse refs/remotes/origin/c1-accepted^{tree})" = "$FD02_BASE_TREE"
+            IFS=$'\t' read -r state74 draft74 merged74 head74 headref74 base74 baseref74 <<< "$(
+              gh api "repos/${GITHUB_REPOSITORY}/pulls/74" \
+                --jq '[.state, (.draft|tostring), (.merged|tostring), .head.sha, .head.ref, .base.sha, .base.ref] | @tsv'
+            )"
+            test "$state74" = open
+            test "$draft74" = true
+            test "$merged74" = false
+            test "$head74" = "$FD02_BASE_HEAD"
+            test "$headref74" = "$C1_BRANCH"
+            test "$base74" = "$FD05_ACCEPTED_HEAD"
+            test "$baseref74" = "$FD05_BRANCH"
+            test "$(git rev-parse refs/remotes/origin/pr74-merge^1)" = "$FD05_ACCEPTED_HEAD"
+            test "$(git rev-parse refs/remotes/origin/pr74-merge^2)" = "$FD02_BASE_HEAD"
+            test "$(git rev-parse refs/remotes/origin/pr74-merge^{tree})" = "$FD02_BASE_TREE"
+            echo "FD02_ACCEPTED_C1_REF_AND_PR74=PASS"
           fi
 
           IFS=$'\t' read -r state67 draft67 merged67 head67 base67 mergeable67 <<< "$(
@@ -795,7 +949,7 @@ jobs:
           node --check production_studio/static/production_studio/studio.js
           node --check production_studio/browser_tests/cdp_client.mjs
           node --check production_studio/browser_tests/read_only_smoke.mjs
-          if [[ "$ACTIVE_SLICE" = C1 ]]; then
+          if [[ "$ACTIVE_SLICE" = C1 || "$ACTIVE_SLICE" = FD02 ]]; then
             node --check production_studio/static/production_studio/audited_draft.js
             node --check production_studio/browser_tests/audited_authoring.mjs
           fi
@@ -820,6 +974,13 @@ jobs:
               --fd05-accepted-tree "$FD05_ACCEPTED_TREE" \
               --repo "$GITHUB_WORKSPACE"
             delta_base_head="$C1_R0_START_HEAD"
+          elif [[ "$ACTIVE_SLICE" = FD02 ]]; then
+            python scripts/verify_production_studio_c_allowlist.py \
+              --slice FD02 \
+              --base-head "$SLICE_BASE_HEAD" \
+              --base-tree "$SLICE_BASE_TREE" \
+              --repo "$GITHUB_WORKSPACE"
+            delta_base_head="$SLICE_BASE_HEAD"
           else
             verifier_args=(
               --slice "$ACTIVE_SLICE"
@@ -876,11 +1037,24 @@ jobs:
           from pathlib import Path
           from xml.etree import ElementTree
           active_slice=os.environ["ACTIVE_SLICE"]
-          expected_total={"FD01":183,"FD05":200,"R0":200,"C1":200}[active_slice]
+          expected_total={"FD01":183,"FD05":200,"R0":200,"C1":200,"FD02":206}[active_slice]
           cases=list(ElementTree.parse(Path("${{ runner.temp }}/postgresql-domain.xml")).iter("testcase"))
           skipped=[c for c in cases if c.find("skipped") is not None]
           assert len(cases)==expected_total, f"expected {expected_total} Foundation tests for {active_slice}, got {len(cases)}"
           assert not skipped, f"unexpected PostgreSQL skips: {len(skipped)}"
+          if active_slice=="FD02":
+            expected_fd02={
+              "test_catalog_identity_bytes_schema_and_checksum_are_exact",
+              "test_first_provision_and_exact_repeat_are_idempotent",
+              "test_management_command_requires_explicit_catalog_and_reports_exact_counts",
+              "test_topic_identity_or_content_collision_is_atomic",
+              "test_binding_identity_collision_and_injected_failure_roll_back",
+              "test_exact_resolver_and_http_return_bytes_or_exact_404",
+            }
+            fd02=[c for c in cases if c.attrib["classname"]=="domain.tests.test_foundation_studio_help_provisioning.FoundationStudioHelpProvisioningTests"]
+            assert len(fd02)==6, f"expected exact 6 FD02 tests, got {len(fd02)}"
+            assert {c.attrib["name"] for c in fd02}==expected_fd02
+            print("PostgreSQL 18 FD02 focused topology: exact 6 passed, 0 skipped")
           print(f"PostgreSQL 18 Foundation {active_slice}: {expected_total} passed, 0 skipped")
           PY
 
@@ -914,7 +1088,7 @@ jobs:
           PY
 
       - name: Run PostgreSQL C1 portable authenticated-draft contract
-        if: ${{ env.ACTIVE_SLICE == 'C1' }}
+        if: ${{ env.ACTIVE_SLICE == 'C1' || env.ACTIVE_SLICE == 'FD02' }}
         env:
           HTTP_PROXY: "http://127.0.0.1:9"
           HTTPS_PROXY: "http://127.0.0.1:9"
@@ -929,7 +1103,7 @@ jobs:
           --junitxml="${{ runner.temp }}/postgresql-c1-portable.xml"
 
       - name: Verify PostgreSQL C1 portable topology is exactly 8/8
-        if: ${{ env.ACTIVE_SLICE == 'C1' }}
+        if: ${{ env.ACTIVE_SLICE == 'C1' || env.ACTIVE_SLICE == 'FD02' }}
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -953,7 +1127,7 @@ jobs:
           PY
 
       - name: Run and verify real Chromium C1 authenticated edit-save-reload
-        if: ${{ env.ACTIVE_SLICE == 'C1' }}
+        if: ${{ env.ACTIVE_SLICE == 'C1' || env.ACTIVE_SLICE == 'FD02' }}
         env:
           HTTP_PROXY: "http://127.0.0.1:9"
           HTTPS_PROXY: "http://127.0.0.1:9"
@@ -1018,12 +1192,26 @@ jobs:
             ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_concurrent_stale_saves_have_one_commit_one_draft_stale"),
             ("domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests","test_postgresql_save_validate_race_obeys_project_first_lock_order"),
           }
-          expected_total={"FD01":183,"FD05":200,"R0":200,"C1":200}[active_slice]
-          expected_passed={"FD01":177,"FD05":189,"R0":189,"C1":189}[active_slice]
+          expected_total={"FD01":183,"FD05":200,"R0":200,"C1":200,"FD02":206}[active_slice]
+          expected_passed={"FD01":177,"FD05":189,"R0":189,"C1":189,"FD02":195}[active_slice]
           expected=accepted_six if active_slice=="FD01" else accepted_six|fd05_five
           assert len(cases)==expected_total, f"expected {expected_total} Foundation tests for {active_slice}, got {len(cases)}"
           assert actual==expected, f"SQLite skip drift: {sorted(actual)}"
           assert len(cases)-len(actual)==expected_passed
+          if active_slice=="FD02":
+            expected_fd02={
+              "test_catalog_identity_bytes_schema_and_checksum_are_exact",
+              "test_first_provision_and_exact_repeat_are_idempotent",
+              "test_management_command_requires_explicit_catalog_and_reports_exact_counts",
+              "test_topic_identity_or_content_collision_is_atomic",
+              "test_binding_identity_collision_and_injected_failure_roll_back",
+              "test_exact_resolver_and_http_return_bytes_or_exact_404",
+            }
+            fd02=[c for c in cases if c.attrib["classname"]=="domain.tests.test_foundation_studio_help_provisioning.FoundationStudioHelpProvisioningTests"]
+            assert len(fd02)==6, f"expected exact 6 FD02 tests, got {len(fd02)}"
+            assert {c.attrib["name"] for c in fd02}==expected_fd02
+            assert all(c.find("skipped") is None for c in fd02)
+            print("SQLite FD02 focused topology: exact 6 passed, 0 skipped")
           print(f"SQLite Foundation {active_slice}: {expected_passed} passed, exact {len(expected)} PostgreSQL-only skips")
           PY
 
@@ -1055,7 +1243,7 @@ jobs:
           PY
 
       - name: Run and verify SQLite C1 portable authenticated-draft contract
-        if: ${{ env.ACTIVE_SLICE == 'C1' }}
+        if: ${{ env.ACTIVE_SLICE == 'C1' || env.ACTIVE_SLICE == 'FD02' }}
         env:
           USE_SQLITE: "true"
           SQLITE_PATH: ${{ runner.temp }}/conflict-analysis-c1.sqlite3
@@ -1091,7 +1279,7 @@ jobs:
           print("SQLite C1 portable: exact 8 passed, 0 skipped; no concurrency claim")
           PY
 
-      - name: Inspect exact wheel and checksum-bound C0/C1 assets
+      - name: Inspect exact wheel, C0/C1 assets and external FD02 catalog contract
         shell: bash
         run: |
           source_root="$PWD"
@@ -1115,7 +1303,7 @@ jobs:
             "production_studio/static/production_studio/studio.css",
             "production_studio/static/production_studio/studio.js",
           }
-          if os.environ["ACTIVE_SLICE"] == "C1":
+          if os.environ["ACTIVE_SLICE"] in {"C1", "FD02"}:
             required |= {
               "production_studio/authoring_claim_boundaries.py",
               "production_studio/contracts/audited_draft_claim_boundaries_v1.ru.json",
@@ -1124,6 +1312,11 @@ jobs:
               "production_studio/templates/production_studio/audited_draft_entry.html",
               "production_studio/static/production_studio/audited_draft.css",
               "production_studio/static/production_studio/audited_draft.js",
+            }
+          if os.environ["ACTIVE_SLICE"] == "FD02":
+            required |= {
+              "domain/services/studio_help_catalog.py",
+              "domain/management/commands/provision_studio_help.py",
             }
           forbidden={
             "production_studio/models.py",
@@ -1137,12 +1330,14 @@ jobs:
             assert not (required-names), sorted(required-names)
             assert not (forbidden&names), sorted(forbidden&names)
             assert not any(n.startswith("production_studio/migrations/") for n in names)
+            if os.environ["ACTIVE_SLICE"] == "FD02":
+              assert "domain/content/studio_help_ru_v1.json" not in names
             for relative in (
               "contracts/read_only_claim_boundaries_v1.ru.json",
               "contracts/read_only_claim_boundaries_v1.ru.json.sha256",
             ):
               assert archive.read(f"production_studio/{relative}")==Path("production_studio",relative).read_bytes()
-            if os.environ["ACTIVE_SLICE"] == "C1":
+            if os.environ["ACTIVE_SLICE"] in {"C1", "FD02"}:
               for relative in (
                 "contracts/audited_draft_claim_boundaries_v1.ru.json",
                 "contracts/audited_draft_claim_boundaries_v1.ru.json.sha256",
@@ -1161,15 +1356,21 @@ jobs:
           "$isolated_venv/bin/python" -m pip install \
             --disable-pip-version-check \
             "$STUDIO_C0_WHEEL"
+          fd02_catalog_copy=""
+          if [[ "$ACTIVE_SLICE" = FD02 ]]; then
+            fd02_catalog_copy="${{ runner.temp }}/studio_help_ru_v1.external.json"
+            cp -- "$source_root/domain/content/studio_help_ru_v1.json" "$fd02_catalog_copy"
+          fi
           cd "${{ runner.temp }}"
           unset PYTHONPATH
           USE_SQLITE=true \
           SQLITE_PATH="${{ runner.temp }}/foundation-prerequisite-installed-wheel.sqlite3" \
           DJANGO_SETTINGS_MODULE=conflict_analysis.settings \
-            "$isolated_venv/bin/python" - "$isolated_venv" "$source_root" <<'PY'
+            "$isolated_venv/bin/python" - "$isolated_venv" "$source_root" "$fd02_catalog_copy" <<'PY'
           from __future__ import annotations
 
           import hashlib
+          import io
           import importlib
           import os
           import sys
@@ -1178,6 +1379,7 @@ jobs:
 
           venv_root = Path(sys.argv[1]).resolve()
           source_root = Path(sys.argv[2]).resolve()
+          fd02_catalog_path = Path(sys.argv[3]).resolve() if sys.argv[3] else None
           assert Path.cwd().resolve() != source_root
           assert "PYTHONPATH" not in os.environ
 
@@ -1193,8 +1395,15 @@ jobs:
               "domain.policies",
               "production_studio",
           ]
-          if os.environ["ACTIVE_SLICE"] == "C1":
+          if os.environ["ACTIVE_SLICE"] in {"C1", "FD02"}:
               module_names.append("production_studio.authoring_claim_boundaries")
+          if os.environ["ACTIVE_SLICE"] == "FD02":
+              module_names.extend(
+                  [
+                      "domain.services.studio_help_catalog",
+                      "domain.management.commands.provision_studio_help",
+                  ]
+              )
           for module_name in module_names:
               module = importlib.import_module(module_name)
               module_path = Path(module.__file__).resolve()
@@ -1213,7 +1422,7 @@ jobs:
               "/api/foundation/definitions/"
               "00000000-0000-0000-0000-000000000000/validation-preview/"
           )
-          if os.environ["ACTIVE_SLICE"] == "C1":
+          if os.environ["ACTIVE_SLICE"] in {"C1", "FD02"}:
               assert reverse("production_studio:audited_draft_entry") == "/studio/drafts/"
               assert reverse(
                   "production_studio:audited_draft_definition",
@@ -1246,7 +1455,7 @@ jobs:
           assert installed_sidecar_path.read_bytes() == source_sidecar
           assert installed_claim.payload == source_contract
           assert installed_claim.sha256 == hashlib.sha256(source_contract).hexdigest()
-          if os.environ["ACTIVE_SLICE"] == "C1":
+          if os.environ["ACTIVE_SLICE"] in {"C1", "FD02"}:
               from production_studio.authoring_claim_boundaries import (
                   load_authoring_claim_boundaries,
               )
@@ -1276,6 +1485,51 @@ jobs:
               assert installed_authoring_claim.sha256 == hashlib.sha256(
                   source_authoring_contract
               ).hexdigest()
+          if os.environ["ACTIVE_SLICE"] == "FD02":
+              from django.core.management import call_command
+              from django.core.management.base import CommandError
+              from domain.models import HelpTopic, UIHelpBinding
+              from domain.services.studio_help_catalog import (
+                  CATALOG_BYTE_LENGTH,
+                  CATALOG_ID,
+                  CATALOG_SHA256,
+                  CATALOG_VERSION,
+                  load_studio_help_catalog,
+              )
+
+              assert fd02_catalog_path is not None
+              assert venv_root not in fd02_catalog_path.parents
+              assert source_root not in fd02_catalog_path.parents
+              catalog_bytes=fd02_catalog_path.read_bytes()
+              expected_sha="1ca03e1672737101e10780135ec228b4ba0b8812d272c3a0d6cb00dd2de2d81e"
+              assert len(catalog_bytes)==4742==CATALOG_BYTE_LENGTH
+              assert hashlib.sha256(catalog_bytes).hexdigest()==expected_sha==CATALOG_SHA256
+              assert CATALOG_ID=="FOUNDATION_STUDIO_HELP_RU_V1"
+              assert CATALOG_VERSION=="1.0.0"
+              catalog=load_studio_help_catalog(fd02_catalog_path)
+              assert catalog.source_bytes==catalog_bytes
+              call_command("migrate", verbosity=0, interactive=False)
+              try:
+                  call_command("provision_studio_help", stdout=io.StringIO())
+              except CommandError:
+                  pass
+              else:
+                  raise AssertionError("installed FD02 command accepted a missing catalog path")
+              assert (HelpTopic.objects.count(),UIHelpBinding.objects.count())==(0,0)
+              first=io.StringIO()
+              call_command("provision_studio_help", fd02_catalog_path, stdout=first)
+              assert first.getvalue().strip()==(
+                  f"{CATALOG_ID} {CATALOG_VERSION} sha256={expected_sha} bytes=4742 "
+                  "topics=4 topics_created=4 bindings=4 bindings_created=4"
+              )
+              repeat=io.StringIO()
+              call_command("provision_studio_help", fd02_catalog_path, stdout=repeat)
+              assert repeat.getvalue().strip()==(
+                  f"{CATALOG_ID} {CATALOG_VERSION} sha256={expected_sha} bytes=4742 "
+                  "topics=4 topics_created=0 bindings=4 bindings_created=0"
+              )
+              assert (HelpTopic.objects.count(),UIHelpBinding.objects.count())==(4,4)
+              print("FD02_EXTERNAL_CATALOG_WHEEL_COMMAND=PASS")
           print("isolated installed-wheel imports:", imported)
-          print("isolated installed-wheel C0/C1 routes and claim bytes: PASS")
+          print("isolated installed-wheel C0/C1/FD02 routes, imports and bytes: PASS")
           PY

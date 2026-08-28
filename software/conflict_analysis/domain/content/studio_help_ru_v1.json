@@ -1,0 +1,83 @@
+{
+  "catalog": "FOUNDATION_STUDIO_HELP_RU_V1",
+  "catalog_version": "1.0.0",
+  "application_scope": "STUDIO",
+  "locale": "ru",
+  "published_at": "2026-08-28T19:18:22Z",
+  "topics": [
+    {
+      "id": "991e01b1-d16e-5d80-9283-30e608ae8d67",
+      "code": "STUDIO-HELP-RU-WELCOME",
+      "stable_key": "studio.welcome",
+      "version": "1.0.0",
+      "title": "Начало работы в Студии",
+      "construct_version": "1.0.0",
+      "term_version": "1.0.0",
+      "sanitized_html": "<h2>Начало работы</h2><p>Студия открывает точную версию определения проекта и показывает сохранённые данные без локальной подмены.</p><p><strong>Важно:</strong> доступные действия зависят от состояния определения и ваших полномочий.</p>",
+      "content_sha256": "bf505770e9263c9b5d86012b7533a71fe24f57d740303463c4e0b9a8328a407a"
+    },
+    {
+      "id": "a263df63-6577-57e4-88b4-4c7bc16cdb8b",
+      "code": "STUDIO-HELP-RU-PROJECT-CREATE",
+      "stable_key": "studio.project.create",
+      "version": "1.0.0",
+      "title": "Создание проекта и черновика",
+      "construct_version": "1.0.0",
+      "term_version": "1.0.0",
+      "sanitized_html": "<h2>Первый черновик</h2><p>Создание проекта формирует проект и его первое определение в состоянии DRAFT одной атомарной операцией Foundation.</p><p>Повторяйте запрос только с тем же идентификатором операции и теми же точными входными данными.</p>",
+      "content_sha256": "a24bdc2f0404f52d25b9a4ec62ba6cc68cc5099adc1d045409147c30a6c50ccf"
+    },
+    {
+      "id": "cb2bf202-d177-583d-8385-400240873470",
+      "code": "STUDIO-HELP-RU-DEFINITION-VALIDATION",
+      "stable_key": "studio.definition.validation",
+      "version": "1.0.0",
+      "title": "Проверка определения проекта",
+      "construct_version": "1.0.0",
+      "term_version": "1.0.0",
+      "sanitized_html": "<h2>Проверка определения</h2><p>Предварительная проверка возвращает канонические диагностические сообщения и не меняет определение, его состояние или журнал аудита.</p><p>Переход к VALIDATED выполняется отдельно и только для допустимого черновика.</p>",
+      "content_sha256": "4aed60801612f269109d162706418409e1d46e0c034bc6f502e5584c48320587"
+    },
+    {
+      "id": "f8b65540-3335-5c82-9824-a4185f54dcc3",
+      "code": "STUDIO-HELP-RU-DEFINITION-PUBLICATION",
+      "stable_key": "studio.definition.publication",
+      "version": "1.0.0",
+      "title": "Публикация определения проекта",
+      "construct_version": "1.0.0",
+      "term_version": "1.0.0",
+      "sanitized_html": "<h2>Публикация определения</h2><p>Публикация закрепляет точную проверенную версию определения. Предыдущая опубликованная версия может оставаться PUBLISHED, но перестаёт быть текущей.</p><p>Не повторяйте публикацию автоматически после неизвестного транспортного результата.</p>",
+      "content_sha256": "a171a7178a8a9e085a3f61f92ac9e9eebd552132f979fd3b780485de3ba523d4"
+    }
+  ],
+  "bindings": [
+    {
+      "id": "1b097286-ac02-5c4c-9853-a6f4b2811d1d",
+      "code": "STUDIO-HELP-BINDING-RU-WELCOME",
+      "ui_key": "studio.welcome",
+      "version": "1.0.0",
+      "topic_id": "991e01b1-d16e-5d80-9283-30e608ae8d67"
+    },
+    {
+      "id": "cb7b8045-1ce5-57b1-abad-cb0fa022d15f",
+      "code": "STUDIO-HELP-BINDING-RU-PROJECT-CREATE",
+      "ui_key": "studio.project.create",
+      "version": "1.0.0",
+      "topic_id": "a263df63-6577-57e4-88b4-4c7bc16cdb8b"
+    },
+    {
+      "id": "ff0f539d-b159-501a-ad10-090d0e389531",
+      "code": "STUDIO-HELP-BINDING-RU-DEFINITION-VALIDATION",
+      "ui_key": "studio.definition.validation",
+      "version": "1.0.0",
+      "topic_id": "cb2bf202-d177-583d-8385-400240873470"
+    },
+    {
+      "id": "11521788-65e2-5b3e-977e-c54cf51ae7d2",
+      "code": "STUDIO-HELP-BINDING-RU-DEFINITION-PUBLICATION",
+      "ui_key": "studio.definition.publication",
+      "version": "1.0.0",
+      "topic_id": "f8b65540-3335-5c82-9824-a4185f54dcc3"
+    }
+  ]
+}

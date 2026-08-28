@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the exact Production Studio C0, R0, or authenticated-draft C1 boundary."""
+"""Verify the exact Production Studio and Foundation FD02 slice boundaries."""
 
 from __future__ import annotations
 
@@ -25,6 +25,9 @@ PINNED_R0_ENUMS_BLOB = "a701c3c83511b7d1706519d40fab4580d0a0d63e"
 PINNED_R0_CLAIM_CONTRACTS_TREE = "737ff552664913fd87496bc2dfb0499389cea3c4"
 PINNED_C1_START_HEAD = "bd6e88c2a5f6552e057ea5b49fc63a1eb77ef4c6"
 PINNED_C1_START_TREE = "e1124839da8571408c258517c8afdf24622f1655"
+PINNED_FD02_BASE_HEAD = "bbe852d2f30f1be042e9cd8c35a52fd120d65ae4"
+PINNED_FD02_BASE_TREE = "838364d0f10a9517160a6bb0a81b547f121e2447"
+PINNED_FD02_DOMAIN_TREE = "51279fb4d656ed42e5da3b18d7922380dce3800d"
 _LOWER_HEX_40 = re.compile(r"[0-9a-f]{40}\Z")
 
 ACTIVE_C0_ALLOWLIST = frozenset(
@@ -113,6 +116,34 @@ C1_FROZEN_PATHS = (
     "software/conflict_analysis/production_studio/tests/test_claim_boundaries.py",
     "software/conflict_analysis/production_studio/tests/test_read_only_http.py",
     "software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py",
+)
+
+ACTIVE_FD02_ALLOWLIST = frozenset(
+    {
+        ".github/workflows/conflict-analysis.yml",
+        "software/conflict_analysis/docs/adr/0006-foundation-studio-application-gateways.md",
+        "software/conflict_analysis/domain/content/studio_help_ru_v1.json",
+        "software/conflict_analysis/domain/management/commands/provision_studio_help.py",
+        "software/conflict_analysis/domain/services/studio_help_catalog.py",
+        "software/conflict_analysis/domain/tests/test_foundation_studio_help_provisioning.py",
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+    }
+)
+
+FD02_FROZEN_PATHS = (
+    "software/conflict_analysis/conflict_analysis",
+    "software/conflict_analysis/domain/api/studio_definitions.py",
+    "software/conflict_analysis/domain/enums.py",
+    "software/conflict_analysis/domain/migrations",
+    "software/conflict_analysis/domain/models.py",
+    "software/conflict_analysis/domain/policies.py",
+    "software/conflict_analysis/domain/services/foundation_packages.py",
+    "software/conflict_analysis/domain/services/help_topics.py",
+    "software/conflict_analysis/domain/services/project_definitions.py",
+    "software/conflict_analysis/domain/services/schemas",
+    "software/conflict_analysis/domain/urls.py",
+    "software/conflict_analysis/production_studio",
+    "software/conflict_analysis/pyproject.toml",
 )
 
 PINNED_MIGRATIONS = (
@@ -221,6 +252,23 @@ def _resolve_slice_contract(
             "fd05_accepted_head": None,
             "fd05_accepted_tree": None,
             "r0_start_pin": "NOT_APPLICABLE_CURRENT_C0",
+            "c1_base_pin": "NOT_APPLICABLE_CURRENT_C0",
+        }
+    if active_slice == "FD02":
+        if fd05_accepted_head is not None or fd05_accepted_tree is not None:
+            raise VerificationError("FD02 does not accept FD05 external pin arguments")
+        if base_head != PINNED_FD02_BASE_HEAD or base_tree != PINNED_FD02_BASE_TREE:
+            raise VerificationError("FD02 accepts only the exact accepted C1 HEAD/TREE")
+        return {
+            "active_slice": active_slice,
+            "allowlist": ACTIVE_FD02_ALLOWLIST,
+            "exact_changed_paths": True,
+            "domain_tree": PINNED_FD02_DOMAIN_TREE,
+            "fd05_base_pin": "NOT_APPLICABLE_CURRENT_FD02",
+            "fd05_accepted_head": None,
+            "fd05_accepted_tree": None,
+            "r0_start_pin": "NOT_APPLICABLE_CURRENT_FD02",
+            "c1_base_pin": "PIN_VERIFIED_AUTHORIZATION",
         }
     if active_slice not in {"R0", "C1"}:
         raise VerificationError(f"unsupported Production Studio verifier slice: {active_slice!r}")
@@ -247,6 +295,7 @@ def _resolve_slice_contract(
             "fd05_accepted_head": accepted_head,
             "fd05_accepted_tree": accepted_tree,
             "r0_start_pin": "NOT_APPLICABLE_CURRENT_R0",
+            "c1_base_pin": "NOT_APPLICABLE_CURRENT_R0",
         }
 
     if base_head != PINNED_C1_START_HEAD or base_tree != PINNED_C1_START_TREE:
@@ -260,6 +309,7 @@ def _resolve_slice_contract(
         "fd05_accepted_head": accepted_head,
         "fd05_accepted_tree": accepted_tree,
         "r0_start_pin": "PIN_VERIFIED_AUTHORIZATION",
+        "c1_base_pin": "NOT_APPLICABLE_CURRENT_C1",
     }
 
 
@@ -293,6 +343,21 @@ def _require_merge_free(active_slice: str, merge_commits: tuple[str, ...]) -> No
         )
 
 
+def _require_single_fast_forward_commit(
+    *,
+    active_slice: str,
+    commit_count: int,
+    delivery_parent: str,
+    base_head: str,
+) -> None:
+    if commit_count != 1 or delivery_parent != base_head:
+        raise VerificationError(
+            f"{active_slice} delivery must be exactly one fast-forward commit "
+            f"whose sole parent is the exact base; count={commit_count}, "
+            f"parent={delivery_parent}, base={base_head}"
+        )
+
+
 def self_check() -> dict[str, object]:
     """Exercise only deterministic slice/pin parsing; make no repository claims."""
 
@@ -316,6 +381,13 @@ def self_check() -> dict[str, object]:
         base_tree=PINNED_C1_START_TREE,
         fd05_accepted_head=PINNED_R0_BASE_HEAD,
         fd05_accepted_tree=PINNED_R0_BASE_TREE,
+    )
+    fd02 = _resolve_slice_contract(
+        active_slice="FD02",
+        base_head=PINNED_FD02_BASE_HEAD,
+        base_tree=PINNED_FD02_BASE_TREE,
+        fd05_accepted_head=None,
+        fd05_accepted_tree=None,
     )
     other_head = "b" * 40
     other_tree = "d" * 40
@@ -498,6 +570,125 @@ def self_check() -> dict[str, object]:
             "offline self-check unexpectedly accepted a C1 merge commit"
         )
 
+    valid_fd02 = {
+        "active_slice": "FD02",
+        "base_head": PINNED_FD02_BASE_HEAD,
+        "base_tree": PINNED_FD02_BASE_TREE,
+        "fd05_accepted_head": None,
+        "fd05_accepted_tree": None,
+    }
+    invalid_fd02_contracts = (
+        (
+            "FD02 mismatched accepted C1 head",
+            {"base_head": other_head},
+            "exact accepted C1 HEAD/TREE",
+        ),
+        (
+            "FD02 mismatched accepted C1 tree",
+            {"base_tree": other_tree},
+            "exact accepted C1 HEAD/TREE",
+        ),
+        (
+            "FD02 uppercase accepted C1 head",
+            {"base_head": PINNED_FD02_BASE_HEAD.upper()},
+            "base HEAD",
+        ),
+        (
+            "FD02 unexpected external pin",
+            {"fd05_accepted_head": PINNED_R0_BASE_HEAD},
+            "does not accept FD05 external pin arguments",
+        ),
+    )
+    for label, overrides, expected_error in invalid_fd02_contracts:
+        candidate = {**valid_fd02, **overrides}
+        try:
+            _resolve_slice_contract(**candidate)  # type: ignore[arg-type]
+        except VerificationError as exc:
+            if expected_error not in str(exc):
+                raise VerificationError(
+                    f"offline self-check {label!r} failed for the wrong reason: {exc}"
+                ) from exc
+        else:
+            raise VerificationError(
+                f"offline self-check unexpectedly accepted {label!r}"
+            )
+
+    _require_changed_path_contract(
+        active_slice="FD02",
+        changed=ACTIVE_FD02_ALLOWLIST,
+        allowlist=ACTIVE_FD02_ALLOWLIST,
+        exact_changed_paths=True,
+    )
+    fd02_path_negative_cases = 0
+    for label, changed, expected_error in (
+        (
+            "FD02 path outside allowlist",
+            ACTIVE_FD02_ALLOWLIST | {"software/conflict_analysis/pyproject.toml"},
+            "outside ACTIVE FD02 EXACT ALLOWLIST",
+        ),
+        (
+            "FD02 missing delivered path",
+            ACTIVE_FD02_ALLOWLIST
+            - {"software/conflict_analysis/domain/content/studio_help_ru_v1.json"},
+            "FD02 changed paths must equal",
+        ),
+    ):
+        fd02_path_negative_cases += 1
+        try:
+            _require_changed_path_contract(
+                active_slice="FD02",
+                changed=frozenset(changed),
+                allowlist=ACTIVE_FD02_ALLOWLIST,
+                exact_changed_paths=True,
+            )
+        except VerificationError as exc:
+            if expected_error not in str(exc):
+                raise VerificationError(
+                    f"offline self-check {label!r} failed for the wrong reason: {exc}"
+                ) from exc
+        else:
+            raise VerificationError(
+                f"offline self-check unexpectedly accepted {label!r}"
+            )
+    _require_merge_free("FD02", ())
+    _require_single_fast_forward_commit(
+        active_slice="FD02",
+        commit_count=1,
+        delivery_parent=PINNED_FD02_BASE_HEAD,
+        base_head=PINNED_FD02_BASE_HEAD,
+    )
+    try:
+        _require_merge_free("FD02", ("synthetic-merge-object",))
+    except VerificationError as exc:
+        if "merge commits are forbidden after the exact FD02 base" not in str(exc):
+            raise VerificationError(
+                "offline FD02 merge-topology self-check failed for the wrong reason"
+            ) from exc
+    else:
+        raise VerificationError(
+            "offline self-check unexpectedly accepted an FD02 merge commit"
+        )
+    for label, commit_count, parent in (
+        ("FD02 extra commit", 2, PINNED_FD02_BASE_HEAD),
+        ("FD02 wrong parent", 1, other_head),
+    ):
+        try:
+            _require_single_fast_forward_commit(
+                active_slice="FD02",
+                commit_count=commit_count,
+                delivery_parent=parent,
+                base_head=PINNED_FD02_BASE_HEAD,
+            )
+        except VerificationError as exc:
+            if "exactly one fast-forward commit" not in str(exc):
+                raise VerificationError(
+                    f"offline self-check {label!r} failed for the wrong reason"
+                ) from exc
+        else:
+            raise VerificationError(
+                f"offline self-check unexpectedly accepted {label!r}"
+            )
+
     try:
         _resolve_slice_contract(
             active_slice="C0",
@@ -517,18 +708,23 @@ def self_check() -> dict[str, object]:
     return {
         "marker": "PRODUCTION_STUDIO_R0_VERIFIER_SELF_CHECK=PASS",
         "c1_marker": "PRODUCTION_STUDIO_C1_VERIFIER_SELF_CHECK=PASS",
+        "fd02_marker": "FOUNDATION_FD02_VERIFIER_SELF_CHECK=PASS",
         "network_access": False,
         "repository_access": False,
         "positive_slices": [
             c0["active_slice"],
             r0["active_slice"],
             c1["active_slice"],
+            fd02["active_slice"],
         ],
         "negative_cases": (
             len(invalid_contracts)
             + len(invalid_c1_contracts)
             + path_negative_cases
             + 2
+            + len(invalid_fd02_contracts)
+            + fd02_path_negative_cases
+            + 3
         ),
     }
 
@@ -590,7 +786,7 @@ def verify(
         )
         _require_merge_free("C1 accepted H2-to-R0 START", accepted_to_start_merges)
 
-    if active_slice in {"R0", "C1"}:
+    if active_slice in {"R0", "C1", "FD02"}:
         merge_commits = tuple(
             item
             for item in _git(
@@ -602,6 +798,20 @@ def verify(
             if item
         )
         _require_merge_free(active_slice, merge_commits)
+
+    delivery_commit_count: int | None = None
+    delivery_parent: str | None = None
+    if active_slice == "FD02":
+        delivery_commit_count = int(
+            _git(repo, "rev-list", "--count", f"{base_head}..HEAD")
+        )
+        delivery_parent = _git(repo, "rev-parse", "HEAD^")
+        _require_single_fast_forward_commit(
+            active_slice=active_slice,
+            commit_count=delivery_commit_count,
+            delivery_parent=delivery_parent,
+            base_head=base_head,
+        )
 
     changed = _changed_paths(repo, base_head)
     allowlist = contract["allowlist"]
@@ -619,7 +829,7 @@ def verify(
 
     domain_prefix = "software/conflict_analysis/domain/"
     changed_domain = sorted(path for path in changed if path.startswith(domain_prefix))
-    if changed_domain:
+    if active_slice != "FD02" and changed_domain:
         raise VerificationError("domain/ is mechanically frozen: " + ", ".join(changed_domain))
 
     domain_tree = _git(
@@ -635,7 +845,7 @@ def verify(
             "pinned domain tree mismatch: "
             f"expected {expected_domain_tree}, got {domain_tree}"
         )
-    if _git(
+    if active_slice != "FD02" and _git(
         repo,
         "diff",
         "--name-only",
@@ -693,6 +903,16 @@ def verify(
                     f"R0 start {start_object}, HEAD {head_object}"
                 )
             frozen_objects[path] = start_object
+    elif active_slice == "FD02":
+        for path in FD02_FROZEN_PATHS:
+            base_object = _git(repo, "rev-parse", f"{base_head}:{path}")
+            head_object = _git(repo, "rev-parse", f"HEAD:{path}")
+            if head_object != base_object:
+                raise VerificationError(
+                    f"FD02 frozen object drift at {path}: "
+                    f"accepted C1 {base_object}, HEAD {head_object}"
+                )
+            frozen_objects[path] = base_object
 
     return {
         "active_slice": active_slice,
@@ -701,21 +921,31 @@ def verify(
         "base_tree": base_tree,
         "changed_paths": sorted(changed),
         "domain_tree": domain_tree,
-        "domain_tree_unchanged": True,
+        "delivery_commit_count": delivery_commit_count,
+        "delivery_parent": delivery_parent,
+        "domain_changed_paths": changed_domain,
+        "domain_tree_unchanged": None if active_slice == "FD02" else True,
         "exact_changed_paths": changed == allowlist if exact_changed_paths else None,
         "fd05_base_pin": contract["fd05_base_pin"],
         "fd05_accepted_head": contract["fd05_accepted_head"],
         "fd05_accepted_tree": contract["fd05_accepted_tree"],
         "frozen_objects": frozen_objects,
-        "merge_commits_absent": True if active_slice in {"R0", "C1"} else None,
+        "merge_commits_absent": (
+            True if active_slice in {"R0", "C1", "FD02"} else None
+        ),
         "migration_filenames_unchanged": True,
         "r0_start_pin": contract["r0_start_pin"],
+        "c1_base_pin": contract["c1_base_pin"],
     }
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--slice", choices=("C0", "R0", "C1"), default="C0")
+    parser.add_argument(
+        "--slice",
+        choices=("C0", "R0", "C1", "FD02"),
+        default="C0",
+    )
     parser.add_argument("--base-head", default=PINNED_BASE_HEAD)
     parser.add_argument("--base-tree", default=PINNED_BASE_TREE)
     parser.add_argument("--fd05-accepted-head")
@@ -741,6 +971,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.self_check:
         print(result["marker"])
         print(result["c1_marker"])
+        print(result["fd02_marker"])
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
