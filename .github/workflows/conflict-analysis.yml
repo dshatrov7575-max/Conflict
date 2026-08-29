@@ -86,6 +86,8 @@ jobs:
       FD02_BASE_TREE: 838364d0f10a9517160a6bb0a81b547f121e2447
       FD03_BASE_HEAD: 6b7d8977f9798fa21b9ccc3d12f9410a5165d6b5
       FD03_BASE_TREE: 09f9a2f93b0e63f7d90863131ffbe799b17475bf
+      FD03_RC2_START_HEAD: bee7335d441c0b5d6d3501481fb14fb62a5de7a8
+      FD03_RC2_START_TREE: a94e9c08bdc67d3f6b2e04952de44ac3f8339f99
       C0_BRANCH: codex/ca-suite-i1-production-studio-c0-read-only
       FD01_BRANCH: codex/ca-suite-i1-foundation-fd01-validation-preview
       FD05_BRANCH: codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
@@ -882,10 +884,13 @@ jobs:
               test "$FD02_BASE_PIN" = "PIN_VERIFIED_AUTHORIZATION"
               test "$SLICE_BASE_HEAD" = "$FD03_BASE_HEAD"
               test "$SLICE_BASE_TREE" = "$FD03_BASE_TREE"
+              test "$(git rev-parse "$FD03_RC2_START_HEAD^{tree}")" = "$FD03_RC2_START_TREE"
+              test "$(git rev-parse "$FD03_RC2_START_HEAD^")" = "$SLICE_BASE_HEAD"
               test "$(git merge-base "$SLICE_BASE_HEAD" "$delivery_head")" = "$SLICE_BASE_HEAD"
+              test "$(git merge-base "$FD03_RC2_START_HEAD" "$delivery_head")" = "$FD03_RC2_START_HEAD"
               test -z "$(git rev-list --merges "$SLICE_BASE_HEAD..$delivery_head")"
-              test "$(git rev-list --count "$SLICE_BASE_HEAD..$delivery_head")" = "1"
-              test "$(git rev-parse "$delivery_head^")" = "$SLICE_BASE_HEAD"
+              test "$(git rev-list --count "$SLICE_BASE_HEAD..$delivery_head")" = "2"
+              test "$(git rev-parse "$delivery_head^")" = "$FD03_RC2_START_HEAD"
               mapfile -t fd03_changed_paths < <(
                 git diff --name-only "$SLICE_BASE_HEAD...$delivery_head" --
               )

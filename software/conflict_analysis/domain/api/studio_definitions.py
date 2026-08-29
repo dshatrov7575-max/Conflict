@@ -1035,7 +1035,7 @@ def open_definition(request: Request, definition_id: object) -> Response:
 
 @_get_only_http_boundary
 @api_view(["GET"])
-@authentication_classes(_PUBLIC_AUTHENTICATION)
+@authentication_classes(_VALIDATION_PREVIEW_AUTHENTICATION)
 @permission_classes([IsAuthenticated])
 def open_publication_result(
     request: Request,

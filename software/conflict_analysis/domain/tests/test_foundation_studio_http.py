@@ -2934,3 +2934,62 @@ class FoundationStudioLifecycleReadResultHttpTests(
             {key: morsel.value for key, morsel in session.cookies.items()},
             cookies_after_definition,
         )
+
+        password_hasher = PBKDF2PasswordHasher()
+        upgrade_eligible = password_hasher.encode(
+            "test-password",
+            password_hasher.salt(),
+            iterations=1,
+        )
+        self.assertTrue(password_hasher.must_update(upgrade_eligible))
+        get_user_model().objects.filter(pk=self.reader.pk).update(
+            password=upgrade_eligible
+        )
+        stored_password = get_user_model().objects.values_list(
+            "password", flat=True
+        ).get(pk=self.reader.pk)
+        self.assertEqual(stored_password, upgrade_eligible)
+        basic_baseline = self._database_fingerprint()
+        basic_authorization = "Basic " + base64.b64encode(
+            b"fd03-reader:test-password"
+        ).decode("ascii")
+
+        basic = APIClient(enforce_csrf_checks=True)
+        basic_response = basic.get(
+            self._publication_url(publication),
+            HTTP_AUTHORIZATION=basic_authorization,
+        )
+        self.assertEqual(basic_response.status_code, 200, basic_response.data)
+        self.assertEqual(basic_response.data, self._publication_dto(publication))
+        self.assertFalse(basic_response.cookies)
+        self.assertNotIn("Set-Cookie", basic_response.headers)
+        self.assertEqual(
+            get_user_model().objects.values_list("password", flat=True).get(
+                pk=self.reader.pk
+            ),
+            stored_password,
+        )
+        self.assertEqual(self._database_fingerprint(), basic_baseline)
+
+        invalid = APIClient(enforce_csrf_checks=True)
+        invalid_authorization = "Basic " + base64.b64encode(
+            b"fd03-reader:not-the-password"
+        ).decode("ascii")
+        invalid_response = invalid.get(
+            self._publication_url(publication),
+            HTTP_AUTHORIZATION=invalid_authorization,
+        )
+        self.assertEqual(invalid_response.status_code, 401, invalid_response.data)
+        self.assertEqual(
+            invalid_response.data,
+            {"detail": "Invalid username/password."},
+        )
+        self.assertFalse(invalid_response.cookies)
+        self.assertNotIn("Set-Cookie", invalid_response.headers)
+        self.assertEqual(
+            get_user_model().objects.values_list("password", flat=True).get(
+                pk=self.reader.pk
+            ),
+            stored_password,
+        )
+        self.assertEqual(self._database_fingerprint(), basic_baseline)

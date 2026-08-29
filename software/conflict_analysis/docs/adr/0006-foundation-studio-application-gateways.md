@@ -364,3 +364,8 @@ domain rows, touch no timestamps, and do not rotate or repair cookies. FD03 adds
 no model, enum, migration, policy, lifecycle service, Help/package authority or
 Studio runtime behavior. The single bounded C0 regression node is strengthened
 only to accept and verify the six newly documented persisted definition fields.
+The new publication-result route authenticates supported Basic credentials with
+the existing non-upgrading verifier, so even a valid password stored with a
+supported stale work factor is checked without rewriting `auth_user.password`;
+invalid Basic credentials likewise fail without rows or response cookies. The
+accepted open-definition authentication chain remains unchanged.

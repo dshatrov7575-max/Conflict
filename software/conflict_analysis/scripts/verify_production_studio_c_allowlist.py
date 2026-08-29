@@ -32,6 +32,8 @@ PINNED_FD02_DOMAIN_TREE = "51279fb4d656ed42e5da3b18d7922380dce3800d"
 PINNED_FD03_BASE_HEAD = "6b7d8977f9798fa21b9ccc3d12f9410a5165d6b5"
 PINNED_FD03_BASE_TREE = "09f9a2f93b0e63f7d90863131ffbe799b17475bf"
 PINNED_FD03_BASE_DOMAIN_TREE = "e47f058218efb79e04b52d4434f9e72f9f91a901"
+PINNED_FD03_RC2_START_HEAD = "bee7335d441c0b5d6d3501481fb14fb62a5de7a8"
+PINNED_FD03_RC2_START_TREE = "a94e9c08bdc67d3f6b2e04952de44ac3f8339f99"
 _LOWER_HEX_40 = re.compile(r"[0-9a-f]{40}\Z")
 
 ACTIVE_C0_ALLOWLIST = frozenset(
@@ -431,6 +433,21 @@ def _require_single_fast_forward_commit(
         )
 
 
+def _require_fd03_rc2_fast_forward(
+    *,
+    commit_count: int,
+    delivery_parent: str,
+) -> None:
+    if commit_count != 2 or delivery_parent != PINNED_FD03_RC2_START_HEAD:
+        raise VerificationError(
+            "FD03 RC2 delivery must be exactly two fast-forward commits from "
+            "the accepted FD02 base, with the final commit whose sole parent "
+            "is the exact RC2 start; "
+            f"count={commit_count}, parent={delivery_parent}, "
+            f"rc2_start={PINNED_FD03_RC2_START_HEAD}"
+        )
+
+
 def _require_exact_test_topology(
     *,
     source: str,
@@ -491,7 +508,7 @@ def _normalized_authorized_method_body(
     start = method.body[0].lineno - 1
     end = method.end_lineno
     indent = " " * (method.col_offset + 4)
-    lines[start:end] = [f"{indent}<AUTHORIZED_FD03_RC1_ASSERTION_BODY>\n"]
+    lines[start:end] = [f"{indent}<AUTHORIZED_FD03_RC2_ASSERTION_BODY>\n"]
     return "".join(lines).rstrip("\n")
 
 
@@ -939,25 +956,22 @@ def self_check() -> dict[str, object]:
                 f"offline self-check unexpectedly accepted {label!r}"
             )
     _require_merge_free("FD03", ())
-    _require_single_fast_forward_commit(
-        active_slice="FD03",
-        commit_count=1,
-        delivery_parent=PINNED_FD03_BASE_HEAD,
-        base_head=PINNED_FD03_BASE_HEAD,
+    _require_fd03_rc2_fast_forward(
+        commit_count=2,
+        delivery_parent=PINNED_FD03_RC2_START_HEAD,
     )
     for label, commit_count, parent in (
-        ("FD03 extra commit", 2, PINNED_FD03_BASE_HEAD),
-        ("FD03 wrong parent", 1, other_head),
+        ("FD03 missing RC2 commit", 1, PINNED_FD03_RC2_START_HEAD),
+        ("FD03 extra commit", 3, PINNED_FD03_RC2_START_HEAD),
+        ("FD03 wrong RC2 parent", 2, other_head),
     ):
         try:
-            _require_single_fast_forward_commit(
-                active_slice="FD03",
+            _require_fd03_rc2_fast_forward(
                 commit_count=commit_count,
                 delivery_parent=parent,
-                base_head=PINNED_FD03_BASE_HEAD,
             )
         except VerificationError as exc:
-            if "exactly one fast-forward commit" not in str(exc):
+            if "exactly two fast-forward commits" not in str(exc):
                 raise VerificationError(
                     f"offline self-check {label!r} failed for the wrong reason"
                 ) from exc
@@ -986,7 +1000,7 @@ def self_check() -> dict[str, object]:
         "marker": "PRODUCTION_STUDIO_R0_VERIFIER_SELF_CHECK=PASS",
         "c1_marker": "PRODUCTION_STUDIO_C1_VERIFIER_SELF_CHECK=PASS",
         "fd02_marker": "FOUNDATION_FD02_VERIFIER_SELF_CHECK=PASS",
-        "fd03_marker": "FOUNDATION_FD03_RC1_VERIFIER_SELF_CHECK=PASS",
+        "fd03_marker": "FOUNDATION_FD03_RC2_VERIFIER_SELF_CHECK=PASS",
         "network_access": False,
         "repository_access": False,
         "positive_slices": [
@@ -1006,7 +1020,7 @@ def self_check() -> dict[str, object]:
             + 3
             + len(invalid_fd03_contracts)
             + fd03_path_negative_cases
-            + 2
+            + 3
         ),
     }
 
@@ -1088,12 +1102,29 @@ def verify(
             _git(repo, "rev-list", "--count", f"{base_head}..HEAD")
         )
         delivery_parent = _git(repo, "rev-parse", "HEAD^")
-        _require_single_fast_forward_commit(
-            active_slice=active_slice,
-            commit_count=delivery_commit_count,
-            delivery_parent=delivery_parent,
-            base_head=base_head,
-        )
+        if active_slice == "FD02":
+            _require_single_fast_forward_commit(
+                active_slice=active_slice,
+                commit_count=delivery_commit_count,
+                delivery_parent=delivery_parent,
+                base_head=base_head,
+            )
+        else:
+            if (
+                _git(repo, "rev-parse", f"{PINNED_FD03_RC2_START_HEAD}^{{tree}}")
+                != PINNED_FD03_RC2_START_TREE
+                or _git(repo, "rev-parse", f"{PINNED_FD03_RC2_START_HEAD}^")
+                != base_head
+                or _git(repo, "merge-base", PINNED_FD03_RC2_START_HEAD, "HEAD")
+                != PINNED_FD03_RC2_START_HEAD
+            ):
+                raise VerificationError(
+                    "FD03 RC2 start HEAD/TREE/parent/ancestry drifted from authorization"
+                )
+            _require_fd03_rc2_fast_forward(
+                commit_count=delivery_commit_count,
+                delivery_parent=delivery_parent,
+            )
 
     changed = _changed_paths(repo, base_head)
     allowlist = contract["allowlist"]
