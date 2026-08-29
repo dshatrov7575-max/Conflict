@@ -40,7 +40,7 @@ from rest_framework.status import (
     HTTP_409_CONFLICT,
 )
 
-from domain.models import Project, ProjectDefinitionVersion
+from domain.models import Project, ProjectDefinitionVersion, ProjectPublication
 from domain.policies import (
     StudioCapability,
     bootstrap_initial_project_definition,
@@ -209,6 +209,14 @@ def project_access_group_name(project_id: object) -> str:
     return canonical_project_access_group_name(project_id)
 
 
+def _persisted_datetime(value: Any) -> str | None:
+    return (
+        value.isoformat().replace("+00:00", "Z")
+        if value is not None
+        else None
+    )
+
+
 def _definition_payload(definition: ProjectDefinitionVersion) -> dict[str, Any]:
     return {
         "id": str(definition.pk),
@@ -225,6 +233,61 @@ def _definition_payload(definition: ProjectDefinitionVersion) -> dict[str, Any]:
             str(definition.supersedes_id) if definition.supersedes_id else None
         ),
     }
+
+
+def _open_definition_payload(
+    definition: ProjectDefinitionVersion,
+) -> dict[str, Any]:
+    payload = _definition_payload(definition)
+    payload.update(
+        {
+            "is_current": definition.is_current,
+            "validation_result": definition.validation_result,
+            "validated_at": _persisted_datetime(definition.validated_at),
+            "validated_by": definition.validated_by,
+            "published_at": _persisted_datetime(definition.published_at),
+            "published_by": definition.published_by,
+        }
+    )
+    return payload
+
+
+def _publication_result_payload(publication: ProjectPublication) -> dict[str, Any]:
+    definition = publication.definition_version
+    workspace = publication.initial_workspace
+    return {
+        "publication_id": str(publication.pk),
+        "project_id": str(publication.project_id),
+        "definition_id": str(definition.pk),
+        "definition_manifest_hash": definition.manifest_hash,
+        "definition_publication_status": definition.publication_status,
+        "definition_is_current": definition.is_current,
+        "initial_workspace_id": str(workspace.pk) if workspace is not None else None,
+        "initial_workspace_definition_id": (
+            str(workspace.definition_version_id) if workspace is not None else None
+        ),
+        "initial_workspace_definition_manifest_hash": (
+            workspace.definition_manifest_hash if workspace is not None else None
+        ),
+        "locale": publication.locale,
+        "actor_identifier": publication.actor_identifier,
+        "validation_result": publication.validation_result,
+        "published_at": _persisted_datetime(publication.published_at),
+    }
+
+
+def _get_only_http_boundary(view):
+    """Reject every non-GET method before DRF authentication or body access."""
+
+    @wraps(view)
+    def boundary(request, *args, **kwargs):
+        if request.method != "GET":
+            response = HttpResponseNotAllowed(["GET"])
+            response["Content-Length"] = "0"
+            return response
+        return view(request, *args, **kwargs)
+
+    return boundary
 
 
 class ValidationPreviewEnvelopeError(ValidationError):
@@ -962,12 +1025,40 @@ def open_definition(request: Request, definition_id: object) -> Response:
             principal=_principal(request),
         )
         get_token(request._request)
-        return _definition_payload(definition)
+        return _open_definition_payload(definition)
 
     response = _execute(operation)
     if response.status_code == HTTP_200_OK:
         return _with_etag(response, str(response.data["manifest_hash"]))
     return response
+
+
+@_get_only_http_boundary
+@api_view(["GET"])
+@authentication_classes(_PUBLIC_AUTHENTICATION)
+@permission_classes([IsAuthenticated])
+def open_publication_result(
+    request: Request,
+    project_id: object,
+    publication_id: object,
+) -> Response:
+    def operation() -> dict[str, Any]:
+        project = _project_or_404(request.user, project_id)
+        principal = _principal(request)
+        require_studio_capability(principal, StudioCapability.DEFINITION_READ)
+        try:
+            publication = ProjectPublication.objects.select_related(
+                "definition_version",
+                "initial_workspace",
+            ).get(
+                pk=publication_id,
+                project_id=project.pk,
+            )
+        except (ProjectPublication.DoesNotExist, ValueError) as exc:
+            raise Http404("Publication result not found.") from exc
+        return _publication_result_payload(publication)
+
+    return _execute(operation)
 
 
 @api_view(["POST"])

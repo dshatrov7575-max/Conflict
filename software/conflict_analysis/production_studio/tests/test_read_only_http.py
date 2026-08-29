@@ -260,6 +260,12 @@ class ProductionStudioReadOnlyHttpTests(TestCase):
                         "code",
                         "version",
                         "publication_status",
+                        "is_current",
+                        "validation_result",
+                        "validated_at",
+                        "validated_by",
+                        "published_at",
+                        "published_by",
                         "manifest",
                         "manifest_hash",
                         "schema_version",
@@ -268,15 +274,29 @@ class ProductionStudioReadOnlyHttpTests(TestCase):
                         "supersedes_id",
                     },
                 )
-                for unavailable in (
-                    "is_current",
-                    "validation_result",
-                    "validated_at",
-                    "validated_by",
-                    "published_at",
-                    "published_by",
-                ):
-                    self.assertNotIn(unavailable, response.data)
+                self.assertEqual(response.data["is_current"], definition.is_current)
+                self.assertEqual(
+                    response.data["validation_result"],
+                    definition.validation_result,
+                )
+                self.assertEqual(
+                    response.data["validated_at"],
+                    (
+                        definition.validated_at.isoformat().replace("+00:00", "Z")
+                        if definition.validated_at is not None
+                        else None
+                    ),
+                )
+                self.assertEqual(response.data["validated_by"], definition.validated_by)
+                self.assertEqual(
+                    response.data["published_at"],
+                    (
+                        definition.published_at.isoformat().replace("+00:00", "Z")
+                        if definition.published_at is not None
+                        else None
+                    ),
+                )
+                self.assertEqual(response.data["published_by"], definition.published_by)
                 self.assertEqual(after, before)
 
     def test_help_is_one_exact_tuple_or_indistinguishable_unavailable(self):

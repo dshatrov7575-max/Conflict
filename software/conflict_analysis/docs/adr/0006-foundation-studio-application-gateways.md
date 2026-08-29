@@ -332,3 +332,35 @@ returns the canonical persisted HTML bytes and SHA only for the declared publish
 binding. Wrong application, UI key, locale or version is an exact 404 through the
 accepted Foundation gateway; there is no local or locale fallback. FD02 keeps all
 accepted FD01, FD05, C0 and C1 assets and behavior byte-for-byte frozen.
+
+## FD03 persisted lifecycle and publication read results
+
+`CA-SUITE-I1-FOUNDATION-FD03-LIFECYCLE-READ-RESULT-001-RC1` exposes only
+persisted Foundation lifecycle and publication outcomes. The existing exact-ID
+definition GET retains its manifest-hash representation ETag and adds the stored
+`is_current`, `validation_result`, `validated_at`, `validated_by`,
+`published_at`, and `published_by` values. The gateway does not infer any value
+from manifest content, timestamps, successor presence, or the current clock.
+
+The additional GET-only publication-result route is scoped by an exact Project
+UUID and an exact ProjectPublication UUID. Project existence and current HUMAN
+`DEFINITION_READ` scope are established before publication identity is queried,
+so an absent Project, an out-of-scope Project, a missing publication, and a
+publication belonging to another Project remain indistinguishable 404 results.
+Every method other than GET is rejected by a route-level 405 boundary before
+DRF authentication, permission or body processing.
+
+The publication DTO is a direct persisted projection of the publication,
+definition and optional initial workspace pins. It includes publication,
+Project and definition UUIDs; the exact definition manifest hash, publication
+status and current flag; locale, actor identifier, validation result and
+publication time. Initial publication returns its exact workspace UUID,
+definition UUID and manifest-hash pin. Successor publication returns `null` for
+all three workspace fields. There is no list, search, latest, fallback or
+recomputed lifecycle endpoint.
+
+Both reads are repeat-stable and non-mutating: they create no audit, session or
+domain rows, touch no timestamps, and do not rotate or repair cookies. FD03 adds
+no model, enum, migration, policy, lifecycle service, Help/package authority or
+Studio runtime behavior. The single bounded C0 regression node is strengthened
+only to accept and verify the six newly documented persisted definition fields.
