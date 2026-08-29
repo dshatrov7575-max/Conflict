@@ -1571,6 +1571,12 @@ class FoundationStudioApplicationGatewayHttpTests(
             "code": retired.code,
             "version": retired.version,
             "publication_status": PublicationStatus.RETIRED,
+            "is_current": retired.is_current,
+            "validation_result": retired.validation_result,
+            "validated_at": retired.validated_at.isoformat().replace("+00:00", "Z"),
+            "validated_by": retired.validated_by,
+            "published_at": retired.published_at.isoformat().replace("+00:00", "Z"),
+            "published_by": retired.published_by,
             "manifest": retired.manifest,
             "manifest_hash": manifest_hash,
             "schema_version": "1.0.0",
@@ -2490,3 +2496,500 @@ class FoundationStudioValidationPreviewHttpTests(
         response = self._post(raw)
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.data["code"], "DEFINITION_NOT_DRAFT")
+
+
+class FoundationStudioLifecycleReadResultHttpTests(
+    FoundationStudioBootstrapMixin,
+    TestCase,
+):
+    def setUp(self) -> None:
+        self.make_contract()
+        user_model = get_user_model()
+        self.reader = user_model.objects.create_user(
+            username="fd03-reader",
+            password="test-password",
+        )
+        self.no_capability = user_model.objects.create_user(
+            username="fd03-no-capability",
+            password="test-password",
+        )
+        self.out_of_scope = user_model.objects.create_user(
+            username="fd03-out-of-scope",
+            password="test-password",
+        )
+        read_permission = Permission.objects.get(
+            content_type__app_label="domain",
+            content_type__model="projectdefinitionversion",
+            codename="studio_read_definition",
+        )
+        self.reader.user_permissions.add(read_permission)
+        self.out_of_scope.user_permissions.add(read_permission)
+        scope = Group.objects.create(name=project_access_group_name(self.project.pk))
+        scope.user_set.add(self.reader, self.no_capability)
+        self.client = APIClient()
+        self.client.force_authenticate(self.reader)
+
+    @staticmethod
+    def _persisted_datetime(value) -> str | None:
+        return value.isoformat().replace("+00:00", "Z") if value is not None else None
+
+    @staticmethod
+    def _database_fingerprint() -> str:
+        from django.db import connection
+
+        snapshot: dict[str, object] = {}
+        with connection.cursor() as cursor:
+            for table in sorted(connection.introspection.table_names(cursor)):
+                cursor.execute(f"SELECT * FROM {connection.ops.quote_name(table)}")
+                columns = [item[0] for item in cursor.description or ()]
+                rows = sorted(repr(tuple(row)) for row in cursor.fetchall())
+                snapshot[table] = {"columns": columns, "rows": rows}
+        payload = json.dumps(
+            snapshot,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return hashlib.sha256(payload).hexdigest()
+
+    def _definition(
+        self,
+        *,
+        code: str,
+        version: str,
+        status: str,
+        is_current: bool = False,
+        supersedes: ProjectDefinitionVersion | None = None,
+        project: Project | None = None,
+        manifest: dict | None = None,
+    ) -> ProjectDefinitionVersion:
+        selected_project = self.project if project is None else project
+        selected_manifest = copy.deepcopy(self.manifest if manifest is None else manifest)
+        manifest_hash = hash_project_definition_manifest_v1(
+            selected_manifest,
+            project=selected_project,
+        )
+        lifecycle: dict[str, object] = {}
+        if status in {
+            PublicationStatus.VALIDATED,
+            PublicationStatus.PUBLISHED,
+            PublicationStatus.RETIRED,
+        }:
+            lifecycle.update(
+                validated_at=timezone.now(),
+                validated_by=f"validator:{code}",
+                validation_result={"valid": True, "source": code},
+            )
+        if status in {PublicationStatus.PUBLISHED, PublicationStatus.RETIRED}:
+            lifecycle.update(
+                published_at=timezone.now(),
+                published_by=f"publisher:{code}",
+            )
+        definition = ProjectDefinitionVersion(
+            project=selected_project,
+            code=code,
+            version=version,
+            is_current=is_current,
+            publication_status=status,
+            manifest=selected_manifest,
+            manifest_hash=manifest_hash,
+            schema_version="1.0.0",
+            semantic_version="1.0.0",
+            construct_version="1.0.0",
+            supersedes=supersedes,
+            **lifecycle,
+        )
+        with _canonical_studio_write("definition"):
+            definition.save(force_insert=True)
+        return definition
+
+    def _workspace(
+        self,
+        definition: ProjectDefinitionVersion,
+    ) -> ProjectWorkspace:
+        workspace = ProjectWorkspace(
+            project=definition.project,
+            definition_version=definition,
+            definition_manifest_hash=definition.manifest_hash,
+            code=f"FD03-WS-{definition.code}",
+            version="1.0.0",
+            name="FD03 exact initial workspace",
+            is_default=True,
+            metadata={"source": "persisted-workspace-pin"},
+        )
+        workspace.save(force_insert=True)
+        return workspace
+
+    def _publication(
+        self,
+        definition: ProjectDefinitionVersion,
+        *,
+        code: str,
+        workspace: ProjectWorkspace | None = None,
+    ) -> ProjectPublication:
+        publication = ProjectPublication(
+            project=definition.project,
+            definition_version=definition,
+            initial_workspace=workspace,
+            code=code,
+            version="1.0.0",
+            locale="ru",
+            actor_identifier=f"actor:{code}",
+            validation_result={"valid": True, "receipt": code},
+            published_at=timezone.now(),
+        )
+        with _canonical_studio_write("publication"):
+            publication.save(force_insert=True)
+        return publication
+
+    def _definition_dto(
+        self,
+        definition: ProjectDefinitionVersion,
+    ) -> dict[str, object]:
+        return {
+            "id": str(definition.pk),
+            "project_id": str(definition.project_id),
+            "code": definition.code,
+            "version": definition.version,
+            "publication_status": definition.publication_status,
+            "is_current": definition.is_current,
+            "validation_result": definition.validation_result,
+            "validated_at": self._persisted_datetime(definition.validated_at),
+            "validated_by": definition.validated_by,
+            "published_at": self._persisted_datetime(definition.published_at),
+            "published_by": definition.published_by,
+            "manifest": definition.manifest,
+            "manifest_hash": definition.manifest_hash,
+            "schema_version": definition.schema_version,
+            "semantic_version": definition.semantic_version,
+            "construct_version": definition.construct_version,
+            "supersedes_id": (
+                str(definition.supersedes_id) if definition.supersedes_id else None
+            ),
+        }
+
+    def _publication_dto(
+        self,
+        publication: ProjectPublication,
+    ) -> dict[str, object]:
+        workspace = publication.initial_workspace
+        definition = publication.definition_version
+        return {
+            "publication_id": str(publication.pk),
+            "project_id": str(publication.project_id),
+            "definition_id": str(definition.pk),
+            "definition_manifest_hash": definition.manifest_hash,
+            "definition_publication_status": definition.publication_status,
+            "definition_is_current": definition.is_current,
+            "initial_workspace_id": str(workspace.pk) if workspace else None,
+            "initial_workspace_definition_id": (
+                str(workspace.definition_version_id) if workspace else None
+            ),
+            "initial_workspace_definition_manifest_hash": (
+                workspace.definition_manifest_hash if workspace else None
+            ),
+            "locale": publication.locale,
+            "actor_identifier": publication.actor_identifier,
+            "validation_result": publication.validation_result,
+            "published_at": self._persisted_datetime(publication.published_at),
+        }
+
+    def _publication_url(self, publication: ProjectPublication) -> str:
+        return (
+            f"/api/foundation/projects/{publication.project_id}/"
+            f"publication-results/{publication.pk}/"
+        )
+
+    def test_fd03_open_definition_returns_exact_persisted_lifecycle_values(self):
+        definitions = tuple(
+            self._definition(
+                code=f"FD03-{status}",
+                version=f"{index}.0.0",
+                status=status,
+            )
+            for index, status in enumerate(PublicationStatus.values, start=1)
+        )
+        for definition in definitions:
+            with self.subTest(status=definition.publication_status):
+                response = self.client.get(
+                    f"/api/foundation/definitions/{definition.pk}/"
+                )
+                self.assertEqual(response.status_code, 200, response.data)
+                self.assertEqual(response.data, self._definition_dto(definition))
+                self.assertEqual(response["ETag"], f'"{definition.manifest_hash}"')
+        draft = definitions[0]
+        self.assertEqual(draft.validation_result, {})
+        self.assertIsNone(draft.validated_at)
+        self.assertEqual(draft.validated_by, "")
+        self.assertIsNone(draft.published_at)
+        self.assertEqual(draft.published_by, "")
+
+    def test_fd03_open_definition_distinguishes_current_successor_and_published_predecessor(self):
+        predecessor = self._definition(
+            code="FD03-PUBLISHED-PREDECESSOR",
+            version="1.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=False,
+        )
+        successor = self._definition(
+            code="FD03-PUBLISHED-SUCCESSOR",
+            version="2.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=True,
+            supersedes=predecessor,
+        )
+        predecessor_response = self.client.get(
+            f"/api/foundation/definitions/{predecessor.pk}/"
+        )
+        successor_response = self.client.get(
+            f"/api/foundation/definitions/{successor.pk}/"
+        )
+        self.assertEqual(predecessor_response.status_code, 200)
+        self.assertEqual(successor_response.status_code, 200)
+        self.assertEqual(
+            predecessor_response.data,
+            self._definition_dto(predecessor),
+        )
+        self.assertEqual(successor_response.data, self._definition_dto(successor))
+        self.assertEqual(
+            predecessor_response.data["publication_status"],
+            PublicationStatus.PUBLISHED,
+        )
+        self.assertFalse(predecessor_response.data["is_current"])
+        self.assertEqual(
+            successor_response.data["publication_status"],
+            PublicationStatus.PUBLISHED,
+        )
+        self.assertTrue(successor_response.data["is_current"])
+        self.assertEqual(
+            successor_response.data["supersedes_id"],
+            str(predecessor.pk),
+        )
+
+    def test_fd03_initial_publication_result_recovers_exact_workspace_pin(self):
+        definition = self._definition(
+            code="FD03-INITIAL-PUBLISHED",
+            version="1.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=True,
+        )
+        workspace = self._workspace(definition)
+        publication = self._publication(
+            definition,
+            code="FD03-INITIAL-PUBLICATION",
+            workspace=workspace,
+        )
+        response = self.client.get(self._publication_url(publication))
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data, self._publication_dto(publication))
+        self.assertEqual(response.data["initial_workspace_id"], str(workspace.pk))
+        self.assertEqual(
+            response.data["initial_workspace_definition_id"],
+            str(definition.pk),
+        )
+        self.assertEqual(
+            response.data["initial_workspace_definition_manifest_hash"],
+            definition.manifest_hash,
+        )
+
+    def test_fd03_successor_publication_result_has_exact_null_workspace_fields(self):
+        definition = self._definition(
+            code="FD03-SUCCESSOR-PUBLISHED",
+            version="2.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=True,
+        )
+        publication = self._publication(
+            definition,
+            code="FD03-SUCCESSOR-PUBLICATION",
+        )
+        response = self.client.get(self._publication_url(publication))
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data, self._publication_dto(publication))
+        self.assertIsNone(response.data["initial_workspace_id"])
+        self.assertIsNone(response.data["initial_workspace_definition_id"])
+        self.assertIsNone(
+            response.data["initial_workspace_definition_manifest_hash"]
+        )
+
+    def test_fd03_publication_result_scope_identity_and_get_only_boundary_are_indistinguishable(self):
+        definition = self._definition(
+            code="FD03-SCOPE-PUBLISHED",
+            version="1.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=True,
+        )
+        publication = self._publication(definition, code="FD03-SCOPE-PUBLICATION")
+
+        other_project = Project.objects.create(
+            id=uuid4(),
+            code="FD03-OTHER-PROJECT",
+            version="1.0.0",
+            name="FD03 inaccessible project",
+        )
+        other_manifest = copy.deepcopy(self.manifest)
+        other_manifest["project"].update(
+            id=str(other_project.pk),
+            code=other_project.code,
+            version=other_project.version,
+            name=other_project.name,
+        )
+        other_definition = self._definition(
+            code="FD03-OTHER-PUBLISHED",
+            version="1.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=True,
+            project=other_project,
+            manifest=other_manifest,
+        )
+        other_publication = self._publication(
+            other_definition,
+            code="FD03-OTHER-PUBLICATION",
+        )
+
+        unavailable_urls = (
+            f"/api/foundation/projects/{uuid4()}/publication-results/{uuid4()}/",
+            self._publication_url(other_publication),
+            (
+                f"/api/foundation/projects/{self.project.pk}/"
+                f"publication-results/{uuid4()}/"
+            ),
+            (
+                f"/api/foundation/projects/{self.project.pk}/"
+                f"publication-results/{other_publication.pk}/"
+            ),
+        )
+        unavailable_responses = [self.client.get(url) for url in unavailable_urls]
+        for response in unavailable_responses:
+            self.assertEqual(response.status_code, 404, response.data)
+            self.assertEqual(
+                response.data,
+                {"code": "STUDIO_RESOURCE_NOT_FOUND", "errors": ["Resource not found."]},
+            )
+        self.assertEqual(
+            {response.content for response in unavailable_responses},
+            {unavailable_responses[0].content},
+        )
+
+        self.client.force_authenticate(self.no_capability)
+        denied = self.client.get(self._publication_url(publication))
+        self.assertEqual(denied.status_code, 403, denied.data)
+        self.assertEqual(denied.data["code"], "STUDIO_CAPABILITY_DENIED")
+        self.client.force_authenticate(self.reader)
+
+        baseline = self._database_fingerprint()
+        for method in ("POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "CONNECT"):
+            with self.subTest(method=method):
+                response = self.client.generic(
+                    method,
+                    self._publication_url(publication),
+                    b'{"forbidden":true}',
+                    content_type="application/json",
+                )
+                self.assertEqual(response.status_code, 405)
+                self.assertEqual(response["Allow"], "GET")
+                self.assertEqual(response["Content-Length"], "0")
+                self.assertEqual(response.content, b"")
+                self.assertFalse(response.cookies)
+                self.assertEqual(self._database_fingerprint(), baseline)
+
+    def test_fd03_reads_are_repeat_stable_and_non_mutating(self):
+        definition = self._definition(
+            code="FD03-STABLE-PUBLISHED",
+            version="1.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=True,
+        )
+        publication = self._publication(definition, code="FD03-STABLE-PUBLICATION")
+        session = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(session.login(username="fd03-reader", password="test-password"))
+        baseline = self._database_fingerprint()
+
+        first_definition = session.get(
+            f"/api/foundation/definitions/{definition.pk}/"
+        )
+        definition_baseline = self._database_fingerprint()
+        second_definition = session.get(
+            f"/api/foundation/definitions/{definition.pk}/"
+        )
+        cookies_after_definition = {
+            key: morsel.value for key, morsel in session.cookies.items()
+        }
+        first_publication = session.get(self._publication_url(publication))
+        second_publication = session.get(self._publication_url(publication))
+
+        self.assertEqual(first_definition.status_code, 200)
+        self.assertEqual(second_definition.status_code, 200)
+        self.assertEqual(first_definition.data, second_definition.data)
+        self.assertEqual(first_definition.content, second_definition.content)
+        self.assertEqual(first_publication.status_code, 200)
+        self.assertEqual(second_publication.status_code, 200)
+        self.assertEqual(first_publication.data, second_publication.data)
+        self.assertEqual(first_publication.content, second_publication.content)
+        self.assertEqual(baseline, definition_baseline)
+        self.assertEqual(definition_baseline, self._database_fingerprint())
+        self.assertFalse(first_publication.cookies)
+        self.assertFalse(second_publication.cookies)
+        self.assertEqual(
+            {key: morsel.value for key, morsel in session.cookies.items()},
+            cookies_after_definition,
+        )
+
+        password_hasher = PBKDF2PasswordHasher()
+        upgrade_eligible = password_hasher.encode(
+            "test-password",
+            password_hasher.salt(),
+            iterations=1,
+        )
+        self.assertTrue(password_hasher.must_update(upgrade_eligible))
+        get_user_model().objects.filter(pk=self.reader.pk).update(
+            password=upgrade_eligible
+        )
+        stored_password = get_user_model().objects.values_list(
+            "password", flat=True
+        ).get(pk=self.reader.pk)
+        self.assertEqual(stored_password, upgrade_eligible)
+        basic_baseline = self._database_fingerprint()
+        basic_authorization = "Basic " + base64.b64encode(
+            b"fd03-reader:test-password"
+        ).decode("ascii")
+
+        basic = APIClient(enforce_csrf_checks=True)
+        basic_response = basic.get(
+            self._publication_url(publication),
+            HTTP_AUTHORIZATION=basic_authorization,
+        )
+        self.assertEqual(basic_response.status_code, 200, basic_response.data)
+        self.assertEqual(basic_response.data, self._publication_dto(publication))
+        self.assertFalse(basic_response.cookies)
+        self.assertNotIn("Set-Cookie", basic_response.headers)
+        self.assertEqual(
+            get_user_model().objects.values_list("password", flat=True).get(
+                pk=self.reader.pk
+            ),
+            stored_password,
+        )
+        self.assertEqual(self._database_fingerprint(), basic_baseline)
+
+        invalid = APIClient(enforce_csrf_checks=True)
+        invalid_authorization = "Basic " + base64.b64encode(
+            b"fd03-reader:not-the-password"
+        ).decode("ascii")
+        invalid_response = invalid.get(
+            self._publication_url(publication),
+            HTTP_AUTHORIZATION=invalid_authorization,
+        )
+        self.assertEqual(invalid_response.status_code, 401, invalid_response.data)
+        self.assertEqual(
+            invalid_response.data,
+            {"detail": "Invalid username/password."},
+        )
+        self.assertFalse(invalid_response.cookies)
+        self.assertNotIn("Set-Cookie", invalid_response.headers)
+        self.assertEqual(
+            get_user_model().objects.values_list("password", flat=True).get(
+                pk=self.reader.pk
+            ),
+            stored_password,
+        )
+        self.assertEqual(self._database_fingerprint(), basic_baseline)
