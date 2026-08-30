@@ -832,7 +832,9 @@ class FoundationStudioPublicationReconciliationTests(
         self.assertEqual(_database_fingerprint(), restored_baseline)
 
     def test_same_key_same_request_replays_before_lifecycle_rejection_and_after_workspace_or_lifecycle_change(self):
-        definition, _, headers, workspace_spec, fresh = self._initial()
+        from django.test.utils import CaptureQueriesContext
+
+        definition, operation_id, headers, workspace_spec, fresh = self._initial()
         self.assertEqual(fresh.status_code, 201, fresh.content)
 
         for codename in (
@@ -884,24 +886,157 @@ class FoundationStudioPublicationReconciliationTests(
         persisted_workspace.name = "Mutable after publication"
         persisted_workspace.metadata = {"changed": True}
         persisted_workspace.save()
+        unrelated_bindings = [
+            UIHelpBinding(
+                id=uuid4(),
+                workspace=persisted_workspace,
+                application_scope=self.topic.application_scope,
+                code=f"FD06-UNRELATED-HELP-{index:03d}",
+                version="1.0.0",
+                ui_key=f"fd06.unrelated.help.{index:03d}",
+                locale=self.topic.locale,
+                help_topic=self.topic,
+            )
+            for index in range(64)
+        ]
+        UIHelpBinding.objects.bulk_create(unrelated_bindings)
+        manifest_binding_ids = tuple(
+            UUID(item["id"])
+            for item in definition.manifest["help_bindings"]
+        )
         definition.refresh_from_db()
         self.assertFalse(definition.is_current)
         self.assertEqual(definition.publication_status, PublicationStatus.PUBLISHED)
 
         baseline = _database_fingerprint()
-        replay = self.client.post(
-            f"/api/foundation/definitions/{definition.pk}/publish-initial/",
-            {"locale": "ru", "workspace": workspace_spec},
-            format="json",
-            **headers,
-        )
+        with CaptureQueriesContext(connection) as receipt_queries:
+            replay = self.client.post(
+                f"/api/foundation/definitions/{definition.pk}/publish-initial/",
+                {"locale": "ru", "workspace": workspace_spec},
+                format="json",
+                **headers,
+            )
+            recovery = self.client.get(
+                self._recovery_url(self.project.pk, operation_id)
+            )
         self.assertEqual(replay.status_code, 200, replay.content)
         self.assertEqual(replay.content, fresh.content)
         self.assertEqual(replay["ETag"], fresh["ETag"])
         self.assertEqual(replay["Location"], fresh["Location"])
         self.assertEqual(replay["Idempotency-Replayed"], "true")
+        self.assertEqual(recovery.status_code, 200, recovery.content)
+        self.assertEqual(recovery.content, fresh.content)
+        self.assertEqual(recovery["ETag"], fresh["ETag"])
+        self.assertEqual(recovery["Location"], fresh["Location"])
+        self.assertEqual(recovery["Idempotency-Replayed"], "true")
         self.assertEqual(_database_fingerprint(), baseline)
         self.assertEqual(ProjectPublication.objects.count(), 2)
+        self.assertEqual(
+            UIHelpBinding.objects.filter(workspace=persisted_workspace).count(),
+            len(manifest_binding_ids) + len(unrelated_bindings),
+        )
+
+        binding_table = UIHelpBinding._meta.db_table.lower()
+        bounded_binding_queries = [
+            item["sql"]
+            for item in receipt_queries.captured_queries
+            if binding_table in item["sql"].lower()
+            and item["sql"].lstrip().upper().startswith("SELECT")
+        ]
+        self.assertEqual(
+            len(bounded_binding_queries),
+            2,
+            bounded_binding_queries,
+        )
+        for query in bounded_binding_queries:
+            with self.subTest(bounded_receipt_query=query):
+                self.assertRegex(query, r'(?i)"id"\s+IN\s*\(')
+                self.assertRegex(query, r'(?i)"workspace_id"\s*=')
+                compact_query = query.lower().replace("-", "")
+                for manifest_binding_id in manifest_binding_ids:
+                    self.assertIn(manifest_binding_id.hex, compact_query)
+                for unrelated_binding in unrelated_bindings:
+                    self.assertNotIn(unrelated_binding.pk.hex, compact_query)
+
+        original_manifest = copy.deepcopy(definition.manifest)
+        manifest_field = ProjectDefinitionVersion._meta.get_field("manifest")
+        definition_table = connection.ops.quote_name(
+            ProjectDefinitionVersion._meta.db_table
+        )
+        definition_pk_column = connection.ops.quote_name(
+            ProjectDefinitionVersion._meta.pk.column
+        )
+        definition_manifest_column = connection.ops.quote_name(
+            manifest_field.column
+        )
+        prepared_definition_pk = ProjectDefinitionVersion._meta.pk.get_db_prep_value(
+            definition.pk,
+            connection,
+        )
+
+        def persist_corrupt_manifest(manifest: dict) -> None:
+            prepared_manifest = manifest_field.get_db_prep_value(
+                manifest,
+                connection,
+            )
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE {definition_table} "
+                    f"SET {definition_manifest_column} = %s "
+                    f"WHERE {definition_pk_column} = %s",
+                    [prepared_manifest, prepared_definition_pk],
+                )
+
+        duplicate_binding_manifest = copy.deepcopy(original_manifest)
+        duplicate_binding_manifest["help_bindings"].append(
+            copy.deepcopy(duplicate_binding_manifest["help_bindings"][0])
+        )
+        malformed_binding_manifest = copy.deepcopy(original_manifest)
+        malformed_binding_manifest["help_bindings"][0]["id"] = "not-a-uuid"
+        missing_bindings_manifest = copy.deepcopy(original_manifest)
+        missing_bindings_manifest.pop("help_bindings")
+        for corruption, corrupt_manifest in (
+            ("duplicate", duplicate_binding_manifest),
+            ("malformed", malformed_binding_manifest),
+            ("missing", missing_bindings_manifest),
+        ):
+            with self.subTest(manifest_binding_corruption=corruption):
+                persist_corrupt_manifest(corrupt_manifest)
+                corrupt_baseline = _database_fingerprint()
+                with CaptureQueriesContext(connection) as corrupt_queries:
+                    corrupt_replay = self.client.post(
+                        f"/api/foundation/definitions/{definition.pk}/publish-initial/",
+                        {"locale": "ru", "workspace": workspace_spec},
+                        format="json",
+                        **headers,
+                    )
+                    corrupt_recovery = self.client.get(
+                        self._recovery_url(self.project.pk, operation_id)
+                    )
+                for response in (corrupt_replay, corrupt_recovery):
+                    self._assert_fixed_error(
+                        response,
+                        status=409,
+                        code="PUBLICATION_OPERATION_IDENTITY_CORRUPT",
+                    )
+                self.assertFalse(
+                    any(
+                        binding_table in item["sql"].lower()
+                        for item in corrupt_queries.captured_queries
+                    ),
+                    corrupt_queries.captured_queries,
+                )
+                self.assertEqual(_database_fingerprint(), corrupt_baseline)
+                persist_corrupt_manifest(original_manifest)
+
+        restored_baseline = _database_fingerprint()
+        restored_recovery = self.client.get(
+            self._recovery_url(self.project.pk, operation_id)
+        )
+        self.assertEqual(restored_recovery.status_code, 200)
+        self.assertEqual(restored_recovery.content, fresh.content)
+        self.assertEqual(restored_recovery["ETag"], fresh["ETag"])
+        self.assertEqual(_database_fingerprint(), restored_baseline)
 
     def test_same_uuid_key_is_independent_across_projects_and_foreign_operation_is_hidden(self):
         operation_id = uuid4()

@@ -278,21 +278,32 @@ def publication_operation_receipt(publication: ProjectPublication) -> dict[str, 
                 or workspace.definition_manifest_hash != definition.manifest_hash
             ):
                 raise ValueError
-            persisted_ids = {
-                str(value)
-                for value in UIHelpBinding.objects.filter(workspace_id=workspace.pk)
-                .values_list("id", flat=True)
-            }
-            manifest_bindings = definition.manifest.get("help_bindings", [])
+            manifest_bindings = definition.manifest["help_bindings"]
             if not isinstance(manifest_bindings, list):
                 raise ValueError
+            manifest_binding_ids: list[UUID] = []
+            seen_binding_ids: set[UUID] = set()
             for item in manifest_bindings:
                 if not isinstance(item, Mapping):
                     raise ValueError
-                item_id = str(item.get("id", ""))
-                if item_id not in persisted_ids:
+                raw_item_id = item.get("id")
+                if not isinstance(raw_item_id, str):
                     raise ValueError
-                binding_ids.append(item_id)
+                item_id = UUID(raw_item_id)
+                if str(item_id) != raw_item_id or item_id in seen_binding_ids:
+                    raise ValueError
+                seen_binding_ids.add(item_id)
+                manifest_binding_ids.append(item_id)
+            persisted_ids = {
+                value
+                for value in UIHelpBinding.objects.filter(
+                    workspace_id=workspace.pk,
+                    id__in=manifest_binding_ids,
+                ).values_list("id", flat=True)
+            }
+            if persisted_ids != seen_binding_ids:
+                raise ValueError
+            binding_ids.extend(str(item_id) for item_id in manifest_binding_ids)
         core = {
             "contract": PUBLICATION_OPERATION_RESULT_CONTRACT,
             "contract_version": PUBLICATION_OPERATION_RESULT_VERSION,

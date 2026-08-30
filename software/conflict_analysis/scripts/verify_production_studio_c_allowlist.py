@@ -38,6 +38,8 @@ PINNED_FD06_BASE_HEAD = "feefd3899b5a168e650ddb3094881f48830acb96"
 PINNED_FD06_BASE_TREE = "0dad3448608b3bbab28c7f1bfc7399c30382a343"
 PINNED_FD06_BASE_DOMAIN_TREE = "8fd38b8d56177527473ac652978594593773c973"
 PINNED_FD06_PRODUCTION_STUDIO_TREE = "31ba7273cfe4a6ae3c57054518de2e2ba98113ff"
+PINNED_FD06_RC4_INTERMEDIATE_HEAD = "0dd4ae788c765a0a0c24ac4d61582870d73e29e2"
+PINNED_FD06_RC4_INTERMEDIATE_TREE = "b59baccfa73ba6b9cce6e89419cb540005564b64"
 FD06_BASE_BRANCH = "codex/ca-suite-i1-foundation-fd03-lifecycle-read-result"
 FD06_TARGET_BRANCH = (
     "codex/ca-suite-i1-foundation-fd06-publication-reconciliation"
@@ -534,6 +536,45 @@ def _require_single_fast_forward_commit(
             f"{active_slice} delivery must be exactly one fast-forward commit "
             f"whose sole parent is the exact base; count={commit_count}, "
             f"parent={delivery_parent}, base={base_head}"
+        )
+
+
+def _require_fd06_rc5_public_history(
+    *,
+    commit_count: int,
+    delivery_head: str,
+    delivery_parent: str,
+    intermediate_parent: str,
+    intermediate_tree: str,
+    ordered_commits: tuple[str, ...],
+) -> None:
+    delivery_head = _require_exact_object_id("FD06 RC5 delivery HEAD", delivery_head)
+    delivery_parent = _require_exact_object_id(
+        "FD06 RC5 delivery parent", delivery_parent
+    )
+    intermediate_parent = _require_exact_object_id(
+        "FD06 RC4 intermediate parent", intermediate_parent
+    )
+    intermediate_tree = _require_exact_object_id(
+        "FD06 RC4 intermediate TREE", intermediate_tree
+    )
+    expected_order = (PINNED_FD06_RC4_INTERMEDIATE_HEAD, delivery_head)
+    if (
+        commit_count != 2
+        or delivery_head == PINNED_FD06_RC4_INTERMEDIATE_HEAD
+        or delivery_parent != PINNED_FD06_RC4_INTERMEDIATE_HEAD
+        or intermediate_parent != PINNED_FD06_BASE_HEAD
+        or intermediate_tree != PINNED_FD06_RC4_INTERMEDIATE_TREE
+        or ordered_commits != expected_order
+    ):
+        raise VerificationError(
+            "FD06 RC5 public history must preserve the exact RC4 intermediate "
+            "and add exactly one child commit; "
+            f"count={commit_count}, delivery={delivery_head}, "
+            f"delivery_parent={delivery_parent}, "
+            f"intermediate_parent={intermediate_parent}, "
+            f"intermediate_tree={intermediate_tree}, "
+            f"ordered_commits={ordered_commits}"
         )
 
 
@@ -1451,13 +1492,17 @@ def self_check() -> dict[str, object]:
                 "offline FD06 topology self-check accepted registry drift"
             )
 
+    delivery_head = "e" * 40
     _require_merge_free("FD06", ())
-    _require_single_fast_forward_commit(
-        active_slice="FD06",
-        commit_count=1,
-        delivery_parent=PINNED_FD06_BASE_HEAD,
-        base_head=PINNED_FD06_BASE_HEAD,
-    )
+    valid_fd06_history = {
+        "commit_count": 2,
+        "delivery_head": delivery_head,
+        "delivery_parent": PINNED_FD06_RC4_INTERMEDIATE_HEAD,
+        "intermediate_parent": PINNED_FD06_BASE_HEAD,
+        "intermediate_tree": PINNED_FD06_RC4_INTERMEDIATE_TREE,
+        "ordered_commits": (PINNED_FD06_RC4_INTERMEDIATE_HEAD, delivery_head),
+    }
+    _require_fd06_rc5_public_history(**valid_fd06_history)
     fd06_history_negative_cases = 0
     try:
         _require_merge_free("FD06", ("synthetic-merge-object",))
@@ -1469,19 +1514,32 @@ def self_check() -> dict[str, object]:
         fd06_history_negative_cases += 1
     else:
         raise VerificationError("offline self-check accepted an FD06 merge commit")
-    for label, commit_count, parent in (
-        ("FD06 extra commit", 2, PINNED_FD06_BASE_HEAD),
-        ("FD06 wrong parent", 1, other_head),
+    for label, overrides in (
+        ("FD06 squashed history", {"commit_count": 1}),
+        ("FD06 extra commit", {"commit_count": 3}),
+        ("FD06 wrong delivery parent", {"delivery_parent": other_head}),
+        ("FD06 wrong intermediate parent", {"intermediate_parent": other_head}),
+        ("FD06 wrong intermediate tree", {"intermediate_tree": other_tree}),
+        (
+            "FD06 replaced intermediate",
+            {"ordered_commits": (other_head, delivery_head)},
+        ),
+        (
+            "FD06 wrong ordered delivery",
+            {
+                "ordered_commits": (
+                    PINNED_FD06_RC4_INTERMEDIATE_HEAD,
+                    other_head,
+                )
+            },
+        ),
     ):
         try:
-            _require_single_fast_forward_commit(
-                active_slice="FD06",
-                commit_count=commit_count,
-                delivery_parent=parent,
-                base_head=PINNED_FD06_BASE_HEAD,
+            _require_fd06_rc5_public_history(
+                **{**valid_fd06_history, **overrides}  # type: ignore[arg-type]
             )
         except VerificationError as exc:
-            if "exactly one fast-forward commit" not in str(exc):
+            if "FD06 RC5 public history must preserve" not in str(exc):
                 raise VerificationError(
                     f"offline self-check {label!r} failed for the wrong reason"
                 ) from exc
@@ -1491,7 +1549,6 @@ def self_check() -> dict[str, object]:
                 f"offline self-check unexpectedly accepted {label!r}"
             )
 
-    delivery_head = "e" * 40
     delivery_tree = "f" * 40
     _require_synthetic_merge_contract(
         expected_base_head=PINNED_FD06_BASE_HEAD,
@@ -1656,17 +1713,56 @@ def verify(
 
     delivery_commit_count: int | None = None
     delivery_parent: str | None = None
+    fd06_intermediate_parent: str | None = None
+    fd06_intermediate_tree: str | None = None
+    fd06_ordered_commits: tuple[str, ...] | None = None
     if active_slice in {"FD02", "FD03", "FD06"}:
         delivery_commit_count = int(
             _git(repo, "rev-list", "--count", f"{base_head}..HEAD")
         )
         delivery_parent = _git(repo, "rev-parse", "HEAD^")
-        if active_slice in {"FD02", "FD06"}:
+        if active_slice == "FD02":
             _require_single_fast_forward_commit(
                 active_slice=active_slice,
                 commit_count=delivery_commit_count,
                 delivery_parent=delivery_parent,
                 base_head=base_head,
+            )
+        elif active_slice == "FD06":
+            fd06_intermediate_parent = _git(
+                repo,
+                "rev-parse",
+                f"{PINNED_FD06_RC4_INTERMEDIATE_HEAD}^",
+            )
+            fd06_intermediate_tree = _git(
+                repo,
+                "rev-parse",
+                f"{PINNED_FD06_RC4_INTERMEDIATE_HEAD}^{{tree}}",
+            )
+            fd06_ordered_commits = tuple(
+                item
+                for item in _git(
+                    repo,
+                    "rev-list",
+                    "--reverse",
+                    f"{base_head}..HEAD",
+                ).splitlines()
+                if item
+            )
+            if (
+                _git(repo, "merge-base", PINNED_FD06_RC4_INTERMEDIATE_HEAD, "HEAD")
+                != PINNED_FD06_RC4_INTERMEDIATE_HEAD
+            ):
+                raise VerificationError(
+                    "FD06 RC5 HEAD is not a descendant of the exact RC4 intermediate"
+                )
+            _require_fd06_rc5_public_history(
+                commit_count=delivery_commit_count,
+                delivery_head=_git(repo, "rev-parse", "HEAD"),
+                delivery_parent=delivery_parent,
+                intermediate_parent=fd06_intermediate_parent,
+                intermediate_tree=fd06_intermediate_tree,
+                ordered_commits=fd06_ordered_commits,
             )
         else:
             if (
@@ -1922,6 +2018,21 @@ def verify(
         "domain_tree": domain_tree,
         "delivery_commit_count": delivery_commit_count,
         "delivery_parent": delivery_parent,
+        "fd06_rc4_intermediate_head": (
+            PINNED_FD06_RC4_INTERMEDIATE_HEAD if active_slice == "FD06" else None
+        ),
+        "fd06_rc4_intermediate_parent": fd06_intermediate_parent,
+        "fd06_rc4_intermediate_tree": fd06_intermediate_tree,
+        "fd06_ordered_delivery_commits": (
+            list(fd06_ordered_commits)
+            if fd06_ordered_commits is not None
+            else None
+        ),
+        "fd06_public_history_exception": (
+            "EXACT_RC4_INTERMEDIATE_PLUS_ONE_CHILD"
+            if active_slice == "FD06"
+            else None
+        ),
         "domain_changed_paths": changed_domain,
         "domain_tree_unchanged": (
             None if active_slice in {"FD02", "FD03", "FD06"} else True

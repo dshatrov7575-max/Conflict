@@ -93,6 +93,8 @@ jobs:
       FD06_BASE_HEAD: feefd3899b5a168e650ddb3094881f48830acb96
       FD06_BASE_TREE: 0dad3448608b3bbab28c7f1bfc7399c30382a343
       FD06_BASE_DOMAIN_TREE: 8fd38b8d56177527473ac652978594593773c973
+      FD06_RC4_INTERMEDIATE_HEAD: 0dd4ae788c765a0a0c24ac4d61582870d73e29e2
+      FD06_RC4_INTERMEDIATE_TREE: b59baccfa73ba6b9cce6e89419cb540005564b64
       FD06_MODELS_BLOB: c6c5c2419989e7b0cf40bd1242ab65d37cc2e162
       FD06_ENUMS_BLOB: a701c3c83511b7d1706519d40fab4580d0a0d63e
       FD06_MIGRATIONS_TREE: b0cc214cd63086172c9d3801338a5a2302a7ce0f
@@ -441,6 +443,30 @@ jobs:
             }
           }
 
+          verify_fd06_rc5_history_contract() {
+            local commit_count="$1"
+            local delivery_head="$2"
+            local delivery_parent="$3"
+            local intermediate_parent="$4"
+            local intermediate_tree="$5"
+            local first_commit="$6"
+            local second_commit="$7"
+            [[ "$FD06_BASE_HEAD" =~ ^[0-9a-f]{40}$ ]] || return 1
+            [[ "$FD06_RC4_INTERMEDIATE_HEAD" =~ ^[0-9a-f]{40}$ ]] || return 1
+            [[ "$FD06_RC4_INTERMEDIATE_TREE" =~ ^[0-9a-f]{40}$ ]] || return 1
+            [[ "$delivery_head" =~ ^[0-9a-f]{40}$ ]] || return 1
+            if [[ "$commit_count" != 2 ||
+                  "$delivery_head" = "$FD06_RC4_INTERMEDIATE_HEAD" ||
+                  "$delivery_parent" != "$FD06_RC4_INTERMEDIATE_HEAD" ||
+                  "$intermediate_parent" != "$FD06_BASE_HEAD" ||
+                  "$intermediate_tree" != "$FD06_RC4_INTERMEDIATE_TREE" ||
+                  "$first_commit" != "$FD06_RC4_INTERMEDIATE_HEAD" ||
+                  "$second_commit" != "$delivery_head" ]]; then
+              echo "FD06 RC5 must preserve the exact RC4 intermediate and add exactly one child commit" >&2
+              return 1
+            fi
+          }
+
           assert_route() {
             local expected="$1"
             shift
@@ -494,6 +520,13 @@ jobs:
           assert_fd06_base_pin_failure() {
             if verify_fd06_base_pin "$@" >/dev/null 2>&1; then
               echo "FD06 FD03 base pin self-check unexpectedly accepted invalid inputs" >&2
+              return 1
+            fi
+          }
+
+          assert_fd06_rc5_history_failure() {
+            if verify_fd06_rc5_history_contract "$@" >/dev/null 2>&1; then
+              echo "FD06 RC5 public-history self-check unexpectedly accepted invalid inputs" >&2
               return 1
             fi
           }
@@ -594,6 +627,22 @@ jobs:
           assert_fd06_base_pin_failure "$pin_head" BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB "$pin_head" "$pin_tree"
           assert_fd06_base_pin_failure "$pin_head" "$pin_tree" "$other_head" "$pin_tree"
           assert_fd06_base_pin_failure "$pin_head" "$pin_tree" "$pin_head" "$other_tree"
+          synthetic_delivery_head="$(printf 'e%.0s' {1..40})"
+          verify_fd06_rc5_history_contract \
+            2 \
+            "$synthetic_delivery_head" \
+            "$FD06_RC4_INTERMEDIATE_HEAD" \
+            "$FD06_BASE_HEAD" \
+            "$FD06_RC4_INTERMEDIATE_TREE" \
+            "$FD06_RC4_INTERMEDIATE_HEAD" \
+            "$synthetic_delivery_head"
+          assert_fd06_rc5_history_failure 1 "$synthetic_delivery_head" "$FD06_RC4_INTERMEDIATE_HEAD" "$FD06_BASE_HEAD" "$FD06_RC4_INTERMEDIATE_TREE" "$FD06_RC4_INTERMEDIATE_HEAD" "$synthetic_delivery_head"
+          assert_fd06_rc5_history_failure 3 "$synthetic_delivery_head" "$FD06_RC4_INTERMEDIATE_HEAD" "$FD06_BASE_HEAD" "$FD06_RC4_INTERMEDIATE_TREE" "$FD06_RC4_INTERMEDIATE_HEAD" "$synthetic_delivery_head"
+          assert_fd06_rc5_history_failure 2 "$synthetic_delivery_head" "$other_head" "$FD06_BASE_HEAD" "$FD06_RC4_INTERMEDIATE_TREE" "$FD06_RC4_INTERMEDIATE_HEAD" "$synthetic_delivery_head"
+          assert_fd06_rc5_history_failure 2 "$synthetic_delivery_head" "$FD06_RC4_INTERMEDIATE_HEAD" "$other_head" "$FD06_RC4_INTERMEDIATE_TREE" "$FD06_RC4_INTERMEDIATE_HEAD" "$synthetic_delivery_head"
+          assert_fd06_rc5_history_failure 2 "$synthetic_delivery_head" "$FD06_RC4_INTERMEDIATE_HEAD" "$FD06_BASE_HEAD" "$other_tree" "$FD06_RC4_INTERMEDIATE_HEAD" "$synthetic_delivery_head"
+          assert_fd06_rc5_history_failure 2 "$synthetic_delivery_head" "$FD06_RC4_INTERMEDIATE_HEAD" "$FD06_BASE_HEAD" "$FD06_RC4_INTERMEDIATE_TREE" "$other_head" "$synthetic_delivery_head"
+          assert_fd06_rc5_history_failure 2 "$synthetic_delivery_head" "$FD06_RC4_INTERMEDIATE_HEAD" "$FD06_BASE_HEAD" "$FD06_RC4_INTERMEDIATE_TREE" "$FD06_RC4_INTERMEDIATE_HEAD" "$other_head"
           echo "ROUTING_MATRIX_SELF_CHECK=PASS"
           echo "FD05_EXTERNAL_PIN_SELF_CHECK=PASS"
           echo "R0_EXTERNAL_PIN_SELF_CHECK=PASS"
@@ -605,6 +654,7 @@ jobs:
           echo "FD03_FD02_BASE_PIN_SELF_CHECK=PASS"
           echo "FD06_ROUTING_SELF_CHECK=PASS"
           echo "FD06_FD03_BASE_PIN_SELF_CHECK=PASS"
+          echo "FD06_RC5_PUBLIC_HISTORY_SELF_CHECK=PASS"
 
           delivery_head="$(git rev-parse HEAD)"
           case "$GITHUB_EVENT_NAME" in
@@ -1059,9 +1109,22 @@ jobs:
               test "$(git rev-parse "${SLICE_BASE_HEAD}:software/conflict_analysis/domain/services/project_definitions.py")" = "$FD06_PROJECT_DEFINITIONS_BASE_BLOB"
               test "$(git rev-parse "${SLICE_BASE_HEAD}:software/conflict_analysis/domain/urls.py")" = "$FD06_URLS_BASE_BLOB"
               test "$(git merge-base "$SLICE_BASE_HEAD" "$delivery_head")" = "$SLICE_BASE_HEAD"
+              test "$(git merge-base "$SLICE_BASE_HEAD" "$FD06_RC4_INTERMEDIATE_HEAD")" = "$SLICE_BASE_HEAD"
+              test "$(git merge-base "$FD06_RC4_INTERMEDIATE_HEAD" "$delivery_head")" = "$FD06_RC4_INTERMEDIATE_HEAD"
               test -z "$(git rev-list --merges "$SLICE_BASE_HEAD..$delivery_head")"
-              test "$(git rev-list --count "$SLICE_BASE_HEAD..$delivery_head")" = "1"
-              test "$(git rev-parse "$delivery_head^")" = "$SLICE_BASE_HEAD"
+              fd06_intermediate_parent="$(git rev-parse "${FD06_RC4_INTERMEDIATE_HEAD}^")"
+              fd06_intermediate_tree="$(git rev-parse "${FD06_RC4_INTERMEDIATE_HEAD}^{tree}")"
+              mapfile -t fd06_history_commits < <(
+                git rev-list --reverse "$SLICE_BASE_HEAD..$delivery_head"
+              )
+              test "$(git rev-list --count "$SLICE_BASE_HEAD..$delivery_head")" = "2"
+              test "$delivery_head" != "$FD06_RC4_INTERMEDIATE_HEAD"
+              test "$(git rev-parse "$delivery_head^")" = "$FD06_RC4_INTERMEDIATE_HEAD"
+              test "$fd06_intermediate_parent" = "$SLICE_BASE_HEAD"
+              test "$fd06_intermediate_tree" = "$FD06_RC4_INTERMEDIATE_TREE"
+              test "${#fd06_history_commits[@]}" -eq 2
+              test "${fd06_history_commits[0]}" = "$FD06_RC4_INTERMEDIATE_HEAD"
+              test "${fd06_history_commits[1]}" = "$delivery_head"
               mapfile -t fd06_changed_paths < <(
                 git diff --name-only "$SLICE_BASE_HEAD...$delivery_head" --
               )
@@ -1084,6 +1147,7 @@ jobs:
               done
               echo "FD06_EXACT_PATH_COUNT=10"
               echo "FD06_ACCEPTED_FD03_BASE_PIN=PASS"
+              echo "FD06_RC5_PUBLIC_HISTORY_EXCEPTION=PASS"
               echo "FD06_FROZEN_OBJECTS=PASS"
               ;;
             *)
