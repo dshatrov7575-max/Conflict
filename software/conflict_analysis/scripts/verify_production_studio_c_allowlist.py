@@ -49,6 +49,16 @@ FD06_POSTGRESQL_TOTAL = 227
 FD06_POSTGRESQL_SKIPPED = 0
 FD06_SQLITE_PASSED = 212
 FD06_SQLITE_SKIPPED = 15
+PINNED_FD07_BASE_HEAD = "b161ed387b3aec90bb8e4010e665fbe35d4b9ea6"
+PINNED_FD07_BASE_TREE = "42dab05a7cbf99e8e71f127ad196139da8b46734"
+PINNED_FD07_BASE_DOMAIN_TREE = "813315e1f2850fe8ebc5971eb3194721d636cc6f"
+FD07_BASE_BRANCH = FD06_TARGET_BRANCH
+FD07_TARGET_BRANCH = "codex/ca-suite-i1-foundation-fd07-publication-readiness"
+FD07_EXACT_PATH_COUNT = 8
+FD07_POSTGRESQL_TOTAL = 236
+FD07_POSTGRESQL_SKIPPED = 0
+FD07_SQLITE_PASSED = 221
+FD07_SQLITE_SKIPPED = 15
 _LOWER_HEX_40 = re.compile(r"[0-9a-f]{40}\Z")
 
 ACTIVE_C0_ALLOWLIST = frozenset(
@@ -177,6 +187,77 @@ ACTIVE_FD06_ALLOWLIST = frozenset(
         "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
     }
 )
+
+ACTIVE_FD07_ALLOWLIST = frozenset(
+    {
+        ".github/workflows/conflict-analysis.yml",
+        "software/conflict_analysis/docs/adr/0006-foundation-studio-application-gateways.md",
+        "software/conflict_analysis/domain/api/studio_definitions.py",
+        "software/conflict_analysis/domain/services/project_definitions.py",
+        "software/conflict_analysis/domain/tests/test_foundation_studio_http.py",
+        "software/conflict_analysis/domain/tests/test_foundation_studio_publication_readiness.py",
+        "software/conflict_analysis/domain/urls.py",
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+    }
+)
+
+FD07_TEST_CLASS = "FoundationStudioPublicationReadinessTests"
+FD07_TEST_METHODS = (
+    "test_route_method_auth_scope_query_headers_and_zero_write_are_exact",
+    "test_first_project_draft_is_initial_candidate_snapshot_only",
+    "test_standalone_draft_in_published_project_is_never_initial_candidate",
+    "test_exact_successor_draft_requires_validate_and_validated_requires_publish",
+    "test_wrong_predecessor_missing_current_and_initial_receipt_integrity_fail_closed",
+    "test_published_retired_and_validated_initial_states_have_no_publication_action",
+    "test_response_is_canonical_hash_bound_no_store_and_deterministic",
+    "test_old_hash_basic_absent_and_cross_scope_are_password_cookie_write_free",
+    "test_readiness_is_advisory_and_fd06_rechecks_after_persisted_state_changes",
+)
+
+FD07_EXACT_FROZEN_OBJECTS = {
+    "software/conflict_analysis/domain/models.py": (
+        "c6c5c2419989e7b0cf40bd1242ab65d37cc2e162"
+    ),
+    "software/conflict_analysis/domain/enums.py": (
+        "a701c3c83511b7d1706519d40fab4580d0a0d63e"
+    ),
+    "software/conflict_analysis/domain/migrations": (
+        "b0cc214cd63086172c9d3801338a5a2302a7ce0f"
+    ),
+    "software/conflict_analysis/domain/policies.py": (
+        "4b5eba67ab9d6ee4f70497a71d2b0af420ab9afb"
+    ),
+    "software/conflict_analysis/production_studio": (
+        "31ba7273cfe4a6ae3c57054518de2e2ba98113ff"
+    ),
+    "software/conflict_analysis/domain/services/foundation_packages.py": (
+        "41c5a6ba2dddd39bdf01ccd398f8ab8213133986"
+    ),
+}
+
+FD07_REOPENED_BASE_BLOBS = {
+    ".github/workflows/conflict-analysis.yml": (
+        "ea6dc0c12897eb683ffa108b8e247639f6e34da1"
+    ),
+    "software/conflict_analysis/docs/adr/0006-foundation-studio-application-gateways.md": (
+        "6544eedc45d0e77c2f89dbfbb4e52874337b7e63"
+    ),
+    "software/conflict_analysis/domain/api/studio_definitions.py": (
+        "ff2680683af265b0c35258df21d15eb575ec1f47"
+    ),
+    "software/conflict_analysis/domain/services/project_definitions.py": (
+        "c4cbb6b426fdfe0359dfe30eff58e712baf1fd19"
+    ),
+    "software/conflict_analysis/domain/tests/test_foundation_studio_http.py": (
+        "376122c7511df26477b2d1ec839d4fd2af00b1e5"
+    ),
+    "software/conflict_analysis/domain/urls.py": (
+        "e4ffdc3efc608fb9a1933c52298e10db0523aaa7"
+    ),
+    "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py": (
+        "188abd70b4b89bd423c148da98240150a7a4d56f"
+    ),
+}
 
 FD06_PORTABLE_CLASS = "FoundationStudioPublicationReconciliationTests"
 FD06_PORTABLE_METHODS = (
@@ -449,6 +530,24 @@ def _resolve_slice_contract(
             "c1_base_pin": "NOT_APPLICABLE_CURRENT_FD06",
             "fd02_base_pin": "NOT_APPLICABLE_CURRENT_FD06",
         }
+    if active_slice == "FD07":
+        if fd05_accepted_head is not None or fd05_accepted_tree is not None:
+            raise VerificationError("FD07 does not accept external pin arguments")
+        if base_head != PINNED_FD07_BASE_HEAD or base_tree != PINNED_FD07_BASE_TREE:
+            raise VerificationError("FD07 accepts only the exact accepted FD06 HEAD/TREE")
+        return {
+            "active_slice": active_slice,
+            "allowlist": ACTIVE_FD07_ALLOWLIST,
+            "exact_changed_paths": True,
+            "domain_tree": PINNED_FD07_BASE_DOMAIN_TREE,
+            "fd05_base_pin": "NOT_APPLICABLE_CURRENT_FD07",
+            "fd05_accepted_head": None,
+            "fd05_accepted_tree": None,
+            "r0_start_pin": "NOT_APPLICABLE_CURRENT_FD07",
+            "c1_base_pin": "NOT_APPLICABLE_CURRENT_FD07",
+            "fd02_base_pin": "NOT_APPLICABLE_CURRENT_FD07",
+            "fd06_base_pin": "PIN_VERIFIED_AUTHORIZATION",
+        }
     if active_slice not in {"R0", "C1"}:
         raise VerificationError(f"unsupported Production Studio verifier slice: {active_slice!r}")
 
@@ -658,6 +757,70 @@ def _require_fd06_frozen_contract(
         raise VerificationError("FD06 exact frozen-object contract drifted")
     if reopened_base_blobs != FD06_REOPENED_BASE_BLOBS:
         raise VerificationError("FD06 reopened base-blob contract drifted")
+
+
+def _resolve_fd07_route(
+    *,
+    event_name: str,
+    event_ref: str = "",
+    head_ref: str = "",
+    base_ref: str = "",
+) -> str:
+    if event_name == "push" and event_ref == f"refs/heads/{FD07_TARGET_BRANCH}":
+        return "PINNED_FD06"
+    if (
+        event_name == "pull_request"
+        and head_ref == FD07_TARGET_BRANCH
+        and base_ref == FD07_BASE_BRANCH
+    ):
+        return "EVENT_FD06"
+    raise VerificationError(
+        "FD07 routing accepts only its exact push ref or its exact stacked "
+        "pull-request ref pair"
+    )
+
+
+def _require_fd07_static_contract(
+    *,
+    exact_path_count: int,
+    test_node_count: int,
+    postgresql_total: int,
+    postgresql_skipped: int,
+    sqlite_passed: int,
+    sqlite_skipped: int,
+) -> None:
+    actual = (
+        exact_path_count,
+        test_node_count,
+        postgresql_total,
+        postgresql_skipped,
+        sqlite_passed,
+        sqlite_skipped,
+    )
+    expected = (
+        FD07_EXACT_PATH_COUNT,
+        9,
+        FD07_POSTGRESQL_TOTAL,
+        FD07_POSTGRESQL_SKIPPED,
+        FD07_SQLITE_PASSED,
+        FD07_SQLITE_SKIPPED,
+    )
+    if actual != expected:
+        raise VerificationError(
+            "FD07 static path/test total contract drifted: "
+            + json.dumps({"expected": expected, "actual": actual})
+        )
+
+
+def _require_fd07_frozen_contract(
+    *,
+    exact_frozen_objects: dict[str, str],
+    reopened_base_blobs: dict[str, str],
+) -> None:
+    if exact_frozen_objects != FD07_EXACT_FROZEN_OBJECTS:
+        raise VerificationError("FD07 exact frozen-object contract drifted")
+    if reopened_base_blobs != FD07_REOPENED_BASE_BLOBS:
+        raise VerificationError("FD07 reopened base-blob contract drifted")
 
 
 def _require_synthetic_merge_contract(
@@ -1602,12 +1765,337 @@ def self_check() -> dict[str, object]:
                 f"offline FD06 synthetic {label} was unexpectedly accepted"
             )
 
+    valid_fd07 = {
+        "active_slice": "FD07",
+        "base_head": PINNED_FD07_BASE_HEAD,
+        "base_tree": PINNED_FD07_BASE_TREE,
+        "fd05_accepted_head": None,
+        "fd05_accepted_tree": None,
+    }
+    fd07 = _resolve_slice_contract(**valid_fd07)
+    invalid_fd07_contracts = (
+        (
+            "FD07 mismatched accepted FD06 head",
+            {"base_head": other_head},
+            "exact accepted FD06 HEAD/TREE",
+        ),
+        (
+            "FD07 mismatched accepted FD06 tree",
+            {"base_tree": other_tree},
+            "exact accepted FD06 HEAD/TREE",
+        ),
+        (
+            "FD07 uppercase accepted FD06 head",
+            {"base_head": PINNED_FD07_BASE_HEAD.upper()},
+            "base HEAD",
+        ),
+        (
+            "FD07 unexpected external pin",
+            {"fd05_accepted_head": PINNED_R0_BASE_HEAD},
+            "does not accept external pin arguments",
+        ),
+    )
+    for label, overrides, expected_error in invalid_fd07_contracts:
+        candidate = {**valid_fd07, **overrides}
+        try:
+            _resolve_slice_contract(**candidate)  # type: ignore[arg-type]
+        except VerificationError as exc:
+            if expected_error not in str(exc):
+                raise VerificationError(
+                    f"offline self-check {label!r} failed for the wrong reason: {exc}"
+                ) from exc
+        else:
+            raise VerificationError(
+                f"offline self-check unexpectedly accepted {label!r}"
+            )
+
+    if len(ACTIVE_FD07_ALLOWLIST) != FD07_EXACT_PATH_COUNT:
+        raise VerificationError("FD07 exact allowlist constant is not eight paths")
+    _require_changed_path_contract(
+        active_slice="FD07",
+        changed=ACTIVE_FD07_ALLOWLIST,
+        allowlist=ACTIVE_FD07_ALLOWLIST,
+        exact_changed_paths=True,
+    )
+    fd07_path_negative_cases = 0
+    for label, changed, expected_error in (
+        (
+            "FD07 ninth path",
+            ACTIVE_FD07_ALLOWLIST | {"software/conflict_analysis/domain/models.py"},
+            "outside ACTIVE FD07 EXACT ALLOWLIST",
+        ),
+        (
+            "FD07 missing readiness registry",
+            ACTIVE_FD07_ALLOWLIST
+            - {
+                "software/conflict_analysis/domain/tests/"
+                "test_foundation_studio_publication_readiness.py"
+            },
+            "FD07 changed paths must equal",
+        ),
+    ):
+        fd07_path_negative_cases += 1
+        try:
+            _require_changed_path_contract(
+                active_slice="FD07",
+                changed=changed,
+                allowlist=ACTIVE_FD07_ALLOWLIST,
+                exact_changed_paths=True,
+            )
+        except VerificationError as exc:
+            if expected_error not in str(exc):
+                raise VerificationError(
+                    f"offline self-check {label!r} failed for the wrong reason: {exc}"
+                ) from exc
+        else:
+            raise VerificationError(
+                f"offline self-check unexpectedly accepted {label!r}"
+            )
+
+    _resolve_fd07_route(
+        event_name="push",
+        event_ref=f"refs/heads/{FD07_TARGET_BRANCH}",
+    )
+    _resolve_fd07_route(
+        event_name="pull_request",
+        head_ref=FD07_TARGET_BRANCH,
+        base_ref=FD07_BASE_BRANCH,
+    )
+    fd07_route_negative_cases = 0
+    for route in (
+        {"event_name": "push", "event_ref": f"refs/heads/{FD07_BASE_BRANCH}"},
+        {
+            "event_name": "pull_request",
+            "head_ref": FD07_TARGET_BRANCH,
+            "base_ref": FD06_BASE_BRANCH,
+        },
+        {
+            "event_name": "pull_request",
+            "head_ref": FD07_BASE_BRANCH,
+            "base_ref": FD07_BASE_BRANCH,
+        },
+        {"event_name": "workflow_dispatch"},
+    ):
+        fd07_route_negative_cases += 1
+        try:
+            _resolve_fd07_route(**route)
+        except VerificationError as exc:
+            if "FD07 routing accepts only" not in str(exc):
+                raise VerificationError(
+                    "offline FD07 routing self-check failed for the wrong reason"
+                ) from exc
+        else:
+            raise VerificationError(
+                "offline FD07 routing self-check accepted an invalid route"
+            )
+
+    _require_fd07_static_contract(
+        exact_path_count=len(ACTIVE_FD07_ALLOWLIST),
+        test_node_count=len(FD07_TEST_METHODS),
+        postgresql_total=FD07_POSTGRESQL_TOTAL,
+        postgresql_skipped=FD07_POSTGRESQL_SKIPPED,
+        sqlite_passed=FD07_SQLITE_PASSED,
+        sqlite_skipped=FD07_SQLITE_SKIPPED,
+    )
+    fd07_static_negative_cases = 0
+    valid_fd07_static = {
+        "exact_path_count": FD07_EXACT_PATH_COUNT,
+        "test_node_count": 9,
+        "postgresql_total": FD07_POSTGRESQL_TOTAL,
+        "postgresql_skipped": FD07_POSTGRESQL_SKIPPED,
+        "sqlite_passed": FD07_SQLITE_PASSED,
+        "sqlite_skipped": FD07_SQLITE_SKIPPED,
+    }
+    for field, invalid_value in (
+        ("exact_path_count", 7),
+        ("test_node_count", 8),
+        ("postgresql_total", 235),
+        ("postgresql_skipped", 1),
+        ("sqlite_passed", 220),
+        ("sqlite_skipped", 14),
+    ):
+        fd07_static_negative_cases += 1
+        try:
+            _require_fd07_static_contract(
+                **{**valid_fd07_static, field: invalid_value}
+            )
+        except VerificationError as exc:
+            if "FD07 static path/test total contract drifted" not in str(exc):
+                raise VerificationError(
+                    f"offline FD07 {field} self-check failed for the wrong reason"
+                ) from exc
+        else:
+            raise VerificationError(
+                f"offline FD07 {field} self-check accepted drift"
+            )
+
+    _require_fd07_frozen_contract(
+        exact_frozen_objects=dict(FD07_EXACT_FROZEN_OBJECTS),
+        reopened_base_blobs=dict(FD07_REOPENED_BASE_BLOBS),
+    )
+    fd07_frozen_negative_cases = 0
+    for label, frozen, reopened, expected_error in (
+        (
+            "frozen policies blob",
+            {
+                **FD07_EXACT_FROZEN_OBJECTS,
+                "software/conflict_analysis/domain/policies.py": other_head,
+            },
+            dict(FD07_REOPENED_BASE_BLOBS),
+            "exact frozen-object contract drifted",
+        ),
+        (
+            "reopened workflow base blob",
+            dict(FD07_EXACT_FROZEN_OBJECTS),
+            {
+                **FD07_REOPENED_BASE_BLOBS,
+                ".github/workflows/conflict-analysis.yml": other_head,
+            },
+            "reopened base-blob contract drifted",
+        ),
+    ):
+        fd07_frozen_negative_cases += 1
+        try:
+            _require_fd07_frozen_contract(
+                exact_frozen_objects=frozen,
+                reopened_base_blobs=reopened,
+            )
+        except VerificationError as exc:
+            if expected_error not in str(exc):
+                raise VerificationError(
+                    f"offline FD07 {label} self-check failed for the wrong reason"
+                ) from exc
+        else:
+            raise VerificationError(
+                f"offline FD07 {label} self-check accepted drift"
+            )
+
+    _require_exact_test_topology(
+        source=render_test_class(FD07_TEST_CLASS, FD07_TEST_METHODS),
+        class_name=FD07_TEST_CLASS,
+        expected_methods=FD07_TEST_METHODS,
+    )
+    fd07_topology_negative_cases = 0
+    for actual_methods in (
+        FD07_TEST_METHODS[:-1],
+        tuple(reversed(FD07_TEST_METHODS)),
+    ):
+        fd07_topology_negative_cases += 1
+        try:
+            _require_exact_test_topology(
+                source=render_test_class(FD07_TEST_CLASS, actual_methods),
+                class_name=FD07_TEST_CLASS,
+                expected_methods=FD07_TEST_METHODS,
+            )
+        except VerificationError as exc:
+            if "test topology mismatch" not in str(exc):
+                raise VerificationError(
+                    "offline FD07 topology self-check failed for the wrong reason"
+                ) from exc
+        else:
+            raise VerificationError(
+                "offline FD07 topology self-check accepted registry drift"
+            )
+
+    fd07_delivery_head = "a" * 40
+    _require_merge_free("FD07", ())
+    _require_single_fast_forward_commit(
+        active_slice="FD07",
+        commit_count=1,
+        delivery_parent=PINNED_FD07_BASE_HEAD,
+        base_head=PINNED_FD07_BASE_HEAD,
+    )
+    fd07_history_negative_cases = 0
+    try:
+        _require_merge_free("FD07", ("synthetic-merge-object",))
+    except VerificationError as exc:
+        if "merge commits are forbidden after the exact FD07 base" not in str(exc):
+            raise VerificationError(
+                "offline FD07 merge-topology self-check failed for the wrong reason"
+            ) from exc
+        fd07_history_negative_cases += 1
+    else:
+        raise VerificationError("offline self-check accepted an FD07 merge commit")
+    for label, count, parent in (
+        ("FD07 missing delivery", 0, PINNED_FD07_BASE_HEAD),
+        ("FD07 extra commit", 2, PINNED_FD07_BASE_HEAD),
+        ("FD07 wrong parent", 1, other_head),
+    ):
+        try:
+            _require_single_fast_forward_commit(
+                active_slice="FD07",
+                commit_count=count,
+                delivery_parent=parent,
+                base_head=PINNED_FD07_BASE_HEAD,
+            )
+        except VerificationError as exc:
+            if "exactly one fast-forward commit" not in str(exc):
+                raise VerificationError(
+                    f"offline {label} self-check failed for the wrong reason"
+                ) from exc
+            fd07_history_negative_cases += 1
+        else:
+            raise VerificationError(f"offline self-check unexpectedly accepted {label}")
+
+    _require_synthetic_merge_contract(
+        expected_base_head=PINNED_FD07_BASE_HEAD,
+        expected_delivery_head=fd07_delivery_head,
+        actual_parents=(PINNED_FD07_BASE_HEAD, fd07_delivery_head),
+        delivery_tree=delivery_tree,
+        synthetic_tree=delivery_tree,
+        independent_tree=delivery_tree,
+    )
+    fd07_synthetic_negative_cases = 0
+    for label, parents, synthetic_tree, independent_tree, expected_error in (
+        (
+            "reversed parents",
+            (fd07_delivery_head, PINNED_FD07_BASE_HEAD),
+            delivery_tree,
+            delivery_tree,
+            "synthetic merge parents",
+        ),
+        (
+            "synthetic tree drift",
+            (PINNED_FD07_BASE_HEAD, fd07_delivery_head),
+            other_tree,
+            delivery_tree,
+            "trees must be equal",
+        ),
+        (
+            "independent merge-tree drift",
+            (PINNED_FD07_BASE_HEAD, fd07_delivery_head),
+            delivery_tree,
+            other_tree,
+            "trees must be equal",
+        ),
+    ):
+        fd07_synthetic_negative_cases += 1
+        try:
+            _require_synthetic_merge_contract(
+                expected_base_head=PINNED_FD07_BASE_HEAD,
+                expected_delivery_head=fd07_delivery_head,
+                actual_parents=parents,
+                delivery_tree=delivery_tree,
+                synthetic_tree=synthetic_tree,
+                independent_tree=independent_tree,
+            )
+        except VerificationError as exc:
+            if expected_error not in str(exc):
+                raise VerificationError(
+                    f"offline FD07 synthetic {label} failed for the wrong reason"
+                ) from exc
+        else:
+            raise VerificationError(
+                f"offline FD07 synthetic {label} was unexpectedly accepted"
+            )
+
     return {
         "marker": "PRODUCTION_STUDIO_R0_VERIFIER_SELF_CHECK=PASS",
         "c1_marker": "PRODUCTION_STUDIO_C1_VERIFIER_SELF_CHECK=PASS",
         "fd02_marker": "FOUNDATION_FD02_VERIFIER_SELF_CHECK=PASS",
         "fd03_marker": "FOUNDATION_FD03_RC2_VERIFIER_SELF_CHECK=PASS",
         "fd06_marker": "FOUNDATION_FD06_VERIFIER_SELF_CHECK=PASS",
+        "fd07_marker": "FOUNDATION_FD07_VERIFIER_SELF_CHECK=PASS",
         "network_access": False,
         "repository_access": False,
         "positive_slices": [
@@ -1617,6 +2105,7 @@ def self_check() -> dict[str, object]:
             fd02["active_slice"],
             fd03["active_slice"],
             fd06["active_slice"],
+            fd07["active_slice"],
         ],
         "negative_cases": (
             len(invalid_contracts)
@@ -1637,6 +2126,14 @@ def self_check() -> dict[str, object]:
             + len(invalid_fd03_contracts)
             + fd03_path_negative_cases
             + 3
+            + len(invalid_fd07_contracts)
+            + fd07_path_negative_cases
+            + fd07_route_negative_cases
+            + fd07_static_negative_cases
+            + fd07_frozen_negative_cases
+            + fd07_topology_negative_cases
+            + fd07_history_negative_cases
+            + fd07_synthetic_negative_cases
         ),
     }
 
@@ -1698,7 +2195,7 @@ def verify(
         )
         _require_merge_free("C1 accepted H2-to-R0 START", accepted_to_start_merges)
 
-    if active_slice in {"R0", "C1", "FD02", "FD03", "FD06"}:
+    if active_slice in {"R0", "C1", "FD02", "FD03", "FD06", "FD07"}:
         merge_commits = tuple(
             item
             for item in _git(
@@ -1716,12 +2213,12 @@ def verify(
     fd06_intermediate_parent: str | None = None
     fd06_intermediate_tree: str | None = None
     fd06_ordered_commits: tuple[str, ...] | None = None
-    if active_slice in {"FD02", "FD03", "FD06"}:
+    if active_slice in {"FD02", "FD03", "FD06", "FD07"}:
         delivery_commit_count = int(
             _git(repo, "rev-list", "--count", f"{base_head}..HEAD")
         )
         delivery_parent = _git(repo, "rev-parse", "HEAD^")
-        if active_slice == "FD02":
+        if active_slice in {"FD02", "FD07"}:
             _require_single_fast_forward_commit(
                 active_slice=active_slice,
                 commit_count=delivery_commit_count,
@@ -1806,7 +2303,7 @@ def verify(
 
     domain_prefix = "software/conflict_analysis/domain/"
     changed_domain = sorted(path for path in changed if path.startswith(domain_prefix))
-    if active_slice not in {"FD02", "FD03", "FD06"} and changed_domain:
+    if active_slice not in {"FD02", "FD03", "FD06", "FD07"} and changed_domain:
         raise VerificationError("domain/ is mechanically frozen: " + ", ".join(changed_domain))
 
     domain_tree = _git(
@@ -1822,7 +2319,7 @@ def verify(
             "pinned domain tree mismatch: "
             f"expected {expected_domain_tree}, got {domain_tree}"
         )
-    if active_slice not in {"FD02", "FD03", "FD06"} and _git(
+    if active_slice not in {"FD02", "FD03", "FD06", "FD07"} and _git(
         repo,
         "diff",
         "--name-only",
@@ -2005,6 +2502,70 @@ def verify(
                 raise VerificationError(
                     f"FD06 changed {path} outside the one authorized method body"
                 )
+    elif active_slice == "FD07":
+        _require_fd07_static_contract(
+            exact_path_count=len(ACTIVE_FD07_ALLOWLIST),
+            test_node_count=len(FD07_TEST_METHODS),
+            postgresql_total=FD07_POSTGRESQL_TOTAL,
+            postgresql_skipped=FD07_POSTGRESQL_SKIPPED,
+            sqlite_passed=FD07_SQLITE_PASSED,
+            sqlite_skipped=FD07_SQLITE_SKIPPED,
+        )
+        _require_fd07_frozen_contract(
+            exact_frozen_objects=dict(FD07_EXACT_FROZEN_OBJECTS),
+            reopened_base_blobs=dict(FD07_REOPENED_BASE_BLOBS),
+        )
+        for path, expected_object in FD07_EXACT_FROZEN_OBJECTS.items():
+            base_object = _git(repo, "rev-parse", f"{base_head}:{path}")
+            head_object = _git(repo, "rev-parse", f"HEAD:{path}")
+            if base_object != expected_object or head_object != expected_object:
+                raise VerificationError(
+                    f"FD07 frozen object drift at {path}: expected "
+                    f"{expected_object}, base {base_object}, HEAD {head_object}"
+                )
+            frozen_objects[path] = expected_object
+        for path, expected_object in FD07_REOPENED_BASE_BLOBS.items():
+            base_object = _git(repo, "rev-parse", f"{base_head}:{path}")
+            if base_object != expected_object:
+                raise VerificationError(
+                    f"FD07 reopened base blob drift at {path}: expected "
+                    f"{expected_object}, got {base_object}"
+                )
+
+        readiness_test_path = (
+            "software/conflict_analysis/domain/tests/"
+            "test_foundation_studio_publication_readiness.py"
+        )
+        if _git(
+            repo,
+            "ls-tree",
+            "--name-only",
+            base_head,
+            "--",
+            readiness_test_path,
+        ):
+            raise VerificationError("FD07 readiness test path must be absent at base")
+        _require_exact_test_topology(
+            source=(repo / readiness_test_path).read_text(encoding="utf-8"),
+            class_name=FD07_TEST_CLASS,
+            expected_methods=FD07_TEST_METHODS,
+        )
+
+        fd06_test_source = (
+            repo
+            / "software/conflict_analysis/domain/tests/"
+            "test_foundation_studio_publication_reconciliation.py"
+        ).read_text(encoding="utf-8")
+        _require_exact_test_topology(
+            source=fd06_test_source,
+            class_name=FD06_PORTABLE_CLASS,
+            expected_methods=FD06_PORTABLE_METHODS,
+        )
+        _require_exact_test_topology(
+            source=fd06_test_source,
+            class_name=FD06_CONCURRENCY_CLASS,
+            expected_methods=FD06_CONCURRENCY_METHODS,
+        )
 
     return {
         "active_slice": active_slice,
@@ -2035,7 +2596,7 @@ def verify(
         ),
         "domain_changed_paths": changed_domain,
         "domain_tree_unchanged": (
-            None if active_slice in {"FD02", "FD03", "FD06"} else True
+            None if active_slice in {"FD02", "FD03", "FD06", "FD07"} else True
         ),
         "exact_changed_paths": changed == allowlist if exact_changed_paths else None,
         "fd05_base_pin": contract["fd05_base_pin"],
@@ -2043,22 +2604,29 @@ def verify(
         "fd05_accepted_tree": contract["fd05_accepted_tree"],
         "frozen_objects": frozen_objects,
         "merge_commits_absent": (
-            True if active_slice in {"R0", "C1", "FD02", "FD03", "FD06"} else None
+            True
+            if active_slice in {"R0", "C1", "FD02", "FD03", "FD06", "FD07"}
+            else None
         ),
         "migration_filenames_unchanged": True,
         "r0_start_pin": contract["r0_start_pin"],
         "c1_base_pin": contract["c1_base_pin"],
         "fd02_base_pin": contract["fd02_base_pin"],
+        "fd06_base_pin": contract.get("fd06_base_pin"),
         "fd03_test_node_count": len(FD03_TEST_METHODS) if active_slice == "FD03" else None,
         "fd03_c0_bounded_node_only": True if active_slice == "FD03" else None,
         "fd06_exact_path_count": (
             len(ACTIVE_FD06_ALLOWLIST) if active_slice == "FD06" else None
         ),
         "fd06_portable_test_node_count": (
-            len(FD06_PORTABLE_METHODS) if active_slice == "FD06" else None
+            len(FD06_PORTABLE_METHODS)
+            if active_slice in {"FD06", "FD07"}
+            else None
         ),
         "fd06_postgresql_only_test_node_count": (
-            len(FD06_CONCURRENCY_METHODS) if active_slice == "FD06" else None
+            len(FD06_CONCURRENCY_METHODS)
+            if active_slice in {"FD06", "FD07"}
+            else None
         ),
         "fd06_postgresql_expected": (
             {
@@ -2081,6 +2649,33 @@ def verify(
             if active_slice == "FD06"
             else None
         ),
+        "fd07_exact_path_count": (
+            len(ACTIVE_FD07_ALLOWLIST) if active_slice == "FD07" else None
+        ),
+        "fd07_test_node_count": (
+            len(FD07_TEST_METHODS) if active_slice == "FD07" else None
+        ),
+        "fd07_postgresql_expected": (
+            {
+                "passed": FD07_POSTGRESQL_TOTAL,
+                "skipped": FD07_POSTGRESQL_SKIPPED,
+            }
+            if active_slice == "FD07"
+            else None
+        ),
+        "fd07_sqlite_expected": (
+            {"passed": FD07_SQLITE_PASSED, "skipped": FD07_SQLITE_SKIPPED}
+            if active_slice == "FD07"
+            else None
+        ),
+        "fd07_synthetic_merge_requirement": (
+            {
+                "parents": [base_head, "FINAL_FD07_HEAD"],
+                "tree": "FINAL_FD07_TREE_EQUALS_INDEPENDENT_MERGE_TREE",
+            }
+            if active_slice == "FD07"
+            else None
+        ),
         "aggregate_exact_changed_paths": (
             aggregate_changed == FD03_AGGREGATE_ALLOWLIST
             if aggregate_changed is not None
@@ -2093,7 +2688,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--slice",
-        choices=("C0", "R0", "C1", "FD02", "FD03", "FD06"),
+        choices=("C0", "R0", "C1", "FD02", "FD03", "FD06", "FD07"),
         default="C0",
     )
     parser.add_argument("--base-head", default=PINNED_BASE_HEAD)
@@ -2124,6 +2719,7 @@ def main(argv: list[str] | None = None) -> int:
         print(result["fd02_marker"])
         print(result["fd03_marker"])
         print(result["fd06_marker"])
+        print(result["fd07_marker"])
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 

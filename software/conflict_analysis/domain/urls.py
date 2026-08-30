@@ -42,6 +42,11 @@ urlpatterns = [
         name="foundation-definition-open",
     ),
     path(
+        "definitions/<uuid:definition_id>/publication-readiness/",
+        studio_definitions.open_publication_readiness,
+        name="foundation-definition-publication-readiness",
+    ),
+    path(
         "definitions/<uuid:definition_id>/clone/",
         studio_definitions.clone_definition,
         name="foundation-definition-clone",

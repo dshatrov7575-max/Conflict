@@ -30,7 +30,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import Count, F, IntegerField, OuterRef, Q, Subquery, Value
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from jsonschema import Draft202012Validator, FormatChecker
 
@@ -155,6 +156,311 @@ class FoundationStudioApplicationConflict(ValidationError):
                 )
             }
         )
+
+
+PUBLICATION_READINESS_CONTRACT: Final = "FOUNDATION_PUBLICATION_READINESS_V1"
+PUBLICATION_READINESS_CONTRACT_VERSION: Final = "1.0.0"
+PUBLICATION_READINESS_SNAPSHOT_SCOPE: Final = "LIFECYCLE_TOPOLOGY_ONLY"
+_PUBLICATION_READINESS_BLOCKER_ORDER: Final = (
+    "DEFINITION_ALREADY_PUBLISHED",
+    "DEFINITION_RETIRED",
+    "INITIAL_REQUIRES_DRAFT",
+    "INITIAL_PROJECT_HAS_PUBLICATION",
+    "INITIAL_PROJECT_HAS_WORKSPACE",
+    "INITIAL_PROJECT_HAS_CURRENT_DEFINITION",
+    "SUCCESSOR_PREDECESSOR_REQUIRED",
+    "SUCCESSOR_PROJECT_PUBLICATION_REQUIRED",
+    "SUCCESSOR_INITIAL_RECEIPT_COUNT_INVALID",
+    "SUCCESSOR_CURRENT_PUBLISHED_REQUIRED",
+    "SUCCESSOR_PREDECESSOR_MISMATCH",
+    "SUCCESSOR_VALIDATION_RESULT_INVALID",
+    "PUBLICATION_TOPOLOGY_UNSUPPORTED",
+)
+
+
+def _publication_readiness_validation_result_valid(
+    raw_valid: object,
+) -> bool | None:
+    return raw_valid if type(raw_valid) is bool else None
+
+
+def publication_readiness_snapshot(
+    *,
+    scoped_project_id: UUID,
+    definition_id: UUID,
+) -> dict[str, Any]:
+    """Return one read-only publication-readiness snapshot in the scoped project."""
+
+    publication_totals = (
+        ProjectPublication.objects.filter(project_id=OuterRef("project_id"))
+        .order_by()
+        .values("project_id")
+        .annotate(total=Count("pk"))
+        .values("total")[:1]
+    )
+    workspace_totals = (
+        ProjectWorkspace.objects.filter(project_id=OuterRef("project_id"))
+        .order_by()
+        .values("project_id")
+        .annotate(total=Count("pk"))
+        .values("total")[:1]
+    )
+    initial_receipt_totals = (
+        ProjectPublication.objects.filter(
+            project_id=OuterRef("project_id"),
+            initial_workspace_id__isnull=False,
+        )
+        .order_by()
+        .values("project_id")
+        .annotate(total=Count("pk"))
+        .values("total")[:1]
+    )
+    valid_initial_receipt_totals = (
+        ProjectPublication.objects.filter(
+            project_id=OuterRef("project_id"),
+            definition_version__project_id=OuterRef("project_id"),
+            definition_version__publication_status=PublicationStatus.PUBLISHED,
+            initial_workspace_id__isnull=False,
+            initial_workspace__project_id=OuterRef("project_id"),
+            initial_workspace__definition_version_id=F("definition_version_id"),
+            initial_workspace__definition_manifest_hash=F(
+                "definition_version__manifest_hash"
+            ),
+        )
+        .order_by()
+        .values("project_id")
+        .annotate(total=Count("pk"))
+        .values("total")[:1]
+    )
+    target_publication_totals = (
+        ProjectPublication.objects.filter(
+            definition_version_id=OuterRef("pk"),
+        )
+        .order_by()
+        .values("definition_version_id")
+        .annotate(total=Count("pk"))
+        .values("total")[:1]
+    )
+    current_definitions = ProjectDefinitionVersion.objects.filter(
+        project_id=OuterRef("project_id"),
+        is_current=True,
+    )
+    definition = (
+        ProjectDefinitionVersion.objects.select_related("project")
+        .filter(
+            pk=definition_id,
+            project_id=scoped_project_id,
+        )
+        .order_by()
+        .annotate(
+            snapshot_project_publication_count=Coalesce(
+                Subquery(publication_totals, output_field=IntegerField()),
+                Value(0, output_field=IntegerField()),
+                output_field=IntegerField(),
+            ),
+            snapshot_project_workspace_count=Coalesce(
+                Subquery(workspace_totals, output_field=IntegerField()),
+                Value(0, output_field=IntegerField()),
+                output_field=IntegerField(),
+            ),
+            snapshot_initial_publication_receipt_count=Coalesce(
+                Subquery(initial_receipt_totals, output_field=IntegerField()),
+                Value(0, output_field=IntegerField()),
+                output_field=IntegerField(),
+            ),
+            snapshot_valid_initial_publication_receipt_count=Coalesce(
+                Subquery(
+                    valid_initial_receipt_totals,
+                    output_field=IntegerField(),
+                ),
+                Value(0, output_field=IntegerField()),
+                output_field=IntegerField(),
+            ),
+            snapshot_target_publication_count=Coalesce(
+                Subquery(target_publication_totals, output_field=IntegerField()),
+                Value(0, output_field=IntegerField()),
+                output_field=IntegerField(),
+            ),
+            snapshot_current_definition_id=Subquery(
+                current_definitions.order_by("pk").values("pk")[:1]
+            ),
+            snapshot_current_definition_publication_status=Subquery(
+                current_definitions.order_by("pk").values("publication_status")[:1]
+            ),
+        )
+        .get()
+    )
+
+    publication_status = definition.publication_status
+    publication_count = int(definition.snapshot_project_publication_count)
+    workspace_count = int(definition.snapshot_project_workspace_count)
+    initial_receipt_count = int(
+        definition.snapshot_initial_publication_receipt_count
+    )
+    valid_initial_receipt_count = int(
+        definition.snapshot_valid_initial_publication_receipt_count
+    )
+    target_publication_count = int(definition.snapshot_target_publication_count)
+    current_definition_id = definition.snapshot_current_definition_id
+    current_count = 1 if current_definition_id is not None else 0
+    current_publication_status = (
+        definition.snapshot_current_definition_publication_status
+    )
+    supersedes_id = definition.supersedes_id
+
+    stored_manifest_hash = definition.manifest_hash
+    if target_publication_count != 0:
+        readiness_precondition_blocker = "DEFINITION_ALREADY_PUBLISHED"
+    elif not identify_typed_project_definition_manifest(definition.manifest):
+        readiness_precondition_blocker = "PUBLICATION_TOPOLOGY_UNSUPPORTED"
+    elif (
+        not isinstance(stored_manifest_hash, str)
+        or re.fullmatch(r"[0-9a-f]{64}", stored_manifest_hash) is None
+    ):
+        readiness_precondition_blocker = "PUBLICATION_TOPOLOGY_UNSUPPORTED"
+    else:
+        try:
+            canonical_manifest_hash = hash_project_definition_manifest_v1(
+                definition.manifest,
+                project=definition.project,
+            )
+        except (
+            ValidationError,
+            TypeError,
+            ValueError,
+            OverflowError,
+            RecursionError,
+        ):
+            readiness_precondition_blocker = "PUBLICATION_TOPOLOGY_UNSUPPORTED"
+        else:
+            readiness_precondition_blocker = (
+                None
+                if canonical_manifest_hash == stored_manifest_hash
+                else "PUBLICATION_TOPOLOGY_UNSUPPORTED"
+            )
+
+    validation_result = definition.validation_result
+    raw_validation_valid = (
+        validation_result.get("valid")
+        if isinstance(validation_result, Mapping)
+        else None
+    )
+    validation_result_valid = _publication_readiness_validation_result_valid(
+        raw_validation_valid
+    )
+
+    blocker_set: set[str] = set()
+    candidate_kind = "NONE"
+    required_next_action = "NONE"
+    topology_is_internally_consistent = (
+        publication_count >= 0
+        and workspace_count >= 0
+        and 0 <= valid_initial_receipt_count <= initial_receipt_count
+        and initial_receipt_count <= publication_count
+        and current_count in {0, 1}
+        and (
+            (
+                current_count == 0
+                and current_definition_id is None
+                and current_publication_status is None
+            )
+            or (
+                current_count == 1
+                and current_definition_id is not None
+                and current_publication_status is not None
+            )
+        )
+    )
+
+    if readiness_precondition_blocker is not None:
+        blocker_set.add(readiness_precondition_blocker)
+    elif publication_status == PublicationStatus.PUBLISHED:
+        blocker_set.add("DEFINITION_ALREADY_PUBLISHED")
+    elif publication_status == PublicationStatus.RETIRED:
+        blocker_set.add("DEFINITION_RETIRED")
+    elif not topology_is_internally_consistent:
+        blocker_set.add("PUBLICATION_TOPOLOGY_UNSUPPORTED")
+    elif supersedes_id is None:
+        if publication_status != PublicationStatus.DRAFT:
+            blocker_set.add("INITIAL_REQUIRES_DRAFT")
+        if publication_count != 0:
+            blocker_set.add("INITIAL_PROJECT_HAS_PUBLICATION")
+        if workspace_count != 0:
+            blocker_set.add("INITIAL_PROJECT_HAS_WORKSPACE")
+        if current_definition_id is not None:
+            blocker_set.add("INITIAL_PROJECT_HAS_CURRENT_DEFINITION")
+        if not blocker_set:
+            candidate_kind = "INITIAL"
+            required_next_action = "PREVIEW_OR_INITIAL_PUBLISH"
+        else:
+            blocker_set.add("SUCCESSOR_PREDECESSOR_REQUIRED")
+    else:
+        if publication_count < 1:
+            blocker_set.add("SUCCESSOR_PROJECT_PUBLICATION_REQUIRED")
+        if initial_receipt_count != 1 or valid_initial_receipt_count != 1:
+            blocker_set.add("SUCCESSOR_INITIAL_RECEIPT_COUNT_INVALID")
+        if (
+            current_definition_id is None
+            or current_publication_status != PublicationStatus.PUBLISHED
+        ):
+            blocker_set.add("SUCCESSOR_CURRENT_PUBLISHED_REQUIRED")
+        if (
+            current_definition_id is not None
+            and supersedes_id != current_definition_id
+        ):
+            blocker_set.add("SUCCESSOR_PREDECESSOR_MISMATCH")
+        if not blocker_set:
+            if publication_status == PublicationStatus.DRAFT:
+                candidate_kind = "SUCCESSOR"
+                required_next_action = "VALIDATE"
+            elif publication_status == PublicationStatus.VALIDATED:
+                if validation_result_valid is True:
+                    candidate_kind = "SUCCESSOR"
+                    required_next_action = "SUCCESSOR_PUBLISH"
+                else:
+                    blocker_set.add("SUCCESSOR_VALIDATION_RESULT_INVALID")
+            else:
+                blocker_set.add("PUBLICATION_TOPOLOGY_UNSUPPORTED")
+
+    blocker_codes = [
+        code
+        for code in _PUBLICATION_READINESS_BLOCKER_ORDER
+        if code in blocker_set
+    ]
+    core = {
+        "contract": PUBLICATION_READINESS_CONTRACT,
+        "contract_version": PUBLICATION_READINESS_CONTRACT_VERSION,
+        "snapshot_scope": PUBLICATION_READINESS_SNAPSHOT_SCOPE,
+        "project_id": str(definition.project_id),
+        "definition_id": str(definition.pk),
+        "manifest_hash": stored_manifest_hash,
+        "publication_status": publication_status,
+        "validation_result_valid": validation_result_valid,
+        "supersedes_id": str(supersedes_id) if supersedes_id is not None else None,
+        "project_publication_count": publication_count,
+        "project_workspace_count": workspace_count,
+        "initial_publication_receipt_count": initial_receipt_count,
+        "current_definition_id": (
+            str(current_definition_id)
+            if current_definition_id is not None
+            else None
+        ),
+        "current_definition_publication_status": current_publication_status,
+        "candidate_kind": candidate_kind,
+        "required_next_action": required_next_action,
+        "blocker_codes": blocker_codes,
+    }
+    core_bytes = json.dumps(
+        core,
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return {
+        **core,
+        "readiness_sha256": hashlib.sha256(core_bytes).hexdigest(),
+    }
 
 
 PUBLICATION_OPERATION_RESULT_CONTRACT: Final = "FOUNDATION_PUBLICATION_OPERATION_RESULT_V1"

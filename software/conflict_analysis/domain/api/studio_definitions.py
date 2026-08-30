@@ -79,6 +79,7 @@ from domain.services.project_definitions import (
     project_access_group_name as canonical_project_access_group_name,
     publication_operation_receipt,
     publication_operation_request_sha256,
+    publication_readiness_snapshot,
     reconcile_publication_operation,
     save_project_definition_draft_human_write,
     validate_project_definition_human_write,
@@ -247,6 +248,12 @@ _PUBLICATION_CONFLICT_CODES = frozenset(
 _PUBLICATION_CONFLICT_MESSAGE = (
     "The requested Foundation publication operation conflicts with persisted state."
 )
+_PUBLICATION_READINESS_ERROR = {
+    "code": "PUBLICATION_READINESS_REQUEST_INVALID",
+    "errors": [
+        "Publication readiness requires an empty query and no operation headers."
+    ],
+}
 
 
 def project_access_group_name(project_id: object) -> str:
@@ -350,6 +357,43 @@ def _post_only_http_boundary(view):
     return boundary
 
 
+def _suppress_publication_readiness_cookie_mutation(request, response=None) -> None:
+    """Keep every FD07 response free of session and CSRF cookie mutation."""
+
+    # SessionMiddleware bound its SessionStore before URL dispatch. Removing
+    # only the raw cookie here therefore preserves authentication while keeping
+    # its response phase from deleting or refreshing an incoming session key.
+    request.COOKIES.pop(settings.SESSION_COOKIE_NAME, None)
+    request.META["CSRF_COOKIE_NEEDS_UPDATE"] = False
+    session = getattr(request, "session", None)
+    if session is not None:
+        session.accessed = False
+        session.modified = False
+    if response is not None:
+        response.cookies.clear()
+        if response.has_header("Set-Cookie"):
+            del response["Set-Cookie"]
+
+
+def _publication_readiness_cache_boundary(view):
+    """Apply the route-wide FD07 cache and cookie privacy barrier."""
+
+    @wraps(view)
+    def boundary(request, *args, **kwargs):
+        response = None
+        _suppress_publication_readiness_cookie_mutation(request)
+        try:
+            response = view(request, *args, **kwargs)
+            return response
+        finally:
+            if response is not None:
+                response["Cache-Control"] = "no-store"
+                response["Vary"] = "Cookie, Authorization"
+            _suppress_publication_readiness_cookie_mutation(request, response)
+
+    return boundary
+
+
 class ValidationPreviewEnvelopeError(ValidationError):
     """Fixed public contract error for FD01 envelope/header/query drift."""
 
@@ -368,6 +412,13 @@ class FoundationPublicationAdmissionError(ValidationError):
         super().__init__({"request": _PUBLICATION_ERROR_MESSAGES[error_code]})
 
 
+class FoundationPublicationReadinessAdmissionError(ValidationError):
+    """Fixed FD07 request-metadata failure after scope and capability."""
+
+    def __init__(self) -> None:
+        super().__init__({"request": _PUBLICATION_READINESS_ERROR["errors"][0]})
+
+
 def _error_payload(exc: Exception) -> tuple[dict[str, Any], int]:
     if isinstance(exc, RawJSONError):
         return dict(exc.as_dict()), HTTP_400_BAD_REQUEST
@@ -383,6 +434,8 @@ def _error_payload(exc: Exception) -> tuple[dict[str, Any], int]:
             "code": exc.error_code,
             "errors": [_PUBLICATION_ERROR_MESSAGES[exc.error_code]],
         }, HTTP_400_BAD_REQUEST
+    if isinstance(exc, FoundationPublicationReadinessAdmissionError):
+        return dict(_PUBLICATION_READINESS_ERROR), HTTP_400_BAD_REQUEST
     if isinstance(exc, ValidationPreviewEnvelopeError):
         return {
             "code": "VALIDATION_PREVIEW_ENVELOPE_INVALID",
@@ -869,6 +922,18 @@ def _publication_recovery_admission(request: Request) -> None:
         raise FoundationPublicationAdmissionError("PUBLICATION_ENVELOPE_INVALID")
 
 
+def _publication_readiness_admission(request: Request) -> None:
+    """Admit the exact bodyless FD07 envelope after scope and capability."""
+
+    if (
+        request.query_params
+        or "HTTP_IDEMPOTENCY_KEY" in request.META
+        or "HTTP_IF_MATCH" in request.META
+        or any(name in request.META for name in _SPOOF_HEADERS)
+    ):
+        raise FoundationPublicationReadinessAdmissionError()
+
+
 def _publication_operation_response(
     publication: ProjectPublication,
     *,
@@ -893,6 +958,21 @@ def _publication_operation_response(
     if recovery_cache_barrier:
         response["Cache-Control"] = "no-store"
         patch_vary_headers(response, ("Cookie", "Authorization"))
+    return response
+
+
+def _publication_readiness_response(snapshot: Mapping[str, Any]) -> HttpResponse:
+    body = json.dumps(
+        snapshot,
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8") + b"\n"
+    response = HttpResponse(body, status=HTTP_200_OK, content_type="application/json")
+    response["ETag"] = f'"{snapshot["readiness_sha256"]}"'
+    response["Cache-Control"] = "no-store"
+    patch_vary_headers(response, ("Cookie", "Authorization"))
     return response
 
 
@@ -1295,6 +1375,30 @@ def open_definition(request: Request, definition_id: object) -> Response:
     if response.status_code == HTTP_200_OK:
         return _with_etag(response, str(response.data["manifest_hash"]))
     return response
+
+
+@_publication_readiness_cache_boundary
+@_get_only_http_boundary
+@api_view(["GET"])
+@authentication_classes(_VALIDATION_PREVIEW_AUTHENTICATION)
+@permission_classes([IsAuthenticated])
+def open_publication_readiness(
+    request: Request,
+    definition_id: object,
+) -> Response:
+    def operation() -> HttpResponse:
+        current_user = _current_publication_user(request)
+        admitted_definition = _definition_or_404(current_user, definition_id)
+        principal = _current_publication_principal(current_user)
+        require_studio_capability(principal, StudioCapability.DEFINITION_READ)
+        _publication_readiness_admission(request)
+        snapshot = publication_readiness_snapshot(
+            definition_id=definition_id,
+            scoped_project_id=admitted_definition.project_id,
+        )
+        return _publication_readiness_response(snapshot)
+
+    return _execute(operation)
 
 
 @_get_only_http_boundary
