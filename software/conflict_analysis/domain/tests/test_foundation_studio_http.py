@@ -208,6 +208,7 @@ class FoundationStudioRawIngressTests(TestCase):
             "/api/foundation/definitions/17000000-0000-4000-8000-000000000001/validate/",
             "/api/foundation/definitions/17000000-0000-4000-8000-000000000001/publish-initial/",
             "/api/foundation/definitions/17000000-0000-4000-8000-000000000001/publish-successor/",
+            "/api/foundation/definitions/17000000-0000-4000-8000-000000000001/publication-readiness/",
             "/api/foundation/definitions/17000000-0000-4000-8000-000000000001/package/2.1/",
             "/api/foundation/projects/17000000-0000-4000-8000-000000000001/definition-packages/2.1/preview/",
             "/api/foundation/projects/17000000-0000-4000-8000-000000000001/definition-packages/2.1/attempt/",

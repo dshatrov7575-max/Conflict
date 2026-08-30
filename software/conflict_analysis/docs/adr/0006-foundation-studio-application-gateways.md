@@ -421,3 +421,74 @@ Authenticated recovery responses additionally set `Cache-Control: no-store`
 and vary on both `Cookie` and `Authorization`. These transport headers do not
 change receipt bytes or ETag identity and do not apply to the distinct FD03
 current-state publication-result route.
+
+## FD07 publication readiness snapshot
+
+`CA-SUITE-I1-FOUNDATION-FD07-PUBLICATION-READINESS-001` adds one advisory,
+read-only Foundation gateway at
+`GET /api/foundation/definitions/<definition UUID>/publication-readiness/`.
+It reports lifecycle and project publication topology only. It grants no
+capability, reserves no operation, validates or publishes nothing, and is not a
+replacement for FD05/FD06 authentication, `If-Match`, idempotency identity or
+transaction checks.
+
+The outer GET-only boundary rejects every other method before authentication or
+body access. A still-outer route privacy boundary covers every 200, 400, 401,
+403, 404 and 405 result: it sets `Cache-Control: no-store` and exact
+`Vary: Cookie, Authorization`, clears response cookie morsels, and neutralizes
+session-deletion/refresh and CSRF-cookie response flags while preserving the
+incoming cookie jar and the original status, body and authentication/method
+headers. This suppression never authenticates an invalid or expired session.
+Supported Basic authentication uses the non-upgrading password verifier. Exact
+definition object scope and current `DEFINITION_READ` capability precede
+request-metadata admission; the query must be empty and publication
+`Idempotency-Key` and `If-Match` headers must be absent. Absent and inaccessible
+definitions remain indistinguishable 404 results. Every outcome performs no
+body parse, cookie or session mutation, password upgrade, row lock, audit or
+domain write.
+
+After admission, the earlier definition object contributes no response field.
+Its admitted project identity is retained only as a fail-closed scope predicate
+against delete-and-recreate races; it is never serialized into the snapshot.
+The Foundation readiness service re-reads the exact definition, all
+project-scoped publication and workspace counts, the initial-receipt count and
+the unique current definition in one internally consistent database statement.
+Correlated subqueries keep the three counts project-wide and immune to join
+multiplication. The snapshot is therefore internally consistent but remains
+advisory and may become stale immediately after the read.
+
+The canonical `FOUNDATION_PUBLICATION_READINESS_V1` response identifies the
+definition and manifest, stored lifecycle and validation truth, predecessor,
+project-wide counts, current definition, candidate kind, topology-required next
+action and ordered stable blocker codes. `readiness_sha256` hashes the canonical
+compact sorted UTF-8 core; the wire representation adds one terminal LF and uses
+the quoted readiness hash as ETag. The route-wide privacy boundary makes both
+authenticated and unauthenticated outcomes non-cacheable and cookie-mutation
+free; success uses the same exact cache headers as every failure branch.
+
+An empty first-project DRAFT may advise `INITIAL` and
+`PREVIEW_OR_INITIAL_PUBLISH`. An exact DRAFT successor of the current PUBLISHED
+definition may advise `VALIDATE`; the same exact VALIDATED successor with a valid
+persisted validation result may advise `SUCCESSOR_PUBLISH`. Every other topology
+returns `NONE` plus all applicable blockers in the fixed FD07 registry order. A
+standalone DRAFT in a published project is never treated as an initial candidate.
+Editor, Publisher and Viewer principals with the same object scope and read
+capability receive the same topology snapshot; mutation permissions remain a
+separate authority.
+
+Actionable advice is limited to an exact typed V1 target whose stored lowercase
+SHA-256 equals the existing canonical manifest hash computed in memory against
+the persisted Project joined into that same statement. Legacy envelopes, blank
+or drifting hashes, canonicalization failures and embedded Project identity
+mismatches are `PUBLICATION_TOPOLOGY_UNSUPPORTED`; the service neither repairs
+nor normalizes their persisted snapshot. This is an identity/shape gate, not a
+second lifecycle validator: a project-bound, structurally admissible typed DRAFT
+may retain non-blocking semantic diagnostics and still receive topology advice,
+while FD05/FD06 remain final validation and publication authority.
+
+The same statement also derives an internal count of every publication receipt
+that points to the exact target definition, independent of the receipt's stored
+project. Any such row suppresses actionable advice as
+`DEFINITION_ALREADY_PUBLISHED`, mirroring the FD06 committed-target guard. This
+internal count and every receipt or foreign-project identity remain absent from
+the public DTO and its hash input.
