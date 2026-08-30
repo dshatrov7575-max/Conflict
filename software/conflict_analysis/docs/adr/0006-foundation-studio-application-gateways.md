@@ -369,3 +369,55 @@ the existing non-upgrading verifier, so even a valid password stored with a
 supported stale work factor is checked without rewriting `auth_user.password`;
 invalid Basic credentials likewise fail without rows or response cookies. The
 accepted open-definition authentication chain remains unchanged.
+
+## FD06 immutable publication operation reconciliation
+
+`CA-SUITE-I1-FOUNDATION-FD06-PUBLICATION-RECONCILIATION-001` makes both
+publication POST gateways explicit, replayable HUMAN-write operations. Each
+request requires a canonical lowercase UUIDv4 `Idempotency-Key`, one strong
+quoted lowercase manifest SHA-256 `If-Match`, no query, and the exact initial or
+successor JSON envelope. The route-level POST gate, real session CSRF,
+non-upgrading Basic verifier, object scope and capability checks precede the
+single bounded raw-body capture.
+
+The canonical semantic request hash is persisted as
+`PUBOP-<operation UUID>-<request SHA-256>` in the existing immutable,
+project-scoped `ProjectPublication.code`. No schema, model, enum, migration or
+permission changes are introduced. A project row lock serializes prefix lookup
+before lifecycle decisions: same key and request replays the exact receipt,
+same key with another semantic request is typed key reuse, and a fresh key
+continues through the canonical publication transaction.
+
+Fresh POST (`201`), exact replay (`200`) and the project-scoped publication
+operation GET return identical canonical UTF-8 JSON bytes with one terminal LF.
+The receipt fixes historical definition state, manifest-ordered initial Help
+binding UUIDs, optional workspace pin, actor, locale, validation result and
+publication time. `result_sha256` hashes the canonical core; the ETag hashes the
+complete wire bytes. Mutable workspace presentation and current lifecycle flags
+are absent. The accepted FD03 13-field DTO remains a separate current-state
+projection. PostgreSQL 18 is the concurrency authority; SQLite proves portable
+semantics and skips only the four FD06 race nodes.
+
+Both publication POSTs use the non-upgrading HUMAN-write authentication path.
+Authentication, exact Project object scope and the current action capability are
+re-established before a committed operation can replay; an operation UUID is
+never an authority token. The recovery GET likewise applies its outer GET gate,
+non-upgrading authentication, exact Project scope and current
+`DEFINITION_READ` capability before request metadata admission or operation
+lookup. Removing scope produces the same bounded 404 as absence, while removing
+the capability produces the fixed Studio capability denial. Restoring current
+authority recovers the original immutable bytes without mutation.
+
+Only an exact full operation code matching
+`PUBOP-<canonical-lowercase-UUIDv4>-<64-lowercase-hex>` is accepted. A malformed
+prefix match, ambiguous or duplicate project-scoped prefix, impossible suffix,
+or receipt reconstruction failure is the fixed bounded
+`409 PUBLICATION_OPERATION_IDENTITY_CORRUPT`; no stored row detail is disclosed.
+Every FD06 admission, replay, recovery, lifecycle and race failure is mapped to
+a fixed typed public body before the legacy generic error fallback. FD06 bodies
+never contain `detail_sha256` or any value derived from exception text.
+
+Authenticated recovery responses additionally set `Cache-Control: no-store`
+and vary on both `Cookie` and `Authorization`. These transport headers do not
+change receipt bytes or ETag identity and do not apply to the distinct FD03
+current-state publication-result route.
