@@ -17,6 +17,11 @@ urlpatterns = [
         name="foundation-definition-create",
     ),
     path(
+        "projects/<uuid:project_id>/publication-operations/<uuid:operation_id>/",
+        studio_definitions.open_publication_operation,
+        name="foundation-publication-operation-open",
+    ),
+    path(
         "projects/<uuid:project_id>/publication-results/<uuid:publication_id>/",
         studio_definitions.open_publication_result,
         name="foundation-publication-result-open",

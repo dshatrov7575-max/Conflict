@@ -18,8 +18,10 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import check_password
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied, ValidationError
+from django.db import IntegrityError
 from django.http import Http404, HttpResponse, HttpResponseNotAllowed
 from django.middleware.csrf import get_token
+from django.utils.cache import patch_vary_headers
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 from rest_framework.decorators import (
@@ -43,7 +45,6 @@ from rest_framework.status import (
 from domain.models import Project, ProjectDefinitionVersion, ProjectPublication
 from domain.policies import (
     StudioCapability,
-    bootstrap_initial_project_definition,
     require_studio_capability,
     studio_principal_from_user,
     validate_project_definition_manifest_policy,
@@ -73,9 +74,12 @@ from domain.services.project_definitions import (
     bootstrap_project_definition_draft_human_write,
     clone_project_definition_draft_human_write,
     create_project_definition_draft_human_write,
+    find_publication_operation,
     open_project_definition,
     project_access_group_name as canonical_project_access_group_name,
-    publish_successor_project_definition,
+    publication_operation_receipt,
+    publication_operation_request_sha256,
+    reconcile_publication_operation,
     save_project_definition_draft_human_write,
     validate_project_definition_human_write,
 )
@@ -132,12 +136,33 @@ class _ReadOnlyBasicAuthentication(BasicAuthentication):
         return user, None
 
 
+class _PublicationSessionAuthentication(_RawJSONSessionAuthentication):
+    """Keep pre-CSRF media rejection on the fixed FD06 envelope DTO."""
+
+    def authenticate(self, request: Request):
+        try:
+            return super().authenticate(request)
+        except ParseError as exc:
+            raise ParseError(
+                detail={
+                    "code": "PUBLICATION_ENVELOPE_INVALID",
+                    "errors": [
+                        "The request must match the exact publication envelope."
+                    ],
+                }
+            ) from exc
+
+
 _PUBLIC_AUTHENTICATION = (BasicAuthentication, _RawJSONSessionAuthentication)
 _VALIDATION_PREVIEW_AUTHENTICATION = (
     _ReadOnlyBasicAuthentication,
     _RawJSONSessionAuthentication,
 )
 _HUMAN_WRITE_AUTHENTICATION = _VALIDATION_PREVIEW_AUTHENTICATION
+_PUBLICATION_AUTHENTICATION = (
+    _ReadOnlyBasicAuthentication,
+    _PublicationSessionAuthentication,
+)
 _SPOOF_FIELDS = frozenset(
     {
         "actor",
@@ -201,6 +226,27 @@ _HUMAN_WRITE_ERROR_MESSAGES = {
         "The DRAFT failed canonical Foundation definition validation."
     ),
 }
+_PUBLICATION_ERROR_MESSAGES = {
+    "PUBLICATION_OPERATION_KEY_REQUIRED": "Idempotency-Key is required.",
+    "PUBLICATION_OPERATION_KEY_INVALID": "Idempotency-Key must be one canonical lowercase RFC 4122 UUIDv4.",
+    "PUBLICATION_IF_MATCH_REQUIRED": "If-Match is required.",
+    "PUBLICATION_IF_MATCH_INVALID": "If-Match must be one strong quoted lowercase SHA-256.",
+    "PUBLICATION_ENVELOPE_INVALID": "The request must match the exact publication envelope.",
+}
+_PUBLICATION_CONFLICT_CODES = frozenset(
+    {
+        "PUBLICATION_OPERATION_KEY_REUSE",
+        "PUBLICATION_STALE",
+        "PUBLICATION_TARGET_STATE_CONFLICT",
+        "PUBLICATION_ALREADY_COMMITTED",
+        "PUBLICATION_ID_CONFLICT",
+        "PUBLICATION_WORKSPACE_CONFLICT",
+        "PUBLICATION_OPERATION_IDENTITY_CORRUPT",
+    }
+)
+_PUBLICATION_CONFLICT_MESSAGE = (
+    "The requested Foundation publication operation conflicts with persisted state."
+)
 
 
 def project_access_group_name(project_id: object) -> str:
@@ -290,6 +336,20 @@ def _get_only_http_boundary(view):
     return boundary
 
 
+def _post_only_http_boundary(view):
+    """Reject every non-POST method before authentication or body access."""
+
+    @wraps(view)
+    def boundary(request, *args, **kwargs):
+        if request.method != "POST":
+            response = HttpResponseNotAllowed(["POST"])
+            response["Content-Length"] = "0"
+            return response
+        return view(request, *args, **kwargs)
+
+    return boundary
+
+
 class ValidationPreviewEnvelopeError(ValidationError):
     """Fixed public contract error for FD01 envelope/header/query drift."""
 
@@ -302,6 +362,12 @@ class FoundationHumanWriteAdmissionError(ValidationError):
         super().__init__({"request": _HUMAN_WRITE_ERROR_MESSAGES[error_code]})
 
 
+class FoundationPublicationAdmissionError(ValidationError):
+    def __init__(self, error_code: str) -> None:
+        self.error_code = error_code
+        super().__init__({"request": _PUBLICATION_ERROR_MESSAGES[error_code]})
+
+
 def _error_payload(exc: Exception) -> tuple[dict[str, Any], int]:
     if isinstance(exc, RawJSONError):
         return dict(exc.as_dict()), HTTP_400_BAD_REQUEST
@@ -312,6 +378,11 @@ def _error_payload(exc: Exception) -> tuple[dict[str, Any], int]:
             "errors": [_HUMAN_WRITE_ERROR_MESSAGES[error_code]],
         }
         return payload, HTTP_400_BAD_REQUEST
+    if isinstance(exc, FoundationPublicationAdmissionError):
+        return {
+            "code": exc.error_code,
+            "errors": [_PUBLICATION_ERROR_MESSAGES[exc.error_code]],
+        }, HTTP_400_BAD_REQUEST
     if isinstance(exc, ValidationPreviewEnvelopeError):
         return {
             "code": "VALIDATION_PREVIEW_ENVELOPE_INVALID",
@@ -323,6 +394,11 @@ def _error_payload(exc: Exception) -> tuple[dict[str, Any], int]:
             "errors": ["The authenticated principal lacks the required Studio capability."],
         }, HTTP_403_FORBIDDEN
     if isinstance(exc, FoundationStudioApplicationConflict):
+        if exc.conflict_code in _PUBLICATION_CONFLICT_CODES:
+            return {
+                "code": exc.conflict_code,
+                "errors": [_PUBLICATION_CONFLICT_MESSAGE],
+            }, HTTP_409_CONFLICT
         return {
             "code": exc.conflict_code,
             "errors": ["The requested Foundation application transition conflicts with persisted state."],
@@ -357,6 +433,7 @@ def _execute(
         )
     except (
         PermissionDenied,
+        FoundationPublicationAdmissionError,
         FoundationHumanWriteError,
         ProjectDefinitionDraftConflict,
         RawJSONError,
@@ -366,13 +443,80 @@ def _execute(
     ) as exc:
         payload, status = _error_payload(exc)
         return Response(payload, status=status)
-    if isinstance(value, Response):
+    if isinstance(value, HttpResponse):
         return value
     return Response(value, status=success_status)
 
 
+def _execute_publication(operation: Callable[[], Any]) -> Response:
+    """Keep every FD06 failure on its fixed, non-fingerprinting public surface."""
+
+    try:
+        value = operation()
+    except (Http404, ObjectDoesNotExist):
+        return Response(
+            {"code": "STUDIO_RESOURCE_NOT_FOUND", "errors": ["Resource not found."]},
+            status=HTTP_404_NOT_FOUND,
+        )
+    except PermissionDenied as exc:
+        payload, status = _error_payload(exc)
+        return Response(payload, status=status)
+    except FoundationPublicationAdmissionError as exc:
+        payload, status = _error_payload(exc)
+        return Response(payload, status=status)
+    except FoundationStudioApplicationConflict as exc:
+        code = (
+            exc.conflict_code
+            if exc.conflict_code in _PUBLICATION_CONFLICT_CODES
+            else "PUBLICATION_TARGET_STATE_CONFLICT"
+        )
+        return Response(
+            {"code": code, "errors": [_PUBLICATION_CONFLICT_MESSAGE]},
+            status=HTTP_409_CONFLICT,
+        )
+    except (RawJSONError, FoundationHumanWriteError):
+        return Response(
+            {
+                "code": "PUBLICATION_ENVELOPE_INVALID",
+                "errors": [_PUBLICATION_ERROR_MESSAGES["PUBLICATION_ENVELOPE_INVALID"]],
+            },
+            status=HTTP_400_BAD_REQUEST,
+        )
+    except (IntegrityError, ValidationError, ValueError, TypeError, AttributeError, KeyError):
+        return Response(
+            {
+                "code": "PUBLICATION_TARGET_STATE_CONFLICT",
+                "errors": [_PUBLICATION_CONFLICT_MESSAGE],
+            },
+            status=HTTP_409_CONFLICT,
+        )
+    if isinstance(value, HttpResponse):
+        return value
+    return Response(value, status=HTTP_200_OK)
+
+
 def _principal(request: Request):
     return studio_principal_from_user(request.user)
+
+
+def _current_publication_user(request: Request):
+    """Re-read the authenticated HUMAN before object scope or capability checks."""
+
+    user = request.user
+    user_model = get_user_model()
+    try:
+        current_user = user_model._default_manager.get(pk=getattr(user, "pk", None))
+    except (user_model.DoesNotExist, TypeError, ValueError) as exc:
+        raise PermissionDenied("The authenticated principal is no longer persisted.") from exc
+    if not bool(getattr(current_user, "is_active", False)):
+        raise PermissionDenied("The authenticated principal is no longer active.")
+    return current_user
+
+
+def _current_publication_principal(user: object):
+    """Derive current capabilities without reusing an authenticator permission cache."""
+
+    return studio_principal_from_user(user)
 
 
 def _has_project_access(user: object, project: Project) -> bool:
@@ -630,6 +774,126 @@ def _require_no_query(request: Request) -> None:
     _reject_spoofed_authority(request, {})
     if request.query_params:
         raise ValidationError({"query": "This route accepts no query parameters."})
+
+
+def _publication_admission(
+    request: Request,
+    *,
+    definition: ProjectDefinitionVersion,
+    principal: object,
+    operation_kind: str,
+) -> tuple[UUID, str, str, dict[str, Any] | None, str]:
+    """Admit key/token and one sealed body before publication domain work."""
+
+    if request.query_params:
+        raise FoundationPublicationAdmissionError("PUBLICATION_ENVELOPE_INVALID")
+    key = request.META.get("HTTP_IDEMPOTENCY_KEY")
+    if key is None or key == "":
+        raise FoundationPublicationAdmissionError("PUBLICATION_OPERATION_KEY_REQUIRED")
+    try:
+        operation_id = UUID(key)
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise FoundationPublicationAdmissionError("PUBLICATION_OPERATION_KEY_INVALID") from exc
+    if (
+        not isinstance(key, str)
+        or str(operation_id) != key
+        or operation_id.version != 4
+        or operation_id.variant != RFC_4122
+    ):
+        raise FoundationPublicationAdmissionError("PUBLICATION_OPERATION_KEY_INVALID")
+    raw_if_match = request.META.get("HTTP_IF_MATCH")
+    if raw_if_match is None or raw_if_match == "":
+        raise FoundationPublicationAdmissionError("PUBLICATION_IF_MATCH_REQUIRED")
+    matched = re.fullmatch(r'"([0-9a-f]{64})"', str(raw_if_match))
+    if matched is None:
+        raise FoundationPublicationAdmissionError("PUBLICATION_IF_MATCH_INVALID")
+    expected_hash = matched.group(1)
+    try:
+        _reject_spoofed_authority(request, {}, allow_if_match=True)
+        capture_http_json(request)
+        payload = dict(read_http_json(request).value)
+        _reject_spoofed_authority(request, payload, allow_if_match=True)
+        _require_human_write_unicode_scalars(payload)
+    except (RawJSONError, ValidationError, ValueError, TypeError) as exc:
+        raise FoundationPublicationAdmissionError("PUBLICATION_ENVELOPE_INVALID") from exc
+
+    workspace: dict[str, Any] | None
+    if operation_kind == "INITIAL":
+        if set(payload) != {"locale", "workspace"} or not isinstance(payload["workspace"], Mapping):
+            raise FoundationPublicationAdmissionError("PUBLICATION_ENVELOPE_INVALID")
+        workspace = dict(payload["workspace"])
+        if set(workspace) != {"id", "code", "version", "name", "is_default", "metadata"}:
+            raise FoundationPublicationAdmissionError("PUBLICATION_ENVELOPE_INVALID")
+        if (
+            any(not isinstance(workspace[field], str) for field in ("id", "code", "version", "name"))
+            or workspace["is_default"] is not True
+            or not isinstance(workspace["metadata"], Mapping)
+        ):
+            raise FoundationPublicationAdmissionError("PUBLICATION_ENVELOPE_INVALID")
+        try:
+            workspace_id = UUID(workspace["id"])
+        except ValueError as exc:
+            raise FoundationPublicationAdmissionError("PUBLICATION_ENVELOPE_INVALID") from exc
+        if str(workspace_id) != workspace["id"]:
+            raise FoundationPublicationAdmissionError("PUBLICATION_ENVELOPE_INVALID")
+        workspace["metadata"] = dict(workspace["metadata"])
+    else:
+        if set(payload) != {"locale"}:
+            raise FoundationPublicationAdmissionError("PUBLICATION_ENVELOPE_INVALID")
+        workspace = None
+    try:
+        locale = _bounded_locale(payload["locale"])
+    except (KeyError, ValidationError) as exc:
+        raise FoundationPublicationAdmissionError("PUBLICATION_ENVELOPE_INVALID") from exc
+    request_hash = publication_operation_request_sha256(
+        operation_kind=operation_kind,
+        project_id=definition.project_id,
+        definition_id=definition.pk,
+        expected_manifest_hash=expected_hash,
+        actor_identifier=principal.actor_identifier,
+        locale=locale,
+        initial_workspace=workspace,
+    )
+    return operation_id, expected_hash, locale, workspace, request_hash
+
+
+def _publication_recovery_admission(request: Request) -> None:
+    """Admit the exact bodyless recovery envelope after scope and capability."""
+
+    if (
+        request.query_params
+        or "HTTP_IDEMPOTENCY_KEY" in request.META
+        or "HTTP_IF_MATCH" in request.META
+        or any(name in request.META for name in _SPOOF_HEADERS)
+    ):
+        raise FoundationPublicationAdmissionError("PUBLICATION_ENVELOPE_INVALID")
+
+
+def _publication_operation_response(
+    publication: ProjectPublication,
+    *,
+    replayed: bool,
+    status: int,
+    recovery_cache_barrier: bool = False,
+) -> HttpResponse:
+    body = json.dumps(
+        publication_operation_receipt(publication),
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8") + b"\n"
+    response = HttpResponse(body, status=status, content_type="application/json")
+    response["ETag"] = f'"{hashlib.sha256(body).hexdigest()}"'
+    response["Location"] = (
+        f"/api/foundation/projects/{publication.project_id}/"
+        f"publication-results/{publication.pk}/"
+    )
+    response["Idempotency-Replayed"] = "true" if replayed else "false"
+    if recovery_cache_barrier:
+        response["Cache-Control"] = "no-store"
+        patch_vary_headers(response, ("Cookie", "Authorization"))
+    return response
 
 
 def _bootstrap_workspace_query(
@@ -1290,69 +1554,88 @@ def validate_definition(request: Request, definition_id: object) -> Response:
     return _execute(operation)
 
 
+@_post_only_http_boundary
 @api_view(["POST"])
-@authentication_classes(_PUBLIC_AUTHENTICATION)
+@authentication_classes(_PUBLICATION_AUTHENTICATION)
 @permission_classes([IsAuthenticated])
 def publish_initial_definition(request: Request, definition_id: object) -> Response:
-    def operation() -> dict[str, Any]:
-        definition = _definition_or_404(request.user, definition_id)
-        principal = _principal(request)
+    def operation() -> HttpResponse:
+        current_user = _current_publication_user(request)
+        definition = _definition_or_404(current_user, definition_id)
+        principal = _current_publication_principal(current_user)
         require_studio_capability(principal, StudioCapability.DEFINITION_VALIDATE)
         require_studio_capability(principal, StudioCapability.DEFINITION_PUBLISH)
-        payload = _json_payload(request)
-        result = bootstrap_initial_project_definition(
-            definition=definition,
-            actor_identifier=principal.actor_identifier,
-            principal=principal,
-            workspace_spec=payload.get("workspace"),
-            locale=payload.get("locale", "ru"),
+        operation_id, expected_hash, locale, workspace, request_hash = _publication_admission(
+            request, definition=definition, principal=principal, operation_kind="INITIAL"
         )
-        return {
-            "publication_id": str(result.publication.pk),
-            "definition": _definition_payload(result.definition),
-            "initial_workspace_id": str(result.workspace.pk),
-            "help_binding_ids": [str(item.pk) for item in result.help_bindings],
-        }
+        result = reconcile_publication_operation(
+            definition=definition, operation_id=operation_id,
+            request_sha256=request_hash, operation_kind="INITIAL",
+            principal=principal, locale=locale, workspace_spec=workspace,
+            expected_manifest_hash=expected_hash,
+        )
+        return _publication_operation_response(
+            result.publication, replayed=result.replayed,
+            status=HTTP_200_OK if result.replayed else HTTP_201_CREATED,
+        )
 
-    return _execute(operation, success_status=HTTP_201_CREATED)
+    return _execute_publication(operation)
 
 
+@_post_only_http_boundary
 @api_view(["POST"])
-@authentication_classes(_PUBLIC_AUTHENTICATION)
+@authentication_classes(_PUBLICATION_AUTHENTICATION)
 @permission_classes([IsAuthenticated])
 def publish_successor_definition(request: Request, definition_id: object) -> Response:
-    def operation() -> dict[str, Any]:
-        definition = _definition_or_404(request.user, definition_id)
-        principal = _principal(request)
+    def operation() -> HttpResponse:
+        current_user = _current_publication_user(request)
+        definition = _definition_or_404(current_user, definition_id)
+        principal = _current_publication_principal(current_user)
         require_studio_capability(principal, StudioCapability.DEFINITION_PUBLISH)
-        _require_no_query(request)
-        payload = _json_payload(request)
-        if set(payload) - {"locale"}:
-            raise ValidationError(
-                {"body": "Successor publication accepts only an optional locale."}
-            )
-        publication = publish_successor_project_definition(
-            definition,
-            principal=principal,
-            locale=(
-                _bounded_locale(payload["locale"])
-                if "locale" in payload
-                else "en"
-            ),
+        operation_id, expected_hash, locale, _, request_hash = _publication_admission(
+            request, definition=definition, principal=principal, operation_kind="SUCCESSOR"
         )
-        return {
-            "publication_id": str(publication.pk),
-            "definition": _definition_payload(publication.definition_version),
-            "initial_workspace_id": None,
-        }
+        result = reconcile_publication_operation(
+            definition=definition, operation_id=operation_id,
+            request_sha256=request_hash, operation_kind="SUCCESSOR",
+            principal=principal, locale=locale, workspace_spec=None,
+            expected_manifest_hash=expected_hash,
+        )
+        return _publication_operation_response(
+            result.publication, replayed=result.replayed,
+            status=HTTP_200_OK if result.replayed else HTTP_201_CREATED,
+        )
 
-    response = _execute(operation, success_status=HTTP_201_CREATED)
-    if response.status_code == HTTP_201_CREATED:
-        return _with_etag(
-            response,
-            str(response.data["definition"]["manifest_hash"]),
+    return _execute_publication(operation)
+
+
+@_get_only_http_boundary
+@api_view(["GET"])
+@authentication_classes(_PUBLICATION_AUTHENTICATION)
+@permission_classes([IsAuthenticated])
+def open_publication_operation(
+    request: Request, project_id: object, operation_id: object
+) -> Response:
+    def operation() -> HttpResponse:
+        current_user = _current_publication_user(request)
+        project = _project_or_404(current_user, project_id)
+        principal = _current_publication_principal(current_user)
+        require_studio_capability(principal, StudioCapability.DEFINITION_READ)
+        _publication_recovery_admission(request)
+        publication = find_publication_operation(
+            project=project,
+            operation_id=operation_id,
         )
-    return response
+        if publication is None:
+            raise Http404("Publication operation not found.")
+        return _publication_operation_response(
+            publication,
+            replayed=True,
+            status=HTTP_200_OK,
+            recovery_cache_barrier=True,
+        )
+
+    return _execute_publication(operation)
 
 
 @api_view(["POST"])

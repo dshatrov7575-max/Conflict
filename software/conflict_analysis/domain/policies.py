@@ -1189,6 +1189,7 @@ def publish_project_definition(
     principal: StudioPrincipal | None = None,
     workspace_spec: Mapping[str, Any] | None = None,
     inject_failure_at: str | None = None,
+    publication_code: str | None = None,
 ) -> ProjectPublication:
     """Publish through the sole Foundation authority.
 
@@ -1363,7 +1364,11 @@ def publish_project_definition(
             project=current.project,
             definition_version=current,
             initial_workspace=workspace,
-            code=_audit_code("PUB"),
+            code=(
+                publication_code
+                if publication_code is not None
+                else _audit_code("PUB")
+            ),
             locale=locale,
             actor_identifier=principal.actor_identifier,
             validation_result=current.validation_result,
@@ -1487,6 +1492,7 @@ def bootstrap_initial_project_definition(
     workspace_spec: Mapping[str, Any],
     locale: str = "ru",
     inject_failure_at: str | None = None,
+    publication_code: str | None = None,
 ) -> ProjectDefinitionBootstrapResult:
     """Atomically validate and first-publish one typed definition exactly once."""
 
@@ -1518,6 +1524,7 @@ def bootstrap_initial_project_definition(
         principal=principal,
         workspace_spec=workspace_spec,
         inject_failure_at=inject_failure_at,
+        publication_code=publication_code,
     )
     workspace = publication.initial_workspace
     if workspace is None:  # defensive: model contract requires it on this path

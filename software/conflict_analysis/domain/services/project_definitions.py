@@ -15,6 +15,7 @@ import copy
 import hashlib
 import json
 import math
+import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone as datetime_timezone
@@ -23,12 +24,13 @@ from enum import StrEnum
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Final, Protocol
-from uuid import UUID
+from uuid import RFC_4122, UUID
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.utils import timezone
 from jsonschema import Draft202012Validator, FormatChecker
 
@@ -38,6 +40,8 @@ from domain.models import (
     Project,
     ProjectDefinitionVersion,
     ProjectPublication,
+    ProjectWorkspace,
+    UIHelpBinding,
     _canonical_studio_write,
 )
 from domain.services.foundation_packages import RawJSONError, parse_json_source
@@ -151,6 +155,347 @@ class FoundationStudioApplicationConflict(ValidationError):
                 )
             }
         )
+
+
+PUBLICATION_OPERATION_RESULT_CONTRACT: Final = "FOUNDATION_PUBLICATION_OPERATION_RESULT_V1"
+PUBLICATION_OPERATION_RESULT_VERSION: Final = "1.0.0"
+PUBLICATION_OPERATION_REQUEST_CONTRACT: Final = "FOUNDATION_PUBLICATION_OPERATION_REQUEST_V1"
+PUBLICATION_OPERATION_REQUEST_VERSION: Final = "1.0.0"
+PUBLICATION_OPERATION_PREFIX: Final = "PUBOP-"
+_PUBLICATION_OPERATION_CODE_PATTERN: Final = re.compile(
+    r"\APUBOP-(?P<operation_id>[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-"
+    r"[89ab][0-9a-f]{3}-[0-9a-f]{12})-(?P<request_sha256>[0-9a-f]{64})\Z"
+)
+
+
+@dataclass(frozen=True, slots=True)
+class FoundationPublicationOperationResult:
+    publication: ProjectPublication
+    replayed: bool
+
+
+def publication_operation_code(operation_id: UUID, request_sha256: str) -> str:
+    if (
+        not isinstance(operation_id, UUID)
+        or operation_id.version != 4
+        or operation_id.variant != RFC_4122
+    ):
+        raise ValueError("Publication operation id must be a UUIDv4.")
+    if not isinstance(request_sha256, str) or len(request_sha256) != 64 or any(
+        item not in "0123456789abcdef" for item in request_sha256
+    ):
+        raise ValueError("Publication operation hash must be lowercase SHA-256.")
+    return f"{PUBLICATION_OPERATION_PREFIX}{operation_id}-{request_sha256}"
+
+
+def _publication_operation_prefix(operation_id: UUID) -> str:
+    if not isinstance(operation_id, UUID):
+        raise ValueError("Publication operation id must be a UUID.")
+    return f"{PUBLICATION_OPERATION_PREFIX}{operation_id}-"
+
+
+def publication_operation_identity(publication: ProjectPublication) -> tuple[UUID, str]:
+    code = getattr(publication, "code", None)
+    try:
+        if not isinstance(code, str):
+            raise ValueError
+        matched = _PUBLICATION_OPERATION_CODE_PATTERN.fullmatch(code)
+        if matched is None:
+            raise ValueError
+        operation_id = UUID(matched.group("operation_id"))
+        request_hash = matched.group("request_sha256")
+        if code != publication_operation_code(operation_id, request_hash):
+            raise ValueError
+    except (TypeError, ValueError) as exc:
+        raise FoundationStudioApplicationConflict(
+            "PUBLICATION_OPERATION_IDENTITY_CORRUPT",
+            "The persisted publication operation identity is corrupt.",
+        ) from exc
+    return operation_id, request_hash
+
+
+def find_publication_operation(
+    *,
+    project: Project,
+    operation_id: UUID,
+    lock: bool = False,
+) -> ProjectPublication | None:
+    """Resolve at most one exact project-scoped canonical publication operation."""
+
+    prefix = _publication_operation_prefix(operation_id)
+    publications = ProjectPublication.objects
+    if lock:
+        publications = publications.select_for_update(of=("self",))
+    matches = list(
+        publications.filter(project=project, code__startswith=prefix)
+        .select_related("definition_version", "initial_workspace")
+        .order_by("pk")[:2]
+    )
+    if len(matches) > 1:
+        raise FoundationStudioApplicationConflict(
+            "PUBLICATION_OPERATION_IDENTITY_CORRUPT",
+            "The project contains an ambiguous publication operation identity.",
+        )
+    if not matches:
+        return None
+    stored_operation_id, _ = publication_operation_identity(matches[0])
+    if stored_operation_id != operation_id:
+        raise FoundationStudioApplicationConflict(
+            "PUBLICATION_OPERATION_IDENTITY_CORRUPT",
+            "The persisted publication operation identity is inconsistent.",
+        )
+    return matches[0]
+
+
+def _publication_definition_receipt(definition: ProjectDefinitionVersion) -> dict[str, Any]:
+    return {
+        "id": str(definition.pk),
+        "project_id": str(definition.project_id),
+        "code": definition.code,
+        "version": definition.version,
+        "publication_status": PublicationStatus.PUBLISHED,
+        "manifest": definition.manifest,
+        "manifest_hash": definition.manifest_hash,
+        "schema_version": definition.schema_version,
+        "semantic_version": definition.semantic_version,
+        "construct_version": definition.construct_version,
+        "supersedes_id": str(definition.supersedes_id) if definition.supersedes_id else None,
+    }
+
+
+def publication_operation_receipt(publication: ProjectPublication) -> dict[str, Any]:
+    try:
+        operation_id, request_hash = publication_operation_identity(publication)
+        definition = publication.definition_version
+        workspace = publication.initial_workspace
+        if definition.project_id != publication.project_id:
+            raise ValueError
+        binding_ids: list[str] = []
+        if workspace is not None:
+            if (
+                workspace.project_id != publication.project_id
+                or workspace.definition_version_id != definition.pk
+                or workspace.definition_manifest_hash != definition.manifest_hash
+            ):
+                raise ValueError
+            persisted_ids = {
+                str(value)
+                for value in UIHelpBinding.objects.filter(workspace_id=workspace.pk)
+                .values_list("id", flat=True)
+            }
+            manifest_bindings = definition.manifest.get("help_bindings", [])
+            if not isinstance(manifest_bindings, list):
+                raise ValueError
+            for item in manifest_bindings:
+                if not isinstance(item, Mapping):
+                    raise ValueError
+                item_id = str(item.get("id", ""))
+                if item_id not in persisted_ids:
+                    raise ValueError
+                binding_ids.append(item_id)
+        core = {
+            "contract": PUBLICATION_OPERATION_RESULT_CONTRACT,
+            "contract_version": PUBLICATION_OPERATION_RESULT_VERSION,
+            "operation_id": str(operation_id),
+            "operation_request_sha256": request_hash,
+            "operation_kind": "INITIAL" if workspace is not None else "SUCCESSOR",
+            "publication_id": str(publication.pk),
+            "project_id": str(publication.project_id),
+            "definition": _publication_definition_receipt(definition),
+            "initial_workspace_id": str(workspace.pk) if workspace else None,
+            "initial_workspace_definition_id": (
+                str(workspace.definition_version_id) if workspace else None
+            ),
+            "initial_workspace_definition_manifest_hash": (
+                workspace.definition_manifest_hash if workspace else None
+            ),
+            "help_binding_ids": binding_ids,
+            "locale": publication.locale,
+            "actor_identifier": publication.actor_identifier,
+            "validation_result": publication.validation_result,
+            "published_at": publication.published_at.isoformat().replace("+00:00", "Z"),
+        }
+        core_bytes = json.dumps(
+            core,
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    except FoundationStudioApplicationConflict:
+        raise
+    except (AttributeError, KeyError, TypeError, ValueError) as exc:
+        raise FoundationStudioApplicationConflict(
+            "PUBLICATION_OPERATION_IDENTITY_CORRUPT",
+            "The immutable publication receipt cannot be reconstructed.",
+        ) from exc
+    return {**core, "result_sha256": hashlib.sha256(core_bytes).hexdigest()}
+
+
+def publication_operation_request_sha256(
+    *, operation_kind: str, project_id: UUID, definition_id: UUID,
+    expected_manifest_hash: str, actor_identifier: str, locale: str,
+    initial_workspace: Mapping[str, Any] | None,
+) -> str:
+    value = {
+        "contract": PUBLICATION_OPERATION_REQUEST_CONTRACT,
+        "version": PUBLICATION_OPERATION_REQUEST_VERSION,
+        "operation_kind": operation_kind,
+        "project_id": str(project_id),
+        "definition_id": str(definition_id),
+        "expected_manifest_hash": expected_manifest_hash,
+        "actor_identifier": actor_identifier,
+        "locale": locale,
+        "initial_workspace": dict(initial_workspace) if initial_workspace is not None else None,
+    }
+    encoded = json.dumps(value, ensure_ascii=False, allow_nan=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+@transaction.atomic
+def reconcile_publication_operation(
+    *, definition: ProjectDefinitionVersion, operation_id: UUID,
+    request_sha256: str, operation_kind: str, principal: object,
+    locale: str, workspace_spec: Mapping[str, Any] | None,
+    expected_manifest_hash: str | None = None,
+    inject_failure_at: str | None = None,
+) -> FoundationPublicationOperationResult:
+    """Serialize one project-scoped publication key before lifecycle decisions."""
+
+    from domain.policies import bootstrap_initial_project_definition
+
+    project = Project.objects.select_for_update().get(pk=definition.project_id)
+    if operation_kind not in {"INITIAL", "SUCCESSOR"}:
+        raise FoundationStudioApplicationConflict(
+            "PUBLICATION_OPERATION_IDENTITY_CORRUPT",
+            "The publication request identity is internally inconsistent.",
+        )
+    if operation_kind == "INITIAL" and not isinstance(workspace_spec, Mapping):
+        raise FoundationStudioApplicationConflict(
+            "PUBLICATION_WORKSPACE_CONFLICT",
+            "The initial workspace identity is invalid.",
+        )
+    if operation_kind == "SUCCESSOR" and workspace_spec is not None:
+        raise FoundationStudioApplicationConflict(
+            "PUBLICATION_WORKSPACE_CONFLICT",
+            "A successor publication cannot create an initial workspace.",
+        )
+    expected_hash = (
+        definition.manifest_hash
+        if expected_manifest_hash is None
+        else expected_manifest_hash
+    )
+    semantic_request_sha256 = publication_operation_request_sha256(
+        operation_kind=operation_kind,
+        project_id=definition.project_id,
+        definition_id=definition.pk,
+        expected_manifest_hash=expected_hash,
+        actor_identifier=principal.actor_identifier,
+        locale=locale,
+        initial_workspace=workspace_spec,
+    )
+    if request_sha256 != semantic_request_sha256:
+        raise FoundationStudioApplicationConflict(
+            "PUBLICATION_OPERATION_IDENTITY_CORRUPT",
+            "The publication request identity is internally inconsistent.",
+        )
+    code = publication_operation_code(operation_id, semantic_request_sha256)
+    locked = ProjectDefinitionVersion.objects.select_for_update().get(
+        pk=definition.pk, project=project
+    )
+    if operation_kind == "SUCCESSOR":
+        predecessor_or_current = Q(is_current=True)
+        if locked.supersedes_id is not None:
+            predecessor_or_current |= Q(pk=locked.supersedes_id)
+        list(
+            ProjectDefinitionVersion.objects.select_for_update()
+            .filter(project=project)
+            .filter(predecessor_or_current)
+            .exclude(pk=locked.pk)
+            .order_by("pk")
+            .values_list("pk", flat=True)
+        )
+    existing = find_publication_operation(
+        project=project,
+        operation_id=operation_id,
+        lock=True,
+    )
+    if existing is not None:
+        _, stored_hash = publication_operation_identity(existing)
+        if stored_hash != request_sha256:
+            raise FoundationStudioApplicationConflict(
+                "PUBLICATION_OPERATION_KEY_REUSE", "The operation key was reused for another request."
+            )
+        return FoundationPublicationOperationResult(existing, True)
+
+    if locked.manifest_hash != expected_hash:
+        raise FoundationStudioApplicationConflict("PUBLICATION_STALE", "The definition manifest is stale.")
+    if ProjectPublication.objects.filter(definition_version=locked).exists():
+        raise FoundationStudioApplicationConflict(
+            "PUBLICATION_ALREADY_COMMITTED", "The target definition is already committed."
+        )
+    if operation_kind == "INITIAL":
+        if ProjectPublication.objects.filter(project=project).exists():
+            raise FoundationStudioApplicationConflict(
+                "PUBLICATION_TARGET_STATE_CONFLICT", "The project already has a publication."
+            )
+        if ProjectWorkspace.objects.filter(project=project).exists():
+            raise FoundationStudioApplicationConflict(
+                "PUBLICATION_WORKSPACE_CONFLICT",
+                "The project already contains a workspace.",
+            )
+        try:
+            workspace_id = UUID(str((workspace_spec or {})["id"]))
+        except (KeyError, TypeError, ValueError) as exc:
+            raise FoundationStudioApplicationConflict(
+                "PUBLICATION_WORKSPACE_CONFLICT",
+                "The initial workspace identity is invalid.",
+            ) from exc
+        if (
+            ProjectWorkspace.objects.select_for_update()
+            .filter(pk=workspace_id)
+            .exists()
+        ):
+            raise FoundationStudioApplicationConflict(
+                "PUBLICATION_ID_CONFLICT",
+                "The initial workspace identity is already in use.",
+            )
+        try:
+            result = bootstrap_initial_project_definition(
+                definition=locked, principal=principal,
+                actor_identifier=principal.actor_identifier,
+                workspace_spec=workspace_spec or {}, locale=locale,
+                inject_failure_at=inject_failure_at, publication_code=code,
+            )
+            publication = result.publication
+        except IntegrityError as exc:
+            raise FoundationStudioApplicationConflict(
+                "PUBLICATION_ID_CONFLICT", "The requested initial identity conflicts."
+            ) from exc
+        except ValidationError as exc:
+            raise FoundationStudioApplicationConflict(
+                "PUBLICATION_TARGET_STATE_CONFLICT",
+                "The initial publication target state conflicts.",
+            ) from exc
+    else:
+        try:
+            publication = publish_successor_project_definition(
+                locked, principal=principal, locale=locale,
+                inject_failure_at=inject_failure_at, publication_code=code,
+            )
+        except FoundationStudioApplicationConflict as exc:
+            if exc.conflict_code.startswith("PUBLICATION_"):
+                raise
+            raise FoundationStudioApplicationConflict(
+                "PUBLICATION_TARGET_STATE_CONFLICT",
+                "The successor publication target state conflicts.",
+            ) from exc
+        except (IntegrityError, ValidationError) as exc:
+            raise FoundationStudioApplicationConflict(
+                "PUBLICATION_TARGET_STATE_CONFLICT",
+                "The successor publication target state conflicts.",
+            ) from exc
+    return FoundationPublicationOperationResult(publication, False)
 
 
 class FoundationHumanWriteError(ValidationError):
@@ -1747,6 +2092,7 @@ def publish_successor_project_definition(
     principal: object,
     locale: str = "en",
     inject_failure_at: str | None = None,
+    publication_code: str | None = None,
 ) -> ProjectPublication:
     """Delegate successor publication while typing only retry/race conflicts."""
 
@@ -1778,6 +2124,7 @@ def publish_successor_project_definition(
             workspace_spec=None,
             locale=locale,
             inject_failure_at=inject_failure_at,
+            publication_code=publication_code,
         )
     except (IntegrityError, ValidationError) as exc:
         if _is_successor_application_conflict(definition.pk):

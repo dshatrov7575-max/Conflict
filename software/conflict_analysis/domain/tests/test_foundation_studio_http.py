@@ -1356,18 +1356,25 @@ class FoundationStudioApplicationGatewayHttpTests(
         )
         self.client.force_authenticate(self.publisher_user)
         url = f"/api/foundation/definitions/{successor.pk}/publish-successor/"
-        response = self.client.post(url, {}, format="json")
+        operation_id = uuid4()
+        headers = {
+            "HTTP_IDEMPOTENCY_KEY": str(operation_id),
+            "HTTP_IF_MATCH": f'"{successor.manifest_hash}"',
+        }
+        response = self.client.post(url, {"locale": "en"}, format="json", **headers)
+        payload = response.json()
 
-        self.assertEqual(response.status_code, 201, response.data)
-        self.assertEqual(response["ETag"], f'"{successor.manifest_hash}"')
-        self.assertIsNone(response.data["initial_workspace_id"])
-        self.assertEqual(response.data["definition"]["id"], str(successor.pk))
+        self.assertEqual(response.status_code, 201, payload)
+        self.assertEqual(response["ETag"], f'"{hashlib.sha256(response.content).hexdigest()}"')
+        self.assertEqual(response["Idempotency-Replayed"], "false")
+        self.assertIsNone(payload["initial_workspace_id"])
+        self.assertEqual(payload["definition"]["id"], str(successor.pk))
         self.assertEqual(
-            response.data["definition"]["publication_status"],
+            payload["definition"]["publication_status"],
             PublicationStatus.PUBLISHED,
         )
         publication = ProjectPublication.objects.get(
-            pk=response.data["publication_id"]
+            pk=payload["publication_id"]
         )
         self.assertIsNone(publication.initial_workspace_id)
         self.assertEqual(
@@ -1386,9 +1393,19 @@ class FoundationStudioApplicationGatewayHttpTests(
             old_pin,
         )
 
-        retry = self.client.post(url, {}, format="json")
-        self.assertEqual(retry.status_code, 409, retry.data)
-        self.assertEqual(retry.data["code"], "SUCCESSOR_PUBLICATION_CONFLICT")
+        retry_headers = {
+            **headers,
+            "HTTP_IDEMPOTENCY_KEY": str(uuid4()),
+        }
+        retry = self.client.post(
+            url,
+            {"locale": "en"},
+            format="json",
+            **retry_headers,
+        )
+        self.assertEqual(retry.status_code, 409, retry.content)
+        self.assertEqual(retry.json()["code"], "PUBLICATION_ALREADY_COMMITTED")
+        self.assertNotIn("detail_sha256", retry.json())
         self.assertEqual(ProjectPublication.objects.count(), 2)
         self.assertEqual(ProjectWorkspace.objects.count(), 1)
 

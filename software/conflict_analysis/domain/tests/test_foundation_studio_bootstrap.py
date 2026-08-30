@@ -1087,12 +1087,15 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
         )
 
         self.client.force_authenticate(self.publisher_user)
+        publication_operation_id = uuid4()
         response = self.client.post(
             f"{definition_url}publish-initial/",
             {"workspace": self.workspace_spec(), "locale": "en"},
             format="json",
+            HTTP_IDEMPOTENCY_KEY=str(publication_operation_id),
+            HTTP_IF_MATCH=f'"{create_response.data["manifest_hash"]}"',
         )
-        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.status_code, 201, response.content)
         self.assertEqual(ProjectPublication.objects.count(), 1)
         self.assertEqual(ProjectWorkspace.objects.count(), 1)
         self.assertEqual(
