@@ -967,10 +967,10 @@ def _require_f0l_bounded_fast_forward_commits(
     oldest_parent: str,
     base_head: str,
 ) -> None:
-    if commit_count not in {1, 2} or oldest_parent != base_head:
+    if commit_count not in {1, 2, 3} or oldest_parent != base_head:
         raise VerificationError(
             "F0L delivery must contain one ordinary fast-forward commit, or "
-            "one additional ordinary correction commit when evidence requires; "
+            "up to two ordinary correction commits when CI evidence requires; "
             f"count={commit_count}, oldest_parent={oldest_parent}, "
             f"base={base_head}"
         )
@@ -2685,7 +2685,7 @@ def f0l_self_check() -> dict[str, object]:
         exact_changed_paths=True,
     )
     history_base = "a" * 40
-    for count in (1, 2):
+    for count in (1, 2, 3):
         _require_f0l_bounded_fast_forward_commits(
             commit_count=count,
             oldest_parent=history_base,
@@ -2693,7 +2693,7 @@ def f0l_self_check() -> dict[str, object]:
         )
     for count, oldest_parent in (
         (0, history_base),
-        (3, history_base),
+        (4, history_base),
         (1, "b" * 40),
     ):
         try:

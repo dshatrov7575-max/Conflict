@@ -2504,8 +2504,7 @@ jobs:
           assert_pin_pair() {
             local head="$1"
             local tree="$2"
-            [[ "$head" =~ ^[0-9a-f]{40}$ ]]
-            [[ "$tree" =~ ^[0-9a-f]{40}$ ]]
+            [[ "$head" =~ ^[0-9a-f]{40}$ && "$tree" =~ ^[0-9a-f]{40}$ ]]
           }
           assert_pin_failure() {
             if assert_pin_pair "$@" >/dev/null 2>&1; then
