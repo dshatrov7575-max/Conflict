@@ -43,6 +43,8 @@ class ProductionStudioReadOnlyHttpTests(TestCase):
             code=identity["code"],
             version=identity["version"],
             name=identity["name"],
+            primary_language_tag="en",
+            primary_language_assignment="EXPLICIT",
         )
         cls.manifest_hash = hash_project_definition_manifest_v1(
             cls.manifest,

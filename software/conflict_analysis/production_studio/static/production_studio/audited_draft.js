@@ -23,6 +23,13 @@
   const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
   const SHA256_PATTERN = /^[0-9a-f]{64}$/;
   const CODE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/;
+  const GRANDFATHERED_LANGUAGE_TAGS = new Map([
+    "art-lojban", "cel-gaulish", "en-GB-oed", "i-ami", "i-bnn",
+    "i-default", "i-enochian", "i-hak", "i-klingon", "i-lux",
+    "i-mingo", "i-navajo", "i-pwn", "i-tao", "i-tay", "i-tsu",
+    "no-bok", "no-nyn", "sgn-BE-FR", "sgn-BE-NL", "sgn-CH-DE",
+    "zh-guoyu", "zh-hakka", "zh-min", "zh-min-nan", "zh-xiang",
+  ].map((item) => [item.toLowerCase(), item]));
   const encoder = new TextEncoder();
 
   const memory = {
@@ -274,6 +281,122 @@
       );
     }
     return false;
+  }
+
+  function projectLanguageError(code) {
+    const error = new TypeError(code);
+    error.code = code;
+    return error;
+  }
+
+  function canonicalizeProjectPrimaryLanguage(value) {
+    if (typeof value !== "string" || value.length === 0) {
+      throw projectLanguageError("PROJECT_PRIMARY_LANGUAGE_REQUIRED");
+    }
+    if (
+      value.length > 255 ||
+      !/^[A-Za-z0-9-]+$/.test(value) ||
+      value.startsWith("-") ||
+      value.endsWith("-") ||
+      value.includes("--")
+    ) {
+      throw projectLanguageError("PROJECT_PRIMARY_LANGUAGE_INVALID");
+    }
+    const lower = value.toLowerCase();
+    if (lower === "und") {
+      throw projectLanguageError("PROJECT_PRIMARY_LANGUAGE_UND_FORBIDDEN");
+    }
+    const grandfathered = GRANDFATHERED_LANGUAGE_TAGS.get(lower);
+    if (grandfathered) return grandfathered;
+
+    const subtags = value.split("-");
+    if (subtags[0].toLowerCase() === "x") {
+      if (
+        subtags.length < 2 ||
+        subtags.slice(1).some((item) => !/^[A-Za-z0-9]{1,8}$/.test(item))
+      ) {
+        throw projectLanguageError("PROJECT_PRIMARY_LANGUAGE_INVALID");
+      }
+      return subtags.map((item) => item.toLowerCase()).join("-");
+    }
+
+    const language = subtags[0];
+    if (!/^(?:[A-Za-z]{2,3}|[A-Za-z]{4}|[A-Za-z]{5,8})$/.test(language)) {
+      throw projectLanguageError("PROJECT_PRIMARY_LANGUAGE_INVALID");
+    }
+    const canonical = [language.toLowerCase()];
+    let index = 1;
+    if (/^[A-Za-z]{2,3}$/.test(language)) {
+      let extlangCount = 0;
+      while (extlangCount < 3 && /^[A-Za-z]{3}$/.test(subtags[index] || "")) {
+        canonical.push(subtags[index].toLowerCase());
+        index += 1;
+        extlangCount += 1;
+      }
+    }
+    if (/^[A-Za-z]{4}$/.test(subtags[index] || "")) {
+      const script = subtags[index].toLowerCase();
+      canonical.push(script[0].toUpperCase() + script.slice(1));
+      index += 1;
+    }
+    if (/^(?:[A-Za-z]{2}|[0-9]{3})$/.test(subtags[index] || "")) {
+      const region = subtags[index];
+      canonical.push(/^[A-Za-z]{2}$/.test(region) ? region.toUpperCase() : region);
+      index += 1;
+    }
+
+    const variants = new Set();
+    while (/^(?:[A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3})$/.test(subtags[index] || "")) {
+      const variant = subtags[index].toLowerCase();
+      if (variants.has(variant)) {
+        throw projectLanguageError("PROJECT_PRIMARY_LANGUAGE_INVALID");
+      }
+      variants.add(variant);
+      canonical.push(variant);
+      index += 1;
+    }
+
+    const singletons = new Set();
+    while (/^[0-9A-WY-Za-wy-z]$/.test(subtags[index] || "")) {
+      const singleton = subtags[index].toLowerCase();
+      if (singleton === "x" || singletons.has(singleton)) {
+        throw projectLanguageError("PROJECT_PRIMARY_LANGUAGE_INVALID");
+      }
+      singletons.add(singleton);
+      canonical.push(singleton);
+      index += 1;
+      let extensionCount = 0;
+      while (/^[A-Za-z0-9]{2,8}$/.test(subtags[index] || "")) {
+        canonical.push(subtags[index].toLowerCase());
+        index += 1;
+        extensionCount += 1;
+      }
+      if (extensionCount === 0) {
+        throw projectLanguageError("PROJECT_PRIMARY_LANGUAGE_INVALID");
+      }
+    }
+
+    if ((subtags[index] || "").toLowerCase() === "x") {
+      canonical.push("x");
+      index += 1;
+      let privateCount = 0;
+      while (/^[A-Za-z0-9]{1,8}$/.test(subtags[index] || "")) {
+        canonical.push(subtags[index].toLowerCase());
+        index += 1;
+        privateCount += 1;
+      }
+      if (privateCount === 0) {
+        throw projectLanguageError("PROJECT_PRIMARY_LANGUAGE_INVALID");
+      }
+    }
+    if (index !== subtags.length) {
+      throw projectLanguageError("PROJECT_PRIMARY_LANGUAGE_INVALID");
+    }
+    const result = canonical.join("-");
+    if (result.length > 255) {
+      throw projectLanguageError("PROJECT_PRIMARY_LANGUAGE_INVALID");
+    }
+    return result;
   }
 
   function randomUUIDv4() {
@@ -564,6 +687,11 @@
     const after = receipt.after_definition;
     const requestIdentity = receipt.request;
     const bodySha = await sha256Text(body);
+    const bodyDocument = parseLosslessJSON(body);
+    const bodyProjectPrimaryLanguage = bodyDocument.value?.project_primary_language;
+    const canonicalEnvelopeSha = await sha256Text(
+      canonicalLosslessJSON(bodyDocument.syntax),
+    );
     const receiptSha = await sha256Text(canonicalLosslessJSON(receiptSyntax));
     const exactReceiptKeys = [
       "contract",
@@ -601,12 +729,43 @@
       "validation_result_sha256",
     ];
     const expectedAction = operation === "BOOTSTRAP_DRAFT" ? "CREATE" : "UPDATE";
+    const exactRequestKeys = operation === "BOOTSTRAP_DRAFT"
+      ? [
+          "contract",
+          "sha256",
+          "raw_input_sha256",
+          "raw_input_byte_length",
+          "if_match",
+          "canonical_envelope_sha256",
+          "project_primary_language",
+        ]
+      : [
+          "contract",
+          "sha256",
+          "raw_input_sha256",
+          "raw_input_byte_length",
+          "if_match",
+        ];
+    const exactBootstrapProjectKeys = [
+      "id",
+      "code",
+      "version",
+      "name",
+      "description",
+      "metadata",
+      "primary_language_tag",
+      "primary_language_assignment",
+    ];
     const bootstrap = receipt.bootstrap_result;
     const expectedGroup = `studio-project:${projectId}`;
     const operationShapeValid =
       operation === "BOOTSTRAP_DRAFT"
         ? receipt.before_definition === null &&
+          hasExactKeys(bootstrap, ["project", "object_scope_group", "membership"]) &&
+          hasExactKeys(bootstrap?.project, exactBootstrapProjectKeys) &&
           bootstrap?.project?.id === projectId &&
+          bootstrap?.project?.primary_language_tag === bodyProjectPrimaryLanguage &&
+          bootstrap?.project?.primary_language_assignment === "EXPLICIT" &&
           bootstrap?.object_scope_group?.name === expectedGroup &&
           bootstrap?.membership?.group === expectedGroup &&
           bootstrap?.membership?.actor_identifier === receipt.actor_identifier
@@ -625,7 +784,11 @@
             "object_scope_group",
             "audit_event_id",
             "write_receipt",
-          ])
+          ]) &&
+          hasExactKeys(payload.project, exactBootstrapProjectKeys) &&
+          payload.project.id === projectId &&
+          payload.project.primary_language_tag === bodyProjectPrimaryLanguage &&
+          payload.project.primary_language_assignment === "EXPLICIT"
         : hasExactKeys(payload, [
             "id",
             "project_id",
@@ -643,13 +806,7 @@
     if (
       !hasExactKeys(receipt, exactReceiptKeys) ||
       !hasExactKeys(after, exactDefinitionKeys) ||
-      !hasExactKeys(requestIdentity, [
-        "contract",
-        "sha256",
-        "raw_input_sha256",
-        "raw_input_byte_length",
-        "if_match",
-      ]) ||
+      !hasExactKeys(requestIdentity, exactRequestKeys) ||
       receipt.contract !== "FOUNDATION_AUDITED_DEFINITION_WRITE_V1" ||
       receipt.version !== "1.0.0" ||
       receipt.operation !== operation ||
@@ -668,10 +825,18 @@
       after.publication_status !== "DRAFT" ||
       !SHA256_PATTERN.test(String(after.manifest_hash || "")) ||
       !requestIdentity ||
-      requestIdentity.contract !== "FOUNDATION_HUMAN_WRITE_REQUEST_IDENTITY_V1" ||
+      requestIdentity.contract !== (
+        operation === "BOOTSTRAP_DRAFT"
+          ? "FOUNDATION_HUMAN_WRITE_REQUEST_IDENTITY_V2"
+          : "FOUNDATION_HUMAN_WRITE_REQUEST_IDENTITY_V1"
+      ) ||
+      !SHA256_PATTERN.test(String(requestIdentity.sha256 || "")) ||
       requestIdentity.raw_input_sha256 !== bodySha ||
       requestIdentity.raw_input_byte_length !== utf8Length(body) ||
       requestIdentity.if_match !== ifMatch ||
+      (operation === "BOOTSTRAP_DRAFT" &&
+        (requestIdentity.canonical_envelope_sha256 !== canonicalEnvelopeSha ||
+          requestIdentity.project_primary_language !== bodyProjectPrimaryLanguage)) ||
       receipt.source_definition !== null ||
       receipt.validation !== null ||
       !operationShapeValid ||
@@ -692,6 +857,7 @@
       receipt,
       receiptSha,
       replayed,
+      projectPrimaryLanguage: bodyProjectPrimaryLanguage,
     };
   }
 
@@ -702,6 +868,9 @@
     const projectVersion = (byId("bootstrap-project-version")?.value || "").trim();
     const projectName = (byId("bootstrap-project-name")?.value || "").trim();
     const projectDescription = byId("bootstrap-project-description")?.value || "";
+    const projectPrimaryLanguage = canonicalizeProjectPrimaryLanguage(
+      byId("bootstrap-project-primary-language")?.value || "",
+    );
     const definitionCode = (byId("bootstrap-definition-code")?.value || "").trim();
     const definitionVersion = (byId("bootstrap-definition-version")?.value || "").trim();
     const semanticVersion = (byId("bootstrap-semantic-version")?.value || "").trim();
@@ -755,6 +924,7 @@
       help_bindings: [],
     };
     const envelope = {
+      project_primary_language: projectPrimaryLanguage,
       project,
       definition: {
         id: definitionId,
@@ -768,7 +938,10 @@
     if (containsLoneUnicodeSurrogate(envelope)) {
       throw new TypeError("AUTHORING_ENVELOPE_INVALID");
     }
-    return { envelope, projectId, definitionId };
+    if (byId("bootstrap-project-primary-language")) {
+      byId("bootstrap-project-primary-language").value = projectPrimaryLanguage;
+    }
+    return { envelope, projectId, definitionId, projectPrimaryLanguage };
   }
 
   function setEntryBusy(busy) {
@@ -858,6 +1031,10 @@
         definitionId: attempt.definitionId,
         operationId: attempt.operationId,
         receiptSha256: verified.receiptSha,
+        projectPrimaryLanguage: verified.projectPrimaryLanguage,
+        projectPrimaryLanguageAssignment: (
+          verified.receipt.bootstrap_result.project.primary_language_assignment
+        ),
         replayed: verified.replayed,
         status: response.status,
       });
@@ -901,6 +1078,7 @@
           operationId: key,
           projectId: exact.projectId,
           definitionId: exact.definitionId,
+          projectPrimaryLanguage: exact.projectPrimaryLanguage,
           body,
           options: Object.freeze({
             method: "POST",
@@ -915,11 +1093,24 @@
           }),
         });
         performBootstrap(attempt);
-      } catch (_error) {
+      } catch (error) {
+        const code = [
+          "PROJECT_PRIMARY_LANGUAGE_REQUIRED",
+          "PROJECT_PRIMARY_LANGUAGE_INVALID",
+          "PROJECT_PRIMARY_LANGUAGE_UND_FORBIDDEN",
+        ].includes(error?.code)
+          ? error.code
+          : "AUTHORING_ENVELOPE_INVALID";
         setState(
           "entry",
-          "AUTHORING_ENVELOPE_INVALID",
-          "Проверьте точные UUID, коды, версии, название и безопасность Unicode.",
+          code,
+          code === "PROJECT_PRIMARY_LANGUAGE_REQUIRED"
+            ? "Явно укажите основной язык проекта, например ru, kk или uz-Cyrl."
+            : code === "PROJECT_PRIMARY_LANGUAGE_UND_FORBIDDEN"
+              ? "Для нового проекта нельзя использовать неопределённый язык und."
+              : code === "PROJECT_PRIMARY_LANGUAGE_INVALID"
+                ? "Основной язык должен быть корректной меткой RFC 5646 без пробелов и подчёркиваний."
+                : "Проверьте точные UUID, коды, версии, название и безопасность Unicode.",
           "error",
         );
       }

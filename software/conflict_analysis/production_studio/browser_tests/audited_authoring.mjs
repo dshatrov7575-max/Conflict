@@ -25,11 +25,14 @@ const losslessExponentKey = requiredEnvironment("STUDIO_LOSSLESS_EXPONENT_KEY");
 const losslessExponentToken = requiredEnvironment("STUDIO_LOSSLESS_EXPONENT_TOKEN");
 const timeoutMs = Number(process.env.STUDIO_CDP_TIMEOUT_MS || "60000");
 const definitionUrl = `${baseUrl}/studio/drafts/definitions/${definitionId}/`;
+const entryUrl = `${baseUrl}/studio/drafts/`;
+const bootstrapPath = "/api/foundation/projects/bootstrap-first-draft/";
 const openPath = `/api/foundation/definitions/${definitionId}/`;
 const savePath = `${openPath}draft/`;
 const previewPath = `${openPath}validation-preview/`;
 const storageKey = "conflict-analysis-studio:audited-draft-layout:v1";
 const eventNames = [
+  "studio:bootstrap-complete",
   "studio:authoring-ready",
   "studio:save-complete",
   "studio:preview-complete",
@@ -214,6 +217,96 @@ try {
       sessionId,
     );
   }
+
+  let removeEntryLoadListener;
+  const entryLoaded = new Promise((resolve) => {
+    removeEntryLoadListener = client.on(
+      "Page.loadEventFired",
+      (_event, eventSessionId) => {
+        if (eventSessionId !== sessionId) return;
+        removeEntryLoadListener();
+        resolve();
+      },
+    );
+  });
+  await client.send("Page.navigate", { url: entryUrl }, sessionId);
+  await entryLoaded;
+  await client.waitForExpression(
+    `document.querySelector("#entry-state-code")?.textContent === "READY" && !document.querySelector("#bootstrap-draft")?.disabled`,
+    sessionId,
+    timeoutMs,
+  );
+  const bootstrapRequestOffset = requests.length;
+  let removeBootstrapLoadListener;
+  const bootstrapDestinationLoaded = new Promise((resolve) => {
+    removeBootstrapLoadListener = client.on(
+      "Page.loadEventFired",
+      (_event, eventSessionId) => {
+        if (eventSessionId !== sessionId) return;
+        removeBootstrapLoadListener();
+        resolve();
+      },
+    );
+  });
+  const bootstrap = await client.evaluate(`new Promise((resolve, reject) => {
+    const language = document.querySelector("#bootstrap-project-primary-language");
+    const form = document.querySelector("#bootstrap-draft-form");
+    if (!language || !form) {
+      reject(new Error("bootstrap form is unavailable"));
+      return;
+    }
+    const expected = {
+      projectId: document.querySelector("#bootstrap-project-id").value,
+      definitionId: document.querySelector("#bootstrap-definition-id").value,
+      operationId: document.querySelector("#bootstrap-operation-key").value,
+    };
+    window.addEventListener("studio:bootstrap-complete", (event) => {
+      resolve({ ...expected, ...event.detail });
+    }, { once: true });
+    language.value = "ru";
+    language.dispatchEvent(new Event("input", { bubbles: true }));
+    form.requestSubmit();
+  })`, sessionId);
+  assert.equal(bootstrap.status, 201);
+  assert.equal(bootstrap.replayed, false);
+  assert.equal(bootstrap.projectPrimaryLanguage, "ru");
+  assert.equal(bootstrap.projectPrimaryLanguageAssignment, "EXPLICIT");
+  assert.match(bootstrap.projectId, /^[0-9a-f-]{36}$/);
+  assert.match(bootstrap.definitionId, /^[0-9a-f-]{36}$/);
+  assert.match(
+    bootstrap.operationId,
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+  );
+  assert.match(bootstrap.receiptSha256, /^[0-9a-f]{64}$/);
+  const bootstrapRequest = requests.slice(bootstrapRequestOffset).find(
+    (item) => item.method === "POST" && new URL(item.url).pathname === bootstrapPath,
+  );
+  assert.ok(bootstrapRequest, "real audited-draft bootstrap request was not observed");
+  assert.equal(JSON.parse(bootstrapRequest.postData).project_primary_language, "ru");
+  assert.equal(bootstrapRequest.headers["idempotency-key"], bootstrap.operationId);
+  assert.ok(bootstrapRequest.headers["x-csrftoken"]);
+  await bootstrapDestinationLoaded;
+  const bootstrapReadback = await client.evaluate(
+    `fetch(${JSON.stringify("/api/foundation/definitions/")} + ${JSON.stringify(bootstrap.definitionId)} + "/", { credentials: "same-origin", cache: "no-store" }).then((response) => response.json())`,
+    sessionId,
+  );
+  assert.equal(bootstrapReadback.id, bootstrap.definitionId);
+  assert.equal(bootstrapReadback.project_id, bootstrap.projectId);
+  assert.equal(bootstrapReadback.manifest.project.default_locale, "ru");
+  const bootstrapPersistence = await client.evaluate(`({
+    localStorageKeys: Object.keys(localStorage).sort(),
+    localStorageValues: Object.values(localStorage),
+    sessionStorageLength: sessionStorage.length,
+  })`, sessionId);
+  assert.deepEqual(bootstrapPersistence.localStorageKeys, []);
+  assert.equal(bootstrapPersistence.sessionStorageLength, 0);
+  assert.equal(
+    bootstrapPersistence.localStorageValues.some(
+      (value) => value.includes("ru") || value.includes(bootstrap.receiptSha256),
+    ),
+    false,
+    "language or receipt was persisted by the browser",
+  );
 
   const ready = await navigateAndWait();
   assert.deepEqual(ready, {
@@ -508,7 +601,8 @@ try {
   );
   const mutationRequests = apiRequests.filter((item) => !["GET", "HEAD"].includes(item.method));
   assert.equal(
-    mutationRequests.every((item) => [savePath, previewPath].includes(new URL(item.url).pathname)),
+    mutationRequests.every((item) =>
+      [bootstrapPath, savePath, previewPath].includes(new URL(item.url).pathname)),
     true,
     "an unauthorized mutation route was called",
   );
@@ -522,7 +616,9 @@ try {
     assert.match(request.headers["if-match"], /^"[0-9a-f]{64}"$/);
     assert.ok(request.headers["x-csrftoken"]);
   }
-  const previewRequests = mutationRequests.filter((item) => item.method === "POST");
+  const previewRequests = mutationRequests.filter(
+    (item) => item.method === "POST" && new URL(item.url).pathname === previewPath,
+  );
   assert.equal(previewRequests.length, 2);
   for (const request of previewRequests) {
     assert.equal("idempotency-key" in request.headers, false);
@@ -540,6 +636,11 @@ try {
     browser_result: "PASS",
     browser: browser.version.Browser,
     definition_id: definitionId,
+    bootstrap_project_id: bootstrap.projectId,
+    bootstrap_definition_id: bootstrap.definitionId,
+    bootstrap_primary_language: bootstrap.projectPrimaryLanguage,
+    bootstrap_primary_language_assignment: bootstrap.projectPrimaryLanguageAssignment,
+    bootstrap_receipt_sha256: bootstrap.receiptSha256,
     claim_contract_sha256: expectedClaimSha256,
     final_manifest_sha256: saved.manifestHash,
     receipt_sha256: saved.receiptSha256,

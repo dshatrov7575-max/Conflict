@@ -225,6 +225,8 @@ class FoundationStudioPublicationReadinessTests(
             name=f"{label} project",
             description=f"{label} project topology",
             metadata={"fd07": label},
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
         )
 
     def _draft(

@@ -53,11 +53,24 @@ from domain.models import (
     TensionPoint,
     TimeSlice,
 )
+from domain.services.language_tags import (
+    LanguageTagValidationError,
+    canonicalize_language_tag,
+)
 
 
 PACKAGE_FORMAT = "conflict-analysis-project"
-PACKAGE_VERSION = "1.0.0"
+PACKAGE_VERSION_1_0 = "1.0.0"
+PACKAGE_VERSION_1_1 = "1.1.0"
+PACKAGE_VERSION = PACKAGE_VERSION_1_1
 HASH_ALGORITHM = "sha256"
+PRIMARY_LANGUAGE_EXPLICIT = "EXPLICIT"
+PRIMARY_LANGUAGE_LEGACY_UNKNOWN = "LEGACY_UNKNOWN"
+PROJECT_PACKAGE_PRIMARY_LANGUAGE_REQUIRED = (
+    "PROJECT_PACKAGE_PRIMARY_LANGUAGE_REQUIRED"
+)
+KZ_PROJECT_ID = "3de70d1d-f4cf-535a-95b9-94c0a65e60e3"
+KZ_PROJECT_CODE = "KZ-ZHANAOZEN-DEMO"
 # The v1 package is a frozen compatibility format.  These sections remain
 # importable for lossless historical round trips, but none of them grants
 # authority in the Foundation/V4 domain.
@@ -80,19 +93,28 @@ CANONICAL_EVIDENCE_CHAIN = (
     "Assessment/ParameterValue",
 )
 CANONICAL_CAPTURED_CONTENT_MODEL = "DocumentContent"
-SCHEMA_PATH = (
-    Path(__file__).resolve().parent
-    / "schemas"
-    / "project-package-1.0.0.schema.json"
-)
+SCHEMA_DIRECTORY = Path(__file__).resolve().parent / "schemas"
+SCHEMA_PATH = SCHEMA_DIRECTORY / "project-package-1.1.0.schema.json"
+_SCHEMA_PATHS = {
+    PACKAGE_VERSION_1_0: SCHEMA_DIRECTORY / "project-package-1.0.0.schema.json",
+    PACKAGE_VERSION: SCHEMA_PATH,
+}
+_PACKAGE_JSON_SCHEMAS: dict[str, dict[str, Any]] = {}
+for _schema_version, _schema_path in _SCHEMA_PATHS.items():
+    with _schema_path.open(encoding="utf-8") as _schema_file:
+        _PACKAGE_JSON_SCHEMAS[_schema_version] = json.load(_schema_file)
+    Draft202012Validator.check_schema(_PACKAGE_JSON_SCHEMAS[_schema_version])
 
-with SCHEMA_PATH.open(encoding="utf-8") as _schema_file:
-    PACKAGE_JSON_SCHEMA = json.load(_schema_file)
-Draft202012Validator.check_schema(PACKAGE_JSON_SCHEMA)
-_PACKAGE_VALIDATOR = Draft202012Validator(
-    PACKAGE_JSON_SCHEMA,
-    format_checker=FormatChecker(),
-)
+PACKAGE_JSON_SCHEMA_1_0 = _PACKAGE_JSON_SCHEMAS[PACKAGE_VERSION_1_0]
+PACKAGE_JSON_SCHEMA_1_1 = _PACKAGE_JSON_SCHEMAS[PACKAGE_VERSION_1_1]
+PACKAGE_JSON_SCHEMA = PACKAGE_JSON_SCHEMA_1_1
+_PACKAGE_VALIDATORS = {
+    version: Draft202012Validator(
+        schema,
+        format_checker=FormatChecker(),
+    )
+    for version, schema in _PACKAGE_JSON_SCHEMAS.items()
+}
 
 _LIST_SECTIONS = (
     "schema_versions",
@@ -222,6 +244,10 @@ class ProjectPackageError(ValueError):
 class ProjectPackageValidationError(ProjectPackageError):
     """The package is malformed, inconsistent, or fails its checksum."""
 
+    def __init__(self, message: str, *, code: str | None = None) -> None:
+        super().__init__(message)
+        self.code = code
+
 
 class ProjectPackageConflictError(ProjectPackageError):
     """A valid package conflicts with an existing project identity."""
@@ -271,6 +297,8 @@ def _payload_for_project(project: Project) -> dict[str, Any]:
             "name": project.name,
             "description": project.description,
             "metadata": project.metadata,
+            "primary_language_tag": project.primary_language_tag,
+            "primary_language_assignment": project.primary_language_assignment,
         },
         "project_lock": None,
         "schema_versions": [],
@@ -522,13 +550,13 @@ def export_project_json(project: Project) -> str:
     return canonical_json(export_project_package(project)) + "\n"
 
 
-def _reject(message: str) -> None:
-    raise ProjectPackageValidationError(message)
+def _reject(message: str, *, code: str | None = None) -> None:
+    raise ProjectPackageValidationError(message, code=code)
 
 
-def _validate_json_schema(raw_package: Any) -> None:
+def _validate_json_schema(raw_package: Any, package_version: str) -> None:
     errors = sorted(
-        _PACKAGE_VALIDATOR.iter_errors(raw_package),
+        _PACKAGE_VALIDATORS[package_version].iter_errors(raw_package),
         key=lambda error: tuple(str(part) for part in error.absolute_path),
     )
     if not errors:
@@ -699,10 +727,55 @@ def _target_ids_by_type(package: Mapping[str, Any]) -> dict[str, set[str]]:
     }
 
 
+def _validate_primary_language_pair(
+    project: Mapping[str, Any],
+    *,
+    path: str = "project",
+) -> tuple[str, str]:
+    tag = project["primary_language_tag"]
+    assignment = project["primary_language_assignment"]
+    try:
+        canonical = canonicalize_language_tag(tag, allow_und=True)
+    except LanguageTagValidationError as exc:
+        _reject(f"{path}.primary_language_tag is invalid: {exc}")
+    if tag != canonical:
+        _reject(
+            f"{path}.primary_language_tag must use canonical casing "
+            f"{canonical!r}."
+        )
+    if assignment == PRIMARY_LANGUAGE_EXPLICIT:
+        if canonical == "und":
+            _reject(
+                f"{path}.primary_language_tag cannot be 'und' when "
+                "primary_language_assignment is EXPLICIT."
+            )
+    elif assignment == PRIMARY_LANGUAGE_LEGACY_UNKNOWN:
+        if canonical != "und":
+            _reject(
+                f"{path}.primary_language_tag must be 'und' when "
+                "primary_language_assignment is LEGACY_UNKNOWN."
+            )
+    else:
+        _reject(
+            f"{path}.primary_language_assignment has unsupported value "
+            f"{assignment!r}."
+        )
+    return canonical, assignment
+
+
 def _validate_and_normalize_package(raw_package: Mapping[str, Any]) -> dict[str, Any]:
-    _validate_json_schema(raw_package)
     if not isinstance(raw_package, Mapping):
         _reject("Package root must be a JSON object.")
+    package_version = raw_package.get("format_version")
+    if (
+        not isinstance(package_version, str)
+        or package_version not in _PACKAGE_JSON_SCHEMAS
+    ):
+        _reject(
+            f"Incompatible package version {package_version!r}; expected one of "
+            f"{sorted(_PACKAGE_JSON_SCHEMAS)!r}."
+        )
+    _validate_json_schema(raw_package, package_version)
     package = copy.deepcopy(dict(raw_package))
     expected_root = {
         "format",
@@ -715,12 +788,6 @@ def _validate_and_normalize_package(raw_package: Mapping[str, Any]) -> dict[str,
     _require_exact_keys(package, expected_root, "package")
     if package["format"] != PACKAGE_FORMAT:
         _reject(f"Unsupported package format {package['format']!r}.")
-    if package["format_version"] != PACKAGE_VERSION:
-        _reject(
-            f"Incompatible package version {package['format_version']!r}; "
-            f"expected {PACKAGE_VERSION!r}."
-        )
-
     supplied_manifest = package.pop("manifest")
     if not isinstance(supplied_manifest, Mapping):
         _reject("manifest must be an object.")
@@ -734,16 +801,22 @@ def _validate_and_normalize_package(raw_package: Mapping[str, Any]) -> dict[str,
     project = package["project"]
     if not isinstance(project, Mapping):
         _reject("project must be an object.")
-    _require_exact_keys(
-        project,
-        _BASE_KEYS | {"name", "description", "metadata"},
-        "project",
-    )
+    project_keys = _BASE_KEYS | {"name", "description", "metadata"}
+    if package_version == PACKAGE_VERSION:
+        project_keys |= {
+            "primary_language_tag",
+            "primary_language_assignment",
+        }
+    _require_exact_keys(project, project_keys, "project")
     project["id"] = _uuid(project["id"], "project.id")
     if not isinstance(project["code"], str) or not project["code"]:
         _reject("project.code must be a non-empty string.")
     if not isinstance(project["metadata"], dict):
         _reject("project.metadata must be an object.")
+    if package_version == PACKAGE_VERSION:
+        canonical, assignment = _validate_primary_language_pair(project)
+        project["primary_language_tag"] = canonical
+        project["primary_language_assignment"] = assignment
 
     lock = package["project_lock"]
     if lock is not None:
@@ -1061,6 +1134,78 @@ def _validate_and_normalize_package(raw_package: Mapping[str, Any]) -> dict[str,
     return package
 
 
+def _upgrade_validated_project_package_1_0_to_1_1(
+    package: Mapping[str, Any],
+    *,
+    primary_language_tag: str,
+    primary_language_assignment: str,
+) -> dict[str, Any]:
+    language = {
+        "primary_language_tag": primary_language_tag,
+        "primary_language_assignment": primary_language_assignment,
+    }
+    canonical, assignment = _validate_primary_language_pair(
+        language,
+        path="upgrade",
+    )
+    upgraded = copy.deepcopy(dict(package))
+    upgraded.pop("manifest", None)
+    upgraded["format_version"] = PACKAGE_VERSION
+    upgraded["project"]["primary_language_tag"] = canonical
+    upgraded["project"]["primary_language_assignment"] = assignment
+    return _validate_and_normalize_package(seal_project_package(upgraded))
+
+
+def upgrade_project_package_1_0_to_1_1(
+    raw_package: Mapping[str, Any],
+    *,
+    primary_language_tag: str,
+    primary_language_assignment: str,
+) -> dict[str, Any]:
+    """Explicitly upgrade one valid frozen 1.0 package to sealed 1.1.
+
+    No language is inferred.  Callers must provide a canonical non-``und``
+    explicit tag, or the exact ``und``/``LEGACY_UNKNOWN`` restoration pair.
+    """
+
+    if not isinstance(raw_package, Mapping):
+        _reject("The 1.0 to 1.1 upgrade input must be a package object.")
+    if raw_package.get("format_version") != PACKAGE_VERSION_1_0:
+        _reject(
+            "The bounded project-package upgrade accepts only format_version "
+            f"{PACKAGE_VERSION_1_0!r}."
+        )
+    package = _validate_and_normalize_package(raw_package)
+    return _upgrade_validated_project_package_1_0_to_1_1(
+        package,
+        primary_language_tag=primary_language_tag,
+        primary_language_assignment=primary_language_assignment,
+    )
+
+
+def _normalize_project_package_for_import(
+    raw_package: Mapping[str, Any],
+) -> dict[str, Any]:
+    package = _validate_and_normalize_package(raw_package)
+    if package["format_version"] == PACKAGE_VERSION:
+        return package
+
+    project = package["project"]
+    if project["id"] == KZ_PROJECT_ID and project["code"] == KZ_PROJECT_CODE:
+        return _upgrade_validated_project_package_1_0_to_1_1(
+            package,
+            primary_language_tag="ru",
+            primary_language_assignment=PRIMARY_LANGUAGE_EXPLICIT,
+        )
+
+    raise ProjectPackageValidationError(
+        f"{PROJECT_PACKAGE_PRIMARY_LANGUAGE_REQUIRED}: a valid 1.0.0 package "
+        "must be explicitly upgraded to 1.1.0 with a primary-language pair "
+        "before import.",
+        code=PROJECT_PACKAGE_PRIMARY_LANGUAGE_REQUIRED,
+    )
+
+
 def _prevalidate_database_conflicts(package: Mapping[str, Any]) -> None:
     project = package["project"]
     if Project.objects.filter(Q(pk=project["id"]) | Q(code=project["code"])).exists():
@@ -1207,18 +1352,33 @@ def import_project_package(raw_package: Mapping[str, Any] | str) -> Project:
     else:
         decoded = raw_package
 
-    package = _validate_and_normalize_package(decoded)
+    package = _normalize_project_package_for_import(decoded)
     _prevalidate_database_conflicts(package)
     project_data = package["project"]
 
     try:
-        project = _create(
-            Project,
+        project_values = {
             **_common(project_data),
-            name=project_data["name"],
-            description=project_data["description"],
-            metadata=project_data["metadata"],
-        )
+            "name": project_data["name"],
+            "description": project_data["description"],
+            "metadata": project_data["metadata"],
+            "primary_language_tag": project_data["primary_language_tag"],
+            "primary_language_assignment": project_data[
+                "primary_language_assignment"
+            ],
+        }
+        if (
+            project_data["primary_language_assignment"]
+            == PRIMARY_LANGUAGE_LEGACY_UNKNOWN
+        ):
+            project = Project.objects.restore_legacy_unknown_from_package(
+                **project_values,
+                package_format=package["format"],
+                package_version=package["format_version"],
+                package_payload_sha256=package["manifest"]["payload_sha256"],
+            )
+        else:
+            project = _create(Project, **project_values)
         workspace = _create_legacy_workspace(project, package)
 
         time_slices: dict[str, TimeSlice] = {}

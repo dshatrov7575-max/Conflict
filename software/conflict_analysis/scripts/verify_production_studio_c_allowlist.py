@@ -59,6 +59,21 @@ FD07_POSTGRESQL_TOTAL = 236
 FD07_POSTGRESQL_SKIPPED = 0
 FD07_SQLITE_PASSED = 221
 FD07_SQLITE_SKIPPED = 15
+PINNED_F0L_BASE_HEAD = "710b88f0db9ec2f0e2fae65c7e0c77025115771a"
+PINNED_F0L_BASE_TREE = "0a15bd4d6993f87199329d0907be372aec9e69ca"
+F0L_BASE_BRANCH = FD07_TARGET_BRANCH
+F0L_TARGET_BRANCH = "codex/ca-suite-i1-project-language-bootstrap-f0l"
+F1_TARGET_BRANCH = "codex/ca-suite-i1-evidence-multilingual-f1"
+C2A_TARGET_BRANCH = (
+    "codex/ca-suite-i1-production-studio-c2a-lifecycle-publication"
+)
+F0L_EXACT_PATH_COUNT = 26
+F0L_NEW_PATH_COUNT = 4
+F0L_PORTABLE_TEST_COUNT = 16
+F0L_POSTGRESQL_MIGRATION_TEST_COUNT = 2
+F0L_FOUNDATION_POSTGRESQL_PASSED = 254
+F0L_FOUNDATION_SQLITE_PASSED = 237
+F0L_FOUNDATION_SQLITE_SKIPPED = 17
 _LOWER_HEX_40 = re.compile(r"[0-9a-f]{40}\Z")
 
 ACTIVE_C0_ALLOWLIST = frozenset(
@@ -199,6 +214,178 @@ ACTIVE_FD07_ALLOWLIST = frozenset(
         "software/conflict_analysis/domain/urls.py",
         "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
     }
+)
+
+ACTIVE_F0L_ALLOWLIST = frozenset(
+    {
+        ".github/workflows/conflict-analysis.yml",
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+        "software/conflict_analysis/domain/models.py",
+        "software/conflict_analysis/domain/migrations/0016_project_primary_language.py",
+        "software/conflict_analysis/domain/services/language_tags.py",
+        "software/conflict_analysis/domain/services/project_definitions.py",
+        "software/conflict_analysis/domain/api/studio_definitions.py",
+        "software/conflict_analysis/domain/services/seed.py",
+        "software/conflict_analysis/domain/services/project_packages.py",
+        "software/conflict_analysis/domain/services/schemas/project-package-1.1.0.schema.json",
+        "software/conflict_analysis/domain/tests/test_data_foundation.py",
+        "software/conflict_analysis/domain/tests/test_v4_foundation_contracts.py",
+        "software/conflict_analysis/domain/tests/test_postgresql_migrations.py",
+        "software/conflict_analysis/domain/tests/test_foundation_studio_bootstrap.py",
+        "software/conflict_analysis/domain/tests/test_foundation_studio_package.py",
+        "software/conflict_analysis/domain/tests/test_foundation_studio_http.py",
+        "software/conflict_analysis/domain/tests/test_foundation_studio_write_reconciliation.py",
+        "software/conflict_analysis/domain/tests/test_foundation_studio_publication_readiness.py",
+        "software/conflict_analysis/domain/tests/test_foundation_studio_publication_reconciliation.py",
+        "software/conflict_analysis/production_studio/static/production_studio/audited_draft.js",
+        "software/conflict_analysis/production_studio/templates/production_studio/audited_draft_entry.html",
+        "software/conflict_analysis/production_studio/tests/test_audited_authoring.py",
+        "software/conflict_analysis/production_studio/tests/test_browser_contract.py",
+        "software/conflict_analysis/production_studio/tests/test_read_only_http.py",
+        "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs",
+        "software/conflict_analysis/docs/adr/0011-project-primary-language-bootstrap.md",
+    }
+)
+
+F0L_NEW_PATHS = frozenset(
+    {
+        "software/conflict_analysis/domain/migrations/0016_project_primary_language.py",
+        "software/conflict_analysis/domain/services/language_tags.py",
+        "software/conflict_analysis/domain/services/schemas/project-package-1.1.0.schema.json",
+        "software/conflict_analysis/docs/adr/0011-project-primary-language-bootstrap.md",
+    }
+)
+
+F1_POST_F0L_ALLOWLIST = frozenset(
+    {
+        "software/conflict_analysis/domain/enums.py",
+        "software/conflict_analysis/domain/models.py",
+        "software/conflict_analysis/domain/migrations/0017_multilingual_evidence_lineage.py",
+        "software/conflict_analysis/domain/services/document_lineage.py",
+        "software/conflict_analysis/domain/services/evidence_drilldown.py",
+        "software/conflict_analysis/domain/api/evidence.py",
+        "software/conflict_analysis/domain/urls.py",
+        "software/conflict_analysis/domain/tests/test_multilingual_evidence_lineage.py",
+        "software/conflict_analysis/docs/adr/0012-multilingual-evidence-document-lineage.md",
+    }
+)
+
+C2A_POST_F0L_ALLOWLIST = frozenset(
+    {
+        ".github/workflows/conflict-analysis.yml",
+        "software/conflict_analysis/README.md",
+        "software/conflict_analysis/docs/adr/0009-production-studio-c-lifecycle-publication.md",
+        "software/conflict_analysis/docs/production-studio-c-read-only-runtime.md",
+        "software/conflict_analysis/production_studio/lifecycle_claim_boundaries.py",
+        "software/conflict_analysis/production_studio/contracts/lifecycle_publication_claim_boundaries_v1.ru.json",
+        "software/conflict_analysis/production_studio/contracts/lifecycle_publication_claim_boundaries_v1.ru.json.sha256",
+        "software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.css",
+        "software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js",
+        "software/conflict_analysis/production_studio/templates/production_studio/lifecycle_publication_definition.html",
+        "software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py",
+        "software/conflict_analysis/production_studio/browser_tests/lifecycle_publication.mjs",
+        "software/conflict_analysis/production_studio/templates/production_studio/audited_draft_definition.html",
+        "software/conflict_analysis/production_studio/static/production_studio/audited_draft.js",
+        "software/conflict_analysis/production_studio/urls.py",
+        "software/conflict_analysis/production_studio/views.py",
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+    }
+)
+
+F0L_EXISTING_BASE_BLOBS = {
+    ".github/workflows/conflict-analysis.yml": "d8187433716431bc2e6c93468f826cd21d08792d",
+    "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py": "d5fac3155f887cd4253b64db1cba89f7a94181d9",
+    "software/conflict_analysis/domain/models.py": "c6c5c2419989e7b0cf40bd1242ab65d37cc2e162",
+    "software/conflict_analysis/domain/services/project_definitions.py": "1b0fa567b138e13752924f47aecede2cf093cec0",
+    "software/conflict_analysis/domain/api/studio_definitions.py": "8d62faa9e47d4d8a7a1da429052a25bb060a41e4",
+    "software/conflict_analysis/domain/services/seed.py": "87453c8580519c056fe9289ce177d4609867c4cd",
+    "software/conflict_analysis/domain/services/project_packages.py": "e02778b1fb94da0c5ba99336fb073a7ea43e4760",
+    "software/conflict_analysis/domain/tests/test_data_foundation.py": "c2e3ac258c761426fb01075e6ebdebf9b74c57df",
+    "software/conflict_analysis/domain/tests/test_v4_foundation_contracts.py": "8a831df39c7316b53f0d6547fbb934d548d075f2",
+    "software/conflict_analysis/domain/tests/test_postgresql_migrations.py": "a73aa341c83255049be40ddd642944bf84c864d2",
+    "software/conflict_analysis/domain/tests/test_foundation_studio_bootstrap.py": "1f582969390cb98f71a3dca18b663c7667e4a6ec",
+    "software/conflict_analysis/domain/tests/test_foundation_studio_package.py": "a3aa4b979401640c7267fffd5ee09973def6a6e5",
+    "software/conflict_analysis/domain/tests/test_foundation_studio_http.py": "792c0029693aec99aa9fa95213d87983d9c784fa",
+    "software/conflict_analysis/domain/tests/test_foundation_studio_write_reconciliation.py": "5a495e843ce5c91acfced662174a83a1ec67bf3f",
+    "software/conflict_analysis/domain/tests/test_foundation_studio_publication_readiness.py": "6b788a33a3d5ea7e71e79a293565a186d318cfb8",
+    "software/conflict_analysis/domain/tests/test_foundation_studio_publication_reconciliation.py": "36e646eb5d50226b29442450b7e7bb196403275c",
+    "software/conflict_analysis/production_studio/static/production_studio/audited_draft.js": "ff62a55dceb11a136c0e4d7bf55a0db2f00ac35c",
+    "software/conflict_analysis/production_studio/templates/production_studio/audited_draft_entry.html": "3e566b505b0b2120b33c54a9bb0bfa34647830e2",
+    "software/conflict_analysis/production_studio/tests/test_audited_authoring.py": "c4667ddd0c034d80db23e9dca668413ee6a762a0",
+    "software/conflict_analysis/production_studio/tests/test_browser_contract.py": "ae55f52c3951c12ad2fecc872f94e1574761c631",
+    "software/conflict_analysis/production_studio/tests/test_read_only_http.py": "6397eb79e9a7f192ea65cebd518e2365635c0c3d",
+    "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs": "e7ae2b0d98a312322eec0b0db521f8934dc56e62",
+}
+
+F0L_FIXTURE_DELTAS = {
+    "software/conflict_analysis/domain/tests/test_foundation_studio_publication_reconciliation.py": {
+        "call_line": 493,
+        "call_source": "        project = Project.objects.create(",
+        "insert_after_line": 499,
+        "insert_after_source": '            metadata={"oracle": "FD06"},',
+    },
+    "software/conflict_analysis/production_studio/tests/test_browser_contract.py": {
+        "call_line": 52,
+        "call_source": "        cls.project = Project.objects.create(",
+        "insert_after_line": 56,
+        "insert_after_source": '            name=identity["name"],',
+    },
+    "software/conflict_analysis/production_studio/tests/test_read_only_http.py": {
+        "call_line": 41,
+        "call_source": "        cls.project = Project.objects.create(",
+        "insert_after_line": 45,
+        "insert_after_source": '            name=identity["name"],',
+    },
+}
+F0L_FIXTURE_INSERTION = (
+    '            primary_language_tag="en",',
+    '            primary_language_assignment="EXPLICIT",',
+)
+
+F0L_FROZEN_OBJECTS = {
+    "software/conflict_analysis/pyproject.toml": "3a4705d5b016aaabbfc66899db852a77eed30b9e",
+    "software/conflict_analysis/domain/enums.py": "a701c3c83511b7d1706519d40fab4580d0a0d63e",
+    "software/conflict_analysis/domain/policies.py": "4b5eba67ab9d6ee4f70497a71d2b0af420ab9afb",
+    "software/conflict_analysis/domain/services/foundation_packages.py": "41c5a6ba2dddd39bdf01ccd398f8ab8213133986",
+    "software/conflict_analysis/domain/services/schemas/project-package-1.0.0.schema.json": "2827994fe19d7c8b93f3bc6ee43452459252e98c",
+    "software/conflict_analysis/domain/services/schemas/foundation-package-2.0.0.schema.json": "f6d980c1ba298aabd7373b9579b2333ec18a52be",
+    "software/conflict_analysis/domain/services/schemas/foundation-package-2.1.0.schema.json": "6aaf283725c8b929b1996b4e0200abf7f1804130",
+    "software/conflict_analysis/domain/services/schemas/project-definition-manifest-1.0.0.schema.json": "4861d951fc2d2baf747fd302dff727f1c60fad83",
+    "software/conflict_analysis/domain/urls.py": "28f1c046799fc7013e0eb45f0f732a39421bce22",
+    "software/conflict_analysis/domain/demo_data.py": "a9f969a816eeedca58db4732dec0909d33287c9c",
+    "software/conflict_analysis/production_studio/views.py": "954cbc5bc543dc3ae9da65872e15fdc714542338",
+    "software/conflict_analysis/production_studio/urls.py": "ae436ed997c0b9a446449986abc49481ed0cee8e",
+}
+
+PROJECT_LANGUAGE_TEST_CLASS = "ProjectPrimaryLanguageContractTests"
+PROJECT_LANGUAGE_TEST_METHODS = (
+    "test_language_tag_well_formedness_and_canonicalization_vectors_are_exact",
+    "test_project_create_and_base_manager_require_explicit_non_und_language",
+    "test_instance_save_rejects_relanguage_and_other_fields_remain_mutable",
+    "test_queryset_update_and_bulk_update_reject_relanguage",
+    "test_get_or_create_requires_language_for_create_and_preserves_existing_identity",
+    "test_update_or_create_same_language_is_idempotent_and_different_language_conflicts",
+    "test_bulk_create_validates_the_full_batch_and_rejects_conflict_modes",
+    "test_seed_creates_ru_replays_and_rejects_existing_non_ru_identity",
+    "test_project_package_1_1_round_trip_preserves_explicit_and_legacy_unknown_language",
+    "test_project_package_1_0_is_frozen_and_only_exact_kz_upgrade_is_admitted",
+)
+PROJECT_LANGUAGE_WRITE_TEST_CLASS = "FoundationStudioProjectLanguageWriteTests"
+PROJECT_LANGUAGE_WRITE_TEST_METHODS = (
+    "test_bootstrap_missing_invalid_and_und_language_reject_before_any_write",
+    "test_bootstrap_case_equivalent_language_replays_by_canonical_semantic_identity",
+    "test_bootstrap_different_language_is_typed_operation_key_reuse",
+    "test_bootstrap_language_persists_in_project_receipt_response_and_fault_rollback",
+)
+PROJECT_LANGUAGE_HTTP_TEST_CLASS = "FoundationStudioProjectLanguageHttpTests"
+PROJECT_LANGUAGE_HTTP_TEST_METHODS = (
+    "test_http_bootstrap_requires_exact_project_primary_language_envelope",
+    "test_http_language_admission_preserves_auth_csrf_scope_and_zero_write_order",
+)
+PROJECT_LANGUAGE_MIGRATION_TEST_CLASS = "ProjectPrimaryLanguageMigrationGateTests"
+PROJECT_LANGUAGE_MIGRATION_TEST_METHODS = (
+    "test_0015_to_0016_maps_exact_kz_to_ru_and_other_projects_to_und_without_drift",
+    "test_0016_reverse_reapply_and_clean_database_seed_are_exact",
 )
 
 FD07_TEST_CLASS = "FoundationStudioPublicationReadinessTests"
@@ -389,6 +576,12 @@ PINNED_MIGRATIONS = (
     "software/conflict_analysis/domain/migrations/__init__.py",
 )
 
+F0L_MIGRATIONS = (
+    *PINNED_MIGRATIONS[:-1],
+    "software/conflict_analysis/domain/migrations/0016_project_primary_language.py",
+    PINNED_MIGRATIONS[-1],
+)
+
 
 class VerificationError(RuntimeError):
     """A deterministic Production Studio slice-boundary verification failure."""
@@ -408,6 +601,20 @@ def _git(repo: Path, *args: str, check: bool = True) -> str:
         detail = completed.stderr.strip() or completed.stdout.strip()
         raise VerificationError(f"git {' '.join(args)} failed: {detail}")
     return completed.stdout.strip()
+
+
+def _git_bytes(repo: Path, *args: str) -> bytes:
+    completed = subprocess.run(
+        ["git", *args],
+        cwd=repo,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if completed.returncode:
+        detail = completed.stderr.decode("utf-8", errors="replace").strip()
+        raise VerificationError(f"git {' '.join(args)} failed: {detail}")
+    return completed.stdout
 
 
 def _repo_root(start: Path) -> Path:
@@ -612,6 +819,122 @@ def _require_changed_path_contract(
             f"{active_slice} changed paths must equal the exact delivered allowlist; "
             "missing: "
             + ", ".join(missing)
+        )
+
+
+def _require_f0l_clean_status(status: str) -> None:
+    if status:
+        raise VerificationError(
+            "F0L verification requires a clean committed worktree; dirty paths: "
+            + status.replace("\n", "; ")
+        )
+
+
+def _require_exact_fixture_delta_source(
+    *,
+    path: str,
+    base_source: str,
+    head_source: str,
+    specification: dict[str, int | str],
+) -> None:
+    base_lines = base_source.splitlines(keepends=True)
+    call_line = int(specification["call_line"])
+    insert_after_line = int(specification["insert_after_line"])
+    if not (1 <= call_line <= insert_after_line <= len(base_lines)):
+        raise VerificationError(f"F0L fixture line bounds drifted at {path}")
+
+    def without_line_ending(value: str) -> str:
+        return value.removesuffix("\n").removesuffix("\r")
+
+    if without_line_ending(base_lines[call_line - 1]) != specification["call_source"]:
+        raise VerificationError(f"F0L fixture Project create call drifted at {path}")
+    anchor = base_lines[insert_after_line - 1]
+    if without_line_ending(anchor) != specification["insert_after_source"]:
+        raise VerificationError(f"F0L fixture insertion anchor drifted at {path}")
+    if anchor.endswith("\r\n"):
+        newline = "\r\n"
+    elif anchor.endswith("\n"):
+        newline = "\n"
+    else:
+        newline = ""
+    if not newline:
+        raise VerificationError(f"F0L fixture insertion anchor has no newline at {path}")
+
+    expected_lines = [
+        *base_lines[:insert_after_line],
+        *(f"{line}{newline}" for line in F0L_FIXTURE_INSERTION),
+        *base_lines[insert_after_line:],
+    ]
+    if head_source != "".join(expected_lines):
+        raise VerificationError(
+            f"F0L fixture delta at {path} must contain only the exact bounded "
+            "primary-language insertion"
+        )
+
+
+def _require_regular_blob_tree_entry(
+    *,
+    path: str,
+    revision: str,
+    entry: str,
+    expected_blob: str | None = None,
+) -> str:
+    fields = entry.split(maxsplit=3)
+    if (
+        len(fields) != 4
+        or fields[0] != "100644"
+        or fields[1] != "blob"
+        or fields[3] != path
+        or not _LOWER_HEX_40.fullmatch(fields[2])
+    ):
+        raise VerificationError(
+            f"F0L fixture must be an exact 100644 blob at {revision}:{path}"
+        )
+    blob = fields[2]
+    if expected_blob is not None and blob != expected_blob:
+        raise VerificationError(
+            f"F0L fixture base blob drift at {path}: expected "
+            f"{expected_blob}, got {blob}"
+        )
+    return blob
+
+
+def _require_f0l_fixture_deltas(repo: Path) -> None:
+    for path, specification in F0L_FIXTURE_DELTAS.items():
+        base_blob = F0L_EXISTING_BASE_BLOBS[path]
+        try:
+            base_object = _require_regular_blob_tree_entry(
+                path=path,
+                revision=PINNED_F0L_BASE_HEAD,
+                entry=_git(
+                    repo,
+                    "ls-tree",
+                    PINNED_F0L_BASE_HEAD,
+                    "--",
+                    path,
+                ),
+                expected_blob=base_blob,
+            )
+            head_object = _require_regular_blob_tree_entry(
+                path=path,
+                revision="HEAD",
+                entry=_git(repo, "ls-tree", "HEAD", "--", path),
+            )
+            base_source = _git_bytes(repo, "cat-file", "blob", base_object).decode(
+                "utf-8"
+            )
+            head_source = _git_bytes(repo, "cat-file", "blob", head_object).decode(
+                "utf-8"
+            )
+        except (OSError, UnicodeDecodeError) as exc:
+            raise VerificationError(
+                f"F0L fixture source cannot be read as exact UTF-8 at {path}: {exc}"
+            ) from exc
+        _require_exact_fixture_delta_source(
+            path=path,
+            base_source=base_source,
+            head_source=head_source,
+            specification=specification,
         )
 
 
@@ -821,6 +1144,154 @@ def _require_fd07_frozen_contract(
         raise VerificationError("FD07 exact frozen-object contract drifted")
     if reopened_base_blobs != FD07_REOPENED_BASE_BLOBS:
         raise VerificationError("FD07 reopened base-blob contract drifted")
+
+
+def _resolve_f0l_route(
+    *,
+    event_name: str,
+    event_ref: str = "",
+    head_ref: str = "",
+    base_ref: str = "",
+) -> str:
+    if event_name == "push" and event_ref == f"refs/heads/{F0L_TARGET_BRANCH}":
+        return "PINNED_FD07"
+    if (
+        event_name == "pull_request"
+        and head_ref == F0L_TARGET_BRANCH
+        and base_ref == F0L_BASE_BRANCH
+    ):
+        return "EVENT_FD07"
+    raise VerificationError(
+        "F0L routing accepts only its exact push ref or exact FD07-targeted "
+        "pull-request ref pair"
+    )
+
+
+def _resolve_post_f0l_route(
+    *,
+    active_slice: str,
+    event_name: str,
+    event_ref: str = "",
+    head_ref: str = "",
+    base_ref: str = "",
+) -> str:
+    target = {"F1": F1_TARGET_BRANCH, "C2A": C2A_TARGET_BRANCH}.get(active_slice)
+    if target is None:
+        raise VerificationError("post-F0L routing supports only F1 or C2A")
+    if event_name == "push" and event_ref == f"refs/heads/{target}":
+        return "PINNED_ACCEPTED_F0L"
+    if (
+        event_name == "pull_request"
+        and head_ref == target
+        and base_ref == F0L_TARGET_BRANCH
+    ):
+        return "EVENT_ACCEPTED_F0L"
+    raise VerificationError(
+        f"{active_slice} routing accepts only its exact push ref or exact "
+        "F0L-targeted pull-request ref pair"
+    )
+
+
+def _require_f0l_static_contract() -> None:
+    actual = (
+        len(ACTIVE_F0L_ALLOWLIST),
+        len(F0L_NEW_PATHS),
+        len(F0L_EXISTING_BASE_BLOBS),
+        len(PROJECT_LANGUAGE_TEST_METHODS)
+        + len(PROJECT_LANGUAGE_WRITE_TEST_METHODS)
+        + len(PROJECT_LANGUAGE_HTTP_TEST_METHODS),
+        len(PROJECT_LANGUAGE_MIGRATION_TEST_METHODS),
+        F0L_FOUNDATION_POSTGRESQL_PASSED,
+        F0L_FOUNDATION_SQLITE_PASSED,
+        F0L_FOUNDATION_SQLITE_SKIPPED,
+        len(F1_POST_F0L_ALLOWLIST),
+        len(C2A_POST_F0L_ALLOWLIST),
+        len(F1_POST_F0L_ALLOWLIST & C2A_POST_F0L_ALLOWLIST),
+        tuple(sorted(F0L_FIXTURE_DELTAS)),
+        all(path in ACTIVE_F0L_ALLOWLIST for path in F0L_FIXTURE_DELTAS),
+        all(path in F0L_EXISTING_BASE_BLOBS for path in F0L_FIXTURE_DELTAS),
+    )
+    expected = (
+        F0L_EXACT_PATH_COUNT,
+        F0L_NEW_PATH_COUNT,
+        F0L_EXACT_PATH_COUNT - F0L_NEW_PATH_COUNT,
+        F0L_PORTABLE_TEST_COUNT,
+        F0L_POSTGRESQL_MIGRATION_TEST_COUNT,
+        254,
+        237,
+        17,
+        9,
+        17,
+        0,
+        (
+            "software/conflict_analysis/domain/tests/test_foundation_studio_publication_reconciliation.py",
+            "software/conflict_analysis/production_studio/tests/test_browser_contract.py",
+            "software/conflict_analysis/production_studio/tests/test_read_only_http.py",
+        ),
+        True,
+        True,
+    )
+    if actual != expected:
+        raise VerificationError(
+            "F0L static path/test/downstream contract drifted: "
+            + json.dumps({"expected": expected, "actual": actual})
+        )
+
+
+def _require_f0l_accepted_pin(
+    *, accepted_head: str | None, accepted_tree: str | None, base_head: str, base_tree: str
+) -> None:
+    accepted_head = _require_exact_object_id("F0L_ACCEPTED_HEAD", accepted_head)
+    accepted_tree = _require_exact_object_id("F0L_ACCEPTED_TREE", accepted_tree)
+    if base_head != accepted_head or base_tree != accepted_tree:
+        raise VerificationError(
+            "post-F0L base HEAD/TREE does not match external accepted-F0L pins"
+        )
+
+
+def _find_exact_test_class_source(repo: Path, class_name: str) -> str:
+    matches: list[str] = []
+    for path in sorted(
+        (repo / "software/conflict_analysis/domain/tests").glob("test_*.py")
+    ):
+        source = path.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        if any(
+            isinstance(node, ast.ClassDef) and node.name == class_name
+            for node in tree.body
+        ):
+            matches.append(source)
+    if len(matches) != 1:
+        raise VerificationError(
+            f"expected exactly one {class_name} class across domain tests, "
+            f"found {len(matches)}"
+        )
+    return matches[0]
+
+
+def _require_package_restore_caller_registry(repo: Path) -> None:
+    production_calls: list[str] = []
+    domain_root = repo / "software/conflict_analysis/domain"
+    for path in sorted(domain_root.rglob("*.py")):
+        if "tests" in path.parts or "migrations" in path.parts:
+            continue
+        source = path.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "restore_legacy_unknown_from_package"
+            ):
+                production_calls.append(path.relative_to(repo).as_posix())
+    expected = [
+        "software/conflict_analysis/domain/services/project_packages.py"
+    ]
+    if production_calls != expected:
+        raise VerificationError(
+            "legacy-unknown package restore production caller registry drifted: "
+            + json.dumps({"expected": expected, "actual": production_calls})
+        )
 
 
 def _require_synthetic_merge_contract(
@@ -2138,6 +2609,214 @@ def self_check() -> dict[str, object]:
     }
 
 
+def f0l_self_check() -> dict[str, object]:
+    """Exercise F0L and successor declarations without repository/network access."""
+
+    _require_f0l_static_contract()
+    if _resolve_f0l_route(
+        event_name="push", event_ref=f"refs/heads/{F0L_TARGET_BRANCH}"
+    ) != "PINNED_FD07":
+        raise VerificationError("F0L push self-check resolved the wrong base source")
+    if _resolve_f0l_route(
+        event_name="pull_request",
+        head_ref=F0L_TARGET_BRANCH,
+        base_ref=F0L_BASE_BRANCH,
+    ) != "EVENT_FD07":
+        raise VerificationError("F0L PR self-check resolved the wrong base source")
+    if _resolve_post_f0l_route(
+        active_slice="F1",
+        event_name="pull_request",
+        head_ref=F1_TARGET_BRANCH,
+        base_ref=F0L_TARGET_BRANCH,
+    ) != "EVENT_ACCEPTED_F0L":
+        raise VerificationError("F1 route self-check resolved the wrong base source")
+    if _resolve_post_f0l_route(
+        active_slice="C2A",
+        event_name="push",
+        event_ref=f"refs/heads/{C2A_TARGET_BRANCH}",
+    ) != "PINNED_ACCEPTED_F0L":
+        raise VerificationError("C2A route self-check resolved the wrong base source")
+
+    negative_cases = 0
+    for call in (
+        lambda: _resolve_f0l_route(
+            event_name="pull_request",
+            head_ref=F0L_TARGET_BRANCH,
+            base_ref=F0L_TARGET_BRANCH,
+        ),
+        lambda: _resolve_post_f0l_route(
+            active_slice="F1",
+            event_name="pull_request",
+            head_ref=F1_TARGET_BRANCH,
+            base_ref=F0L_BASE_BRANCH,
+        ),
+        lambda: _resolve_post_f0l_route(
+            active_slice="C2A",
+            event_name="push",
+            event_ref=f"refs/heads/{C2A_TARGET_BRANCH}-unexpected",
+        ),
+    ):
+        try:
+            call()
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError("F0L routing self-check accepted a negative case")
+
+    _require_changed_path_contract(
+        active_slice="F0L",
+        changed=ACTIVE_F0L_ALLOWLIST,
+        allowlist=ACTIVE_F0L_ALLOWLIST,
+        exact_changed_paths=True,
+    )
+    _require_f0l_clean_status("")
+    try:
+        _require_f0l_clean_status(" M authorized-but-uncommitted.py")
+    except VerificationError:
+        negative_cases += 1
+    else:
+        raise VerificationError("F0L clean-status self-check accepted dirty state")
+    fixture_path = sorted(F0L_FIXTURE_DELTAS)[0]
+    for changed in (
+        ACTIVE_F0L_ALLOWLIST - {fixture_path},
+        ACTIVE_F0L_ALLOWLIST | {"unauthorized/27th-path"},
+    ):
+        try:
+            _require_changed_path_contract(
+                active_slice="F0L",
+                changed=changed,
+                allowlist=ACTIVE_F0L_ALLOWLIST,
+                exact_changed_paths=True,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError("F0L path self-check accepted a negative case")
+
+    fixture_specification: dict[str, int | str] = {
+        "call_line": 2,
+        "call_source": "call",
+        "insert_after_line": 3,
+        "insert_after_source": "anchor",
+    }
+    base_fixture_source = "before\ncall\nanchor\nafter\n"
+    exact_fixture_source = (
+        "before\ncall\nanchor\n"
+        '            primary_language_tag="en",\n'
+        '            primary_language_assignment="EXPLICIT",\n'
+        "after\n"
+    )
+    _require_exact_fixture_delta_source(
+        path="fixture.py",
+        base_source=base_fixture_source,
+        head_source=exact_fixture_source,
+        specification=fixture_specification,
+    )
+    fixture_blob = "a" * 40
+    _require_regular_blob_tree_entry(
+        path="fixture.py",
+        revision="HEAD",
+        entry=f"100644 blob {fixture_blob}\tfixture.py",
+        expected_blob=fixture_blob,
+    )
+    for invalid_fixture_entry in (
+        f"120000 blob {fixture_blob}\tfixture.py",
+        f"100644 tree {fixture_blob}\tfixture.py",
+        f"100644 blob {'b' * 40}\tfixture.py",
+        f"100644 blob {fixture_blob}\tother.py",
+    ):
+        try:
+            _require_regular_blob_tree_entry(
+                path="fixture.py",
+                revision="HEAD",
+                entry=invalid_fixture_entry,
+                expected_blob=fixture_blob,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                "F0L fixture self-check accepted tree-entry drift"
+            )
+    for invalid_fixture_source in (
+        base_fixture_source,
+        exact_fixture_source.replace("after\n", "unrelated\nafter\n"),
+    ):
+        try:
+            _require_exact_fixture_delta_source(
+                path="fixture.py",
+                base_source=base_fixture_source,
+                head_source=invalid_fixture_source,
+                specification=fixture_specification,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError("F0L fixture self-check accepted delta drift")
+
+    pin_head = "a" * 40
+    pin_tree = "b" * 40
+    _require_f0l_accepted_pin(
+        accepted_head=pin_head,
+        accepted_tree=pin_tree,
+        base_head=pin_head,
+        base_tree=pin_tree,
+    )
+    for accepted_head, accepted_tree, base_head, base_tree in (
+        (None, pin_tree, pin_head, pin_tree),
+        (pin_head, None, pin_head, pin_tree),
+        (pin_head.upper(), pin_tree, pin_head, pin_tree),
+        (pin_head, pin_tree, "c" * 40, pin_tree),
+        (pin_head, pin_tree, pin_head, "d" * 40),
+    ):
+        try:
+            _require_f0l_accepted_pin(
+                accepted_head=accepted_head,
+                accepted_tree=accepted_tree,
+                base_head=base_head,
+                base_tree=base_tree,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError("accepted-F0L pin self-check accepted drift")
+
+    def render(class_name: str, methods: tuple[str, ...]) -> str:
+        body = "\n".join(f"    def {name}(self):\n        pass" for name in methods)
+        return f"class {class_name}:\n{body}\n"
+
+    for class_name, methods in (
+        (PROJECT_LANGUAGE_TEST_CLASS, PROJECT_LANGUAGE_TEST_METHODS),
+        (PROJECT_LANGUAGE_WRITE_TEST_CLASS, PROJECT_LANGUAGE_WRITE_TEST_METHODS),
+        (PROJECT_LANGUAGE_HTTP_TEST_CLASS, PROJECT_LANGUAGE_HTTP_TEST_METHODS),
+        (PROJECT_LANGUAGE_MIGRATION_TEST_CLASS, PROJECT_LANGUAGE_MIGRATION_TEST_METHODS),
+    ):
+        _require_exact_test_topology(
+            source=render(class_name, methods),
+            class_name=class_name,
+            expected_methods=methods,
+        )
+        try:
+            _require_exact_test_topology(
+                source=render(class_name, methods[:-1]),
+                class_name=class_name,
+                expected_methods=methods,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError("F0L topology self-check accepted registry drift")
+
+    return {
+        "marker": "PROJECT_LANGUAGE_F0L_VERIFIER_SELF_CHECK=PASS",
+        "downstream_marker": "POST_F0L_F1_C2A_PIN_SELF_CHECK=PASS",
+        "network_access": False,
+        "repository_access": False,
+        "positive_slices": ["F0L", "F1", "C2A"],
+        "negative_cases": negative_cases,
+    }
+
+
 def verify(
     repo: Path,
     *,
@@ -2684,23 +3363,274 @@ def verify(
     }
 
 
+def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, object]:
+    """Verify the exact F0L delivery without making network/remote-state claims."""
+
+    _require_f0l_static_contract()
+    base_head = _require_exact_object_id("F0L base HEAD", base_head)
+    base_tree = _require_exact_object_id("F0L base TREE", base_tree)
+    if base_head != PINNED_F0L_BASE_HEAD or base_tree != PINNED_F0L_BASE_TREE:
+        raise VerificationError("F0L accepts only the exact authorized FD07 HEAD/TREE")
+    if _git(repo, "rev-parse", base_head) != base_head:
+        raise VerificationError("exact F0L base commit is unavailable")
+    if _git(repo, "rev-parse", f"{base_head}^{{tree}}") != base_tree:
+        raise VerificationError("exact F0L base tree does not match authorization")
+    if _git(repo, "merge-base", base_head, "HEAD") != base_head:
+        raise VerificationError("F0L HEAD is not a descendant of the exact FD07 base")
+
+    commit_count = int(_git(repo, "rev-list", "--count", f"{base_head}..HEAD"))
+    delivery_parent = _git(repo, "rev-parse", "HEAD^") if commit_count else base_head
+    _require_merge_free(
+        "F0L",
+        tuple(
+            line
+            for line in _git(repo, "rev-list", "--merges", f"{base_head}..HEAD").splitlines()
+            if line
+        ),
+    )
+    _require_single_fast_forward_commit(
+        active_slice="F0L",
+        commit_count=commit_count,
+        delivery_parent=delivery_parent,
+        base_head=base_head,
+    )
+
+    _require_f0l_clean_status(
+        _git(repo, "status", "--porcelain=v1", "--untracked-files=all")
+    )
+
+    changed = _changed_paths(repo, base_head)
+    _require_changed_path_contract(
+        active_slice="F0L",
+        changed=changed,
+        allowlist=ACTIVE_F0L_ALLOWLIST,
+        exact_changed_paths=True,
+    )
+
+    for path, expected_blob in F0L_EXISTING_BASE_BLOBS.items():
+        actual = _git(repo, "rev-parse", f"{base_head}:{path}")
+        if actual != expected_blob:
+            raise VerificationError(
+                f"F0L existing-path base blob drift at {path}: "
+                f"expected {expected_blob}, got {actual}"
+            )
+
+    _require_f0l_fixture_deltas(repo)
+
+    frozen_objects: dict[str, str] = {}
+    for path, expected_object in F0L_FROZEN_OBJECTS.items():
+        base_object = _git(repo, "rev-parse", f"{base_head}:{path}")
+        head_object = _git(repo, "rev-parse", f"HEAD:{path}")
+        if base_object != expected_object or head_object != expected_object:
+            raise VerificationError(
+                f"F0L frozen object drift at {path}: expected {expected_object}, "
+                f"base {base_object}, HEAD {head_object}"
+            )
+        frozen_objects[path] = expected_object
+
+    for path in F0L_NEW_PATHS:
+        if _git(repo, "ls-tree", "--name-only", base_head, "--", path):
+            raise VerificationError(f"F0L new path unexpectedly exists at base: {path}")
+        if not _git(repo, "ls-tree", "--name-only", "HEAD", "--", path):
+            raise VerificationError(f"F0L required new path is absent at HEAD: {path}")
+
+    migrations = tuple(
+        line
+        for line in _git(
+            repo, "ls-files", "software/conflict_analysis/domain/migrations"
+        ).splitlines()
+        if line
+    )
+    if migrations != F0L_MIGRATIONS:
+        raise VerificationError(
+            "F0L migration filename set drifted: "
+            + json.dumps({"expected": F0L_MIGRATIONS, "actual": migrations})
+        )
+    migration_path = (
+        repo
+        / "software/conflict_analysis/domain/migrations/0016_project_primary_language.py"
+    )
+    migration_source = migration_path.read_text(encoding="utf-8")
+    if not re.search(
+        r"dependencies\s*=\s*\[\s*\(\s*[\"']domain[\"']\s*,\s*"
+        r"[\"']0015_foundation_studio_contract_constraints[\"']\s*\)\s*\]",
+        migration_source,
+        re.DOTALL,
+    ):
+        raise VerificationError(
+            "F0L migration must depend only on "
+            "domain.0015_foundation_studio_contract_constraints"
+        )
+
+    for class_name, methods in (
+        (PROJECT_LANGUAGE_TEST_CLASS, PROJECT_LANGUAGE_TEST_METHODS),
+        (PROJECT_LANGUAGE_WRITE_TEST_CLASS, PROJECT_LANGUAGE_WRITE_TEST_METHODS),
+        (PROJECT_LANGUAGE_HTTP_TEST_CLASS, PROJECT_LANGUAGE_HTTP_TEST_METHODS),
+        (PROJECT_LANGUAGE_MIGRATION_TEST_CLASS, PROJECT_LANGUAGE_MIGRATION_TEST_METHODS),
+    ):
+        _require_exact_test_topology(
+            source=_find_exact_test_class_source(repo, class_name),
+            class_name=class_name,
+            expected_methods=methods,
+        )
+
+    _require_package_restore_caller_registry(repo)
+    models_source = (
+        repo / "software/conflict_analysis/domain/models.py"
+    ).read_text(encoding="utf-8")
+    if "def restore_legacy_unknown_from_package(" not in models_source:
+        raise VerificationError("sealed Project package-restore entrypoint is absent")
+
+    return {
+        "active_slice": "F0L",
+        "allowlist_result": "PASS",
+        "base_head": base_head,
+        "base_tree": base_tree,
+        "delivery_head": _git(repo, "rev-parse", "HEAD"),
+        "delivery_tree": _git(repo, "rev-parse", "HEAD^{tree}"),
+        "delivery_commit_count": commit_count,
+        "delivery_parent": delivery_parent,
+        "changed_paths": sorted(changed),
+        "exact_changed_path_count": len(changed),
+        "new_paths": sorted(F0L_NEW_PATHS),
+        "existing_base_blobs": dict(sorted(F0L_EXISTING_BASE_BLOBS.items())),
+        "bounded_fixture_deltas": sorted(F0L_FIXTURE_DELTAS),
+        "frozen_objects": frozen_objects,
+        "migration_filenames": list(migrations),
+        "portable_test_node_count": F0L_PORTABLE_TEST_COUNT,
+        "postgresql_migration_test_node_count": F0L_POSTGRESQL_MIGRATION_TEST_COUNT,
+        "package_restore_production_callers": [
+            "software/conflict_analysis/domain/services/project_packages.py"
+        ],
+        "downstream_f1_path_count": len(F1_POST_F0L_ALLOWLIST),
+        "downstream_c2a_path_count": len(C2A_POST_F0L_ALLOWLIST),
+        "downstream_own_diff_intersection": 0,
+        "merge_commits_absent": True,
+        "network_access": False,
+    }
+
+
+def verify_post_f0l(
+    repo: Path,
+    *,
+    active_slice: str,
+    base_head: str,
+    base_tree: str,
+    accepted_head: str | None,
+    accepted_tree: str | None,
+) -> dict[str, object]:
+    """Fail closed around externally accepted F0L pins for future F1/C2A."""
+
+    if active_slice not in {"F1", "C2A"}:
+        raise VerificationError("post-F0L verifier supports only F1 or C2A")
+    base_head = _require_exact_object_id("post-F0L base HEAD", base_head)
+    base_tree = _require_exact_object_id("post-F0L base TREE", base_tree)
+    _require_f0l_accepted_pin(
+        accepted_head=accepted_head,
+        accepted_tree=accepted_tree,
+        base_head=base_head,
+        base_tree=base_tree,
+    )
+    if _git(repo, "rev-parse", f"{base_head}^{{tree}}") != base_tree:
+        raise VerificationError("accepted-F0L commit TREE does not match its pin")
+    if _git(repo, "merge-base", base_head, "HEAD") != base_head:
+        raise VerificationError(f"{active_slice} is not based on accepted F0L")
+    commit_count = int(_git(repo, "rev-list", "--count", f"{base_head}..HEAD"))
+    delivery_parent = _git(repo, "rev-parse", "HEAD^") if commit_count else base_head
+    _require_merge_free(
+        active_slice,
+        tuple(
+            line
+            for line in _git(repo, "rev-list", "--merges", f"{base_head}..HEAD").splitlines()
+            if line
+        ),
+    )
+    _require_single_fast_forward_commit(
+        active_slice=active_slice,
+        commit_count=commit_count,
+        delivery_parent=delivery_parent,
+        base_head=base_head,
+    )
+    allowlist = (
+        F1_POST_F0L_ALLOWLIST if active_slice == "F1" else C2A_POST_F0L_ALLOWLIST
+    )
+    changed = _changed_paths(repo, base_head)
+    _require_changed_path_contract(
+        active_slice=active_slice,
+        changed=changed,
+        allowlist=allowlist,
+        exact_changed_paths=True,
+    )
+    return {
+        "active_slice": active_slice,
+        "allowlist_result": "PASS",
+        "base_head": base_head,
+        "base_tree": base_tree,
+        "f0l_accepted_head": accepted_head,
+        "f0l_accepted_tree": accepted_tree,
+        "changed_paths": sorted(changed),
+        "delivery_commit_count": commit_count,
+        "delivery_parent": delivery_parent,
+        "merge_commits_absent": True,
+        "network_access": False,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--slice",
-        choices=("C0", "R0", "C1", "FD02", "FD03", "FD06", "FD07"),
+        choices=(
+            "C0",
+            "R0",
+            "C1",
+            "FD02",
+            "FD03",
+            "FD06",
+            "FD07",
+            "F0L",
+            "F1",
+            "C2A",
+        ),
         default="C0",
     )
     parser.add_argument("--base-head", default=PINNED_BASE_HEAD)
     parser.add_argument("--base-tree", default=PINNED_BASE_TREE)
     parser.add_argument("--fd05-accepted-head")
     parser.add_argument("--fd05-accepted-tree")
+    parser.add_argument("--f0l-accepted-head")
+    parser.add_argument("--f0l-accepted-tree")
     parser.add_argument("--repo", type=Path, default=Path.cwd())
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args(argv)
     try:
         if args.self_check:
             result = self_check()
+            f0l_result = f0l_self_check()
+            result["f0l_marker"] = f0l_result["marker"]
+            result["post_f0l_marker"] = f0l_result["downstream_marker"]
+            result["positive_slices"] = [
+                *result["positive_slices"],
+                *f0l_result["positive_slices"],
+            ]
+            result["negative_cases"] = (
+                int(result["negative_cases"]) + int(f0l_result["negative_cases"])
+            )
+        elif args.slice == "F0L":
+            result = verify_f0l(
+                _repo_root(args.repo.resolve()),
+                base_head=args.base_head,
+                base_tree=args.base_tree,
+            )
+        elif args.slice in {"F1", "C2A"}:
+            result = verify_post_f0l(
+                _repo_root(args.repo.resolve()),
+                active_slice=args.slice,
+                base_head=args.base_head,
+                base_tree=args.base_tree,
+                accepted_head=args.f0l_accepted_head,
+                accepted_tree=args.f0l_accepted_tree,
+            )
         else:
             result = verify(
                 _repo_root(args.repo.resolve()),
@@ -2720,6 +3650,8 @@ def main(argv: list[str] | None = None) -> int:
         print(result["fd03_marker"])
         print(result["fd06_marker"])
         print(result["fd07_marker"])
+        print(result["f0l_marker"])
+        print(result["post_f0l_marker"])
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 

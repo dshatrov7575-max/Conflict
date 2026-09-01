@@ -16,8 +16,9 @@ from django.core.validators import (
     RegexValidator,
     URLValidator,
 )
-from django.db import models, transaction
+from django.db import IntegrityError, models, transaction
 from django.db.models import Q
+from django.db.models.utils import resolve_callables
 from django.utils import timezone
 
 from .enums import (
@@ -271,17 +272,445 @@ class RevisionedStableVersionedModel(StableVersionedModel):
         super().save(*args, **kwargs)
 
 
+class ProjectPrimaryLanguageAssignment(models.TextChoices):
+    EXPLICIT = "EXPLICIT", "Explicit"
+    LEGACY_UNKNOWN = "LEGACY_UNKNOWN", "Legacy unknown"
+
+
+_PROJECT_LANGUAGE_FIELDS = frozenset(
+    {"primary_language_tag", "primary_language_assignment"}
+)
+
+
+def _project_language_error(
+    field: str,
+    message: str,
+    *,
+    code: str,
+) -> ValidationError:
+    return ValidationError({field: ValidationError(message, code=code)})
+
+
+class ProjectQuerySet(models.QuerySet):
+    """Guard the immutable Project language pair on every bulk/upsert path."""
+
+    @staticmethod
+    def _without_language_lookups(values: dict[str, Any]) -> dict[str, Any]:
+        return {
+            key: value
+            for key, value in values.items()
+            if key not in _PROJECT_LANGUAGE_FIELDS
+        }
+
+    @staticmethod
+    def _assert_requested_language_matches(
+        project: "Project",
+        *sources: dict[str, Any] | None,
+    ) -> None:
+        from .services.language_tags import (
+            LanguageTagValidationError,
+            canonicalize_language_tag,
+        )
+
+        for source in sources:
+            if not source:
+                continue
+            if "primary_language_tag" in source:
+                requested = source["primary_language_tag"]
+                if callable(requested):
+                    requested = requested()
+                try:
+                    requested = canonicalize_language_tag(requested, allow_und=True)
+                except LanguageTagValidationError as exc:
+                    raise _project_language_error(
+                        "primary_language_tag",
+                        str(exc),
+                        code="project_primary_language_invalid",
+                    ) from exc
+                if requested != project.primary_language_tag:
+                    raise _project_language_error(
+                        "primary_language_tag",
+                        "The requested Project language conflicts with its immutable identity.",
+                        code="project_primary_language_conflict",
+                    )
+            if "primary_language_assignment" in source:
+                assignment = source["primary_language_assignment"]
+                if callable(assignment):
+                    assignment = assignment()
+                if assignment != project.primary_language_assignment:
+                    raise _project_language_error(
+                        "primary_language_assignment",
+                        "The requested Project language assignment conflicts with its immutable identity.",
+                        code="project_primary_language_conflict",
+                    )
+
+    def update(self, **kwargs: Any) -> int:
+        if _PROJECT_LANGUAGE_FIELDS.intersection(kwargs):
+            raise _project_language_error(
+                "primary_language_tag",
+                "A Project primary-language identity is immutable.",
+                code="project_primary_language_immutable",
+            )
+        return super().update(**kwargs)
+
+    def bulk_update(
+        self,
+        objs: Any,
+        fields: Any,
+        batch_size: int | None = None,
+    ) -> int:
+        objects = list(objs)
+        field_list = list(fields)
+        field_names = {
+            field if isinstance(field, str) else field.name for field in field_list
+        }
+        if _PROJECT_LANGUAGE_FIELDS.intersection(field_names):
+            raise _project_language_error(
+                "primary_language_tag",
+                "A Project primary-language identity is immutable.",
+                code="project_primary_language_immutable",
+            )
+        for obj in objects:
+            obj._validate_persisted_primary_language(using=self.db)
+        return super().bulk_update(
+            objects,
+            field_list,
+            batch_size=batch_size,
+        )
+
+    def bulk_create(
+        self,
+        objs: Any,
+        batch_size: int | None = None,
+        ignore_conflicts: bool = False,
+        update_conflicts: bool = False,
+        update_fields: Any = None,
+        unique_fields: Any = None,
+    ) -> Any:
+        objects = list(objs)
+        if ignore_conflicts or update_conflicts:
+            raise _project_language_error(
+                "primary_language_tag",
+                "Project bulk inserts cannot ignore or rewrite identity conflicts.",
+                code="project_primary_language_conflict_mode",
+            )
+        with transaction.atomic(using=self.db):
+            for obj in objects:
+                obj._prepare_ordinary_primary_language_insert()
+                obj.full_clean()
+            return super().bulk_create(
+                objects,
+                batch_size=batch_size,
+                ignore_conflicts=False,
+                update_conflicts=False,
+                update_fields=update_fields,
+                unique_fields=unique_fields,
+            )
+
+    def get_or_create(
+        self,
+        defaults: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> tuple[Any, bool]:
+        self._for_write = True
+        identity_lookup = self._without_language_lookups(kwargs)
+        try:
+            project = self.get(**identity_lookup)
+        except self.model.DoesNotExist:
+            params = self._extract_model_params(defaults, **kwargs)
+            try:
+                with transaction.atomic(using=self.db):
+                    params = dict(resolve_callables(params))
+                    return self.create(**params), True
+            except IntegrityError:
+                try:
+                    project = self.get(**identity_lookup)
+                except self.model.DoesNotExist:
+                    raise
+                self._assert_requested_language_matches(project, kwargs, defaults)
+                return project, False
+        self._assert_requested_language_matches(project, kwargs, defaults)
+        return project, False
+
+    def update_or_create(
+        self,
+        defaults: dict[str, Any] | None = None,
+        create_defaults: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> tuple[Any, bool]:
+        update_values = defaults or {}
+        create_values = create_defaults if create_defaults is not None else update_values
+        self._for_write = True
+        with transaction.atomic(using=self.db):
+            project, created = self.select_for_update().get_or_create(
+                create_values,
+                **kwargs,
+            )
+            if created:
+                return project, True
+            self._assert_requested_language_matches(
+                project,
+                kwargs,
+                create_values,
+                update_values,
+            )
+            for name, value in resolve_callables(update_values):
+                if name not in _PROJECT_LANGUAGE_FIELDS:
+                    setattr(project, name, value)
+            project.save(using=self.db)
+            return project, False
+
+
+class ProjectManager(models.Manager.from_queryset(ProjectQuerySet)):
+    def restore_legacy_unknown_from_package(
+        self,
+        *,
+        id: Any,
+        code: str,
+        version: str,
+        name: str,
+        description: str,
+        metadata: dict[str, Any],
+        primary_language_tag: str,
+        primary_language_assignment: str,
+        package_format: str,
+        package_version: str,
+        package_payload_sha256: str,
+    ) -> "Project":
+        """Insert one checksum-bound Project 1.1 legacy-unknown identity.
+
+        This deliberately has no update branch.  Package parsing, JSON Schema
+        validation, and checksum comparison happen before the sole caller hands
+        the exact validated identity to this final persistence boundary.
+        """
+
+        from .services.language_tags import (
+            LanguageTagValidationError,
+            canonicalize_language_tag,
+        )
+
+        if package_format != "conflict-analysis-project" or package_version != "1.1.0":
+            raise _project_language_error(
+                "primary_language_assignment",
+                "Legacy unknown restoration requires a validated project package 1.1.0.",
+                code="project_primary_language_restore_package_invalid",
+            )
+        if re.fullmatch(r"[0-9a-f]{64}", package_payload_sha256) is None:
+            raise _project_language_error(
+                "primary_language_assignment",
+                "Legacy unknown restoration requires an exact package payload checksum.",
+                code="project_primary_language_restore_checksum_invalid",
+            )
+        try:
+            canonical = canonicalize_language_tag(
+                primary_language_tag,
+                allow_und=True,
+            )
+        except LanguageTagValidationError as exc:
+            raise _project_language_error(
+                "primary_language_tag",
+                str(exc),
+                code="project_primary_language_invalid",
+            ) from exc
+        if (
+            canonical != "und"
+            or primary_language_tag != canonical
+            or primary_language_assignment
+            != ProjectPrimaryLanguageAssignment.LEGACY_UNKNOWN
+        ):
+            raise _project_language_error(
+                "primary_language_assignment",
+                "Package restoration accepts only exact und + LEGACY_UNKNOWN.",
+                code="project_primary_language_restore_state_invalid",
+            )
+
+        project = self.model(
+            id=id,
+            code=code,
+            version=version,
+            name=name,
+            description=description,
+            metadata=metadata,
+            primary_language_tag=canonical,
+            primary_language_assignment=primary_language_assignment,
+        )
+        project.full_clean()
+        try:
+            with transaction.atomic(using=self.db):
+                if self.filter(Q(pk=id) | Q(code=code)).exists():
+                    raise _project_language_error(
+                        "primary_language_tag",
+                        "Legacy unknown restoration is insert-only.",
+                        code="project_primary_language_restore_insert_only",
+                    )
+                models.Model.save(
+                    project,
+                    force_insert=True,
+                    using=self.db,
+                )
+        except IntegrityError as exc:
+            raise _project_language_error(
+                "primary_language_tag",
+                "Legacy unknown restoration conflicts with an existing Project identity.",
+                code="project_primary_language_restore_insert_only",
+            ) from exc
+        return project
+
+
 class Project(StableVersionedModel):
+    objects = ProjectManager()
+
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     metadata = models.JSONField(default=dict, blank=True)
+    primary_language_tag = models.CharField(max_length=255)
+    primary_language_assignment = models.CharField(
+        max_length=16,
+        choices=ProjectPrimaryLanguageAssignment.choices,
+    )
 
     class Meta:
         ordering = ("code",)
+        base_manager_name = "objects"
         constraints = [
             *_stable_constraints("domain_project"),
             models.UniqueConstraint(fields=("code",), name="domain_project_code_uniq"),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        primary_language_assignment=(
+                            ProjectPrimaryLanguageAssignment.EXPLICIT
+                        )
+                    )
+                    & ~Q(primary_language_tag="und")
+                    & ~Q(primary_language_tag="")
+                    | Q(
+                        primary_language_assignment=(
+                            ProjectPrimaryLanguageAssignment.LEGACY_UNKNOWN
+                        ),
+                        primary_language_tag="und",
+                    )
+                ),
+                name="domain_project_language_pair",
+            ),
         ]
+
+    def _canonicalize_primary_language(self, *, allow_und: bool) -> str:
+        from .services.language_tags import (
+            LanguageTagValidationError,
+            canonicalize_language_tag,
+        )
+
+        if self.primary_language_tag in (None, ""):
+            raise _project_language_error(
+                "primary_language_tag",
+                "A Project primary language is required.",
+                code="project_primary_language_required",
+            )
+        try:
+            canonical = canonicalize_language_tag(
+                self.primary_language_tag,
+                allow_und=allow_und,
+            )
+        except LanguageTagValidationError as exc:
+            code = (
+                "project_primary_language_und_forbidden"
+                if exc.code == "und_forbidden"
+                else "project_primary_language_invalid"
+            )
+            raise _project_language_error(
+                "primary_language_tag",
+                str(exc),
+                code=code,
+            ) from exc
+        self.primary_language_tag = canonical
+        return canonical
+
+    def _prepare_ordinary_primary_language_insert(self) -> None:
+        self._canonicalize_primary_language(allow_und=False)
+        if self.primary_language_assignment in (None, ""):
+            self.primary_language_assignment = (
+                ProjectPrimaryLanguageAssignment.EXPLICIT
+            )
+        elif self.primary_language_assignment != ProjectPrimaryLanguageAssignment.EXPLICIT:
+            raise _project_language_error(
+                "primary_language_assignment",
+                "Ordinary Project creation requires EXPLICIT language assignment.",
+                code="project_primary_language_assignment_invalid",
+            )
+
+    def _normalize_primary_language_pair(self) -> None:
+        canonical = self._canonicalize_primary_language(allow_und=True)
+        assignment = self.primary_language_assignment
+        if assignment == ProjectPrimaryLanguageAssignment.EXPLICIT:
+            if canonical == "und":
+                raise _project_language_error(
+                    "primary_language_tag",
+                    "EXPLICIT Project language cannot be 'und'.",
+                    code="project_primary_language_und_forbidden",
+                )
+        elif assignment == ProjectPrimaryLanguageAssignment.LEGACY_UNKNOWN:
+            if canonical != "und":
+                raise _project_language_error(
+                    "primary_language_assignment",
+                    "LEGACY_UNKNOWN requires the exact 'und' language tag.",
+                    code="project_primary_language_assignment_invalid",
+                )
+        else:
+            raise _project_language_error(
+                "primary_language_assignment",
+                "Project language assignment must be EXPLICIT or LEGACY_UNKNOWN.",
+                code="project_primary_language_assignment_invalid",
+            )
+
+    def _validate_persisted_primary_language(self, *, using: str | None = None) -> None:
+        self._normalize_primary_language_pair()
+        if self.pk is None:
+            return
+        database = using or self._state.db or "default"
+        previous = (
+            type(self).objects.using(database)
+            .filter(pk=self.pk)
+            .values("primary_language_tag", "primary_language_assignment")
+            .first()
+        )
+        if previous is not None and (
+            previous["primary_language_tag"] != self.primary_language_tag
+            or previous["primary_language_assignment"]
+            != self.primary_language_assignment
+        ):
+            raise _project_language_error(
+                "primary_language_tag",
+                "A Project primary-language identity is immutable.",
+                code="project_primary_language_immutable",
+            )
+
+    def full_clean(self, *args: Any, **kwargs: Any) -> None:
+        # Many established domain constructors explicitly validate before
+        # saving. Prepare the server-owned assignment before Django records a
+        # blank-field error; this is not a field default and still requires an
+        # explicit, well-formed, non-und language on every ordinary insert.
+        if self._state.adding and self.primary_language_assignment in (None, ""):
+            self._prepare_ordinary_primary_language_insert()
+        super().full_clean(*args, **kwargs)
+
+    def clean(self) -> None:
+        super().clean()
+        self._normalize_primary_language_pair()
+        self._validate_persisted_primary_language()
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        database = kwargs.get("using") or self._state.db or "default"
+        previous_exists = bool(
+            self.pk
+            and type(self).objects.using(database).filter(pk=self.pk).exists()
+        )
+        if previous_exists:
+            self._validate_persisted_primary_language(using=database)
+        else:
+            self._prepare_ordinary_primary_language_insert()
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.code}: {self.name}"

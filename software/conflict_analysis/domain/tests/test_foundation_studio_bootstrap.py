@@ -99,6 +99,8 @@ class FoundationStudioBootstrapMixin:
             name="Persisted project name",
             description="Persisted project description",
             metadata={"authority": "Project"},
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
         )
         sanitized_html = "<p>Exact Studio welcome help.</p>"
         checksum = hashlib.sha256(sanitized_html.encode("utf-8")).hexdigest()
@@ -755,6 +757,8 @@ class FoundationStudioHttpAuthorizationTests(FoundationStudioBootstrapMixin, Tes
             code="PROJECT-STUDIO-OTHER",
             version="2.0.0",
             name="Other inaccessible project",
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
         )
         other_manifest["project"].update(
             {
@@ -1395,6 +1399,8 @@ class FoundationStudioP0PersistenceIntegrityTests(
             code="P0-FOREIGN-PROJECT",
             version="1.0.0",
             name="Foreign project",
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
         )
         foreign_manifest = {"legacy": "published-definition"}
         foreign_definition = ProjectDefinitionVersion.objects.create(
@@ -1477,6 +1483,8 @@ class FoundationStudioP0PersistenceIntegrityTests(
             code="P0-PUBLICATION-FOREIGN",
             version="1.0.0",
             name="Other project",
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
         )
         foreign_manifest = {"legacy": "foreign-publication-definition"}
         foreign_definition = ProjectDefinitionVersion.objects.create(
@@ -2089,6 +2097,7 @@ class FoundationStudioFirstProjectDraftBootstrapTests(TestCase):
                 "source": "first-project-test",
                 "nested": {"owner": "client"},
             },
+            "project_primary_language": "ru",
             "definition_id": resolved_definition_id,
             "definition_code": "FIRST-PROJECT-DRAFT",
             "definition_version": "1.0.0",
@@ -2154,6 +2163,8 @@ class FoundationStudioFirstProjectDraftBootstrapTests(TestCase):
                     "id": str(result.project.pk),
                     "code": result.project.code,
                     "version": result.project.version,
+                    "primary_language_tag": "ru",
+                    "primary_language_assignment": "EXPLICIT",
                 },
                 "object_scope_group": {"name": expected_group},
             },
@@ -2203,6 +2214,8 @@ class FoundationStudioFirstProjectDraftBootstrapTests(TestCase):
             code="PREEXISTING-ID-OWNER",
             version="1.0.0",
             name="Existing Project by id",
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
         )
         with self.assertRaises(FoundationStudioApplicationConflict) as caught:
             bootstrap_project_definition_draft(**id_arguments)
@@ -2218,6 +2231,8 @@ class FoundationStudioFirstProjectDraftBootstrapTests(TestCase):
             code=code_arguments["project_code"],
             version="1.0.0",
             name="Existing Project by code",
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
         )
         with self.assertRaises(FoundationStudioApplicationConflict) as caught:
             bootstrap_project_definition_draft(**code_arguments)
@@ -2557,6 +2572,7 @@ class FoundationStudioFirstProjectApplicationConcurrencyTests(TransactionTestCas
                     project_name="First Project Race",
                     project_description="PostgreSQL atomic application race.",
                     project_metadata={"source": "first-project-race"},
+                    project_primary_language="ru",
                     definition_id=definition_id,
                     definition_code="FIRST-PROJECT-APPLICATION-RACE-DRAFT",
                     definition_version="1.0.0",
@@ -2657,6 +2673,8 @@ class FoundationStudioFirstProjectApplicationConcurrencyTests(TransactionTestCas
                     "id": str(project_id),
                     "code": project_code,
                     "version": "1.0.0",
+                    "primary_language_tag": "ru",
+                    "primary_language_assignment": "EXPLICIT",
                 },
                 "object_scope_group": {"name": scope_group_name},
             },

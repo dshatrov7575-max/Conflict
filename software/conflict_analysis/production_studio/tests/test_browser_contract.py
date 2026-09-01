@@ -54,6 +54,8 @@ class ProductionStudioReadOnlyBrowserContractTests(StaticLiveServerTestCase):
             code=identity["code"],
             version=identity["version"],
             name=identity["name"],
+            primary_language_tag="en",
+            primary_language_assignment="EXPLICIT",
         )
 
         help_html = "<p>Точная русская справка C0.</p>"

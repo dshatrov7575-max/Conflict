@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
+from django.core.exceptions import ValidationError
 from django.db import OperationalError, close_old_connections, connection
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
@@ -35,7 +36,9 @@ from domain.services.project_definitions import (
     FoundationStudioApplicationConflict,
     ProjectDefinitionManifestDiagnostic,
     ProjectDefinitionManifestValidation,
+    bootstrap_project_definition_draft,
     bootstrap_project_definition_draft_human_write,
+    canonical_bootstrap_envelope_identity,
     clone_project_definition_draft_human_write,
     create_project_definition_draft,
     create_project_definition_draft_human_write,
@@ -44,6 +47,7 @@ from domain.services.project_definitions import (
     save_project_definition_draft_human_write,
     validate_project_definition_human_write,
 )
+from domain.services.language_tags import LanguageTagValidationError
 from domain.tests.test_foundation_studio_bootstrap import (
     FD05_HUMAN_WRITE_FAILURE_STAGES,
     FoundationStudioBootstrapMixin,
@@ -142,8 +146,18 @@ class FoundationStudioWriteContractMixin(FoundationStudioBootstrapMixin):
         route: str,
         source_id: UUID | None = None,
         if_match: str | None = None,
+        canonical_envelope: dict | None = None,
     ) -> FoundationHumanWriteRequestIdentity:
         method = "PUT" if operation is FoundationHumanWriteOperation.SAVE_DRAFT else "POST"
+        canonical_envelope_sha256 = None
+        project_primary_language = None
+        if operation is FoundationHumanWriteOperation.BOOTSTRAP_DRAFT:
+            if canonical_envelope is None:
+                canonical_envelope = json.loads(raw)
+            (
+                project_primary_language,
+                canonical_envelope_sha256,
+            ) = canonical_bootstrap_envelope_identity(canonical_envelope)
         return FoundationHumanWriteRequestIdentity.build(
             operation=operation,
             operation_id=operation_id,
@@ -157,7 +171,46 @@ class FoundationStudioWriteContractMixin(FoundationStudioBootstrapMixin):
             raw_input_sha256=hashlib.sha256(raw).hexdigest(),
             raw_input_byte_length=len(raw),
             if_match=if_match,
+            canonical_envelope_sha256=canonical_envelope_sha256,
+            project_primary_language=project_primary_language,
         )
+
+    @staticmethod
+    def bootstrap_envelope(
+        *,
+        project_id: UUID,
+        project_code: str,
+        project_name: str,
+        project_metadata: dict,
+        definition_id: UUID,
+        definition_code: str,
+        manifest: dict,
+        project_primary_language: str = "ru",
+        project_version: str = "1.0.0",
+        project_description: str = "",
+        definition_version: str = "1.0.0",
+        semantic_version: str = "1.0.0",
+        construct_version: str = "1.0.0",
+    ) -> dict:
+        return {
+            "project_primary_language": project_primary_language,
+            "project": {
+                "id": str(project_id),
+                "code": project_code,
+                "version": project_version,
+                "name": project_name,
+                "description": project_description,
+                "metadata": copy.deepcopy(project_metadata),
+            },
+            "definition": {
+                "id": str(definition_id),
+                "code": definition_code,
+                "version": definition_version,
+                "manifest": copy.deepcopy(manifest),
+                "semantic_version": semantic_version,
+                "construct_version": construct_version,
+            },
+        }
 
     def direct_draft(self, *, code: str | None = None, version: str | None = None):
         return create_project_definition_draft(
@@ -291,19 +344,25 @@ class FoundationStudioWriteContractMixin(FoundationStudioBootstrapMixin):
         self.assertEqual(receipt["actor_identifier"], actor)
         self.assertEqual(receipt["audit_action"], action)
         self.assertEqual(receipt["original_http_status"], status)
-        self.assertEqual(
-            set(receipt["request"]),
-            {
-                "contract",
-                "sha256",
-                "raw_input_sha256",
-                "raw_input_byte_length",
-                "if_match",
-            },
-        )
+        expected_request_keys = {
+            "contract",
+            "sha256",
+            "raw_input_sha256",
+            "raw_input_byte_length",
+            "if_match",
+        }
+        if operation is FoundationHumanWriteOperation.BOOTSTRAP_DRAFT:
+            expected_request_keys.update(
+                {"canonical_envelope_sha256", "project_primary_language"}
+            )
+        self.assertEqual(set(receipt["request"]), expected_request_keys)
         self.assertEqual(
             receipt["request"]["contract"],
-            "FOUNDATION_HUMAN_WRITE_REQUEST_IDENTITY_V1",
+            (
+                "FOUNDATION_HUMAN_WRITE_REQUEST_IDENTITY_V2"
+                if operation is FoundationHumanWriteOperation.BOOTSTRAP_DRAFT
+                else "FOUNDATION_HUMAN_WRITE_REQUEST_IDENTITY_V1"
+            ),
         )
         self.assertEqual(len(receipt["request"]["sha256"]), 64)
         self.assertEqual(
@@ -334,6 +393,246 @@ class FoundationStudioWriteContractMixin(FoundationStudioBootstrapMixin):
         )
 
 
+class FoundationStudioProjectLanguageWriteTests(
+    FoundationStudioWriteContractMixin,
+    TestCase,
+):
+    def setUp(self) -> None:
+        self.make_write_contract()
+
+    def language_bootstrap(
+        self,
+        language: str,
+        *,
+        operation_id: UUID | None = None,
+        project_id: UUID | None = None,
+        definition_id: UUID | None = None,
+    ) -> tuple[dict, bytes, FoundationHumanWriteRequestIdentity, dict]:
+        operation_id = operation_id or uuid4()
+        project_id = project_id or uuid4()
+        definition_id = definition_id or uuid4()
+        project_code = f"F0L-WRITE-{project_id.hex}"
+        definition_code = f"F0L-WRITE-DEF-{definition_id.hex}"
+        project_name = "Языковой bootstrap Project"
+        project_description = "Точная F0L семантическая идентичность."
+        project_metadata = {"f0l": "project-language"}
+        manifest = manifest_vector()
+        manifest["project"].update(
+            {
+                "id": str(project_id),
+                "code": project_code,
+                "version": "1.0.0",
+                "name": project_name,
+                "description": project_description,
+                "metadata": copy.deepcopy(project_metadata),
+            }
+        )
+        envelope = self.bootstrap_envelope(
+            project_id=project_id,
+            project_code=project_code,
+            project_name=project_name,
+            project_description=project_description,
+            project_metadata=project_metadata,
+            definition_id=definition_id,
+            definition_code=definition_code,
+            manifest=manifest,
+            project_primary_language=language,
+        )
+        raw = self.raw(envelope)
+        request = self.identity(
+            FoundationHumanWriteOperation.BOOTSTRAP_DRAFT,
+            operation_id=operation_id,
+            actor=self.editor_principal.actor_identifier,
+            project_id=project_id,
+            target_id=definition_id,
+            raw=raw,
+            route="/api/foundation/projects/bootstrap-first-draft/",
+            canonical_envelope=envelope,
+        )
+        kwargs = {
+            "request_identity": request,
+            "project_id": project_id,
+            "project_code": project_code,
+            "project_version": "1.0.0",
+            "project_name": project_name,
+            "project_description": project_description,
+            "project_metadata": project_metadata,
+            "project_primary_language": language,
+            "definition_id": definition_id,
+            "definition_code": definition_code,
+            "definition_version": "1.0.0",
+            "manifest": manifest,
+            "principal": self.editor_principal,
+            "user": self.editor_user,
+        }
+        return envelope, raw, request, kwargs
+
+    def test_bootstrap_missing_invalid_and_und_language_reject_before_any_write(self):
+        _, _, _, valid_kwargs = self.language_bootstrap("ru")
+        membership = Group.user_set.through
+        baseline = (
+            Project.objects.count(),
+            Group.objects.count(),
+            membership.objects.count(),
+            ProjectDefinitionVersion.objects.count(),
+            AuditEvent.objects.count(),
+        )
+
+        missing = dict(valid_kwargs)
+        missing.pop("project_primary_language")
+        with self.assertRaises(TypeError):
+            bootstrap_project_definition_draft_human_write(**missing)
+
+        direct = dict(valid_kwargs)
+        direct.pop("request_identity")
+        for value, code in (
+            ("", "required"),
+            ("ru_RU", "invalid"),
+            ("und", "und_forbidden"),
+        ):
+            with self.subTest(value=value):
+                with self.assertRaises(LanguageTagValidationError) as caught:
+                    bootstrap_project_definition_draft(
+                        **{**direct, "project_primary_language": value}
+                    )
+                self.assertEqual(caught.exception.code, code)
+                self.assertEqual(
+                    (
+                        Project.objects.count(),
+                        Group.objects.count(),
+                        membership.objects.count(),
+                        ProjectDefinitionVersion.objects.count(),
+                        AuditEvent.objects.count(),
+                    ),
+                    baseline,
+                )
+
+    def test_bootstrap_case_equivalent_language_replays_by_canonical_semantic_identity(self):
+        operation_id, project_id, definition_id = uuid4(), uuid4(), uuid4()
+        _, first_raw, _, first_kwargs = self.language_bootstrap(
+            "RU-latn",
+            operation_id=operation_id,
+            project_id=project_id,
+            definition_id=definition_id,
+        )
+        first = bootstrap_project_definition_draft_human_write(**first_kwargs)
+        _, replay_raw, _, replay_kwargs = self.language_bootstrap(
+            "ru-Latn",
+            operation_id=operation_id,
+            project_id=project_id,
+            definition_id=definition_id,
+        )
+        replay = bootstrap_project_definition_draft_human_write(**replay_kwargs)
+
+        self.assertNotEqual(first_raw, replay_raw)
+        self.assertTrue(replay.replayed)
+        self.assertEqual(replay.receipt.as_dict(), first.receipt.as_dict())
+        self.assertEqual(first.project.primary_language_tag, "ru-Latn")
+        request_receipt = first.receipt.as_dict()["request"]
+        self.assertEqual(
+            request_receipt["raw_input_sha256"],
+            hashlib.sha256(first_raw).hexdigest(),
+        )
+        self.assertEqual(request_receipt["raw_input_byte_length"], len(first_raw))
+        self.assertEqual(request_receipt["project_primary_language"], "ru-Latn")
+        self.assertEqual(Project.objects.filter(pk=project_id).count(), 1)
+        self.assertEqual(AuditEvent.objects.filter(pk=operation_id).count(), 1)
+
+    def test_bootstrap_different_language_is_typed_operation_key_reuse(self):
+        operation_id, project_id, definition_id = uuid4(), uuid4(), uuid4()
+        _, _, _, first_kwargs = self.language_bootstrap(
+            "ru",
+            operation_id=operation_id,
+            project_id=project_id,
+            definition_id=definition_id,
+        )
+        first = bootstrap_project_definition_draft_human_write(**first_kwargs)
+        _, _, _, changed_kwargs = self.language_bootstrap(
+            "kk",
+            operation_id=operation_id,
+            project_id=project_id,
+            definition_id=definition_id,
+        )
+        with self.assertRaises(ValidationError):
+            bootstrap_project_definition_draft_human_write(
+                **{
+                    **changed_kwargs,
+                    "request_identity": first_kwargs["request_identity"],
+                }
+            )
+        with self.assertRaises(FoundationStudioApplicationConflict) as caught:
+            bootstrap_project_definition_draft_human_write(**changed_kwargs)
+        self.assertEqual(caught.exception.conflict_code, "WRITE_OPERATION_KEY_REUSED")
+        self.assertEqual(Project.objects.get(pk=project_id).primary_language_tag, "ru")
+        self.assertEqual(AuditEvent.objects.filter(pk=first.audit_event.pk).count(), 1)
+
+    def test_bootstrap_language_persists_in_project_receipt_response_and_fault_rollback(self):
+        envelope, raw, request, kwargs = self.language_bootstrap("UZ-cyrl")
+        result = bootstrap_project_definition_draft_human_write(**kwargs)
+        project = Project.objects.get(pk=result.project.pk)
+        receipt = result.receipt.as_dict()
+        self.assertEqual(
+            (project.primary_language_tag, project.primary_language_assignment),
+            ("uz-Cyrl", "EXPLICIT"),
+        )
+        self.assertEqual(
+            receipt["bootstrap_result"]["project"]["primary_language_tag"],
+            "uz-Cyrl",
+        )
+        self.assertEqual(
+            receipt["bootstrap_result"]["project"]["primary_language_assignment"],
+            "EXPLICIT",
+        )
+        self.assertEqual(receipt["request"]["project_primary_language"], "uz-Cyrl")
+        self.assertEqual(receipt["request"]["raw_input_sha256"], hashlib.sha256(raw).hexdigest())
+
+        response_envelope, response_raw, response_request, _ = self.language_bootstrap("KK")
+        response = self.http(
+            self.editor_user,
+            "POST",
+            "/api/foundation/projects/bootstrap-first-draft/",
+            response_raw,
+            key=response_request.operation_id,
+        )
+        self.assertEqual(response.status_code, 201, response.json())
+        self.assertEqual(response.json()["project"]["primary_language_tag"], "kk")
+        self.assertEqual(
+            response.json()["project"]["primary_language_assignment"],
+            "EXPLICIT",
+        )
+        self.assertEqual(
+            response.json()["write_receipt"]["bootstrap_result"]["project"]
+            ["primary_language_tag"],
+            "kk",
+        )
+        self.assertEqual(response_envelope["project_primary_language"], "KK")
+
+        for stage in FD05_HUMAN_WRITE_FAILURE_STAGES:
+            with self.subTest(stage=stage):
+                _, _, fault_request, fault_kwargs = self.language_bootstrap("ru")
+                with self.assertRaisesRegex(RuntimeError, stage):
+                    bootstrap_project_definition_draft_human_write(
+                        **fault_kwargs,
+                        inject_failure_at=stage,
+                    )
+                self.assertFalse(
+                    Project.objects.filter(pk=fault_kwargs["project_id"]).exists()
+                )
+                self.assertFalse(
+                    Group.objects.filter(
+                        name=f"studio-project:{fault_kwargs['project_id']}"
+                    ).exists()
+                )
+                self.assertFalse(
+                    ProjectDefinitionVersion.objects.filter(
+                        pk=fault_kwargs["definition_id"]
+                    ).exists()
+                )
+                self.assertFalse(
+                    AuditEvent.objects.filter(pk=fault_request.operation_id).exists()
+                )
+
+
 class FoundationStudioWriteReconciliationTests(
     FoundationStudioWriteContractMixin,
     TestCase,
@@ -353,15 +652,16 @@ class FoundationStudioWriteReconciliationTests(
             "negative_zero": -0.0,
             "nested": {"negative_zero": -0.0},
         }
-        bootstrap_raw = self.raw(
-            {
-                "project": {
-                    "id": str(bootstrap_project_id),
-                    "metadata": bootstrap_metadata,
-                },
-                "definition": {"id": str(bootstrap_definition_id)},
-            }
+        bootstrap_envelope = self.bootstrap_envelope(
+            project_id=bootstrap_project_id,
+            project_code="FD05-BOOTSTRAP",
+            project_name="FD05 bootstrap",
+            project_metadata=bootstrap_metadata,
+            definition_id=bootstrap_definition_id,
+            definition_code="FD05-BOOTSTRAP-DRAFT",
+            manifest=bootstrap_manifest,
         )
+        bootstrap_raw = self.raw(bootstrap_envelope)
         bootstrap_request = self.identity(
             FoundationHumanWriteOperation.BOOTSTRAP_DRAFT,
             operation_id=uuid4(),
@@ -370,6 +670,7 @@ class FoundationStudioWriteReconciliationTests(
             target_id=bootstrap_definition_id,
             raw=bootstrap_raw,
             route="/api/foundation/projects/bootstrap-first-draft/",
+            canonical_envelope=bootstrap_envelope,
         )
         bootstrap_kwargs = {
             "request_identity": bootstrap_request,
@@ -378,6 +679,7 @@ class FoundationStudioWriteReconciliationTests(
             "project_version": "1.0.0",
             "project_name": "FD05 bootstrap",
             "project_metadata": bootstrap_metadata,
+            "project_primary_language": "ru",
             "definition_id": bootstrap_definition_id,
             "definition_code": "FD05-BOOTSTRAP-DRAFT",
             "definition_version": "1.0.0",
@@ -518,6 +820,7 @@ class FoundationStudioWriteReconciliationTests(
             }
         )
         surrogate_payload = {
+            "project_primary_language": "ru",
             "project": {
                 "id": str(surrogate_project_id),
                 "code": "FD05-UNICODE-REJECT",
@@ -694,12 +997,16 @@ class FoundationStudioWriteReconciliationTests(
                 "version": "1.0.0",
             }
         )
-        bootstrap_raw = self.raw(
-            {
-                "project": str(bootstrap_project_id),
-                "definition": str(bootstrap_definition_id),
-            }
+        bootstrap_envelope = self.bootstrap_envelope(
+            project_id=bootstrap_project_id,
+            project_code="FD05-REPLAY-SCOPE",
+            project_name="FD05 replay current scope",
+            project_metadata={},
+            definition_id=bootstrap_definition_id,
+            definition_code="FD05-REPLAY-SCOPE-DRAFT",
+            manifest=bootstrap_manifest,
         )
+        bootstrap_raw = self.raw(bootstrap_envelope)
         bootstrap_request = self.identity(
             FoundationHumanWriteOperation.BOOTSTRAP_DRAFT,
             operation_id=uuid4(),
@@ -708,6 +1015,7 @@ class FoundationStudioWriteReconciliationTests(
             target_id=bootstrap_definition_id,
             raw=bootstrap_raw,
             route="/api/foundation/projects/bootstrap-first-draft/",
+            canonical_envelope=bootstrap_envelope,
         )
         bootstrap_kwargs = {
             "request_identity": bootstrap_request,
@@ -716,6 +1024,7 @@ class FoundationStudioWriteReconciliationTests(
             "project_version": "1.0.0",
             "project_name": "FD05 replay current scope",
             "project_metadata": {},
+            "project_primary_language": "ru",
             "definition_id": bootstrap_definition_id,
             "definition_code": "FD05-REPLAY-SCOPE-DRAFT",
             "definition_version": "1.0.0",
@@ -746,6 +1055,7 @@ class FoundationStudioWriteReconciliationTests(
                     target_id=bootstrap_definition_id,
                     raw=bootstrap_raw,
                     route="/api/foundation/projects/bootstrap-first-draft/",
+                    canonical_envelope=bootstrap_envelope,
                 )
                 with self.assertRaises(StudioAuthorizationDenied):
                     bootstrap_project_definition_draft_human_write(
@@ -850,6 +1160,8 @@ class FoundationStudioWriteReconciliationTests(
             name="Global operation-key collision target",
             description="",
             metadata={},
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
         )
         other_definition = create_project_definition_draft(
             project=other_project,
@@ -1317,10 +1629,43 @@ class FoundationStudioWriteReconciliationTests(
                 stage_code = stage.upper().replace("_", "-")
                 manifest = manifest_vector()
                 manifest["project"].update({"id": str(project_id), "code": f"FD05-ROLLBACK-{stage_code}", "version": "1.0.0"})
-                raw = self.raw({"project": str(project_id), "definition": str(definition_id)})
-                request = self.identity(FoundationHumanWriteOperation.BOOTSTRAP_DRAFT, operation_id=operation_id, actor=self.editor_principal.actor_identifier, project_id=project_id, target_id=definition_id, raw=raw, route="/api/foundation/projects/bootstrap-first-draft/")
+                envelope = self.bootstrap_envelope(
+                    project_id=project_id,
+                    project_code=f"FD05-ROLLBACK-{stage_code}",
+                    project_name="rollback",
+                    project_metadata={},
+                    definition_id=definition_id,
+                    definition_code=f"FD05-ROLLBACK-DEF-{stage_code}",
+                    manifest=manifest,
+                )
+                raw = self.raw(envelope)
+                request = self.identity(
+                    FoundationHumanWriteOperation.BOOTSTRAP_DRAFT,
+                    operation_id=operation_id,
+                    actor=self.editor_principal.actor_identifier,
+                    project_id=project_id,
+                    target_id=definition_id,
+                    raw=raw,
+                    route="/api/foundation/projects/bootstrap-first-draft/",
+                    canonical_envelope=envelope,
+                )
                 with self.assertRaisesRegex(RuntimeError, stage):
-                    bootstrap_project_definition_draft_human_write(request_identity=request, project_id=project_id, project_code=f"FD05-ROLLBACK-{stage_code}", project_version="1.0.0", project_name="rollback", project_metadata={}, definition_id=definition_id, definition_code=f"FD05-ROLLBACK-DEF-{stage_code}", definition_version="1.0.0", manifest=manifest, principal=self.editor_principal, user=self.editor_user, inject_failure_at=stage)
+                    bootstrap_project_definition_draft_human_write(
+                        request_identity=request,
+                        project_id=project_id,
+                        project_code=f"FD05-ROLLBACK-{stage_code}",
+                        project_version="1.0.0",
+                        project_name="rollback",
+                        project_metadata={},
+                        project_primary_language="ru",
+                        definition_id=definition_id,
+                        definition_code=f"FD05-ROLLBACK-DEF-{stage_code}",
+                        definition_version="1.0.0",
+                        manifest=manifest,
+                        principal=self.editor_principal,
+                        user=self.editor_user,
+                        inject_failure_at=stage,
+                    )
                 self.assertFalse(Project.objects.filter(pk=project_id).exists())
                 self.assertFalse(Group.objects.filter(name=f"studio-project:{project_id}").exists())
                 self.assertFalse(ProjectDefinitionVersion.objects.filter(pk=definition_id).exists())
@@ -1476,7 +1821,16 @@ class FoundationStudioWriteReconciliationConcurrencyTests(
         manifest["project"].update(
             {"id": str(project_id), "code": project_code, "version": "1.0.0"}
         )
-        raw = self.raw({"project": str(project_id), "definition": str(definition_id)})
+        envelope = self.bootstrap_envelope(
+            project_id=project_id,
+            project_code=project_code,
+            project_name="Concurrent bootstrap",
+            project_metadata={"race": True},
+            definition_id=definition_id,
+            definition_code="FD05-CONCURRENT-BOOTSTRAP-DRAFT",
+            manifest=manifest,
+        )
+        raw = self.raw(envelope)
         request = self.identity(
             FoundationHumanWriteOperation.BOOTSTRAP_DRAFT,
             operation_id=operation_id,
@@ -1485,6 +1839,7 @@ class FoundationStudioWriteReconciliationConcurrencyTests(
             target_id=definition_id,
             raw=raw,
             route="/api/foundation/projects/bootstrap-first-draft/",
+            canonical_envelope=envelope,
         )
 
         def invoke():
@@ -1495,6 +1850,7 @@ class FoundationStudioWriteReconciliationConcurrencyTests(
                 project_version="1.0.0",
                 project_name="Concurrent bootstrap",
                 project_metadata={"race": True},
+                project_primary_language="ru",
                 definition_id=definition_id,
                 definition_code="FD05-CONCURRENT-BOOTSTRAP-DRAFT",
                 definition_version="1.0.0",
@@ -1563,6 +1919,8 @@ class FoundationStudioWriteReconciliationConcurrencyTests(
             name="Global operation UUID race B",
             description="",
             metadata={},
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
         )
         other_manifest = copy.deepcopy(self.manifest)
         other_manifest["project"].update(

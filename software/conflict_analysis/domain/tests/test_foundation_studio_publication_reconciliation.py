@@ -497,6 +497,8 @@ class FoundationStudioPublicationReconciliationTests(
             name="FD06 independent project",
             description="Project-scoped operation identity oracle.",
             metadata={"oracle": "FD06"},
+            primary_language_tag="en",
+            primary_language_assignment="EXPLICIT",
         )
         manifest = copy.deepcopy(self.manifest)
         manifest["project"].update(

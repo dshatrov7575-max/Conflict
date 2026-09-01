@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 from unittest import mock
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, connection, transaction
+from django.db.models import F
 from django.test import TestCase
 
 from domain.demo_data import (
@@ -36,6 +39,7 @@ from domain.models import (
     ParticipantGroup,
     Project,
     ProjectLock,
+    ProjectPrimaryLanguageAssignment,
     ProjectSchemaVersion,
     Scenario,
     ScenarioOverride,
@@ -49,14 +53,21 @@ from domain.policies import (
     require_project_structure_mutation,
 )
 from domain.services.project_packages import (
+    PACKAGE_VERSION,
+    PROJECT_PACKAGE_PRIMARY_LANGUAGE_REQUIRED,
     PACKAGE_JSON_SCHEMA,
     ProjectPackageValidationError,
     export_project_json,
     export_project_package,
     import_project_package,
     seal_project_package,
+    upgrade_project_package_1_0_to_1_1,
 )
-from domain.services.seed import seed_zhanaozen_demo
+from domain.services.language_tags import (
+    LanguageTagValidationError,
+    canonicalize_language_tag,
+)
+from domain.services.seed import SeedConflictError, seed_zhanaozen_demo
 
 
 def clean_save(instance):
@@ -146,6 +157,445 @@ class DemoSeedTests(TestCase):
         expected = stable_demo_uuid("tension-point", "PTN-01")
         with mock.patch("domain.demo_data.SEED_VERSION", "FUTURE-SEED-99"):
             self.assertEqual(stable_demo_uuid("tension-point", "PTN-01"), expected)
+
+
+class ProjectPrimaryLanguageContractTests(TestCase):
+    def _project(self, code: str, language: str = "ru", **values):
+        return Project.objects.create(
+            code=code,
+            version="1.0.0",
+            name=values.pop("name", code),
+            primary_language_tag=language,
+            **values,
+        )
+
+    @staticmethod
+    def _downgrade_to_frozen_1_0(package):
+        downgraded = copy.deepcopy(package)
+        downgraded.pop("manifest", None)
+        downgraded["format_version"] = "1.0.0"
+        downgraded["project"].pop("primary_language_tag")
+        downgraded["project"].pop("primary_language_assignment")
+        return seal_project_package(downgraded)
+
+    def test_language_tag_well_formedness_and_canonicalization_vectors_are_exact(self):
+        vectors = {
+            "ru": "ru",
+            "KY": "ky",
+            "kk": "kk",
+            "UZ": "uz",
+            "uz-cYRL": "uz-Cyrl",
+            "UZ-latn": "uz-Latn",
+            "EN-us": "en-US",
+            "zh-hANT-tw": "zh-Hant-TW",
+            "de-ch-1901": "de-CH-1901",
+            "SL-ROZAJ-BISKE-1994": "sl-rozaj-biske-1994",
+            "en-A-AAA-b-CCC-X-Private": "en-a-aaa-b-ccc-x-private",
+            "I-KLINGON": "i-klingon",
+            "X-Project-Local": "x-project-local",
+        }
+        for supplied, expected in vectors.items():
+            with self.subTest(supplied=supplied):
+                self.assertEqual(canonicalize_language_tag(supplied), expected)
+
+        exactly_255 = "x-" + "-".join(["aaaaaaaa"] * 28 + ["b"])
+        self.assertEqual(len(exactly_255), 255)
+        self.assertEqual(canonicalize_language_tag(exactly_255), exactly_255)
+        self.assertEqual(
+            canonicalize_language_tag("UND", allow_und=True),
+            "und",
+        )
+
+        invalid = (
+            "",
+            "en_US",
+            "en US",
+            "en--US",
+            "e",
+            "en-abcdefghi",
+            "en-US-Latn",
+            "sl-rozaj-ROZAJ",
+            "en-a-aaa-A-bbb",
+            "Russian language",
+            f"{exactly_255}-c",
+        )
+        for supplied in invalid:
+            with self.subTest(supplied=supplied):
+                with self.assertRaises(LanguageTagValidationError):
+                    canonicalize_language_tag(supplied)
+        with self.assertRaisesRegex(LanguageTagValidationError, "legacy restoration"):
+            canonicalize_language_tag("und")
+
+    def test_project_create_and_base_manager_require_explicit_non_und_language(self):
+        managers = (Project.objects, Project._default_manager, Project._base_manager)
+        for index, manager in enumerate(managers):
+            with self.subTest(manager=manager):
+                with self.assertRaises(ValidationError):
+                    manager.create(code=f"MISSING-{index}", name="Missing")
+                with self.assertRaises(ValidationError):
+                    manager.create(
+                        code=f"UNKNOWN-{index}",
+                        name="Unknown",
+                        primary_language_tag="und",
+                    )
+                with self.assertRaises(ValidationError):
+                    manager.create(
+                        code=f"MALFORMED-{index}",
+                        name="Malformed",
+                        primary_language_tag="ru_RU",
+                    )
+                with self.assertRaises(ValidationError):
+                    manager.create(
+                        code=f"EXPRESSION-{index}",
+                        name="Expression",
+                        primary_language_tag=F("code"),
+                    )
+
+        project = Project._base_manager.create(
+            code="CANONICAL-CREATE",
+            name="Canonical create",
+            primary_language_tag="RU",
+        )
+        self.assertEqual(project.primary_language_tag, "ru")
+        self.assertEqual(
+            project.primary_language_assignment,
+            ProjectPrimaryLanguageAssignment.EXPLICIT,
+        )
+
+    def test_instance_save_rejects_relanguage_and_other_fields_remain_mutable(self):
+        project = self._project("INSTANCE-IMMUTABLE")
+        project.name = "Hidden relanguage"
+        project.primary_language_tag = "kk"
+        with self.assertRaises(ValidationError):
+            project.save(update_fields=["name"])
+        project.refresh_from_db()
+        self.assertEqual(project.name, "INSTANCE-IMMUTABLE")
+        self.assertEqual(project.primary_language_tag, "ru")
+
+        project.primary_language_assignment = (
+            ProjectPrimaryLanguageAssignment.LEGACY_UNKNOWN
+        )
+        with self.assertRaises(ValidationError):
+            project.save()
+        project.refresh_from_db()
+        project.name = "Mutable name"
+        project.save(update_fields=["name"])
+        project.refresh_from_db()
+        self.assertEqual(project.name, "Mutable name")
+        self.assertEqual(project.primary_language_tag, "ru")
+
+        deferred = Project.objects.only("id", "name").get(pk=project.pk)
+        deferred.name = "Deferred mutable name"
+        deferred.save(update_fields=["name"])
+        deferred.refresh_from_db()
+        self.assertEqual(deferred.primary_language_tag, "ru")
+        deferred.primary_language_tag = "kk"
+        deferred.name = "Deferred hidden relanguage"
+        with self.assertRaises(ValidationError):
+            deferred.save(update_fields=["name"])
+
+    def test_queryset_update_and_bulk_update_reject_relanguage(self):
+        project = self._project("QUERYSET-IMMUTABLE")
+        with self.assertRaises(ValidationError):
+            Project.objects.filter(pk=project.pk).update(primary_language_tag="kk")
+        with self.assertRaises(ValidationError):
+            Project.objects.filter(pk=project.pk).update(
+                primary_language_tag=F("primary_language_tag")
+            )
+
+        project.primary_language_tag = "kk"
+        project.name = "Hidden bulk relanguage"
+        with self.assertRaises(ValidationError):
+            Project.objects.bulk_update([project], ["name"])
+        with self.assertRaises(ValidationError):
+            Project.objects.bulk_update([project], ["primary_language_tag"])
+
+        project.refresh_from_db()
+        Project.objects.filter(pk=project.pk).update(name="Queryset mutable")
+        project.refresh_from_db()
+        project.name = "Bulk mutable"
+        self.assertEqual(Project.objects.bulk_update([project], ["name"]), 1)
+        project.refresh_from_db()
+        self.assertEqual(project.name, "Bulk mutable")
+
+        database_project_id = Project._meta.get_field("id").get_db_prep_value(
+            project.pk,
+            connection,
+        )
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "UPDATE domain_project "
+                        "SET primary_language_tag = %s WHERE id = %s",
+                        ["und", database_project_id],
+                    )
+        project.refresh_from_db()
+        self.assertEqual(
+            (
+                project.primary_language_tag,
+                project.primary_language_assignment,
+            ),
+            ("ru", ProjectPrimaryLanguageAssignment.EXPLICIT),
+        )
+
+    def test_get_or_create_requires_language_for_create_and_preserves_existing_identity(self):
+        with self.assertRaises(ValidationError):
+            Project.objects.get_or_create(
+                code="GET-OR-CREATE",
+                defaults={"name": "Missing language"},
+            )
+        project, created = Project.objects.get_or_create(
+            code="GET-OR-CREATE",
+            defaults={"name": "Created", "primary_language_tag": "RU"},
+        )
+        self.assertTrue(created)
+        same, created = Project.objects.get_or_create(code=project.code)
+        self.assertFalse(created)
+        self.assertEqual(same.pk, project.pk)
+        same, created = Project.objects.get_or_create(
+            code=project.code,
+            primary_language_tag="rU",
+        )
+        self.assertFalse(created)
+        self.assertEqual(same.pk, project.pk)
+        with self.assertRaises(ValidationError):
+            Project.objects.get_or_create(
+                code=project.code,
+                defaults={"primary_language_tag": "kk"},
+            )
+        project.refresh_from_db()
+        self.assertEqual(project.primary_language_tag, "ru")
+
+    def test_update_or_create_same_language_is_idempotent_and_different_language_conflicts(self):
+        with self.assertRaises(ValidationError):
+            Project.objects.update_or_create(
+                code="UPDATE-OR-CREATE-MISSING",
+                defaults={"name": "Must not persist"},
+                create_defaults={"name": "Missing language"},
+            )
+        project, created = Project.objects.update_or_create(
+            code="UPDATE-OR-CREATE",
+            defaults={"name": "Created", "primary_language_tag": "RU"},
+        )
+        self.assertTrue(created)
+        same, created = Project.objects.update_or_create(
+            code=project.code,
+            defaults={"name": "Updated", "primary_language_tag": "rU"},
+        )
+        self.assertFalse(created)
+        self.assertEqual(same.pk, project.pk)
+        self.assertEqual(same.name, "Updated")
+        same, created = Project.objects.update_or_create(
+            code="UPDATE-OR-CREATE-WITH-CREATE-DEFAULTS",
+            defaults={"name": "Updated after create"},
+            create_defaults={
+                "name": "Created through create_defaults",
+                "primary_language_tag": "RU",
+            },
+        )
+        self.assertTrue(created)
+        self.assertEqual(same.primary_language_tag, "ru")
+        with self.assertRaises(ValidationError):
+            Project.objects.update_or_create(
+                code=same.code,
+                defaults={"name": "Must roll back"},
+                create_defaults={"primary_language_tag": "kk"},
+            )
+        same.refresh_from_db()
+        self.assertEqual(same.name, "Created through create_defaults")
+        with self.assertRaises(ValidationError):
+            Project.objects.update_or_create(
+                code=project.code,
+                defaults={"name": "Must roll back", "primary_language_tag": "kk"},
+            )
+        project.refresh_from_db()
+        self.assertEqual(project.name, "Updated")
+        self.assertEqual(project.primary_language_tag, "ru")
+
+    def test_bulk_create_validates_the_full_batch_and_rejects_conflict_modes(self):
+        created = Project.objects.bulk_create(
+            [
+                Project(code="BULK-RU", name="Bulk RU", primary_language_tag="RU"),
+                Project(code="BULK-KK", name="Bulk KK", primary_language_tag="KK"),
+            ]
+        )
+        self.assertEqual(
+            [project.primary_language_tag for project in created],
+            ["ru", "kk"],
+        )
+        count_before = Project.objects.count()
+        with self.assertRaises(ValidationError):
+            Project.objects.bulk_create(
+                [
+                    Project(
+                        code="BULK-ATOMIC-VALID",
+                        name="Valid",
+                        primary_language_tag="uz-Latn",
+                    ),
+                    Project(
+                        code="BULK-ATOMIC-INVALID",
+                        name="Invalid",
+                        primary_language_tag="uz_Latn",
+                    ),
+                ]
+            )
+        self.assertEqual(Project.objects.count(), count_before)
+        candidate = Project(
+            code="BULK-CONFLICT-MODE",
+            name="Conflict mode",
+            primary_language_tag="ru",
+        )
+        with self.assertRaises(ValidationError):
+            Project.objects.bulk_create([candidate], ignore_conflicts=True)
+        with self.assertRaises(ValidationError):
+            Project.objects.bulk_create(
+                [candidate],
+                update_conflicts=True,
+                update_fields=["name"],
+                unique_fields=["code"],
+            )
+
+    def test_seed_creates_ru_replays_and_rejects_existing_non_ru_identity(self):
+        project_id = stable_demo_uuid("project", PROJECT_CODE)
+        conflicting = Project.objects.create(
+            id=project_id,
+            code=PROJECT_CODE,
+            version="1.0.0",
+            name="Conflicting language",
+            primary_language_tag="kk",
+        )
+        with self.assertRaises(SeedConflictError):
+            seed_zhanaozen_demo()
+        conflicting.refresh_from_db()
+        self.assertEqual(conflicting.primary_language_tag, "kk")
+        conflicting.delete()
+
+        project = seed_zhanaozen_demo()
+        replay = seed_zhanaozen_demo()
+        self.assertEqual(replay.pk, project.pk)
+        self.assertEqual(project.primary_language_tag, "ru")
+        self.assertEqual(
+            project.primary_language_assignment,
+            ProjectPrimaryLanguageAssignment.EXPLICIT,
+        )
+
+    def test_project_package_1_1_round_trip_preserves_explicit_and_legacy_unknown_language(self):
+        explicit = self._project("PACKAGE-EXPLICIT", "UZ-latn")
+        explicit_package = export_project_package(explicit)
+        self.assertEqual(explicit_package["format_version"], PACKAGE_VERSION)
+        self.assertEqual(explicit_package["project"]["primary_language_tag"], "uz-Latn")
+        explicit.delete()
+        restored_explicit = import_project_package(explicit_package)
+        self.assertEqual(restored_explicit.primary_language_tag, "uz-Latn")
+        self.assertEqual(
+            restored_explicit.primary_language_assignment,
+            ProjectPrimaryLanguageAssignment.EXPLICIT,
+        )
+
+        legacy_source = self._project("PACKAGE-LEGACY-UNKNOWN", "kk")
+        legacy_package = export_project_package(legacy_source)
+        legacy_package["project"]["primary_language_tag"] = "und"
+        legacy_package["project"]["primary_language_assignment"] = "LEGACY_UNKNOWN"
+        legacy_package = seal_project_package(legacy_package)
+        legacy_source.delete()
+        restored_legacy = import_project_package(legacy_package)
+        self.assertEqual(restored_legacy.primary_language_tag, "und")
+        self.assertEqual(
+            restored_legacy.primary_language_assignment,
+            ProjectPrimaryLanguageAssignment.LEGACY_UNKNOWN,
+        )
+
+    def test_project_package_1_0_is_frozen_and_only_exact_kz_upgrade_is_admitted(self):
+        schema_path = (
+            Path(__file__).resolve().parents[1]
+            / "services"
+            / "schemas"
+            / "project-package-1.0.0.schema.json"
+        )
+        self.assertEqual(
+            hashlib.sha256(schema_path.read_bytes()).hexdigest(),
+            "6956ef96da4ec58b4b7b35257190917c628d46e4b983c33641abfac6ef9915c3",
+        )
+
+        ordinary = self._project("PACKAGE-V1-NEEDS-LANGUAGE", "kk")
+        ordinary_v1 = self._downgrade_to_frozen_1_0(
+            export_project_package(ordinary)
+        )
+        ordinary.delete()
+        with self.assertRaises(ProjectPackageValidationError) as raised:
+            import_project_package(ordinary_v1)
+        self.assertEqual(raised.exception.code, PROJECT_PACKAGE_PRIMARY_LANGUAGE_REQUIRED)
+
+        uuid_only = copy.deepcopy(ordinary_v1)
+        uuid_only.pop("manifest")
+        uuid_only["project"]["id"] = str(
+            stable_demo_uuid("project", PROJECT_CODE)
+        )
+        uuid_only = seal_project_package(uuid_only)
+        with self.assertRaises(ProjectPackageValidationError) as raised:
+            import_project_package(uuid_only)
+        self.assertEqual(raised.exception.code, PROJECT_PACKAGE_PRIMARY_LANGUAGE_REQUIRED)
+
+        code_only = copy.deepcopy(ordinary_v1)
+        code_only.pop("manifest")
+        code_only["project"]["code"] = PROJECT_CODE
+        code_only = seal_project_package(code_only)
+        with self.assertRaises(ProjectPackageValidationError) as raised:
+            import_project_package(code_only)
+        self.assertEqual(raised.exception.code, PROJECT_PACKAGE_PRIMARY_LANGUAGE_REQUIRED)
+        self.assertFalse(Project.objects.filter(code=PROJECT_CODE).exists())
+
+        upgraded = upgrade_project_package_1_0_to_1_1(
+            ordinary_v1,
+            primary_language_tag="kk",
+            primary_language_assignment="EXPLICIT",
+        )
+        restored = import_project_package(upgraded)
+        self.assertEqual(restored.primary_language_tag, "kk")
+
+        for tag, assignment in (
+            ("und", "EXPLICIT"),
+            ("ru", "LEGACY_UNKNOWN"),
+            ("RU", "EXPLICIT"),
+        ):
+            with self.subTest(tag=tag, assignment=assignment):
+                with self.assertRaises(ProjectPackageValidationError):
+                    upgrade_project_package_1_0_to_1_1(
+                        ordinary_v1,
+                        primary_language_tag=tag,
+                        primary_language_assignment=assignment,
+                    )
+
+        restored.delete()
+        legacy_upgraded = upgrade_project_package_1_0_to_1_1(
+            ordinary_v1,
+            primary_language_tag="und",
+            primary_language_assignment="LEGACY_UNKNOWN",
+        )
+        legacy_restored = import_project_package(legacy_upgraded)
+        self.assertEqual(
+            (
+                legacy_restored.primary_language_tag,
+                legacy_restored.primary_language_assignment,
+            ),
+            ("und", ProjectPrimaryLanguageAssignment.LEGACY_UNKNOWN),
+        )
+
+        kz = Project.objects.create(
+            id=stable_demo_uuid("project", PROJECT_CODE),
+            code=PROJECT_CODE,
+            name="Exact KZ v1 identity",
+            primary_language_tag="ru",
+        )
+        kz_v1 = self._downgrade_to_frozen_1_0(export_project_package(kz))
+        kz.delete()
+        restored_kz = import_project_package(kz_v1)
+        self.assertEqual(restored_kz.primary_language_tag, "ru")
+        self.assertEqual(
+            restored_kz.primary_language_assignment,
+            ProjectPrimaryLanguageAssignment.EXPLICIT,
+        )
 
 
 class AssessmentIsolationTests(TestCase):
@@ -245,7 +695,11 @@ class StructurePolicyTests(TestCase):
             require_project_structure_mutation(project, actor=StructureActor.STUDIO)
 
     def test_studio_can_create_a_differently_sized_unlocked_project(self):
-        project = Project.objects.create(code="STUDIO-TEST", name="Studio test")
+        project = Project.objects.create(
+            code="STUDIO-TEST",
+            name="Studio test",
+            primary_language_tag="ru",
+        )
         clean_save(
             ProjectLock(
                 project=project,
