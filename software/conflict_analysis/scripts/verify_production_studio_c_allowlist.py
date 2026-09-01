@@ -961,6 +961,21 @@ def _require_single_fast_forward_commit(
         )
 
 
+def _require_f0l_bounded_fast_forward_commits(
+    *,
+    commit_count: int,
+    oldest_parent: str,
+    base_head: str,
+) -> None:
+    if commit_count not in {1, 2} or oldest_parent != base_head:
+        raise VerificationError(
+            "F0L delivery must contain one ordinary fast-forward commit, or "
+            "one additional ordinary correction commit when evidence requires; "
+            f"count={commit_count}, oldest_parent={oldest_parent}, "
+            f"base={base_head}"
+        )
+
+
 def _require_fd06_rc5_public_history(
     *,
     commit_count: int,
@@ -2669,6 +2684,30 @@ def f0l_self_check() -> dict[str, object]:
         allowlist=ACTIVE_F0L_ALLOWLIST,
         exact_changed_paths=True,
     )
+    history_base = "a" * 40
+    for count in (1, 2):
+        _require_f0l_bounded_fast_forward_commits(
+            commit_count=count,
+            oldest_parent=history_base,
+            base_head=history_base,
+        )
+    for count, oldest_parent in (
+        (0, history_base),
+        (3, history_base),
+        (1, "b" * 40),
+    ):
+        try:
+            _require_f0l_bounded_fast_forward_commits(
+                commit_count=count,
+                oldest_parent=oldest_parent,
+                base_head=history_base,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                "F0L history self-check accepted out-of-bounds delivery history"
+            )
     _require_f0l_clean_status("")
     try:
         _require_f0l_clean_status(" M authorized-but-uncommitted.py")
@@ -3378,8 +3417,23 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
     if _git(repo, "merge-base", base_head, "HEAD") != base_head:
         raise VerificationError("F0L HEAD is not a descendant of the exact FD07 base")
 
-    commit_count = int(_git(repo, "rev-list", "--count", f"{base_head}..HEAD"))
+    ordered_commits = tuple(
+        line
+        for line in _git(
+            repo,
+            "rev-list",
+            "--reverse",
+            f"{base_head}..HEAD",
+        ).splitlines()
+        if line
+    )
+    commit_count = len(ordered_commits)
     delivery_parent = _git(repo, "rev-parse", "HEAD^") if commit_count else base_head
+    oldest_parent = (
+        _git(repo, "rev-parse", f"{ordered_commits[0]}^")
+        if ordered_commits
+        else base_head
+    )
     _require_merge_free(
         "F0L",
         tuple(
@@ -3388,10 +3442,9 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
             if line
         ),
     )
-    _require_single_fast_forward_commit(
-        active_slice="F0L",
+    _require_f0l_bounded_fast_forward_commits(
         commit_count=commit_count,
-        delivery_parent=delivery_parent,
+        oldest_parent=oldest_parent,
         base_head=base_head,
     )
 
@@ -3453,7 +3506,7 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
     migration_source = migration_path.read_text(encoding="utf-8")
     if not re.search(
         r"dependencies\s*=\s*\[\s*\(\s*[\"']domain[\"']\s*,\s*"
-        r"[\"']0015_foundation_studio_contract_constraints[\"']\s*\)\s*\]",
+        r"[\"']0015_foundation_studio_contract_constraints[\"']\s*\)\s*,?\s*\]",
         migration_source,
         re.DOTALL,
     ):
@@ -3489,7 +3542,9 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         "delivery_head": _git(repo, "rev-parse", "HEAD"),
         "delivery_tree": _git(repo, "rev-parse", "HEAD^{tree}"),
         "delivery_commit_count": commit_count,
+        "delivery_commits": list(ordered_commits),
         "delivery_parent": delivery_parent,
+        "delivery_oldest_parent": oldest_parent,
         "changed_paths": sorted(changed),
         "exact_changed_path_count": len(changed),
         "new_paths": sorted(F0L_NEW_PATHS),
