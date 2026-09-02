@@ -2354,7 +2354,6 @@ jobs:
       C2A_BRANCH: codex/ca-suite-i1-production-studio-c2a-lifecycle-publication
       F0L_ACCEPTED_HEAD: "${{ vars.F0L_ACCEPTED_HEAD }}"
       F0L_ACCEPTED_TREE: "${{ vars.F0L_ACCEPTED_TREE }}"
-      SUCCESSOR_EVIDENCE_DIR: ${{ runner.temp }}/successor-evidence
 
     steps:
       - name: Check out exact delivery head
@@ -2587,6 +2586,14 @@ jobs:
           PY
           fi
           git diff --check "$SLICE_BASE_HEAD...HEAD"
+
+      - name: Bind exact F1 or C2A evidence directory
+        if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'SUCCESSOR_EVIDENCE_DIR=%s\n' \
+            "$RUNNER_TEMP/successor-evidence" >> "$GITHUB_ENV"
 
       - name: Initialize exact F1 or C2A evidence manifest
         if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'

@@ -72,9 +72,12 @@ F0L_RATIFIED_EXISTING_COMMITS = (
     "79b03a653a1c9c675fba49d09ac61933ec07f114",
     "0f67adabf697f1be67daa5a07b68bc0731954bb0",
     "a6363f8206ed0276ee40fd3c652bf572c872e2b8",
+    "a4006d609064a5f473325c1b82e1033224ecb539",
 )
-PINNED_F0L_CORRECTION_4_HEAD = F0L_RATIFIED_EXISTING_COMMITS[-1]
+PINNED_F0L_CORRECTION_4_HEAD = F0L_RATIFIED_EXISTING_COMMITS[3]
 PINNED_F0L_CORRECTION_4_TREE = "f3869f7e66d3fe9601b937df196f03b1de51aee0"
+PINNED_F0L_CORRECTION_5_HEAD = F0L_RATIFIED_EXISTING_COMMITS[4]
+PINNED_F0L_CORRECTION_5_TREE = "9931862e3c3879102530613bac9028ab2d54805c"
 F0L_CORRECTION_4_PATHS = frozenset(
     {
         "software/conflict_analysis/domain/models.py",
@@ -83,6 +86,12 @@ F0L_CORRECTION_4_PATHS = frozenset(
     }
 )
 F0L_CORRECTION_5_PATHS = frozenset(
+    {
+        ".github/workflows/conflict-analysis.yml",
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+    }
+)
+F0L_CORRECTION_5A_PATHS = frozenset(
     {
         ".github/workflows/conflict-analysis.yml",
         "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
@@ -1344,7 +1353,7 @@ def _require_f0l_bounded_fast_forward_commits(
         else None
     )
     if (
-        commit_count not in {1, 2, 3, 4, 5}
+        commit_count not in {1, 2, 3, 4, 5, 6}
         or oldest_parent != base_head
         or len(ordered_commits) != commit_count
         or ordered_commits[: len(ratified_prefix)] != ratified_prefix
@@ -1352,7 +1361,7 @@ def _require_f0l_bounded_fast_forward_commits(
     ):
         raise VerificationError(
             "F0L delivery must preserve the exact ratified ordinary commit prefix "
-            "and contain at most one authorized fifth correction commit; "
+            "and contain at most one authorized sixth correction-5a commit; "
             f"count={commit_count}, oldest_parent={oldest_parent}, "
             f"delivery_parent={delivery_parent}, base={base_head}, "
             f"commits={ordered_commits}"
@@ -1400,6 +1409,30 @@ def _require_f0l_correction_5_paths(
             + json.dumps(
                 {
                     "expected": sorted(F0L_CORRECTION_5_PATHS),
+                    "actual": sorted(changed_paths or set()),
+                }
+            )
+        )
+
+
+def _require_f0l_correction_5a_paths(
+    *,
+    commit_count: int,
+    changed_paths: set[str] | None,
+) -> None:
+    if commit_count < 6:
+        if changed_paths is not None:
+            raise VerificationError(
+                "F0L correction-5a paths must be absent before the sixth commit"
+            )
+        return
+    if changed_paths != F0L_CORRECTION_5A_PATHS:
+        raise VerificationError(
+            "F0L sixth correction-5a commit must change exactly the workflow and "
+            "verifier paths: "
+            + json.dumps(
+                {
+                    "expected": sorted(F0L_CORRECTION_5A_PATHS),
                     "actual": sorted(changed_paths or set()),
                 }
             )
@@ -1659,8 +1692,11 @@ def _require_f0l_static_contract() -> None:
         F0L_ASYNC_ORM_ENTRYPOINTS,
         F0L_RATIFIED_EXISTING_COMMITS,
         PINNED_F0L_CORRECTION_4_TREE,
+        PINNED_F0L_CORRECTION_5_HEAD,
+        PINNED_F0L_CORRECTION_5_TREE,
         tuple(sorted(F0L_CORRECTION_4_PATHS)),
         tuple(sorted(F0L_CORRECTION_5_PATHS)),
+        tuple(sorted(F0L_CORRECTION_5A_PATHS)),
     )
     expected = (
         F0L_EXACT_PATH_COUNT,
@@ -1698,11 +1734,18 @@ def _require_f0l_static_contract() -> None:
             "79b03a653a1c9c675fba49d09ac61933ec07f114",
             "0f67adabf697f1be67daa5a07b68bc0731954bb0",
             "a6363f8206ed0276ee40fd3c652bf572c872e2b8",
+            "a4006d609064a5f473325c1b82e1033224ecb539",
         ),
         "f3869f7e66d3fe9601b937df196f03b1de51aee0",
+        "a4006d609064a5f473325c1b82e1033224ecb539",
+        "9931862e3c3879102530613bac9028ab2d54805c",
         (
             "software/conflict_analysis/domain/models.py",
             "software/conflict_analysis/domain/tests/test_data_foundation.py",
+            "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+        ),
+        (
+            ".github/workflows/conflict-analysis.yml",
             "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
         ),
         (
@@ -1732,9 +1775,12 @@ def _successor_static_contract_payload() -> dict[str, object]:
     return {
         "f0l_correction_4_head": PINNED_F0L_CORRECTION_4_HEAD,
         "f0l_correction_4_tree": PINNED_F0L_CORRECTION_4_TREE,
+        "f0l_correction_5_head": PINNED_F0L_CORRECTION_5_HEAD,
+        "f0l_correction_5_tree": PINNED_F0L_CORRECTION_5_TREE,
         "f0l_ratified_commits": F0L_RATIFIED_EXISTING_COMMITS,
         "f0l_correction_4_paths": sorted(F0L_CORRECTION_4_PATHS),
         "f0l_correction_5_paths": sorted(F0L_CORRECTION_5_PATHS),
+        "f0l_correction_5a_paths": sorted(F0L_CORRECTION_5A_PATHS),
         "f1_allowlist": sorted(F1_POST_F0L_ALLOWLIST),
         "f1_new_paths": sorted(F1_NEW_PATHS),
         "f1_frozen_paths": F1_FROZEN_PATHS,
@@ -1790,7 +1836,7 @@ def _require_successor_static_contract() -> None:
         sort_keys=True,
     ).encode("utf-8")
     digest = hashlib.sha256(encoded).hexdigest()
-    expected = "0c23032ee8a7da3548834d89912c03805aa9fa5ac1450927898e7483e446deca"
+    expected = "3cf19b04770c4925a98f46a82071024dbf59fae851178fc20731b34c9ec08d5d"
     if digest != expected:
         raise VerificationError(
             "post-F0L successor static contract drifted: "
@@ -1800,7 +1846,13 @@ def _require_successor_static_contract() -> None:
 
 def _successor_workflow_required_tokens() -> tuple[str, ...]:
     terminal_cli = '--successor-evidence-dir "$RUNNER_TEMP/successor-evidence"'
+    runtime_evidence_binding = (
+        '"$RUNNER_TEMP/successor-evidence" >> "$GITHUB_ENV"'
+    )
     return (
+        "name: Bind exact F1 or C2A evidence directory",
+        "printf 'SUCCESSOR_EVIDENCE_DIR=%s\\n'",
+        runtime_evidence_binding,
         "name: Require complete F1/C2A functional evidence",
         "if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'",
         terminal_cli,
@@ -1823,15 +1875,34 @@ def _successor_workflow_required_tokens() -> tuple[str, ...]:
 
 def _require_successor_workflow_contract(source: str) -> None:
     terminal_cli = '--successor-evidence-dir "$RUNNER_TEMP/successor-evidence"'
+    runtime_evidence_binding = (
+        '"$RUNNER_TEMP/successor-evidence" >> "$GITHUB_ENV"'
+    )
     required_tokens = _successor_workflow_required_tokens()
     missing = [token for token in required_tokens if token not in source]
-    if missing or source.count(terminal_cli) != 1:
+    invalid_job_level_runner_temp = bool(
+        re.search(
+            r"(?m)^[ \t]+SUCCESSOR_EVIDENCE_DIR\s*:\s*"
+            r"\$\{\{\s*runner\.temp\s*\}\}/successor-evidence\s*(?:#.*)?$",
+            source,
+        )
+    )
+    if (
+        missing
+        or source.count(terminal_cli) != 1
+        or source.count(runtime_evidence_binding) != 1
+        or invalid_job_level_runner_temp
+    ):
         raise VerificationError(
             "successor workflow terminal evidence gate drifted: "
             + json.dumps(
                 {
                     "missing": missing,
                     "terminal_invocation_count": source.count(terminal_cli),
+                    "runtime_evidence_binding_count": source.count(
+                        runtime_evidence_binding
+                    ),
+                    "invalid_job_level_runner_temp": invalid_job_level_runner_temp,
                 }
             )
         )
@@ -4286,7 +4357,7 @@ def f0l_self_check() -> dict[str, object]:
         *F0L_RATIFIED_EXISTING_COMMITS,
         "d" * 40,
     )
-    for count in (1, 2, 3, 4, 5):
+    for count in (1, 2, 3, 4, 5, 6):
         _require_f0l_bounded_fast_forward_commits(
             commit_count=count,
             oldest_parent=history_base,
@@ -4298,7 +4369,7 @@ def f0l_self_check() -> dict[str, object]:
         )
     for count, oldest_parent, ordered_commits, delivery_parent in (
         (0, history_base, (), history_base),
-        (6, history_base, (*authorized_history, "e" * 40), authorized_history[-1]),
+        (7, history_base, (*authorized_history, "e" * 40), authorized_history[-1]),
         (1, "b" * 40, authorized_history[:1], history_base),
         (
             3,
@@ -4306,11 +4377,11 @@ def f0l_self_check() -> dict[str, object]:
             ("c" * 40, *authorized_history[1:3]),
             authorized_history[1],
         ),
-        (5, history_base, authorized_history, "e" * 40),
+        (6, history_base, authorized_history, "e" * 40),
         (
-            5,
+            6,
             history_base,
-            (*authorized_history[:3], "c" * 40, authorized_history[4]),
+            (*authorized_history[:4], "c" * 40, authorized_history[5]),
             "c" * 40,
         ),
     ):
@@ -4334,7 +4405,7 @@ def f0l_self_check() -> dict[str, object]:
         changed_paths=set(F0L_CORRECTION_4_PATHS),
     )
     _require_f0l_correction_4_paths(
-        commit_count=5,
+        commit_count=6,
         changed_paths=set(F0L_CORRECTION_4_PATHS),
     )
     for commit_count, changed_paths in (
@@ -4360,6 +4431,10 @@ def f0l_self_check() -> dict[str, object]:
         commit_count=5,
         changed_paths=set(F0L_CORRECTION_5_PATHS),
     )
+    _require_f0l_correction_5_paths(
+        commit_count=6,
+        changed_paths=set(F0L_CORRECTION_5_PATHS),
+    )
     for commit_count, changed_paths in (
         (4, set(F0L_CORRECTION_5_PATHS)),
         (5, None),
@@ -4376,6 +4451,32 @@ def f0l_self_check() -> dict[str, object]:
         else:
             raise VerificationError(
                 "F0L correction-5 path self-check accepted scope drift"
+            )
+    _require_f0l_correction_5a_paths(commit_count=5, changed_paths=None)
+    _require_f0l_correction_5a_paths(
+        commit_count=6,
+        changed_paths=set(F0L_CORRECTION_5A_PATHS),
+    )
+    for commit_count, changed_paths in (
+        (5, set(F0L_CORRECTION_5A_PATHS)),
+        (6, None),
+        (
+            6,
+            set(F0L_CORRECTION_5A_PATHS)
+            - {sorted(F0L_CORRECTION_5A_PATHS)[0]},
+        ),
+        (6, set(F0L_CORRECTION_5A_PATHS) | {"unauthorized/sixth-path"}),
+    ):
+        try:
+            _require_f0l_correction_5a_paths(
+                commit_count=commit_count,
+                changed_paths=changed_paths,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                "F0L correction-5a path self-check accepted scope drift"
             )
     _require_f0l_clean_status("")
     try:
@@ -4697,6 +4798,29 @@ class ProjectQuerySet:
         raise VerificationError(
             "successor workflow self-check accepted duplicate terminal invocation"
         )
+    runtime_evidence_binding = (
+        '"$RUNNER_TEMP/successor-evidence" >> "$GITHUB_ENV"'
+    )
+    for label, invalid_workflow_source in (
+        (
+            "job-level runner.temp evidence binding",
+            workflow_source
+            + "\n      SUCCESSOR_EVIDENCE_DIR: "
+            + "${{ runner.temp }}/successor-evidence",
+        ),
+        (
+            "duplicate runtime evidence binding",
+            workflow_source + "\n" + runtime_evidence_binding,
+        ),
+    ):
+        try:
+            _require_successor_workflow_contract(invalid_workflow_source)
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                f"successor workflow self-check accepted {label}"
+            )
 
     with TemporaryDirectory(prefix="f0l-successor-self-check-") as temp_name:
         temp_root = Path(temp_name)
@@ -5460,14 +5584,28 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         commit_count=commit_count,
         changed_paths=correction_4_changed_paths,
     )
-    correction_5_changed_paths = (
-        _commit_changed_paths(repo, ordered_commits[4])
-        if commit_count >= 5
-        else None
-    )
+    correction_5_changed_paths = None
+    if commit_count >= 5:
+        if (
+            _git(repo, "rev-parse", f"{PINNED_F0L_CORRECTION_5_HEAD}^{{tree}}")
+            != PINNED_F0L_CORRECTION_5_TREE
+        ):
+            raise VerificationError("F0L correction-5 ratified TREE drifted")
+        correction_5_changed_paths = _commit_changed_paths(
+            repo, PINNED_F0L_CORRECTION_5_HEAD
+        )
     _require_f0l_correction_5_paths(
         commit_count=commit_count,
         changed_paths=correction_5_changed_paths,
+    )
+    correction_5a_changed_paths = (
+        _commit_changed_paths(repo, ordered_commits[5])
+        if commit_count >= 6
+        else None
+    )
+    _require_f0l_correction_5a_paths(
+        commit_count=commit_count,
+        changed_paths=correction_5a_changed_paths,
     )
 
     changed = _changed_paths(repo, base_head)
@@ -5576,6 +5714,8 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         "delivery_oldest_parent": oldest_parent,
         "correction_4_head": PINNED_F0L_CORRECTION_4_HEAD,
         "correction_4_tree": PINNED_F0L_CORRECTION_4_TREE,
+        "correction_5_head": PINNED_F0L_CORRECTION_5_HEAD,
+        "correction_5_tree": PINNED_F0L_CORRECTION_5_TREE,
         "correction_4_changed_paths": (
             sorted(correction_4_changed_paths)
             if correction_4_changed_paths is not None
@@ -5584,6 +5724,13 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         "correction_5_changed_paths": (
             sorted(correction_5_changed_paths)
             if correction_5_changed_paths is not None
+            else None
+        ),
+        "correction_5a_head": ordered_commits[5] if commit_count >= 6 else None,
+        "correction_5a_parent": ordered_commits[4] if commit_count >= 6 else None,
+        "correction_5a_changed_paths": (
+            sorted(correction_5a_changed_paths)
+            if correction_5a_changed_paths is not None
             else None
         ),
         "changed_paths": sorted(changed),
