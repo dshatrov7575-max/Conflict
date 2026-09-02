@@ -63,6 +63,18 @@ PINNED_F0L_BASE_HEAD = "710b88f0db9ec2f0e2fae65c7e0c77025115771a"
 PINNED_F0L_BASE_TREE = "0a15bd4d6993f87199329d0907be372aec9e69ca"
 F0L_BASE_BRANCH = FD07_TARGET_BRANCH
 F0L_TARGET_BRANCH = "codex/ca-suite-i1-project-language-bootstrap-f0l"
+F0L_RATIFIED_EXISTING_COMMITS = (
+    "545e24231673b2c113bde064f835aa24c7d7b10d",
+    "79b03a653a1c9c675fba49d09ac61933ec07f114",
+    "0f67adabf697f1be67daa5a07b68bc0731954bb0",
+)
+F0L_CORRECTION_4_PATHS = frozenset(
+    {
+        "software/conflict_analysis/domain/models.py",
+        "software/conflict_analysis/domain/tests/test_data_foundation.py",
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+    }
+)
 F1_TARGET_BRANCH = "codex/ca-suite-i1-evidence-multilingual-f1"
 C2A_TARGET_BRANCH = (
     "codex/ca-suite-i1-production-studio-c2a-lifecycle-publication"
@@ -74,6 +86,18 @@ F0L_POSTGRESQL_MIGRATION_TEST_COUNT = 2
 F0L_FOUNDATION_POSTGRESQL_PASSED = 254
 F0L_FOUNDATION_SQLITE_PASSED = 237
 F0L_FOUNDATION_SQLITE_SKIPPED = 17
+F0L_LANGUAGE_LOOKUP_PREFIXES = (
+    "primary_language_tag__",
+    "primary_language_assignment__",
+)
+F0L_ASYNC_ORM_ENTRYPOINTS = (
+    "acreate",
+    "aget_or_create",
+    "aupdate_or_create",
+    "aupdate",
+    "abulk_create",
+    "abulk_update",
+)
 _LOWER_HEX_40 = re.compile(r"[0-9a-f]{40}\Z")
 
 ACTIVE_C0_ALLOWLIST = frozenset(
@@ -966,13 +990,44 @@ def _require_f0l_bounded_fast_forward_commits(
     commit_count: int,
     oldest_parent: str,
     base_head: str,
+    ordered_commits: tuple[str, ...],
 ) -> None:
-    if commit_count not in {1, 2, 3} or oldest_parent != base_head:
+    ratified_prefix = F0L_RATIFIED_EXISTING_COMMITS[: min(commit_count, 3)]
+    if (
+        commit_count not in {1, 2, 3, 4}
+        or oldest_parent != base_head
+        or len(ordered_commits) != commit_count
+        or ordered_commits[: len(ratified_prefix)] != ratified_prefix
+    ):
         raise VerificationError(
-            "F0L delivery must contain one ordinary fast-forward commit, or "
-            "up to two ordinary correction commits when CI evidence requires; "
+            "F0L delivery must preserve the exact ratified ordinary commit prefix "
+            "and contain at most one authorized fourth correction commit; "
             f"count={commit_count}, oldest_parent={oldest_parent}, "
-            f"base={base_head}"
+            f"base={base_head}, commits={ordered_commits}"
+        )
+
+
+def _require_f0l_correction_4_paths(
+    *,
+    commit_count: int,
+    changed_paths: set[str] | None,
+) -> None:
+    if commit_count < 4:
+        if changed_paths is not None:
+            raise VerificationError(
+                "F0L correction-4 paths must be absent before the fourth commit"
+            )
+        return
+    if changed_paths != F0L_CORRECTION_4_PATHS:
+        raise VerificationError(
+            "F0L fourth commit must change exactly the three authorized correction "
+            "paths: "
+            + json.dumps(
+                {
+                    "expected": sorted(F0L_CORRECTION_4_PATHS),
+                    "actual": sorted(changed_paths or set()),
+                }
+            )
         )
 
 
@@ -1225,6 +1280,10 @@ def _require_f0l_static_contract() -> None:
         tuple(sorted(F0L_FIXTURE_DELTAS)),
         all(path in ACTIVE_F0L_ALLOWLIST for path in F0L_FIXTURE_DELTAS),
         all(path in F0L_EXISTING_BASE_BLOBS for path in F0L_FIXTURE_DELTAS),
+        F0L_LANGUAGE_LOOKUP_PREFIXES,
+        F0L_ASYNC_ORM_ENTRYPOINTS,
+        F0L_RATIFIED_EXISTING_COMMITS,
+        tuple(sorted(F0L_CORRECTION_4_PATHS)),
     )
     expected = (
         F0L_EXACT_PATH_COUNT,
@@ -1245,6 +1304,28 @@ def _require_f0l_static_contract() -> None:
         ),
         True,
         True,
+        (
+            "primary_language_tag__",
+            "primary_language_assignment__",
+        ),
+        (
+            "acreate",
+            "aget_or_create",
+            "aupdate_or_create",
+            "aupdate",
+            "abulk_create",
+            "abulk_update",
+        ),
+        (
+            "545e24231673b2c113bde064f835aa24c7d7b10d",
+            "79b03a653a1c9c675fba49d09ac61933ec07f114",
+            "0f67adabf697f1be67daa5a07b68bc0731954bb0",
+        ),
+        (
+            "software/conflict_analysis/domain/models.py",
+            "software/conflict_analysis/domain/tests/test_data_foundation.py",
+            "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+        ),
     )
     if actual != expected:
         raise VerificationError(
@@ -1365,6 +1446,209 @@ def _require_exact_test_topology(
         raise VerificationError(
             f"{class_name} test topology mismatch: "
             + json.dumps({"expected": expected_methods, "actual": actual})
+        )
+
+
+def _require_f0l_correction_4_evidence(
+    *,
+    models_source: str,
+    tests_source: str,
+) -> None:
+    models_tree = ast.parse(models_source)
+    prefix_assignments = [
+        node
+        for node in models_tree.body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name)
+            and target.id == "_PROJECT_LANGUAGE_LOOKUP_PREFIXES"
+            for target in node.targets
+        )
+    ]
+    try:
+        declared_prefixes = (
+            ast.literal_eval(prefix_assignments[0].value)
+            if len(prefix_assignments) == 1
+            else None
+        )
+    except (ValueError, SyntaxError):
+        declared_prefixes = None
+    if declared_prefixes != F0L_LANGUAGE_LOOKUP_PREFIXES:
+        raise VerificationError("F0L language lookup-expression prefixes drifted")
+
+    queryset_classes = [
+        node
+        for node in models_tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "ProjectQuerySet"
+    ]
+    if len(queryset_classes) != 1:
+        raise VerificationError("expected exactly one ProjectQuerySet class")
+    queryset_methods = {
+        node.name: node
+        for node in queryset_classes[0].body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    prevalidate = queryset_methods.get("_prevalidate_project_language_request")
+    core = queryset_methods.get("_get_or_create_prevalidated")
+    if prevalidate is None or core is None:
+        raise VerificationError("F0L prevalidated Project upsert boundary is absent")
+
+    def has_positive_lookup_prefix_guard(
+        expression: ast.AST,
+        *,
+        negated: bool = False,
+    ) -> bool:
+        if isinstance(expression, ast.UnaryOp) and isinstance(expression.op, ast.Not):
+            return has_positive_lookup_prefix_guard(
+                expression.operand,
+                negated=not negated,
+            )
+        if (
+            isinstance(expression, ast.Call)
+            and isinstance(expression.func, ast.Attribute)
+            and expression.func.attr == "startswith"
+            and any(
+                isinstance(argument, ast.Name)
+                and argument.id == "_PROJECT_LANGUAGE_LOOKUP_PREFIXES"
+                for argument in expression.args
+            )
+        ):
+            return not negated
+        return any(
+            has_positive_lookup_prefix_guard(child, negated=negated)
+            for child in ast.iter_child_nodes(expression)
+        )
+
+    prefix_guard = any(
+        has_positive_lookup_prefix_guard(node.test)
+        and any(
+            isinstance(body_node, ast.Raise)
+            for statement in node.body
+            for body_node in ast.walk(statement)
+        )
+        for node in ast.walk(prevalidate)
+        if isinstance(node, ast.If)
+    )
+    helper_names = {
+        node.id for node in ast.walk(prevalidate) if isinstance(node, ast.Name)
+    }
+    helper_attributes = {
+        node.attr for node in ast.walk(prevalidate) if isinstance(node, ast.Attribute)
+    }
+    helper_literals = {
+        node.value
+        for node in ast.walk(prevalidate)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    if (
+        not prefix_guard
+        or not {"callable", "canonicalize_language_tag"} <= helper_names
+        or not {"EXPLICIT", "LEGACY_UNKNOWN"} <= helper_attributes
+        or not {
+            "project_primary_language_lookup_forbidden",
+            "Project language identity values are inconsistent.",
+        }
+        <= helper_literals
+    ):
+        raise VerificationError(
+            "F0L lookup rejection, scalar validation or duplicate guard drifted"
+        )
+
+    for method_name in ("get_or_create", "update_or_create"):
+        method = queryset_methods.get(method_name)
+        if method is None or not method.body:
+            raise VerificationError(f"ProjectQuerySet.{method_name} is absent")
+        first_statement_calls = [
+            node for node in ast.walk(method.body[0]) if isinstance(node, ast.Call)
+        ]
+        if len(first_statement_calls) != 1 or not any(
+            isinstance(call.func, ast.Attribute)
+            and call.func.attr == "_prevalidate_project_language_request"
+            for call in first_statement_calls
+        ):
+            raise VerificationError(
+                f"ProjectQuerySet.{method_name} must prevalidate before lookup/lock"
+            )
+
+    if not any(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "_assert_prevalidated_language_matches"
+        for node in ast.walk(core)
+    ):
+        raise VerificationError("F0L persisted language comparison guard drifted")
+
+    tests_tree = ast.parse(tests_source)
+    test_classes = [
+        node
+        for node in tests_tree.body
+        if isinstance(node, ast.ClassDef)
+        and node.name == PROJECT_LANGUAGE_TEST_CLASS
+    ]
+    if len(test_classes) != 1:
+        raise VerificationError(
+            f"expected exactly one {PROJECT_LANGUAGE_TEST_CLASS} class"
+        )
+    async_locations: dict[str, set[str]] = {
+        entrypoint: set() for entrypoint in F0L_ASYNC_ORM_ENTRYPOINTS
+    }
+    uninvoked_coroutines: dict[str, list[str]] = {}
+    for method in test_classes[0].body:
+        if not isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        invoked_coroutines = {
+            call.func.args[0].id
+            for statement in method.body
+            if not isinstance(statement, (ast.FunctionDef, ast.AsyncFunctionDef))
+            for call in ast.walk(statement)
+            if isinstance(call, ast.Call)
+            and isinstance(call.func, ast.Call)
+            and isinstance(call.func.func, ast.Name)
+            and call.func.func.id == "async_to_sync"
+            and len(call.func.args) == 1
+            and isinstance(call.func.args[0], ast.Name)
+        }
+        for coroutine in (
+            node for node in method.body if isinstance(node, ast.AsyncFunctionDef)
+        ):
+            coroutine_entrypoints = {
+                call.func.attr
+                for awaited in ast.walk(coroutine)
+                if isinstance(awaited, ast.Await)
+                for call in ast.walk(awaited.value)
+                if isinstance(call, ast.Call)
+                and isinstance(call.func, ast.Attribute)
+                and call.func.attr in async_locations
+            }
+            if not coroutine_entrypoints:
+                continue
+            if coroutine.name not in invoked_coroutines:
+                uninvoked_coroutines[
+                    f"{method.name}.{coroutine.name}"
+                ] = sorted(coroutine_entrypoints)
+                continue
+            for entrypoint in coroutine_entrypoints:
+                async_locations[entrypoint].add(method.name)
+    missing = sorted(
+        entrypoint
+        for entrypoint, locations in async_locations.items()
+        if not locations
+    )
+    outside_registered_tests = {
+        entrypoint: sorted(locations - set(PROJECT_LANGUAGE_TEST_METHODS))
+        for entrypoint, locations in async_locations.items()
+        if locations - set(PROJECT_LANGUAGE_TEST_METHODS)
+    }
+    if missing or outside_registered_tests or uninvoked_coroutines:
+        raise VerificationError(
+            "F0L async ORM runtime evidence drifted: "
+            + json.dumps(
+                {
+                    "missing": missing,
+                    "outside_registered_tests": outside_registered_tests,
+                    "uninvoked_coroutines": uninvoked_coroutines,
+                }
+            )
         )
 
 
@@ -2685,28 +2969,57 @@ def f0l_self_check() -> dict[str, object]:
         exact_changed_paths=True,
     )
     history_base = "a" * 40
-    for count in (1, 2, 3):
+    authorized_history = (
+        *F0L_RATIFIED_EXISTING_COMMITS,
+        "d" * 40,
+    )
+    for count in (1, 2, 3, 4):
         _require_f0l_bounded_fast_forward_commits(
             commit_count=count,
             oldest_parent=history_base,
             base_head=history_base,
+            ordered_commits=authorized_history[:count],
         )
-    for count, oldest_parent in (
-        (0, history_base),
-        (4, history_base),
-        (1, "b" * 40),
+    for count, oldest_parent, ordered_commits in (
+        (0, history_base, ()),
+        (5, history_base, (*authorized_history, "e" * 40)),
+        (1, "b" * 40, authorized_history[:1]),
+        (3, history_base, ("c" * 40, *authorized_history[1:3])),
     ):
         try:
             _require_f0l_bounded_fast_forward_commits(
                 commit_count=count,
                 oldest_parent=oldest_parent,
                 base_head=history_base,
+                ordered_commits=ordered_commits,
             )
         except VerificationError:
             negative_cases += 1
         else:
             raise VerificationError(
                 "F0L history self-check accepted out-of-bounds delivery history"
+            )
+    _require_f0l_correction_4_paths(commit_count=3, changed_paths=None)
+    _require_f0l_correction_4_paths(
+        commit_count=4,
+        changed_paths=set(F0L_CORRECTION_4_PATHS),
+    )
+    for commit_count, changed_paths in (
+        (3, set(F0L_CORRECTION_4_PATHS)),
+        (4, None),
+        (4, set(F0L_CORRECTION_4_PATHS) - {sorted(F0L_CORRECTION_4_PATHS)[0]}),
+        (4, set(F0L_CORRECTION_4_PATHS) | {"unauthorized/fourth-path"}),
+    ):
+        try:
+            _require_f0l_correction_4_paths(
+                commit_count=commit_count,
+                changed_paths=changed_paths,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                "F0L correction-4 path self-check accepted scope drift"
             )
     _require_f0l_clean_status("")
     try:
@@ -2824,6 +3137,124 @@ def f0l_self_check() -> dict[str, object]:
         body = "\n".join(f"    def {name}(self):\n        pass" for name in methods)
         return f"class {class_name}:\n{body}\n"
 
+    synthetic_models = """
+_PROJECT_LANGUAGE_LOOKUP_PREFIXES = (
+    "primary_language_tag__",
+    "primary_language_assignment__",
+)
+class ProjectPrimaryLanguageAssignment:
+    EXPLICIT = "EXPLICIT"
+    LEGACY_UNKNOWN = "LEGACY_UNKNOWN"
+class ProjectQuerySet:
+    @staticmethod
+    def _prevalidate_project_language_request(*sources):
+        if key.startswith(_PROJECT_LANGUAGE_LOOKUP_PREFIXES):
+            raise ValueError("project_primary_language_lookup_forbidden")
+        value = callable(value)
+        value = canonicalize_language_tag(value)
+        assignment = ProjectPrimaryLanguageAssignment.EXPLICIT
+        assignment = ProjectPrimaryLanguageAssignment.LEGACY_UNKNOWN
+        message = "Project language identity values are inconsistent."
+    def _assert_prevalidated_language_matches(self):
+        pass
+    def _get_or_create_prevalidated(self):
+        self._assert_prevalidated_language_matches()
+    def get_or_create(self):
+        requested = self._prevalidate_project_language_request()
+        return self._get_or_create_prevalidated()
+    def update_or_create(self):
+        requested = self._prevalidate_project_language_request()
+        return self.select_for_update()._get_or_create_prevalidated()
+"""
+    async_lines = "\n".join(
+        f"            await objects.{entrypoint}()"
+        for entrypoint in F0L_ASYNC_ORM_ENTRYPOINTS
+    )
+    synthetic_tests = (
+        f"class {PROJECT_LANGUAGE_TEST_CLASS}:\n"
+        f"    def {PROJECT_LANGUAGE_TEST_METHODS[0]}(self):\n"
+        "        async def exercise():\n"
+        f"{async_lines}\n"
+        "        async_to_sync(exercise)()\n"
+    )
+    _require_f0l_correction_4_evidence(
+        models_source=synthetic_models,
+        tests_source=synthetic_tests,
+    )
+    for invalid_models, invalid_tests in (
+        (
+            synthetic_models.replace(
+                "primary_language_assignment__",
+                "primary_language_assignment_",
+            ),
+            synthetic_tests,
+        ),
+        (
+            synthetic_models,
+            synthetic_tests.replace(".abulk_update()", ".bulk_update()"),
+        ),
+        (
+            synthetic_models,
+            synthetic_tests.replace("        async_to_sync(exercise)()\n", ""),
+        ),
+        (
+            synthetic_models.replace(
+                "            raise ValueError(\"project_primary_language_lookup_forbidden\")",
+                "            code = \"project_primary_language_lookup_forbidden\"",
+            ),
+            synthetic_tests,
+        ),
+        (
+            synthetic_models.replace(
+                "        if key.startswith(_PROJECT_LANGUAGE_LOOKUP_PREFIXES):",
+                "        if not key.startswith(_PROJECT_LANGUAGE_LOOKUP_PREFIXES):",
+            ),
+            synthetic_tests,
+        ),
+        (
+            synthetic_models.replace(
+                "        if key.startswith(_PROJECT_LANGUAGE_LOOKUP_PREFIXES):\n"
+                "            raise ValueError(\"project_primary_language_lookup_forbidden\")",
+                "        if key.startswith(_PROJECT_LANGUAGE_LOOKUP_PREFIXES):\n"
+                "            pass\n"
+                "        else:\n"
+                "            raise ValueError(\"project_primary_language_lookup_forbidden\")",
+            ),
+            synthetic_tests,
+        ),
+        (
+            synthetic_models.replace(
+                "    def get_or_create(self):\n"
+                "        requested = self._prevalidate_project_language_request()\n",
+                "    def get_or_create(self):\n"
+                "        project = self.get()\n"
+                "        requested = self._prevalidate_project_language_request()\n",
+            ),
+            synthetic_tests,
+        ),
+        (
+            synthetic_models.replace(
+                "    def update_or_create(self):\n"
+                "        requested = self._prevalidate_project_language_request()\n",
+                "    def update_or_create(self):\n"
+                "        project = self.select_for_update()\n"
+                "        requested = self._prevalidate_project_language_request()\n",
+            ),
+            synthetic_tests,
+        ),
+    ):
+        try:
+            _require_f0l_correction_4_evidence(
+                models_source=invalid_models,
+                tests_source=invalid_tests,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                "F0L correction-4 self-check accepted guard or async drift"
+            )
+
     for class_name, methods in (
         (PROJECT_LANGUAGE_TEST_CLASS, PROJECT_LANGUAGE_TEST_METHODS),
         (PROJECT_LANGUAGE_WRITE_TEST_CLASS, PROJECT_LANGUAGE_WRITE_TEST_METHODS),
@@ -2848,6 +3279,7 @@ def f0l_self_check() -> dict[str, object]:
 
     return {
         "marker": "PROJECT_LANGUAGE_F0L_VERIFIER_SELF_CHECK=PASS",
+        "correction_4_marker": "F0L_CORRECTION_4_GUARD_ASYNC_SELF_CHECK=PASS",
         "downstream_marker": "POST_F0L_F1_C2A_PIN_SELF_CHECK=PASS",
         "network_access": False,
         "repository_access": False,
@@ -3446,10 +3878,18 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         commit_count=commit_count,
         oldest_parent=oldest_parent,
         base_head=base_head,
+        ordered_commits=ordered_commits,
     )
 
     _require_f0l_clean_status(
         _git(repo, "status", "--porcelain=v1", "--untracked-files=all")
+    )
+    correction_4_changed_paths = (
+        _changed_paths(repo, "HEAD^") if commit_count == 4 else None
+    )
+    _require_f0l_correction_4_paths(
+        commit_count=commit_count,
+        changed_paths=correction_4_changed_paths,
     )
 
     changed = _changed_paths(repo, base_head)
@@ -3533,6 +3973,13 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
     ).read_text(encoding="utf-8")
     if "def restore_legacy_unknown_from_package(" not in models_source:
         raise VerificationError("sealed Project package-restore entrypoint is absent")
+    _require_f0l_correction_4_evidence(
+        models_source=models_source,
+        tests_source=_find_exact_test_class_source(
+            repo,
+            PROJECT_LANGUAGE_TEST_CLASS,
+        ),
+    )
 
     return {
         "active_slice": "F0L",
@@ -3545,6 +3992,11 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         "delivery_commits": list(ordered_commits),
         "delivery_parent": delivery_parent,
         "delivery_oldest_parent": oldest_parent,
+        "correction_4_changed_paths": (
+            sorted(correction_4_changed_paths)
+            if correction_4_changed_paths is not None
+            else None
+        ),
         "changed_paths": sorted(changed),
         "exact_changed_path_count": len(changed),
         "new_paths": sorted(F0L_NEW_PATHS),
@@ -3554,6 +4006,9 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         "migration_filenames": list(migrations),
         "portable_test_node_count": F0L_PORTABLE_TEST_COUNT,
         "postgresql_migration_test_node_count": F0L_POSTGRESQL_MIGRATION_TEST_COUNT,
+        "language_lookup_expression_prefixes": list(F0L_LANGUAGE_LOOKUP_PREFIXES),
+        "prevalidation_before_lookup_or_lock": True,
+        "async_orm_runtime_entrypoints": list(F0L_ASYNC_ORM_ENTRYPOINTS),
         "package_restore_production_callers": [
             "software/conflict_analysis/domain/services/project_packages.py"
         ],
@@ -3663,6 +4118,7 @@ def main(argv: list[str] | None = None) -> int:
             result = self_check()
             f0l_result = f0l_self_check()
             result["f0l_marker"] = f0l_result["marker"]
+            result["f0l_correction_4_marker"] = f0l_result["correction_4_marker"]
             result["post_f0l_marker"] = f0l_result["downstream_marker"]
             result["positive_slices"] = [
                 *result["positive_slices"],
@@ -3706,6 +4162,7 @@ def main(argv: list[str] | None = None) -> int:
         print(result["fd06_marker"])
         print(result["fd07_marker"])
         print(result["f0l_marker"])
+        print(result["f0l_correction_4_marker"])
         print(result["post_f0l_marker"])
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     return 0

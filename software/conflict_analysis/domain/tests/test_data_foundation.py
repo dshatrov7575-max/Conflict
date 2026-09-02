@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest import mock
 from uuid import uuid4
 
+from asgiref.sync import async_to_sync
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.db.models import F
@@ -262,6 +263,18 @@ class ProjectPrimaryLanguageContractTests(TestCase):
             ProjectPrimaryLanguageAssignment.EXPLICIT,
         )
 
+        async def async_create_without_language():
+            await Project.objects.acreate(
+                code="ASYNC-CREATE-MISSING",
+                name="Async create missing language",
+            )
+
+        with self.assertRaises(ValidationError):
+            async_to_sync(async_create_without_language)()
+        self.assertFalse(
+            Project.objects.filter(code="ASYNC-CREATE-MISSING").exists()
+        )
+
     def test_instance_save_rejects_relanguage_and_other_fields_remain_mutable(self):
         project = self._project("INSTANCE-IMMUTABLE")
         project.name = "Hidden relanguage"
@@ -303,8 +316,25 @@ class ProjectPrimaryLanguageContractTests(TestCase):
                 primary_language_tag=F("primary_language_tag")
             )
 
+        async def async_queryset_relanguage():
+            await Project.objects.filter(pk=project.pk).aupdate(
+                primary_language_tag="kk"
+            )
+
+        with self.assertRaises(ValidationError):
+            async_to_sync(async_queryset_relanguage)()
+
         project.primary_language_tag = "kk"
         project.name = "Hidden bulk relanguage"
+
+        async def async_bulk_relanguage():
+            await Project.objects.abulk_update(
+                [project],
+                ["primary_language_tag"],
+            )
+
+        with self.assertRaises(ValidationError):
+            async_to_sync(async_bulk_relanguage)()
         with self.assertRaises(ValidationError):
             Project.objects.bulk_update([project], ["name"])
         with self.assertRaises(ValidationError):
@@ -359,11 +389,81 @@ class ProjectPrimaryLanguageContractTests(TestCase):
         )
         self.assertFalse(created)
         self.assertEqual(same.pk, project.pk)
+        same, created = Project.objects.get_or_create(
+            code=project.code,
+            primary_language_tag="RU",
+            defaults={"primary_language_tag": "rU"},
+        )
+        self.assertFalse(created)
+        self.assertEqual(same.pk, project.pk)
+
+        callable_language = mock.Mock(return_value="UZ-latn")
+        callable_project, created = Project.objects.get_or_create(
+            code="GET-OR-CREATE-CALLABLE",
+            defaults={
+                "name": "Callable language",
+                "primary_language_tag": callable_language,
+            },
+        )
+        self.assertTrue(created)
+        self.assertEqual(callable_project.primary_language_tag, "uz-Latn")
+        callable_language.assert_called_once_with()
+
+        for forbidden_lookup in (
+            {"primary_language_tag__iexact": "ru"},
+            {"primary_language_tag__in": ["ru"]},
+            {"primary_language_assignment__isnull": False},
+        ):
+            with self.subTest(forbidden_lookup=forbidden_lookup):
+                with self.assertNumQueries(0), self.assertRaises(ValidationError):
+                    Project.objects.get_or_create(
+                        code=project.code,
+                        **forbidden_lookup,
+                    )
+        with self.assertNumQueries(0), self.assertRaises(ValidationError):
+            Project.objects.get_or_create(
+                code=project.code,
+                defaults={"primary_language_tag__iexact": "ru"},
+            )
+
+        invalid_callable = mock.Mock(return_value=F("code"))
+        with self.assertNumQueries(0), self.assertRaises(ValidationError):
+            Project.objects.get_or_create(
+                code=project.code,
+                defaults={"primary_language_tag": invalid_callable},
+            )
+        invalid_callable.assert_called_once_with()
+        with self.assertNumQueries(0), self.assertRaises(ValidationError):
+            Project.objects.get_or_create(
+                code=project.code,
+                primary_language_tag=F("code"),
+            )
+        with self.assertNumQueries(0), self.assertRaises(ValidationError):
+            Project.objects.get_or_create(
+                code=project.code,
+                primary_language_tag="RU",
+                defaults={"primary_language_tag": "kk"},
+            )
+        with self.assertNumQueries(0), self.assertRaises(ValidationError):
+            Project.objects.get_or_create(
+                code=project.code,
+                primary_language_assignment=lambda: object(),
+            )
+
         with self.assertRaises(ValidationError):
             Project.objects.get_or_create(
                 code=project.code,
                 defaults={"primary_language_tag": "kk"},
             )
+
+        async def async_get_or_create_with_language_lookup():
+            await Project.objects.aget_or_create(
+                code=project.code,
+                primary_language_tag__iexact="ru",
+            )
+
+        with self.assertRaises(ValidationError):
+            async_to_sync(async_get_or_create_with_language_lookup)()
         project.refresh_from_db()
         self.assertEqual(project.primary_language_tag, "ru")
 
@@ -373,6 +473,12 @@ class ProjectPrimaryLanguageContractTests(TestCase):
                 code="UPDATE-OR-CREATE-MISSING",
                 defaults={"name": "Must not persist"},
                 create_defaults={"name": "Missing language"},
+            )
+        with self.assertRaises(ValidationError):
+            Project.objects.update_or_create(
+                code="UPDATE-OR-CREATE-NO-DEFAULTS-LEAK",
+                defaults={"primary_language_tag": "ru"},
+                create_defaults={"name": "Explicit create defaults stay exact"},
             )
         project, created = Project.objects.update_or_create(
             code="UPDATE-OR-CREATE",
@@ -386,6 +492,73 @@ class ProjectPrimaryLanguageContractTests(TestCase):
         self.assertFalse(created)
         self.assertEqual(same.pk, project.pk)
         self.assertEqual(same.name, "Updated")
+
+        for values in (
+            {
+                "kwargs": {"primary_language_tag__iexact": "ru"},
+                "defaults": {"name": "Must not update"},
+            },
+            {
+                "kwargs": {},
+                "defaults": {"primary_language_assignment__in": ["EXPLICIT"]},
+            },
+            {
+                "kwargs": {},
+                "defaults": {"name": "Must not update"},
+                "create_defaults": {"primary_language_tag__in": ["ru"]},
+            },
+        ):
+            with self.subTest(values=values):
+                with self.assertNumQueries(0), self.assertRaises(ValidationError):
+                    Project.objects.update_or_create(
+                        code=project.code,
+                        defaults=values["defaults"],
+                        create_defaults=values.get("create_defaults"),
+                        **values["kwargs"],
+                    )
+
+        with self.assertNumQueries(0), self.assertRaises(ValidationError):
+            Project.objects.update_or_create(
+                code=project.code,
+                primary_language_tag="RU",
+                defaults={
+                    "name": "Must not update",
+                    "primary_language_tag": "rU",
+                },
+                create_defaults={"primary_language_tag": "kk"},
+            )
+        malformed_create_language = mock.Mock(return_value=object())
+        with self.assertNumQueries(0), self.assertRaises(ValidationError):
+            Project.objects.update_or_create(
+                code=project.code,
+                defaults={"name": "Must not update"},
+                create_defaults={
+                    "primary_language_tag": malformed_create_language,
+                },
+            )
+        malformed_create_language.assert_called_once_with()
+        with self.assertNumQueries(0), self.assertRaises(ValidationError):
+            Project.objects.update_or_create(
+                code=project.code,
+                primary_language_tag="ru",
+                defaults={"name": "Must not update"},
+                create_defaults={
+                    "primary_language_assignment": "LEGACY_UNKNOWN",
+                },
+            )
+        project.refresh_from_db()
+        self.assertEqual(project.name, "Updated")
+
+        async def async_update_or_create_with_language_lookup():
+            await Project.objects.aupdate_or_create(
+                code=project.code,
+                primary_language_assignment__in=["EXPLICIT"],
+                defaults={"name": "Must not update"},
+            )
+
+        with self.assertRaises(ValidationError):
+            async_to_sync(async_update_or_create_with_language_lookup)()
+
         same, created = Project.objects.update_or_create(
             code="UPDATE-OR-CREATE-WITH-CREATE-DEFAULTS",
             defaults={"name": "Updated after create"},
@@ -455,6 +628,28 @@ class ProjectPrimaryLanguageContractTests(TestCase):
                 update_fields=["name"],
                 unique_fields=["code"],
             )
+
+        async def async_bulk_create_invalid_language():
+            await Project.objects.abulk_create(
+                [
+                    Project(
+                        code="ASYNC-BULK-VALID",
+                        name="Async bulk valid",
+                        primary_language_tag="ru",
+                    ),
+                    Project(
+                        code="ASYNC-BULK-INVALID",
+                        name="Async bulk invalid",
+                        primary_language_tag=F("code"),
+                    ),
+                ]
+            )
+
+        with self.assertRaises(ValidationError):
+            async_to_sync(async_bulk_create_invalid_language)()
+        self.assertFalse(
+            Project.objects.filter(code__startswith="ASYNC-BULK-").exists()
+        )
 
     def test_seed_creates_ru_replays_and_rejects_existing_non_ru_identity(self):
         project_id = stable_demo_uuid("project", PROJECT_CODE)

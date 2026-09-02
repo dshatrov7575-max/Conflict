@@ -280,6 +280,10 @@ class ProjectPrimaryLanguageAssignment(models.TextChoices):
 _PROJECT_LANGUAGE_FIELDS = frozenset(
     {"primary_language_tag", "primary_language_assignment"}
 )
+_PROJECT_LANGUAGE_LOOKUP_PREFIXES = (
+    "primary_language_tag__",
+    "primary_language_assignment__",
+)
 
 
 def _project_language_error(
@@ -303,46 +307,157 @@ class ProjectQuerySet(models.QuerySet):
         }
 
     @staticmethod
-    def _assert_requested_language_matches(
-        project: "Project",
+    def _prevalidate_project_language_request(
         *sources: dict[str, Any] | None,
-    ) -> None:
+    ) -> tuple[dict[str, str], tuple[dict[str, Any] | None, ...]]:
         from .services.language_tags import (
             LanguageTagValidationError,
             canonicalize_language_tag,
         )
 
-        for source in sources:
-            if not source:
+        normalized_sources = tuple(
+            dict(source) if source is not None else None for source in sources
+        )
+        for source in normalized_sources:
+            if source is None:
                 continue
-            if "primary_language_tag" in source:
-                requested = source["primary_language_tag"]
-                if callable(requested):
-                    requested = requested()
+            for key in source:
+                if isinstance(key, str) and key.startswith(
+                    _PROJECT_LANGUAGE_LOOKUP_PREFIXES
+                ):
+                    field = key.split("__", 1)[0]
+                    raise _project_language_error(
+                        field,
+                        "Project language identity does not accept lookup expressions.",
+                        code="project_primary_language_lookup_forbidden",
+                    )
+
+        requested: dict[str, str] = {}
+        for source in normalized_sources:
+            if source is None:
+                continue
+            for field in (
+                "primary_language_tag",
+                "primary_language_assignment",
+            ):
+                if field not in source:
+                    continue
+                value = source[field]
+                if callable(value):
+                    try:
+                        value = value()
+                    except Exception as exc:
+                        raise _project_language_error(
+                            field,
+                            "Project language identity callable could not be resolved.",
+                            code="project_primary_language_invalid",
+                        ) from exc
+                if field == "primary_language_tag":
+                    try:
+                        value = canonicalize_language_tag(value, allow_und=True)
+                    except LanguageTagValidationError as exc:
+                        raise _project_language_error(
+                            field,
+                            str(exc),
+                            code="project_primary_language_invalid",
+                        ) from exc
+                elif not isinstance(value, str) or value not in (
+                    ProjectPrimaryLanguageAssignment.EXPLICIT,
+                    ProjectPrimaryLanguageAssignment.LEGACY_UNKNOWN,
+                ):
+                    raise _project_language_error(
+                        field,
+                        "Project language assignment must be EXPLICIT or LEGACY_UNKNOWN.",
+                        code="project_primary_language_assignment_invalid",
+                    )
+                source[field] = value
+                if field in requested and requested[field] != value:
+                    raise _project_language_error(
+                        field,
+                        "Project language identity values are inconsistent.",
+                        code="project_primary_language_conflict",
+                    )
+                requested[field] = value
+
+        requested_tag = requested.get("primary_language_tag")
+        requested_assignment = requested.get("primary_language_assignment")
+        if requested_tag is not None and requested_assignment is not None:
+            if (
+                requested_assignment == ProjectPrimaryLanguageAssignment.EXPLICIT
+                and requested_tag == "und"
+            ):
+                raise _project_language_error(
+                    "primary_language_tag",
+                    "EXPLICIT Project language cannot be 'und'.",
+                    code="project_primary_language_und_forbidden",
+                )
+            if (
+                requested_assignment
+                == ProjectPrimaryLanguageAssignment.LEGACY_UNKNOWN
+                and requested_tag != "und"
+            ):
+                raise _project_language_error(
+                    "primary_language_assignment",
+                    "LEGACY_UNKNOWN requires the exact 'und' language tag.",
+                    code="project_primary_language_assignment_invalid",
+                )
+        return requested, normalized_sources
+
+    @staticmethod
+    def _assert_prevalidated_language_matches(
+        project: "Project",
+        requested: dict[str, str],
+    ) -> None:
+        requested_tag = requested.get("primary_language_tag")
+        if (
+            requested_tag is not None
+            and requested_tag != project.primary_language_tag
+        ):
+            raise _project_language_error(
+                "primary_language_tag",
+                "The requested Project language conflicts with its immutable identity.",
+                code="project_primary_language_conflict",
+            )
+        requested_assignment = requested.get("primary_language_assignment")
+        if (
+            requested_assignment is not None
+            and requested_assignment != project.primary_language_assignment
+        ):
+            raise _project_language_error(
+                "primary_language_assignment",
+                "The requested Project language assignment conflicts with its immutable identity.",
+                code="project_primary_language_conflict",
+            )
+
+    def _get_or_create_prevalidated(
+        self,
+        *,
+        defaults: dict[str, Any] | None,
+        lookup_values: dict[str, Any],
+        requested_language: dict[str, str],
+    ) -> tuple[Any, bool]:
+        self._for_write = True
+        identity_lookup = self._without_language_lookups(lookup_values)
+        try:
+            project = self.get(**identity_lookup)
+        except self.model.DoesNotExist:
+            params = self._extract_model_params(defaults, **lookup_values)
+            try:
+                with transaction.atomic(using=self.db):
+                    params = dict(resolve_callables(params))
+                    return self.create(**params), True
+            except IntegrityError:
                 try:
-                    requested = canonicalize_language_tag(requested, allow_und=True)
-                except LanguageTagValidationError as exc:
-                    raise _project_language_error(
-                        "primary_language_tag",
-                        str(exc),
-                        code="project_primary_language_invalid",
-                    ) from exc
-                if requested != project.primary_language_tag:
-                    raise _project_language_error(
-                        "primary_language_tag",
-                        "The requested Project language conflicts with its immutable identity.",
-                        code="project_primary_language_conflict",
-                    )
-            if "primary_language_assignment" in source:
-                assignment = source["primary_language_assignment"]
-                if callable(assignment):
-                    assignment = assignment()
-                if assignment != project.primary_language_assignment:
-                    raise _project_language_error(
-                        "primary_language_assignment",
-                        "The requested Project language assignment conflicts with its immutable identity.",
-                        code="project_primary_language_conflict",
-                    )
+                    project = self.get(**identity_lookup)
+                except self.model.DoesNotExist:
+                    raise
+                self._assert_prevalidated_language_matches(
+                    project,
+                    requested_language,
+                )
+                return project, False
+        self._assert_prevalidated_language_matches(project, requested_language)
+        return project, False
 
     def update(self, **kwargs: Any) -> int:
         if _PROJECT_LANGUAGE_FIELDS.intersection(kwargs):
@@ -412,25 +527,16 @@ class ProjectQuerySet(models.QuerySet):
         defaults: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> tuple[Any, bool]:
-        self._for_write = True
-        identity_lookup = self._without_language_lookups(kwargs)
-        try:
-            project = self.get(**identity_lookup)
-        except self.model.DoesNotExist:
-            params = self._extract_model_params(defaults, **kwargs)
-            try:
-                with transaction.atomic(using=self.db):
-                    params = dict(resolve_callables(params))
-                    return self.create(**params), True
-            except IntegrityError:
-                try:
-                    project = self.get(**identity_lookup)
-                except self.model.DoesNotExist:
-                    raise
-                self._assert_requested_language_matches(project, kwargs, defaults)
-                return project, False
-        self._assert_requested_language_matches(project, kwargs, defaults)
-        return project, False
+        requested_language, normalized_sources = (
+            self._prevalidate_project_language_request(kwargs, defaults)
+        )
+        normalized_kwargs, normalized_defaults = normalized_sources
+        assert normalized_kwargs is not None
+        return self._get_or_create_prevalidated(
+            defaults=normalized_defaults,
+            lookup_values=normalized_kwargs,
+            requested_language=requested_language,
+        )
 
     def update_or_create(
         self,
@@ -438,22 +544,33 @@ class ProjectQuerySet(models.QuerySet):
         create_defaults: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> tuple[Any, bool]:
-        update_values = defaults or {}
-        create_values = create_defaults if create_defaults is not None else update_values
+        requested_language, normalized_sources = (
+            self._prevalidate_project_language_request(
+                kwargs,
+                defaults,
+                *(() if create_defaults is None else (create_defaults,)),
+            )
+        )
+        normalized_kwargs, normalized_defaults, *normalized_create_defaults = (
+            normalized_sources
+        )
+        assert normalized_kwargs is not None
+        update_values = normalized_defaults or {}
+        create_values = (
+            normalized_create_defaults[0]
+            if normalized_create_defaults
+            else update_values
+        )
+        assert create_values is not None
         self._for_write = True
         with transaction.atomic(using=self.db):
-            project, created = self.select_for_update().get_or_create(
-                create_values,
-                **kwargs,
+            project, created = self.select_for_update()._get_or_create_prevalidated(
+                defaults=create_values,
+                lookup_values=normalized_kwargs,
+                requested_language=requested_language,
             )
             if created:
                 return project, True
-            self._assert_requested_language_matches(
-                project,
-                kwargs,
-                create_values,
-                update_values,
-            )
             for name, value in resolve_callables(update_values):
                 if name not in _PROJECT_LANGUAGE_FIELDS:
                     setattr(project, name, value)
