@@ -2354,6 +2354,7 @@ jobs:
       C2A_BRANCH: codex/ca-suite-i1-production-studio-c2a-lifecycle-publication
       F0L_ACCEPTED_HEAD: "${{ vars.F0L_ACCEPTED_HEAD }}"
       F0L_ACCEPTED_TREE: "${{ vars.F0L_ACCEPTED_TREE }}"
+      SUCCESSOR_EVIDENCE_DIR: ${{ runner.temp }}/successor-evidence
 
     steps:
       - name: Check out exact delivery head
@@ -2553,6 +2554,7 @@ jobs:
         run: python scripts/verify_production_studio_c_allowlist.py --self-check
 
       - name: Verify exact route, ancestry, 26-path allowlist and bounded fixture deltas
+        if: env.ACTIVE_SLICE == 'F0L'
         run: |
           set -euo pipefail
           verifier_args=(
@@ -2585,6 +2587,775 @@ jobs:
           PY
           fi
           git diff --check "$SLICE_BASE_HEAD...HEAD"
+
+      - name: Initialize exact F1 or C2A evidence manifest
+        if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir "$SUCCESSOR_EVIDENCE_DIR"
+          delivery_head="$(git rev-parse HEAD)"
+          delivery_tree="$(git rev-parse HEAD^{tree})"
+          python - \
+            "$SUCCESSOR_EVIDENCE_DIR/manifest.json" \
+            "$ACTIVE_SLICE" \
+            "$SLICE_BASE_HEAD" \
+            "$SLICE_BASE_TREE" \
+            "$delivery_head" \
+            "$delivery_tree" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          output, active_slice, base_head, base_tree, delivery_head, delivery_tree = sys.argv[1:]
+          junit_files = {
+              "F1": [
+                  "f1-focused-postgresql.xml",
+                  "f1-focused-sqlite.xml",
+                  "f1-foundation-postgresql.xml",
+                  "f1-foundation-sqlite.xml",
+                  "f1-c0-postgresql.xml",
+                  "f1-c0-sqlite.xml",
+                  "f1-c1-postgresql.xml",
+                  "f1-c1-sqlite.xml",
+                  "f1-c1-chromium-postgresql.xml",
+              ],
+              "C2A": [
+                  "c2a-portable-postgresql.xml",
+                  "c2a-portable-sqlite.xml",
+                  "c2a-foundation-postgresql.xml",
+                  "c2a-foundation-sqlite.xml",
+                  "c2a-c0-postgresql.xml",
+                  "c2a-c0-sqlite.xml",
+                  "c2a-c1-postgresql.xml",
+                  "c2a-c1-sqlite.xml",
+                  "c2a-c1-chromium-postgresql.xml",
+                  "c2a-chromium-postgresql.xml",
+              ],
+          }[active_slice]
+          payload = {
+              "schema": "POST_F0L_SUCCESSOR_CI_EVIDENCE_V1",
+              "active_slice": active_slice,
+              "base_head": base_head,
+              "base_tree": base_tree,
+              "delivery_head": delivery_head,
+              "delivery_tree": delivery_tree,
+              "junit_files": junit_files,
+              "migration_evidence": "migration.json",
+              "wheel_file": "conflict_analysis-0.1.0-py3-none-any.whl",
+              "wheel_install_evidence": "wheel-install.json",
+              "synthetic_tree_evidence": (
+                  None if active_slice == "F1" else "synthetic-tree.json"
+              ),
+          }
+          pathlib.Path(output).write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(f"{active_slice}_SUCCESSOR_EVIDENCE_MANIFEST=PASS")
+          PY
+
+      - name: Check successor static contracts and clean PostgreSQL migrations
+        if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q conflict_analysis domain production_studio
+          python manage.py makemigrations --check --dry-run
+          python manage.py migrate --noinput
+          python manage.py check
+
+          if [[ "$ACTIVE_SLICE" = F1 ]]; then
+            test -f domain/migrations/0017_multilingual_evidence_lineage.py
+            test -f domain/services/document_lineage.py
+            test -f domain/services/evidence_drilldown.py
+            test -f domain/api/evidence.py
+            test -f docs/adr/0012-multilingual-evidence-document-lineage.md
+          else
+            contract=production_studio/contracts/lifecycle_publication_claim_boundaries_v1.ru.json
+            digest_file="${contract}.sha256"
+            test -f production_studio/lifecycle_claim_boundaries.py
+            test -f "$contract"
+            test -f "$digest_file"
+            test -f production_studio/templates/production_studio/lifecycle_publication_definition.html
+            test -f production_studio/static/production_studio/lifecycle_publication.css
+            test -f production_studio/static/production_studio/lifecycle_publication.js
+            test -f production_studio/browser_tests/lifecycle_publication.mjs
+            node --check production_studio/static/production_studio/lifecycle_publication.js
+            node --check production_studio/browser_tests/lifecycle_publication.mjs
+            node --check production_studio/static/production_studio/audited_draft.js
+            read -r expected_digest _ < "$digest_file"
+            actual_digest="$(sha256sum "$contract" | awk '{print $1}')"
+            test "$actual_digest" = "$expected_digest"
+            base_migrations="$(git -C "$GITHUB_WORKSPACE" ls-tree -r --name-only \
+              "$SLICE_BASE_HEAD" -- software/conflict_analysis/domain/migrations)"
+            delivery_migrations="$(git -C "$GITHUB_WORKSPACE" ls-tree -r --name-only \
+              HEAD -- software/conflict_analysis/domain/migrations)"
+            test "$delivery_migrations" = "$base_migrations"
+          fi
+          echo "${ACTIVE_SLICE}_STATIC_AND_POSTGRESQL_CLEAN_MIGRATION=PASS"
+
+      - name: Run exact successor registries and Foundation on PostgreSQL
+        if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+        shell: bash
+        run: |
+          set -euo pipefail
+          prefix="$(printf '%s' "$ACTIVE_SLICE" | tr '[:upper:]' '[:lower:]')"
+          if [[ "$ACTIVE_SLICE" = F1 ]]; then
+            python -m pytest domain/tests/test_multilingual_evidence_lineage.py \
+              --junitxml="$SUCCESSOR_EVIDENCE_DIR/f1-focused-postgresql.xml"
+            python -m pytest domain/tests \
+              --junitxml="$SUCCESSOR_EVIDENCE_DIR/f1-foundation-postgresql.xml"
+            focused="$SUCCESSOR_EVIDENCE_DIR/f1-focused-postgresql.xml"
+            foundation="$SUCCESSOR_EVIDENCE_DIR/f1-foundation-postgresql.xml"
+          else
+            python -m pytest \
+              production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests \
+              --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-portable-postgresql.xml"
+            python -m pytest domain/tests \
+              --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-foundation-postgresql.xml"
+            focused="$SUCCESSOR_EVIDENCE_DIR/c2a-portable-postgresql.xml"
+            foundation="$SUCCESSOR_EVIDENCE_DIR/c2a-foundation-postgresql.xml"
+          fi
+          python - "$ACTIVE_SLICE" "$focused" "$foundation" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          active_slice, focused_path, foundation_path = sys.argv[1:]
+
+          def cases(path):
+              root = ET.parse(path).getroot()
+              nodes = root.findall(".//testcase")
+              assert not root.findall(".//failure"), path
+              assert not root.findall(".//error"), path
+              return nodes
+
+          focused = cases(focused_path)
+          foundation = cases(foundation_path)
+          if active_slice == "F1":
+              portable_class = "MultilingualEvidenceLineageTests"
+              migration_class = "MultilingualEvidenceLineageMigrationTests"
+              portable_methods = (
+                  "test_fact_category_is_project_scoped_versioned_and_path_is_deterministic",
+                  "test_category_self_cycle_cross_project_reparent_and_delete_fail_closed",
+                  "test_fact_classification_status_is_assignment_state_and_fact_type_remains_separate",
+                  "test_legacy_facts_remain_unclassified_without_identity_or_evidence_drift",
+                  "test_monolingual_content_is_synchronized_without_fabricated_translation_provenance",
+                  "test_complete_one_to_one_one_to_many_and_many_to_one_alignment_is_checksum_bound",
+                  "test_partial_positional_contradictory_or_many_to_many_alignment_is_never_synchronized",
+                  "test_translation_provenance_preserves_exact_known_fields_and_explicit_unknowns",
+                  "test_any_primary_translation_edit_creates_unsynchronized_derivative_and_preserves_history",
+                  "test_explicit_complete_realign_creates_new_synchronized_derivative_without_mutation",
+                  "test_memory_origin_fact_returns_typed_no_document_evidence",
+                  "test_multiple_document_evidence_is_deterministic_without_truth_or_independence_inference",
+                  "test_synchronized_drilldown_resolves_exact_primary_and_original_fragments",
+                  "test_unsynchronized_drilldown_returns_alignment_not_guaranteed_without_guessed_original",
+                  "test_drilldown_authorizes_before_disclosure_and_performs_zero_writes",
+                  "test_noncanonical_in_place_or_bypass_mutations_fail_closed",
+              )
+              migration_methods = (
+                  "test_0016_to_0017_preserves_project_language_and_all_legacy_evidence_identities",
+                  "test_0017_reverse_reapply_and_empty_database_are_deterministic",
+              )
+              portable = tuple(
+                  node.attrib["name"] for node in focused
+                  if node.attrib.get("classname", "").endswith(portable_class)
+              )
+              migration = tuple(
+                  node.attrib["name"] for node in focused
+                  if node.attrib.get("classname", "").endswith(migration_class)
+              )
+              assert portable == portable_methods, portable
+              assert migration == migration_methods, migration
+              assert len(focused) == 18
+              assert all(node.find("skipped") is None for node in focused)
+              assert len(foundation) == 272
+              assert all(node.find("skipped") is None for node in foundation)
+          else:
+              methods = (
+                  "test_route_auth_and_checksum_bound_claim_contract_are_exact",
+                  "test_initial_draft_uses_optional_preview_then_atomic_publication_without_prior_validate",
+                  "test_validation_unknown_outcome_allows_only_explicit_same_request_reconciliation",
+                  "test_fd07_never_labels_standalone_or_validated_initial_as_publishable_and_is_refetched_before_attempt",
+                  "test_successor_draft_validates_then_fd07_allows_only_exact_successor_publication",
+                  "test_publication_unknown_outcome_disables_post_and_uses_only_operation_recovery_get",
+                  "test_operation_identity_and_receipts_never_enter_browser_persistent_storage",
+                  "test_current_noncurrent_retired_and_unknown_lifecycle_states_render_truthfully",
+                  "test_typed_auth_scope_capability_csrf_stale_reuse_and_state_conflicts_are_bounded",
+                  "test_package_science_chat_document_prediction_and_recommendation_controls_remain_unavailable",
+                  "test_dirty_busy_unresolved_navigation_and_unload_are_guarded_without_automatic_mutation",
+                  "test_publication_requires_human_retained_recovery_ticket_and_busy_unload_is_guarded",
+                  "test_recovery_ticket_and_post_share_one_frozen_attempt_and_edits_require_new_operation",
+              )
+              actual = tuple(node.attrib["name"] for node in focused)
+              assert actual == methods, actual
+              assert len(focused) == 13
+              assert all(node.find("skipped") is None for node in focused)
+              assert len(foundation) == 254
+              assert all(node.find("skipped") is None for node in foundation)
+          print(f"{active_slice}_POSTGRESQL_EXACT_REGISTRY_AND_TOTALS=PASS")
+          PY
+
+      - name: Run exact successor registries and Foundation on SQLite
+        if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
+        env:
+          USE_SQLITE: "true"
+          SQLITE_PATH: ${{ runner.temp }}/successor-foundation-sqlite.sqlite3
+        shell: bash
+        run: |
+          set -euo pipefail
+          python manage.py migrate --noinput
+          if [[ "$ACTIVE_SLICE" = F1 ]]; then
+            python -m pytest domain/tests/test_multilingual_evidence_lineage.py \
+              --junitxml="$SUCCESSOR_EVIDENCE_DIR/f1-focused-sqlite.xml"
+            python -m pytest domain/tests \
+              --junitxml="$SUCCESSOR_EVIDENCE_DIR/f1-foundation-sqlite.xml"
+            focused="$SUCCESSOR_EVIDENCE_DIR/f1-focused-sqlite.xml"
+            foundation="$SUCCESSOR_EVIDENCE_DIR/f1-foundation-sqlite.xml"
+          else
+            python -m pytest \
+              production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests \
+              --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-portable-sqlite.xml"
+            python -m pytest domain/tests \
+              --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-foundation-sqlite.xml"
+            focused="$SUCCESSOR_EVIDENCE_DIR/c2a-portable-sqlite.xml"
+            foundation="$SUCCESSOR_EVIDENCE_DIR/c2a-foundation-sqlite.xml"
+          fi
+          python - \
+            "$ACTIVE_SLICE" \
+            "$focused" \
+            "$foundation" \
+            "$SUCCESSOR_EVIDENCE_DIR/migration.json" \
+            "$SLICE_BASE_HEAD" \
+            "$SLICE_BASE_TREE" \
+            "$(git rev-parse HEAD)" \
+            "$(git rev-parse HEAD^{tree})" <<'PY'
+          import json
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          (
+              active_slice,
+              focused_path,
+              foundation_path,
+              evidence_path,
+              base_head,
+              base_tree,
+              delivery_head,
+              delivery_tree,
+          ) = sys.argv[1:]
+
+          def cases(path):
+              root = ET.parse(path).getroot()
+              nodes = root.findall(".//testcase")
+              assert not root.findall(".//failure"), path
+              assert not root.findall(".//error"), path
+              return nodes
+
+          focused = cases(focused_path)
+          foundation = cases(foundation_path)
+          if active_slice == "F1":
+              portable_class = "MultilingualEvidenceLineageTests"
+              migration_class = "MultilingualEvidenceLineageMigrationTests"
+              portable_methods = (
+                  "test_fact_category_is_project_scoped_versioned_and_path_is_deterministic",
+                  "test_category_self_cycle_cross_project_reparent_and_delete_fail_closed",
+                  "test_fact_classification_status_is_assignment_state_and_fact_type_remains_separate",
+                  "test_legacy_facts_remain_unclassified_without_identity_or_evidence_drift",
+                  "test_monolingual_content_is_synchronized_without_fabricated_translation_provenance",
+                  "test_complete_one_to_one_one_to_many_and_many_to_one_alignment_is_checksum_bound",
+                  "test_partial_positional_contradictory_or_many_to_many_alignment_is_never_synchronized",
+                  "test_translation_provenance_preserves_exact_known_fields_and_explicit_unknowns",
+                  "test_any_primary_translation_edit_creates_unsynchronized_derivative_and_preserves_history",
+                  "test_explicit_complete_realign_creates_new_synchronized_derivative_without_mutation",
+                  "test_memory_origin_fact_returns_typed_no_document_evidence",
+                  "test_multiple_document_evidence_is_deterministic_without_truth_or_independence_inference",
+                  "test_synchronized_drilldown_resolves_exact_primary_and_original_fragments",
+                  "test_unsynchronized_drilldown_returns_alignment_not_guaranteed_without_guessed_original",
+                  "test_drilldown_authorizes_before_disclosure_and_performs_zero_writes",
+                  "test_noncanonical_in_place_or_bypass_mutations_fail_closed",
+              )
+              migration_methods = (
+                  "test_0016_to_0017_preserves_project_language_and_all_legacy_evidence_identities",
+                  "test_0017_reverse_reapply_and_empty_database_are_deterministic",
+              )
+              portable = tuple(
+                  node.attrib["name"] for node in focused
+                  if node.attrib.get("classname", "").endswith(portable_class)
+              )
+              migration = tuple(
+                  node.attrib["name"] for node in focused
+                  if node.attrib.get("classname", "").endswith(migration_class)
+              )
+              assert portable == portable_methods, portable
+              assert migration == migration_methods, migration
+              assert len(focused) == 18
+              assert sum(node.find("skipped") is None for node in focused) == 16
+              assert sum(node.find("skipped") is not None for node in focused) == 2
+              assert all(
+                  node.find("skipped") is None
+                  for node in focused
+                  if node.attrib.get("classname", "").endswith(portable_class)
+              )
+              assert all(
+                  node.find("skipped") is not None
+                  for node in focused
+                  if node.attrib.get("classname", "").endswith(migration_class)
+              )
+              assert len(foundation) == 272
+              assert sum(node.find("skipped") is None for node in foundation) == 253
+              assert sum(node.find("skipped") is not None for node in foundation) == 19
+              gates = [
+                  "compileall",
+                  "django_check",
+                  "makemigrations_check",
+                  "postgresql_clean_migrate_0017",
+                  "postgresql_0016_to_0017",
+                  "postgresql_0017_reverse_reapply",
+                  "postgresql_immutable_identity",
+                  "sqlite_clean_migrate_0017",
+              ]
+          else:
+              methods = (
+                  "test_route_auth_and_checksum_bound_claim_contract_are_exact",
+                  "test_initial_draft_uses_optional_preview_then_atomic_publication_without_prior_validate",
+                  "test_validation_unknown_outcome_allows_only_explicit_same_request_reconciliation",
+                  "test_fd07_never_labels_standalone_or_validated_initial_as_publishable_and_is_refetched_before_attempt",
+                  "test_successor_draft_validates_then_fd07_allows_only_exact_successor_publication",
+                  "test_publication_unknown_outcome_disables_post_and_uses_only_operation_recovery_get",
+                  "test_operation_identity_and_receipts_never_enter_browser_persistent_storage",
+                  "test_current_noncurrent_retired_and_unknown_lifecycle_states_render_truthfully",
+                  "test_typed_auth_scope_capability_csrf_stale_reuse_and_state_conflicts_are_bounded",
+                  "test_package_science_chat_document_prediction_and_recommendation_controls_remain_unavailable",
+                  "test_dirty_busy_unresolved_navigation_and_unload_are_guarded_without_automatic_mutation",
+                  "test_publication_requires_human_retained_recovery_ticket_and_busy_unload_is_guarded",
+                  "test_recovery_ticket_and_post_share_one_frozen_attempt_and_edits_require_new_operation",
+              )
+              actual = tuple(node.attrib["name"] for node in focused)
+              assert actual == methods, actual
+              assert len(focused) == 13
+              assert all(node.find("skipped") is None for node in focused)
+              assert len(foundation) == 254
+              assert sum(node.find("skipped") is None for node in foundation) == 237
+              assert sum(node.find("skipped") is not None for node in foundation) == 17
+              gates = [
+                  "compileall",
+                  "django_check",
+                  "makemigrations_check",
+                  "postgresql_clean_migrate_0016",
+                  "sqlite_clean_migrate_0016",
+                  "migration_filenames_unchanged",
+              ]
+          evidence = {
+              "schema": "POST_F0L_MIGRATION_EVIDENCE_V1",
+              "active_slice": active_slice,
+              "base_head": base_head,
+              "base_tree": base_tree,
+              "delivery_head": delivery_head,
+              "delivery_tree": delivery_tree,
+              "gates": gates,
+          }
+          pathlib.Path(evidence_path).write_text(
+              json.dumps(evidence, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(f"{active_slice}_SQLITE_EXACT_REGISTRY_AND_TOTALS=PASS")
+          PY
+
+      - name: Run C0 and C1 successor regression on PostgreSQL
+        if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+        shell: bash
+        run: |
+          set -euo pipefail
+          prefix="$(printf '%s' "$ACTIVE_SLICE" | tr '[:upper:]' '[:lower:]')"
+          c0="$SUCCESSOR_EVIDENCE_DIR/${prefix}-c0-postgresql.xml"
+          c1="$SUCCESSOR_EVIDENCE_DIR/${prefix}-c1-postgresql.xml"
+          python -m pytest \
+            production_studio/tests/test_browser_contract.py \
+            production_studio/tests/test_claim_boundaries.py \
+            production_studio/tests/test_read_only_http.py \
+            production_studio/tests/test_read_only_static_contracts.py \
+            --junitxml="$c0"
+          python -m pytest \
+            production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringContractTests \
+            --junitxml="$c1"
+          python - "$ACTIVE_SLICE" "$c0" "$c1" \
+            "$SUCCESSOR_EVIDENCE_DIR/c2a-portable-postgresql.xml" <<'PY'
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          active_slice, c0_path, c1_path, c2a_path = sys.argv[1:]
+
+          def passed_count(path):
+              root = ET.parse(path).getroot()
+              cases = root.findall(".//testcase")
+              assert not root.findall(".//failure"), path
+              assert not root.findall(".//error"), path
+              assert not root.findall(".//skipped"), path
+              return len(cases)
+
+          c0_count = passed_count(c0_path)
+          c1_count = passed_count(c1_path)
+          assert (c0_count, c1_count) == (19, 8)
+          if active_slice == "C2A":
+              portable_count = passed_count(pathlib.Path(c2a_path))
+              assert portable_count == 13
+              assert c0_count + c1_count + portable_count == 40
+          print(f"{active_slice}_POSTGRESQL_C0_19_C1_8_PRODUCT_TOTAL=PASS")
+          PY
+
+      - name: Run C0 and C1 successor regression on SQLite
+        if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
+        env:
+          USE_SQLITE: "true"
+          SQLITE_PATH: ${{ runner.temp }}/successor-product-sqlite.sqlite3
+        shell: bash
+        run: |
+          set -euo pipefail
+          prefix="$(printf '%s' "$ACTIVE_SLICE" | tr '[:upper:]' '[:lower:]')"
+          c0="$SUCCESSOR_EVIDENCE_DIR/${prefix}-c0-sqlite.xml"
+          c1="$SUCCESSOR_EVIDENCE_DIR/${prefix}-c1-sqlite.xml"
+          python -m pytest \
+            production_studio/tests/test_browser_contract.py \
+            production_studio/tests/test_claim_boundaries.py \
+            production_studio/tests/test_read_only_http.py \
+            production_studio/tests/test_read_only_static_contracts.py \
+            --junitxml="$c0"
+          python -m pytest \
+            production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringContractTests \
+            --junitxml="$c1"
+          python - "$ACTIVE_SLICE" "$c0" "$c1" \
+            "$SUCCESSOR_EVIDENCE_DIR/c2a-portable-sqlite.xml" <<'PY'
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          active_slice, c0_path, c1_path, c2a_path = sys.argv[1:]
+
+          def passed_count(path):
+              root = ET.parse(path).getroot()
+              cases = root.findall(".//testcase")
+              assert not root.findall(".//failure"), path
+              assert not root.findall(".//error"), path
+              assert not root.findall(".//skipped"), path
+              return len(cases)
+
+          c0_count = passed_count(c0_path)
+          c1_count = passed_count(c1_path)
+          assert (c0_count, c1_count) == (19, 8)
+          if active_slice == "C2A":
+              portable_count = passed_count(pathlib.Path(c2a_path))
+              assert portable_count == 13
+              assert c0_count + c1_count + portable_count == 40
+          print(f"{active_slice}_SQLITE_C0_19_C1_8_PRODUCT_TOTAL=PASS")
+          PY
+
+      - name: Run exact successor real Chromium registries on PostgreSQL
+        if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
+        shell: bash
+        run: |
+          set -euo pipefail
+          prefix="$(printf '%s' "$ACTIVE_SLICE" | tr '[:upper:]' '[:lower:]')"
+          chrome="$(command -v google-chrome || command -v chromium || true)"
+          test -n "$chrome"
+          "$chrome" --version
+          c1="$SUCCESSOR_EVIDENCE_DIR/${prefix}-c1-chromium-postgresql.xml"
+          STUDIO_CHROME_BIN="$chrome" python -m pytest \
+            production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringBrowserTests::test_authenticated_edit_save_reload_is_bounded_foundation_only_and_receipted \
+            --junitxml="$c1"
+          paths=("$c1")
+          if [[ "$ACTIVE_SLICE" = C2A ]]; then
+            c2a="$SUCCESSOR_EVIDENCE_DIR/c2a-chromium-postgresql.xml"
+            STUDIO_CHROME_BIN="$chrome" python -m pytest \
+              production_studio/tests/test_lifecycle_publication.py \
+              -k 'test_chromium_draft_preview_atomic_initial_publish_recover_and_reload or test_chromium_successor_validate_publish_lost_response_recovery_and_predecessor_noncurrent' \
+              --junitxml="$c2a"
+            paths+=("$c2a")
+          fi
+          python - "$ACTIVE_SLICE" "${paths[@]}" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          active_slice, *paths = sys.argv[1:]
+          method_sets = []
+          for path in paths:
+              root = ET.parse(path).getroot()
+              cases = root.findall(".//testcase")
+              assert not root.findall(".//failure"), path
+              assert not root.findall(".//error"), path
+              assert not root.findall(".//skipped"), path
+              method_sets.append(tuple(node.attrib["name"] for node in cases))
+          assert method_sets[0] == (
+              "test_authenticated_edit_save_reload_is_bounded_foundation_only_and_receipted",
+          )
+          if active_slice == "C2A":
+              assert method_sets[1] == (
+                  "test_chromium_draft_preview_atomic_initial_publish_recover_and_reload",
+                  "test_chromium_successor_validate_publish_lost_response_recovery_and_predecessor_noncurrent",
+              )
+              assert 19 + 8 + 13 + len(method_sets[0]) + len(method_sets[1]) == 43
+          print(f"{active_slice}_EXACT_REAL_CHROMIUM_REGISTRY=PASS")
+          PY
+
+      - name: Build and inspect the exact successor wheel in isolation
+        if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip wheel --no-deps --wheel-dir "$SUCCESSOR_EVIDENCE_DIR" .
+          mapfile -t wheels < <(
+            find "$SUCCESSOR_EVIDENCE_DIR" -maxdepth 1 -type f -name '*.whl' -print
+          )
+          test "${#wheels[@]}" -eq 1
+          wheel="${wheels[0]}"
+          test "$(basename "$wheel")" = conflict_analysis-0.1.0-py3-none-any.whl
+
+          isolated_venv="${RUNNER_TEMP}/successor-wheel-venv"
+          python -m venv --system-site-packages "$isolated_venv"
+          "$isolated_venv/bin/python" -m pip install \
+            --disable-pip-version-check --force-reinstall --no-deps "$wheel"
+          (
+            cd "$RUNNER_TEMP"
+            "$isolated_venv/bin/python" - \
+              "$ACTIVE_SLICE" \
+              "$wheel" \
+              "$SUCCESSOR_EVIDENCE_DIR/wheel-install.json" \
+              "$GITHUB_WORKSPACE/software/conflict_analysis" \
+              "$SLICE_BASE_HEAD" \
+              "$SLICE_BASE_TREE" \
+              "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" \
+              "$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD^{tree})" <<'PY'
+          import hashlib
+          import importlib
+          import json
+          import os
+          import pathlib
+          import sys
+          from importlib.resources import files
+          from zipfile import ZipFile
+
+          (
+              active_slice,
+              wheel_name,
+              evidence_name,
+              repository_root,
+              base_head,
+              base_tree,
+              delivery_head,
+              delivery_tree,
+          ) = sys.argv[1:]
+          wheel_path = pathlib.Path(wheel_name).resolve(strict=True)
+          evidence_path = pathlib.Path(evidence_name)
+          repository_root = pathlib.Path(repository_root).resolve(strict=True)
+          venv_root = pathlib.Path(sys.prefix).resolve(strict=True)
+          assert pathlib.Path.cwd().resolve() != repository_root
+
+          os.environ.setdefault("DJANGO_SETTINGS_MODULE", "conflict_analysis.settings")
+          import django
+          django.setup()
+
+          def installed_module(name):
+              module = importlib.import_module(name)
+              module_path = pathlib.Path(module.__file__).resolve(strict=True)
+              assert module_path.is_relative_to(venv_root), (name, module_path, venv_root)
+              assert not module_path.is_relative_to(repository_root), (name, module_path)
+              return module
+
+          with ZipFile(wheel_path) as archive:
+              members = set(archive.namelist())
+              assert archive.testzip() is None
+
+          if active_slice == "F1":
+              required_members = {
+                  "domain/__init__.py",
+                  "domain/migrations/__init__.py",
+                  "domain/migrations/0017_multilingual_evidence_lineage.py",
+                  "domain/services/__init__.py",
+                  "domain/services/document_lineage.py",
+                  "domain/services/evidence_drilldown.py",
+                  "domain/api/__init__.py",
+                  "domain/api/evidence.py",
+              }
+              assert required_members <= members, sorted(required_members - members)
+              installed_module("domain.migrations.0017_multilingual_evidence_lineage")
+              installed_module("domain.services.document_lineage")
+              installed_module("domain.services.evidence_drilldown")
+              installed_module("domain.api.evidence")
+              repository_only = {
+                  "docs/adr/0012-multilingual-evidence-document-lineage.md",
+              }
+              assert all((repository_root / path).is_file() for path in repository_only)
+              assert not {
+                  member for member in members
+                  if any(member == path or member.endswith(f"/{path}") for path in repository_only)
+              }
+              checks = [
+                  "wheel_built_exactly_once",
+                  "isolated_install",
+                  "migration_0017_discovered",
+                  "document_lineage_imported",
+                  "evidence_drilldown_imported",
+                  "domain_api_evidence_imported",
+                  "adr_repository_only",
+              ]
+          else:
+              required_members = {
+                  "production_studio/__init__.py",
+                  "production_studio/lifecycle_claim_boundaries.py",
+                  "production_studio/urls.py",
+                  "production_studio/views.py",
+                  "production_studio/contracts/lifecycle_publication_claim_boundaries_v1.ru.json",
+                  "production_studio/contracts/lifecycle_publication_claim_boundaries_v1.ru.json.sha256",
+                  "production_studio/templates/production_studio/lifecycle_publication_definition.html",
+                  "production_studio/static/production_studio/lifecycle_publication.css",
+                  "production_studio/static/production_studio/lifecycle_publication.js",
+              }
+              assert required_members <= members, sorted(required_members - members)
+              installed_module("production_studio")
+              installed_module("production_studio.lifecycle_claim_boundaries")
+              installed_module("production_studio.urls")
+              installed_module("production_studio.views")
+              resource_root = files("production_studio")
+              contract = resource_root.joinpath(
+                  "contracts/lifecycle_publication_claim_boundaries_v1.ru.json"
+              )
+              digest_file = resource_root.joinpath(
+                  "contracts/lifecycle_publication_claim_boundaries_v1.ru.json.sha256"
+              )
+              template = resource_root.joinpath(
+                  "templates/production_studio/lifecycle_publication_definition.html"
+              )
+              stylesheet = resource_root.joinpath(
+                  "static/production_studio/lifecycle_publication.css"
+              )
+              javascript = resource_root.joinpath(
+                  "static/production_studio/lifecycle_publication.js"
+              )
+              assert all(
+                  resource.is_file()
+                  for resource in (contract, digest_file, template, stylesheet, javascript)
+              )
+              expected_digest = digest_file.read_text(encoding="utf-8").split()[0]
+              assert hashlib.sha256(contract.read_bytes()).hexdigest() == expected_digest
+              repository_only = {
+                  "README.md",
+                  "docs/adr/0009-production-studio-c-lifecycle-publication.md",
+                  "docs/production-studio-c-read-only-runtime.md",
+              }
+              assert all((repository_root / path).is_file() for path in repository_only)
+              assert not {
+                  member for member in members
+                  if any(member == path or member.endswith(f"/{path}") for path in repository_only)
+              }
+              checks = [
+                  "wheel_built_exactly_once",
+                  "isolated_install",
+                  "production_studio_imported",
+                  "lifecycle_claim_boundaries_imported",
+                  "contract_payload_present",
+                  "template_payload_present",
+                  "static_payload_present",
+                  "docs_repository_only",
+              ]
+
+          evidence = {
+              "schema": "POST_F0L_WHEEL_INSTALL_EVIDENCE_V1",
+              "active_slice": active_slice,
+              "base_head": base_head,
+              "base_tree": base_tree,
+              "delivery_head": delivery_head,
+              "delivery_tree": delivery_tree,
+              "wheel_sha256": hashlib.sha256(wheel_path.read_bytes()).hexdigest(),
+              "source_tree_fallback": False,
+              "checks": checks,
+          }
+          evidence_path.write_text(
+              json.dumps(evidence, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(f"{active_slice}_ISOLATED_WHEEL_AND_PACKAGE_DATA=PASS")
+          PY
+          )
+
+      - name: Prove the exact C2A synthetic merge tree
+        if: env.ACTIVE_SLICE == 'C2A'
+        shell: bash
+        run: |
+          set -euo pipefail
+          delivery_head="$(git rev-parse HEAD)"
+          delivery_tree="$(git rev-parse HEAD^{tree})"
+          merge_base="$(git merge-base "$SLICE_BASE_HEAD" "$delivery_head")"
+          test "$merge_base" = "$SLICE_BASE_HEAD"
+          synthetic_tree="$(git merge-tree --write-tree \
+            "$SLICE_BASE_HEAD" "$delivery_head")"
+          independent_tree="$(git merge-tree --write-tree \
+            "$merge_base" "$delivery_head")"
+          test "$synthetic_tree" = "$delivery_tree"
+          test "$independent_tree" = "$delivery_tree"
+          python - \
+            "$SUCCESSOR_EVIDENCE_DIR/synthetic-tree.json" \
+            "$SLICE_BASE_HEAD" \
+            "$delivery_head" \
+            "$delivery_tree" \
+            "$synthetic_tree" \
+            "$independent_tree" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          output, base_head, delivery_head, delivery_tree, synthetic_tree, independent_tree = sys.argv[1:]
+          evidence = {
+              "schema": "C2A_SYNTHETIC_TREE_EVIDENCE_V1",
+              "base_head": base_head,
+              "delivery_head": delivery_head,
+              "parents": [base_head, delivery_head],
+              "delivery_tree": delivery_tree,
+              "synthetic_tree": synthetic_tree,
+              "independent_tree": independent_tree,
+          }
+          pathlib.Path(output).write_text(
+              json.dumps(evidence, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print("C2A_SYNTHETIC_TREE_EQUALS_DELIVERY_TREE=PASS")
+          PY
+
+      - name: Require complete F1/C2A functional evidence
+        if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
+        shell: bash
+        run: |
+          set -euo pipefail
+          verifier_report="${RUNNER_TEMP}/post-f0l-successor-verifier.json"
+          python scripts/verify_production_studio_c_allowlist.py \
+            --slice "$ACTIVE_SLICE" \
+            --base-head "$SLICE_BASE_HEAD" \
+            --base-tree "$SLICE_BASE_TREE" \
+            --f0l-accepted-head "$F0L_ACCEPTED_HEAD" \
+            --f0l-accepted-tree "$F0L_ACCEPTED_TREE" \
+            --successor-evidence-dir "$RUNNER_TEMP/successor-evidence" \
+            --repo "$GITHUB_WORKSPACE" | tee "$verifier_report"
+          python - "$verifier_report" <<'PY'
+          import json
+          import sys
+
+          report = json.loads(open(sys.argv[1], encoding="utf-8").read())
+          assert report["allowlist_result"] == "PASS"
+          assert report["active_slice"] in {"F1", "C2A"}
+          assert report["successor_ci_evidence"]["schema"] == "POST_F0L_SUCCESSOR_CI_EVIDENCE_V1"
+          print("POST_F0L_F1_C2A_EXECUTABLE_CI=PASS")
+          PY
 
       - name: Check F0L schemas, migrations, Django and Node syntax
         if: env.ACTIVE_SLICE == 'F0L'

@@ -5,11 +5,15 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 import re
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path, PurePosixPath
+from tempfile import TemporaryDirectory
+from zipfile import BadZipFile, ZipFile
 
 
 PINNED_BASE_HEAD = "5f73ebf2fd29a161a34ea047c7eead4fb0c582d4"
@@ -67,11 +71,20 @@ F0L_RATIFIED_EXISTING_COMMITS = (
     "545e24231673b2c113bde064f835aa24c7d7b10d",
     "79b03a653a1c9c675fba49d09ac61933ec07f114",
     "0f67adabf697f1be67daa5a07b68bc0731954bb0",
+    "a6363f8206ed0276ee40fd3c652bf572c872e2b8",
 )
+PINNED_F0L_CORRECTION_4_HEAD = F0L_RATIFIED_EXISTING_COMMITS[-1]
+PINNED_F0L_CORRECTION_4_TREE = "f3869f7e66d3fe9601b937df196f03b1de51aee0"
 F0L_CORRECTION_4_PATHS = frozenset(
     {
         "software/conflict_analysis/domain/models.py",
         "software/conflict_analysis/domain/tests/test_data_foundation.py",
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+    }
+)
+F0L_CORRECTION_5_PATHS = frozenset(
+    {
+        ".github/workflows/conflict-analysis.yml",
         "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
     }
 )
@@ -98,7 +111,230 @@ F0L_ASYNC_ORM_ENTRYPOINTS = (
     "abulk_create",
     "abulk_update",
 )
+F1_PORTABLE_TEST_CLASS = "MultilingualEvidenceLineageTests"
+F1_PORTABLE_TEST_METHODS = (
+    "test_fact_category_is_project_scoped_versioned_and_path_is_deterministic",
+    "test_category_self_cycle_cross_project_reparent_and_delete_fail_closed",
+    "test_fact_classification_status_is_assignment_state_and_fact_type_remains_separate",
+    "test_legacy_facts_remain_unclassified_without_identity_or_evidence_drift",
+    "test_monolingual_content_is_synchronized_without_fabricated_translation_provenance",
+    "test_complete_one_to_one_one_to_many_and_many_to_one_alignment_is_checksum_bound",
+    "test_partial_positional_contradictory_or_many_to_many_alignment_is_never_synchronized",
+    "test_translation_provenance_preserves_exact_known_fields_and_explicit_unknowns",
+    "test_any_primary_translation_edit_creates_unsynchronized_derivative_and_preserves_history",
+    "test_explicit_complete_realign_creates_new_synchronized_derivative_without_mutation",
+    "test_memory_origin_fact_returns_typed_no_document_evidence",
+    "test_multiple_document_evidence_is_deterministic_without_truth_or_independence_inference",
+    "test_synchronized_drilldown_resolves_exact_primary_and_original_fragments",
+    "test_unsynchronized_drilldown_returns_alignment_not_guaranteed_without_guessed_original",
+    "test_drilldown_authorizes_before_disclosure_and_performs_zero_writes",
+    "test_noncanonical_in_place_or_bypass_mutations_fail_closed",
+)
+F1_MIGRATION_TEST_CLASS = "MultilingualEvidenceLineageMigrationTests"
+F1_MIGRATION_TEST_METHODS = (
+    "test_0016_to_0017_preserves_project_language_and_all_legacy_evidence_identities",
+    "test_0017_reverse_reapply_and_empty_database_are_deterministic",
+)
+F1_NEW_PATHS = frozenset(
+    {
+        "software/conflict_analysis/domain/migrations/0017_multilingual_evidence_lineage.py",
+        "software/conflict_analysis/domain/services/document_lineage.py",
+        "software/conflict_analysis/domain/services/evidence_drilldown.py",
+        "software/conflict_analysis/domain/api/evidence.py",
+        "software/conflict_analysis/domain/tests/test_multilingual_evidence_lineage.py",
+        "software/conflict_analysis/docs/adr/0012-multilingual-evidence-document-lineage.md",
+    }
+)
+F1_FROZEN_PATHS = (
+    ".github/workflows/conflict-analysis.yml",
+    "software/conflict_analysis/pyproject.toml",
+    "software/conflict_analysis/production_studio",
+    "software/conflict_analysis/domain/migrations/0016_project_primary_language.py",
+    "software/conflict_analysis/domain/services/language_tags.py",
+    "software/conflict_analysis/domain/services/project_definitions.py",
+    "software/conflict_analysis/domain/api/studio_definitions.py",
+    "software/conflict_analysis/domain/services/seed.py",
+    "software/conflict_analysis/domain/services/project_packages.py",
+    "software/conflict_analysis/domain/services/schemas/project-package-1.1.0.schema.json",
+    "software/conflict_analysis/docs/adr/0011-project-primary-language-bootstrap.md",
+)
+F1_FOCUSED_POSTGRESQL_TOTAL = 18
+F1_FOCUSED_SQLITE_PASSED = 16
+F1_FOCUSED_SQLITE_SKIPPED = 2
+F1_FOUNDATION_POSTGRESQL_TOTAL = 272
+F1_FOUNDATION_SQLITE_PASSED = 253
+F1_FOUNDATION_SQLITE_SKIPPED = 19
+
+C2A_PORTABLE_TEST_CLASS = "ProductionStudioLifecyclePublicationTests"
+C2A_PORTABLE_TEST_METHODS = (
+    "test_route_auth_and_checksum_bound_claim_contract_are_exact",
+    "test_initial_draft_uses_optional_preview_then_atomic_publication_without_prior_validate",
+    "test_validation_unknown_outcome_allows_only_explicit_same_request_reconciliation",
+    "test_fd07_never_labels_standalone_or_validated_initial_as_publishable_and_is_refetched_before_attempt",
+    "test_successor_draft_validates_then_fd07_allows_only_exact_successor_publication",
+    "test_publication_unknown_outcome_disables_post_and_uses_only_operation_recovery_get",
+    "test_operation_identity_and_receipts_never_enter_browser_persistent_storage",
+    "test_current_noncurrent_retired_and_unknown_lifecycle_states_render_truthfully",
+    "test_typed_auth_scope_capability_csrf_stale_reuse_and_state_conflicts_are_bounded",
+    "test_package_science_chat_document_prediction_and_recommendation_controls_remain_unavailable",
+    "test_dirty_busy_unresolved_navigation_and_unload_are_guarded_without_automatic_mutation",
+    "test_publication_requires_human_retained_recovery_ticket_and_busy_unload_is_guarded",
+    "test_recovery_ticket_and_post_share_one_frozen_attempt_and_edits_require_new_operation",
+)
+C2A_CHROMIUM_TEST_METHODS = (
+    "test_chromium_draft_preview_atomic_initial_publish_recover_and_reload",
+    "test_chromium_successor_validate_publish_lost_response_recovery_and_predecessor_noncurrent",
+)
+C2A_NEW_PATHS = frozenset(
+    {
+        "software/conflict_analysis/docs/adr/0009-production-studio-c-lifecycle-publication.md",
+        "software/conflict_analysis/production_studio/lifecycle_claim_boundaries.py",
+        "software/conflict_analysis/production_studio/contracts/lifecycle_publication_claim_boundaries_v1.ru.json",
+        "software/conflict_analysis/production_studio/contracts/lifecycle_publication_claim_boundaries_v1.ru.json.sha256",
+        "software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.css",
+        "software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js",
+        "software/conflict_analysis/production_studio/templates/production_studio/lifecycle_publication_definition.html",
+        "software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py",
+        "software/conflict_analysis/production_studio/browser_tests/lifecycle_publication.mjs",
+    }
+)
+C2A_FROZEN_PATHS = (
+    "software/conflict_analysis/pyproject.toml",
+    "software/conflict_analysis/production_studio/templates/production_studio/audited_draft_entry.html",
+    "software/conflict_analysis/production_studio/tests/test_audited_authoring.py",
+    "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs",
+    "software/conflict_analysis/domain/models.py",
+    "software/conflict_analysis/domain/migrations/0016_project_primary_language.py",
+    "software/conflict_analysis/domain/services/language_tags.py",
+    "software/conflict_analysis/domain/services/project_definitions.py",
+    "software/conflict_analysis/domain/api/studio_definitions.py",
+    "software/conflict_analysis/domain/services/seed.py",
+    "software/conflict_analysis/domain/services/project_packages.py",
+    "software/conflict_analysis/domain/services/schemas/project-package-1.1.0.schema.json",
+    "software/conflict_analysis/docs/adr/0011-project-primary-language-bootstrap.md",
+)
+C2A_PORTABLE_TOTAL = 13
+C2A_CHROMIUM_TOTAL = 2
+C2A_FOUNDATION_POSTGRESQL_TOTAL = 254
+C2A_FOUNDATION_SQLITE_PASSED = 237
+C2A_FOUNDATION_SQLITE_SKIPPED = 17
+SUCCESSOR_C0_TOTAL = 19
+SUCCESSOR_C1_PORTABLE_TOTAL = 8
+SUCCESSOR_C1_CHROMIUM_TOTAL = 1
+
+SUCCESSOR_WHEEL_NAME = "conflict_analysis-0.1.0-py3-none-any.whl"
+SUCCESSOR_EVIDENCE_SCHEMA = "POST_F0L_SUCCESSOR_CI_EVIDENCE_V1"
+SUCCESSOR_MIGRATION_EVIDENCE_SCHEMA = "POST_F0L_MIGRATION_EVIDENCE_V1"
+SUCCESSOR_WHEEL_EVIDENCE_SCHEMA = "POST_F0L_WHEEL_INSTALL_EVIDENCE_V1"
+C2A_SYNTHETIC_EVIDENCE_SCHEMA = "C2A_SYNTHETIC_TREE_EVIDENCE_V1"
+SUCCESSOR_JUNIT_FILES = {
+    "F1": (
+        "f1-focused-postgresql.xml",
+        "f1-focused-sqlite.xml",
+        "f1-foundation-postgresql.xml",
+        "f1-foundation-sqlite.xml",
+        "f1-c0-postgresql.xml",
+        "f1-c0-sqlite.xml",
+        "f1-c1-postgresql.xml",
+        "f1-c1-sqlite.xml",
+        "f1-c1-chromium-postgresql.xml",
+    ),
+    "C2A": (
+        "c2a-portable-postgresql.xml",
+        "c2a-portable-sqlite.xml",
+        "c2a-foundation-postgresql.xml",
+        "c2a-foundation-sqlite.xml",
+        "c2a-c0-postgresql.xml",
+        "c2a-c0-sqlite.xml",
+        "c2a-c1-postgresql.xml",
+        "c2a-c1-sqlite.xml",
+        "c2a-c1-chromium-postgresql.xml",
+        "c2a-chromium-postgresql.xml",
+    ),
+}
+SUCCESSOR_MIGRATION_GATES = {
+    "F1": (
+        "compileall",
+        "django_check",
+        "makemigrations_check",
+        "postgresql_clean_migrate_0017",
+        "postgresql_0016_to_0017",
+        "postgresql_0017_reverse_reapply",
+        "postgresql_immutable_identity",
+        "sqlite_clean_migrate_0017",
+    ),
+    "C2A": (
+        "compileall",
+        "django_check",
+        "makemigrations_check",
+        "postgresql_clean_migrate_0016",
+        "sqlite_clean_migrate_0016",
+        "migration_filenames_unchanged",
+    ),
+}
+SUCCESSOR_WHEEL_CHECKS = {
+    "F1": (
+        "wheel_built_exactly_once",
+        "isolated_install",
+        "migration_0017_discovered",
+        "document_lineage_imported",
+        "evidence_drilldown_imported",
+        "domain_api_evidence_imported",
+        "adr_repository_only",
+    ),
+    "C2A": (
+        "wheel_built_exactly_once",
+        "isolated_install",
+        "production_studio_imported",
+        "lifecycle_claim_boundaries_imported",
+        "contract_payload_present",
+        "template_payload_present",
+        "static_payload_present",
+        "docs_repository_only",
+    ),
+}
+SUCCESSOR_WHEEL_REQUIRED_MEMBERS = {
+    "F1": frozenset(
+        {
+            "domain/__init__.py",
+            "domain/migrations/__init__.py",
+            "domain/migrations/0017_multilingual_evidence_lineage.py",
+            "domain/services/__init__.py",
+            "domain/services/document_lineage.py",
+            "domain/services/evidence_drilldown.py",
+            "domain/api/__init__.py",
+            "domain/api/evidence.py",
+        }
+    ),
+    "C2A": frozenset(
+        {
+            "production_studio/__init__.py",
+            "production_studio/apps.py",
+            "production_studio/lifecycle_claim_boundaries.py",
+            "production_studio/urls.py",
+            "production_studio/views.py",
+            "production_studio/contracts/lifecycle_publication_claim_boundaries_v1.ru.json",
+            "production_studio/contracts/lifecycle_publication_claim_boundaries_v1.ru.json.sha256",
+            "production_studio/templates/production_studio/lifecycle_publication_definition.html",
+            "production_studio/static/production_studio/lifecycle_publication.css",
+            "production_studio/static/production_studio/lifecycle_publication.js",
+        }
+    ),
+}
+SUCCESSOR_REPOSITORY_ONLY_WHEEL_PATHS = {
+    "F1": frozenset(
+        {"docs/adr/0012-multilingual-evidence-document-lineage.md"}
+    ),
+    "C2A": frozenset(
+        {
+            "README.md",
+            "docs/adr/0009-production-studio-c-lifecycle-publication.md",
+            "docs/production-studio-c-read-only-runtime.md",
+        }
+    ),
+}
 _LOWER_HEX_40 = re.compile(r"[0-9a-f]{40}\Z")
+_LOWER_HEX_64 = re.compile(r"[0-9a-f]{64}\Z")
 
 ACTIVE_C0_ALLOWLIST = frozenset(
     {
@@ -412,6 +648,88 @@ PROJECT_LANGUAGE_MIGRATION_TEST_METHODS = (
     "test_0016_reverse_reapply_and_clean_database_seed_are_exact",
 )
 
+F1_FOCUSED_TEST_NODES = (
+    *((F1_PORTABLE_TEST_CLASS, method) for method in F1_PORTABLE_TEST_METHODS),
+    *((F1_MIGRATION_TEST_CLASS, method) for method in F1_MIGRATION_TEST_METHODS),
+)
+C2A_PORTABLE_TEST_NODES = tuple(
+    (C2A_PORTABLE_TEST_CLASS, method) for method in C2A_PORTABLE_TEST_METHODS
+)
+SUCCESSOR_C1_CHROMIUM_TEST_NODE = (
+    "ProductionStudioAuditedAuthoringBrowserTests",
+    "test_authenticated_edit_save_reload_is_bounded_foundation_only_and_receipted",
+)
+F0L_SQLITE_SKIPPED_TEST_NODES = (
+    (
+        "domain.tests.test_foundation_studio_bootstrap.FoundationStudioBootstrapConcurrencyTests",
+        "test_postgresql_concurrent_bootstrap_has_one_winner_and_one_explicit_conflict",
+    ),
+    (
+        "domain.tests.test_foundation_studio_bootstrap.FoundationStudioSuccessorConcurrencyTests",
+        "test_postgresql_competing_successors_have_one_winner_and_preserve_old_pin",
+    ),
+    (
+        "domain.tests.test_foundation_studio_bootstrap.FoundationStudioApplicationSuccessorConcurrencyTests",
+        "test_postgresql_application_wrapper_has_one_success_and_one_typed_conflict",
+    ),
+    (
+        "domain.tests.test_foundation_studio_bootstrap.FoundationStudioFirstProjectApplicationConcurrencyTests",
+        "test_postgresql_application_bootstrap_has_one_complete_winner_and_no_orphans",
+    ),
+    (
+        "domain.tests.test_foundation_studio_package.FoundationStudioCrossPathLockOrderTests",
+        "test_postgresql_import_initial_and_successor_paths_share_one_lock_order",
+    ),
+    (
+        "domain.tests.test_foundation_studio_publication_reconciliation.FoundationStudioPublicationReconciliationConcurrencyTests",
+        "test_concurrent_initial_different_keys_has_one_commit_and_one_typed_loser",
+    ),
+    (
+        "domain.tests.test_foundation_studio_publication_reconciliation.FoundationStudioPublicationReconciliationConcurrencyTests",
+        "test_concurrent_initial_same_key_has_one_fresh_and_one_replay",
+    ),
+    (
+        "domain.tests.test_foundation_studio_publication_reconciliation.FoundationStudioPublicationReconciliationConcurrencyTests",
+        "test_concurrent_successor_different_keys_has_one_current_winner_and_one_typed_loser",
+    ),
+    (
+        "domain.tests.test_foundation_studio_publication_reconciliation.FoundationStudioPublicationReconciliationConcurrencyTests",
+        "test_concurrent_successor_same_key_has_one_fresh_and_one_replay",
+    ),
+    (
+        "domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests",
+        "test_postgresql_concurrent_bootstrap_same_key_has_one_graph_one_audit_one_reconcile",
+    ),
+    (
+        "domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests",
+        "test_postgresql_concurrent_create_same_key_has_one_commit_one_reconcile",
+    ),
+    (
+        "domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests",
+        "test_postgresql_concurrent_stale_saves_have_one_commit_one_draft_stale",
+    ),
+    (
+        "domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests",
+        "test_postgresql_different_keys_same_create_or_clone_identity_have_one_typed_loser",
+    ),
+    (
+        "domain.tests.test_foundation_studio_write_reconciliation.FoundationStudioWriteReconciliationConcurrencyTests",
+        "test_postgresql_save_validate_race_obeys_project_first_lock_order",
+    ),
+    (
+        "domain.tests.test_postgresql_migrations.PostgreSQLMigrationGateTests",
+        "test_clean_test_database_is_at_every_migration_leaf",
+    ),
+    (
+        "domain.tests.test_postgresql_migrations.ProjectPrimaryLanguageMigrationGateTests",
+        "test_0015_to_0016_maps_exact_kz_to_ru_and_other_projects_to_und_without_drift",
+    ),
+    (
+        "domain.tests.test_postgresql_migrations.ProjectPrimaryLanguageMigrationGateTests",
+        "test_0016_reverse_reapply_and_clean_database_seed_are_exact",
+    ),
+)
+
 FD07_TEST_CLASS = "FoundationStudioPublicationReadinessTests"
 FD07_TEST_METHODS = (
     "test_route_method_auth_scope_query_headers_and_zero_write_are_exact",
@@ -605,6 +923,11 @@ F0L_MIGRATIONS = (
     "software/conflict_analysis/domain/migrations/0016_project_primary_language.py",
     PINNED_MIGRATIONS[-1],
 )
+F1_MIGRATIONS = (
+    *F0L_MIGRATIONS[:-1],
+    "software/conflict_analysis/domain/migrations/0017_multilingual_evidence_lineage.py",
+    F0L_MIGRATIONS[-1],
+)
 
 
 class VerificationError(RuntimeError):
@@ -675,6 +998,23 @@ def _changed_paths(repo: Path, base_head: str) -> set[str]:
         if path
     }
     return committed | worktree | staged | untracked
+
+
+def _commit_changed_paths(repo: Path, commit: str) -> set[str]:
+    commit = _require_exact_object_id("F0L correction commit", commit)
+    return {
+        _normalize(path)
+        for path in _git(
+            repo,
+            "diff",
+            "--name-only",
+            "--no-renames",
+            f"{commit}^",
+            commit,
+            "--",
+        ).splitlines()
+        if path
+    }
 
 
 def _require_exact_object_id(label: str, value: str | None) -> str:
@@ -991,19 +1331,31 @@ def _require_f0l_bounded_fast_forward_commits(
     oldest_parent: str,
     base_head: str,
     ordered_commits: tuple[str, ...],
+    delivery_parent: str,
 ) -> None:
-    ratified_prefix = F0L_RATIFIED_EXISTING_COMMITS[: min(commit_count, 3)]
+    ratified_prefix = F0L_RATIFIED_EXISTING_COMMITS[
+        : min(commit_count, len(F0L_RATIFIED_EXISTING_COMMITS))
+    ]
+    expected_delivery_parent = (
+        base_head
+        if commit_count == 1
+        else ordered_commits[-2]
+        if len(ordered_commits) >= 2
+        else None
+    )
     if (
-        commit_count not in {1, 2, 3, 4}
+        commit_count not in {1, 2, 3, 4, 5}
         or oldest_parent != base_head
         or len(ordered_commits) != commit_count
         or ordered_commits[: len(ratified_prefix)] != ratified_prefix
+        or delivery_parent != expected_delivery_parent
     ):
         raise VerificationError(
             "F0L delivery must preserve the exact ratified ordinary commit prefix "
-            "and contain at most one authorized fourth correction commit; "
+            "and contain at most one authorized fifth correction commit; "
             f"count={commit_count}, oldest_parent={oldest_parent}, "
-            f"base={base_head}, commits={ordered_commits}"
+            f"delivery_parent={delivery_parent}, base={base_head}, "
+            f"commits={ordered_commits}"
         )
 
 
@@ -1025,6 +1377,29 @@ def _require_f0l_correction_4_paths(
             + json.dumps(
                 {
                     "expected": sorted(F0L_CORRECTION_4_PATHS),
+                    "actual": sorted(changed_paths or set()),
+                }
+            )
+        )
+
+
+def _require_f0l_correction_5_paths(
+    *,
+    commit_count: int,
+    changed_paths: set[str] | None,
+) -> None:
+    if commit_count < 5:
+        if changed_paths is not None:
+            raise VerificationError(
+                "F0L correction-5 paths must be absent before the fifth commit"
+            )
+        return
+    if changed_paths != F0L_CORRECTION_5_PATHS:
+        raise VerificationError(
+            "F0L fifth commit must change exactly the workflow and verifier paths: "
+            + json.dumps(
+                {
+                    "expected": sorted(F0L_CORRECTION_5_PATHS),
                     "actual": sorted(changed_paths or set()),
                 }
             )
@@ -1283,7 +1658,9 @@ def _require_f0l_static_contract() -> None:
         F0L_LANGUAGE_LOOKUP_PREFIXES,
         F0L_ASYNC_ORM_ENTRYPOINTS,
         F0L_RATIFIED_EXISTING_COMMITS,
+        PINNED_F0L_CORRECTION_4_TREE,
         tuple(sorted(F0L_CORRECTION_4_PATHS)),
+        tuple(sorted(F0L_CORRECTION_5_PATHS)),
     )
     expected = (
         F0L_EXACT_PATH_COUNT,
@@ -1320,10 +1697,16 @@ def _require_f0l_static_contract() -> None:
             "545e24231673b2c113bde064f835aa24c7d7b10d",
             "79b03a653a1c9c675fba49d09ac61933ec07f114",
             "0f67adabf697f1be67daa5a07b68bc0731954bb0",
+            "a6363f8206ed0276ee40fd3c652bf572c872e2b8",
         ),
+        "f3869f7e66d3fe9601b937df196f03b1de51aee0",
         (
             "software/conflict_analysis/domain/models.py",
             "software/conflict_analysis/domain/tests/test_data_foundation.py",
+            "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+        ),
+        (
+            ".github/workflows/conflict-analysis.yml",
             "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
         ),
     )
@@ -1343,6 +1726,201 @@ def _require_f0l_accepted_pin(
         raise VerificationError(
             "post-F0L base HEAD/TREE does not match external accepted-F0L pins"
         )
+
+
+def _successor_static_contract_payload() -> dict[str, object]:
+    return {
+        "f0l_correction_4_head": PINNED_F0L_CORRECTION_4_HEAD,
+        "f0l_correction_4_tree": PINNED_F0L_CORRECTION_4_TREE,
+        "f0l_ratified_commits": F0L_RATIFIED_EXISTING_COMMITS,
+        "f0l_correction_4_paths": sorted(F0L_CORRECTION_4_PATHS),
+        "f0l_correction_5_paths": sorted(F0L_CORRECTION_5_PATHS),
+        "f1_allowlist": sorted(F1_POST_F0L_ALLOWLIST),
+        "f1_new_paths": sorted(F1_NEW_PATHS),
+        "f1_frozen_paths": F1_FROZEN_PATHS,
+        "f1_portable_class": F1_PORTABLE_TEST_CLASS,
+        "f1_portable_methods": F1_PORTABLE_TEST_METHODS,
+        "f1_migration_class": F1_MIGRATION_TEST_CLASS,
+        "f1_migration_methods": F1_MIGRATION_TEST_METHODS,
+        "f1_migrations": F1_MIGRATIONS,
+        "f1_totals": (
+            F1_FOCUSED_POSTGRESQL_TOTAL,
+            F1_FOCUSED_SQLITE_PASSED,
+            F1_FOCUSED_SQLITE_SKIPPED,
+            F1_FOUNDATION_POSTGRESQL_TOTAL,
+            F1_FOUNDATION_SQLITE_PASSED,
+            F1_FOUNDATION_SQLITE_SKIPPED,
+        ),
+        "c2a_allowlist": sorted(C2A_POST_F0L_ALLOWLIST),
+        "c2a_new_paths": sorted(C2A_NEW_PATHS),
+        "c2a_frozen_paths": C2A_FROZEN_PATHS,
+        "c2a_portable_class": C2A_PORTABLE_TEST_CLASS,
+        "c2a_portable_methods": C2A_PORTABLE_TEST_METHODS,
+        "c2a_chromium_methods": C2A_CHROMIUM_TEST_METHODS,
+        "c2a_totals": (
+            C2A_PORTABLE_TOTAL,
+            C2A_CHROMIUM_TOTAL,
+            C2A_FOUNDATION_POSTGRESQL_TOTAL,
+            C2A_FOUNDATION_SQLITE_PASSED,
+            C2A_FOUNDATION_SQLITE_SKIPPED,
+            SUCCESSOR_C0_TOTAL,
+            SUCCESSOR_C1_PORTABLE_TOTAL,
+            SUCCESSOR_C1_CHROMIUM_TOTAL,
+        ),
+        "f0l_sqlite_skipped_nodes": F0L_SQLITE_SKIPPED_TEST_NODES,
+        "successor_junit_files": SUCCESSOR_JUNIT_FILES,
+        "successor_migration_gates": SUCCESSOR_MIGRATION_GATES,
+        "successor_wheel_checks": SUCCESSOR_WHEEL_CHECKS,
+        "successor_wheel_required_members": {
+            key: sorted(value)
+            for key, value in SUCCESSOR_WHEEL_REQUIRED_MEMBERS.items()
+        },
+        "successor_repository_only_wheel_paths": {
+            key: sorted(value)
+            for key, value in SUCCESSOR_REPOSITORY_ONLY_WHEEL_PATHS.items()
+        },
+    }
+
+
+def _require_successor_static_contract() -> None:
+    encoded = json.dumps(
+        _successor_static_contract_payload(),
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    digest = hashlib.sha256(encoded).hexdigest()
+    expected = "0c23032ee8a7da3548834d89912c03805aa9fa5ac1450927898e7483e446deca"
+    if digest != expected:
+        raise VerificationError(
+            "post-F0L successor static contract drifted: "
+            + json.dumps({"expected": expected, "actual": digest})
+        )
+
+
+def _successor_workflow_required_tokens() -> tuple[str, ...]:
+    terminal_cli = '--successor-evidence-dir "$RUNNER_TEMP/successor-evidence"'
+    return (
+        "name: Require complete F1/C2A functional evidence",
+        "if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'",
+        terminal_cli,
+        "POST_F0L_F1_C2A_EXECUTABLE_CI=PASS",
+        "-k",
+        *C2A_CHROMIUM_TEST_METHODS,
+        SUCCESSOR_EVIDENCE_SCHEMA,
+        SUCCESSOR_MIGRATION_EVIDENCE_SCHEMA,
+        SUCCESSOR_WHEEL_EVIDENCE_SCHEMA,
+        C2A_SYNTHETIC_EVIDENCE_SCHEMA,
+        "manifest.json",
+        "migration.json",
+        "wheel-install.json",
+        "synthetic-tree.json",
+        SUCCESSOR_WHEEL_NAME,
+        *SUCCESSOR_JUNIT_FILES["F1"],
+        *SUCCESSOR_JUNIT_FILES["C2A"],
+    )
+
+
+def _require_successor_workflow_contract(source: str) -> None:
+    terminal_cli = '--successor-evidence-dir "$RUNNER_TEMP/successor-evidence"'
+    required_tokens = _successor_workflow_required_tokens()
+    missing = [token for token in required_tokens if token not in source]
+    if missing or source.count(terminal_cli) != 1:
+        raise VerificationError(
+            "successor workflow terminal evidence gate drifted: "
+            + json.dumps(
+                {
+                    "missing": missing,
+                    "terminal_invocation_count": source.count(terminal_cli),
+                }
+            )
+        )
+
+
+def _require_successor_repository_contract(
+    repo: Path,
+    *,
+    active_slice: str,
+    base_head: str,
+) -> dict[str, object]:
+    allowlist = (
+        F1_POST_F0L_ALLOWLIST if active_slice == "F1" else C2A_POST_F0L_ALLOWLIST
+    )
+    new_paths = F1_NEW_PATHS if active_slice == "F1" else C2A_NEW_PATHS
+    frozen_paths = F1_FROZEN_PATHS if active_slice == "F1" else C2A_FROZEN_PATHS
+    base_blobs: dict[str, str] = {}
+    for path in sorted(allowlist):
+        base_entry = _git(repo, "ls-tree", base_head, "--", path)
+        head_entry = _git(repo, "ls-tree", "HEAD", "--", path)
+        if path in new_paths:
+            if base_entry:
+                raise VerificationError(
+                    f"{active_slice} required-new path already exists at accepted F0L: {path}"
+                )
+            _require_regular_blob_tree_entry(
+                path=path,
+                revision="HEAD",
+                entry=head_entry,
+            )
+            continue
+        base_blobs[path] = _require_regular_blob_tree_entry(
+            path=path,
+            revision=base_head,
+            entry=base_entry,
+        )
+        _require_regular_blob_tree_entry(
+            path=path,
+            revision="HEAD",
+            entry=head_entry,
+        )
+
+    frozen_objects: dict[str, str] = {}
+    for path in frozen_paths:
+        base_object = _git(repo, "rev-parse", f"{base_head}:{path}")
+        head_object = _git(repo, "rev-parse", f"HEAD:{path}")
+        if base_object != head_object:
+            raise VerificationError(
+                f"{active_slice} accepted-F0L frozen input drifted at {path}"
+            )
+        frozen_objects[path] = base_object
+
+    migrations = tuple(
+        line
+        for line in _git(
+            repo,
+            "ls-files",
+            "software/conflict_analysis/domain/migrations",
+        ).splitlines()
+        if line
+    )
+    expected_migrations = F1_MIGRATIONS if active_slice == "F1" else F0L_MIGRATIONS
+    if migrations != expected_migrations:
+        raise VerificationError(
+            f"{active_slice} migration filename set drifted: "
+            + json.dumps(
+                {"expected": expected_migrations, "actual": migrations}
+            )
+        )
+    if active_slice == "F1":
+        migration_source = (
+            repo
+            / "software/conflict_analysis/domain/migrations/0017_multilingual_evidence_lineage.py"
+        ).read_text(encoding="utf-8")
+        if not re.search(
+            r"dependencies\s*=\s*\[\s*\(\s*[\"']domain[\"']\s*,\s*"
+            r"[\"']0016_project_primary_language[\"']\s*\)\s*,?\s*\]",
+            migration_source,
+            re.DOTALL,
+        ):
+            raise VerificationError(
+                "F1 migration must depend only on domain.0016_project_primary_language"
+            )
+    return {
+        "new_paths": sorted(new_paths),
+        "existing_base_blobs": dict(sorted(base_blobs.items())),
+        "frozen_objects": dict(sorted(frozen_objects.items())),
+        "migration_filenames": list(migrations),
+    }
 
 
 def _find_exact_test_class_source(repo: Path, class_name: str) -> str:
@@ -1447,6 +2025,107 @@ def _require_exact_test_topology(
             f"{class_name} test topology mismatch: "
             + json.dumps({"expected": expected_methods, "actual": actual})
         )
+
+
+def _require_successor_test_source_topology(
+    source: str, *, active_slice: str
+) -> None:
+    tree = ast.parse(source)
+    module_level_tests = [
+        node.name
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+    ]
+    if module_level_tests:
+        raise VerificationError(
+            f"{active_slice} successor test file has unauthorized module-level tests: "
+            + json.dumps(module_level_tests)
+        )
+    if active_slice == "F1":
+        contracts = (
+            (F1_PORTABLE_TEST_CLASS, F1_PORTABLE_TEST_METHODS),
+            (F1_MIGRATION_TEST_CLASS, F1_MIGRATION_TEST_METHODS),
+        )
+    else:
+        contracts = ((C2A_PORTABLE_TEST_CLASS, C2A_PORTABLE_TEST_METHODS),)
+    for class_name, methods in contracts:
+        _require_exact_test_topology(
+            source=source,
+            class_name=class_name,
+            expected_methods=methods,
+        )
+    actual_test_nodes = [
+        (class_node.name, method.name)
+        for class_node in tree.body
+        if isinstance(class_node, ast.ClassDef)
+        for method in class_node.body
+        if isinstance(method, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and method.name.startswith("test_")
+    ]
+    expected_test_nodes = [
+        (class_name, method)
+        for class_name, methods in contracts
+        for method in methods
+    ]
+    if active_slice == "C2A":
+        portable_nodes = set(C2A_PORTABLE_TEST_NODES)
+        chromium_nodes = [
+            node for node in actual_test_nodes if node not in portable_nodes
+        ]
+        chromium_methods = tuple(method for _class_name, method in chromium_nodes)
+        expected_registry_matches = (
+            len(actual_test_nodes)
+            == len(C2A_PORTABLE_TEST_METHODS) + len(C2A_CHROMIUM_TEST_METHODS)
+            and set(chromium_methods) == set(C2A_CHROMIUM_TEST_METHODS)
+            and len(chromium_methods) == len(set(chromium_methods))
+        )
+        expected_for_report: object = {
+            "portable_nodes": expected_test_nodes,
+            "chromium_methods": C2A_CHROMIUM_TEST_METHODS,
+            "chromium_class": "authority-does-not-pin",
+        }
+    else:
+        expected_registry_matches = actual_test_nodes == expected_test_nodes
+        expected_for_report = expected_test_nodes
+    if not expected_registry_matches:
+        raise VerificationError(
+            f"{active_slice} successor test-file registry drifted: "
+            + json.dumps(
+                {"expected": expected_for_report, "actual": actual_test_nodes}
+            )
+        )
+
+
+def _require_successor_test_topology(repo: Path, *, active_slice: str) -> None:
+    for class_name, methods in (
+        (PROJECT_LANGUAGE_TEST_CLASS, PROJECT_LANGUAGE_TEST_METHODS),
+        (PROJECT_LANGUAGE_WRITE_TEST_CLASS, PROJECT_LANGUAGE_WRITE_TEST_METHODS),
+        (PROJECT_LANGUAGE_HTTP_TEST_CLASS, PROJECT_LANGUAGE_HTTP_TEST_METHODS),
+        (PROJECT_LANGUAGE_MIGRATION_TEST_CLASS, PROJECT_LANGUAGE_MIGRATION_TEST_METHODS),
+    ):
+        _require_exact_test_topology(
+            source=_find_exact_test_class_source(repo, class_name),
+            class_name=class_name,
+            expected_methods=methods,
+        )
+    models_source = (
+        repo / "software/conflict_analysis/domain/models.py"
+    ).read_text(encoding="utf-8")
+    _require_f0l_correction_4_evidence(
+        models_source=models_source,
+        tests_source=_find_exact_test_class_source(repo, PROJECT_LANGUAGE_TEST_CLASS),
+    )
+    _require_package_restore_caller_registry(repo)
+    test_path = (
+        "software/conflict_analysis/domain/tests/test_multilingual_evidence_lineage.py"
+        if active_slice == "F1"
+        else "software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py"
+    )
+    _require_successor_test_source_topology(
+        (repo / test_path).read_text(encoding="utf-8"),
+        active_slice=active_slice,
+    )
 
 
 def _require_f0l_correction_4_evidence(
@@ -1650,6 +2329,510 @@ def _require_f0l_correction_4_evidence(
                 }
             )
         )
+
+
+def _normalized_test_node(class_name: str, method_name: str) -> tuple[str, str]:
+    return class_name.rsplit(".", 1)[-1], method_name
+
+
+def _f0l_focused_test_nodes() -> tuple[tuple[str, str], ...]:
+    return tuple(
+        (class_name, method)
+        for class_name, methods in (
+            (PROJECT_LANGUAGE_TEST_CLASS, PROJECT_LANGUAGE_TEST_METHODS),
+            (PROJECT_LANGUAGE_WRITE_TEST_CLASS, PROJECT_LANGUAGE_WRITE_TEST_METHODS),
+            (PROJECT_LANGUAGE_HTTP_TEST_CLASS, PROJECT_LANGUAGE_HTTP_TEST_METHODS),
+            (
+                PROJECT_LANGUAGE_MIGRATION_TEST_CLASS,
+                PROJECT_LANGUAGE_MIGRATION_TEST_METHODS,
+            ),
+        )
+        for method in methods
+    )
+
+
+def _require_junit_contract(
+    *,
+    label: str,
+    source: str,
+    expected_total: int,
+    expected_skipped: int,
+    exact_nodes: tuple[tuple[str, str], ...] | None = None,
+    exact_method_names: tuple[str, ...] | None = None,
+    required_nodes: tuple[tuple[str, str], ...] = (),
+    exact_skipped_nodes: tuple[tuple[str, str], ...] | None = None,
+) -> dict[str, object]:
+    try:
+        root = ET.fromstring(source)
+    except ET.ParseError as exc:
+        raise VerificationError(f"{label} JUnit XML is malformed: {exc}") from exc
+    cases = root.findall(".//testcase")
+    identities: list[tuple[str, str]] = []
+    skipped: list[tuple[str, str]] = []
+    failures: list[tuple[str, str]] = []
+    for case in cases:
+        class_name = case.attrib.get("classname")
+        method_name = case.attrib.get("name")
+        if not class_name or not method_name:
+            raise VerificationError(f"{label} JUnit testcase identity is incomplete")
+        identity = _normalized_test_node(class_name, method_name)
+        identities.append(identity)
+        if case.find("skipped") is not None:
+            skipped.append(identity)
+        if case.find("failure") is not None or case.find("error") is not None:
+            failures.append(identity)
+    if len(set(identities)) != len(identities):
+        raise VerificationError(f"{label} JUnit contains duplicate testcase identities")
+    expected_exact = (
+        {_normalized_test_node(*item) for item in exact_nodes}
+        if exact_nodes is not None
+        else None
+    )
+    required = {_normalized_test_node(*item) for item in required_nodes}
+    expected_skips = (
+        {_normalized_test_node(*item) for item in exact_skipped_nodes}
+        if exact_skipped_nodes is not None
+        else None
+    )
+    actual = set(identities)
+    actual_methods = {method for _class_name, method in identities}
+    expected_methods = set(exact_method_names or ())
+    actual_skips = set(skipped)
+    if (
+        len(cases) != expected_total
+        or len(skipped) != expected_skipped
+        or failures
+        or (expected_exact is not None and actual != expected_exact)
+        or (
+            exact_method_names is not None
+            and (
+                actual_methods != expected_methods
+                or len(identities) != len(expected_methods)
+            )
+        )
+        or not required <= actual
+        or (expected_skips is not None and actual_skips != expected_skips)
+    ):
+        raise VerificationError(
+            f"{label} JUnit evidence drifted: "
+            + json.dumps(
+                {
+                    "expected_total": expected_total,
+                    "actual_total": len(cases),
+                    "expected_skipped": expected_skipped,
+                    "actual_skipped": len(skipped),
+                    "failures": failures,
+                    "missing_required": sorted(required - actual),
+                    "exact_node_match": (
+                        None if expected_exact is None else actual == expected_exact
+                    ),
+                    "exact_method_match": (
+                        None
+                        if exact_method_names is None
+                        else actual_methods == expected_methods
+                    ),
+                    "exact_skip_match": (
+                        None if expected_skips is None else actual_skips == expected_skips
+                    ),
+                }
+            )
+        )
+    return {
+        "total": len(cases),
+        "passed": len(cases) - len(skipped),
+        "skipped": len(skipped),
+    }
+
+
+def _successor_junit_contracts(
+    active_slice: str,
+) -> dict[str, dict[str, object]]:
+    f0l_nodes = _f0l_focused_test_nodes()
+    if active_slice == "F1":
+        f1_skips = tuple(
+            (F1_MIGRATION_TEST_CLASS, method)
+            for method in F1_MIGRATION_TEST_METHODS
+        )
+        return {
+            "f1-focused-postgresql.xml": {
+                "expected_total": 18,
+                "expected_skipped": 0,
+                "exact_nodes": F1_FOCUSED_TEST_NODES,
+            },
+            "f1-focused-sqlite.xml": {
+                "expected_total": 18,
+                "expected_skipped": 2,
+                "exact_nodes": F1_FOCUSED_TEST_NODES,
+                "exact_skipped_nodes": f1_skips,
+            },
+            "f1-foundation-postgresql.xml": {
+                "expected_total": F1_FOUNDATION_POSTGRESQL_TOTAL,
+                "expected_skipped": 0,
+                "required_nodes": (*f0l_nodes, *F1_FOCUSED_TEST_NODES),
+            },
+            "f1-foundation-sqlite.xml": {
+                "expected_total": F1_FOUNDATION_POSTGRESQL_TOTAL,
+                "expected_skipped": F1_FOUNDATION_SQLITE_SKIPPED,
+                "required_nodes": (*f0l_nodes, *F1_FOCUSED_TEST_NODES),
+                "exact_skipped_nodes": (*F0L_SQLITE_SKIPPED_TEST_NODES, *f1_skips),
+            },
+            "f1-c0-postgresql.xml": {
+                "expected_total": SUCCESSOR_C0_TOTAL,
+                "expected_skipped": 0,
+            },
+            "f1-c0-sqlite.xml": {
+                "expected_total": SUCCESSOR_C0_TOTAL,
+                "expected_skipped": 0,
+            },
+            "f1-c1-postgresql.xml": {
+                "expected_total": SUCCESSOR_C1_PORTABLE_TOTAL,
+                "expected_skipped": 0,
+            },
+            "f1-c1-sqlite.xml": {
+                "expected_total": SUCCESSOR_C1_PORTABLE_TOTAL,
+                "expected_skipped": 0,
+            },
+            "f1-c1-chromium-postgresql.xml": {
+                "expected_total": SUCCESSOR_C1_CHROMIUM_TOTAL,
+                "expected_skipped": 0,
+                "exact_nodes": (SUCCESSOR_C1_CHROMIUM_TEST_NODE,),
+            },
+        }
+    return {
+        "c2a-portable-postgresql.xml": {
+            "expected_total": C2A_PORTABLE_TOTAL,
+            "expected_skipped": 0,
+            "exact_nodes": C2A_PORTABLE_TEST_NODES,
+        },
+        "c2a-portable-sqlite.xml": {
+            "expected_total": C2A_PORTABLE_TOTAL,
+            "expected_skipped": 0,
+            "exact_nodes": C2A_PORTABLE_TEST_NODES,
+        },
+        "c2a-foundation-postgresql.xml": {
+            "expected_total": C2A_FOUNDATION_POSTGRESQL_TOTAL,
+            "expected_skipped": 0,
+            "required_nodes": f0l_nodes,
+        },
+        "c2a-foundation-sqlite.xml": {
+            "expected_total": C2A_FOUNDATION_POSTGRESQL_TOTAL,
+            "expected_skipped": C2A_FOUNDATION_SQLITE_SKIPPED,
+            "required_nodes": f0l_nodes,
+            "exact_skipped_nodes": F0L_SQLITE_SKIPPED_TEST_NODES,
+        },
+        "c2a-c0-postgresql.xml": {
+            "expected_total": SUCCESSOR_C0_TOTAL,
+            "expected_skipped": 0,
+        },
+        "c2a-c0-sqlite.xml": {
+            "expected_total": SUCCESSOR_C0_TOTAL,
+            "expected_skipped": 0,
+        },
+        "c2a-c1-postgresql.xml": {
+            "expected_total": SUCCESSOR_C1_PORTABLE_TOTAL,
+            "expected_skipped": 0,
+        },
+        "c2a-c1-sqlite.xml": {
+            "expected_total": SUCCESSOR_C1_PORTABLE_TOTAL,
+            "expected_skipped": 0,
+        },
+        "c2a-c1-chromium-postgresql.xml": {
+            "expected_total": SUCCESSOR_C1_CHROMIUM_TOTAL,
+            "expected_skipped": 0,
+            "exact_nodes": (SUCCESSOR_C1_CHROMIUM_TEST_NODE,),
+        },
+        "c2a-chromium-postgresql.xml": {
+            "expected_total": C2A_CHROMIUM_TOTAL,
+            "expected_skipped": 0,
+            "exact_method_names": C2A_CHROMIUM_TEST_METHODS,
+        },
+    }
+
+
+def _load_exact_json(path: Path, *, keys: frozenset[str]) -> dict[str, object]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise VerificationError(f"successor evidence JSON is unreadable at {path.name}: {exc}") from exc
+    if not isinstance(value, dict) or set(value) != keys:
+        raise VerificationError(
+            f"successor evidence JSON shape drifted at {path.name}: "
+            + json.dumps({"expected": sorted(keys), "actual": sorted(value) if isinstance(value, dict) else None})
+        )
+    return value
+
+
+def _require_evidence_identity(
+    evidence: dict[str, object],
+    *,
+    schema: str,
+    active_slice: str,
+    base_head: str,
+    base_tree: str,
+    delivery_head: str,
+    delivery_tree: str,
+) -> None:
+    expected = {
+        "schema": schema,
+        "active_slice": active_slice,
+        "base_head": base_head,
+        "base_tree": base_tree,
+        "delivery_head": delivery_head,
+        "delivery_tree": delivery_tree,
+    }
+    actual = {key: evidence.get(key) for key in expected}
+    if actual != expected:
+        raise VerificationError(
+            "successor evidence identity is stale or mismatched: "
+            + json.dumps({"expected": expected, "actual": actual})
+        )
+
+
+def _require_successor_ci_evidence(
+    evidence_dir: Path | None,
+    *,
+    repo: Path,
+    active_slice: str,
+    base_head: str,
+    base_tree: str,
+    delivery_head: str,
+    delivery_tree: str,
+) -> dict[str, object]:
+    if evidence_dir is None:
+        raise VerificationError(
+            f"{active_slice} routed verification requires --successor-evidence-dir"
+        )
+    try:
+        if evidence_dir.is_symlink() or not evidence_dir.is_dir():
+            raise VerificationError("successor evidence directory is absent or a symlink")
+        directory = evidence_dir.resolve(strict=True)
+        junit_names = SUCCESSOR_JUNIT_FILES[active_slice]
+        synthetic_name = "synthetic-tree.json" if active_slice == "C2A" else None
+        expected_names = {
+            "manifest.json",
+            "migration.json",
+            "wheel-install.json",
+            SUCCESSOR_WHEEL_NAME,
+            *junit_names,
+        }
+        if synthetic_name is not None:
+            expected_names.add(synthetic_name)
+        entries = list(directory.iterdir())
+        actual_names = {entry.name for entry in entries}
+        if actual_names != expected_names:
+            raise VerificationError(
+                "successor evidence filename set drifted: "
+                + json.dumps(
+                    {"expected": sorted(expected_names), "actual": sorted(actual_names)}
+                )
+            )
+        for entry in entries:
+            if entry.is_symlink() or not entry.is_file():
+                raise VerificationError(
+                    f"successor evidence entry must be a regular file: {entry.name}"
+                )
+
+        manifest = _load_exact_json(
+            directory / "manifest.json",
+            keys=frozenset(
+                {
+                    "schema",
+                    "active_slice",
+                    "base_head",
+                    "base_tree",
+                    "delivery_head",
+                    "delivery_tree",
+                    "junit_files",
+                    "migration_evidence",
+                    "wheel_file",
+                    "wheel_install_evidence",
+                    "synthetic_tree_evidence",
+                }
+            ),
+        )
+        _require_evidence_identity(
+            manifest,
+            schema=SUCCESSOR_EVIDENCE_SCHEMA,
+            active_slice=active_slice,
+            base_head=base_head,
+            base_tree=base_tree,
+            delivery_head=delivery_head,
+            delivery_tree=delivery_tree,
+        )
+        expected_manifest_files = {
+            "junit_files": list(junit_names),
+            "migration_evidence": "migration.json",
+            "wheel_file": SUCCESSOR_WHEEL_NAME,
+            "wheel_install_evidence": "wheel-install.json",
+            "synthetic_tree_evidence": synthetic_name,
+        }
+        actual_manifest_files = {
+            key: manifest.get(key) for key in expected_manifest_files
+        }
+        if actual_manifest_files != expected_manifest_files:
+            raise VerificationError(
+                "successor evidence manifest file registry drifted: "
+                + json.dumps(
+                    {
+                        "expected": expected_manifest_files,
+                        "actual": actual_manifest_files,
+                    }
+                )
+            )
+
+        junit_reports: dict[str, object] = {}
+        for name, contract in _successor_junit_contracts(active_slice).items():
+            junit_reports[name] = _require_junit_contract(
+                label=name,
+                source=(directory / name).read_text(encoding="utf-8"),
+                **contract,
+            )
+
+        identity_keys = {
+            "schema",
+            "active_slice",
+            "base_head",
+            "base_tree",
+            "delivery_head",
+            "delivery_tree",
+        }
+        migration = _load_exact_json(
+            directory / "migration.json",
+            keys=frozenset({*identity_keys, "gates"}),
+        )
+        _require_evidence_identity(
+            migration,
+            schema=SUCCESSOR_MIGRATION_EVIDENCE_SCHEMA,
+            active_slice=active_slice,
+            base_head=base_head,
+            base_tree=base_tree,
+            delivery_head=delivery_head,
+            delivery_tree=delivery_tree,
+        )
+        if migration.get("gates") != list(SUCCESSOR_MIGRATION_GATES[active_slice]):
+            raise VerificationError("successor migration evidence gate registry drifted")
+
+        wheel_evidence = _load_exact_json(
+            directory / "wheel-install.json",
+            keys=frozenset(
+                {*identity_keys, "wheel_sha256", "source_tree_fallback", "checks"}
+            ),
+        )
+        _require_evidence_identity(
+            wheel_evidence,
+            schema=SUCCESSOR_WHEEL_EVIDENCE_SCHEMA,
+            active_slice=active_slice,
+            base_head=base_head,
+            base_tree=base_tree,
+            delivery_head=delivery_head,
+            delivery_tree=delivery_tree,
+        )
+        wheel_digest = wheel_evidence.get("wheel_sha256")
+        if (
+            not isinstance(wheel_digest, str)
+            or _LOWER_HEX_64.fullmatch(wheel_digest) is None
+            or wheel_evidence.get("source_tree_fallback") is not False
+            or wheel_evidence.get("checks")
+            != list(SUCCESSOR_WHEEL_CHECKS[active_slice])
+        ):
+            raise VerificationError("successor wheel/install evidence drifted")
+        wheel_path = directory / SUCCESSOR_WHEEL_NAME
+        actual_wheel_digest = hashlib.sha256(wheel_path.read_bytes()).hexdigest()
+        if actual_wheel_digest != wheel_digest:
+            raise VerificationError("successor wheel SHA-256 does not match its evidence")
+        with ZipFile(wheel_path) as archive:
+            members = archive.namelist()
+            if archive.testzip() is not None or len(members) != len(set(members)):
+                raise VerificationError("successor wheel is corrupt or has duplicate members")
+            member_set = set(members)
+        missing_members = SUCCESSOR_WHEEL_REQUIRED_MEMBERS[active_slice] - member_set
+        repository_only_paths = SUCCESSOR_REPOSITORY_ONLY_WHEEL_PATHS[active_slice]
+        forbidden_members = {
+            member
+            for member in member_set
+            if any(
+                member == path or member.endswith(f"/{path}")
+                for path in repository_only_paths
+            )
+        }
+        if missing_members or forbidden_members:
+            raise VerificationError(
+                "successor wheel payload contract drifted: "
+                + json.dumps(
+                    {
+                        "missing": sorted(missing_members),
+                        "repository_only_in_wheel": sorted(forbidden_members),
+                    }
+                )
+            )
+
+        synthetic_report: dict[str, object] | None = None
+        if active_slice == "C2A":
+            synthetic = _load_exact_json(
+                directory / "synthetic-tree.json",
+                keys=frozenset(
+                    {
+                        "schema",
+                        "base_head",
+                        "delivery_head",
+                        "parents",
+                        "delivery_tree",
+                        "synthetic_tree",
+                        "independent_tree",
+                    }
+                ),
+            )
+            if synthetic.get("schema") != C2A_SYNTHETIC_EVIDENCE_SCHEMA:
+                raise VerificationError("C2A synthetic-tree evidence schema drifted")
+            parents = synthetic.get("parents")
+            if not isinstance(parents, list) or not all(
+                isinstance(parent, str) for parent in parents
+            ):
+                raise VerificationError("C2A synthetic-tree parents are malformed")
+            recomputed_independent_tree = _git(
+                repo,
+                "merge-tree",
+                "--write-tree",
+                base_head,
+                delivery_head,
+            )
+            _require_synthetic_merge_contract(
+                expected_base_head=base_head,
+                expected_delivery_head=delivery_head,
+                actual_parents=tuple(parents),
+                delivery_tree=delivery_tree,
+                synthetic_tree=str(synthetic.get("synthetic_tree", "")),
+                independent_tree=recomputed_independent_tree,
+            )
+            if (
+                synthetic.get("base_head") != base_head
+                or synthetic.get("delivery_head") != delivery_head
+                or synthetic.get("delivery_tree") != delivery_tree
+                or synthetic.get("independent_tree")
+                != recomputed_independent_tree
+            ):
+                raise VerificationError("C2A synthetic-tree evidence identity drifted")
+            synthetic_report = {
+                "parents": parents,
+                "synthetic_tree": synthetic["synthetic_tree"],
+                "independent_tree": recomputed_independent_tree,
+            }
+    except (OSError, UnicodeDecodeError, BadZipFile) as exc:
+        raise VerificationError(f"successor CI evidence is unreadable: {exc}") from exc
+    return {
+        "schema": SUCCESSOR_EVIDENCE_SCHEMA,
+        "directory": str(directory),
+        "junit": junit_reports,
+        "migration_gates": list(SUCCESSOR_MIGRATION_GATES[active_slice]),
+        "wheel_sha256": actual_wheel_digest,
+        "wheel_required_members": sorted(
+            SUCCESSOR_WHEEL_REQUIRED_MEMBERS[active_slice]
+        ),
+        "repository_only_wheel_paths": sorted(
+            SUCCESSOR_REPOSITORY_ONLY_WHEEL_PATHS[active_slice]
+        ),
+        "synthetic_tree": synthetic_report,
+    }
 
 
 def _normalized_authorized_method_body(
@@ -2908,10 +4091,140 @@ def self_check() -> dict[str, object]:
     }
 
 
+def _render_successor_self_check_junit(contract: dict[str, object]) -> str:
+    exact_nodes = contract.get("exact_nodes")
+    exact_method_names = contract.get("exact_method_names")
+    required_nodes = contract.get("required_nodes", ())
+    expected_total = int(contract["expected_total"])
+    if exact_nodes is not None:
+        identities = list(exact_nodes)
+    elif exact_method_names is not None:
+        identities = [
+            ("AuthorityUnpinnedChromiumClass", method)
+            for method in exact_method_names
+        ]
+    else:
+        identities = list(required_nodes)
+    exact_skips = contract.get("exact_skipped_nodes")
+    normalized_identities = {
+        _normalized_test_node(class_name, method_name)
+        for class_name, method_name in identities
+    }
+    for identity in exact_skips or ():
+        normalized = _normalized_test_node(*identity)
+        if normalized not in normalized_identities:
+            identities.append(identity)
+            normalized_identities.add(normalized)
+    used = set(identities)
+    filler = 0
+    while len(identities) < expected_total:
+        identity = ("SuccessorSelfCheckFiller", f"test_filler_{filler:04d}")
+        filler += 1
+        if identity not in used:
+            identities.append(identity)
+            used.add(identity)
+    if len(identities) != expected_total:
+        raise VerificationError("successor self-check JUnit contract overflows total")
+    skip_nodes = {
+        _normalized_test_node(class_name, method_name)
+        for class_name, method_name in (exact_skips or ())
+    }
+    if exact_skips is None:
+        skip_nodes = {
+            _normalized_test_node(class_name, method_name)
+            for class_name, method_name in identities[
+                : int(contract["expected_skipped"])
+            ]
+        }
+    suite = ET.Element("testsuite")
+    for class_name, method_name in identities:
+        case = ET.SubElement(
+            suite,
+            "testcase",
+            {"classname": class_name, "name": method_name},
+        )
+        if _normalized_test_node(class_name, method_name) in skip_nodes:
+            ET.SubElement(case, "skipped")
+    return ET.tostring(suite, encoding="unicode")
+
+
+def _write_successor_self_check_evidence(
+    directory: Path,
+    *,
+    active_slice: str,
+    base_head: str,
+    base_tree: str,
+    delivery_head: str,
+    delivery_tree: str,
+) -> None:
+    directory.mkdir()
+    junit_names = SUCCESSOR_JUNIT_FILES[active_slice]
+    synthetic_name = "synthetic-tree.json" if active_slice == "C2A" else None
+    identity = {
+        "active_slice": active_slice,
+        "base_head": base_head,
+        "base_tree": base_tree,
+        "delivery_head": delivery_head,
+        "delivery_tree": delivery_tree,
+    }
+    manifest = {
+        "schema": SUCCESSOR_EVIDENCE_SCHEMA,
+        **identity,
+        "junit_files": list(junit_names),
+        "migration_evidence": "migration.json",
+        "wheel_file": SUCCESSOR_WHEEL_NAME,
+        "wheel_install_evidence": "wheel-install.json",
+        "synthetic_tree_evidence": synthetic_name,
+    }
+    (directory / "manifest.json").write_text(
+        json.dumps(manifest), encoding="utf-8"
+    )
+    for name, contract in _successor_junit_contracts(active_slice).items():
+        (directory / name).write_text(
+            _render_successor_self_check_junit(contract), encoding="utf-8"
+        )
+    migration = {
+        "schema": SUCCESSOR_MIGRATION_EVIDENCE_SCHEMA,
+        **identity,
+        "gates": list(SUCCESSOR_MIGRATION_GATES[active_slice]),
+    }
+    (directory / "migration.json").write_text(
+        json.dumps(migration), encoding="utf-8"
+    )
+    wheel_path = directory / SUCCESSOR_WHEEL_NAME
+    with ZipFile(wheel_path, "w") as archive:
+        for member in sorted(SUCCESSOR_WHEEL_REQUIRED_MEMBERS[active_slice]):
+            archive.writestr(member, b"successor-self-check\n")
+    wheel = {
+        "schema": SUCCESSOR_WHEEL_EVIDENCE_SCHEMA,
+        **identity,
+        "wheel_sha256": hashlib.sha256(wheel_path.read_bytes()).hexdigest(),
+        "source_tree_fallback": False,
+        "checks": list(SUCCESSOR_WHEEL_CHECKS[active_slice]),
+    }
+    (directory / "wheel-install.json").write_text(
+        json.dumps(wheel), encoding="utf-8"
+    )
+    if active_slice == "C2A":
+        synthetic = {
+            "schema": C2A_SYNTHETIC_EVIDENCE_SCHEMA,
+            "base_head": base_head,
+            "delivery_head": delivery_head,
+            "parents": [base_head, delivery_head],
+            "delivery_tree": delivery_tree,
+            "synthetic_tree": delivery_tree,
+            "independent_tree": delivery_tree,
+        }
+        (directory / "synthetic-tree.json").write_text(
+            json.dumps(synthetic), encoding="utf-8"
+        )
+
+
 def f0l_self_check() -> dict[str, object]:
-    """Exercise F0L and successor declarations without repository/network access."""
+    """Exercise F0L and successor declarations without network/caller-repo access."""
 
     _require_f0l_static_contract()
+    _require_successor_static_contract()
     if _resolve_f0l_route(
         event_name="push", event_ref=f"refs/heads/{F0L_TARGET_BRANCH}"
     ) != "PINNED_FD07":
@@ -2973,18 +4286,33 @@ def f0l_self_check() -> dict[str, object]:
         *F0L_RATIFIED_EXISTING_COMMITS,
         "d" * 40,
     )
-    for count in (1, 2, 3, 4):
+    for count in (1, 2, 3, 4, 5):
         _require_f0l_bounded_fast_forward_commits(
             commit_count=count,
             oldest_parent=history_base,
             base_head=history_base,
             ordered_commits=authorized_history[:count],
+            delivery_parent=(
+                history_base if count == 1 else authorized_history[count - 2]
+            ),
         )
-    for count, oldest_parent, ordered_commits in (
-        (0, history_base, ()),
-        (5, history_base, (*authorized_history, "e" * 40)),
-        (1, "b" * 40, authorized_history[:1]),
-        (3, history_base, ("c" * 40, *authorized_history[1:3])),
+    for count, oldest_parent, ordered_commits, delivery_parent in (
+        (0, history_base, (), history_base),
+        (6, history_base, (*authorized_history, "e" * 40), authorized_history[-1]),
+        (1, "b" * 40, authorized_history[:1], history_base),
+        (
+            3,
+            history_base,
+            ("c" * 40, *authorized_history[1:3]),
+            authorized_history[1],
+        ),
+        (5, history_base, authorized_history, "e" * 40),
+        (
+            5,
+            history_base,
+            (*authorized_history[:3], "c" * 40, authorized_history[4]),
+            "c" * 40,
+        ),
     ):
         try:
             _require_f0l_bounded_fast_forward_commits(
@@ -2992,6 +4320,7 @@ def f0l_self_check() -> dict[str, object]:
                 oldest_parent=oldest_parent,
                 base_head=history_base,
                 ordered_commits=ordered_commits,
+                delivery_parent=delivery_parent,
             )
         except VerificationError:
             negative_cases += 1
@@ -3004,11 +4333,16 @@ def f0l_self_check() -> dict[str, object]:
         commit_count=4,
         changed_paths=set(F0L_CORRECTION_4_PATHS),
     )
+    _require_f0l_correction_4_paths(
+        commit_count=5,
+        changed_paths=set(F0L_CORRECTION_4_PATHS),
+    )
     for commit_count, changed_paths in (
         (3, set(F0L_CORRECTION_4_PATHS)),
         (4, None),
         (4, set(F0L_CORRECTION_4_PATHS) - {sorted(F0L_CORRECTION_4_PATHS)[0]}),
         (4, set(F0L_CORRECTION_4_PATHS) | {"unauthorized/fourth-path"}),
+        (5, None),
     ):
         try:
             _require_f0l_correction_4_paths(
@@ -3020,6 +4354,28 @@ def f0l_self_check() -> dict[str, object]:
         else:
             raise VerificationError(
                 "F0L correction-4 path self-check accepted scope drift"
+            )
+    _require_f0l_correction_5_paths(commit_count=4, changed_paths=None)
+    _require_f0l_correction_5_paths(
+        commit_count=5,
+        changed_paths=set(F0L_CORRECTION_5_PATHS),
+    )
+    for commit_count, changed_paths in (
+        (4, set(F0L_CORRECTION_5_PATHS)),
+        (5, None),
+        (5, set(F0L_CORRECTION_5_PATHS) - {sorted(F0L_CORRECTION_5_PATHS)[0]}),
+        (5, set(F0L_CORRECTION_5_PATHS) | {"unauthorized/fifth-path"}),
+    ):
+        try:
+            _require_f0l_correction_5_paths(
+                commit_count=commit_count,
+                changed_paths=changed_paths,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                "F0L correction-5 path self-check accepted scope drift"
             )
     _require_f0l_clean_status("")
     try:
@@ -3277,12 +4633,216 @@ class ProjectQuerySet:
         else:
             raise VerificationError("F0L topology self-check accepted registry drift")
 
+    successor_sources = {
+        "F1": "\n".join(
+            (
+                render(F1_PORTABLE_TEST_CLASS, F1_PORTABLE_TEST_METHODS),
+                render(F1_MIGRATION_TEST_CLASS, F1_MIGRATION_TEST_METHODS),
+            )
+        ),
+        "C2A": "\n".join(
+            (
+                render(C2A_PORTABLE_TEST_CLASS, C2A_PORTABLE_TEST_METHODS),
+                render("AuthorityUnpinnedChromiumClass", C2A_CHROMIUM_TEST_METHODS),
+            )
+        ),
+    }
+    for active_slice, source in successor_sources.items():
+        _require_successor_test_source_topology(
+            source,
+            active_slice=active_slice,
+        )
+        for invalid_source in (
+            source + "\ndef test_unauthorized_module_node():\n    pass\n",
+            source.replace(
+                (F1_PORTABLE_TEST_METHODS if active_slice == "F1" else C2A_CHROMIUM_TEST_METHODS)[-1],
+                "test_registry_drift",
+                1,
+            ),
+            source + "\nclass UnauthorizedExtraTests:\n    def test_extra(self):\n        pass\n",
+        ):
+            try:
+                _require_successor_test_source_topology(
+                    invalid_source,
+                    active_slice=active_slice,
+                )
+            except VerificationError:
+                negative_cases += 1
+            else:
+                raise VerificationError(
+                    f"{active_slice} successor topology self-check accepted drift"
+                )
+
+    workflow_source = "\n".join(_successor_workflow_required_tokens())
+    _require_successor_workflow_contract(workflow_source)
+    for token in dict.fromkeys(_successor_workflow_required_tokens()):
+        try:
+            _require_successor_workflow_contract(
+                workflow_source.replace(token, "SELF_CHECK_REMOVED", 1)
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                f"successor workflow self-check accepted missing token: {token}"
+            )
+    terminal_cli = '--successor-evidence-dir "$RUNNER_TEMP/successor-evidence"'
+    try:
+        _require_successor_workflow_contract(
+            workflow_source + "\n" + terminal_cli
+        )
+    except VerificationError:
+        negative_cases += 1
+    else:
+        raise VerificationError(
+            "successor workflow self-check accepted duplicate terminal invocation"
+        )
+
+    with TemporaryDirectory(prefix="f0l-successor-self-check-") as temp_name:
+        temp_root = Path(temp_name)
+        synthetic_repo = temp_root / "repo"
+        synthetic_repo.mkdir()
+        _git(synthetic_repo, "init", "--quiet")
+        _git(synthetic_repo, "config", "user.name", "F0L Self Check")
+        _git(synthetic_repo, "config", "user.email", "f0l-self-check@example.invalid")
+        probe_path = synthetic_repo / "probe.txt"
+        probe_path.write_text("base\n", encoding="utf-8")
+        _git(synthetic_repo, "add", "probe.txt")
+        _git(synthetic_repo, "commit", "--quiet", "-m", "base")
+        synthetic_base_head = _git(synthetic_repo, "rev-parse", "HEAD")
+        synthetic_base_tree = _git(synthetic_repo, "rev-parse", "HEAD^{tree}")
+        probe_path.write_text("delivery\n", encoding="utf-8")
+        _git(synthetic_repo, "add", "probe.txt")
+        _git(synthetic_repo, "commit", "--quiet", "-m", "delivery")
+        synthetic_delivery_head = _git(synthetic_repo, "rev-parse", "HEAD")
+        synthetic_delivery_tree = _git(synthetic_repo, "rev-parse", "HEAD^{tree}")
+
+        def require_evidence(directory: Path, active_slice: str) -> None:
+            _require_successor_ci_evidence(
+                directory,
+                repo=synthetic_repo,
+                active_slice=active_slice,
+                base_head=synthetic_base_head,
+                base_tree=synthetic_base_tree,
+                delivery_head=synthetic_delivery_head,
+                delivery_tree=synthetic_delivery_tree,
+            )
+
+        for active_slice in ("F1", "C2A"):
+            positive_dir = temp_root / f"{active_slice.lower()}-positive"
+            _write_successor_self_check_evidence(
+                positive_dir,
+                active_slice=active_slice,
+                base_head=synthetic_base_head,
+                base_tree=synthetic_base_tree,
+                delivery_head=synthetic_delivery_head,
+                delivery_tree=synthetic_delivery_tree,
+            )
+            require_evidence(positive_dir, active_slice)
+
+            mutations = [
+                "extra-file",
+                "missing-junit",
+                "stale-manifest",
+                "junit-failure",
+                "migration-gates",
+                "wheel-fallback",
+                "wheel-repository-doc",
+            ]
+            if active_slice == "C2A":
+                mutations.extend(("synthetic-tree", "independent-tree"))
+            for mutation_index, mutation in enumerate(mutations):
+                evidence_dir = temp_root / (
+                    f"{active_slice.lower()}-negative-{mutation_index}"
+                )
+                _write_successor_self_check_evidence(
+                    evidence_dir,
+                    active_slice=active_slice,
+                    base_head=synthetic_base_head,
+                    base_tree=synthetic_base_tree,
+                    delivery_head=synthetic_delivery_head,
+                    delivery_tree=synthetic_delivery_tree,
+                )
+                if mutation == "extra-file":
+                    (evidence_dir / "unexpected.txt").write_text(
+                        "unexpected\n", encoding="utf-8"
+                    )
+                elif mutation == "missing-junit":
+                    (evidence_dir / SUCCESSOR_JUNIT_FILES[active_slice][0]).unlink()
+                elif mutation == "stale-manifest":
+                    path = evidence_dir / "manifest.json"
+                    payload = json.loads(path.read_text(encoding="utf-8"))
+                    payload["base_head"] = "f" * 40
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                elif mutation == "junit-failure":
+                    path = evidence_dir / SUCCESSOR_JUNIT_FILES[active_slice][0]
+                    tree = ET.fromstring(path.read_text(encoding="utf-8"))
+                    ET.SubElement(tree.find(".//testcase"), "failure")
+                    path.write_text(ET.tostring(tree, encoding="unicode"), encoding="utf-8")
+                elif mutation == "migration-gates":
+                    path = evidence_dir / "migration.json"
+                    payload = json.loads(path.read_text(encoding="utf-8"))
+                    payload["gates"] = list(reversed(payload["gates"]))
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                elif mutation == "wheel-fallback":
+                    path = evidence_dir / "wheel-install.json"
+                    payload = json.loads(path.read_text(encoding="utf-8"))
+                    payload["source_tree_fallback"] = True
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                elif mutation == "wheel-repository-doc":
+                    wheel_path = evidence_dir / SUCCESSOR_WHEEL_NAME
+                    repository_only = sorted(
+                        SUCCESSOR_REPOSITORY_ONLY_WHEEL_PATHS[active_slice]
+                    )[0]
+                    with ZipFile(wheel_path, "a") as archive:
+                        archive.writestr(
+                            f"unauthorized-prefix/{repository_only}",
+                            b"must remain Git-only\n",
+                        )
+                    path = evidence_dir / "wheel-install.json"
+                    payload = json.loads(path.read_text(encoding="utf-8"))
+                    payload["wheel_sha256"] = hashlib.sha256(
+                        wheel_path.read_bytes()
+                    ).hexdigest()
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                elif mutation in {"synthetic-tree", "independent-tree"}:
+                    path = evidence_dir / "synthetic-tree.json"
+                    payload = json.loads(path.read_text(encoding="utf-8"))
+                    payload[mutation.replace("-", "_")] = "e" * 40
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                try:
+                    require_evidence(evidence_dir, active_slice)
+                except VerificationError:
+                    negative_cases += 1
+                else:
+                    raise VerificationError(
+                        f"{active_slice} evidence self-check accepted {mutation}"
+                    )
+
+        try:
+            _require_successor_ci_evidence(
+                None,
+                repo=synthetic_repo,
+                active_slice="F1",
+                base_head=synthetic_base_head,
+                base_tree=synthetic_base_tree,
+                delivery_head=synthetic_delivery_head,
+                delivery_tree=synthetic_delivery_tree,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                "successor evidence self-check accepted absent evidence directory"
+            )
+
     return {
         "marker": "PROJECT_LANGUAGE_F0L_VERIFIER_SELF_CHECK=PASS",
         "correction_4_marker": "F0L_CORRECTION_4_GUARD_ASYNC_SELF_CHECK=PASS",
-        "downstream_marker": "POST_F0L_F1_C2A_PIN_SELF_CHECK=PASS",
+        "downstream_marker": "POST_F0L_F1_C2A_EXECUTABLE_CI_SELF_CHECK=PASS",
         "network_access": False,
-        "repository_access": False,
+        "caller_repository_access": False,
+        "temporary_repository_access": True,
         "positive_slices": ["F0L", "F1", "C2A"],
         "negative_cases": negative_cases,
     }
@@ -3838,6 +5398,7 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
     """Verify the exact F0L delivery without making network/remote-state claims."""
 
     _require_f0l_static_contract()
+    _require_successor_static_contract()
     base_head = _require_exact_object_id("F0L base HEAD", base_head)
     base_tree = _require_exact_object_id("F0L base TREE", base_tree)
     if base_head != PINNED_F0L_BASE_HEAD or base_tree != PINNED_F0L_BASE_TREE:
@@ -3879,17 +5440,34 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         oldest_parent=oldest_parent,
         base_head=base_head,
         ordered_commits=ordered_commits,
+        delivery_parent=delivery_parent,
     )
 
     _require_f0l_clean_status(
         _git(repo, "status", "--porcelain=v1", "--untracked-files=all")
     )
-    correction_4_changed_paths = (
-        _changed_paths(repo, "HEAD^") if commit_count == 4 else None
-    )
+    correction_4_changed_paths = None
+    if commit_count >= 4:
+        if (
+            _git(repo, "rev-parse", f"{PINNED_F0L_CORRECTION_4_HEAD}^{{tree}}")
+            != PINNED_F0L_CORRECTION_4_TREE
+        ):
+            raise VerificationError("F0L correction-4 ratified TREE drifted")
+        correction_4_changed_paths = _commit_changed_paths(
+            repo, PINNED_F0L_CORRECTION_4_HEAD
+        )
     _require_f0l_correction_4_paths(
         commit_count=commit_count,
         changed_paths=correction_4_changed_paths,
+    )
+    correction_5_changed_paths = (
+        _commit_changed_paths(repo, ordered_commits[4])
+        if commit_count >= 5
+        else None
+    )
+    _require_f0l_correction_5_paths(
+        commit_count=commit_count,
+        changed_paths=correction_5_changed_paths,
     )
 
     changed = _changed_paths(repo, base_head)
@@ -3980,6 +5558,10 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
             PROJECT_LANGUAGE_TEST_CLASS,
         ),
     )
+    workflow_source = (
+        repo / ".github/workflows/conflict-analysis.yml"
+    ).read_text(encoding="utf-8")
+    _require_successor_workflow_contract(workflow_source)
 
     return {
         "active_slice": "F0L",
@@ -3992,9 +5574,16 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         "delivery_commits": list(ordered_commits),
         "delivery_parent": delivery_parent,
         "delivery_oldest_parent": oldest_parent,
+        "correction_4_head": PINNED_F0L_CORRECTION_4_HEAD,
+        "correction_4_tree": PINNED_F0L_CORRECTION_4_TREE,
         "correction_4_changed_paths": (
             sorted(correction_4_changed_paths)
             if correction_4_changed_paths is not None
+            else None
+        ),
+        "correction_5_changed_paths": (
+            sorted(correction_5_changed_paths)
+            if correction_5_changed_paths is not None
             else None
         ),
         "changed_paths": sorted(changed),
@@ -4015,6 +5604,7 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         "downstream_f1_path_count": len(F1_POST_F0L_ALLOWLIST),
         "downstream_c2a_path_count": len(C2A_POST_F0L_ALLOWLIST),
         "downstream_own_diff_intersection": 0,
+        "successor_executable_ci_contract": True,
         "merge_commits_absent": True,
         "network_access": False,
     }
@@ -4028,11 +5618,14 @@ def verify_post_f0l(
     base_tree: str,
     accepted_head: str | None,
     accepted_tree: str | None,
+    evidence_dir: Path | None,
 ) -> dict[str, object]:
     """Fail closed around externally accepted F0L pins for future F1/C2A."""
 
     if active_slice not in {"F1", "C2A"}:
         raise VerificationError("post-F0L verifier supports only F1 or C2A")
+    _require_f0l_static_contract()
+    _require_successor_static_contract()
     base_head = _require_exact_object_id("post-F0L base HEAD", base_head)
     base_tree = _require_exact_object_id("post-F0L base TREE", base_tree)
     _require_f0l_accepted_pin(
@@ -4061,6 +5654,9 @@ def verify_post_f0l(
         delivery_parent=delivery_parent,
         base_head=base_head,
     )
+    _require_f0l_clean_status(
+        _git(repo, "status", "--porcelain=v1", "--untracked-files=all")
+    )
     allowlist = (
         F1_POST_F0L_ALLOWLIST if active_slice == "F1" else C2A_POST_F0L_ALLOWLIST
     )
@@ -4071,6 +5667,33 @@ def verify_post_f0l(
         allowlist=allowlist,
         exact_changed_paths=True,
     )
+    repository_contract = _require_successor_repository_contract(
+        repo,
+        active_slice=active_slice,
+        base_head=base_head,
+    )
+    _require_successor_test_topology(repo, active_slice=active_slice)
+    workflow_source = (
+        repo / ".github/workflows/conflict-analysis.yml"
+    ).read_text(encoding="utf-8")
+    _require_successor_workflow_contract(workflow_source)
+    delivery_head = _require_exact_object_id(
+        f"{active_slice} delivery HEAD",
+        _git(repo, "rev-parse", "HEAD"),
+    )
+    delivery_tree = _require_exact_object_id(
+        f"{active_slice} delivery TREE",
+        _git(repo, "rev-parse", "HEAD^{tree}"),
+    )
+    evidence = _require_successor_ci_evidence(
+        evidence_dir,
+        repo=repo,
+        active_slice=active_slice,
+        base_head=base_head,
+        base_tree=base_tree,
+        delivery_head=delivery_head,
+        delivery_tree=delivery_tree,
+    )
     return {
         "active_slice": active_slice,
         "allowlist_result": "PASS",
@@ -4078,9 +5701,18 @@ def verify_post_f0l(
         "base_tree": base_tree,
         "f0l_accepted_head": accepted_head,
         "f0l_accepted_tree": accepted_tree,
+        "delivery_head": delivery_head,
+        "delivery_tree": delivery_tree,
         "changed_paths": sorted(changed),
         "delivery_commit_count": commit_count,
         "delivery_parent": delivery_parent,
+        "new_paths": repository_contract["new_paths"],
+        "existing_base_blobs": repository_contract["existing_base_blobs"],
+        "frozen_objects": repository_contract["frozen_objects"],
+        "migration_filenames": repository_contract["migration_filenames"],
+        "functional_ci_evidence": "PASS",
+        "successor_ci_evidence": evidence,
+        "inherited_foundation_c0_c1_frozen_by_exact_allowlist": True,
         "merge_commits_absent": True,
         "network_access": False,
     }
@@ -4110,6 +5742,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--fd05-accepted-tree")
     parser.add_argument("--f0l-accepted-head")
     parser.add_argument("--f0l-accepted-tree")
+    parser.add_argument("--successor-evidence-dir", type=Path)
     parser.add_argument("--repo", type=Path, default=Path.cwd())
     parser.add_argument("--self-check", action="store_true")
     args = parser.parse_args(argv)
@@ -4141,6 +5774,7 @@ def main(argv: list[str] | None = None) -> int:
                 base_tree=args.base_tree,
                 accepted_head=args.f0l_accepted_head,
                 accepted_tree=args.f0l_accepted_tree,
+                evidence_dir=args.successor_evidence_dir,
             )
         else:
             result = verify(
