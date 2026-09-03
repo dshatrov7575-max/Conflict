@@ -552,6 +552,7 @@ class FoundationStudioContractModelTests(TestCase):
             code="STUDIO-CONTRACT-PROJECT",
             version="1.0.0",
             name="Studio contract project",
+            primary_language_tag="ru",
         )
         manifest = {}
         now = timezone.now()
@@ -1242,3 +1243,216 @@ class FoundationStudioContractReverseMigrationTests(TransactionTestCase):
             "project_definition_import",
             "Cannot reverse after project-definition import receipts exist.",
         )
+
+
+class ProjectPrimaryLanguageMigrationGateTests(TransactionTestCase):
+    migrate_from = [("domain", "0015_foundation_studio_contract_constraints")]
+    migrate_to = [("domain", "0016_project_primary_language")]
+    kz_id = UUID("3de70d1d-f4cf-535a-95b9-94c0a65e60e3")
+    other_id = UUID("48000000-0000-4000-8000-000000000001")
+    id_only_id = kz_id
+    code_only_id = UUID("48000000-0000-4000-8000-000000000002")
+
+    def setUp(self):
+        super().setUp()
+        if connection.vendor != "postgresql":
+            self.skipTest("PostgreSQL-only migration gate")
+
+    def _restore_leaf_migrations(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+
+    def _seed_0015_projects(self, apps):
+        Project = apps.get_model("domain", "Project")
+        ProjectSchemaVersion = apps.get_model("domain", "ProjectSchemaVersion")
+        kz = Project.objects.create(
+            id=self.kz_id,
+            code="KZ-ZHANAOZEN-DEMO",
+            version="7.2.1",
+            name="Exact KZ durable identity",
+            description="preserve KZ description",
+            metadata={"preserve": "kz", "nested": {"value": 0}},
+        )
+        other = Project.objects.create(
+            id=self.other_id,
+            code="OTHER-PROJECT",
+            version="4.5.6",
+            name="Other durable identity",
+            description="preserve other description",
+            metadata={"preserve": "other", "false": False},
+        )
+        # Exact-pair authority: matching the code without the UUID is not KZ.
+        code_only = Project.objects.create(
+            id=self.code_only_id,
+            code="KZ-ZHANAOZEN-DEMO-DECOY",
+            version="1.0.0",
+            name="Code-prefix decoy",
+            metadata={"preserve": "code-only"},
+        )
+        schema = ProjectSchemaVersion.objects.create(
+            id=UUID("48000000-0000-4000-8000-000000000003"),
+            project=other,
+            code="SCHEMA-PRESERVE",
+            version="4.5.6",
+            is_current=True,
+            manifest={"identity": "must-not-drift", "zero": 0},
+            manifest_hash="a" * 64,
+        )
+        return {
+            "kz": kz,
+            "other": other,
+            "code_only": code_only,
+            "schema": schema,
+        }
+
+    @staticmethod
+    def _project_snapshot(Project):
+        return list(
+            Project.objects.order_by("id").values(
+                "id",
+                "code",
+                "version",
+                "name",
+                "description",
+                "metadata",
+            )
+        )
+
+    def test_0015_to_0016_maps_exact_kz_to_ru_and_other_projects_to_und_without_drift(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.migrate_from)
+        self.addCleanup(self._restore_leaf_migrations)
+        old_apps = executor.loader.project_state(self.migrate_from).apps
+        rows = self._seed_0015_projects(old_apps)
+        before_projects = self._project_snapshot(
+            old_apps.get_model("domain", "Project")
+        )
+        before_schema = old_apps.get_model(
+            "domain", "ProjectSchemaVersion"
+        ).objects.values(
+            "id", "project_id", "manifest", "manifest_hash"
+        ).get(pk=rows["schema"].pk)
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.migrate_to)
+        apps = executor.loader.project_state(self.migrate_to).apps
+        Project = apps.get_model("domain", "Project")
+        self.assertEqual(
+            tuple(
+                Project.objects.values_list(
+                    "primary_language_tag",
+                    "primary_language_assignment",
+                ).get(pk=self.kz_id)
+            ),
+            ("ru", "EXPLICIT"),
+        )
+        for project_id in (self.other_id, self.code_only_id):
+            self.assertEqual(
+                tuple(
+                    Project.objects.values_list(
+                        "primary_language_tag",
+                        "primary_language_assignment",
+                    ).get(pk=project_id)
+                ),
+                ("und", "LEGACY_UNKNOWN"),
+            )
+        self.assertEqual(self._project_snapshot(Project), before_projects)
+        after_schema = apps.get_model(
+            "domain", "ProjectSchemaVersion"
+        ).objects.values(
+            "id", "project_id", "manifest", "manifest_hash"
+        ).get(pk=rows["schema"].pk)
+        self.assertEqual(after_schema, before_schema)
+
+        # A second 0015-shaped pass proves that neither half of the durable
+        # KZ identity is independently sufficient to infer Russian.
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.migrate_from)
+        apps_0015 = executor.loader.project_state(self.migrate_from).apps
+        Project0015 = apps_0015.get_model("domain", "Project")
+        Project0015.objects.filter(pk=self.kz_id).delete()
+        code_only = Project0015.objects.get(pk=self.code_only_id)
+        code_only.code = "KZ-ZHANAOZEN-DEMO"
+        code_only.save(update_fields=["code"])
+        Project0015.objects.create(
+            id=self.kz_id,
+            code="UUID-ONLY-KZ-DECOY",
+            version="1.0.0",
+            name="UUID-only decoy",
+        )
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.migrate_to)
+        near_match_project = executor.loader.project_state(
+            self.migrate_to
+        ).apps.get_model("domain", "Project")
+        for project_id in (self.kz_id, self.code_only_id):
+            self.assertEqual(
+                tuple(
+                    near_match_project.objects.values_list(
+                        "primary_language_tag",
+                        "primary_language_assignment",
+                    ).get(pk=project_id)
+                ),
+                ("und", "LEGACY_UNKNOWN"),
+            )
+
+    def test_0016_reverse_reapply_and_clean_database_seed_are_exact(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.migrate_from)
+        self.addCleanup(self._restore_leaf_migrations)
+        apps_0015 = executor.loader.project_state(self.migrate_from).apps
+        self._seed_0015_projects(apps_0015)
+        before_projects = self._project_snapshot(
+            apps_0015.get_model("domain", "Project")
+        )
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.migrate_to)
+        apps_0016 = executor.loader.project_state(self.migrate_to).apps
+        first_pairs = list(
+            apps_0016.get_model("domain", "Project")
+            .objects.order_by("id")
+            .values_list(
+                "id",
+                "primary_language_tag",
+                "primary_language_assignment",
+            )
+        )
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.migrate_from)
+        reversed_apps = executor.loader.project_state(self.migrate_from).apps
+        reversed_project = reversed_apps.get_model("domain", "Project")
+        self.assertNotIn(
+            "primary_language_tag",
+            {field.name for field in reversed_project._meta.get_fields()},
+        )
+        self.assertEqual(self._project_snapshot(reversed_project), before_projects)
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.migrate_to)
+        reapplied_apps = executor.loader.project_state(self.migrate_to).apps
+        reapplied_project = reapplied_apps.get_model("domain", "Project")
+        self.assertEqual(
+            list(
+                reapplied_project.objects.order_by("id").values_list(
+                    "id",
+                    "primary_language_tag",
+                    "primary_language_assignment",
+                )
+            ),
+            first_pairs,
+        )
+        self.assertEqual(self._project_snapshot(reapplied_project), before_projects)
+
+        reapplied_project.objects.all().delete()
+        from domain.demo_data import PROJECT_CODE, stable_demo_uuid
+        from domain.services.seed import seed_zhanaozen_demo
+
+        seeded = seed_zhanaozen_demo()
+        replayed = seed_zhanaozen_demo()
+        self.assertEqual(seeded.pk, replayed.pk)
+        self.assertEqual(seeded.pk, stable_demo_uuid("project", PROJECT_CODE))
+        self.assertEqual(seeded.primary_language_tag, "ru")
+        self.assertEqual(seeded.primary_language_assignment, "EXPLICIT")

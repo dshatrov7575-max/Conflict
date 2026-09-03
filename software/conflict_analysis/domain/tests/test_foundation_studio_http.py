@@ -130,6 +130,8 @@ class FoundationStudioRawIngressTests(TestCase):
             code=identity["code"],
             version=identity["version"],
             name="Raw ingress Project",
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
         )
         self.editor_principal = StudioPrincipal.for_role(
             actor_identifier="raw-editor",
@@ -897,6 +899,7 @@ class FoundationStudioRawIngressTests(TestCase):
             }
         )
         payload = {
+            "project_primary_language": "ru",
             "project": {
                 "id": str(project_id),
                 "code": "HTTP-FIRST-PROJECT",
@@ -968,6 +971,269 @@ class FoundationStudioRawIngressTests(TestCase):
             "?application=OTHER&application=STUDIO&locale=en&version=1.0.0"
         )
         self.assertEqual(response.status_code, 404, response.data)
+
+
+class FoundationStudioProjectLanguageHttpTests(
+    FoundationStudioBootstrapMixin,
+    TestCase,
+):
+    url = "/api/foundation/projects/bootstrap-first-draft/"
+
+    def setUp(self) -> None:
+        self.make_contract()
+        user_model = get_user_model()
+        self.editor = user_model.objects.create_user(
+            username=f"f0l-http-editor-{uuid4().hex}",
+            password="f0l-http-password",
+        )
+        self.viewer = user_model.objects.create_user(
+            username=f"f0l-http-viewer-{uuid4().hex}",
+            password="f0l-http-password",
+        )
+        permissions = {
+            item.codename: item
+            for item in Permission.objects.filter(
+                content_type__app_label="domain",
+                content_type__model="projectdefinitionversion",
+            )
+        }
+        self.editor.user_permissions.add(
+            permissions["studio_read_definition"],
+            permissions["studio_create_definition_draft"],
+        )
+        self.viewer.user_permissions.add(permissions["studio_read_definition"])
+        scope = Group.objects.create(name=project_access_group_name(self.project.pk))
+        scope.user_set.add(self.editor, self.viewer)
+
+    def payload(
+        self,
+        language: object,
+        *,
+        project_id=None,
+        definition_id=None,
+    ) -> tuple[dict, object, object]:
+        project_id = project_id or uuid4()
+        definition_id = definition_id or uuid4()
+        project = {
+            "id": str(project_id),
+            "code": f"F0L-HTTP-{project_id.hex}",
+            "version": "1.0.0",
+            "name": "HTTP Project с явным языком",
+            "description": "Язык выбирается до единой доменной записи.",
+            "metadata": {"f0l": "http"},
+        }
+        manifest = copy.deepcopy(self.manifest)
+        manifest["project"].update(copy.deepcopy(project))
+        return (
+            {
+                "project_primary_language": language,
+                "project": project,
+                "definition": {
+                    "id": str(definition_id),
+                    "code": f"F0L-HTTP-DEF-{definition_id.hex}",
+                    "version": "1.0.0",
+                    "manifest": manifest,
+                    "semantic_version": "1.0.0",
+                    "construct_version": "1.0.0",
+                },
+            },
+            project_id,
+            definition_id,
+        )
+
+    @staticmethod
+    def raw(payload: object) -> bytes:
+        return json.dumps(
+            payload,
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
+    @staticmethod
+    def domain_counts() -> tuple[int, int, int, int, int]:
+        return (
+            Project.objects.count(),
+            Group.objects.count(),
+            Group.user_set.through.objects.count(),
+            ProjectDefinitionVersion.objects.count(),
+            AuditEvent.objects.count(),
+        )
+
+    def test_http_bootstrap_requires_exact_project_primary_language_envelope(self):
+        client = APIClient()
+        client.force_authenticate(self.editor)
+        baseline = self.domain_counts()
+        for value, code in (
+            (None, "PROJECT_PRIMARY_LANGUAGE_REQUIRED"),
+            ("", "PROJECT_PRIMARY_LANGUAGE_REQUIRED"),
+            ("ru_RU", "PROJECT_PRIMARY_LANGUAGE_INVALID"),
+            ("und", "PROJECT_PRIMARY_LANGUAGE_UND_FORBIDDEN"),
+        ):
+            with self.subTest(value=value):
+                payload, project_id, _ = self.payload(value)
+                if value is None:
+                    payload.pop("project_primary_language")
+                response = client.generic(
+                    "POST",
+                    self.url,
+                    self.raw(payload),
+                    content_type="application/json",
+                    HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+                )
+                self.assertEqual((response.status_code, response.data["code"]), (400, code))
+                self.assertEqual(self.domain_counts(), baseline)
+                self.assertFalse(Project.objects.filter(pk=project_id).exists())
+
+        spoofed, _, _ = self.payload("ru")
+        spoofed["project_primary_language_assignment"] = "LEGACY_UNKNOWN"
+        spoofed_response = client.generic(
+            "POST",
+            self.url,
+            self.raw(spoofed),
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+        )
+        self.assertEqual(
+            (spoofed_response.status_code, spoofed_response.data["code"]),
+            (400, "AUTHORING_ENVELOPE_INVALID"),
+        )
+        self.assertEqual(self.domain_counts(), baseline)
+
+        payload, project_id, definition_id = self.payload("UZ-cyrl")
+        raw = self.raw(payload)
+        operation_id = uuid4()
+        created = client.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(operation_id),
+        )
+        self.assertEqual(created.status_code, 201, created.data)
+        self.assertEqual(
+            created.data["project"],
+            {
+                **payload["project"],
+                "primary_language_tag": "uz-Cyrl",
+                "primary_language_assignment": "EXPLICIT",
+            },
+        )
+        self.assertEqual(created.data["definition"]["id"], str(definition_id))
+        receipt = created.data["write_receipt"]
+        self.assertEqual(
+            receipt["request"]["contract"],
+            "FOUNDATION_HUMAN_WRITE_REQUEST_IDENTITY_V2",
+        )
+        self.assertEqual(receipt["request"]["project_primary_language"], "uz-Cyrl")
+        self.assertEqual(
+            receipt["request"]["raw_input_sha256"],
+            hashlib.sha256(raw).hexdigest(),
+        )
+        self.assertEqual(receipt["request"]["raw_input_byte_length"], len(raw))
+        self.assertEqual(
+            receipt["bootstrap_result"]["project"]["primary_language_assignment"],
+            "EXPLICIT",
+        )
+        self.assertEqual(Project.objects.get(pk=project_id).primary_language_tag, "uz-Cyrl")
+
+    def test_http_language_admission_preserves_auth_csrf_scope_and_zero_write_order(self):
+        payload, project_id, _ = self.payload("ru_RU")
+        raw = self.raw(payload)
+        operation_id = uuid4()
+        baseline = self.domain_counts()
+
+        anonymous = APIClient(enforce_csrf_checks=True)
+        anonymous_response = anonymous.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(operation_id),
+        )
+        self.assertEqual(anonymous_response.status_code, 401)
+        self.assertEqual(self.domain_counts(), baseline)
+
+        missing_csrf = APIClient(enforce_csrf_checks=True)
+        missing_csrf.force_login(self.editor)
+        missing_csrf_response = missing_csrf.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(operation_id),
+        )
+        self.assertEqual(missing_csrf_response.status_code, 403)
+        self.assertEqual(self.domain_counts(), baseline)
+
+        viewer = APIClient(enforce_csrf_checks=True)
+        viewer.force_login(self.viewer)
+        opened = viewer.get(
+            "/api/foundation/help/studio.welcome/"
+            "?application=STUDIO&locale=en&version=1.0.0"
+        )
+        self.assertEqual(opened.status_code, 200, opened.data)
+        viewer_response = viewer.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(operation_id),
+            HTTP_X_CSRFTOKEN=viewer.cookies[settings.CSRF_COOKIE_NAME].value,
+        )
+        self.assertEqual(viewer_response.status_code, 403)
+        self.assertEqual(viewer_response.data["code"], "STUDIO_CAPABILITY_DENIED")
+        self.assertEqual(self.domain_counts(), baseline)
+
+        editor = APIClient(enforce_csrf_checks=True)
+        editor.force_login(self.editor)
+        opened = editor.get(
+            "/api/foundation/help/studio.welcome/"
+            "?application=STUDIO&locale=en&version=1.0.0"
+        )
+        self.assertEqual(opened.status_code, 200, opened.data)
+        invalid = editor.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(operation_id),
+            HTTP_X_CSRFTOKEN=editor.cookies[settings.CSRF_COOKIE_NAME].value,
+        )
+        self.assertEqual(
+            (invalid.status_code, invalid.data["code"]),
+            (400, "PROJECT_PRIMARY_LANGUAGE_INVALID"),
+        )
+        self.assertEqual(self.domain_counts(), baseline)
+        self.assertFalse(Project.objects.filter(pk=project_id).exists())
+
+        valid_payload, project_id, _ = self.payload("ru")
+        valid_raw = self.raw(valid_payload)
+        valid_key = uuid4()
+        created = editor.generic(
+            "POST",
+            self.url,
+            valid_raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(valid_key),
+            HTTP_X_CSRFTOKEN=editor.cookies[settings.CSRF_COOKIE_NAME].value,
+        )
+        self.assertEqual(created.status_code, 201, created.data)
+        scope = Group.objects.get(name=project_access_group_name(project_id))
+        scope.user_set.remove(self.editor)
+        replay = editor.generic(
+            "POST",
+            self.url,
+            valid_raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(valid_key),
+            HTTP_X_CSRFTOKEN=editor.cookies[settings.CSRF_COOKIE_NAME].value,
+        )
+        self.assertEqual(replay.status_code, 403, replay.data)
+        self.assertEqual(replay.data["code"], "STUDIO_CAPABILITY_DENIED")
+        self.assertEqual(Project.objects.filter(pk=project_id).count(), 1)
+        self.assertEqual(AuditEvent.objects.filter(pk=valid_key).count(), 1)
 
 
 class FoundationStudioApplicationGatewayHttpTests(
@@ -1422,6 +1688,7 @@ class FoundationStudioApplicationGatewayHttpTests(
             }
         )
         base = {
+            "project_primary_language": "ru",
             "project": {
                 "id": str(project_id),
                 "code": "HTTP-EXACT-ENVELOPE",
@@ -2844,6 +3111,8 @@ class FoundationStudioLifecycleReadResultHttpTests(
             code="FD03-OTHER-PROJECT",
             version="1.0.0",
             name="FD03 inaccessible project",
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
         )
         other_manifest = copy.deepcopy(self.manifest)
         other_manifest["project"].update(

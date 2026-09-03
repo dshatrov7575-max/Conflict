@@ -33,6 +33,7 @@ from domain.models import (
     ParticipantGroup,
     Project,
     ProjectDefinitionVersion,
+    ProjectPrimaryLanguageAssignment,
     ProjectLock,
     ProjectPublication,
     ProjectSchemaVersion,
@@ -155,6 +156,16 @@ def seed_zhanaozen_demo() -> Project:
 
     project_id = stable_demo_uuid("project", PROJECT_CODE)
     _assert_stable_identity(Project, object_id=project_id, code=PROJECT_CODE)
+    existing_project = Project.objects.filter(pk=project_id).first()
+    if existing_project is not None and (
+        existing_project.primary_language_tag != "ru"
+        or existing_project.primary_language_assignment
+        != ProjectPrimaryLanguageAssignment.EXPLICIT
+    ):
+        raise SeedConflictError(
+            "The stable Zhanaozen Project identity has a different immutable "
+            "primary language."
+        )
     project = _upsert(
         Project,
         object_id=project_id,
@@ -163,6 +174,10 @@ def seed_zhanaozen_demo() -> Project:
             "version": SCHEMA_VERSION,
             "name": PROJECT_NAME,
             "description": "",
+            "primary_language_tag": "ru",
+            "primary_language_assignment": (
+                ProjectPrimaryLanguageAssignment.EXPLICIT
+            ),
             "metadata": {
                 "seed_version": SEED_VERSION,
                 "compatibility_profile": "V1_LEGACY_REGRESSION_ONLY",

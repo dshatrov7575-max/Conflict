@@ -1357,7 +1357,12 @@ class FoundationFactoryMixin:
 
     def make_foundation(self, *, suffix: str = "A") -> ProjectWorkspace:
         self.project = clean_save(
-            Project(code=f"PROJECT-{suffix}", version="1.0.0", name=f"Project {suffix}")
+            Project(
+                code=f"PROJECT-{suffix}",
+                version="1.0.0",
+                name=f"Project {suffix}",
+                primary_language_tag="ru",
+            )
         )
         manifest = {"ontology_version": "4.0.0", "project": self.project.code}
         digest = manifest_hash(manifest)

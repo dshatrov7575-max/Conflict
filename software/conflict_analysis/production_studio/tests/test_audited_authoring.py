@@ -167,6 +167,8 @@ class _AuditedAuthoringFixture:
             name=identity["name"],
             description=identity["description"],
             metadata=identity["metadata"],
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
         )
         fixture_principal = StudioPrincipal.for_role(
             actor_identifier=f"c1-fixture:{uuid4()}",
@@ -254,6 +256,7 @@ class _AuditedAuthoringFixture:
         ):
             manifest[collection] = []
         payload: dict[str, object] = {
+            "project_primary_language": "ru",
             "project": project,
             "definition": {
                 "id": str(definition_id),
@@ -388,6 +391,8 @@ class ProductionStudioAuditedAuthoringContractTests(
             "bootstrap-project-version",
             "bootstrap-project-name",
             "bootstrap-project-description",
+            "bootstrap-project-primary-language",
+            "bootstrap-project-primary-language-help",
             "bootstrap-definition-id",
             "bootstrap-definition-code",
             "bootstrap-definition-version",
@@ -402,6 +407,15 @@ class ProductionStudioAuditedAuthoringContractTests(
             "entry-state-message",
         ):
             self.assertIn(f'id="{selector}"', entry_html)
+        language_input = re.search(
+            r'<input\s+[^>]*id="bootstrap-project-primary-language"[^>]*>',
+            entry_html,
+            flags=re.DOTALL,
+        )
+        self.assertIsNotNone(language_input)
+        self.assertRegex(language_input.group(0), r"\brequired\b")
+        self.assertNotRegex(language_input.group(0), r'\bvalue\s*=')
+        self.assertIn("Например: ru, kk, uz-Cyrl", entry_html)
 
         definition_id = str(self.definition.pk)
         self.assertIn(
@@ -419,6 +433,8 @@ class ProductionStudioAuditedAuthoringContractTests(
         self.assertNotIn("/api/studio", entry_html + shell_html)
         script = AUTHORING_SCRIPT.read_text(encoding="utf-8")
         self.assertIn("studio_contract", script)
+        self.assertIn("canonicalizeProjectPrimaryLanguage", script)
+        self.assertIn("project_primary_language", script)
         self.assertIn(AUTHORING_CLAIM_BOUNDARY_CONTRACT_ID, script)
         self.assertNotIn("/api/studio", script)
 
@@ -440,6 +456,32 @@ class ProductionStudioAuditedAuthoringContractTests(
         self.assertFalse(ProjectDefinitionVersion.objects.filter(pk=definition_id).exists())
 
         api, csrf = self.session_api()
+        for language, code in (
+            (None, "PROJECT_PRIMARY_LANGUAGE_REQUIRED"),
+            ("ru_RU", "PROJECT_PRIMARY_LANGUAGE_INVALID"),
+            ("und", "PROJECT_PRIMARY_LANGUAGE_UND_FORBIDDEN"),
+        ):
+            with self.subTest(language=language):
+                candidate = copy.deepcopy(payload)
+                if language is None:
+                    candidate.pop("project_primary_language")
+                else:
+                    candidate["project_primary_language"] = language
+                rejected_language = api.post(
+                    url,
+                    data=_raw_json(candidate),
+                    content_type="application/json",
+                    HTTP_X_CSRFTOKEN=csrf,
+                    HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+                )
+                self.assertEqual(
+                    (rejected_language.status_code, rejected_language.data["code"]),
+                    (400, code),
+                )
+                self.assertFalse(Project.objects.filter(pk=project_id).exists())
+                self.assertFalse(
+                    ProjectDefinitionVersion.objects.filter(pk=definition_id).exists()
+                )
         malformed = api.post(
             url,
             data=raw + b"{}",
@@ -461,9 +503,27 @@ class ProductionStudioAuditedAuthoringContractTests(
         )
         self.assertEqual(created.status_code, 201, created.data)
         self.assertEqual(created.data["project"]["id"], str(project_id))
+        self.assertEqual(created.data["project"]["primary_language_tag"], "ru")
+        self.assertEqual(
+            created.data["project"]["primary_language_assignment"],
+            "EXPLICIT",
+        )
         self.assertEqual(created.data["definition"]["id"], str(definition_id))
         self.assertEqual(
             created.data["write_receipt"]["operation_id"], str(operation_id)
+        )
+        self.assertEqual(
+            created.data["write_receipt"]["request"]["contract"],
+            "FOUNDATION_HUMAN_WRITE_REQUEST_IDENTITY_V2",
+        )
+        self.assertEqual(
+            created.data["write_receipt"]["request"]["project_primary_language"],
+            "ru",
+        )
+        self.assertEqual(
+            created.data["write_receipt"]["bootstrap_result"]["project"]
+            ["primary_language_assignment"],
+            "EXPLICIT",
         )
         self.assertEqual(created["X-Foundation-Operation-Replayed"], "false")
         self.assertTrue(
@@ -771,12 +831,37 @@ class ProductionStudioAuditedAuthoringBrowserTests(
         self.assertLessEqual(result["max_active_rows"], 100)
         self.assertEqual(result["typed_conflict"], "DRAFT_STALE")
         self.assertRegex(result["receipt_sha256"], r"^[0-9a-f]{64}$")
-        self.assertEqual(AuditEvent.objects.count(), audit_before + 2)
+        self.assertEqual(result["bootstrap_primary_language"], "ru")
+        self.assertEqual(
+            result["bootstrap_primary_language_assignment"],
+            "EXPLICIT",
+        )
+        self.assertRegex(result["bootstrap_receipt_sha256"], r"^[0-9a-f]{64}$")
+        bootstrapped_project = Project.objects.get(
+            pk=result["bootstrap_project_id"]
+        )
+        self.assertEqual(
+            (
+                bootstrapped_project.primary_language_tag,
+                bootstrapped_project.primary_language_assignment,
+            ),
+            ("ru", "EXPLICIT"),
+        )
+        self.assertTrue(
+            ProjectDefinitionVersion.objects.filter(
+                pk=result["bootstrap_definition_id"],
+                project=bootstrapped_project,
+            ).exists()
+        )
+        self.assertEqual(AuditEvent.objects.count(), audit_before + 3)
 
         after = database_fingerprint()
         allowed_changes = {
             "domain_auditevent",
+            "domain_project",
             "domain_projectdefinitionversion",
+            "auth_group",
+            "auth_user_groups",
         }
         for table, digest in before.items():
             if table not in allowed_changes:

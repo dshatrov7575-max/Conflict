@@ -51,6 +51,19 @@
             <input id="bootstrap-project-name" name="project-name" type="text" value="Новый проект анализа конфликта" maxlength="255" required>
             <label for="bootstrap-project-description">Описание</label>
             <textarea id="bootstrap-project-description" name="project-description" rows="3"></textarea>
+            <label for="bootstrap-project-primary-language">Основной язык проекта</label>
+            <input
+              id="bootstrap-project-primary-language"
+              name="project-primary-language"
+              type="text"
+              maxlength="255"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Например: ru, kk, uz-Cyrl"
+              aria-describedby="bootstrap-project-primary-language-help"
+              required
+            >
+            <small id="bootstrap-project-primary-language-help">Укажите язык явно: например, ru, kk или uz-Cyrl. Значение заранее не выбрано.</small>
           </fieldset>
           <fieldset>
             <legend>Первый DRAFT</legend>

@@ -50,6 +50,7 @@ from domain.policies import (
     validate_project_definition_manifest_policy,
 )
 from domain.services.help_topics import HelpTopicResolutionError, resolve_help_topic
+from domain.services.language_tags import LanguageTagValidationError
 from domain.services.foundation_packages import (
     Foundation21CommitResult,
     Foundation21Preview,
@@ -72,6 +73,7 @@ from domain.services.project_definitions import (
     FoundationStudioApplicationConflict,
     ProjectDefinitionDraftConflict,
     bootstrap_project_definition_draft_human_write,
+    canonical_bootstrap_envelope_identity,
     clone_project_definition_draft_human_write,
     create_project_definition_draft_human_write,
     find_publication_operation,
@@ -225,6 +227,15 @@ _HUMAN_WRITE_ERROR_MESSAGES = {
     ),
     "DEFINITION_VALIDATION_FAILED": (
         "The DRAFT failed canonical Foundation definition validation."
+    ),
+    "PROJECT_PRIMARY_LANGUAGE_REQUIRED": (
+        "project_primary_language is required for Project bootstrap."
+    ),
+    "PROJECT_PRIMARY_LANGUAGE_INVALID": (
+        "project_primary_language must be one well-formed RFC 5646 language tag."
+    ),
+    "PROJECT_PRIMARY_LANGUAGE_UND_FORBIDDEN": (
+        "The runtime Project primary language must not be und."
     ),
 }
 _PUBLICATION_ERROR_MESSAGES = {
@@ -727,6 +738,8 @@ def _human_write_request_identity(
     source_definition_id: UUID | None,
     target_definition_id: UUID | None,
     if_match: str | None,
+    canonical_envelope_sha256: str | None = None,
+    project_primary_language: str | None = None,
 ) -> FoundationHumanWriteRequestIdentity:
     return FoundationHumanWriteRequestIdentity.build(
         operation=operation,
@@ -741,6 +754,8 @@ def _human_write_request_identity(
         raw_input_sha256=captured.identity.sha256,
         raw_input_byte_length=captured.identity.byte_length,
         if_match=if_match,
+        canonical_envelope_sha256=canonical_envelope_sha256,
+        project_primary_language=project_primary_language,
     )
 
 
@@ -1883,7 +1898,15 @@ def bootstrap_first_definition_draft(request: Request) -> Response:
             operation=operation_name,
             allow_if_match=False,
         )
-        if set(payload) != {"project", "definition"}:
+        if "project_primary_language" not in payload:
+            raise FoundationHumanWriteAdmissionError(
+                "PROJECT_PRIMARY_LANGUAGE_REQUIRED"
+            )
+        if set(payload) != {
+            "project_primary_language",
+            "project",
+            "definition",
+        }:
             raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
         project = payload["project"]
         definition = payload["definition"]
@@ -1932,6 +1955,25 @@ def bootstrap_first_definition_draft(request: Request) -> Response:
             raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
         if not isinstance(definition["manifest"], Mapping):
             raise FoundationHumanWriteAdmissionError("AUTHORING_ENVELOPE_INVALID")
+        try:
+            (
+                project_primary_language,
+                canonical_envelope_sha256,
+            ) = canonical_bootstrap_envelope_identity(payload)
+        except (LanguageTagValidationError, ValidationError, TypeError) as exc:
+            language_error_codes = {
+                "required": "PROJECT_PRIMARY_LANGUAGE_REQUIRED",
+                "und_forbidden": "PROJECT_PRIMARY_LANGUAGE_UND_FORBIDDEN",
+            }
+            error_code = (
+                language_error_codes.get(
+                    exc.code,
+                    "PROJECT_PRIMARY_LANGUAGE_INVALID",
+                )
+                if isinstance(exc, LanguageTagValidationError)
+                else "PROJECT_PRIMARY_LANGUAGE_INVALID"
+            )
+            raise FoundationHumanWriteAdmissionError(error_code) from exc
         project_id = _canonical_entity_uuid(project["id"])
         definition_id = _canonical_entity_uuid(definition["id"])
         request_identity = _human_write_request_identity(
@@ -1944,6 +1986,8 @@ def bootstrap_first_definition_draft(request: Request) -> Response:
             source_definition_id=None,
             target_definition_id=definition_id,
             if_match=if_match,
+            canonical_envelope_sha256=canonical_envelope_sha256,
+            project_primary_language=project_primary_language,
         )
         result = bootstrap_project_definition_draft_human_write(
             request_identity=request_identity,
@@ -1953,6 +1997,7 @@ def bootstrap_first_definition_draft(request: Request) -> Response:
             project_name=project["name"],
             project_description=project["description"],
             project_metadata=project["metadata"],
+            project_primary_language=project_primary_language,
             definition_id=definition_id,
             definition_code=definition["code"],
             definition_version=definition["version"],
@@ -1976,6 +2021,10 @@ def bootstrap_first_definition_draft(request: Request) -> Response:
                     "name": result.project.name,
                     "description": result.project.description,
                     "metadata": result.project.metadata,
+                    "primary_language_tag": result.project.primary_language_tag,
+                    "primary_language_assignment": (
+                        result.project.primary_language_assignment
+                    ),
                 },
                 "definition": _definition_payload(result.definition),
                 "object_scope_group": result.scope_group.name,

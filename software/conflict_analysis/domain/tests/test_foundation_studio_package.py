@@ -293,6 +293,7 @@ class TypedManifestDraftServiceTests(TestCase):
             name="Persisted project name",
             description="Persisted description",
             metadata={"persisted": True},
+            primary_language_tag="ru",
         )
         self.principal = object()
         self.authorization = mock.patch(
@@ -448,6 +449,10 @@ from domain.services.project_definitions import (
     create_project_definition_draft,
     save_project_definition_draft,
 )
+from domain.services.project_packages import (
+    PACKAGE_JSON_SCHEMA as PROJECT_PACKAGE_JSON_SCHEMA,
+    PACKAGE_VERSION as PROJECT_PACKAGE_VERSION,
+)
 
 
 FIXTURE_PATH = (
@@ -514,6 +519,7 @@ class FoundationStudioPackage21Tests(TestCase):
             code=identity["code"],
             version=identity["version"],
             name="Persisted Project",
+            primary_language_tag="ru",
         )
         html = "<p>Package help.</p>"
         help_sha = hashlib.sha256(html.encode()).hexdigest()
@@ -1317,6 +1323,24 @@ class FoundationStudioPackage21Tests(TestCase):
 
     def test_legacy_constants_and_typed_dispatch_are_not_reinterpreted(self):
         self.assertEqual(FOUNDATION_PACKAGE_VERSION, "2.0.0")
+        self.assertEqual(PROJECT_PACKAGE_VERSION, "1.1.0")
+        project_schema = PROJECT_PACKAGE_JSON_SCHEMA["$defs"]["project"]
+        project_required = set(project_schema["allOf"][1]["required"])
+        self.assertTrue(
+            {"primary_language_tag", "primary_language_assignment"}.issubset(
+                project_required
+            )
+        )
+        frozen_schema_path = (
+            Path(__file__).resolve().parents[1]
+            / "services"
+            / "schemas"
+            / "project-package-1.0.0.schema.json"
+        )
+        self.assertEqual(
+            hashlib.sha256(frozen_schema_path.read_bytes()).hexdigest(),
+            "6956ef96da4ec58b4b7b35257190917c628d46e4b983c33641abfac6ef9915c3",
+        )
         with self.assertRaises(FoundationPackageValidationError):
             validate_foundation_package_2_1(
                 {
@@ -1340,6 +1364,7 @@ class FoundationStudioCrossPathLockOrderTests(TransactionTestCase):
             code=identity["code"],
             version=identity["version"],
             name="Lock-order Project",
+            primary_language_tag="ru",
         )
         html = "<p>Lock-order help.</p>"
         checksum = hashlib.sha256(html.encode("utf-8")).hexdigest()

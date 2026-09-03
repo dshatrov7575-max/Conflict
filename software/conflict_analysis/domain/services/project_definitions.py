@@ -46,6 +46,7 @@ from domain.models import (
     _canonical_studio_write,
 )
 from domain.services.foundation_packages import RawJSONError, parse_json_source
+from domain.services.language_tags import canonicalize_language_tag
 
 
 PROJECT_DEFINITION_MANIFEST_FORMAT: Final = "conflict-analysis-project-definition"
@@ -60,6 +61,9 @@ PROJECT_DEFINITION_VALIDATION_CONTRACT: Final = (
 PROJECT_ACCESS_GROUP_PREFIX: Final = "studio-project:"
 FOUNDATION_HUMAN_WRITE_REQUEST_CONTRACT: Final = (
     "FOUNDATION_HUMAN_WRITE_REQUEST_IDENTITY_V1"
+)
+FOUNDATION_BOOTSTRAP_HUMAN_WRITE_REQUEST_CONTRACT: Final = (
+    "FOUNDATION_HUMAN_WRITE_REQUEST_IDENTITY_V2"
 )
 FOUNDATION_HUMAN_WRITE_RECEIPT_CONTRACT: Final = (
     "FOUNDATION_AUDITED_DEFINITION_WRITE_V1"
@@ -971,13 +975,32 @@ _HUMAN_WRITE_RECEIPT_KEYS: Final = frozenset(
         "original_http_status",
     }
 )
-_HUMAN_WRITE_REQUEST_KEYS: Final = frozenset(
+_HUMAN_WRITE_REQUEST_V1_KEYS: Final = frozenset(
     {
         "contract",
         "sha256",
         "raw_input_sha256",
         "raw_input_byte_length",
         "if_match",
+    }
+)
+_HUMAN_WRITE_REQUEST_V2_KEYS: Final = frozenset(
+    {
+        *_HUMAN_WRITE_REQUEST_V1_KEYS,
+        "canonical_envelope_sha256",
+        "project_primary_language",
+    }
+)
+_BOOTSTRAP_RECEIPT_PROJECT_KEYS: Final = frozenset(
+    {
+        "id",
+        "code",
+        "version",
+        "name",
+        "description",
+        "metadata",
+        "primary_language_tag",
+        "primary_language_assignment",
     }
 )
 _DEFINITION_RECEIPT_IDENTITY_KEYS: Final = frozenset(
@@ -1033,6 +1056,68 @@ def _canonical_identity_sha256(value: Mapping[str, Any]) -> str:
     ).hexdigest()
 
 
+def canonical_bootstrap_envelope_identity(
+    envelope: Mapping[str, Any],
+) -> tuple[str, str]:
+    """Return the canonical language and semantic hash for one bootstrap DTO.
+
+    Raw request bytes remain immutable first-attempt provenance.  The separate
+    semantic identity deliberately normalizes only the required Project
+    language, so RFC 5646 case equivalents reconcile to the first receipt.
+    """
+
+    if not isinstance(envelope, Mapping):
+        raise ValidationError(
+            {"bootstrap_envelope": "A bootstrap JSON object is required."}
+        )
+    canonical_language = canonicalize_language_tag(
+        envelope.get("project_primary_language"),
+        allow_und=False,
+    )
+    canonical_envelope = copy.deepcopy(dict(envelope))
+    canonical_envelope["project_primary_language"] = canonical_language
+    return canonical_language, _canonical_identity_sha256(canonical_envelope)
+
+
+def _canonical_bootstrap_call_identity(
+    *,
+    project_id: UUID,
+    project_code: str,
+    project_version: str,
+    project_name: str,
+    project_description: str,
+    project_metadata: Mapping[str, Any],
+    project_primary_language: str,
+    definition_id: UUID,
+    definition_code: str,
+    definition_version: str,
+    manifest: Mapping[str, Any] | str | bytes,
+    semantic_version: str,
+    construct_version: str,
+) -> tuple[str, str]:
+    return canonical_bootstrap_envelope_identity(
+        {
+            "project_primary_language": project_primary_language,
+            "project": {
+                "id": str(project_id),
+                "code": project_code,
+                "version": project_version,
+                "name": project_name,
+                "description": project_description,
+                "metadata": project_metadata,
+            },
+            "definition": {
+                "id": str(definition_id),
+                "code": definition_code,
+                "version": definition_version,
+                "manifest": manifest,
+                "semantic_version": semantic_version,
+                "construct_version": construct_version,
+            },
+        }
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class FoundationHumanWriteRequestIdentity:
     """Server-built immutable correlation identity for one exact HTTP intent."""
@@ -1049,6 +1134,8 @@ class FoundationHumanWriteRequestIdentity:
     raw_input_sha256: str
     raw_input_byte_length: int
     if_match: str | None
+    canonical_envelope_sha256: str | None
+    project_primary_language: str | None
     sha256: str
 
     @classmethod
@@ -1067,6 +1154,8 @@ class FoundationHumanWriteRequestIdentity:
         raw_input_sha256: str,
         raw_input_byte_length: int,
         if_match: str | None,
+        canonical_envelope_sha256: str | None = None,
+        project_primary_language: str | None = None,
     ) -> "FoundationHumanWriteRequestIdentity":
         resolved_operation = FoundationHumanWriteOperation(operation)
         resolved_operation_id = _exact_uuid(
@@ -1144,8 +1233,33 @@ class FoundationHumanWriteRequestIdentity:
             raise ValidationError(
                 {"request_identity": "Target mutation requires target and If-Match."}
             )
+        if resolved_operation is FoundationHumanWriteOperation.BOOTSTRAP_DRAFT:
+            semantic_sha256 = _exact_sha256(
+                canonical_envelope_sha256,
+                label="canonical_envelope_sha256",
+            )
+            canonical_language = canonicalize_language_tag(
+                project_primary_language,
+                allow_und=False,
+            )
+            request_contract = FOUNDATION_BOOTSTRAP_HUMAN_WRITE_REQUEST_CONTRACT
+        else:
+            if (
+                canonical_envelope_sha256 is not None
+                or project_primary_language is not None
+            ):
+                raise ValidationError(
+                    {
+                        "request_identity": (
+                            "Canonical bootstrap identity is forbidden for V1 HUMAN writes."
+                        )
+                    }
+                )
+            semantic_sha256 = None
+            canonical_language = None
+            request_contract = FOUNDATION_HUMAN_WRITE_REQUEST_CONTRACT
         intent = {
-            "contract": FOUNDATION_HUMAN_WRITE_REQUEST_CONTRACT,
+            "contract": request_contract,
             "operation_id": str(resolved_operation_id),
             "operation": resolved_operation.value,
             "method": resolved_method,
@@ -1155,10 +1269,18 @@ class FoundationHumanWriteRequestIdentity:
             "source_definition_id": str(source_id) if source_id is not None else None,
             "target_definition_id": str(target_id) if target_id is not None else None,
             "normalized_content_type": content_type,
-            "raw_input_sha256": raw_sha256,
-            "raw_input_byte_length": raw_input_byte_length,
             "if_match": if_match,
         }
+        if resolved_operation is FoundationHumanWriteOperation.BOOTSTRAP_DRAFT:
+            intent.update(
+                canonical_envelope_sha256=semantic_sha256,
+                project_primary_language=canonical_language,
+            )
+        else:
+            intent.update(
+                raw_input_sha256=raw_sha256,
+                raw_input_byte_length=raw_input_byte_length,
+            )
         return cls(
             operation_id=resolved_operation_id,
             operation=resolved_operation,
@@ -1172,17 +1294,29 @@ class FoundationHumanWriteRequestIdentity:
             raw_input_sha256=raw_sha256,
             raw_input_byte_length=raw_input_byte_length,
             if_match=if_match,
+            canonical_envelope_sha256=semantic_sha256,
+            project_primary_language=canonical_language,
             sha256=_canonical_identity_sha256(intent),
         )
 
     def as_dict(self) -> dict[str, Any]:
-        return {
-            "contract": FOUNDATION_HUMAN_WRITE_REQUEST_CONTRACT,
+        payload = {
+            "contract": (
+                FOUNDATION_BOOTSTRAP_HUMAN_WRITE_REQUEST_CONTRACT
+                if self.operation is FoundationHumanWriteOperation.BOOTSTRAP_DRAFT
+                else FOUNDATION_HUMAN_WRITE_REQUEST_CONTRACT
+            ),
             "sha256": self.sha256,
             "raw_input_sha256": self.raw_input_sha256,
             "raw_input_byte_length": self.raw_input_byte_length,
             "if_match": self.if_match,
         }
+        if self.operation is FoundationHumanWriteOperation.BOOTSTRAP_DRAFT:
+            payload.update(
+                canonical_envelope_sha256=self.canonical_envelope_sha256,
+                project_primary_language=self.project_primary_language,
+            )
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -2219,6 +2353,7 @@ def bootstrap_project_definition_draft(
     project_name: str,
     project_description: str = "",
     project_metadata: Mapping[str, Any],
+    project_primary_language: str,
     definition_id: UUID | str,
     definition_code: str,
     definition_version: str,
@@ -2234,10 +2369,29 @@ def bootstrap_project_definition_draft(
 
     resolved_project_id = UUID(str(project_id))
     resolved_definition_id = _exact_first_definition_id(definition_id)
+    resolved_primary_language = canonicalize_language_tag(
+        project_primary_language,
+        allow_und=False,
+    )
     resolved_project_metadata = _copy_project_metadata(project_metadata)
     persisted_user = _trusted_human_bootstrap_user(principal=principal, user=user)
     scope_group_name = project_access_group_name(resolved_project_id)
     if request_identity is not None:
+        _, canonical_envelope_sha256 = _canonical_bootstrap_call_identity(
+            project_id=resolved_project_id,
+            project_code=project_code,
+            project_version=project_version,
+            project_name=project_name,
+            project_description=project_description,
+            project_metadata=resolved_project_metadata,
+            project_primary_language=resolved_primary_language,
+            definition_id=resolved_definition_id,
+            definition_code=definition_code,
+            definition_version=definition_version,
+            manifest=manifest,
+            semantic_version=semantic_version,
+            construct_version=construct_version,
+        )
         _require_human_write_request(
             request_identity,
             operation=FoundationHumanWriteOperation.BOOTSTRAP_DRAFT,
@@ -2245,6 +2399,18 @@ def bootstrap_project_definition_draft(
             project_id=resolved_project_id,
             target_definition_id=resolved_definition_id,
         )
+        if (
+            request_identity.project_primary_language != resolved_primary_language
+            or request_identity.canonical_envelope_sha256
+            != canonical_envelope_sha256
+        ):
+            raise ValidationError(
+                {
+                    "request_identity": (
+                        "Bootstrap request identity does not match the canonical envelope."
+                    )
+                }
+            )
 
     try:
         with transaction.atomic():
@@ -2268,6 +2434,8 @@ def bootstrap_project_definition_draft(
                 name=project_name,
                 description=project_description,
                 metadata=resolved_project_metadata,
+                primary_language_tag=resolved_primary_language,
+                primary_language_assignment="EXPLICIT",
             )
             project.full_clean()
             project.save(force_insert=True)
@@ -2313,6 +2481,10 @@ def bootstrap_project_definition_draft(
                             "id": str(project.pk),
                             "code": project.code,
                             "version": project.version,
+                            "primary_language_tag": project.primary_language_tag,
+                            "primary_language_assignment": (
+                                project.primary_language_assignment
+                            ),
                         },
                         "object_scope_group": {
                             "name": scope_group.name,
@@ -2333,15 +2505,10 @@ def bootstrap_project_definition_draft(
                     original_http_status=201,
                 )
                 _inject_human_write_failure(inject_failure_at, "before_audit_insert")
-                audit_event = record_definition_audit(
+                audit_event = _record_bootstrap_human_write_audit(
                     context=context,
-                    action=AuditAction.CREATE,
-                    entity_type="PROJECT_DEFINITION_VERSION",
-                    entity_id=definition.pk,
-                    before=None,
-                    event_id=request_identity.operation_id,
+                    receipt=receipt,
                     occurred_at=occurred_at,
-                    foundation_human_operation=receipt.as_dict(),
                 )
                 _inject_human_write_failure(inject_failure_at, "after_audit_insert")
             _inject_first_project_failure(inject_failure_at, "after_create_audit")
@@ -2631,6 +2798,8 @@ def _bootstrap_receipt_identity(
             "name": project.name,
             "description": project.description,
             "metadata": copy.deepcopy(project.metadata),
+            "primary_language_tag": project.primary_language_tag,
+            "primary_language_assignment": project.primary_language_assignment,
         },
         "object_scope_group": {"name": scope_group.name},
         "membership": {
@@ -2767,11 +2936,32 @@ def _receipt_from_audit(audit_event: AuditEvent) -> FoundationHumanWriteReceipt:
         if isinstance(request_payload, Mapping)
         else None
     )
+    expected_request_keys = (
+        _HUMAN_WRITE_REQUEST_V2_KEYS
+        if operation is FoundationHumanWriteOperation.BOOTSTRAP_DRAFT
+        else _HUMAN_WRITE_REQUEST_V1_KEYS
+    )
+    expected_request_contract = (
+        FOUNDATION_BOOTSTRAP_HUMAN_WRITE_REQUEST_CONTRACT
+        if operation is FoundationHumanWriteOperation.BOOTSTRAP_DRAFT
+        else FOUNDATION_HUMAN_WRITE_REQUEST_CONTRACT
+    )
+    bootstrap_project = (
+        bootstrap_result.get("project")
+        if isinstance(bootstrap_result, Mapping)
+        else None
+    )
     operation_shape_is_exact = {
         FoundationHumanWriteOperation.BOOTSTRAP_DRAFT: (
             source_definition is None
             and before_definition is None
             and isinstance(bootstrap_result, Mapping)
+            and set(bootstrap_result)
+            == {"project", "object_scope_group", "membership"}
+            and isinstance(bootstrap_project, Mapping)
+            and set(bootstrap_project) == _BOOTSTRAP_RECEIPT_PROJECT_KEYS
+            and bootstrap_project.get("id") == str(project_id)
+            and bootstrap_project.get("primary_language_assignment") == "EXPLICIT"
             and validation is None
         ),
         FoundationHumanWriteOperation.CREATE_DRAFT: (
@@ -2878,8 +3068,13 @@ def _receipt_from_audit(audit_event: AuditEvent) -> FoundationHumanWriteReceipt:
             != _canonical_identity_sha256(validation)
         )
         or not isinstance(request_payload, Mapping)
-        or set(request_payload) != _HUMAN_WRITE_REQUEST_KEYS
-        or request_payload.get("contract") != FOUNDATION_HUMAN_WRITE_REQUEST_CONTRACT
+        or set(request_payload) != expected_request_keys
+        or request_payload.get("contract") != expected_request_contract
+        or (
+            operation is FoundationHumanWriteOperation.BOOTSTRAP_DRAFT
+            and request_payload.get("project_primary_language")
+            != bootstrap_project.get("primary_language_tag")
+        )
         or not isinstance(request_payload.get("raw_input_byte_length"), int)
         or isinstance(request_payload.get("raw_input_byte_length"), bool)
         or request_payload.get("raw_input_byte_length") < 0
@@ -2894,6 +3089,19 @@ def _receipt_from_audit(audit_event: AuditEvent) -> FoundationHumanWriteReceipt:
             request_payload.get("raw_input_sha256"),
             label="raw_input_sha256",
         )
+        if operation is FoundationHumanWriteOperation.BOOTSTRAP_DRAFT:
+            _exact_sha256(
+                request_payload.get("canonical_envelope_sha256"),
+                label="canonical_envelope_sha256",
+            )
+            canonical_language = canonicalize_language_tag(
+                request_payload.get("project_primary_language"),
+                allow_und=False,
+            )
+            if canonical_language != request_payload.get("project_primary_language"):
+                raise ValidationError(
+                    {"project_primary_language": "Stored language tag is not canonical."}
+                )
         if request_payload.get("if_match") is not None:
             _exact_sha256(request_payload.get("if_match"), label="if_match")
         return FoundationHumanWriteReceipt(
@@ -2916,6 +3124,147 @@ def _receipt_from_audit(audit_event: AuditEvent) -> FoundationHumanWriteReceipt:
             "WRITE_OPERATION_KEY_REUSED",
             "The operation UUID has an unreadable immutable receipt.",
         ) from exc
+
+
+def _record_bootstrap_human_write_audit(
+    *,
+    context: object,
+    receipt: FoundationHumanWriteReceipt,
+    occurred_at: datetime,
+) -> AuditEvent:
+    """Append the sole V2 HUMAN receipt without widening the frozen V1 policy.
+
+    The policy gateway remains authoritative for every ordinary definition
+    audit and every V1 HUMAN write.  BOOTSTRAP_DRAFT alone has a V2 request
+    identity, so this narrow bridge reuses the policy's sealed-context check,
+    validates the complete server-built receipt against the prospective event,
+    and inserts the append-only row once.  It never rewrites a saved receipt.
+    """
+
+    from domain.policies import _require_audit_context
+
+    trusted_context = _require_audit_context(context, scope=AuditScope.DEFINITION)
+    if (
+        trusted_context.actor_type != AuditActorType.HUMAN
+        or not isinstance(receipt, FoundationHumanWriteReceipt)
+        or receipt.operation is not FoundationHumanWriteOperation.BOOTSTRAP_DRAFT
+        or receipt.audit_action != str(AuditAction.CREATE)
+        or receipt.operation_id.version != 4
+        or receipt.project_id != trusted_context.project_id
+        or receipt.actor_identifier != trusted_context.actor_identifier
+        or receipt.source_definition is not None
+        or receipt.before_definition is not None
+        or receipt.validation is not None
+        or receipt.original_http_status != 201
+        or receipt.occurred_at != _utc_z(occurred_at)
+    ):
+        raise ValidationError(
+            {
+                "foundation_human_operation": (
+                    "BOOTSTRAP_DRAFT V2 receipt must equal its trusted audit context."
+                )
+            }
+        )
+    definition = ProjectDefinitionVersion.objects.select_related("project").get(
+        pk=trusted_context.definition_version_id,
+        project_id=trusted_context.project_id,
+    )
+    payload = receipt.as_dict()
+    request_payload = payload.get("request")
+    bootstrap_result = payload.get("bootstrap_result")
+    bootstrap_project = (
+        bootstrap_result.get("project")
+        if isinstance(bootstrap_result, Mapping)
+        else None
+    )
+    after_definition = payload.get("after_definition")
+    try:
+        persisted_payload = json.loads(
+            json.dumps(
+                payload,
+                ensure_ascii=False,
+                allow_nan=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        )
+        canonical_language = canonicalize_language_tag(
+            request_payload.get("project_primary_language"),
+            allow_und=False,
+        )
+        _exact_sha256(request_payload.get("sha256"), label="request_sha256")
+        _exact_sha256(
+            request_payload.get("raw_input_sha256"),
+            label="raw_input_sha256",
+        )
+        _exact_sha256(
+            request_payload.get("canonical_envelope_sha256"),
+            label="canonical_envelope_sha256",
+        )
+    except (AttributeError, TypeError, ValueError, ValidationError) as exc:
+        raise ValidationError(
+            {
+                "foundation_human_operation": (
+                    "BOOTSTRAP_DRAFT V2 receipt must contain exact JSON identity."
+                )
+            }
+        ) from exc
+    if (
+        set(payload) != _HUMAN_WRITE_RECEIPT_KEYS
+        or not isinstance(request_payload, Mapping)
+        or set(request_payload) != _HUMAN_WRITE_REQUEST_V2_KEYS
+        or request_payload.get("contract")
+        != FOUNDATION_BOOTSTRAP_HUMAN_WRITE_REQUEST_CONTRACT
+        or canonical_language != request_payload.get("project_primary_language")
+        or request_payload.get("if_match") is not None
+        or not isinstance(request_payload.get("raw_input_byte_length"), int)
+        or isinstance(request_payload.get("raw_input_byte_length"), bool)
+        or request_payload.get("raw_input_byte_length") < 0
+        or not isinstance(bootstrap_result, Mapping)
+        or set(bootstrap_result)
+        != {"project", "object_scope_group", "membership"}
+        or not isinstance(bootstrap_project, Mapping)
+        or set(bootstrap_project) != _BOOTSTRAP_RECEIPT_PROJECT_KEYS
+        or bootstrap_project.get("id") != str(definition.project_id)
+        or bootstrap_project.get("primary_language_tag") != canonical_language
+        or bootstrap_project.get("primary_language_assignment") != "EXPLICIT"
+        or not isinstance(after_definition, Mapping)
+        or not set(after_definition) == _DEFINITION_RECEIPT_IDENTITY_KEYS
+        or after_definition.get("id") != str(definition.pk)
+        or after_definition.get("project_id") != str(definition.project_id)
+        or after_definition.get("publication_status") != PublicationStatus.DRAFT
+    ):
+        raise ValidationError(
+            {
+                "foundation_human_operation": (
+                    "BOOTSTRAP_DRAFT V2 receipt shape does not match its definition."
+                )
+            }
+        )
+    event = AuditEvent(
+        id=receipt.operation_id,
+        project=definition.project,
+        workspace=None,
+        definition_version=definition,
+        scope=AuditScope.DEFINITION,
+        assessment_set=None,
+        parameter_value=None,
+        code=f"AUD-DEF-OP-{receipt.operation_id.hex}",
+        action=AuditAction.CREATE,
+        actor_type=trusted_context.actor_type,
+        actor_identifier=trusted_context.actor_identifier,
+        entity_type="PROJECT_DEFINITION_VERSION",
+        entity_id=definition.pk,
+        before=None,
+        after={FOUNDATION_HUMAN_OPERATION_AUDIT_KEY: persisted_payload},
+        occurred_at=occurred_at,
+    )
+    event.full_clean()
+    _receipt_from_audit(event)
+    event.save(force_insert=True)
+    event.refresh_from_db()
+    _receipt_from_audit(event)
+    return event
 
 
 def _require_human_write_request(
@@ -2951,6 +3300,8 @@ def _require_human_write_request(
             raw_input_sha256=request.raw_input_sha256,
             raw_input_byte_length=request.raw_input_byte_length,
             if_match=request.if_match,
+            canonical_envelope_sha256=request.canonical_envelope_sha256,
+            project_primary_language=request.project_primary_language,
         )
     except (TypeError, ValueError, ValidationError) as exc:
         raise ValidationError(
@@ -3022,9 +3373,25 @@ def _existing_human_write_result(
         or receipt.actor_identifier != request.actor_identifier
         or receipt.project_id != request.project_id
         or request_payload.get("sha256") != request.sha256
-        or request_payload.get("raw_input_sha256") != request.raw_input_sha256
-        or request_payload.get("raw_input_byte_length") != request.raw_input_byte_length
         or request_payload.get("if_match") != request.if_match
+        or (
+            request.operation is FoundationHumanWriteOperation.BOOTSTRAP_DRAFT
+            and (
+                request_payload.get("canonical_envelope_sha256")
+                != request.canonical_envelope_sha256
+                or request_payload.get("project_primary_language")
+                != request.project_primary_language
+            )
+        )
+        or (
+            request.operation is not FoundationHumanWriteOperation.BOOTSTRAP_DRAFT
+            and (
+                request_payload.get("raw_input_sha256")
+                != request.raw_input_sha256
+                or request_payload.get("raw_input_byte_length")
+                != request.raw_input_byte_length
+            )
+        )
     ):
         raise FoundationStudioApplicationConflict(
             "WRITE_OPERATION_KEY_REUSED",
@@ -3186,6 +3553,7 @@ def bootstrap_project_definition_draft_human_write(
     project_name: str,
     project_description: str = "",
     project_metadata: Mapping[str, Any],
+    project_primary_language: str,
     definition_id: UUID | str,
     definition_code: str,
     definition_version: str,
@@ -3199,6 +3567,11 @@ def bootstrap_project_definition_draft_human_write(
     _require_capability(principal, "DRAFT_CREATE")
     resolved_project_id = _exact_uuid(project_id, label="project_id")
     resolved_definition_id = _exact_uuid(definition_id, label="definition_id")
+    resolved_primary_language = canonicalize_language_tag(
+        project_primary_language,
+        allow_und=False,
+    )
+    resolved_project_metadata = _copy_project_metadata(project_metadata)
     _require_human_write_request(
         request_identity,
         operation=FoundationHumanWriteOperation.BOOTSTRAP_DRAFT,
@@ -3206,6 +3579,33 @@ def bootstrap_project_definition_draft_human_write(
         project_id=resolved_project_id,
         target_definition_id=resolved_definition_id,
     )
+    _, canonical_envelope_sha256 = _canonical_bootstrap_call_identity(
+        project_id=resolved_project_id,
+        project_code=project_code,
+        project_version=project_version,
+        project_name=project_name,
+        project_description=project_description,
+        project_metadata=resolved_project_metadata,
+        project_primary_language=resolved_primary_language,
+        definition_id=resolved_definition_id,
+        definition_code=definition_code,
+        definition_version=definition_version,
+        manifest=manifest,
+        semantic_version=semantic_version,
+        construct_version=construct_version,
+    )
+    if (
+        request_identity.project_primary_language != resolved_primary_language
+        or request_identity.canonical_envelope_sha256
+        != canonical_envelope_sha256
+    ):
+        raise ValidationError(
+            {
+                "request_identity": (
+                    "Bootstrap request identity does not match the canonical envelope."
+                )
+            }
+        )
     persisted_user = _trusted_human_bootstrap_user(principal=principal, user=user)
     _bootstrap_existing_project_access(persisted_user, resolved_project_id)
     existing = _existing_bootstrap_human_write_result(
@@ -3221,7 +3621,8 @@ def bootstrap_project_definition_draft_human_write(
             project_version=project_version,
             project_name=project_name,
             project_description=project_description,
-            project_metadata=project_metadata,
+            project_metadata=resolved_project_metadata,
+            project_primary_language=resolved_primary_language,
             definition_id=resolved_definition_id,
             definition_code=definition_code,
             definition_version=definition_version,
@@ -3233,7 +3634,7 @@ def bootstrap_project_definition_draft_human_write(
             request_identity=request_identity,
             inject_failure_at=inject_failure_at,
         )
-    except (IntegrityError, ValidationError):
+    except (FoundationStudioApplicationConflict, IntegrityError, ValidationError):
         _bootstrap_existing_project_access(persisted_user, resolved_project_id)
         existing = _existing_bootstrap_human_write_result(
             request_identity,
