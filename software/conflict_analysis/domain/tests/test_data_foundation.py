@@ -12,7 +12,8 @@ from uuid import uuid4
 from asgiref.sync import async_to_sync
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
-from django.db.models import F
+from django.db.models import BooleanField, Exists, F, OuterRef, Q, Subquery
+from django.db.models.expressions import RawSQL
 from django.test import TestCase
 
 from domain.demo_data import (
@@ -456,6 +457,110 @@ class ProjectPrimaryLanguageContractTests(TestCase):
                 defaults={"primary_language_tag": "kk"},
             )
 
+        filtered, created = Project.objects.filter(code=project.code).get_or_create(
+            defaults={"name": "Filtered ordinary read"},
+        )
+        self.assertFalse(created)
+        self.assertEqual(filtered.pk, project.pk)
+        annotated, created = (
+            Project.objects.annotate(unrelated_name=F("name"))
+            .filter(code=project.code)
+            .get_or_create(defaults={"name": "Annotated ordinary read"})
+        )
+        self.assertFalse(created)
+        self.assertEqual(annotated.pk, project.pk)
+
+        language_subquery = Project.objects.filter(
+            pk=OuterRef("pk"),
+        ).values("primary_language_tag")[:1]
+        unsafe_querysets = (
+            (
+                "transformed lookup",
+                Project.objects.filter(primary_language_tag__iexact="ru"),
+            ),
+            (
+                "negated predicate",
+                Project.objects.filter(~Q(primary_language_tag="kk")),
+            ),
+            (
+                "exclude negated predicate",
+                Project.objects.exclude(primary_language_tag="kk"),
+            ),
+            (
+                "nested Q",
+                Project.objects.filter(Q(Q(primary_language_tag="ru"))),
+            ),
+            (
+                "language alias",
+                Project.objects.alias(
+                    project_language=F("primary_language_tag"),
+                ).filter(project_language="ru"),
+            ),
+            (
+                "language F",
+                Project.objects.filter(code=F("primary_language_tag")),
+            ),
+            (
+                "language Subquery",
+                Project.objects.filter(
+                    code=Subquery(language_subquery),
+                ),
+            ),
+            (
+                "language Exists",
+                Project.objects.filter(
+                    Exists(
+                        Project.objects.filter(
+                            pk=OuterRef("pk"),
+                            primary_language_tag="ru",
+                        )
+                    )
+                ),
+            ),
+            (
+                "ExtraWhere",
+                Project.objects.extra(
+                    where=["primary_language_tag = %s"],
+                    params=["ru"],
+                ),
+            ),
+            (
+                "RawSQL",
+                Project.objects.filter(
+                    RawSQL(
+                        "primary_language_tag = %s",
+                        ["ru"],
+                        output_field=BooleanField(),
+                    ),
+                ),
+            ),
+            (
+                "combined OR QuerySet",
+                Project.objects.filter(code=project.code)
+                | Project.objects.filter(primary_language_tag="ru"),
+            ),
+            (
+                "combined UNION QuerySet",
+                Project.objects.filter(code=project.code).union(
+                    Project.objects.filter(primary_language_tag="ru")
+                ),
+            ),
+        )
+        for label, unsafe_queryset in unsafe_querysets:
+            with self.subTest(label=label):
+                callable_language = mock.Mock(
+                    side_effect=AssertionError("callable must not run")
+                )
+                with self.assertNumQueries(0), self.assertRaises(ValidationError):
+                    unsafe_queryset.get_or_create(
+                        code=project.code,
+                        defaults={
+                            "name": "Must not be evaluated",
+                            "primary_language_tag": callable_language,
+                        },
+                    )
+                self.assertEqual(callable_language.call_count, 0, label)
+
         async def async_get_or_create_with_language_lookup():
             await Project.objects.aget_or_create(
                 code=project.code,
@@ -464,6 +569,21 @@ class ProjectPrimaryLanguageContractTests(TestCase):
 
         with self.assertRaises(ValidationError):
             async_to_sync(async_get_or_create_with_language_lookup)()
+        async_callable = mock.Mock(
+            side_effect=AssertionError("callable must not run")
+        )
+
+        async def async_get_or_create_with_preexisting_state():
+            await Project.objects.filter(
+                primary_language_tag__iexact="ru"
+            ).aget_or_create(
+                code=project.code,
+                defaults={"primary_language_tag": async_callable},
+            )
+
+        with self.assertNumQueries(0), self.assertRaises(ValidationError):
+            async_to_sync(async_get_or_create_with_preexisting_state)()
+        async_callable.assert_not_called()
         project.refresh_from_db()
         self.assertEqual(project.primary_language_tag, "ru")
 
@@ -546,6 +666,37 @@ class ProjectPrimaryLanguageContractTests(TestCase):
                     "primary_language_assignment": "LEGACY_UNKNOWN",
                 },
             )
+        filtered, created = Project.objects.filter(code=project.code).update_or_create(
+            defaults={"name": "Updated"},
+        )
+        self.assertFalse(created)
+        self.assertEqual(filtered.pk, project.pk)
+        for label, unsafe_queryset in (
+            (
+                "transformed update lookup",
+                Project.objects.filter(primary_language_tag__iexact="ru"),
+            ),
+            (
+                "nested Q update",
+                Project.objects.filter(Q(Q(primary_language_tag="ru"))),
+            ),
+            (
+                "combined update QuerySet",
+                Project.objects.filter(code=project.code).union(
+                    Project.objects.filter(primary_language_tag="ru")
+                ),
+            ),
+        ):
+            with self.subTest(label=label):
+                callable_language = mock.Mock(
+                    side_effect=AssertionError("callable must not run")
+                )
+                with self.assertNumQueries(0), self.assertRaises(ValidationError):
+                    unsafe_queryset.update_or_create(
+                        code=project.code,
+                        defaults={"primary_language_tag": callable_language},
+                    )
+                callable_language.assert_not_called()
         project.refresh_from_db()
         self.assertEqual(project.name, "Updated")
 
@@ -558,6 +709,21 @@ class ProjectPrimaryLanguageContractTests(TestCase):
 
         with self.assertRaises(ValidationError):
             async_to_sync(async_update_or_create_with_language_lookup)()
+        async_update_callable = mock.Mock(
+            side_effect=AssertionError("callable must not run")
+        )
+
+        async def async_update_or_create_with_preexisting_state():
+            await Project.objects.filter(
+                primary_language_assignment__in=["EXPLICIT"]
+            ).aupdate_or_create(
+                code=project.code,
+                defaults={"primary_language_tag": async_update_callable},
+            )
+
+        with self.assertNumQueries(0), self.assertRaises(ValidationError):
+            async_to_sync(async_update_or_create_with_preexisting_state)()
+        async_update_callable.assert_not_called()
 
         same, created = Project.objects.update_or_create(
             code="UPDATE-OR-CREATE-WITH-CREATE-DEFAULTS",

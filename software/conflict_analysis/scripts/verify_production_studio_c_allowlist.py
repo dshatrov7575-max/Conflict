@@ -74,6 +74,11 @@ F0L_RATIFIED_EXISTING_COMMITS = (
     "a6363f8206ed0276ee40fd3c652bf572c872e2b8",
     "a4006d609064a5f473325c1b82e1033224ecb539",
 )
+F0L_RATIFIED_CORRECTION_5A_HEAD = "65c929db1d168026fa85a97775df0e6e4a533a41"
+F0L_RATIFIED_LINEAR_COMMITS = (
+    *F0L_RATIFIED_EXISTING_COMMITS,
+    F0L_RATIFIED_CORRECTION_5A_HEAD,
+)
 PINNED_F0L_CORRECTION_4_HEAD = F0L_RATIFIED_EXISTING_COMMITS[3]
 PINNED_F0L_CORRECTION_4_TREE = "f3869f7e66d3fe9601b937df196f03b1de51aee0"
 PINNED_F0L_CORRECTION_5_HEAD = F0L_RATIFIED_EXISTING_COMMITS[4]
@@ -94,6 +99,13 @@ F0L_CORRECTION_5_PATHS = frozenset(
 F0L_CORRECTION_5A_PATHS = frozenset(
     {
         ".github/workflows/conflict-analysis.yml",
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+    }
+)
+F0L_CORRECTION_6_PATHS = frozenset(
+    {
+        "software/conflict_analysis/domain/models.py",
+        "software/conflict_analysis/domain/tests/test_data_foundation.py",
         "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
     }
 )
@@ -1342,8 +1354,8 @@ def _require_f0l_bounded_fast_forward_commits(
     ordered_commits: tuple[str, ...],
     delivery_parent: str,
 ) -> None:
-    ratified_prefix = F0L_RATIFIED_EXISTING_COMMITS[
-        : min(commit_count, len(F0L_RATIFIED_EXISTING_COMMITS))
+    ratified_prefix = F0L_RATIFIED_LINEAR_COMMITS[
+        : min(commit_count, len(F0L_RATIFIED_LINEAR_COMMITS))
     ]
     expected_delivery_parent = (
         base_head
@@ -1353,7 +1365,7 @@ def _require_f0l_bounded_fast_forward_commits(
         else None
     )
     if (
-        commit_count not in {1, 2, 3, 4, 5, 6}
+        commit_count not in {1, 2, 3, 4, 5, 6, 7}
         or oldest_parent != base_head
         or len(ordered_commits) != commit_count
         or ordered_commits[: len(ratified_prefix)] != ratified_prefix
@@ -1361,7 +1373,7 @@ def _require_f0l_bounded_fast_forward_commits(
     ):
         raise VerificationError(
             "F0L delivery must preserve the exact ratified ordinary commit prefix "
-            "and contain at most one authorized sixth correction-5a commit; "
+            "and contain exactly one final Correction 6 child at most; "
             f"count={commit_count}, oldest_parent={oldest_parent}, "
             f"delivery_parent={delivery_parent}, base={base_head}, "
             f"commits={ordered_commits}"
@@ -1433,6 +1445,30 @@ def _require_f0l_correction_5a_paths(
             + json.dumps(
                 {
                     "expected": sorted(F0L_CORRECTION_5A_PATHS),
+                    "actual": sorted(changed_paths or set()),
+                }
+            )
+        )
+
+
+def _require_f0l_correction_6_paths(
+    *,
+    commit_count: int,
+    changed_paths: set[str] | None,
+) -> None:
+    if commit_count < 7:
+        if changed_paths is not None:
+            raise VerificationError(
+                "F0L correction-6 paths must be absent before the seventh commit"
+            )
+        return
+    if changed_paths != F0L_CORRECTION_6_PATHS:
+        raise VerificationError(
+            "F0L seventh correction-6 commit must change exactly the three "
+            "authorized QuerySet correction paths: "
+            + json.dumps(
+                {
+                    "expected": sorted(F0L_CORRECTION_6_PATHS),
                     "actual": sorted(changed_paths or set()),
                 }
             )
@@ -1690,13 +1726,14 @@ def _require_f0l_static_contract() -> None:
         all(path in F0L_EXISTING_BASE_BLOBS for path in F0L_FIXTURE_DELTAS),
         F0L_LANGUAGE_LOOKUP_PREFIXES,
         F0L_ASYNC_ORM_ENTRYPOINTS,
-        F0L_RATIFIED_EXISTING_COMMITS,
+        F0L_RATIFIED_LINEAR_COMMITS,
         PINNED_F0L_CORRECTION_4_TREE,
         PINNED_F0L_CORRECTION_5_HEAD,
         PINNED_F0L_CORRECTION_5_TREE,
         tuple(sorted(F0L_CORRECTION_4_PATHS)),
         tuple(sorted(F0L_CORRECTION_5_PATHS)),
         tuple(sorted(F0L_CORRECTION_5A_PATHS)),
+        tuple(sorted(F0L_CORRECTION_6_PATHS)),
     )
     expected = (
         F0L_EXACT_PATH_COUNT,
@@ -1735,6 +1772,7 @@ def _require_f0l_static_contract() -> None:
             "0f67adabf697f1be67daa5a07b68bc0731954bb0",
             "a6363f8206ed0276ee40fd3c652bf572c872e2b8",
             "a4006d609064a5f473325c1b82e1033224ecb539",
+            "65c929db1d168026fa85a97775df0e6e4a533a41",
         ),
         "f3869f7e66d3fe9601b937df196f03b1de51aee0",
         "a4006d609064a5f473325c1b82e1033224ecb539",
@@ -1750,6 +1788,11 @@ def _require_f0l_static_contract() -> None:
         ),
         (
             ".github/workflows/conflict-analysis.yml",
+            "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+        ),
+        (
+            "software/conflict_analysis/domain/models.py",
+            "software/conflict_analysis/domain/tests/test_data_foundation.py",
             "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
         ),
     )
@@ -2240,8 +2283,56 @@ def _require_f0l_correction_4_evidence(
     }
     prevalidate = queryset_methods.get("_prevalidate_project_language_request")
     core = queryset_methods.get("_get_or_create_prevalidated")
-    if prevalidate is None or core is None:
+    query_state_guard = queryset_methods.get(
+        "_reject_unsafe_project_language_query_state"
+    )
+    expression_guard = queryset_methods.get(
+        "_project_expression_depends_on_language"
+    )
+    query_guard = queryset_methods.get("_project_query_depends_on_language")
+    if (
+        prevalidate is None
+        or core is None
+        or query_state_guard is None
+        or expression_guard is None
+        or query_guard is None
+    ):
         raise VerificationError("F0L prevalidated Project upsert boundary is absent")
+
+    query_state_names = {
+        node.id
+        for method in (query_state_guard, expression_guard, query_guard)
+        for node in ast.walk(method)
+        if isinstance(node, ast.Name)
+    }
+    query_state_attributes = {
+        node.attr
+        for method in (query_state_guard, expression_guard, query_guard)
+        for node in ast.walk(method)
+        if isinstance(node, ast.Attribute)
+    }
+    query_state_literals = {
+        node.value
+        for method in (query_state_guard, expression_guard, query_guard)
+        for node in ast.walk(method)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    if (
+        not {"Subquery", "Exists"} <= query_state_literals
+        or not {"RawSQL", "ExtraWhere", "WhereNode", "F"}
+        <= query_state_literals
+        or not {
+            "combined_queries",
+            "where",
+            "annotations",
+        }
+        <= query_state_attributes
+        or "project_primary_language_query_state_forbidden"
+        not in query_state_literals
+    ):
+        raise VerificationError(
+            "F0L QuerySet state guard does not cover opaque, combined and dependency paths"
+        )
 
     def has_positive_lookup_prefix_guard(
         expression: ast.AST,
@@ -2313,8 +2404,20 @@ def _require_f0l_correction_4_evidence(
         ]
         if len(first_statement_calls) != 1 or not any(
             isinstance(call.func, ast.Attribute)
-            and call.func.attr == "_prevalidate_project_language_request"
+            and call.func.attr == "_reject_unsafe_project_language_query_state"
             for call in first_statement_calls
+        ):
+            raise VerificationError(
+                f"ProjectQuerySet.{method_name} must reject unsafe QuerySet state first"
+            )
+        second_statement_calls = [
+            node for node in ast.walk(method.body[1])
+            if isinstance(node, ast.Call)
+        ] if len(method.body) > 1 else []
+        if not any(
+            isinstance(call.func, ast.Attribute)
+            and call.func.attr == "_prevalidate_project_language_request"
+            for call in second_statement_calls
         ):
             raise VerificationError(
                 f"ProjectQuerySet.{method_name} must prevalidate before lookup/lock"
@@ -2400,6 +2503,28 @@ def _require_f0l_correction_4_evidence(
                 }
             )
         )
+    test_literals = {
+        node.value
+        for node in ast.walk(tests_tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    required_query_state_test_labels = {
+        "transformed lookup",
+        "negated predicate",
+        "exclude negated predicate",
+        "nested Q",
+        "language alias",
+        "language F",
+        "language Subquery",
+        "language Exists",
+        "ExtraWhere",
+        "RawSQL",
+        "combined OR QuerySet",
+        "combined UNION QuerySet",
+        "callable must not run",
+    }
+    if not required_query_state_test_labels <= test_literals:
+        raise VerificationError("F0L QuerySet state adversarial test coverage drifted")
 
 
 def _normalized_test_node(class_name: str, method_name: str) -> tuple[str, str]:
@@ -4354,10 +4479,10 @@ def f0l_self_check() -> dict[str, object]:
     )
     history_base = "a" * 40
     authorized_history = (
-        *F0L_RATIFIED_EXISTING_COMMITS,
+        *F0L_RATIFIED_LINEAR_COMMITS,
         "d" * 40,
     )
-    for count in (1, 2, 3, 4, 5, 6):
+    for count in (1, 2, 3, 4, 5, 6, 7):
         _require_f0l_bounded_fast_forward_commits(
             commit_count=count,
             oldest_parent=history_base,
@@ -4369,7 +4494,7 @@ def f0l_self_check() -> dict[str, object]:
         )
     for count, oldest_parent, ordered_commits, delivery_parent in (
         (0, history_base, (), history_base),
-        (7, history_base, (*authorized_history, "e" * 40), authorized_history[-1]),
+        (8, history_base, (*authorized_history, "e" * 40), authorized_history[-1]),
         (1, "b" * 40, authorized_history[:1], history_base),
         (
             3,
@@ -4377,11 +4502,16 @@ def f0l_self_check() -> dict[str, object]:
             ("c" * 40, *authorized_history[1:3]),
             authorized_history[1],
         ),
-        (6, history_base, authorized_history, "e" * 40),
         (
             6,
             history_base,
-            (*authorized_history[:4], "c" * 40, authorized_history[5]),
+            (*authorized_history[:5], "c" * 40),
+            "c" * 40,
+        ),
+        (
+            7,
+            history_base,
+            (*authorized_history[:5], "c" * 40, "e" * 40),
             "c" * 40,
         ),
     ):
@@ -4477,6 +4607,32 @@ def f0l_self_check() -> dict[str, object]:
         else:
             raise VerificationError(
                 "F0L correction-5a path self-check accepted scope drift"
+            )
+    _require_f0l_correction_6_paths(commit_count=6, changed_paths=None)
+    _require_f0l_correction_6_paths(
+        commit_count=7,
+        changed_paths=set(F0L_CORRECTION_6_PATHS),
+    )
+    for commit_count, changed_paths in (
+        (6, set(F0L_CORRECTION_6_PATHS)),
+        (7, None),
+        (
+            7,
+            set(F0L_CORRECTION_6_PATHS)
+            - {sorted(F0L_CORRECTION_6_PATHS)[0]},
+        ),
+        (7, set(F0L_CORRECTION_6_PATHS) | {"unauthorized/seventh-path"}),
+    ):
+        try:
+            _require_f0l_correction_6_paths(
+                commit_count=commit_count,
+                changed_paths=changed_paths,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                "F0L correction-6 path self-check accepted scope drift"
             )
     _require_f0l_clean_status("")
     try:
@@ -4603,6 +4759,19 @@ class ProjectPrimaryLanguageAssignment:
     EXPLICIT = "EXPLICIT"
     LEGACY_UNKNOWN = "LEGACY_UNKNOWN"
 class ProjectQuerySet:
+    @classmethod
+    def _project_expression_depends_on_language(cls, expression, query, seen_annotations=None, seen_queries=None):
+        expression_name = expression.__class__.__name__
+        return expression_name in {"RawSQL", "ExtraWhere", "Subquery", "Exists", "F"}
+    @classmethod
+    def _project_query_depends_on_language(cls, query, **kwargs):
+        return query.annotations or query.where
+    def _reject_unsafe_project_language_query_state(self):
+        expression_name = self.query.where.__class__.__name__
+        if self.query.combined_queries:
+            raise ValueError("project_primary_language_query_state_forbidden")
+        if expression_name in {"RawSQL", "ExtraWhere", "WhereNode", "Subquery", "Exists", "F"}:
+            raise ValueError("project_primary_language_query_state_forbidden")
     @staticmethod
     def _prevalidate_project_language_request(*sources):
         if key.startswith(_PROJECT_LANGUAGE_LOOKUP_PREFIXES):
@@ -4617,9 +4786,11 @@ class ProjectQuerySet:
     def _get_or_create_prevalidated(self):
         self._assert_prevalidated_language_matches()
     def get_or_create(self):
+        self._reject_unsafe_project_language_query_state()
         requested = self._prevalidate_project_language_request()
         return self._get_or_create_prevalidated()
     def update_or_create(self):
+        self._reject_unsafe_project_language_query_state()
         requested = self._prevalidate_project_language_request()
         return self.select_for_update()._get_or_create_prevalidated()
 """
@@ -4630,6 +4801,14 @@ class ProjectQuerySet:
     synthetic_tests = (
         f"class {PROJECT_LANGUAGE_TEST_CLASS}:\n"
         f"    def {PROJECT_LANGUAGE_TEST_METHODS[0]}(self):\n"
+        "        query_state_labels = (\n"
+        '            "transformed lookup", "negated predicate",\n'
+        '            "exclude negated predicate", "nested Q",\n'
+        '            "language alias", "language F", "language Subquery",\n'
+        '            "language Exists", "ExtraWhere", "RawSQL",\n'
+        '            "combined OR QuerySet", "combined UNION QuerySet",\n'
+        '            "callable must not run",\n'
+        "        )\n"
         "        async def exercise():\n"
         f"{async_lines}\n"
         "        async_to_sync(exercise)()\n"
@@ -4682,6 +4861,7 @@ class ProjectQuerySet:
         (
             synthetic_models.replace(
                 "    def get_or_create(self):\n"
+                "        self._reject_unsafe_project_language_query_state()\n"
                 "        requested = self._prevalidate_project_language_request()\n",
                 "    def get_or_create(self):\n"
                 "        project = self.get()\n"
@@ -4692,6 +4872,7 @@ class ProjectQuerySet:
         (
             synthetic_models.replace(
                 "    def update_or_create(self):\n"
+                "        self._reject_unsafe_project_language_query_state()\n"
                 "        requested = self._prevalidate_project_language_request()\n",
                 "    def update_or_create(self):\n"
                 "        project = self.select_for_update()\n"
@@ -5607,6 +5788,15 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         commit_count=commit_count,
         changed_paths=correction_5a_changed_paths,
     )
+    correction_6_changed_paths = (
+        _commit_changed_paths(repo, ordered_commits[6])
+        if commit_count >= 7
+        else None
+    )
+    _require_f0l_correction_6_paths(
+        commit_count=commit_count,
+        changed_paths=correction_6_changed_paths,
+    )
 
     changed = _changed_paths(repo, base_head)
     _require_changed_path_contract(
@@ -5731,6 +5921,13 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         "correction_5a_changed_paths": (
             sorted(correction_5a_changed_paths)
             if correction_5a_changed_paths is not None
+            else None
+        ),
+        "correction_6_head": ordered_commits[6] if commit_count >= 7 else None,
+        "correction_6_parent": ordered_commits[5] if commit_count >= 7 else None,
+        "correction_6_changed_paths": (
+            sorted(correction_6_changed_paths)
+            if correction_6_changed_paths is not None
             else None
         ),
         "changed_paths": sorted(changed),

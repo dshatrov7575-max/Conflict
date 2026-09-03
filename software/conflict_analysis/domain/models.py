@@ -298,6 +298,139 @@ def _project_language_error(
 class ProjectQuerySet(models.QuerySet):
     """Guard the immutable Project language pair on every bulk/upsert path."""
 
+    @classmethod
+    def _project_expression_depends_on_language(
+        cls,
+        expression: Any,
+        query: Any,
+        seen_annotations: set[str] | None = None,
+        seen_queries: set[int] | None = None,
+    ) -> bool:
+        """Find language dependencies without resolving or executing a query."""
+
+        seen_annotations = seen_annotations or set()
+        seen_queries = seen_queries or set()
+        expression_name = expression.__class__.__name__
+        if expression_name in {"RawSQL", "ExtraWhere"}:
+            return True
+        if expression_name in {"Subquery", "Exists"}:
+            nested_query = getattr(expression, "query", None)
+            if nested_query is None or id(nested_query) in seen_queries:
+                return nested_query is None
+            seen_queries.add(id(nested_query))
+            return cls._project_query_depends_on_language(
+                nested_query,
+                seen_annotations=set(),
+                seen_queries=seen_queries,
+            )
+
+        if expression_name == "F":
+            reference = getattr(expression, "name", None)
+            if reference in _PROJECT_LANGUAGE_FIELDS:
+                return True
+            annotation = query.annotations.get(reference)
+            if annotation is not None and reference not in seen_annotations:
+                seen_annotations.add(reference)
+                return cls._project_expression_depends_on_language(
+                    annotation,
+                    query,
+                    seen_annotations,
+                    seen_queries,
+                )
+
+        target = getattr(expression, "target", None)
+        target_name = getattr(target, "name", None)
+        if target_name in _PROJECT_LANGUAGE_FIELDS:
+            return True
+        reference = getattr(expression, "name", None)
+        if reference in _PROJECT_LANGUAGE_FIELDS:
+            return True
+        annotation = query.annotations.get(reference)
+        if annotation is not None and reference not in seen_annotations:
+            seen_annotations.add(reference)
+            if cls._project_expression_depends_on_language(
+                annotation,
+                query,
+                seen_annotations,
+                seen_queries,
+            ):
+                return True
+
+        get_source_expressions = getattr(expression, "get_source_expressions", None)
+        if get_source_expressions is not None:
+            for child in get_source_expressions() or ():
+                if cls._project_expression_depends_on_language(
+                    child,
+                    query,
+                    seen_annotations,
+                    seen_queries,
+                ):
+                    return True
+        return False
+
+    @classmethod
+    def _project_query_depends_on_language(
+        cls,
+        query: Any,
+        *,
+        seen_annotations: set[str] | None = None,
+        seen_queries: set[int] | None = None,
+    ) -> bool:
+        where = query.where
+        if where is None:
+            return False
+        seen_annotations = seen_annotations or set()
+        seen_queries = seen_queries or set()
+
+        for selected in getattr(query, "select", ()) or ():
+            if cls._project_expression_depends_on_language(
+                selected,
+                query,
+                seen_annotations,
+                seen_queries,
+            ):
+                return True
+
+        def visit(node: Any) -> bool:
+            node_name = node.__class__.__name__
+            if node_name in {"RawSQL", "ExtraWhere"}:
+                return True
+            if node_name == "WhereNode":
+                if getattr(node, "connector", None) == "OR":
+                    return True
+                return any(visit(child) for child in getattr(node, "children", ()))
+            if cls._project_expression_depends_on_language(
+                node,
+                query,
+                seen_annotations,
+                seen_queries,
+            ):
+                return True
+            return any(
+                visit(child)
+                for child in getattr(node, "children", ())
+                if child is not node
+            )
+
+        return visit(where)
+
+    def _reject_unsafe_project_language_query_state(self) -> None:
+        """Reject opaque/combined/language-dependent selection state before writes."""
+
+        query = self.query
+        if query.combinator or query.combined_queries:
+            raise _project_language_error(
+                "primary_language_tag",
+                "Combined Project QuerySets cannot be used for language-guarded upserts.",
+                code="project_primary_language_query_state_forbidden",
+            )
+        if self._project_query_depends_on_language(query):
+            raise _project_language_error(
+                "primary_language_tag",
+                "Project QuerySet selection state is not safe for a language-guarded upsert.",
+                code="project_primary_language_query_state_forbidden",
+            )
+
     @staticmethod
     def _without_language_lookups(values: dict[str, Any]) -> dict[str, Any]:
         return {
@@ -527,6 +660,7 @@ class ProjectQuerySet(models.QuerySet):
         defaults: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> tuple[Any, bool]:
+        self._reject_unsafe_project_language_query_state()
         requested_language, normalized_sources = (
             self._prevalidate_project_language_request(kwargs, defaults)
         )
@@ -544,6 +678,7 @@ class ProjectQuerySet(models.QuerySet):
         create_defaults: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> tuple[Any, bool]:
+        self._reject_unsafe_project_language_query_state()
         requested_language, normalized_sources = (
             self._prevalidate_project_language_request(
                 kwargs,
