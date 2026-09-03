@@ -396,8 +396,6 @@ class ProjectQuerySet(models.QuerySet):
             if node_name in {"RawSQL", "ExtraWhere"}:
                 return True
             if node_name == "WhereNode":
-                if getattr(node, "connector", None) == "OR":
-                    return True
                 return any(visit(child) for child in getattr(node, "children", ()))
             if cls._project_expression_depends_on_language(
                 node,

@@ -79,6 +79,7 @@ F0L_RATIFIED_LINEAR_COMMITS = (
     *F0L_RATIFIED_EXISTING_COMMITS,
     F0L_RATIFIED_CORRECTION_5A_HEAD,
 )
+F0L_RATIFIED_CORRECTION_6_HEAD = "ee00a95da6770bf3880ae0eb36f25768a1ebd7e3"
 PINNED_F0L_CORRECTION_4_HEAD = F0L_RATIFIED_EXISTING_COMMITS[3]
 PINNED_F0L_CORRECTION_4_TREE = "f3869f7e66d3fe9601b937df196f03b1de51aee0"
 PINNED_F0L_CORRECTION_5_HEAD = F0L_RATIFIED_EXISTING_COMMITS[4]
@@ -109,6 +110,7 @@ F0L_CORRECTION_6_PATHS = frozenset(
         "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
     }
 )
+F0L_CORRECTION_6B_PATHS = F0L_CORRECTION_6_PATHS
 F1_TARGET_BRANCH = "codex/ca-suite-i1-evidence-multilingual-f1"
 C2A_TARGET_BRANCH = (
     "codex/ca-suite-i1-production-studio-c2a-lifecycle-publication"
@@ -1354,9 +1356,11 @@ def _require_f0l_bounded_fast_forward_commits(
     ordered_commits: tuple[str, ...],
     delivery_parent: str,
 ) -> None:
-    ratified_prefix = F0L_RATIFIED_LINEAR_COMMITS[
-        : min(commit_count, len(F0L_RATIFIED_LINEAR_COMMITS))
-    ]
+    ratified_commits = (
+        *F0L_RATIFIED_LINEAR_COMMITS,
+        F0L_RATIFIED_CORRECTION_6_HEAD,
+    )
+    ratified_prefix = ratified_commits[: min(commit_count, len(ratified_commits))]
     expected_delivery_parent = (
         base_head
         if commit_count == 1
@@ -1365,7 +1369,7 @@ def _require_f0l_bounded_fast_forward_commits(
         else None
     )
     if (
-        commit_count not in {1, 2, 3, 4, 5, 6, 7}
+        commit_count not in {1, 2, 3, 4, 5, 6, 7, 8}
         or oldest_parent != base_head
         or len(ordered_commits) != commit_count
         or ordered_commits[: len(ratified_prefix)] != ratified_prefix
@@ -1373,7 +1377,7 @@ def _require_f0l_bounded_fast_forward_commits(
     ):
         raise VerificationError(
             "F0L delivery must preserve the exact ratified ordinary commit prefix "
-            "and contain exactly one final Correction 6 child at most; "
+            "and contain exactly one final Correction 6B child at most; "
             f"count={commit_count}, oldest_parent={oldest_parent}, "
             f"delivery_parent={delivery_parent}, base={base_head}, "
             f"commits={ordered_commits}"
@@ -1469,6 +1473,30 @@ def _require_f0l_correction_6_paths(
             + json.dumps(
                 {
                     "expected": sorted(F0L_CORRECTION_6_PATHS),
+                    "actual": sorted(changed_paths or set()),
+                }
+            )
+        )
+
+
+def _require_f0l_correction_6b_paths(
+    *,
+    commit_count: int,
+    changed_paths: set[str] | None,
+) -> None:
+    if commit_count < 8:
+        if changed_paths is not None:
+            raise VerificationError(
+                "F0L correction-6b paths must be absent before the eighth commit"
+            )
+        return
+    if changed_paths != F0L_CORRECTION_6B_PATHS:
+        raise VerificationError(
+            "F0L eighth correction-6b commit must change exactly the three "
+            "authorized QuerySet correction paths: "
+            + json.dumps(
+                {
+                    "expected": sorted(F0L_CORRECTION_6B_PATHS),
                     "actual": sorted(changed_paths or set()),
                 }
             )
@@ -1734,6 +1762,7 @@ def _require_f0l_static_contract() -> None:
         tuple(sorted(F0L_CORRECTION_5_PATHS)),
         tuple(sorted(F0L_CORRECTION_5A_PATHS)),
         tuple(sorted(F0L_CORRECTION_6_PATHS)),
+        tuple(sorted(F0L_CORRECTION_6B_PATHS)),
     )
     expected = (
         F0L_EXACT_PATH_COUNT,
@@ -1788,6 +1817,11 @@ def _require_f0l_static_contract() -> None:
         ),
         (
             ".github/workflows/conflict-analysis.yml",
+            "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+        ),
+        (
+            "software/conflict_analysis/domain/models.py",
+            "software/conflict_analysis/domain/tests/test_data_foundation.py",
             "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
         ),
         (
@@ -2317,6 +2351,13 @@ def _require_f0l_correction_4_evidence(
         for node in ast.walk(method)
         if isinstance(node, ast.Constant) and isinstance(node.value, str)
     }
+    if re.search(
+        r"connector\s*[^\n]*==\s*[\"']OR[\"']\s*:\s*\n\s*return\s+True",
+        models_source,
+    ):
+        raise VerificationError(
+            "F0L QuerySet state guard retains blanket OR rejection"
+        )
     if (
         not {"Subquery", "Exists"} <= query_state_literals
         or not {"RawSQL", "ExtraWhere", "WhereNode", "F"}
@@ -2522,6 +2563,17 @@ def _require_f0l_correction_4_evidence(
         "combined OR QuerySet",
         "combined UNION QuerySet",
         "callable must not run",
+        "benign non-language Q OR existing",
+        "benign non-language Q OR create",
+        "benign nested/negated non-language tree",
+        "benign bitwise QuerySet OR",
+        "benign bitwise QuerySet AND",
+        "async benign non-language OR",
+        "language-dependent Q OR",
+        "language-dependent QuerySet OR",
+        "non-language union",
+        "non-language intersection",
+        "non-language difference",
     }
     if not required_query_state_test_labels <= test_literals:
         raise VerificationError("F0L QuerySet state adversarial test coverage drifted")
@@ -4480,9 +4532,10 @@ def f0l_self_check() -> dict[str, object]:
     history_base = "a" * 40
     authorized_history = (
         *F0L_RATIFIED_LINEAR_COMMITS,
+        F0L_RATIFIED_CORRECTION_6_HEAD,
         "d" * 40,
     )
-    for count in (1, 2, 3, 4, 5, 6, 7):
+    for count in (1, 2, 3, 4, 5, 6, 7, 8):
         _require_f0l_bounded_fast_forward_commits(
             commit_count=count,
             oldest_parent=history_base,
@@ -4494,7 +4547,7 @@ def f0l_self_check() -> dict[str, object]:
         )
     for count, oldest_parent, ordered_commits, delivery_parent in (
         (0, history_base, (), history_base),
-        (8, history_base, (*authorized_history, "e" * 40), authorized_history[-1]),
+        (9, history_base, (*authorized_history, "e" * 40), authorized_history[-1]),
         (1, "b" * 40, authorized_history[:1], history_base),
         (
             3,
@@ -4513,6 +4566,12 @@ def f0l_self_check() -> dict[str, object]:
             history_base,
             (*authorized_history[:5], "c" * 40, "e" * 40),
             "c" * 40,
+        ),
+        (
+            8,
+            history_base,
+            (*authorized_history[:6], "c" * 40, "e" * 40),
+            "e" * 40,
         ),
     ):
         try:
@@ -4613,6 +4672,11 @@ def f0l_self_check() -> dict[str, object]:
         commit_count=7,
         changed_paths=set(F0L_CORRECTION_6_PATHS),
     )
+    _require_f0l_correction_6b_paths(commit_count=7, changed_paths=None)
+    _require_f0l_correction_6b_paths(
+        commit_count=8,
+        changed_paths=set(F0L_CORRECTION_6B_PATHS),
+    )
     for commit_count, changed_paths in (
         (6, set(F0L_CORRECTION_6_PATHS)),
         (7, None),
@@ -4633,6 +4697,26 @@ def f0l_self_check() -> dict[str, object]:
         else:
             raise VerificationError(
                 "F0L correction-6 path self-check accepted scope drift"
+            )
+    for commit_count, changed_paths in (
+        (7, set(F0L_CORRECTION_6B_PATHS)),
+        (8, None),
+        (
+            8,
+            set(F0L_CORRECTION_6B_PATHS) - {sorted(F0L_CORRECTION_6B_PATHS)[0]},
+        ),
+        (8, set(F0L_CORRECTION_6B_PATHS) | {"unauthorized/eighth-path"}),
+    ):
+        try:
+            _require_f0l_correction_6b_paths(
+                commit_count=commit_count,
+                changed_paths=changed_paths,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                "F0L correction-6b path self-check accepted scope drift"
             )
     _require_f0l_clean_status("")
     try:
@@ -4808,6 +4892,14 @@ class ProjectQuerySet:
         '            "language Exists", "ExtraWhere", "RawSQL",\n'
         '            "combined OR QuerySet", "combined UNION QuerySet",\n'
         '            "callable must not run",\n'
+        '            "benign non-language Q OR existing",\n'
+        '            "benign non-language Q OR create",\n'
+        '            "benign nested/negated non-language tree",\n'
+        '            "benign bitwise QuerySet OR", "benign bitwise QuerySet AND",\n'
+        '            "async benign non-language OR",\n'
+        '            "language-dependent Q OR", "language-dependent QuerySet OR",\n'
+        '            "non-language union", "non-language intersection",\n'
+        '            "non-language difference",\n'
         "        )\n"
         "        async def exercise():\n"
         f"{async_lines}\n"
@@ -5797,6 +5889,15 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         commit_count=commit_count,
         changed_paths=correction_6_changed_paths,
     )
+    correction_6b_changed_paths = (
+        _commit_changed_paths(repo, ordered_commits[7])
+        if commit_count >= 8
+        else None
+    )
+    _require_f0l_correction_6b_paths(
+        commit_count=commit_count,
+        changed_paths=correction_6b_changed_paths,
+    )
 
     changed = _changed_paths(repo, base_head)
     _require_changed_path_contract(
@@ -5928,6 +6029,13 @@ def verify_f0l(repo: Path, *, base_head: str, base_tree: str) -> dict[str, objec
         "correction_6_changed_paths": (
             sorted(correction_6_changed_paths)
             if correction_6_changed_paths is not None
+            else None
+        ),
+        "correction_6b_head": ordered_commits[7] if commit_count >= 8 else None,
+        "correction_6b_parent": ordered_commits[6] if commit_count >= 8 else None,
+        "correction_6b_changed_paths": (
+            sorted(correction_6b_changed_paths)
+            if correction_6b_changed_paths is not None
             else None
         ),
         "changed_paths": sorted(changed),

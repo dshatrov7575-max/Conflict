@@ -470,6 +470,40 @@ class ProjectPrimaryLanguageContractTests(TestCase):
         self.assertFalse(created)
         self.assertEqual(annotated.pk, project.pk)
 
+        benign_q_or, created = Project.objects.filter(
+            Q(code=project.code) | Q(name="Never matched")
+        ).get_or_create(defaults={"name": "Benign Q OR read"})
+        self.assertFalse(created, "benign non-language Q OR existing")
+        self.assertEqual(benign_q_or.pk, project.pk)
+        benign_q_or_create, created = Project.objects.filter(
+            Q(code="BENIGN-Q-OR-CREATE") | Q(name="Benign Q OR create")
+        ).get_or_create(
+            code="BENIGN-Q-OR-CREATE",
+            defaults={
+                "name": "Benign Q OR create",
+                "primary_language_tag": "ru",
+            },
+        )
+        self.assertTrue(created, "benign non-language Q OR create")
+        self.assertEqual(benign_q_or_create.primary_language_tag, "ru")
+        benign_nested, created = Project.objects.filter(
+            ~Q(name="Never matched") & Q(Q(code=project.code) | Q(name="Never matched"))
+        ).get_or_create(defaults={"name": "Benign nested Q read"})
+        self.assertFalse(created, "benign nested/negated non-language tree")
+        self.assertEqual(benign_nested.pk, project.pk)
+        benign_queryset_or, created = (
+            Project.objects.filter(code=project.code)
+            | Project.objects.filter(name="Never matched")
+        ).get_or_create(defaults={"name": "Benign QuerySet OR read"})
+        self.assertFalse(created, "benign bitwise QuerySet OR")
+        self.assertEqual(benign_queryset_or.pk, project.pk)
+        benign_queryset_and, created = (
+            Project.objects.filter(code=project.code)
+            & Project.objects.filter(pk=project.pk)
+        ).get_or_create(defaults={"name": "Benign QuerySet AND read"})
+        self.assertFalse(created, "benign bitwise QuerySet AND")
+        self.assertEqual(benign_queryset_and.pk, project.pk)
+
         language_subquery = Project.objects.filter(
             pk=OuterRef("pk"),
         ).values("primary_language_tag")[:1]
@@ -540,9 +574,32 @@ class ProjectPrimaryLanguageContractTests(TestCase):
                 | Project.objects.filter(primary_language_tag="ru"),
             ),
             (
+                "language-dependent Q OR",
+                Project.objects.filter(
+                    Q(code=project.code) | Q(primary_language_tag="ru")
+                ),
+            ),
+            (
+                "language-dependent QuerySet OR",
+                Project.objects.filter(code=project.code)
+                | Project.objects.filter(primary_language_tag="ru"),
+            ),
+            (
                 "combined UNION QuerySet",
                 Project.objects.filter(code=project.code).union(
-                    Project.objects.filter(primary_language_tag="ru")
+                    Project.objects.filter(name="Never matched")
+                ),
+            ),
+            (
+                "non-language intersection",
+                Project.objects.filter(code=project.code).intersection(
+                    Project.objects.filter(name=project.name)
+                ),
+            ),
+            (
+                "non-language difference",
+                Project.objects.filter(code=project.code).difference(
+                    Project.objects.filter(name="Never matched")
                 ),
             ),
         )
@@ -566,6 +623,15 @@ class ProjectPrimaryLanguageContractTests(TestCase):
                 code=project.code,
                 primary_language_tag__iexact="ru",
             )
+
+        async def async_benign_non_language_or():
+            return await Project.objects.filter(
+                Q(code=project.code) | Q(name="Never matched")
+            ).aget_or_create(defaults={"name": "Async benign non-language OR"})
+
+        async_benign, async_created = async_to_sync(async_benign_non_language_or)()
+        self.assertFalse(async_created, "async benign non-language OR")
+        self.assertEqual(async_benign.pk, project.pk)
 
         with self.assertRaises(ValidationError):
             async_to_sync(async_get_or_create_with_language_lookup)()
@@ -671,6 +737,12 @@ class ProjectPrimaryLanguageContractTests(TestCase):
         )
         self.assertFalse(created)
         self.assertEqual(filtered.pk, project.pk)
+        benign_update_or, created = (
+            Project.objects.filter(Q(code=project.code) | Q(name="Never matched"))
+            .update_or_create(defaults={"name": "Updated"})
+        )
+        self.assertFalse(created)
+        self.assertEqual(benign_update_or.pk, project.pk)
         for label, unsafe_queryset in (
             (
                 "transformed update lookup",
@@ -681,9 +753,20 @@ class ProjectPrimaryLanguageContractTests(TestCase):
                 Project.objects.filter(Q(Q(primary_language_tag="ru"))),
             ),
             (
-                "combined update QuerySet",
+                "language-dependent Q OR update",
+                Project.objects.filter(
+                    Q(code=project.code) | Q(primary_language_tag="ru")
+                ),
+            ),
+            (
+                "language-dependent QuerySet OR update",
+                Project.objects.filter(code=project.code)
+                | Project.objects.filter(primary_language_tag="ru"),
+            ),
+            (
+                "non-language union",
                 Project.objects.filter(code=project.code).union(
-                    Project.objects.filter(primary_language_tag="ru")
+                    Project.objects.filter(name="Never matched")
                 ),
             ),
         ):
