@@ -4049,6 +4049,37 @@ class DocumentContentRoleBinding(CanonicalDocumentLineageModel):
             errors["content_variant"] = (
                 "Legacy unspecified variants cannot be assigned multilingual roles."
             )
+        # The role is a semantic claim, not merely a view label.  Defend the
+        # F0L Project-language boundary here as well as in the canonical
+        # service, so a direct ORM write cannot bind an arbitrary language as
+        # PROJECT_PRIMARY.  Legacy rows receive no role binding at all.
+        if self.role == DocumentContentRole.PROJECT_PRIMARY and variant is not None:
+            version = (
+                DocumentVersion.objects.select_related("workspace__project")
+                .filter(pk=self.document_version_id)
+                .first()
+            )
+            if version is not None:
+                try:
+                    project_primary_language = _canonicalize_multilingual_language_tag(
+                        version.workspace.project.primary_language_tag
+                    )
+                except ValidationError:
+                    errors["role"] = (
+                        "A PROJECT_PRIMARY binding requires a valid explicit "
+                        "Project primary language."
+                    )
+                else:
+                    if project_primary_language == "und":
+                        errors["role"] = (
+                            "A PROJECT_PRIMARY binding cannot use an unknown "
+                            "Project language."
+                        )
+                    elif variant.language_tag != project_primary_language:
+                        errors["content_variant"] = (
+                            "PROJECT_PRIMARY must use the exact Project primary "
+                            "language."
+                        )
         if errors:
             raise ValidationError(errors)
 
@@ -4360,6 +4391,13 @@ class TranslationProvenance(CanonicalDocumentLineageModel):
                 ),
                 name="domain_translation_provenance_known_boundary",
             ),
+            models.CheckConstraint(
+                condition=(
+                    Q(actor_type="UNKNOWN")
+                    | ~Q(actor_identifier="")
+                ),
+                name="domain_translation_provenance_known_actor",
+            ),
         ]
 
     def clean(self) -> None:
@@ -4423,6 +4461,15 @@ class TranslationProvenance(CanonicalDocumentLineageModel):
             (self.provider, self.model, self.method_version)
         ):
             errors["knowledge"] = "Unknown provenance cannot fabricate provider facts."
+        if self.actor_type in {
+            TranslationActorType.HUMAN,
+            TranslationActorType.AI,
+            TranslationActorType.HYBRID,
+        } and not self.actor_identifier.strip():
+            errors["actor_identifier"] = (
+                "Known HUMAN, AI, and HYBRID translation provenance requires "
+                "an actor identifier."
+            )
         if self.alignment_set_id:
             alignment = SentenceAlignmentSet.objects.filter(pk=self.alignment_set_id).first()
             if alignment is not None and alignment.document_version_id != self.document_version_id:

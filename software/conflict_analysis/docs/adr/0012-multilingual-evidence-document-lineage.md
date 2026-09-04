@@ -34,11 +34,26 @@ identities.  Its coordinate checksum does not replace the legacy byte capture
 hash: `DocumentContent` remains the payload/byte/hash authority.  A variant is
 never a reinterpretation of the legacy `DocumentContent` payload.
 
+Both role tags are canonicalized before any multilingual comparison or write.
+`PROJECT_PRIMARY` must equal the canonical, non-`und`
+`workspace.project.primary_language_tag`.  If canonical role tags are equal,
+their normalized text and segmentation must also be equal and exactly one
+shared variant is created; same-language divergent text is rejected rather
+than presented as a translation.  A shared variant may only be self-aligned
+sentence-by-sentence.
+
 Legacy content is migrated to one `LEGACY_UNSPECIFIED`, `und` variant which
 retains the exact legacy normalized text, while the legacy capture checksum
 remains attached to its `DocumentContent` authority.  It receives no role
 binding.  In particular, migration does not label legacy rows `ORIGINAL` or
 `PROJECT_PRIMARY`.
+
+The legacy successor UUID is deterministically derived from immutable legacy
+`DocumentContent` identity.  Migration never decodes `original_bytes` or
+replaces an empty `normalized_text`; it validates an exact fragment's version,
+offsets, text and hash before pinning.  An unprovable exact anchor (including a
+missing capture or mismatch) aborts the whole migration with a deterministic
+typed blocker rather than leaving a null or guessed pin.
 
 `TextFragment.content_variant` pins every canonical new `EXACT` fragment to a
 concrete variant belonging to its exact `DocumentVersion`.  An exact fragment
@@ -54,6 +69,15 @@ ordinal, text and text hash.  An alignment-set checksum binds the precise
 variant IDs and hashes, sentence IDs and hashes, segmentation versions, and
 the sorted edge set.
 
+For a synchronized claim, sentence ranges are ordered, non-overlapping and
+resolve exactly against both normalized role texts.  Every non-whitespace code
+point is covered exactly once; uncovered separators may be whitespace only.
+Every stored sentence participates in one complete 1:1, 1:N or N:1 component.
+For a shared monolingual variant, that is restricted further to exact 1:1
+self-edges for each stored sentence.  Partial, positional, crossed,
+overlapping, duplicated, M:N or checksum-recomputed corrupt graphs fail
+closed and cannot justify original-side disclosure.
+
 `translation_synchronized=yes` is permitted only for a complete,
 checksum-bound alignment covering both sentence sets.  Its connected
 components may be only 1:1, 1:N, or N:1.  M:N, partial, positional-only,
@@ -67,6 +91,15 @@ original excerpt where this contract is absent.
 method values are retained exactly; when any such fact is not known, the
 corresponding provenance state is explicitly `UNKNOWN` rather than filled with
 a plausible value.
+
+HUMAN, AI and HYBRID provenance requires a nonblank actor identifier; UNKNOWN
+is explicitly blank-capable.  Every derivative command receives one persisted
+predecessor `DocumentVersion`, verifies that it belongs to the exact
+predecessor `Document` and records that version and its bound ORIGINAL variant
+as the provenance source.  It never selects a latest/current version
+implicitly.  A translation edit additionally proves that its supplied ORIGINAL
+text, canonical language and segmentation equal that exact predecessor
+ORIGINAL before it writes; only the project-primary role may change.
 
 Documents carry immutable cross-document lineage:
 
@@ -126,6 +159,15 @@ Memory-origin Facts return typed `NO_DOCUMENT_EVIDENCE`.  Unsynchronized
 document evidence returns `ALIGNMENT_NOT_GUARANTEED` and no guessed original
 excerpt.  A synchronized result resolves only the exact primary and original
 fragments proven by its variant and alignment identities.
+
+Drilldown retains its compatibility `fact_id`, `fact_type`, category and
+evidence fields and additively serializes the exact Fact ID/code/version/type,
+statement, origin, directness, status and temporal status.  It exposes stored
+source `independence_group`, never an inferred independence claim.  A proven
+synchronized pair carries both variants' language/hash/segmentation identity,
+both sides' sentence ID/code/number/range/text/hash and the alignment-set
+ID/hash.  It serializes stored translation provenance as stored; an absent
+root is typed `null`, never the string `"None"`.
 
 ### Migration compatibility
 

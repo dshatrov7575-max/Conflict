@@ -2975,6 +2975,22 @@ jobs:
           print(f"{active_slice}_SQLITE_EXACT_REGISTRY_AND_TOTALS=PASS")
           PY
 
+      - name: Build one exact successor wheel for C0 runtime
+        if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip wheel --no-deps --wheel-dir "$SUCCESSOR_EVIDENCE_DIR" .
+          mapfile -t wheels < <(
+            find "$SUCCESSOR_EVIDENCE_DIR" -maxdepth 1 -type f -name '*.whl' -print
+          )
+          test "${#wheels[@]}" -eq 1
+          wheel="${wheels[0]}"
+          test "$(basename "$wheel")" = conflict_analysis-0.1.0-py3-none-any.whl
+          test "$wheel" = "$SUCCESSOR_EVIDENCE_DIR/conflict_analysis-0.1.0-py3-none-any.whl"
+          printf 'STUDIO_C0_WHEEL=%s\n' "$wheel" >> "$GITHUB_ENV"
+          echo "${ACTIVE_SLICE}_ONE_EXACT_SUCCESSOR_WHEEL_FOR_C0=PASS"
+
       - name: Run C0 and C1 successor regression on PostgreSQL
         if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
         env:
@@ -3116,18 +3132,16 @@ jobs:
           print(f"{active_slice}_EXACT_REAL_CHROMIUM_REGISTRY=PASS")
           PY
 
-      - name: Build and inspect the exact successor wheel in isolation
+      - name: Inspect the same exact successor wheel in isolation
         if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip wheel --no-deps --wheel-dir "$SUCCESSOR_EVIDENCE_DIR" .
-          mapfile -t wheels < <(
-            find "$SUCCESSOR_EVIDENCE_DIR" -maxdepth 1 -type f -name '*.whl' -print
-          )
-          test "${#wheels[@]}" -eq 1
-          wheel="${wheels[0]}"
+          test -n "${STUDIO_C0_WHEEL:-}"
+          wheel="$STUDIO_C0_WHEEL"
+          test -f "$wheel"
           test "$(basename "$wheel")" = conflict_analysis-0.1.0-py3-none-any.whl
+          test "$wheel" = "$SUCCESSOR_EVIDENCE_DIR/conflict_analysis-0.1.0-py3-none-any.whl"
 
           isolated_venv="${RUNNER_TEMP}/successor-wheel-venv"
           python -m venv --system-site-packages "$isolated_venv"

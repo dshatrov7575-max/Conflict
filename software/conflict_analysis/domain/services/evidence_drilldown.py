@@ -38,6 +38,7 @@ class EvidenceDrilldown:
     code: EvidenceDrilldownCode
     fact_id: str
     fact_type: str
+    fact: Mapping[str, Any]
     category: Mapping[str, Any]
     evidence: tuple[Mapping[str, Any], ...]
 
@@ -46,6 +47,10 @@ class EvidenceDrilldown:
             "code": self.code.value,
             "fact_id": self.fact_id,
             "fact_type": self.fact_type,
+            # The original top-level identity fields remain compatibility
+            # fields.  This complete immutable Fact snapshot is additive and
+            # deliberately contains no assessment or truth inference.
+            "fact": dict(self.fact),
             "category": dict(self.category),
             "evidence": [dict(item) for item in self.evidence],
         }
@@ -57,6 +62,136 @@ def _models() -> Any:
     from domain import models as domain_models
 
     return domain_models
+
+
+def _fact_payload(fact: Any) -> dict[str, Any]:
+    """Return the exact persisted Fact state exposed by this read contract."""
+
+    return {
+        "id": str(fact.pk),
+        "code": fact.code,
+        "version": fact.version,
+        "fact_type": fact.fact_type,
+        "statement": fact.statement,
+        "origin": fact.origin,
+        "directness": fact.directness,
+        "status": fact.status,
+        "temporal_status": fact.temporal_status,
+    }
+
+
+def _variant_payload(variant: Any) -> dict[str, Any]:
+    """Expose an immutable variant identity without reinterpreting its text."""
+
+    return {
+        "variant_id": str(variant.pk),
+        "language_tag": variant.language_tag,
+        "content_sha256": variant.content_sha256,
+        "segmentation_version": variant.segmentation_version,
+    }
+
+
+def _sentence_payload(sentences: Iterable[Any]) -> list[dict[str, Any]]:
+    """Serialize only exact stored sentence identities and coordinates."""
+
+    return [
+        {
+            "id": str(sentence.pk),
+            "code": sentence.code,
+            "sentence_number": sentence.sentence_number,
+            "start_offset": sentence.start_offset,
+            "end_offset": sentence.end_offset,
+            "text": sentence.text,
+            "text_sha256": sentence.text_sha256,
+        }
+        for sentence in sentences
+    ]
+
+
+def _stored_sentence_ranges_are_complete(
+    sentences: Iterable[Any], *, variant: Any
+) -> bool:
+    """Fail closed unless stored ranges exactly cover non-whitespace text.
+
+    The canonical writer normally guarantees this invariant.  Rechecking it
+    at disclosure time prevents a corrupt or otherwise invalid persisted graph
+    from being mistaken for a safely aligned original counterpart.
+    """
+
+    ordered = list(sentences)
+    if not ordered:
+        return False
+    cursor = 0
+    normalized_text = variant.normalized_text
+    for sentence in ordered:
+        start_offset = sentence.start_offset
+        end_offset = sentence.end_offset
+        if (
+            start_offset < cursor
+            or end_offset <= start_offset
+            or end_offset > len(normalized_text)
+            or normalized_text[start_offset:end_offset] != sentence.text
+            or hashlib.sha256(sentence.text.encode("utf-8")).hexdigest()
+            != sentence.text_sha256
+        ):
+            return False
+        if any(
+            not code_point.isspace()
+            for code_point in normalized_text[cursor:start_offset]
+        ):
+            return False
+        cursor = end_offset
+    return not any(not code_point.isspace() for code_point in normalized_text[cursor:])
+
+
+def _translation_provenance_payload(
+    *, document_version: Any, project_primary_variant: Any | None
+) -> dict[str, Any] | None:
+    """Expose one exact stored provenance row, never a synthesized account."""
+
+    if project_primary_variant is None:
+        return None
+    models = _models()
+    rows = list(
+        models.TranslationProvenance.objects.filter(
+            document_version=document_version,
+            project_primary_variant=project_primary_variant,
+        ).order_by("code", "pk")
+    )
+    # A canonical version has one primary-role binding.  More than one matching
+    # provenance row is corruption, not a reason to pick an arbitrary row.
+    if len(rows) != 1:
+        return None
+    provenance = rows[0]
+    return {
+        "id": str(provenance.pk),
+        "code": provenance.code,
+        "version": provenance.version,
+        "document_version_id": str(provenance.document_version_id),
+        "project_primary_variant_id": str(provenance.project_primary_variant_id),
+        "source_document_version_id": str(provenance.source_document_version_id),
+        "source_content_variant_id": str(provenance.source_content_variant_id),
+        "source_language_tag": provenance.source_language_tag,
+        "target_language_tag": provenance.target_language_tag,
+        "translation_id": provenance.translation_id,
+        "translation_version": provenance.translation_version,
+        "translated_at": (
+            provenance.translated_at.isoformat()
+            if provenance.translated_at is not None
+            else None
+        ),
+        "actor_type": provenance.actor_type,
+        "actor_identifier": provenance.actor_identifier,
+        "provider": provenance.provider,
+        "model": provenance.model,
+        "method_version": provenance.method_version,
+        "knowledge": provenance.knowledge,
+        "alignment_set_id": (
+            str(provenance.alignment_set_id)
+            if provenance.alignment_set_id is not None
+            else None
+        ),
+    }
 
 
 def _canonical_sha256(value: Mapping[str, Any]) -> str:
@@ -296,8 +431,13 @@ def _alignment_checksum_matches(
     return expected == getattr(alignment_set, "alignment_sha256", "")
 
 
-def _synchronized_original_payload(fragment: Any) -> dict[str, Any] | None:
-    """Return exact original sentences only for a fully verified graph."""
+def _synchronized_alignment_payload(fragment: Any) -> dict[str, Any] | None:
+    """Return both exact role sides only for a fully verified graph.
+
+    This never derives a counterpart from offsets, numbering or text.  The
+    primary sentence list is the stored set that intersects the exact fragment;
+    the original list is reached exclusively through persisted alignment edges.
+    """
 
     models = _models()
     document_version = fragment.document_version
@@ -343,6 +483,24 @@ def _synchronized_original_payload(fragment: Any) -> dict[str, Any] | None:
     )
     if not original_sentences or not primary_sentences:
         return None
+    if not _stored_sentence_ranges_are_complete(
+        original_sentences, variant=original_variant
+    ) or not _stored_sentence_ranges_are_complete(
+        primary_sentences, variant=primary_variant
+    ):
+        return None
+    if (
+        fragment.start_offset is None
+        or fragment.end_offset is None
+        or fragment.end_offset <= fragment.start_offset
+        or primary_variant.normalized_text[
+            fragment.start_offset : fragment.end_offset
+        ]
+        != fragment.exact_text
+        or hashlib.sha256(fragment.exact_text.encode("utf-8")).hexdigest()
+        != fragment.text_sha256
+    ):
+        return None
     edges = list(
         models.SentenceAlignmentEdge.objects.select_related(
             "original_sentence", "project_primary_sentence"
@@ -350,6 +508,15 @@ def _synchronized_original_payload(fragment: Any) -> dict[str, Any] | None:
         .filter(alignment_set=alignment_set)
         .order_by("original_sentence__sentence_number", "project_primary_sentence__sentence_number", "code", "pk")
     )
+    if original_variant.pk == primary_variant.pk and any(
+        edge.cardinality != "ONE_TO_ONE"
+        or edge.original_sentence_id != edge.project_primary_sentence_id
+        for edge in edges
+    ):
+        # A shared monolingual coordinate system can only witness each stored
+        # sentence against itself.  Even a checksum-valid cross-sentence graph
+        # would be an invented translation relationship.
+        return None
     graph_valid, _ = _alignment_components_from_edges(
         edges=edges,
         original_sentence_ids={sentence.pk for sentence in original_sentences},
@@ -383,23 +550,37 @@ def _synchronized_original_payload(fragment: Any) -> dict[str, Any] | None:
         original_for_fragment,
         key=lambda sentence: (sentence.sentence_number, sentence.code, str(sentence.pk)),
     )
-    sentence_payload = [
-        {
-            "id": str(sentence.pk),
-            "code": sentence.code,
-            "sentence_number": sentence.sentence_number,
-            "text": sentence.text,
-            "text_sha256": sentence.text_sha256,
-        }
-        for sentence in exact_sentences
+    exact_primary_sentences = [
+        sentence for sentence in primary_sentences if sentence.pk in primary_for_fragment
     ]
+    original_sentence_payload = _sentence_payload(exact_sentences)
+    primary_sentence_payload = _sentence_payload(exact_primary_sentences)
+    original_payload = _variant_payload(original_variant)
+    original_payload.update(
+        {
+            "sentences": original_sentence_payload,
+            # This is formed only from stored ORIGINAL sentence identities
+            # reached by persisted edges; it is never an offset/number/text
+            # guess.
+            "excerpt": "\n".join(item["text"] for item in original_sentence_payload),
+            # Retain the established nested compatibility fields while the
+            # evidence-level fields below make the shared alignment identity
+            # explicit for both role sides.
+            "alignment_set_id": str(alignment_set.pk),
+            "alignment_sha256": alignment_set.alignment_sha256,
+        }
+    )
+    primary_payload = _variant_payload(primary_variant)
+    primary_payload.update(
+        {
+            "sentences": primary_sentence_payload,
+            "alignment_set_id": str(alignment_set.pk),
+            "alignment_sha256": alignment_set.alignment_sha256,
+        }
+    )
     return {
-        "variant_id": str(original_variant.pk),
-        "language_tag": original_variant.language_tag,
-        "sentences": sentence_payload,
-        # This is formed only from stored ORIGINAL sentence identities reached
-        # by persisted edges; it is never an offset/number/text guess.
-        "excerpt": "\n".join(item["text"] for item in sentence_payload),
+        "original": original_payload,
+        "project_primary": primary_payload,
         "alignment_set_id": str(alignment_set.pk),
         "alignment_sha256": alignment_set.alignment_sha256,
     }
@@ -411,7 +592,11 @@ def _document_payload(document: Any) -> dict[str, Any]:
         "id": str(document.pk),
         "code": document.code,
         "version": document.version,
-        "root_document_id": str(document.root_document_id),
+        "root_document_id": (
+            str(document.root_document_id)
+            if document.root_document_id is not None
+            else None
+        ),
         "predecessor_document_id": (
             str(document.predecessor_document_id)
             if document.predecessor_document_id is not None
@@ -424,6 +609,7 @@ def _document_payload(document: Any) -> dict[str, Any]:
             "code": source.code,
             "name": source.name,
             "publisher": source.publisher,
+            "independence_group": source.independence_group,
             "independence_status": source.independence_status,
         },
     }
@@ -434,7 +620,8 @@ def _evidence_payload(link: Any) -> tuple[dict[str, Any], bool]:
 
     fragment = link.fragment
     document_version = fragment.document_version
-    primary = {
+    primary_variant = fragment.content_variant
+    primary: dict[str, Any] = {
         "fragment_id": str(fragment.pk),
         "fragment_code": fragment.code,
         "content_variant_id": (
@@ -448,6 +635,10 @@ def _evidence_payload(link: Any) -> tuple[dict[str, Any], bool]:
         "exact_text": fragment.exact_text,
         "text_sha256": fragment.text_sha256,
     }
+    if primary_variant is not None:
+        # This additive identity is useful even for unsynchronised evidence;
+        # it does not imply that an ORIGINAL counterpart is available.
+        primary.update(_variant_payload(primary_variant))
     payload: dict[str, Any] = {
         "fact_evidence_id": str(link.pk),
         "fact_evidence_code": link.code,
@@ -463,14 +654,21 @@ def _evidence_payload(link: Any) -> tuple[dict[str, Any], bool]:
         },
         "document": _document_payload(document_version.document),
         "project_primary": primary,
+        "translation_provenance": _translation_provenance_payload(
+            document_version=document_version,
+            project_primary_variant=primary_variant,
+        ),
     }
-    original = _synchronized_original_payload(fragment)
-    if original is None:
+    synchronized = _synchronized_alignment_payload(fragment)
+    if synchronized is None:
         # Deliberately omit both `original` and `original_excerpt`: a null or
         # copied offset is too easy for downstream code to misread as a match.
         return payload, False
-    payload["original"] = original
-    payload["original_excerpt"] = original["excerpt"]
+    primary.update(synchronized["project_primary"])
+    payload["original"] = synchronized["original"]
+    payload["original_excerpt"] = synchronized["original"]["excerpt"]
+    payload["alignment_set_id"] = synchronized["alignment_set_id"]
+    payload["alignment_sha256"] = synchronized["alignment_sha256"]
     return payload, True
 
 
@@ -484,6 +682,7 @@ def build_evidence_drilldown(fact: Any) -> EvidenceDrilldown:
 
     if fact is None or getattr(fact, "pk", None) is None:
         raise ValueError("A persisted Fact is required for evidence drilldown.")
+    fact_payload = _fact_payload(fact)
     category = _category_payload(fact)
     links = list(
         fact.evidence_links.select_related(
@@ -501,6 +700,7 @@ def build_evidence_drilldown(fact: Any) -> EvidenceDrilldown:
             code=code,
             fact_id=str(fact.pk),
             fact_type=fact.fact_type,
+            fact=fact_payload,
             category=category,
             evidence=(),
         )
@@ -518,6 +718,7 @@ def build_evidence_drilldown(fact: Any) -> EvidenceDrilldown:
         ),
         fact_id=str(fact.pk),
         fact_type=fact.fact_type,
+        fact=fact_payload,
         category=category,
         evidence=tuple(payloads),
     )

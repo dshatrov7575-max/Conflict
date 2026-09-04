@@ -3,7 +3,9 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+from dataclasses import replace
 from datetime import date
+from importlib import import_module
 from unittest.mock import patch
 from uuid import UUID, uuid4
 
@@ -13,6 +15,7 @@ from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
+from django.db.migrations.recorder import MigrationRecorder
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
 import pytest
@@ -52,6 +55,7 @@ from domain.models import (
     TranslationProvenance,
 )
 from domain.services.document_lineage import (
+    _alignment_checksum,
     AlignmentComponentSpec,
     ContentVariantSpec,
     DocumentLineageError,
@@ -68,6 +72,7 @@ from domain.services.evidence_drilldown import (
     EvidenceDrilldownCode,
     build_evidence_drilldown,
 )
+from domain.services.language_tags import canonicalize_language_tag
 from domain.tests.test_v4_foundation_contracts import (
     FoundationFactoryMixin,
     clean_save,
@@ -160,10 +165,10 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
         self,
         suffix: str,
         *,
-        original_sentences: tuple[str, ...] = ("Исходное предложение.",),
-        primary_sentences: tuple[str, ...] = ("Primary sentence.",),
-        original_language: str = "ru",
-        primary_language: str = "en",
+        original_sentences: tuple[str, ...] = ("Original sentence.",),
+        primary_sentences: tuple[str, ...] = ("Основное предложение.",),
+        original_language: str = "en",
+        primary_language: str = "ru",
         components: tuple[AlignmentComponentSpec, ...] | None = None,
         provenance: TranslationProvenanceSpec | None = None,
         source: Source | None = None,
@@ -184,7 +189,8 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
                 for number in range(1, len(original_sentences) + 1)
             )
         if provenance is None and (
-            original_language != primary_language
+            canonicalize_language_tag(original_language, allow_und=True)
+            != canonicalize_language_tag(primary_language, allow_und=True)
             or original.normalized_text != primary.normalized_text
             or original.segmentation_version != primary.segmentation_version
         ):
@@ -261,6 +267,73 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
                 },
             ),
         )
+
+    @staticmethod
+    def _fact_payload(fact: Fact) -> dict[str, object]:
+        return {
+            "id": str(fact.pk),
+            "code": fact.code,
+            "version": fact.version,
+            "fact_type": fact.fact_type,
+            "statement": fact.statement,
+            "origin": fact.origin,
+            "directness": fact.directness,
+            "status": fact.status,
+            "temporal_status": fact.temporal_status,
+        }
+
+    @staticmethod
+    def _variant_payload(variant: DocumentContentVariant) -> dict[str, str]:
+        return {
+            "variant_id": str(variant.pk),
+            "language_tag": variant.language_tag,
+            "content_sha256": variant.content_sha256,
+            "segmentation_version": variant.segmentation_version,
+        }
+
+    @staticmethod
+    def _sentence_payload(sentence: DocumentSentence) -> dict[str, object]:
+        return {
+            "id": str(sentence.pk),
+            "code": sentence.code,
+            "sentence_number": sentence.sentence_number,
+            "start_offset": sentence.start_offset,
+            "end_offset": sentence.end_offset,
+            "text": sentence.text,
+            "text_sha256": sentence.text_sha256,
+        }
+
+    @staticmethod
+    def _provenance_payload(provenance: TranslationProvenance) -> dict[str, object]:
+        return {
+            "id": str(provenance.pk),
+            "code": provenance.code,
+            "version": provenance.version,
+            "document_version_id": str(provenance.document_version_id),
+            "project_primary_variant_id": str(provenance.project_primary_variant_id),
+            "source_document_version_id": str(provenance.source_document_version_id),
+            "source_content_variant_id": str(provenance.source_content_variant_id),
+            "source_language_tag": provenance.source_language_tag,
+            "target_language_tag": provenance.target_language_tag,
+            "translation_id": provenance.translation_id,
+            "translation_version": provenance.translation_version,
+            "translated_at": (
+                provenance.translated_at.isoformat()
+                if provenance.translated_at is not None
+                else None
+            ),
+            "actor_type": provenance.actor_type,
+            "actor_identifier": provenance.actor_identifier,
+            "provider": provenance.provider,
+            "model": provenance.model,
+            "method_version": provenance.method_version,
+            "knowledge": provenance.knowledge,
+            "alignment_set_id": (
+                str(provenance.alignment_set_id)
+                if provenance.alignment_set_id is not None
+                else None
+            ),
+        }
 
     def _category(
         self,
@@ -490,6 +563,10 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
         self.assertEqual(drilldown["category"]["classification_status"], "UNCLASSIFIED")
         self.assertIsNone(drilldown["category"]["category"])
         self.assertEqual(drilldown["code"], EvidenceDrilldownCode.ALIGNMENT_NOT_GUARANTEED)
+        self.assertIsNone(drilldown["evidence"][0]["document"]["root_document_id"])
+        self.assertNotEqual(
+            drilldown["evidence"][0]["document"]["root_document_id"], "None"
+        )
         self.assertFalse(FactCategoryAssignment.objects.filter(fact=fact).exists())
         self.assertFalse(DocumentContentRoleBinding.objects.filter(document_version=version).exists())
         self.assertFalse(DocumentSentence.objects.filter(content_variant__document_version=version).exists())
@@ -538,6 +615,102 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
             ),
             {"ORIGINAL", "PROJECT_PRIMARY"},
         )
+        canonical_monolingual = self._ingest(
+            "MONOLINGUAL-CANONICAL-TAGS",
+            original_sentences=("Один канонический текст.",),
+            primary_sentences=("Один канонический текст.",),
+            original_language="RU",
+            primary_language="ru",
+            provenance=None,
+        )
+        self.assertEqual(
+            canonical_monolingual.original_variant.pk,
+            canonical_monolingual.primary_variant.pk,
+        )
+        self.assertEqual(canonical_monolingual.primary_variant.language_tag, "ru")
+        baseline = Document.objects.count()
+        with self.assertRaises(DocumentLineageError):
+            self._ingest(
+                "MONOLINGUAL-SAME-LANGUAGE-DIFFERENT-TEXT",
+                original_sentences=("Оригинальный текст.",),
+                primary_sentences=("Другой текст.",),
+                original_language="ru",
+                primary_language="RU",
+                provenance=self._unknown_provenance("MONOLINGUAL-DIFFERENT"),
+            )
+        with self.assertRaises(DocumentLineageError):
+            self._ingest(
+                "PROJECT-PRIMARY-UND",
+                primary_language="und",
+            )
+        with self.assertRaises(DocumentLineageError):
+            self._ingest(
+                "PROJECT-PRIMARY-MISMATCH",
+                primary_language="en",
+            )
+        self.assertEqual(Document.objects.count(), baseline)
+
+        # Simulate a hostile persisted corruption which bypasses the canonical
+        # writer: a checksum-valid crossed self-alignment must not disclose an
+        # invented ORIGINAL counterpart on read.
+        corrupt = self._ingest(
+            "MONOLINGUAL-CORRUPTED-READ",
+            original_sentences=("Первое.", "Второе."),
+            primary_sentences=("Первое.", "Второе."),
+            original_language="ru",
+            primary_language="ru",
+            provenance=None,
+        )
+        corrupt_fragment = self._primary_fragment(corrupt, "MONOLINGUAL-CORRUPTED-READ")
+        corrupt_fact = self._fact("MONOLINGUAL-CORRUPTED-READ")
+        self._evidence_link(
+            "MONOLINGUAL-CORRUPTED-READ",
+            fact=corrupt_fact,
+            fragment=corrupt_fragment,
+        )
+        corrupt_sentences = {
+            sentence.sentence_number: sentence
+            for sentence in DocumentSentence.objects.filter(
+                content_variant=corrupt.primary_variant
+            )
+        }
+        corrupt_edges = list(
+            SentenceAlignmentEdge.objects.filter(
+                alignment_set=corrupt.alignment_set
+            ).order_by("original_sentence__sentence_number")
+        )
+        edge_table = connection.ops.quote_name(SentenceAlignmentEdge._meta.db_table)
+        alignment_table = connection.ops.quote_name(SentenceAlignmentSet._meta.db_table)
+        crossed_checksum = _alignment_checksum(
+            original_variant=corrupt.original_variant,
+            primary_variant=corrupt.primary_variant,
+            original_sentences=corrupt_sentences,
+            primary_sentences=corrupt_sentences,
+            components=(
+                AlignmentComponentSpec((1,), (2,)),
+                AlignmentComponentSpec((2,), (1,)),
+            ),
+        )
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"UPDATE {edge_table} SET project_primary_sentence_id = %s WHERE id = %s",
+                [corrupt_sentences[2].pk.hex, corrupt_edges[0].pk.hex],
+            )
+            cursor.execute(
+                f"UPDATE {edge_table} SET project_primary_sentence_id = %s WHERE id = %s",
+                [corrupt_sentences[1].pk.hex, corrupt_edges[1].pk.hex],
+            )
+            cursor.execute(
+                f"UPDATE {alignment_table} SET alignment_sha256 = %s WHERE id = %s",
+                [crossed_checksum, corrupt.alignment_set.pk.hex],
+            )
+        corrupted_payload = build_evidence_drilldown(corrupt_fact).as_dict()
+        corrupted_evidence = corrupted_payload["evidence"][0]
+        self.assertEqual(
+            corrupted_payload["code"], EvidenceDrilldownCode.ALIGNMENT_NOT_GUARANTEED
+        )
+        self.assertNotIn("original", corrupted_evidence)
+        self.assertNotIn("original_excerpt", corrupted_evidence)
 
     def test_complete_one_to_one_one_to_many_and_many_to_one_alignment_is_checksum_bound(self):
         one_to_one = self._ingest("ONE-ONE")
@@ -599,6 +772,90 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
                         primary_sentences=("First.", "Second."),
                         components=components,
                     )
+
+        original, original_sentences = self._role(
+            language_tag="en",
+            sentences=("First.", "Second."),
+            code="DOC-RANGE-ORIGINAL",
+        )
+        primary, primary_sentences = self._role(
+            language_tag="ru",
+            sentences=("Первое.", "Второе."),
+            code="DOC-RANGE-PRIMARY",
+        )
+
+        def assert_invalid_ranges(
+            suffix: str,
+            supplied_original: tuple[SentenceSpec, ...],
+            supplied_primary: tuple[SentenceSpec, ...] = primary_sentences,
+        ) -> None:
+            with self.subTest(case=suffix):
+                with self.assertRaises(DocumentLineageError):
+                    ingest_initial_synchronized_document(
+                        workspace=self.workspace,
+                        source=self.source,
+                        document=DocumentSpec(
+                            code=f"DOC-RANGE-{suffix}",
+                            title=f"Invalid range {suffix}",
+                        ),
+                        original=original,
+                        project_primary=primary,
+                        original_sentences=supplied_original,
+                        project_primary_sentences=supplied_primary,
+                        alignment_components=tuple(
+                            AlignmentComponentSpec((number,), (number,))
+                            for number in range(1, len(supplied_original) + 1)
+                        ),
+                        translation_provenance=self._unknown_provenance(
+                            f"RANGE-{suffix}"
+                        ),
+                    )
+
+        assert_invalid_ranges("PREFIX-GAP", (
+            SentenceSpec("irst.", 1, 6, 1, "RANGE-PREFIX-O1"),
+            original_sentences[1],
+        ))
+        assert_invalid_ranges("INTERIOR-GAP", (
+            SentenceSpec("First", 0, 5, 1, "RANGE-INTERIOR-O1"),
+            original_sentences[1],
+        ))
+        assert_invalid_ranges("SUFFIX-GAP", (
+            original_sentences[0],
+            SentenceSpec("Second", 7, 13, 2, "RANGE-SUFFIX-O2"),
+        ))
+        assert_invalid_ranges("OVERLAP", (
+            original_sentences[0],
+            SentenceSpec(".", 5, 6, 2, "RANGE-OVERLAP-O2"),
+        ))
+        assert_invalid_ranges("OUT-OF-ORDER-NUMBER", (
+            SentenceSpec("First.", 0, 6, 2, "RANGE-NUMBER-O2"),
+            SentenceSpec("Second.", 7, 14, 1, "RANGE-NUMBER-O1"),
+        ))
+
+        monolingual, monolingual_sentences = self._role(
+            language_tag="ru",
+            sentences=("Первое.", "Второе."),
+            code="DOC-RANGE-MONOLINGUAL",
+        )
+        with self.subTest(case="MONOLINGUAL-CROSS-SENTENCE"):
+            with self.assertRaises(DocumentLineageError):
+                ingest_initial_synchronized_document(
+                    workspace=self.workspace,
+                    source=self.source,
+                    document=DocumentSpec(
+                        code="DOC-RANGE-MONOLINGUAL-CROSS",
+                        title="Invalid monolingual cross-sentence alignment",
+                    ),
+                    original=monolingual,
+                    project_primary=monolingual,
+                    original_sentences=monolingual_sentences,
+                    project_primary_sentences=monolingual_sentences,
+                    alignment_components=(
+                        AlignmentComponentSpec((1,), (2,)),
+                        AlignmentComponentSpec((2,), (1,)),
+                    ),
+                    translation_provenance=None,
+                )
         self.assertEqual(Document.objects.count(), baseline)
         self.assertFalse(Document.objects.filter(translation_synchronized=True).exists())
 
@@ -620,6 +877,8 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
                 known.translation_provenance.model,
                 known.translation_provenance.method_version,
                 known.translation_provenance.knowledge,
+                known.translation_provenance.actor_type,
+                known.translation_provenance.actor_identifier,
             ),
             (
                 "translation:KNOWN-PROVENANCE",
@@ -628,6 +887,8 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
                 "translation-model-f1",
                 "prompt-v1",
                 "KNOWN",
+                "AI",
+                "translator:f1",
             ),
         )
         self.assertEqual(
@@ -636,15 +897,17 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
                 unknown.translation_provenance.model,
                 unknown.translation_provenance.method_version,
                 unknown.translation_provenance.knowledge,
+                unknown.translation_provenance.actor_type,
+                unknown.translation_provenance.actor_identifier,
             ),
-            ("", "", "", "UNKNOWN"),
+            ("", "", "", "UNKNOWN", "UNKNOWN", ""),
         )
         identical_text_different_language = self._ingest(
             "IDENTICAL-TEXT-DIFFERENT-LANGUAGE",
             original_sentences=("Unchanged token.",),
             primary_sentences=("Unchanged token.",),
-            original_language="ru",
-            primary_language="en",
+            original_language="en",
+            primary_language="ru",
         )
         self.assertNotEqual(
             identical_text_different_language.original_variant.pk,
@@ -655,6 +918,21 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
             identical_text_different_language.primary_variant.content_sha256,
         )
         self.assertNotEqual(known.translation_provenance.pk, unknown.translation_provenance.pk)
+        baseline = Document.objects.count()
+        for actor_type in ("HUMAN", "AI", "HYBRID"):
+            with self.subTest(actor_type=actor_type):
+                with self.assertRaises(DocumentLineageError):
+                    self._ingest(
+                        f"KNOWN-BLANK-ACTOR-{actor_type}",
+                        provenance=replace(
+                            self._known_provenance(
+                                f"KNOWN-BLANK-ACTOR-{actor_type}"
+                            ),
+                            actor_type=actor_type,
+                            actor_identifier="   ",
+                        ),
+                    )
+        self.assertEqual(Document.objects.count(), baseline)
 
     def test_any_primary_translation_edit_creates_unsynchronized_derivative_and_preserves_history(self):
         initial = self._ingest("EDIT-INITIAL")
@@ -662,18 +940,51 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
         fact = self._fact("EDIT")
         link = self._evidence_link("EDIT", fact=fact, fragment=initial_fragment)
         original, original_sentences = self._role(
-            language_tag="ru",
-            sentences=("Исходное предложение.",),
+            language_tag="en",
+            sentences=("Original sentence.",),
             code="DOC-EDIT-DERIVATIVE-ORIGINAL",
         )
         primary, primary_sentences = self._role(
-            language_tag="en",
-            sentences=("Primary sentence!",),
+            language_tag="ru",
+            sentences=("Основное предложение!",),
             code="DOC-EDIT-DERIVATIVE-PRIMARY",
         )
+        changed_original, changed_original_sentences = self._role(
+            language_tag="en",
+            sentences=("Changed original sentence.",),
+            code="DOC-EDIT-CHANGED-ORIGINAL",
+        )
+        baseline = Document.objects.count()
+        with self.assertRaises(DocumentLineageError):
+            create_translation_edit_derivative(
+                predecessor_document=initial.document,
+                predecessor_document_version=initial.document_version,
+                document=DocumentSpec(code="DOC-EDIT-CHANGED-ORIGINAL", title="Invalid edit"),
+                original=changed_original,
+                project_primary=primary,
+                original_sentences=changed_original_sentences,
+                project_primary_sentences=primary_sentences,
+                translation_provenance=self._unknown_provenance("EDIT-CHANGED-ORIGINAL"),
+            )
+        self.assertEqual(Document.objects.count(), baseline)
+        wrong_predecessor = self._ingest("EDIT-WRONG-PREDECESSOR")
+        baseline = Document.objects.count()
+        with self.assertRaises(DocumentLineageError):
+            create_translation_edit_derivative(
+                predecessor_document=initial.document,
+                predecessor_document_version=wrong_predecessor.document_version,
+                document=DocumentSpec(code="DOC-EDIT-WRONG-VERSION", title="Invalid edit"),
+                original=original,
+                project_primary=primary,
+                original_sentences=original_sentences,
+                project_primary_sentences=primary_sentences,
+                translation_provenance=self._unknown_provenance("EDIT-WRONG-VERSION"),
+            )
+        self.assertEqual(Document.objects.count(), baseline)
 
         edited = create_translation_edit_derivative(
             predecessor_document=initial.document,
+            predecessor_document_version=initial.document_version,
             document=DocumentSpec(code="DOC-EDIT-DERIVATIVE", title="Edited translation"),
             original=original,
             project_primary=primary,
@@ -694,23 +1005,24 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
         initial_fragment.refresh_from_db()
         self.assertEqual(link.fragment_id, initial_fragment.pk)
         self.assertEqual(initial_fragment.content_variant_id, initial.primary_variant.pk)
-        self.assertEqual(initial.primary_variant.normalized_text, "Primary sentence.")
-        self.assertEqual(edited.primary_variant.normalized_text, "Primary sentence!")
+        self.assertEqual(initial.primary_variant.normalized_text, "Основное предложение.")
+        self.assertEqual(edited.primary_variant.normalized_text, "Основное предложение!")
 
     def test_explicit_complete_realign_creates_new_synchronized_derivative_without_mutation(self):
         initial = self._ingest("REALIGN-INITIAL")
         edited_original, edited_original_sentences = self._role(
-            language_tag="ru",
-            sentences=("Исходное предложение.",),
+            language_tag="en",
+            sentences=("Original sentence.",),
             code="DOC-REALIGN-EDIT-ORIGINAL",
         )
         edited_primary, edited_primary_sentences = self._role(
-            language_tag="en",
-            sentences=("Primary sentence!",),
+            language_tag="ru",
+            sentences=("Основное предложение!",),
             code="DOC-REALIGN-EDIT-PRIMARY",
         )
         edited = create_translation_edit_derivative(
             predecessor_document=initial.document,
+            predecessor_document_version=initial.document_version,
             document=DocumentSpec(code="DOC-REALIGN-EDIT", title="Edited translation"),
             original=edited_original,
             project_primary=edited_primary,
@@ -718,8 +1030,23 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
             project_primary_sentences=edited_primary_sentences,
             translation_provenance=self._unknown_provenance("REALIGN-EDIT"),
         )
+        baseline = Document.objects.count()
+        with self.assertRaises(DocumentLineageError):
+            create_complete_realignment_derivative(
+                predecessor_document=edited.document,
+                predecessor_document_version=initial.document_version,
+                document=DocumentSpec(code="DOC-REALIGN-WRONG-VERSION", title="Invalid realignment"),
+                original=edited_original,
+                project_primary=edited_primary,
+                original_sentences=edited_original_sentences,
+                project_primary_sentences=edited_primary_sentences,
+                alignment_components=(AlignmentComponentSpec((1,), (1,)),),
+                translation_provenance=self._unknown_provenance("REALIGN-WRONG-VERSION"),
+            )
+        self.assertEqual(Document.objects.count(), baseline)
         realigned = create_complete_realignment_derivative(
             predecessor_document=edited.document,
+            predecessor_document_version=edited.document_version,
             document=DocumentSpec(code="DOC-REALIGN-COMPLETE", title="Realigned translation"),
             original=edited_original,
             project_primary=edited_primary,
@@ -748,6 +1075,8 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
         self.assertEqual(result["code"], EvidenceDrilldownCode.NO_DOCUMENT_EVIDENCE)
         self.assertEqual(result["evidence"], [])
         self.assertEqual(result["fact_id"], str(fact.pk))
+        self.assertEqual(result["fact_type"], fact.fact_type)
+        self.assertEqual(result["fact"], self._fact_payload(fact))
 
     def test_multiple_document_evidence_is_deterministic_without_truth_or_independence_inference(self):
         first = self._ingest("MULTI-FIRST")
@@ -774,6 +1103,20 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
             [entry["fact_evidence_code"] for entry in first_read["evidence"]],
             ["LINK-A-MULTI", "LINK-Z-MULTI"],
         )
+        self.assertEqual(
+            [
+                entry["document"]["source"]["independence_group"]
+                for entry in first_read["evidence"]
+            ],
+            [second_source.independence_group, self.source.independence_group],
+        )
+        self.assertEqual(
+            [entry["translation_provenance"] for entry in first_read["evidence"]],
+            [
+                self._provenance_payload(second.translation_provenance),
+                self._provenance_payload(first.translation_provenance),
+            ],
+        )
         self.assertTrue(
             all(
                 key not in first_read
@@ -790,8 +1133,8 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
     def test_synchronized_drilldown_resolves_exact_primary_and_original_fragments(self):
         result = self._ingest(
             "SYNC-DRILLDOWN",
-            original_sentences=("Длинное исходное предложение.",),
-            primary_sentences=("Short primary.",),
+            original_sentences=("Long original sentence.",),
+            primary_sentences=("Короткое основное предложение.",),
         )
         fragment = self._primary_fragment(result, "SYNC-DRILLDOWN")
         fact = self._fact("SYNC-DRILLDOWN")
@@ -799,30 +1142,83 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
 
         payload = build_evidence_drilldown(fact).as_dict()
         evidence = payload["evidence"][0]
+        primary_sentence = DocumentSentence.objects.get(
+            content_variant=result.primary_variant
+        )
+        original_sentence = DocumentSentence.objects.get(
+            content_variant=result.original_variant
+        )
 
         self.assertEqual(payload["code"], EvidenceDrilldownCode.DOCUMENT_EVIDENCE)
+        self.assertEqual(payload["fact"], self._fact_payload(fact))
         self.assertEqual(
             evidence["project_primary"]["content_variant_id"], str(result.primary_variant.pk)
         )
-        self.assertEqual(evidence["project_primary"]["exact_text"], "Short primary.")
-        self.assertEqual(evidence["original"]["variant_id"], str(result.original_variant.pk))
-        self.assertEqual(evidence["original"]["excerpt"], "Длинное исходное предложение.")
-        self.assertEqual(evidence["original_excerpt"], "Длинное исходное предложение.")
+        self.assertEqual(
+            {
+                key: evidence["project_primary"][key]
+                for key in ("variant_id", "language_tag", "content_sha256", "segmentation_version")
+            },
+            self._variant_payload(result.primary_variant),
+        )
+        self.assertEqual(
+            evidence["project_primary"]["sentences"],
+            [self._sentence_payload(primary_sentence)],
+        )
+        self.assertEqual(
+            evidence["project_primary"]["alignment_set_id"], str(result.alignment_set.pk)
+        )
+        self.assertEqual(
+            evidence["project_primary"]["alignment_sha256"],
+            result.alignment_set.alignment_sha256,
+        )
+        self.assertEqual(
+            evidence["project_primary"]["exact_text"], "Короткое основное предложение."
+        )
+        self.assertEqual(
+            {
+                key: evidence["original"][key]
+                for key in ("variant_id", "language_tag", "content_sha256", "segmentation_version")
+            },
+            self._variant_payload(result.original_variant),
+        )
+        self.assertEqual(
+            evidence["original"]["sentences"], [self._sentence_payload(original_sentence)]
+        )
+        self.assertEqual(
+            evidence["original"]["excerpt"], "Long original sentence."
+        )
+        self.assertEqual(evidence["original_excerpt"], "Long original sentence.")
+        self.assertEqual(evidence["alignment_set_id"], str(result.alignment_set.pk))
+        self.assertEqual(
+            evidence["alignment_sha256"], result.alignment_set.alignment_sha256
+        )
+        self.assertEqual(
+            evidence["original"]["alignment_set_id"], str(result.alignment_set.pk)
+        )
+        self.assertEqual(
+            evidence["original"]["alignment_sha256"], result.alignment_set.alignment_sha256
+        )
+        self.assertEqual(
+            evidence["translation_provenance"],
+            self._provenance_payload(result.translation_provenance),
+        )
 
     def test_unsynchronized_drilldown_returns_alignment_not_guaranteed_without_guessed_original(self):
         initial = self._ingest("UNSYNC-INITIAL")
         original, original_sentences = self._role(
-            language_tag="ru",
-            sentences=("Исходное предложение.",),
+            language_tag="en",
+            sentences=("Original sentence.",),
             code="DOC-UNSYNC-EDIT-ORIGINAL",
         )
         primary, primary_sentences = self._role(
-            language_tag="en",
-            sentences=("Changed primary sentence.",),
+            language_tag="ru",
+            sentences=("Изменённое основное предложение.",),
             code="DOC-UNSYNC-EDIT-PRIMARY",
         )
         edited = create_translation_edit_derivative(
             predecessor_document=initial.document,
+            predecessor_document_version=initial.document_version,
             document=DocumentSpec(code="DOC-UNSYNC-EDIT", title="Unsynchronized edit"),
             original=original,
             project_primary=primary,
@@ -841,10 +1237,25 @@ class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
         evidence = payload["evidence"][0]
 
         self.assertEqual(payload["code"], EvidenceDrilldownCode.ALIGNMENT_NOT_GUARANTEED)
+        self.assertEqual(payload["fact"], self._fact_payload(fact))
         self.assertNotIn("original", evidence)
         self.assertNotIn("original_excerpt", evidence)
+        self.assertNotIn("alignment_set_id", evidence)
+        self.assertNotIn("alignment_sha256", evidence)
         self.assertEqual(
             evidence["project_primary"]["content_variant_id"], str(edited.primary_variant.pk)
+        )
+        self.assertEqual(
+            {
+                key: evidence["project_primary"][key]
+                for key in ("variant_id", "language_tag", "content_sha256", "segmentation_version")
+            },
+            self._variant_payload(edited.primary_variant),
+        )
+        self.assertNotIn("sentences", evidence["project_primary"])
+        self.assertEqual(
+            evidence["translation_provenance"],
+            self._provenance_payload(edited.translation_provenance),
         )
 
     def test_drilldown_authorizes_before_disclosure_and_performs_zero_writes(self):
@@ -1135,7 +1546,10 @@ class MultilingualEvidenceLineageMigrationTests(TransactionTestCase):
             code="F1-MIGRATION-EMPTY-CONTENT",
             version="1.0.0",
             normalized_text="",
-            original_bytes=b"",
+            # Deliberately invalid/nonempty bytes prove that 0017 preserves
+            # the legacy normalized coordinate text and never decodes bytes
+            # to fabricate a replacement value.
+            original_bytes=b"\xfflegacy-nonempty-bytes",
             encoding="utf-8",
             normalization_version="legacy-v1",
             content_sha256=empty_content_sha256,
@@ -1218,6 +1632,7 @@ class MultilingualEvidenceLineageMigrationTests(TransactionTestCase):
         FactCategoryAssignment = apps.get_model("domain", "FactCategoryAssignment")
 
         self.assertEqual(after, before)
+        self.assertTrue(bytes(before["empty_content"]["original_bytes"]))
         document = Document.objects.get(pk=ids["document"])
         self.assertEqual(document.root_document_id, document.pk)
         self.assertIsNone(document.predecessor_document_id)
@@ -1260,7 +1675,7 @@ class MultilingualEvidenceLineageMigrationTests(TransactionTestCase):
                 ids["empty_document_version"],
                 "und",
                 "LEGACY_UNSPECIFIED",
-                "",
+                before["empty_content"]["normalized_text"],
                 hashlib.sha256(b"").hexdigest(),
                 hashlib.sha256(b"").hexdigest(),
             ),
@@ -1292,10 +1707,10 @@ class MultilingualEvidenceLineageMigrationTests(TransactionTestCase):
                 "id", "root_document_id", "predecessor_document_id", "lineage_kind", "translation_synchronized"
             ).get(pk=ids["document"]),
             "variant": apps_0017.get_model("domain", "DocumentContentVariant").objects.values(
-                "document_content_id", "document_version_id", "language_tag", "variant_kind", "normalized_text", "content_sha256", "metadata"
+                "id", "document_content_id", "document_version_id", "language_tag", "variant_kind", "normalized_text", "content_sha256", "metadata"
             ).get(document_content_id=ids["content"]),
             "empty_variant": apps_0017.get_model("domain", "DocumentContentVariant").objects.values(
-                "document_content_id", "document_version_id", "language_tag", "variant_kind", "normalized_text", "content_sha256", "metadata"
+                "id", "document_content_id", "document_version_id", "language_tag", "variant_kind", "normalized_text", "content_sha256", "metadata"
             ).get(document_content_id=ids["empty_content"]),
             "fragment": apps_0017.get_model("domain", "TextFragment").objects.values(
                 "id", "exact_text", "text_sha256"
@@ -1319,10 +1734,10 @@ class MultilingualEvidenceLineageMigrationTests(TransactionTestCase):
                 "id", "root_document_id", "predecessor_document_id", "lineage_kind", "translation_synchronized"
             ).get(pk=ids["document"]),
             "variant": reapplied_apps.get_model("domain", "DocumentContentVariant").objects.values(
-                "document_content_id", "document_version_id", "language_tag", "variant_kind", "normalized_text", "content_sha256", "metadata"
+                "id", "document_content_id", "document_version_id", "language_tag", "variant_kind", "normalized_text", "content_sha256", "metadata"
             ).get(document_content_id=ids["content"]),
             "empty_variant": reapplied_apps.get_model("domain", "DocumentContentVariant").objects.values(
-                "document_content_id", "document_version_id", "language_tag", "variant_kind", "normalized_text", "content_sha256", "metadata"
+                "id", "document_content_id", "document_version_id", "language_tag", "variant_kind", "normalized_text", "content_sha256", "metadata"
             ).get(document_content_id=ids["empty_content"]),
             "fragment": reapplied_apps.get_model("domain", "TextFragment").objects.values(
                 "id", "exact_text", "text_sha256"
@@ -1330,6 +1745,60 @@ class MultilingualEvidenceLineageMigrationTests(TransactionTestCase):
         }
         self.assertEqual(reapplied_successor_rows, first_successor_rows)
         self.assertEqual(self._legacy_snapshot(reapplied_apps, ids), before)
+
+        # A legacy EXACT anchor cannot silently receive a guessed pin.  Both
+        # a text mismatch and an absent capture must stop this atomic migration
+        # with the same deterministic typed blocker and no partial successor
+        # schema/backfill state.
+        blocker_type = import_module(
+            "domain.migrations.0017_multilingual_evidence_lineage"
+        ).LegacyMultilingualEvidenceMigrationBlocker
+        executor = MigrationExecutor(connection)
+        executor.migrate(self.migrate_from)
+        invalid_apps = executor.loader.project_state(self.migrate_from).apps
+        LegacyTextFragment = invalid_apps.get_model("domain", "TextFragment")
+        legacy_fragment = LegacyTextFragment.objects.get(pk=ids["fragment"])
+        mismatched_text = "X" + legacy_fragment.exact_text[1:]
+        LegacyTextFragment.objects.filter(pk=legacy_fragment.pk).update(
+            exact_text=mismatched_text,
+            text_sha256=hashlib.sha256(mismatched_text.encode("utf-8")).hexdigest(),
+        )
+        with self.assertRaises(blocker_type) as mismatched:
+            MigrationExecutor(connection).migrate(self.migrate_to)
+        self.assertIn("variant_text_mismatch", str(mismatched.exception))
+        self.assertFalse(
+            MigrationRecorder.Migration.objects.using(connection.alias).filter(
+                app="domain", name="0017_multilingual_evidence_lineage"
+            ).exists()
+        )
+        rollback_apps = MigrationExecutor(connection).loader.project_state(
+            self.migrate_from
+        ).apps
+        self.assertEqual(
+            rollback_apps.get_model("domain", "TextFragment")
+            .objects.get(pk=ids["fragment"])
+            .exact_text,
+            mismatched_text,
+        )
+        self.assertNotIn(
+            "domain_documentcontentvariant", connection.introspection.table_names()
+        )
+
+        LegacyDocumentContent = rollback_apps.get_model("domain", "DocumentContent")
+        LegacyDocumentContent.objects.filter(pk=ids["content"]).delete()
+        with self.assertRaises(blocker_type) as missing_content:
+            MigrationExecutor(connection).migrate(self.migrate_to)
+        self.assertIn(
+            "missing_document_content_variant", str(missing_content.exception)
+        )
+        self.assertFalse(
+            MigrationRecorder.Migration.objects.using(connection.alias).filter(
+                app="domain", name="0017_multilingual_evidence_lineage"
+            ).exists()
+        )
+        self.assertNotIn(
+            "domain_documentcontentvariant", connection.introspection.table_names()
+        )
 
         executor = MigrationExecutor(connection)
         executor.migrate(self.migrate_from)

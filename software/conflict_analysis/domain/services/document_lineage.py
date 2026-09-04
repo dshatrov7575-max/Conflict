@@ -241,6 +241,52 @@ def _require_same_workspace(*, workspace: Any, values: Iterable[tuple[str, Any]]
             _raise(name, "The object belongs to another workspace.")
 
 
+def _canonical_language_tag(value: str, *, field_name: str) -> str:
+    """Canonicalize a role tag before it participates in F1 semantics."""
+
+    from domain.services.language_tags import (
+        LanguageTagValidationError,
+        canonicalize_language_tag,
+    )
+
+    try:
+        return canonicalize_language_tag(value, allow_und=True)
+    except LanguageTagValidationError as exc:
+        _raise(field_name, str(exc))
+        raise AssertionError("unreachable") from exc
+
+
+def _assert_project_primary_language(
+    *,
+    workspace: Any,
+    primary: ContentVariantSpec,
+) -> str:
+    """Bind PROJECT_PRIMARY to the exact explicit Project language identity."""
+
+    project = getattr(workspace, "project", None)
+    if project is None:
+        _raise("workspace", "The workspace must resolve its exact Project.")
+    project_language = _canonical_language_tag(
+        project.primary_language_tag,
+        field_name="project_primary",
+    )
+    primary_language = _canonical_language_tag(
+        primary.language_tag,
+        field_name="project_primary",
+    )
+    if project_language == "und":
+        _raise(
+            "project_primary",
+            "Canonical multilingual writes require an explicit non-und Project language.",
+        )
+    if primary_language != project_language:
+        _raise(
+            "project_primary",
+            "PROJECT_PRIMARY must use the exact canonical Project primary language.",
+        )
+    return primary_language
+
+
 def _role_binding_for(document_version: Any, role: str) -> Any | None:
     models = _domain_models()
     return (
@@ -257,11 +303,25 @@ def _assert_distinct_or_monolingual(
 ) -> bool:
     """Return whether one variant may safely serve both role bindings."""
 
-    monolingual = (
-        original.language_tag == primary.language_tag
-        and original.normalized_text == primary.normalized_text
-        and original.segmentation_version == primary.segmentation_version
+    original_language = _canonical_language_tag(
+        original.language_tag,
+        field_name="original",
     )
+    primary_language = _canonical_language_tag(
+        primary.language_tag,
+        field_name="project_primary",
+    )
+    same_language = original_language == primary_language
+    if same_language and (
+        original.normalized_text != primary.normalized_text
+        or original.segmentation_version != primary.segmentation_version
+    ):
+        _raise(
+            "project_primary",
+            "Same-language ORIGINAL and PROJECT_PRIMARY roles require identical "
+            "text and segmentation in one shared variant.",
+        )
+    monolingual = same_language
     if monolingual and provenance is not None:
         _raise(
             "translation_provenance",
@@ -280,6 +340,7 @@ def _normalise_sentences(
     *,
     variant: ContentVariantSpec,
     role: str,
+    require_complete_coverage: bool = False,
 ) -> tuple[SentenceSpec, ...]:
     """Validate exact sentence coordinates before persistent writes begin."""
 
@@ -288,10 +349,12 @@ def _normalise_sentences(
     normalized: list[SentenceSpec] = []
     seen_numbers: set[int] = set()
     seen_coordinates: set[tuple[int, int]] = set()
+    previous_number = 0
+    previous_end = 0
     for index, sentence in enumerate(sentences, start=1):
         number = sentence.sentence_number if sentence.sentence_number is not None else index
-        if number < 1 or number in seen_numbers:
-            _raise(role, "Sentence numbers must be unique positive identities.")
+        if number < 1 or number in seen_numbers or number <= previous_number:
+            _raise(role, "Sentence numbers must be ordered unique positive identities.")
         if sentence.start_offset < 0 or sentence.end_offset <= sentence.start_offset:
             _raise(role, "Sentence offsets must be a non-empty exact range.")
         if sentence.end_offset > len(variant.normalized_text):
@@ -304,8 +367,20 @@ def _normalise_sentences(
         coordinates = (sentence.start_offset, sentence.end_offset)
         if coordinates in seen_coordinates:
             _raise(role, "Duplicate sentence coordinate identities are forbidden.")
+        if sentence.start_offset < previous_end:
+            _raise(role, "Sentence ranges must be ordered and non-overlapping.")
+        if require_complete_coverage and any(
+            not character.isspace()
+            for character in variant.normalized_text[previous_end : sentence.start_offset]
+        ):
+            _raise(
+                role,
+                "Synchronized sentence ranges cannot omit non-whitespace variant text.",
+            )
         seen_numbers.add(number)
         seen_coordinates.add(coordinates)
+        previous_number = number
+        previous_end = sentence.end_offset
         normalized.append(
             SentenceSpec(
                 text=sentence.text,
@@ -317,6 +392,13 @@ def _normalise_sentences(
                 metadata=sentence.metadata,
             )
         )
+    if require_complete_coverage and any(
+        not character.isspace() for character in variant.normalized_text[previous_end:]
+    ):
+        _raise(
+            role,
+            "Synchronized sentence ranges cannot omit non-whitespace variant text.",
+        )
     return tuple(normalized)
 
 
@@ -325,6 +407,7 @@ def _validate_components(
     *,
     original_sentences: Sequence[SentenceSpec],
     primary_sentences: Sequence[SentenceSpec],
+    monolingual: bool = False,
 ) -> tuple[AlignmentComponentSpec, ...]:
     """Reject partial, duplicate, positional and M:N synchronization claims."""
 
@@ -350,6 +433,15 @@ def _validate_components(
             _raise("alignment", "An alignment references an unknown primary sentence.")
         if len(originals) > 1 and len(primaries) > 1:
             _raise("alignment", "Many-to-many alignment is never synchronized.")
+        if monolingual and (
+            len(originals) != 1
+            or len(primaries) != 1
+            or originals[0] != primaries[0]
+        ):
+            _raise(
+                "alignment",
+                "A shared monolingual variant permits only exact 1:1 self-alignment.",
+            )
         if used_original.intersection(originals) or used_primary.intersection(primaries):
             _raise("alignment", "Sentences may belong to only one alignment component.")
         used_original.update(originals)
@@ -507,6 +599,7 @@ def _create_result(
     alignment_components: Sequence[AlignmentComponentSpec],
     provenance: TranslationProvenanceSpec | None,
     predecessor_document: Any | None,
+    predecessor_document_version: Any | None,
     lineage_kind: str,
     synchronized: bool,
 ) -> DocumentLineageResult:
@@ -522,6 +615,25 @@ def _create_result(
             workspace=workspace,
             values=(("predecessor_document", predecessor_document),),
         )
+        _ensure_persisted(
+            predecessor_document_version,
+            field_name="predecessor_document_version",
+        )
+        _require_same_workspace(
+            workspace=workspace,
+            values=(("predecessor_document_version", predecessor_document_version),),
+        )
+        if predecessor_document_version.document_id != predecessor_document.pk:
+            _raise(
+                "predecessor_document_version",
+                "The predecessor version must belong to the exact predecessor Document.",
+            )
+    elif predecessor_document_version is not None:
+        _raise(
+            "predecessor_document_version",
+            "An initial ingest cannot claim a predecessor version.",
+        )
+    _assert_project_primary_language(workspace=workspace, primary=primary)
     monolingual = _assert_distinct_or_monolingual(original, primary, provenance)
     if provenance is not None:
         if not provenance.translation_id.strip():
@@ -539,23 +651,60 @@ def _create_result(
                 "translation_provenance",
                 "Translation provenance requires the recorded translation time.",
             )
+        if (
+            provenance.actor_type in {"HUMAN", "AI", "HYBRID"}
+            and not provenance.actor_identifier.strip()
+        ):
+            _raise(
+                "translation_provenance",
+                "Known HUMAN, AI, and HYBRID translation provenance requires an "
+                "actor identifier.",
+            )
     if synchronized:
         normalized_original_sentences = _normalise_sentences(
-            original_sentences, variant=original, role=ROLE_ORIGINAL
+            original_sentences,
+            variant=original,
+            role=ROLE_ORIGINAL,
+            require_complete_coverage=True,
         )
-        normalized_primary_sentences = (
-            normalized_original_sentences
-            if monolingual
-            else _normalise_sentences(
-                primary_sentences,
-                variant=primary,
-                role=ROLE_PROJECT_PRIMARY,
+        normalized_primary_input = _normalise_sentences(
+            primary_sentences,
+            variant=primary,
+            role=ROLE_PROJECT_PRIMARY,
+            require_complete_coverage=True,
+        )
+        if monolingual:
+            original_identity = tuple(
+                (
+                    sentence.sentence_number,
+                    sentence.start_offset,
+                    sentence.end_offset,
+                    sentence.text,
+                )
+                for sentence in normalized_original_sentences
             )
-        )
+            primary_identity = tuple(
+                (
+                    sentence.sentence_number,
+                    sentence.start_offset,
+                    sentence.end_offset,
+                    sentence.text,
+                )
+                for sentence in normalized_primary_input
+            )
+            if primary_identity != original_identity:
+                _raise(
+                    "project_primary",
+                    "A shared monolingual variant requires identical stored sentence identities.",
+                )
+            normalized_primary_sentences = normalized_original_sentences
+        else:
+            normalized_primary_sentences = normalized_primary_input
         components = _validate_components(
             alignment_components,
             original_sentences=normalized_original_sentences,
             primary_sentences=normalized_primary_sentences,
+            monolingual=monolingual,
         )
     else:
         if alignment_components:
@@ -565,14 +714,20 @@ def _create_result(
             )
         normalized_original_sentences = tuple(
             _normalise_sentences(
-                original_sentences, variant=original, role=ROLE_ORIGINAL
+                original_sentences,
+                variant=original,
+                role=ROLE_ORIGINAL,
+                require_complete_coverage=False,
             )
             if original_sentences
             else ()
         )
         normalized_primary_sentences = tuple(
             _normalise_sentences(
-                primary_sentences, variant=primary, role=ROLE_PROJECT_PRIMARY
+                primary_sentences,
+                variant=primary,
+                role=ROLE_PROJECT_PRIMARY,
+                require_complete_coverage=False,
             )
             if primary_sentences
             else ()
@@ -820,9 +975,12 @@ def _create_result(
         if provenance is not None:
             source_variant = original_variant
             source_document_version = document_version
-            if predecessor_document is not None:
-                source_variant = _predecessor_original_variant(predecessor_document)
-                source_document_version = source_variant.document_version
+            if predecessor_document is not None and predecessor_document_version is not None:
+                source_variant = _predecessor_original_variant(
+                    predecessor_document,
+                    predecessor_document_version,
+                )
+                source_document_version = predecessor_document_version
             stored_provenance = models.TranslationProvenance(
                 workspace=workspace,
                 document_version=document_version,
@@ -903,51 +1061,89 @@ def ingest_initial_synchronized_document(
         alignment_components=alignment_components,
         provenance=translation_provenance,
         predecessor_document=None,
+        predecessor_document_version=None,
         lineage_kind=LINEAGE_INITIAL_INGEST,
         synchronized=True,
     )
 
 
-def _predecessor_primary_variant(predecessor_document: Any) -> Any:
+def _predecessor_role_variant(
+    predecessor_document: Any,
+    predecessor_document_version: Any,
+    role: str,
+) -> Any:
+    """Resolve one role from the caller-selected persisted predecessor version."""
+
     models = _domain_models()
-    document_version = (
-        models.DocumentVersion.objects.filter(document=predecessor_document)
-        .order_by("created_at", "code", "pk")
-        .last()
+    _ensure_persisted(predecessor_document, field_name="predecessor_document")
+    _ensure_persisted(
+        predecessor_document_version,
+        field_name="predecessor_document_version",
     )
+    document_version = models.DocumentVersion.objects.filter(
+        pk=predecessor_document_version.pk,
+        document_id=predecessor_document.pk,
+        workspace_id=predecessor_document.workspace_id,
+    ).first()
     if document_version is None:
-        _raise("predecessor_document", "The predecessor has no captured document version.")
-    binding = _role_binding_for(document_version, ROLE_PROJECT_PRIMARY)
+        _raise(
+            "predecessor_document_version",
+            "The exact predecessor version must belong to the predecessor Document.",
+        )
+    binding = _role_binding_for(document_version, role)
     if binding is None:
         _raise(
-            "predecessor_document",
-            "The predecessor has no authoritative PROJECT_PRIMARY role binding.",
+            "predecessor_document_version",
+            f"The exact predecessor version has no authoritative {role} role binding.",
+        )
+    if (
+        binding.workspace_id != predecessor_document.workspace_id
+        or binding.content_variant.workspace_id != predecessor_document.workspace_id
+        or binding.content_variant.document_version_id != document_version.pk
+    ):
+        _raise(
+            "predecessor_document_version",
+            f"The exact predecessor {role} binding is outside its declared version scope.",
         )
     return binding.content_variant
 
 
-def _predecessor_original_variant(predecessor_document: Any) -> Any:
-    models = _domain_models()
-    document_version = (
-        models.DocumentVersion.objects.filter(document=predecessor_document)
-        .order_by("created_at", "code", "pk")
-        .last()
+def _predecessor_primary_variant(
+    predecessor_document: Any,
+    predecessor_document_version: Any,
+) -> Any:
+    return _predecessor_role_variant(
+        predecessor_document,
+        predecessor_document_version,
+        ROLE_PROJECT_PRIMARY,
     )
-    if document_version is None:
-        _raise("predecessor_document", "The predecessor has no captured document version.")
-    binding = _role_binding_for(document_version, ROLE_ORIGINAL)
-    if binding is None:
-        _raise(
-            "predecessor_document",
-            "The predecessor has no authoritative ORIGINAL role binding.",
-        )
-    return binding.content_variant
+
+
+def _predecessor_original_variant(
+    predecessor_document: Any,
+    predecessor_document_version: Any,
+) -> Any:
+    return _predecessor_role_variant(
+        predecessor_document,
+        predecessor_document_version,
+        ROLE_ORIGINAL,
+    )
+
+
+def _variant_matches_spec(variant: Any, spec: ContentVariantSpec, *, field_name: str) -> bool:
+    return (
+        variant.normalized_text == spec.normalized_text
+        and variant.language_tag
+        == _canonical_language_tag(spec.language_tag, field_name=field_name)
+        and variant.segmentation_version == spec.segmentation_version
+    )
 
 
 @transaction.atomic
 def create_translation_edit_derivative(
     *,
     predecessor_document: Any,
+    predecessor_document_version: Any,
     document: DocumentSpec,
     original: ContentVariantSpec,
     project_primary: ContentVariantSpec,
@@ -962,11 +1158,24 @@ def create_translation_edit_derivative(
     """
 
     _ensure_persisted(predecessor_document, field_name="predecessor_document")
-    predecessor_primary = _predecessor_primary_variant(predecessor_document)
-    if (
-        predecessor_primary.normalized_text == project_primary.normalized_text
-        and predecessor_primary.language_tag == project_primary.language_tag
-        and predecessor_primary.segmentation_version == project_primary.segmentation_version
+    predecessor_original = _predecessor_original_variant(
+        predecessor_document,
+        predecessor_document_version,
+    )
+    predecessor_primary = _predecessor_primary_variant(
+        predecessor_document,
+        predecessor_document_version,
+    )
+    if not _variant_matches_spec(predecessor_original, original, field_name="original"):
+        _raise(
+            "original",
+            "A translation edit must preserve the exact predecessor-version ORIGINAL "
+            "text, language, and segmentation.",
+        )
+    if _variant_matches_spec(
+        predecessor_primary,
+        project_primary,
+        field_name="project_primary",
     ):
         _raise(
             "project_primary",
@@ -983,6 +1192,7 @@ def create_translation_edit_derivative(
         alignment_components=(),
         provenance=translation_provenance,
         predecessor_document=predecessor_document,
+        predecessor_document_version=predecessor_document_version,
         lineage_kind=LINEAGE_TRANSLATION_EDIT,
         synchronized=False,
     )
@@ -992,6 +1202,7 @@ def create_translation_edit_derivative(
 def create_complete_realignment_derivative(
     *,
     predecessor_document: Any,
+    predecessor_document_version: Any,
     document: DocumentSpec,
     original: ContentVariantSpec,
     project_primary: ContentVariantSpec,
@@ -1009,17 +1220,19 @@ def create_complete_realignment_derivative(
     """
 
     _ensure_persisted(predecessor_document, field_name="predecessor_document")
-    predecessor_original = _predecessor_original_variant(predecessor_document)
-    predecessor_primary = _predecessor_primary_variant(predecessor_document)
+    predecessor_original = _predecessor_original_variant(
+        predecessor_document,
+        predecessor_document_version,
+    )
+    predecessor_primary = _predecessor_primary_variant(
+        predecessor_document,
+        predecessor_document_version,
+    )
     for field_name, prior, requested in (
         ("original", predecessor_original, original),
         ("project_primary", predecessor_primary, project_primary),
     ):
-        if (
-            prior.normalized_text != requested.normalized_text
-            or prior.language_tag != requested.language_tag
-            or prior.segmentation_version != requested.segmentation_version
-        ):
+        if not _variant_matches_spec(prior, requested, field_name=field_name):
             _raise(
                 field_name,
                 "Complete re-alignment cannot combine a role text or segmentation edit.",
@@ -1035,6 +1248,7 @@ def create_complete_realignment_derivative(
         alignment_components=alignment_components,
         provenance=translation_provenance,
         predecessor_document=predecessor_document,
+        predecessor_document_version=predecessor_document_version,
         lineage_kind=LINEAGE_REALIGNMENT,
         synchronized=True,
     )
