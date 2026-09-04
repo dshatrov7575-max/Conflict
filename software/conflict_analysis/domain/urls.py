@@ -2,10 +2,15 @@
 
 from django.urls import path
 
-from domain.api import studio_definitions
+from domain.api import evidence, studio_definitions
 
 
 urlpatterns = [
+    path(
+        "projects/<uuid:project_id>/workspaces/<uuid:workspace_id>/facts/<uuid:fact_id>/evidence/",
+        evidence.fact_evidence_drilldown,
+        name="foundation-fact-evidence-drilldown",
+    ),
     path(
         "projects/bootstrap-first-draft/",
         studio_definitions.bootstrap_first_definition_draft,
