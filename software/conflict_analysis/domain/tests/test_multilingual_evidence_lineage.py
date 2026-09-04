@@ -15,6 +15,7 @@ from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TestCase, TransactionTestCase
 from django.utils import timezone
+import pytest
 from rest_framework.test import APIClient
 
 from domain.api.studio_definitions import project_access_group_name
@@ -71,6 +72,9 @@ from domain.tests.test_v4_foundation_contracts import (
     FoundationFactoryMixin,
     clean_save,
 )
+
+
+pytest_plugins = (__name__,)
 
 
 class MultilingualEvidenceLineageTests(FoundationFactoryMixin, TestCase):
@@ -1345,3 +1349,53 @@ class MultilingualEvidenceLineageMigrationTests(TransactionTestCase):
             "FactCategoryAssignment",
         ):
             self.assertFalse(empty_0017.get_model("domain", model_name).objects.exists())
+
+
+_F1_JUNIT_ORDER = {
+    MultilingualEvidenceLineageTests: (
+        "test_fact_category_is_project_scoped_versioned_and_path_is_deterministic",
+        "test_category_self_cycle_cross_project_reparent_and_delete_fail_closed",
+        "test_fact_classification_status_is_assignment_state_and_fact_type_remains_separate",
+        "test_legacy_facts_remain_unclassified_without_identity_or_evidence_drift",
+        "test_monolingual_content_is_synchronized_without_fabricated_translation_provenance",
+        "test_complete_one_to_one_one_to_many_and_many_to_one_alignment_is_checksum_bound",
+        "test_partial_positional_contradictory_or_many_to_many_alignment_is_never_synchronized",
+        "test_translation_provenance_preserves_exact_known_fields_and_explicit_unknowns",
+        "test_any_primary_translation_edit_creates_unsynchronized_derivative_and_preserves_history",
+        "test_explicit_complete_realign_creates_new_synchronized_derivative_without_mutation",
+        "test_memory_origin_fact_returns_typed_no_document_evidence",
+        "test_multiple_document_evidence_is_deterministic_without_truth_or_independence_inference",
+        "test_synchronized_drilldown_resolves_exact_primary_and_original_fragments",
+        "test_unsynchronized_drilldown_returns_alignment_not_guaranteed_without_guessed_original",
+        "test_drilldown_authorizes_before_disclosure_and_performs_zero_writes",
+        "test_noncanonical_in_place_or_bypass_mutations_fail_closed",
+    ),
+    MultilingualEvidenceLineageMigrationTests: (
+        "test_0016_to_0017_preserves_project_language_and_all_legacy_evidence_identities",
+        "test_0017_reverse_reapply_and_empty_database_are_deterministic",
+    ),
+}
+_F1_JUNIT_RANK = {
+    test_class: {method_name: position for position, method_name in enumerate(method_names)}
+    for test_class, method_names in _F1_JUNIT_ORDER.items()
+}
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_collection_modifyitems(items):
+    """Emit the frozen F1 unittest registry in the acceptance-defined order."""
+    ordered_by_class = {}
+    for test_class, expected_names in _F1_JUNIT_ORDER.items():
+        class_items = [item for item in items if item.cls is test_class]
+        if not class_items:
+            continue
+        actual_names = {item.name for item in class_items}
+        if actual_names != set(expected_names) or len(class_items) != len(expected_names):
+            raise RuntimeError("F1 frozen JUnit registry drifted")
+        ordered_by_class[test_class] = iter(
+            sorted(class_items, key=lambda item: _F1_JUNIT_RANK[test_class][item.name])
+        )
+    items[:] = [
+        next(ordered_by_class[item.cls]) if item.cls in ordered_by_class else item
+        for item in items
+    ]
