@@ -169,7 +169,6 @@ F1_NEW_PATHS = frozenset(
     }
 )
 F1_FROZEN_PATHS = (
-    ".github/workflows/conflict-analysis.yml",
     "software/conflict_analysis/pyproject.toml",
     "software/conflict_analysis/production_studio",
     "software/conflict_analysis/domain/migrations/0016_project_primary_language.py",
@@ -552,6 +551,39 @@ F1_POST_F0L_ALLOWLIST = frozenset(
         "software/conflict_analysis/docs/adr/0012-multilingual-evidence-document-lineage.md",
     }
 )
+
+# The owner-authorized F1 RC2 recovery is deliberately separate from the
+# original nine-path delivery and from C2A's independent allowlist.  Keeping
+# the original declaration intact preserves the frozen F0L/C2A intersection
+# contract while the F1 verifier accepts this exact, bounded recovery only.
+F1_RECOVERY_BASE_HEAD = "bfbd6b94c98ad27378c1452e38a69bf8b1fb169f"
+F1_RECOVERY_COMMIT_1 = "bacafab8d4685d0a3614f41db5e8f74c024bfbbf"
+F1_RECOVERY_COMMIT_2 = "23940d6c0d61b0697832dbe273b22ccc6caf3590"
+F1_RECOVERY_COMMIT_2_DELTA_PATHS = frozenset(
+    {
+        "software/conflict_analysis/domain/tests/test_multilingual_evidence_lineage.py"
+    }
+)
+F1_RECOVERY_COMMIT_3_DELTA_PATHS = frozenset(
+    {
+        ".github/workflows/conflict-analysis.yml",
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+        "software/conflict_analysis/domain/models.py",
+        "software/conflict_analysis/domain/migrations/0017_multilingual_evidence_lineage.py",
+        "software/conflict_analysis/domain/services/document_lineage.py",
+        "software/conflict_analysis/domain/services/evidence_drilldown.py",
+        "software/conflict_analysis/domain/tests/test_multilingual_evidence_lineage.py",
+        "software/conflict_analysis/docs/adr/0012-multilingual-evidence-document-lineage.md",
+    }
+)
+F1_FINAL_AGGREGATE_ALLOWLIST = frozenset(
+    F1_POST_F0L_ALLOWLIST
+    | {
+        ".github/workflows/conflict-analysis.yml",
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+    }
+)
+F1_FINAL_EXISTING_PATHS = frozenset(F1_FINAL_AGGREGATE_ALLOWLIST - F1_NEW_PATHS)
 
 C2A_POST_F0L_ALLOWLIST = frozenset(
     {
@@ -1348,6 +1380,79 @@ def _require_single_fast_forward_commit(
         )
 
 
+def _require_f1_recovery_topology(
+    *,
+    base_head: str,
+    delivery_head: str,
+    commit_count: int,
+    ordered_commits: tuple[str, ...],
+    commit_parents: tuple[str, ...],
+    commit_deltas: tuple[set[str] | frozenset[str], ...],
+    aggregate_paths: set[str] | frozenset[str],
+) -> None:
+    """Require only the owner-authorized three-commit F1 RC2 recovery."""
+
+    base_head = _require_exact_object_id("F1 recovery base HEAD", base_head)
+    delivery_head = _require_exact_object_id("F1 recovery delivery HEAD", delivery_head)
+    normalized_commits = tuple(
+        _require_exact_object_id("F1 recovery commit", commit)
+        for commit in ordered_commits
+    )
+    normalized_parents = tuple(
+        _require_exact_object_id("F1 recovery commit parent", parent)
+        for parent in commit_parents
+    )
+    normalized_deltas = tuple(frozenset(paths) for paths in commit_deltas)
+    normalized_aggregate = frozenset(aggregate_paths)
+    expected_deltas = (
+        F1_POST_F0L_ALLOWLIST,
+        F1_RECOVERY_COMMIT_2_DELTA_PATHS,
+        F1_RECOVERY_COMMIT_3_DELTA_PATHS,
+    )
+    if (
+        base_head != F1_RECOVERY_BASE_HEAD
+        or commit_count != 3
+        or len(normalized_commits) != 3
+        or len(normalized_parents) != 3
+        or len(normalized_deltas) != 3
+        or normalized_commits[0] != F1_RECOVERY_COMMIT_1
+        or normalized_commits[1] != F1_RECOVERY_COMMIT_2
+        or normalized_commits[2]
+        in {F1_RECOVERY_BASE_HEAD, F1_RECOVERY_COMMIT_1, F1_RECOVERY_COMMIT_2}
+        or delivery_head != normalized_commits[2]
+        or normalized_parents
+        != (
+            F1_RECOVERY_BASE_HEAD,
+            F1_RECOVERY_COMMIT_1,
+            F1_RECOVERY_COMMIT_2,
+        )
+    ):
+        raise VerificationError(
+            "F1 recovery topology must be exactly base -> "
+            "bacafab8 -> 23940d6 -> one ordinary child"
+        )
+    if normalized_deltas != expected_deltas:
+        raise VerificationError(
+            "F1 recovery per-commit path deltas drifted: "
+            + json.dumps(
+                {
+                    "expected": [sorted(paths) for paths in expected_deltas],
+                    "actual": [sorted(paths) for paths in normalized_deltas],
+                }
+            )
+        )
+    if normalized_aggregate != F1_FINAL_AGGREGATE_ALLOWLIST:
+        raise VerificationError(
+            "F1 recovery final aggregate must equal the exact 11-path allowlist: "
+            + json.dumps(
+                {
+                    "expected": sorted(F1_FINAL_AGGREGATE_ALLOWLIST),
+                    "actual": sorted(normalized_aggregate),
+                }
+            )
+        )
+
+
 def _require_f0l_bounded_fast_forward_commits(
     *,
     commit_count: int,
@@ -1848,6 +1953,65 @@ def _require_f0l_accepted_pin(
         )
 
 
+def _require_f1_recovery_static_contract() -> None:
+    expected_recovery_delta = frozenset(
+        {
+            ".github/workflows/conflict-analysis.yml",
+            "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+            "software/conflict_analysis/domain/models.py",
+            "software/conflict_analysis/domain/migrations/0017_multilingual_evidence_lineage.py",
+            "software/conflict_analysis/domain/services/document_lineage.py",
+            "software/conflict_analysis/domain/services/evidence_drilldown.py",
+            "software/conflict_analysis/domain/tests/test_multilingual_evidence_lineage.py",
+            "software/conflict_analysis/docs/adr/0012-multilingual-evidence-document-lineage.md",
+        }
+    )
+    expected_aggregate = frozenset(
+        {
+            ".github/workflows/conflict-analysis.yml",
+            "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+            "software/conflict_analysis/domain/enums.py",
+            "software/conflict_analysis/domain/models.py",
+            "software/conflict_analysis/domain/migrations/0017_multilingual_evidence_lineage.py",
+            "software/conflict_analysis/domain/services/document_lineage.py",
+            "software/conflict_analysis/domain/services/evidence_drilldown.py",
+            "software/conflict_analysis/domain/api/evidence.py",
+            "software/conflict_analysis/domain/urls.py",
+            "software/conflict_analysis/domain/tests/test_multilingual_evidence_lineage.py",
+            "software/conflict_analysis/docs/adr/0012-multilingual-evidence-document-lineage.md",
+        }
+    )
+    expected_existing = frozenset(
+        {
+            ".github/workflows/conflict-analysis.yml",
+            "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+            "software/conflict_analysis/domain/enums.py",
+            "software/conflict_analysis/domain/models.py",
+            "software/conflict_analysis/domain/urls.py",
+        }
+    )
+    if (
+        F1_RECOVERY_BASE_HEAD
+        != "bfbd6b94c98ad27378c1452e38a69bf8b1fb169f"
+        or F1_RECOVERY_COMMIT_1
+        != "bacafab8d4685d0a3614f41db5e8f74c024bfbbf"
+        or F1_RECOVERY_COMMIT_2
+        != "23940d6c0d61b0697832dbe273b22ccc6caf3590"
+        or F1_RECOVERY_COMMIT_2_DELTA_PATHS
+        != frozenset(
+            {
+                "software/conflict_analysis/domain/tests/test_multilingual_evidence_lineage.py"
+            }
+        )
+        or F1_RECOVERY_COMMIT_3_DELTA_PATHS != expected_recovery_delta
+        or F1_FINAL_AGGREGATE_ALLOWLIST != expected_aggregate
+        or F1_FINAL_EXISTING_PATHS != expected_existing
+        or (len(F1_FINAL_AGGREGATE_ALLOWLIST), len(F1_FINAL_EXISTING_PATHS), len(F1_NEW_PATHS))
+        != (11, 5, 6)
+    ):
+        raise VerificationError("F1 recovery static topology/path contract drifted")
+
+
 def _successor_static_contract_payload() -> dict[str, object]:
     return {
         "f0l_correction_4_head": PINNED_F0L_CORRECTION_4_HEAD,
@@ -1859,6 +2023,13 @@ def _successor_static_contract_payload() -> dict[str, object]:
         "f0l_correction_5_paths": sorted(F0L_CORRECTION_5_PATHS),
         "f0l_correction_5a_paths": sorted(F0L_CORRECTION_5A_PATHS),
         "f1_allowlist": sorted(F1_POST_F0L_ALLOWLIST),
+        "f1_recovery_base_head": F1_RECOVERY_BASE_HEAD,
+        "f1_recovery_commit_1": F1_RECOVERY_COMMIT_1,
+        "f1_recovery_commit_2": F1_RECOVERY_COMMIT_2,
+        "f1_recovery_commit_2_delta": sorted(F1_RECOVERY_COMMIT_2_DELTA_PATHS),
+        "f1_recovery_commit_3_delta": sorted(F1_RECOVERY_COMMIT_3_DELTA_PATHS),
+        "f1_final_aggregate_allowlist": sorted(F1_FINAL_AGGREGATE_ALLOWLIST),
+        "f1_final_existing_paths": sorted(F1_FINAL_EXISTING_PATHS),
         "f1_new_paths": sorted(F1_NEW_PATHS),
         "f1_frozen_paths": F1_FROZEN_PATHS,
         "f1_portable_class": F1_PORTABLE_TEST_CLASS,
@@ -1906,6 +2077,7 @@ def _successor_static_contract_payload() -> dict[str, object]:
 
 
 def _require_successor_static_contract() -> None:
+    _require_f1_recovery_static_contract()
     encoded = json.dumps(
         _successor_static_contract_payload(),
         ensure_ascii=False,
@@ -1913,7 +2085,7 @@ def _require_successor_static_contract() -> None:
         sort_keys=True,
     ).encode("utf-8")
     digest = hashlib.sha256(encoded).hexdigest()
-    expected = "3cf19b04770c4925a98f46a82071024dbf59fae851178fc20731b34c9ec08d5d"
+    expected = "d456b88e5cc85b8851c9d26fccce548f9ecd868b7e614091e7a4d59b00eb9013"
     if digest != expected:
         raise VerificationError(
             "post-F0L successor static contract drifted: "
@@ -1926,10 +2098,25 @@ def _successor_workflow_required_tokens() -> tuple[str, ...]:
     runtime_evidence_binding = (
         '"$RUNNER_TEMP/successor-evidence" >> "$GITHUB_ENV"'
     )
+    successor_wheel_build = (
+        'python -m pip wheel --no-deps --wheel-dir "$SUCCESSOR_EVIDENCE_DIR" .'
+    )
+    c0_wheel_binding = (
+        "printf 'STUDIO_C0_WHEEL=%s\\n' \"$wheel\" >> \"$GITHUB_ENV\""
+    )
+    c0_postgresql_step = "name: Run C0 and C1 successor regression on PostgreSQL"
+    wheel_inspection_step = "name: Inspect the same exact successor wheel in isolation"
+    wheel_reuse = 'wheel="$STUDIO_C0_WHEEL"'
     return (
         "name: Bind exact F1 or C2A evidence directory",
         "printf 'SUCCESSOR_EVIDENCE_DIR=%s\\n'",
         runtime_evidence_binding,
+        "name: Build one exact successor wheel for C0 runtime",
+        successor_wheel_build,
+        c0_wheel_binding,
+        c0_postgresql_step,
+        wheel_inspection_step,
+        wheel_reuse,
         "name: Require complete F1/C2A functional evidence",
         "if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'",
         terminal_cli,
@@ -1955,6 +2142,15 @@ def _require_successor_workflow_contract(source: str) -> None:
     runtime_evidence_binding = (
         '"$RUNNER_TEMP/successor-evidence" >> "$GITHUB_ENV"'
     )
+    successor_wheel_build = (
+        'python -m pip wheel --no-deps --wheel-dir "$SUCCESSOR_EVIDENCE_DIR" .'
+    )
+    c0_wheel_binding = (
+        "printf 'STUDIO_C0_WHEEL=%s\\n' \"$wheel\" >> \"$GITHUB_ENV\""
+    )
+    c0_postgresql_step = "name: Run C0 and C1 successor regression on PostgreSQL"
+    wheel_inspection_step = "name: Inspect the same exact successor wheel in isolation"
+    wheel_reuse = 'wheel="$STUDIO_C0_WHEEL"'
     required_tokens = _successor_workflow_required_tokens()
     missing = [token for token in required_tokens if token not in source]
     invalid_job_level_runner_temp = bool(
@@ -1964,10 +2160,30 @@ def _require_successor_workflow_contract(source: str) -> None:
             source,
         )
     )
+    successor_wheel_order = all(
+        token in source
+        for token in (
+            successor_wheel_build,
+            c0_wheel_binding,
+            c0_postgresql_step,
+            wheel_inspection_step,
+            wheel_reuse,
+        )
+    ) and (
+        source.index(successor_wheel_build)
+        < source.index(c0_wheel_binding)
+        < source.index(c0_postgresql_step)
+        < source.index(wheel_inspection_step)
+        < source.index(wheel_reuse)
+    )
     if (
         missing
         or source.count(terminal_cli) != 1
         or source.count(runtime_evidence_binding) != 1
+        or source.count(successor_wheel_build) != 1
+        or source.count(c0_wheel_binding) != 1
+        or source.count(wheel_reuse) != 1
+        or not successor_wheel_order
         or invalid_job_level_runner_temp
     ):
         raise VerificationError(
@@ -1979,6 +2195,12 @@ def _require_successor_workflow_contract(source: str) -> None:
                     "runtime_evidence_binding_count": source.count(
                         runtime_evidence_binding
                     ),
+                    "successor_wheel_build_count": source.count(
+                        successor_wheel_build
+                    ),
+                    "c0_wheel_binding_count": source.count(c0_wheel_binding),
+                    "wheel_reuse_count": source.count(wheel_reuse),
+                    "successor_wheel_order": successor_wheel_order,
                     "invalid_job_level_runner_temp": invalid_job_level_runner_temp,
                 }
             )
@@ -1992,7 +2214,9 @@ def _require_successor_repository_contract(
     base_head: str,
 ) -> dict[str, object]:
     allowlist = (
-        F1_POST_F0L_ALLOWLIST if active_slice == "F1" else C2A_POST_F0L_ALLOWLIST
+        F1_FINAL_AGGREGATE_ALLOWLIST
+        if active_slice == "F1"
+        else C2A_POST_F0L_ALLOWLIST
     )
     new_paths = F1_NEW_PATHS if active_slice == "F1" else C2A_NEW_PATHS
     frozen_paths = F1_FROZEN_PATHS if active_slice == "F1" else C2A_FROZEN_PATHS
@@ -2021,6 +2245,13 @@ def _require_successor_repository_contract(
             revision="HEAD",
             entry=head_entry,
         )
+
+    if active_slice == "F1" and (
+        len(allowlist),
+        len(new_paths),
+        len(base_blobs),
+    ) != (11, 6, 5):
+        raise VerificationError("F1 recovery aggregate/new/existing path proof drifted")
 
     frozen_objects: dict[str, str] = {}
     for path in frozen_paths:
@@ -4523,6 +4754,102 @@ def f0l_self_check() -> dict[str, object]:
         else:
             raise VerificationError("F0L routing self-check accepted a negative case")
 
+    f1_recovery_child = "c" * 40
+    f1_recovery_positive = {
+        "base_head": F1_RECOVERY_BASE_HEAD,
+        "delivery_head": f1_recovery_child,
+        "commit_count": 3,
+        "ordered_commits": (
+            F1_RECOVERY_COMMIT_1,
+            F1_RECOVERY_COMMIT_2,
+            f1_recovery_child,
+        ),
+        "commit_parents": (
+            F1_RECOVERY_BASE_HEAD,
+            F1_RECOVERY_COMMIT_1,
+            F1_RECOVERY_COMMIT_2,
+        ),
+        "commit_deltas": (
+            F1_POST_F0L_ALLOWLIST,
+            F1_RECOVERY_COMMIT_2_DELTA_PATHS,
+            F1_RECOVERY_COMMIT_3_DELTA_PATHS,
+        ),
+        "aggregate_paths": F1_FINAL_AGGREGATE_ALLOWLIST,
+    }
+    _require_f1_recovery_topology(**f1_recovery_positive)
+    _require_merge_free("F1", ())
+    for label, overrides in (
+        ("wrong base", {"base_head": "a" * 40}),
+        ("wrong count", {"commit_count": 2}),
+        (
+            "commit 1 substitution",
+            {
+                "ordered_commits": (
+                    "a" * 40,
+                    F1_RECOVERY_COMMIT_2,
+                    f1_recovery_child,
+                )
+            },
+        ),
+        (
+            "commit 2 substitution",
+            {
+                "ordered_commits": (
+                    F1_RECOVERY_COMMIT_1,
+                    "d" * 40,
+                    f1_recovery_child,
+                )
+            },
+        ),
+        ("wrong final parent", {"commit_parents": (F1_RECOVERY_BASE_HEAD, F1_RECOVERY_COMMIT_1, "d" * 40)}),
+        (
+            "commit 1 delta drift",
+            {"commit_deltas": (
+                F1_POST_F0L_ALLOWLIST - {sorted(F1_POST_F0L_ALLOWLIST)[0]},
+                F1_RECOVERY_COMMIT_2_DELTA_PATHS,
+                F1_RECOVERY_COMMIT_3_DELTA_PATHS,
+            )},
+        ),
+        (
+            "commit 2 delta drift",
+            {"commit_deltas": (
+                F1_POST_F0L_ALLOWLIST,
+                F1_RECOVERY_COMMIT_2_DELTA_PATHS | {"unauthorized/second-path"},
+                F1_RECOVERY_COMMIT_3_DELTA_PATHS,
+            )},
+        ),
+        (
+            "commit 3 delta drift",
+            {"commit_deltas": (
+                F1_POST_F0L_ALLOWLIST,
+                F1_RECOVERY_COMMIT_2_DELTA_PATHS,
+                F1_RECOVERY_COMMIT_3_DELTA_PATHS
+                - {sorted(F1_RECOVERY_COMMIT_3_DELTA_PATHS)[0]},
+            )},
+        ),
+        (
+            "aggregate drift",
+            {
+                "aggregate_paths": F1_FINAL_AGGREGATE_ALLOWLIST
+                | {"unauthorized/twelfth-path"}
+            },
+        ),
+    ):
+        try:
+            _require_f1_recovery_topology(**{**f1_recovery_positive, **overrides})
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                f"F1 recovery self-check accepted {label}"
+            )
+    try:
+        _require_merge_free("F1", ("synthetic-merge-object",))
+    except VerificationError:
+        negative_cases += 1
+    else:
+        raise VerificationError("F1 recovery self-check accepted a merge commit")
+
     _require_changed_path_contract(
         active_slice="F0L",
         changed=ACTIVE_F0L_ALLOWLIST,
@@ -5074,6 +5401,13 @@ class ProjectQuerySet:
     runtime_evidence_binding = (
         '"$RUNNER_TEMP/successor-evidence" >> "$GITHUB_ENV"'
     )
+    successor_wheel_build = (
+        'python -m pip wheel --no-deps --wheel-dir "$SUCCESSOR_EVIDENCE_DIR" .'
+    )
+    c0_wheel_binding = (
+        "printf 'STUDIO_C0_WHEEL=%s\\n' \"$wheel\" >> \"$GITHUB_ENV\""
+    )
+    wheel_reuse = 'wheel="$STUDIO_C0_WHEEL"'
     for label, invalid_workflow_source in (
         (
             "job-level runner.temp evidence binding",
@@ -5084,6 +5418,18 @@ class ProjectQuerySet:
         (
             "duplicate runtime evidence binding",
             workflow_source + "\n" + runtime_evidence_binding,
+        ),
+        (
+            "duplicate successor wheel build",
+            workflow_source + "\n" + successor_wheel_build,
+        ),
+        (
+            "duplicate C0 wheel binding",
+            workflow_source + "\n" + c0_wheel_binding,
+        ),
+        (
+            "duplicate successor wheel reuse",
+            workflow_source + "\n" + wheel_reuse,
         ),
     ):
         try:
@@ -6092,6 +6438,15 @@ def verify_post_f0l(
         raise VerificationError(f"{active_slice} is not based on accepted F0L")
     commit_count = int(_git(repo, "rev-list", "--count", f"{base_head}..HEAD"))
     delivery_parent = _git(repo, "rev-parse", "HEAD^") if commit_count else base_head
+    delivery_head = _require_exact_object_id(
+        f"{active_slice} delivery HEAD",
+        _git(repo, "rev-parse", "HEAD"),
+    )
+    ordered_commits = tuple(
+        line
+        for line in _git(repo, "rev-list", "--reverse", f"{base_head}..HEAD").splitlines()
+        if line
+    )
     _require_merge_free(
         active_slice,
         tuple(
@@ -6100,17 +6455,20 @@ def verify_post_f0l(
             if line
         ),
     )
-    _require_single_fast_forward_commit(
-        active_slice=active_slice,
-        commit_count=commit_count,
-        delivery_parent=delivery_parent,
-        base_head=base_head,
-    )
+    if active_slice == "C2A":
+        _require_single_fast_forward_commit(
+            active_slice=active_slice,
+            commit_count=commit_count,
+            delivery_parent=delivery_parent,
+            base_head=base_head,
+        )
     _require_f0l_clean_status(
         _git(repo, "status", "--porcelain=v1", "--untracked-files=all")
     )
     allowlist = (
-        F1_POST_F0L_ALLOWLIST if active_slice == "F1" else C2A_POST_F0L_ALLOWLIST
+        F1_FINAL_AGGREGATE_ALLOWLIST
+        if active_slice == "F1"
+        else C2A_POST_F0L_ALLOWLIST
     )
     changed = _changed_paths(repo, base_head)
     _require_changed_path_contract(
@@ -6119,6 +6477,21 @@ def verify_post_f0l(
         allowlist=allowlist,
         exact_changed_paths=True,
     )
+    if active_slice == "F1":
+        _require_f1_recovery_topology(
+            base_head=base_head,
+            delivery_head=delivery_head,
+            commit_count=commit_count,
+            ordered_commits=ordered_commits,
+            commit_parents=tuple(
+                _git(repo, "rev-parse", f"{commit}^")
+                for commit in ordered_commits
+            ),
+            commit_deltas=tuple(
+                _commit_changed_paths(repo, commit) for commit in ordered_commits
+            ),
+            aggregate_paths=changed,
+        )
     repository_contract = _require_successor_repository_contract(
         repo,
         active_slice=active_slice,
@@ -6129,10 +6502,6 @@ def verify_post_f0l(
         repo / ".github/workflows/conflict-analysis.yml"
     ).read_text(encoding="utf-8")
     _require_successor_workflow_contract(workflow_source)
-    delivery_head = _require_exact_object_id(
-        f"{active_slice} delivery HEAD",
-        _git(repo, "rev-parse", "HEAD"),
-    )
     delivery_tree = _require_exact_object_id(
         f"{active_slice} delivery TREE",
         _git(repo, "rev-parse", "HEAD^{tree}"),
@@ -6156,12 +6525,28 @@ def verify_post_f0l(
         "delivery_head": delivery_head,
         "delivery_tree": delivery_tree,
         "changed_paths": sorted(changed),
+        "exact_changed_path_count": len(changed),
         "delivery_commit_count": commit_count,
+        "delivery_commits": list(ordered_commits),
         "delivery_parent": delivery_parent,
         "new_paths": repository_contract["new_paths"],
         "existing_base_blobs": repository_contract["existing_base_blobs"],
         "frozen_objects": repository_contract["frozen_objects"],
         "migration_filenames": repository_contract["migration_filenames"],
+        "f1_recovery_topology": (
+            {
+                "base": F1_RECOVERY_BASE_HEAD,
+                "commit_1": F1_RECOVERY_COMMIT_1,
+                "commit_2": F1_RECOVERY_COMMIT_2,
+                "commit_3_parent": F1_RECOVERY_COMMIT_2,
+                "commit_3_delta_paths": sorted(F1_RECOVERY_COMMIT_3_DELTA_PATHS),
+                "aggregate_path_count": len(F1_FINAL_AGGREGATE_ALLOWLIST),
+                "existing_path_count": len(F1_FINAL_EXISTING_PATHS),
+                "new_path_count": len(F1_NEW_PATHS),
+            }
+            if active_slice == "F1"
+            else None
+        ),
         "functional_ci_evidence": "PASS",
         "successor_ci_evidence": evidence,
         "inherited_foundation_c0_c1_frozen_by_exact_allowlist": True,

@@ -169,6 +169,60 @@ class FactOrigin(models.TextChoices):
     IMPORTED_COMMENT = "IMPORTED_COMMENT", "Imported comment"
 
 
+class DocumentContentRole(models.TextChoices):
+    """The only user-meaningful views of a multilingual capture."""
+
+    ORIGINAL = "ORIGINAL", "Original"
+    PROJECT_PRIMARY = "PROJECT_PRIMARY", "Project primary"
+
+
+class DocumentContentVariantKind(models.TextChoices):
+    """Provenance-safe kinds for separately checksum-bound text variants."""
+
+    LEGACY_UNSPECIFIED = "LEGACY_UNSPECIFIED", "Legacy unspecified"
+    DECLARED = "DECLARED", "Declared capture variant"
+    TRANSLATED = "TRANSLATED", "Translated variant"
+
+
+class DocumentLineageKind(models.TextChoices):
+    """Why this immutable Document identity exists in a lineage."""
+
+    LEGACY_CAPTURE = "LEGACY_CAPTURE", "Legacy capture"
+    INITIAL_INGEST = "INITIAL_INGEST", "Initial multilingual ingest"
+    TRANSLATION_EDIT = "TRANSLATION_EDIT", "Translation edit derivative"
+    REALIGNMENT = "REALIGNMENT", "Explicit realignment derivative"
+
+
+class TranslationProvenanceState(models.TextChoices):
+    """Whether the optional provider/model/method facts are actually known."""
+
+    KNOWN = "KNOWN", "Known"
+    UNKNOWN = "UNKNOWN", "Unknown"
+
+
+class TranslationActorType(models.TextChoices):
+    HUMAN = "HUMAN", "Human"
+    AI = "AI", "AI"
+    HYBRID = "HYBRID", "Hybrid"
+    UNKNOWN = "UNKNOWN", "Unknown"
+
+
+class SentenceAlignmentCardinality(models.TextChoices):
+    ONE_TO_ONE = "ONE_TO_ONE", "1:1"
+    ONE_TO_MANY = "ONE_TO_MANY", "1:N"
+    MANY_TO_ONE = "MANY_TO_ONE", "N:1"
+
+
+class FactCategoryAssignmentStatus(models.TextChoices):
+    """A Fact's classification state; never a property of the taxonomy node."""
+
+    UNCLASSIFIED = "UNCLASSIFIED", "Unclassified"
+    UNKNOWN = "UNKNOWN", "Unknown"
+    PROVISIONAL = "PROVISIONAL", "Provisional"
+    CONFIRMED = "CONFIRMED", "Confirmed"
+    DISPUTED = "DISPUTED", "Disputed"
+
+
 class FactDirectness(models.TextChoices):
     DIRECT = "DIRECT", "Direct"
     INDIRECT = "INDIRECT", "Indirect"

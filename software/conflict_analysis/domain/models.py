@@ -38,12 +38,16 @@ from .enums import (
     ChatMessageStatus,
     CompatibilityStatus,
     ConfidenceLevel,
+    DocumentContentRole,
+    DocumentContentVariantKind,
+    DocumentLineageKind,
     DocumentVersionStatus,
     EvidenceRelation,
     EvidenceTemporalStatus,
     ExperimentStatus,
     ExperimentType,
     FactDirectness,
+    FactCategoryAssignmentStatus,
     FactEvidenceRelation,
     FactOrigin,
     FactType,
@@ -54,10 +58,13 @@ from .enums import (
     PowerDimension,
     PublicationStatus,
     ScenarioStatus,
+    SentenceAlignmentCardinality,
     SourceIndependenceStatus,
     StrategyStatus,
     TargetType,
     TerminologyMappingStatus,
+    TranslationActorType,
+    TranslationProvenanceState,
     ValueStatus,
     Visibility,
 )
@@ -118,6 +125,33 @@ def _canonical_studio_write(*authorities: str) -> Iterator[None]:
 
 def _studio_write_is_authorized(authority: str) -> bool:
     return authority in _STUDIO_CANONICAL_WRITE_AUTHORITIES.get()
+
+
+# Multilingual document identities deliberately have a narrower mutation
+# authority than the existing Studio write boundary.  Keeping this scope here
+# lets the model guards fail closed without importing a service module (which
+# would otherwise create a models/services import cycle).  Historical Django
+# migration models do not inherit these runtime guards.
+_DOCUMENT_LINEAGE_WRITE_AUTHORITIES: ContextVar[frozenset[str]] = ContextVar(
+    "document_lineage_write_authorities",
+    default=frozenset(),
+)
+
+
+@contextmanager
+def _canonical_document_lineage_write(*authorities: str) -> Iterator[None]:
+    current = _DOCUMENT_LINEAGE_WRITE_AUTHORITIES.get()
+    token = _DOCUMENT_LINEAGE_WRITE_AUTHORITIES.set(
+        current | frozenset(authorities)
+    )
+    try:
+        yield
+    finally:
+        _DOCUMENT_LINEAGE_WRITE_AUTHORITIES.reset(token)
+
+
+def _document_lineage_write_is_authorized(authority: str) -> bool:
+    return authority in _DOCUMENT_LINEAGE_WRITE_AUTHORITIES.get()
 
 
 def _stable_constraints(prefix: str) -> list[models.BaseConstraint]:
@@ -3477,6 +3511,26 @@ class Document(ImmutableCapturedModel):
     publication_date = models.DateField(null=True, blank=True)
     accessed_on = models.DateField(null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
+    predecessor_document = models.ForeignKey(
+        "self",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="lineage_successors",
+    )
+    root_document = models.ForeignKey(
+        "self",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="lineage_descendants",
+    )
+    lineage_kind = models.CharField(
+        max_length=32,
+        choices=DocumentLineageKind.choices,
+        default=DocumentLineageKind.LEGACY_CAPTURE,
+    )
+    translation_synchronized = models.BooleanField(default=False)
 
     class Meta:
         ordering = ("workspace__code", "source__code", "code")
@@ -3496,6 +3550,27 @@ class Document(ImmutableCapturedModel):
             ),
         ]
 
+    def full_clean(
+        self,
+        exclude: set[str] | None = None,
+        validate_unique: bool = True,
+        validate_constraints: bool = True,
+    ) -> None:
+        # A canonical initial/derivative identity is born with a generated UUID
+        # and self-root pointer.  The database accepts that self-reference on
+        # INSERT, but Django's pre-insert FK existence check cannot see it yet.
+        # Exclude only that one provisional check; clean() still enforces every
+        # cross-workspace and lineage rule and the pointer becomes real in the
+        # same atomic INSERT.
+        exclusions = set(exclude or ())
+        if self._state.adding and self.root_document_id == self.pk:
+            exclusions.add("root_document")
+        super().full_clean(
+            exclude=exclusions,
+            validate_unique=validate_unique,
+            validate_constraints=validate_constraints,
+        )
+
     def clean(self) -> None:
         super().clean()
         errors: dict[str, str] = {}
@@ -3512,6 +3587,74 @@ class Document(ImmutableCapturedModel):
             and self.accessed_on < self.publication_date
         ):
             errors["accessed_on"] = "Access date cannot precede publication date."
+        if self.predecessor_document_id:
+            predecessor = Document.objects.filter(
+                pk=self.predecessor_document_id
+            ).first()
+            if predecessor is not None:
+                if predecessor.workspace_id != self.workspace_id:
+                    errors["predecessor_document"] = (
+                        "Document lineage cannot cross workspaces."
+                    )
+                if predecessor.pk == self.pk:
+                    errors["predecessor_document"] = (
+                        "A Document cannot be its own predecessor."
+                    )
+        if self.root_document_id:
+            root = Document.objects.filter(pk=self.root_document_id).first()
+            if root is not None and root.workspace_id != self.workspace_id:
+                errors["root_document"] = "Document lineage cannot cross workspaces."
+        if self.lineage_kind == DocumentLineageKind.INITIAL_INGEST:
+            if self.predecessor_document_id is not None:
+                errors["predecessor_document"] = (
+                    "An initial multilingual ingest cannot have a predecessor."
+                )
+            if self.root_document_id != self.pk:
+                errors["root_document"] = (
+                    "An initial multilingual ingest must be its own root document."
+                )
+            if not self.translation_synchronized:
+                errors["translation_synchronized"] = (
+                    "An initial multilingual ingest requires complete synchronization."
+                )
+        elif self.lineage_kind in {
+            DocumentLineageKind.TRANSLATION_EDIT,
+            DocumentLineageKind.REALIGNMENT,
+        }:
+            if self.predecessor_document_id is None:
+                errors["predecessor_document"] = (
+                    "A multilingual derivative requires its exact predecessor."
+                )
+            else:
+                predecessor = Document.objects.filter(
+                    pk=self.predecessor_document_id
+                ).first()
+                if predecessor is not None:
+                    if predecessor.root_document_id is None:
+                        errors["predecessor_document"] = (
+                            "A multilingual derivative cannot inherit an unspecified root."
+                        )
+                    elif self.root_document_id != predecessor.root_document_id:
+                        errors["root_document"] = (
+                            "A multilingual derivative must inherit its predecessor root."
+                        )
+            expected_synchronized = self.lineage_kind == DocumentLineageKind.REALIGNMENT
+            if self.translation_synchronized != expected_synchronized:
+                errors["translation_synchronized"] = (
+                    "Translation edits are unsynchronized; complete realignment is synchronized."
+                )
+        if self.lineage_kind != DocumentLineageKind.LEGACY_CAPTURE and not _document_lineage_write_is_authorized(
+            "document"
+        ):
+            errors["lineage_kind"] = (
+                "Multilingual Document lineage must be created by the canonical service."
+            )
+        if self.translation_synchronized and not _document_lineage_write_is_authorized(
+            "document"
+        ):
+            errors["translation_synchronized"] = (
+                "Synchronized documents require the canonical lineage service."
+            )
         if errors:
             raise ValidationError(errors)
 
@@ -3671,6 +3814,672 @@ class DocumentContent(ImmutableCapturedModel):
             raise ValidationError(errors)
 
 
+class DocumentLineageQuerySet(ImmutableQuerySet):
+    """Disallow a second runtime path around document-lineage services."""
+
+    authority = ""
+
+    def bulk_create(
+        self,
+        objs: Any,
+        batch_size: int | None = None,
+        ignore_conflicts: bool = False,
+        update_conflicts: bool = False,
+        update_fields: Any = None,
+        unique_fields: Any = None,
+    ) -> Any:
+        objects = list(objs)
+        if any(
+            not _document_lineage_write_is_authorized(
+                getattr(obj, "lineage_authority", "")
+            )
+            for obj in objects
+        ):
+            raise ValidationError(
+                "Multilingual capture rows must be created by the canonical lineage service."
+            )
+        return super().bulk_create(
+            objects,
+            batch_size=batch_size,
+            ignore_conflicts=ignore_conflicts,
+            update_conflicts=update_conflicts,
+            update_fields=update_fields,
+            unique_fields=unique_fields,
+        )
+
+
+class DocumentLineageManager(models.Manager.from_queryset(DocumentLineageQuerySet)):
+    pass
+
+
+class CanonicalDocumentLineageModel(ImmutableCapturedModel):
+    """Append-only multilingual rows created only by document_lineage."""
+
+    objects = DocumentLineageManager()
+    lineage_authority = ""
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self._state.adding and not _document_lineage_write_is_authorized(
+            self.lineage_authority
+        ):
+            raise ValidationError(
+                {
+                    "__all__": (
+                        "Multilingual capture rows must be created by the canonical "
+                        "document-lineage service."
+                    )
+                }
+            )
+        super().save(*args, **kwargs)
+
+
+def _canonicalize_multilingual_language_tag(value: str | None) -> str:
+    """Use F0L's complete tag grammar without changing its frozen module."""
+
+    from .services.language_tags import (
+        LanguageTagValidationError,
+        canonicalize_language_tag,
+    )
+
+    if value in (None, ""):
+        raise ValidationError({"language_tag": "A content language tag is required."})
+    try:
+        return canonicalize_language_tag(value, allow_und=True)
+    except LanguageTagValidationError as exc:
+        raise ValidationError({"language_tag": str(exc)}) from exc
+
+
+class DocumentContentVariant(CanonicalDocumentLineageModel):
+    """Immutable normalized text coordinate system for one DocumentVersion."""
+
+    lineage_authority = "variant"
+
+    workspace = models.ForeignKey(
+        ProjectWorkspace,
+        on_delete=models.RESTRICT,
+        related_name="document_content_variants",
+    )
+    document_version = models.ForeignKey(
+        DocumentVersion,
+        on_delete=models.RESTRICT,
+        related_name="content_variants",
+    )
+    # This link preserves, rather than replaces, the legacy OneToOne capture
+    # authority.  Several explicitly declared views may refer to one capture.
+    document_content = models.ForeignKey(
+        DocumentContent,
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="multilingual_variants",
+    )
+    variant_kind = models.CharField(
+        max_length=32,
+        choices=DocumentContentVariantKind.choices,
+    )
+    language_tag = models.CharField(max_length=255)
+    normalized_text = models.TextField()
+    content_sha256 = models.CharField(max_length=64, validators=[SHA256_VALIDATOR])
+    segmentation_version = models.CharField(max_length=64)
+    normalization_version = models.CharField(max_length=64, default="multilingual-v1")
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ("workspace__code", "document_version__code", "code")
+        constraints = [
+            *_stable_constraints("domain_doc_variant"),
+            models.UniqueConstraint(
+                fields=("workspace", "code"),
+                name="domain_doc_variant_ws_code_uniq",
+            ),
+            models.CheckConstraint(
+                # A zero-byte historical capture has no normalized coordinate
+                # text, yet migration 0017 must preserve it as an explicitly
+                # non-linguistic legacy successor.  New declared/translated
+                # variants always require concrete immutable text.
+                condition=(
+                    Q(variant_kind=DocumentContentVariantKind.LEGACY_UNSPECIFIED)
+                    | ~Q(normalized_text="")
+                ),
+                name="domain_doc_variant_text_present",
+            ),
+        ]
+
+    @property
+    def captured_content(self) -> DocumentContent | None:
+        """Read-friendly name; persistence remains document_content_id."""
+
+        return self.document_content
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        self.language_tag = _canonicalize_multilingual_language_tag(self.language_tag)
+        _validate_related_workspace(
+            workspace_id=self.workspace_id,
+            related_model=DocumentVersion,
+            related_id=self.document_version_id,
+            field_name="document_version",
+            errors=errors,
+        )
+        if self.document_content_id:
+            _validate_related_workspace(
+                workspace_id=self.workspace_id,
+                related_model=DocumentContent,
+                related_id=self.document_content_id,
+                field_name="document_content",
+                errors=errors,
+            )
+            content = DocumentContent.objects.filter(pk=self.document_content_id).first()
+            if content is not None and content.document_version_id != self.document_version_id:
+                errors["document_content"] = (
+                    "A content variant must remain bound to its exact captured version."
+                )
+        expected = hashlib.sha256(self.normalized_text.encode("utf-8")).hexdigest()
+        if expected != self.content_sha256:
+            errors["content_sha256"] = "Checksum does not match normalized variant text."
+        if not self.segmentation_version:
+            errors["segmentation_version"] = "A segmentation version is required."
+        if errors:
+            raise ValidationError(errors)
+
+
+class DocumentContentRoleBinding(CanonicalDocumentLineageModel):
+    """Immutable role binding; a monolingual variant may fill both roles."""
+
+    lineage_authority = "role_binding"
+
+    workspace = models.ForeignKey(
+        ProjectWorkspace,
+        on_delete=models.RESTRICT,
+        related_name="document_content_role_bindings",
+    )
+    document_version = models.ForeignKey(
+        DocumentVersion,
+        on_delete=models.RESTRICT,
+        related_name="content_role_bindings",
+    )
+    content_variant = models.ForeignKey(
+        DocumentContentVariant,
+        on_delete=models.RESTRICT,
+        related_name="role_bindings",
+    )
+    role = models.CharField(max_length=32, choices=DocumentContentRole.choices)
+
+    class Meta:
+        ordering = ("workspace__code", "document_version__code", "role")
+        constraints = [
+            *_stable_constraints("domain_doc_role_binding"),
+            models.UniqueConstraint(
+                fields=("workspace", "code"),
+                name="domain_doc_role_binding_ws_code_uniq",
+            ),
+            models.UniqueConstraint(
+                fields=("document_version", "role"),
+                name="domain_doc_role_binding_role_uniq",
+            ),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        for field_name, related_model, related_id in (
+            ("document_version", DocumentVersion, self.document_version_id),
+            ("content_variant", DocumentContentVariant, self.content_variant_id),
+        ):
+            _validate_related_workspace(
+                workspace_id=self.workspace_id,
+                related_model=related_model,
+                related_id=related_id,
+                field_name=field_name,
+                errors=errors,
+            )
+        variant = DocumentContentVariant.objects.filter(pk=self.content_variant_id).first()
+        if variant is not None and variant.document_version_id != self.document_version_id:
+            errors["content_variant"] = (
+                "A content-role binding must use a variant of its exact version."
+            )
+        if (
+            variant is not None
+            and variant.variant_kind == DocumentContentVariantKind.LEGACY_UNSPECIFIED
+        ):
+            errors["content_variant"] = (
+                "Legacy unspecified variants cannot be assigned multilingual roles."
+            )
+        # The role is a semantic claim, not merely a view label.  Defend the
+        # F0L Project-language boundary here as well as in the canonical
+        # service, so a direct ORM write cannot bind an arbitrary language as
+        # PROJECT_PRIMARY.  Legacy rows receive no role binding at all.
+        if self.role == DocumentContentRole.PROJECT_PRIMARY and variant is not None:
+            version = (
+                DocumentVersion.objects.select_related("workspace__project")
+                .filter(pk=self.document_version_id)
+                .first()
+            )
+            if version is not None:
+                try:
+                    project_primary_language = _canonicalize_multilingual_language_tag(
+                        version.workspace.project.primary_language_tag
+                    )
+                except ValidationError:
+                    errors["role"] = (
+                        "A PROJECT_PRIMARY binding requires a valid explicit "
+                        "Project primary language."
+                    )
+                else:
+                    if project_primary_language == "und":
+                        errors["role"] = (
+                            "A PROJECT_PRIMARY binding cannot use an unknown "
+                            "Project language."
+                        )
+                    elif variant.language_tag != project_primary_language:
+                        errors["content_variant"] = (
+                            "PROJECT_PRIMARY must use the exact Project primary "
+                            "language."
+                        )
+        if errors:
+            raise ValidationError(errors)
+
+
+class DocumentSentence(CanonicalDocumentLineageModel):
+    """Checksum-bound sentence identity within exactly one text variant."""
+
+    lineage_authority = "sentence"
+
+    workspace = models.ForeignKey(
+        ProjectWorkspace,
+        on_delete=models.RESTRICT,
+        related_name="document_sentences",
+    )
+    content_variant = models.ForeignKey(
+        DocumentContentVariant,
+        on_delete=models.RESTRICT,
+        related_name="sentences",
+    )
+    sentence_number = models.PositiveIntegerField()
+    text = models.TextField()
+    start_offset = models.PositiveIntegerField()
+    end_offset = models.PositiveIntegerField()
+    text_sha256 = models.CharField(max_length=64, validators=[SHA256_VALIDATOR])
+    segmentation_version = models.CharField(max_length=64)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ("workspace__code", "content_variant__code", "sentence_number")
+        constraints = [
+            *_stable_constraints("domain_doc_sentence"),
+            models.UniqueConstraint(
+                fields=("workspace", "code"), name="domain_doc_sentence_ws_code_uniq"
+            ),
+            models.UniqueConstraint(
+                fields=("content_variant", "sentence_number"),
+                name="domain_doc_sentence_number_uniq",
+            ),
+            models.CheckConstraint(
+                condition=Q(end_offset__gt=models.F("start_offset")),
+                name="domain_doc_sentence_offsets_ordered",
+            ),
+            models.CheckConstraint(
+                condition=~Q(text=""), name="domain_doc_sentence_text_present"
+            ),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        _validate_related_workspace(
+            workspace_id=self.workspace_id,
+            related_model=DocumentContentVariant,
+            related_id=self.content_variant_id,
+            field_name="content_variant",
+            errors=errors,
+        )
+        variant = DocumentContentVariant.objects.filter(pk=self.content_variant_id).first()
+        if variant is not None:
+            if self.segmentation_version != variant.segmentation_version:
+                errors["segmentation_version"] = (
+                    "Sentence segmentation must match its exact content variant."
+                )
+            if self.end_offset <= self.start_offset:
+                errors["end_offset"] = "Sentence end offset must exceed start offset."
+            elif variant.normalized_text[self.start_offset : self.end_offset] != self.text:
+                errors["text"] = "Sentence text does not resolve against its variant."
+        if hashlib.sha256(self.text.encode("utf-8")).hexdigest() != self.text_sha256:
+            errors["text_sha256"] = "Sentence checksum does not match sentence text."
+        if errors:
+            raise ValidationError(errors)
+
+
+class SentenceAlignmentSet(CanonicalDocumentLineageModel):
+    """One checksum-bound complete alignment claim for a DocumentVersion."""
+
+    lineage_authority = "alignment"
+
+    workspace = models.ForeignKey(
+        ProjectWorkspace,
+        on_delete=models.RESTRICT,
+        related_name="sentence_alignment_sets",
+    )
+    document_version = models.ForeignKey(
+        DocumentVersion,
+        on_delete=models.RESTRICT,
+        related_name="sentence_alignment_sets",
+    )
+    original_variant = models.ForeignKey(
+        DocumentContentVariant,
+        on_delete=models.RESTRICT,
+        related_name="original_alignment_sets",
+    )
+    project_primary_variant = models.ForeignKey(
+        DocumentContentVariant,
+        on_delete=models.RESTRICT,
+        related_name="primary_alignment_sets",
+    )
+    original_segmentation_version = models.CharField(max_length=64)
+    project_primary_segmentation_version = models.CharField(max_length=64)
+    alignment_sha256 = models.CharField(max_length=64, validators=[SHA256_VALIDATOR])
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ("workspace__code", "document_version__code", "code")
+        constraints = [
+            *_stable_constraints("domain_alignment_set"),
+            models.UniqueConstraint(
+                fields=("workspace", "code"), name="domain_alignment_set_ws_code_uniq"
+            ),
+            models.UniqueConstraint(
+                fields=("document_version",),
+                name="domain_alignment_set_version_uniq",
+            ),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        for field_name, related_model, related_id in (
+            ("document_version", DocumentVersion, self.document_version_id),
+            ("original_variant", DocumentContentVariant, self.original_variant_id),
+            (
+                "project_primary_variant",
+                DocumentContentVariant,
+                self.project_primary_variant_id,
+            ),
+        ):
+            _validate_related_workspace(
+                workspace_id=self.workspace_id,
+                related_model=related_model,
+                related_id=related_id,
+                field_name=field_name,
+                errors=errors,
+            )
+        original = DocumentContentVariant.objects.filter(pk=self.original_variant_id).first()
+        primary = DocumentContentVariant.objects.filter(
+            pk=self.project_primary_variant_id
+        ).first()
+        for field_name, variant, version in (
+            ("original_variant", original, self.original_segmentation_version),
+            ("project_primary_variant", primary, self.project_primary_segmentation_version),
+        ):
+            if variant is not None:
+                if variant.document_version_id != self.document_version_id:
+                    errors[field_name] = "Alignment variants must belong to its exact version."
+                if variant.segmentation_version != version:
+                    errors[field_name] = "Alignment segmentation does not match variant."
+        if errors:
+            raise ValidationError(errors)
+
+
+class SentenceAlignmentEdge(CanonicalDocumentLineageModel):
+    """One explicit edge; a service validates whole-component cardinality."""
+
+    lineage_authority = "alignment"
+
+    workspace = models.ForeignKey(
+        ProjectWorkspace,
+        on_delete=models.RESTRICT,
+        related_name="sentence_alignment_edges",
+    )
+    alignment_set = models.ForeignKey(
+        SentenceAlignmentSet,
+        on_delete=models.RESTRICT,
+        related_name="edges",
+    )
+    original_sentence = models.ForeignKey(
+        DocumentSentence,
+        on_delete=models.RESTRICT,
+        related_name="original_alignment_edges",
+    )
+    project_primary_sentence = models.ForeignKey(
+        DocumentSentence,
+        on_delete=models.RESTRICT,
+        related_name="primary_alignment_edges",
+    )
+    cardinality = models.CharField(
+        max_length=16, choices=SentenceAlignmentCardinality.choices
+    )
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = (
+            "workspace__code",
+            "alignment_set__code",
+            "original_sentence__sentence_number",
+            "project_primary_sentence__sentence_number",
+        )
+        constraints = [
+            *_stable_constraints("domain_alignment_edge"),
+            models.UniqueConstraint(
+                fields=("workspace", "code"), name="domain_alignment_edge_ws_code_uniq"
+            ),
+            models.UniqueConstraint(
+                fields=(
+                    "alignment_set",
+                    "original_sentence",
+                    "project_primary_sentence",
+                ),
+                name="domain_alignment_edge_pair_uniq",
+            ),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        for field_name, related_model, related_id in (
+            ("alignment_set", SentenceAlignmentSet, self.alignment_set_id),
+            ("original_sentence", DocumentSentence, self.original_sentence_id),
+            (
+                "project_primary_sentence",
+                DocumentSentence,
+                self.project_primary_sentence_id,
+            ),
+        ):
+            _validate_related_workspace(
+                workspace_id=self.workspace_id,
+                related_model=related_model,
+                related_id=related_id,
+                field_name=field_name,
+                errors=errors,
+            )
+        alignment = SentenceAlignmentSet.objects.filter(pk=self.alignment_set_id).first()
+        original = DocumentSentence.objects.filter(pk=self.original_sentence_id).first()
+        primary = DocumentSentence.objects.filter(
+            pk=self.project_primary_sentence_id
+        ).first()
+        if alignment is not None:
+            if original is not None and original.content_variant_id != alignment.original_variant_id:
+                errors["original_sentence"] = "Original sentence is outside alignment scope."
+            if primary is not None and primary.content_variant_id != alignment.project_primary_variant_id:
+                errors["project_primary_sentence"] = (
+                    "Project-primary sentence is outside alignment scope."
+                )
+        if errors:
+            raise ValidationError(errors)
+
+
+class TranslationProvenance(CanonicalDocumentLineageModel):
+    """Truthful provenance for a translated primary-language variant."""
+
+    lineage_authority = "provenance"
+
+    workspace = models.ForeignKey(
+        ProjectWorkspace,
+        on_delete=models.RESTRICT,
+        related_name="translation_provenance_rows",
+    )
+    document_version = models.ForeignKey(
+        DocumentVersion,
+        on_delete=models.RESTRICT,
+        related_name="translation_provenance_rows",
+    )
+    project_primary_variant = models.OneToOneField(
+        DocumentContentVariant,
+        on_delete=models.RESTRICT,
+        related_name="translation_provenance",
+    )
+    source_document_version = models.ForeignKey(
+        DocumentVersion,
+        on_delete=models.RESTRICT,
+        related_name="translation_derivatives",
+    )
+    source_content_variant = models.ForeignKey(
+        DocumentContentVariant,
+        on_delete=models.RESTRICT,
+        related_name="translation_sources",
+    )
+    source_language_tag = models.CharField(max_length=255)
+    target_language_tag = models.CharField(max_length=255)
+    translation_id = models.CharField(max_length=128)
+    translation_version = models.CharField(max_length=64)
+    translated_at = models.DateTimeField()
+    actor_type = models.CharField(max_length=16, choices=TranslationActorType.choices)
+    actor_identifier = models.CharField(max_length=255, blank=True)
+    provider = models.CharField(max_length=255, blank=True)
+    model = models.CharField(max_length=255, blank=True)
+    method_version = models.CharField(max_length=255, blank=True)
+    knowledge = models.CharField(
+        max_length=16, choices=TranslationProvenanceState.choices
+    )
+    alignment_set = models.ForeignKey(
+        SentenceAlignmentSet,
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="translation_provenance_rows",
+    )
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ("workspace__code", "document_version__code", "code")
+        constraints = [
+            *_stable_constraints("domain_translation_provenance"),
+            models.UniqueConstraint(
+                fields=("workspace", "code"),
+                name="domain_translation_provenance_ws_code_uniq",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(knowledge=TranslationProvenanceState.KNOWN)
+                    | Q(
+                        knowledge=TranslationProvenanceState.UNKNOWN,
+                        provider="",
+                        model="",
+                        method_version="",
+                    )
+                ),
+                name="domain_translation_provenance_known_boundary",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(actor_type="UNKNOWN")
+                    | ~Q(actor_identifier="")
+                ),
+                name="domain_translation_provenance_known_actor",
+            ),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        self.source_language_tag = _canonicalize_multilingual_language_tag(
+            self.source_language_tag
+        )
+        self.target_language_tag = _canonicalize_multilingual_language_tag(
+            self.target_language_tag
+        )
+        for field_name, related_model, related_id in (
+            ("document_version", DocumentVersion, self.document_version_id),
+            (
+                "project_primary_variant",
+                DocumentContentVariant,
+                self.project_primary_variant_id,
+            ),
+            (
+                "source_document_version",
+                DocumentVersion,
+                self.source_document_version_id,
+            ),
+            (
+                "source_content_variant",
+                DocumentContentVariant,
+                self.source_content_variant_id,
+            ),
+        ):
+            _validate_related_workspace(
+                workspace_id=self.workspace_id,
+                related_model=related_model,
+                related_id=related_id,
+                field_name=field_name,
+                errors=errors,
+            )
+        target = DocumentContentVariant.objects.filter(
+            pk=self.project_primary_variant_id
+        ).first()
+        source = DocumentContentVariant.objects.filter(
+            pk=self.source_content_variant_id
+        ).first()
+        if target is not None and target.document_version_id != self.document_version_id:
+            errors["project_primary_variant"] = (
+                "Translated variant must belong to the recorded DocumentVersion."
+            )
+        if source is not None:
+            if source.document_version_id != self.source_document_version_id:
+                errors["source_content_variant"] = (
+                    "Translation source variant must belong to source DocumentVersion."
+                )
+            if source.language_tag != self.source_language_tag:
+                errors["source_language_tag"] = (
+                    "Translation source language must match its exact content variant."
+                )
+        if target is not None and target.language_tag != self.target_language_tag:
+            errors["target_language_tag"] = (
+                "Translation target language must match its exact content variant."
+            )
+        if self.knowledge == TranslationProvenanceState.UNKNOWN and any(
+            (self.provider, self.model, self.method_version)
+        ):
+            errors["knowledge"] = "Unknown provenance cannot fabricate provider facts."
+        if self.actor_type in {
+            TranslationActorType.HUMAN,
+            TranslationActorType.AI,
+            TranslationActorType.HYBRID,
+        } and not self.actor_identifier.strip():
+            errors["actor_identifier"] = (
+                "Known HUMAN, AI, and HYBRID translation provenance requires "
+                "an actor identifier."
+            )
+        if self.alignment_set_id:
+            alignment = SentenceAlignmentSet.objects.filter(pk=self.alignment_set_id).first()
+            if alignment is not None and alignment.document_version_id != self.document_version_id:
+                errors["alignment_set"] = (
+                    "Translation alignment must belong to the translated version."
+                )
+        if errors:
+            raise ValidationError(errors)
+
+
 class TextFragment(ImmutableCapturedModel):
     workspace = models.ForeignKey(
         ProjectWorkspace,
@@ -3680,6 +4489,13 @@ class TextFragment(ImmutableCapturedModel):
     document_version = models.ForeignKey(
         DocumentVersion,
         on_delete=models.RESTRICT,
+        related_name="fragments",
+    )
+    content_variant = models.ForeignKey(
+        DocumentContentVariant,
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
         related_name="fragments",
     )
     anchor_status = models.CharField(
@@ -3733,6 +4549,22 @@ class TextFragment(ImmutableCapturedModel):
             field_name="document_version",
             errors=errors,
         )
+        variant = None
+        if self.content_variant_id:
+            _validate_related_workspace(
+                workspace_id=self.workspace_id,
+                related_model=DocumentContentVariant,
+                related_id=self.content_variant_id,
+                field_name="content_variant",
+                errors=errors,
+            )
+            variant = DocumentContentVariant.objects.filter(
+                pk=self.content_variant_id
+            ).first()
+            if variant is not None and variant.document_version_id != self.document_version_id:
+                errors["content_variant"] = (
+                    "A fragment variant must belong to its exact DocumentVersion."
+                )
         if self.anchor_status == AnchorStatus.EXACT:
             if self.start_offset is None or self.end_offset is None:
                 errors["start_offset"] = "Exact anchors require both offsets."
@@ -3742,15 +4574,28 @@ class TextFragment(ImmutableCapturedModel):
                 errors["selector"] = "Exact anchors require a stable selector."
             if hashlib.sha256(self.exact_text.encode("utf-8")).hexdigest() != self.text_sha256:
                 errors["text_sha256"] = "Fragment checksum does not match exact text."
-            content = DocumentContent.objects.filter(
+            role_bound = DocumentContentRoleBinding.objects.filter(
                 document_version_id=self.document_version_id
-            ).first()
-            if content is None or not content.normalized_text:
+            ).exists()
+            if role_bound and variant is None:
+                errors["content_variant"] = (
+                    "Exact multilingual fragments require an exact content-variant pin."
+                )
+            content_text = (
+                variant.normalized_text
+                if variant is not None
+                else (
+                    DocumentContent.objects.filter(
+                        document_version_id=self.document_version_id
+                    ).values_list("normalized_text", flat=True).first()
+                )
+            )
+            if not content_text:
                 errors["document_version"] = (
                     "Exact fragments require captured normalized document content."
                 )
             elif self.start_offset is not None and self.end_offset is not None:
-                if content.normalized_text[self.start_offset : self.end_offset] != self.exact_text:
+                if content_text[self.start_offset : self.end_offset] != self.exact_text:
                     errors["exact_text"] = "ANCHOR_MISMATCH: exact text does not resolve."
         elif self.anchor_status == AnchorStatus.HASH_RECORDED_PENDING_INGEST:
             if not self.text_sha256:
@@ -3789,6 +4634,78 @@ class TextFragment(ImmutableCapturedModel):
                 errors["anchor_status"] = (
                     "Unresolved and URL-only fragments cannot claim an exact anchor."
                 )
+        if errors:
+            raise ValidationError(errors)
+
+
+class FactCategory(ImmutableCapturedModel):
+    """Project-scoped, versioned taxonomy node with immutable ancestry."""
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.RESTRICT,
+        related_name="fact_categories",
+    )
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="children",
+    )
+    name = models.CharField(max_length=255)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ("project__code", "code", "version")
+        constraints = [
+            *_stable_constraints("domain_fact_category"),
+            models.UniqueConstraint(
+                fields=("project", "code", "version"),
+                name="domain_fact_category_identity_uniq",
+            ),
+            models.CheckConstraint(
+                condition=~Q(name=""), name="domain_fact_category_name_present"
+            ),
+        ]
+
+    @property
+    def full_path(self) -> tuple[str, ...]:
+        """Deterministic code path; labels never become comparison keys."""
+
+        path: list[str] = [self.code]
+        seen = {self.pk}
+        node = self.parent
+        while node is not None:
+            if node.pk in seen:
+                # clean() prevents this; retain a bounded property if a corrupt
+                # historical database is inspected without mutation.
+                return tuple(reversed(path))
+            seen.add(node.pk)
+            path.append(node.code)
+            node = node.parent
+        return tuple(reversed(path))
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        if self.parent_id:
+            if self.parent_id == self.pk:
+                errors["parent"] = "A FactCategory cannot parent itself."
+            parent = FactCategory.objects.filter(pk=self.parent_id).first()
+            if parent is not None:
+                if parent.project_id != self.project_id:
+                    errors["parent"] = "FactCategory parent must share its Project."
+                seen = {self.pk}
+                cursor = parent
+                while cursor is not None:
+                    if cursor.pk in seen:
+                        errors["parent"] = "FactCategory hierarchy cannot contain a cycle."
+                        break
+                    seen.add(cursor.pk)
+                    cursor = cursor.parent
+        if not self.name.strip():
+            errors["name"] = "A FactCategory display name is required."
         if errors:
             raise ValidationError(errors)
 
@@ -3885,6 +4802,82 @@ class Fact(ImmutableCapturedModel):
             raise ValidationError(errors)
 
 
+class FactCategoryAssignment(ImmutableCapturedModel):
+    """An immutable Fact-specific classification, distinct from Fact.fact_type."""
+
+    workspace = models.ForeignKey(
+        ProjectWorkspace,
+        on_delete=models.RESTRICT,
+        related_name="fact_category_assignments",
+    )
+    fact = models.OneToOneField(
+        Fact,
+        on_delete=models.RESTRICT,
+        related_name="category_assignment",
+    )
+    category = models.ForeignKey(
+        FactCategory,
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="assignments",
+    )
+    classification_status = models.CharField(
+        max_length=16,
+        choices=FactCategoryAssignmentStatus.choices,
+        default=FactCategoryAssignmentStatus.UNCLASSIFIED,
+    )
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ("workspace__code", "fact__code", "code")
+        constraints = [
+            *_stable_constraints("domain_fact_category_assignment"),
+            models.UniqueConstraint(
+                fields=("workspace", "code"),
+                name="domain_fact_category_assignment_ws_code_uniq",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        category__isnull=True,
+                        classification_status=FactCategoryAssignmentStatus.UNCLASSIFIED,
+                    )
+                    | Q(category__isnull=False)
+                ),
+                name="domain_fact_category_assignment_state",
+            ),
+        ]
+
+    @property
+    def full_path(self) -> tuple[str, ...] | None:
+        return self.category.full_path if self.category_id else None
+
+    def clean(self) -> None:
+        super().clean()
+        errors: dict[str, str] = {}
+        _validate_related_workspace(
+            workspace_id=self.workspace_id,
+            related_model=Fact,
+            related_id=self.fact_id,
+            field_name="fact",
+            errors=errors,
+        )
+        if self.category_id:
+            category = FactCategory.objects.filter(pk=self.category_id).first()
+            workspace = ProjectWorkspace.objects.filter(pk=self.workspace_id).first()
+            if category is not None and workspace is not None and category.project_id != workspace.project_id:
+                errors["category"] = "FactCategory must belong to the Fact workspace Project."
+            if self.classification_status == FactCategoryAssignmentStatus.UNCLASSIFIED:
+                errors["classification_status"] = (
+                    "An explicit category assignment cannot be UNCLASSIFIED."
+                )
+        elif self.classification_status != FactCategoryAssignmentStatus.UNCLASSIFIED:
+            errors["category"] = "A classified Fact requires an explicit category."
+        if errors:
+            raise ValidationError(errors)
+
+
 class FactEvidence(ImmutableCapturedModel):
     workspace = models.ForeignKey(
         ProjectWorkspace,
@@ -3938,6 +4931,23 @@ class FactEvidence(ImmutableCapturedModel):
                 field_name=field_name,
                 errors=errors,
             )
+        fragment = TextFragment.objects.filter(pk=self.fragment_id).first()
+        if fragment is not None:
+            bindings = DocumentContentRoleBinding.objects.filter(
+                document_version_id=fragment.document_version_id
+            )
+            if bindings.exists():
+                if fragment.content_variant_id is None:
+                    errors["fragment"] = (
+                        "Canonical multilingual Fact evidence requires an exact variant pin."
+                    )
+                elif not bindings.filter(
+                    content_variant_id=fragment.content_variant_id,
+                    role=DocumentContentRole.PROJECT_PRIMARY,
+                ).exists():
+                    errors["fragment"] = (
+                        "Canonical Fact extraction must use the PROJECT_PRIMARY variant."
+                    )
         if errors:
             raise ValidationError(errors)
 
