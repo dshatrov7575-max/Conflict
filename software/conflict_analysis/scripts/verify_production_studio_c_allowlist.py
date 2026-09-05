@@ -585,6 +585,29 @@ F1_FINAL_AGGREGATE_ALLOWLIST = frozenset(
 )
 F1_FINAL_EXISTING_PATHS = frozenset(F1_FINAL_AGGREGATE_ALLOWLIST - F1_NEW_PATHS)
 
+# F1-CHROMIUM-R3 is a deliberately separate, fourth-child recovery.  The
+# original three-commit RC2 contract above remains independently enforceable
+# for its historical delivery; this contract is only for the authorized child
+# of that exact RC2 object.
+F1_CHROMIUM_R3_RC2_HEAD = "04cb729f46bb13bfda4d957eaabcaee8ae50619e"
+F1_CHROMIUM_R3_RC2_TREE = "dc1099bb9a0b58fab2e3be668eb3ab649e94f37e"
+F1_CHROMIUM_R3_STUDIO_ROOT = "software/conflict_analysis/production_studio"
+F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH = (
+    f"{F1_CHROMIUM_R3_STUDIO_ROOT}/browser_tests/audited_authoring.mjs"
+)
+F1_CHROMIUM_R3_RC2_MODIFIED_BLOBS = {
+    ".github/workflows/conflict-analysis.yml": "8feef98f992ca65c409b12ef40866a6e47a494a7",
+    F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH: "c4435611336be404c5ae2f566582e5c2bb1a4b16",
+    "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py": "4788bc843910c4f14eb50004b04f055bef4275cc",
+}
+F1_CHROMIUM_R3_DELTA_PATHS = frozenset(F1_CHROMIUM_R3_RC2_MODIFIED_BLOBS)
+F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST = frozenset(
+    F1_FINAL_AGGREGATE_ALLOWLIST | F1_CHROMIUM_R3_DELTA_PATHS
+)
+F1_CHROMIUM_R3_EXISTING_PATHS = frozenset(
+    F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST - F1_NEW_PATHS
+)
+
 C2A_POST_F0L_ALLOWLIST = frozenset(
     {
         ".github/workflows/conflict-analysis.yml",
@@ -1453,6 +1476,247 @@ def _require_f1_recovery_topology(
         )
 
 
+def _require_f1_chromium_r3_active_slice(active_slice: str) -> None:
+    if active_slice != "F1":
+        raise VerificationError("F1 Chromium R3 exception applies only to F1")
+
+
+def _require_f1_chromium_r3_topology(
+    *,
+    base_head: str,
+    delivery_head: str,
+    commit_count: int,
+    ordered_commits: tuple[str, ...],
+    commit_parents: tuple[str, ...],
+    commit_parent_counts: tuple[int, ...],
+    commit_deltas: tuple[set[str] | frozenset[str], ...],
+    aggregate_paths: set[str] | frozenset[str],
+    rc2_tree: str,
+) -> None:
+    """Require the one authorized ordinary child of the fixed F1 RC2 prefix."""
+
+    base_head = _require_exact_object_id("F1 Chromium R3 base HEAD", base_head)
+    delivery_head = _require_exact_object_id(
+        "F1 Chromium R3 delivery HEAD", delivery_head
+    )
+    rc2_tree = _require_exact_object_id("F1 Chromium R3 RC2 TREE", rc2_tree)
+    normalized_commits = tuple(
+        _require_exact_object_id("F1 Chromium R3 commit", commit)
+        for commit in ordered_commits
+    )
+    normalized_parents = tuple(
+        _require_exact_object_id("F1 Chromium R3 commit parent", parent)
+        for parent in commit_parents
+    )
+    normalized_deltas = tuple(frozenset(paths) for paths in commit_deltas)
+    normalized_aggregate = frozenset(aggregate_paths)
+    if (
+        base_head != F1_RECOVERY_BASE_HEAD
+        or commit_count != 4
+        or len(normalized_commits) != 4
+        or len(normalized_parents) != 4
+        or len(commit_parent_counts) != 4
+        or len(normalized_deltas) != 4
+        or any(type(count) is not int for count in commit_parent_counts)
+        or normalized_commits[2] != F1_CHROMIUM_R3_RC2_HEAD
+        or normalized_commits[3]
+        in {
+            F1_RECOVERY_BASE_HEAD,
+            F1_RECOVERY_COMMIT_1,
+            F1_RECOVERY_COMMIT_2,
+            F1_CHROMIUM_R3_RC2_HEAD,
+        }
+        or delivery_head != normalized_commits[3]
+        or normalized_parents
+        != (
+            F1_RECOVERY_BASE_HEAD,
+            F1_RECOVERY_COMMIT_1,
+            F1_RECOVERY_COMMIT_2,
+            F1_CHROMIUM_R3_RC2_HEAD,
+        )
+        or commit_parent_counts != (1, 1, 1, 1)
+        or rc2_tree != F1_CHROMIUM_R3_RC2_TREE
+        or normalized_deltas[3] != F1_CHROMIUM_R3_DELTA_PATHS
+        or normalized_aggregate != F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST
+    ):
+        raise VerificationError(
+            "F1 Chromium R3 topology must be exactly base -> bacafab8 -> "
+            "23940d6 -> fixed RC2 -> one ordinary child"
+        )
+    _require_f1_recovery_topology(
+        base_head=base_head,
+        delivery_head=F1_CHROMIUM_R3_RC2_HEAD,
+        commit_count=3,
+        ordered_commits=normalized_commits[:3],
+        commit_parents=normalized_parents[:3],
+        commit_deltas=normalized_deltas[:3],
+        aggregate_paths=frozenset().union(*normalized_deltas[:3]),
+    )
+
+
+def _f1_chromium_r3_tree_entry(
+    repo: Path, *, revision: str, path: str
+) -> tuple[str, str, str]:
+    entry = _git(repo, "ls-tree", revision, "--", path)
+    fields = entry.split(maxsplit=3)
+    if (
+        len(fields) != 4
+        or fields[3] != path
+        or _LOWER_HEX_40.fullmatch(fields[2]) is None
+    ):
+        raise VerificationError(
+            f"F1 Chromium R3 requires one exact tree entry at {revision}:{path}"
+        )
+    return fields[0], fields[1], fields[2]
+
+
+def _f1_chromium_r3_tree_entries(
+    repo: Path, *, revision: str
+) -> dict[str, tuple[str, str, str]]:
+    source = _git_bytes(
+        repo,
+        "ls-tree",
+        "-r",
+        "-z",
+        "--full-tree",
+        revision,
+        "--",
+        F1_CHROMIUM_R3_STUDIO_ROOT,
+    )
+    entries: dict[str, tuple[str, str, str]] = {}
+    try:
+        records = [record for record in source.split(b"\0") if record]
+        for record in records:
+            metadata, separator, encoded_path = record.partition(b"\t")
+            fields = metadata.split()
+            path = encoded_path.decode("utf-8")
+            if (
+                not separator
+                or len(fields) != 3
+                or not path.startswith(f"{F1_CHROMIUM_R3_STUDIO_ROOT}/")
+            ):
+                raise VerificationError(
+                    "F1 Chromium R3 Production Studio tree entry is malformed"
+                )
+            mode, object_type, object_id = (
+                field.decode("ascii") for field in fields
+            )
+            if _LOWER_HEX_40.fullmatch(object_id) is None or path in entries:
+                raise VerificationError(
+                    "F1 Chromium R3 Production Studio tree entry is invalid"
+                )
+            entries[path] = (mode, object_type, object_id)
+    except UnicodeDecodeError as exc:
+        raise VerificationError(
+            "F1 Chromium R3 Production Studio tree contains a non-UTF-8 path"
+        ) from exc
+    if not entries:
+        raise VerificationError("F1 Chromium R3 Production Studio tree is absent")
+    return entries
+
+
+def _require_f1_chromium_r3_studio_freeze_entries(
+    *,
+    base_entries: dict[str, tuple[str, str, str]],
+    delivery_entries: dict[str, tuple[str, str, str]],
+) -> None:
+    exception_path = F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH
+    expected_base = (
+        "100644",
+        "blob",
+        F1_CHROMIUM_R3_RC2_MODIFIED_BLOBS[exception_path],
+    )
+    base_exception = base_entries.get(exception_path)
+    delivery_exception = delivery_entries.get(exception_path)
+    if base_exception != expected_base:
+        raise VerificationError(
+            "F1 Chromium R3 audited_authoring.mjs RC2 blob/mode/type drifted"
+        )
+    if (
+        delivery_exception is None
+        or delivery_exception[:2] != expected_base[:2]
+        or delivery_exception[2] == expected_base[2]
+    ):
+        raise VerificationError(
+            "F1 Chromium R3 audited_authoring.mjs must be one modified regular blob"
+        )
+    frozen_base = {
+        path: entry for path, entry in base_entries.items() if path != exception_path
+    }
+    frozen_delivery = {
+        path: entry
+        for path, entry in delivery_entries.items()
+        if path != exception_path
+    }
+    if frozen_delivery != frozen_base:
+        drifted = sorted(
+            path
+            for path in set(frozen_base) | set(frozen_delivery)
+            if frozen_base.get(path) != frozen_delivery.get(path)
+        )
+        raise VerificationError(
+            "F1 Chromium R3 Production Studio freeze drifted outside "
+            f"audited_authoring.mjs: {', '.join(drifted)}"
+        )
+
+
+def _require_f1_chromium_r3_production_studio_freeze(repo: Path) -> None:
+    _require_f1_chromium_r3_studio_freeze_entries(
+        base_entries=_f1_chromium_r3_tree_entries(
+            repo,
+            revision=F1_CHROMIUM_R3_RC2_HEAD,
+        ),
+        delivery_entries=_f1_chromium_r3_tree_entries(repo, revision="HEAD"),
+    )
+
+
+def _require_f1_chromium_r3_delta_statuses(repo: Path) -> None:
+    statuses: dict[str, str] = {}
+    for line in _git(
+        repo,
+        "diff",
+        "--name-status",
+        "--no-renames",
+        f"{F1_CHROMIUM_R3_RC2_HEAD}..HEAD",
+        "--",
+    ).splitlines():
+        status, separator, path = line.partition("\t")
+        normalized_path = _normalize(path)
+        if not separator or normalized_path in statuses:
+            raise VerificationError("F1 Chromium R3 modified-path status is malformed")
+        statuses[normalized_path] = status
+    if (
+        frozenset(statuses) != F1_CHROMIUM_R3_DELTA_PATHS
+        or any(status != "M" for status in statuses.values())
+    ):
+        raise VerificationError(
+            "F1 Chromium R3 fourth-child delta must be exactly three modified paths"
+        )
+    for path, expected_blob in F1_CHROMIUM_R3_RC2_MODIFIED_BLOBS.items():
+        base_entry = _f1_chromium_r3_tree_entry(
+            repo,
+            revision=F1_CHROMIUM_R3_RC2_HEAD,
+            path=path,
+        )
+        delivery_entry = _f1_chromium_r3_tree_entry(
+            repo,
+            revision="HEAD",
+            path=path,
+        )
+        if base_entry != ("100644", "blob", expected_blob):
+            raise VerificationError(
+                f"F1 Chromium R3 RC2 modified-path blob/mode/type drifted at {path}"
+            )
+        if (
+            delivery_entry[:2] != base_entry[:2]
+            or delivery_entry[2] == base_entry[2]
+        ):
+            raise VerificationError(
+                f"F1 Chromium R3 fourth child must modify the regular blob at {path}"
+            )
+    _require_f1_chromium_r3_production_studio_freeze(repo)
+
+
 def _require_f0l_bounded_fast_forward_commits(
     *,
     commit_count: int,
@@ -2012,6 +2276,69 @@ def _require_f1_recovery_static_contract() -> None:
         raise VerificationError("F1 recovery static topology/path contract drifted")
 
 
+def _require_f1_chromium_r3_static_contract() -> None:
+    expected_delta = frozenset(
+        {
+            ".github/workflows/conflict-analysis.yml",
+            "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs",
+            "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+        }
+    )
+    expected_aggregate = frozenset(
+        {
+            ".github/workflows/conflict-analysis.yml",
+            "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+            "software/conflict_analysis/domain/enums.py",
+            "software/conflict_analysis/domain/models.py",
+            "software/conflict_analysis/domain/migrations/0017_multilingual_evidence_lineage.py",
+            "software/conflict_analysis/domain/services/document_lineage.py",
+            "software/conflict_analysis/domain/services/evidence_drilldown.py",
+            "software/conflict_analysis/domain/api/evidence.py",
+            "software/conflict_analysis/domain/urls.py",
+            "software/conflict_analysis/domain/tests/test_multilingual_evidence_lineage.py",
+            "software/conflict_analysis/docs/adr/0012-multilingual-evidence-document-lineage.md",
+            "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs",
+        }
+    )
+    expected_existing = frozenset(
+        {
+            ".github/workflows/conflict-analysis.yml",
+            "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+            "software/conflict_analysis/domain/enums.py",
+            "software/conflict_analysis/domain/models.py",
+            "software/conflict_analysis/domain/urls.py",
+            "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs",
+        }
+    )
+    expected_blobs = {
+        ".github/workflows/conflict-analysis.yml": "8feef98f992ca65c409b12ef40866a6e47a494a7",
+        "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs": "c4435611336be404c5ae2f566582e5c2bb1a4b16",
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py": "4788bc843910c4f14eb50004b04f055bef4275cc",
+    }
+    if (
+        F1_CHROMIUM_R3_RC2_HEAD
+        != "04cb729f46bb13bfda4d957eaabcaee8ae50619e"
+        or F1_CHROMIUM_R3_RC2_TREE
+        != "dc1099bb9a0b58fab2e3be668eb3ab649e94f37e"
+        or F1_CHROMIUM_R3_STUDIO_ROOT
+        != "software/conflict_analysis/production_studio"
+        or F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH
+        != "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs"
+        or F1_CHROMIUM_R3_RC2_MODIFIED_BLOBS != expected_blobs
+        or F1_CHROMIUM_R3_DELTA_PATHS != expected_delta
+        or F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST != expected_aggregate
+        or F1_CHROMIUM_R3_EXISTING_PATHS != expected_existing
+        or (
+            len(F1_CHROMIUM_R3_DELTA_PATHS),
+            len(F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST),
+            len(F1_CHROMIUM_R3_EXISTING_PATHS),
+            len(F1_NEW_PATHS),
+        )
+        != (3, 12, 6, 6)
+    ):
+        raise VerificationError("F1 Chromium R3 static topology/path contract drifted")
+
+
 def _successor_static_contract_payload() -> dict[str, object]:
     return {
         "f0l_correction_4_head": PINNED_F0L_CORRECTION_4_HEAD,
@@ -2078,6 +2405,7 @@ def _successor_static_contract_payload() -> dict[str, object]:
 
 def _require_successor_static_contract() -> None:
     _require_f1_recovery_static_contract()
+    _require_f1_chromium_r3_static_contract()
     encoded = json.dumps(
         _successor_static_contract_payload(),
         ensure_ascii=False,
@@ -2207,19 +2535,198 @@ def _require_successor_workflow_contract(source: str) -> None:
         )
 
 
+def _require_f1_chromium_r3_workflow_contract(source: str) -> None:
+    """Pin the owner-authorized R3 observer and immutable same-run archive."""
+
+    observer_name = "Run bounded F1 Chromium bootstrap-observer self-checks"
+    prepare_name = "Prepare immutable F1 Chromium R3 same-run evidence archive"
+    upload_name = "Upload immutable F1 Chromium R3 same-run evidence archive"
+    receipt_name = "Verify immutable F1 Chromium R3 archive receipt"
+    step_names = (observer_name, prepare_name, upload_name, receipt_name)
+
+    def exact_step_block(name: str) -> str:
+        matches = list(
+            re.finditer(rf"(?m)^      - name: {re.escape(name)}\s*$", source)
+        )
+        if len(matches) != 1:
+            raise VerificationError(
+                "F1 Chromium R3 workflow step cardinality drifted: "
+                + json.dumps({"step": name, "count": len(matches)})
+            )
+        start = matches[0].start()
+        successor = re.search(r"(?m)^      - name: ", source[matches[0].end() :])
+        end = (
+            matches[0].end() + successor.start()
+            if successor is not None
+            else len(source)
+        )
+        return source[start:end]
+
+    observer, prepare, upload, receipt = (
+        exact_step_block(name) for name in step_names
+    )
+    route_pattern = re.compile(
+        r"(?s)if:\s*>-\s*"
+        r"\$\{\{\s*always\(\)\s*&&\s*\(\s*"
+        rf"\(github\.event_name\s*==\s*'push'\s*&&\s*"
+        rf"github\.ref\s*==\s*'refs/heads/{re.escape(F1_TARGET_BRANCH)}'\)\s*"
+        r"\|\|\s*"
+        rf"\(github\.event_name\s*==\s*'pull_request'\s*&&\s*"
+        rf"github\.head_ref\s*==\s*'{re.escape(F1_TARGET_BRANCH)}'\s*&&\s*"
+        rf"github\.base_ref\s*==\s*'{re.escape(F0L_TARGET_BRANCH)}'\)\s*"
+        r"\)\s*\}\}"
+    )
+    route_blocks = (prepare, upload, receipt)
+    route_contract = all(
+        len(route_pattern.findall(block)) == 1 and block.count("always()") == 1
+        for block in route_blocks
+    )
+    observer_command = re.compile(
+        r"(?m)^          node "
+        r"production_studio/browser_tests/audited_authoring\.mjs\s+\\\s*$\n"
+        r"^            --self-check-observation\s*$"
+    )
+    artifact_name = (
+        "name: f1-chromium-r3-${{ github.run_id }}-attempt-"
+        "${{ github.run_attempt }}-${{ github.event_name }}"
+    )
+    artifact_path = (
+        "path: ${{ runner.temp }}/f1-chromium-r3-evidence-"
+        "${{ github.run_id }}-${{ github.run_attempt }}-${{ github.event_name }}"
+    )
+    required_counts = {
+        "F1_CHROMIUM_R3_BOOTSTRAP_OBSERVER_SELF_CHECK=PASS": 1,
+        "F1_CHROMIUM_R3_SAME_RUN_EVIDENCE_ARCHIVE_V1": 1,
+        "F1_CHROMIUM_R3_ARCHIVE_CONTENT_SET=COMPLETE": 1,
+        "F1_CHROMIUM_R3_ARCHIVE_COMPLETE=PASS": 1,
+        "F1_CHROMIUM_R3_PARTIAL_DIAGNOSTICS=ARCHIVED": 2,
+        "F1_CHROMIUM_R3_ARCHIVE_DIGEST_AND_WHEEL_SHA256=PASS": 1,
+        "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a": 1,
+        "id: f1_chromium_r3_upload": 1,
+        "F1_R3_ARTIFACT_ID": 2,
+        "F1_R3_ARTIFACT_DIGEST": 2,
+        artifact_name: 1,
+        artifact_path: 1,
+        "if-no-files-found: error": 1,
+        "overwrite: false": 1,
+    }
+    count_drift = {
+        token: {"expected": expected, "actual": source.count(token)}
+        for token, expected in required_counts.items()
+        if source.count(token) != expected
+    }
+    observer_contract = (
+        observer.count("if: env.ACTIVE_SLICE == 'F1'") == 1
+        and observer.count("shell: bash") == 1
+        and len(observer_command.findall(observer)) == 1
+        and observer.count("F1_CHROMIUM_R3_BOOTSTRAP_OBSERVER_SELF_CHECK=PASS")
+        == 1
+        and "always()" not in observer
+    )
+    prepare_tokens = (
+        'archive_layout = "complete" if not missing_names else "partial"',
+        '"schema": "F1_CHROMIUM_R3_SAME_RUN_EVIDENCE_ARCHIVE_V1"',
+        'if archive_layout == "complete":',
+        "F1_CHROMIUM_R3_ARCHIVE_CONTENT_SET=COMPLETE",
+        "F1_CHROMIUM_R3_PARTIAL_DIAGNOSTICS=ARCHIVED",
+        "if acceptance_ready:",
+        "F1_CHROMIUM_R3_ARCHIVE_COMPLETE=PASS",
+        'if pre_archive_job_status == "success" and not acceptance_ready:',
+        "raise SystemExit(",
+        "canonical_wheel_env_matches",
+        "wheel_sha256_matches",
+        'verifier_result == "PASS"',
+        'mkdir "$archive_root"',
+    )
+    prepare_contract = all(token in prepare for token in prepare_tokens)
+    upload_contract = (
+        "uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
+        in upload
+        and "id: f1_chromium_r3_upload" in upload
+        and artifact_name in upload
+        and artifact_path in upload
+        and "if-no-files-found: error" in upload
+        and "overwrite: false" in upload
+        and "overwrite: true" not in upload
+    )
+    receipt_tokens = (
+        "F1_R3_ARTIFACT_ID: ${{ steps.f1_chromium_r3_upload.outputs.artifact-id }}",
+        "F1_R3_ARTIFACT_DIGEST: ${{ steps.f1_chromium_r3_upload.outputs.artifact-digest }}",
+        'if metadata["pre_archive_job_status"] == "success":',
+        'assert metadata["archive_layout"] == "complete"',
+        'assert metadata["acceptance_ready"] is True',
+        "assert artifact_id",
+        "full_hex.fullmatch(artifact_digest)",
+        "F1_CHROMIUM_R3_ARCHIVE_DIGEST_AND_WHEEL_SHA256=PASS",
+        "F1_CHROMIUM_R3_PARTIAL_DIAGNOSTICS=ARCHIVED",
+    )
+    receipt_contract = all(token in receipt for token in receipt_tokens)
+    order_contract = (
+        source.index(observer_name)
+        < source.index("name: Require complete F1/C2A functional evidence")
+        < source.index(prepare_name)
+        < source.index(upload_name)
+        < source.index(receipt_name)
+    )
+    if (
+        count_drift
+        or not observer_contract
+        or not route_contract
+        or not prepare_contract
+        or not upload_contract
+        or not receipt_contract
+        or not order_contract
+        or source.count("actions/upload-artifact@") != 1
+        or source.count("always()") != 3
+    ):
+        raise VerificationError(
+            "F1 Chromium R3 observer/archive workflow contract drifted: "
+            + json.dumps(
+                {
+                    "count_drift": count_drift,
+                    "observer_contract": observer_contract,
+                    "route_contract": route_contract,
+                    "prepare_contract": prepare_contract,
+                    "upload_contract": upload_contract,
+                    "receipt_contract": receipt_contract,
+                    "order_contract": order_contract,
+                    "upload_artifact_action_count": source.count(
+                        "actions/upload-artifact@"
+                    ),
+                    "always_count": source.count("always()"),
+                }
+            )
+        )
+
+
 def _require_successor_repository_contract(
     repo: Path,
     *,
     active_slice: str,
     base_head: str,
+    f1_chromium_r3: bool = False,
 ) -> dict[str, object]:
+    if f1_chromium_r3:
+        _require_f1_chromium_r3_active_slice(active_slice)
     allowlist = (
-        F1_FINAL_AGGREGATE_ALLOWLIST
-        if active_slice == "F1"
-        else C2A_POST_F0L_ALLOWLIST
+        F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST
+        if active_slice == "F1" and f1_chromium_r3
+        else (
+            F1_FINAL_AGGREGATE_ALLOWLIST
+            if active_slice == "F1"
+            else C2A_POST_F0L_ALLOWLIST
+        )
     )
     new_paths = F1_NEW_PATHS if active_slice == "F1" else C2A_NEW_PATHS
-    frozen_paths = F1_FROZEN_PATHS if active_slice == "F1" else C2A_FROZEN_PATHS
+    frozen_paths = (
+        tuple(
+            path
+            for path in F1_FROZEN_PATHS
+            if path != F1_CHROMIUM_R3_STUDIO_ROOT
+        )
+        if active_slice == "F1" and f1_chromium_r3
+        else (F1_FROZEN_PATHS if active_slice == "F1" else C2A_FROZEN_PATHS)
+    )
     base_blobs: dict[str, str] = {}
     for path in sorted(allowlist):
         base_entry = _git(repo, "ls-tree", base_head, "--", path)
@@ -2246,12 +2753,12 @@ def _require_successor_repository_contract(
             entry=head_entry,
         )
 
-    if active_slice == "F1" and (
-        len(allowlist),
-        len(new_paths),
-        len(base_blobs),
-    ) != (11, 6, 5):
-        raise VerificationError("F1 recovery aggregate/new/existing path proof drifted")
+    if active_slice == "F1":
+        expected_path_proof = (12, 6, 6) if f1_chromium_r3 else (11, 6, 5)
+        if (len(allowlist), len(new_paths), len(base_blobs)) != expected_path_proof:
+            raise VerificationError(
+                "F1 recovery aggregate/new/existing path proof drifted"
+            )
 
     frozen_objects: dict[str, str] = {}
     for path in frozen_paths:
@@ -2262,6 +2769,9 @@ def _require_successor_repository_contract(
                 f"{active_slice} accepted-F0L frozen input drifted at {path}"
             )
         frozen_objects[path] = base_object
+
+    if f1_chromium_r3:
+        _require_f1_chromium_r3_production_studio_freeze(repo)
 
     migrations = tuple(
         line
@@ -2298,6 +2808,7 @@ def _require_successor_repository_contract(
         "new_paths": sorted(new_paths),
         "existing_base_blobs": dict(sorted(base_blobs.items())),
         "frozen_objects": dict(sorted(frozen_objects.items())),
+        "f1_chromium_r3_studio_freeze": f1_chromium_r3,
         "migration_filenames": list(migrations),
     }
 
@@ -4850,6 +5361,143 @@ def f0l_self_check() -> dict[str, object]:
     else:
         raise VerificationError("F1 recovery self-check accepted a merge commit")
 
+    f1_chromium_r3_child = "e" * 40
+    f1_chromium_r3_positive = {
+        "base_head": F1_RECOVERY_BASE_HEAD,
+        "delivery_head": f1_chromium_r3_child,
+        "commit_count": 4,
+        "ordered_commits": (
+            F1_RECOVERY_COMMIT_1,
+            F1_RECOVERY_COMMIT_2,
+            F1_CHROMIUM_R3_RC2_HEAD,
+            f1_chromium_r3_child,
+        ),
+        "commit_parents": (
+            F1_RECOVERY_BASE_HEAD,
+            F1_RECOVERY_COMMIT_1,
+            F1_RECOVERY_COMMIT_2,
+            F1_CHROMIUM_R3_RC2_HEAD,
+        ),
+        "commit_parent_counts": (1, 1, 1, 1),
+        "commit_deltas": (
+            F1_POST_F0L_ALLOWLIST,
+            F1_RECOVERY_COMMIT_2_DELTA_PATHS,
+            F1_RECOVERY_COMMIT_3_DELTA_PATHS,
+            F1_CHROMIUM_R3_DELTA_PATHS,
+        ),
+        "aggregate_paths": F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST,
+        "rc2_tree": F1_CHROMIUM_R3_RC2_TREE,
+    }
+    _require_f1_chromium_r3_topology(**f1_chromium_r3_positive)
+    r3_studio_base = {
+        F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH: (
+            "100644",
+            "blob",
+            F1_CHROMIUM_R3_RC2_MODIFIED_BLOBS[
+                F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH
+            ],
+        ),
+        f"{F1_CHROMIUM_R3_STUDIO_ROOT}/static/production_studio/audited_draft.js": (
+            "100644",
+            "blob",
+            "a" * 40,
+        ),
+    }
+    r3_studio_delivery = {
+        **r3_studio_base,
+        F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH: ("100644", "blob", "b" * 40),
+    }
+    _require_f1_chromium_r3_studio_freeze_entries(
+        base_entries=r3_studio_base,
+        delivery_entries=r3_studio_delivery,
+    )
+    for label, overrides in (
+        (
+            "extra fourth-child path",
+            {
+                "commit_deltas": (
+                    *f1_chromium_r3_positive["commit_deltas"][:3],
+                    F1_CHROMIUM_R3_DELTA_PATHS | {"unauthorized/fourth-path"},
+                )
+            },
+        ),
+        (
+            "missing fourth-child path",
+            {
+                "commit_deltas": (
+                    *f1_chromium_r3_positive["commit_deltas"][:3],
+                    F1_CHROMIUM_R3_DELTA_PATHS
+                    - {sorted(F1_CHROMIUM_R3_DELTA_PATHS)[0]},
+                )
+            },
+        ),
+        (
+            "fixed RC2 prefix substitution",
+            {
+                "ordered_commits": (
+                    F1_RECOVERY_COMMIT_1,
+                    F1_RECOVERY_COMMIT_2,
+                    "a" * 40,
+                    f1_chromium_r3_child,
+                )
+            },
+        ),
+        (
+            "fourth-child parent substitution",
+            {
+                "commit_parents": (
+                    F1_RECOVERY_BASE_HEAD,
+                    F1_RECOVERY_COMMIT_1,
+                    F1_RECOVERY_COMMIT_2,
+                    "a" * 40,
+                )
+            },
+        ),
+        ("fixed RC2 tree substitution", {"rc2_tree": "a" * 40}),
+        ("fourth-child merge", {"commit_parent_counts": (1, 1, 1, 2)}),
+        (
+            "aggregate extra path",
+            {
+                "aggregate_paths": F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST
+                | {"unauthorized/twelfth-path"}
+            },
+        ),
+    ):
+        try:
+            _require_f1_chromium_r3_topology(
+                **{**f1_chromium_r3_positive, **overrides}
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                f"F1 Chromium R3 self-check accepted {label}"
+            )
+    try:
+        _require_f1_chromium_r3_studio_freeze_entries(
+            base_entries=r3_studio_base,
+            delivery_entries={
+                **r3_studio_delivery,
+                f"{F1_CHROMIUM_R3_STUDIO_ROOT}/static/production_studio/audited_draft.js": (
+                    "100644",
+                    "blob",
+                    "c" * 40,
+                ),
+            },
+        )
+    except VerificationError:
+        negative_cases += 1
+    else:
+        raise VerificationError(
+            "F1 Chromium R3 self-check accepted another Production Studio file"
+        )
+    try:
+        _require_f1_chromium_r3_active_slice("C2A")
+    except VerificationError:
+        negative_cases += 1
+    else:
+        raise VerificationError("F1 Chromium R3 self-check accepted C2A misuse")
+
     _require_changed_path_contract(
         active_slice="F0L",
         changed=ACTIVE_F0L_ALLOWLIST,
@@ -5439,6 +6087,141 @@ class ProjectQuerySet:
         else:
             raise VerificationError(
                 f"successor workflow self-check accepted {label}"
+            )
+
+    f1_r3_route = """        if: >-
+          ${{
+            always() &&
+            (
+              (github.event_name == 'push' && github.ref == 'refs/heads/codex/ca-suite-i1-evidence-multilingual-f1') ||
+              (github.event_name == 'pull_request' && github.head_ref == 'codex/ca-suite-i1-evidence-multilingual-f1' && github.base_ref == 'codex/ca-suite-i1-project-language-bootstrap-f0l')
+            )
+          }}"""
+    f1_r3_workflow_source = "\n\n".join(
+        (
+            """      - name: Run bounded F1 Chromium bootstrap-observer self-checks
+        if: env.ACTIVE_SLICE == 'F1'
+        shell: bash
+        run: |
+          node production_studio/browser_tests/audited_authoring.mjs \\
+            --self-check-observation
+          echo "F1_CHROMIUM_R3_BOOTSTRAP_OBSERVER_SELF_CHECK=PASS\"""",
+            """      - name: Require complete F1/C2A functional evidence
+        run: echo POST_F0L_F1_C2A_EXECUTABLE_CI=PASS""",
+            """      - name: Prepare immutable F1 Chromium R3 same-run evidence archive
+"""
+            + f1_r3_route
+            + """
+        shell: bash
+        run: |
+          mkdir "$archive_root"
+          archive_layout = "complete" if not missing_names else "partial"
+          metadata = {
+              "schema": "F1_CHROMIUM_R3_SAME_RUN_EVIDENCE_ARCHIVE_V1",
+          }
+          canonical_wheel_env_matches = True
+          wheel_sha256_matches = True
+          verifier_result == "PASS"
+          if archive_layout == "complete":
+              print("F1_CHROMIUM_R3_ARCHIVE_CONTENT_SET=COMPLETE")
+          else:
+              print("F1_CHROMIUM_R3_PARTIAL_DIAGNOSTICS=ARCHIVED")
+          if acceptance_ready:
+              print("F1_CHROMIUM_R3_ARCHIVE_COMPLETE=PASS")
+          if pre_archive_job_status == "success" and not acceptance_ready:
+              raise SystemExit("missing same-run evidence")""",
+            """      - name: Upload immutable F1 Chromium R3 same-run evidence archive
+        id: f1_chromium_r3_upload
+"""
+            + f1_r3_route
+            + """
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: f1-chromium-r3-${{ github.run_id }}-attempt-${{ github.run_attempt }}-${{ github.event_name }}
+          path: ${{ runner.temp }}/f1-chromium-r3-evidence-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.event_name }}
+          if-no-files-found: error
+          overwrite: false""",
+            """      - name: Verify immutable F1 Chromium R3 archive receipt
+"""
+            + f1_r3_route
+            + """
+        shell: bash
+        env:
+          F1_R3_ARTIFACT_ID: ${{ steps.f1_chromium_r3_upload.outputs.artifact-id }}
+          F1_R3_ARTIFACT_DIGEST: ${{ steps.f1_chromium_r3_upload.outputs.artifact-digest }}
+        run: |
+          artifact_id="$F1_R3_ARTIFACT_ID"
+          artifact_digest="$F1_R3_ARTIFACT_DIGEST"
+          if metadata["pre_archive_job_status"] == "success":
+              assert metadata["archive_layout"] == "complete"
+              assert metadata["acceptance_ready"] is True
+              assert artifact_id
+              full_hex.fullmatch(artifact_digest)
+              print("F1_CHROMIUM_R3_ARCHIVE_DIGEST_AND_WHEEL_SHA256=PASS")
+          else:
+              print("F1_CHROMIUM_R3_PARTIAL_DIAGNOSTICS=ARCHIVED")""",
+        )
+    )
+    _require_f1_chromium_r3_workflow_contract(f1_r3_workflow_source)
+    for label, invalid_r3_workflow_source in (
+        (
+            "missing observer marker",
+            f1_r3_workflow_source.replace(
+                "F1_CHROMIUM_R3_BOOTSTRAP_OBSERVER_SELF_CHECK=PASS",
+                "F1_CHROMIUM_R3_BOOTSTRAP_OBSERVER_SELF_CHECK=REMOVED",
+                1,
+            ),
+        ),
+        (
+            "observer no longer F1-only",
+            f1_r3_workflow_source.replace(
+                "if: env.ACTIVE_SLICE == 'F1'", "if: always()", 1
+            ),
+        ),
+        (
+            "archive route lacks always",
+            f1_r3_workflow_source.replace("always() &&", "success() &&", 1),
+        ),
+        (
+            "archive uploader SHA drift",
+            f1_r3_workflow_source.replace(
+                "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a", "f" * 40, 1
+            ),
+        ),
+        (
+            "archive overwrite enabled",
+            f1_r3_workflow_source.replace("overwrite: false", "overwrite: true", 1),
+        ),
+        (
+            "partial diagnostics removed",
+            f1_r3_workflow_source.replace(
+                "F1_CHROMIUM_R3_PARTIAL_DIAGNOSTICS=ARCHIVED",
+                "F1_CHROMIUM_R3_PARTIAL_DIAGNOSTICS=REMOVED",
+                1,
+            ),
+        ),
+        (
+            "archive receipt digest binding removed",
+            f1_r3_workflow_source.replace(
+                "F1_R3_ARTIFACT_DIGEST: "
+                "${{ steps.f1_chromium_r3_upload.outputs.artifact-digest }}",
+                "F1_R3_ARTIFACT_DIGEST: REMOVED",
+                1,
+            ),
+        ),
+        (
+            "duplicate uploader",
+            f1_r3_workflow_source
+            + "\nactions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+        ),
+    ):
+        try:
+            _require_f1_chromium_r3_workflow_contract(invalid_r3_workflow_source)
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                f"F1 Chromium R3 workflow self-check accepted {label}"
             )
 
     with TemporaryDirectory(prefix="f0l-successor-self-check-") as temp_name:
@@ -6437,6 +7220,7 @@ def verify_post_f0l(
     if _git(repo, "merge-base", base_head, "HEAD") != base_head:
         raise VerificationError(f"{active_slice} is not based on accepted F0L")
     commit_count = int(_git(repo, "rev-list", "--count", f"{base_head}..HEAD"))
+    f1_chromium_r3 = active_slice == "F1" and commit_count == 4
     delivery_parent = _git(repo, "rev-parse", "HEAD^") if commit_count else base_head
     delivery_head = _require_exact_object_id(
         f"{active_slice} delivery HEAD",
@@ -6466,9 +7250,13 @@ def verify_post_f0l(
         _git(repo, "status", "--porcelain=v1", "--untracked-files=all")
     )
     allowlist = (
-        F1_FINAL_AGGREGATE_ALLOWLIST
-        if active_slice == "F1"
-        else C2A_POST_F0L_ALLOWLIST
+        F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST
+        if f1_chromium_r3
+        else (
+            F1_FINAL_AGGREGATE_ALLOWLIST
+            if active_slice == "F1"
+            else C2A_POST_F0L_ALLOWLIST
+        )
     )
     changed = _changed_paths(repo, base_head)
     _require_changed_path_contract(
@@ -6478,30 +7266,56 @@ def verify_post_f0l(
         exact_changed_paths=True,
     )
     if active_slice == "F1":
-        _require_f1_recovery_topology(
-            base_head=base_head,
-            delivery_head=delivery_head,
-            commit_count=commit_count,
-            ordered_commits=ordered_commits,
-            commit_parents=tuple(
-                _git(repo, "rev-parse", f"{commit}^")
-                for commit in ordered_commits
-            ),
-            commit_deltas=tuple(
-                _commit_changed_paths(repo, commit) for commit in ordered_commits
-            ),
-            aggregate_paths=changed,
+        commit_parents = tuple(
+            _git(repo, "rev-parse", f"{commit}^") for commit in ordered_commits
         )
+        commit_deltas = tuple(
+            _commit_changed_paths(repo, commit) for commit in ordered_commits
+        )
+        if f1_chromium_r3:
+            _require_f1_chromium_r3_topology(
+                base_head=base_head,
+                delivery_head=delivery_head,
+                commit_count=commit_count,
+                ordered_commits=ordered_commits,
+                commit_parents=commit_parents,
+                commit_parent_counts=tuple(
+                    len(
+                        _git(repo, "show", "-s", "--format=%P", commit).split()
+                    )
+                    for commit in ordered_commits
+                ),
+                commit_deltas=commit_deltas,
+                aggregate_paths=changed,
+                rc2_tree=_git(
+                    repo,
+                    "rev-parse",
+                    f"{F1_CHROMIUM_R3_RC2_HEAD}^{{tree}}",
+                ),
+            )
+            _require_f1_chromium_r3_delta_statuses(repo)
+        else:
+            _require_f1_recovery_topology(
+                base_head=base_head,
+                delivery_head=delivery_head,
+                commit_count=commit_count,
+                ordered_commits=ordered_commits,
+                commit_parents=commit_parents,
+                commit_deltas=commit_deltas,
+                aggregate_paths=changed,
+            )
     repository_contract = _require_successor_repository_contract(
         repo,
         active_slice=active_slice,
         base_head=base_head,
+        f1_chromium_r3=f1_chromium_r3,
     )
     _require_successor_test_topology(repo, active_slice=active_slice)
     workflow_source = (
         repo / ".github/workflows/conflict-analysis.yml"
     ).read_text(encoding="utf-8")
     _require_successor_workflow_contract(workflow_source)
+    _require_f1_chromium_r3_workflow_contract(workflow_source)
     delivery_tree = _require_exact_object_id(
         f"{active_slice} delivery TREE",
         _git(repo, "rev-parse", "HEAD^{tree}"),
@@ -6547,6 +7361,26 @@ def verify_post_f0l(
             if active_slice == "F1"
             else None
         ),
+        "f1_chromium_r3_topology": (
+            {
+                "rc2_head": F1_CHROMIUM_R3_RC2_HEAD,
+                "rc2_tree": F1_CHROMIUM_R3_RC2_TREE,
+                "rc2_parent": F1_RECOVERY_COMMIT_2,
+                "fourth_parent": F1_CHROMIUM_R3_RC2_HEAD,
+                "fourth_delta_paths": sorted(F1_CHROMIUM_R3_DELTA_PATHS),
+                "aggregate_path_count": len(
+                    F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST
+                ),
+                "existing_path_count": len(F1_CHROMIUM_R3_EXISTING_PATHS),
+                "new_path_count": len(F1_NEW_PATHS),
+                "production_studio_exception": F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH,
+            }
+            if f1_chromium_r3
+            else None
+        ),
+        "f1_chromium_r3_production_studio_freeze": repository_contract[
+            "f1_chromium_r3_studio_freeze"
+        ],
         "functional_ci_evidence": "PASS",
         "successor_ci_evidence": evidence,
         "inherited_foundation_c0_c1_frozen_by_exact_allowlist": True,

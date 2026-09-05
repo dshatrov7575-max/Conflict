@@ -4,6 +4,323 @@ import { inflateSync } from "node:zlib";
 import { launchChromium } from "./cdp_client.mjs";
 
 
+const bootstrapBindingName = "__studioBootstrapObservation";
+const bootstrapEventName = "studio:bootstrap-complete";
+const bootstrapDiagnosticLimit = 12;
+const bootstrapSelfCheckArgument = "--self-check-observation";
+
+const bootstrapObserverError = (code) => new Error(`bootstrap observer ${code}`);
+
+const normalizeBootstrapIdentity = (value) => (
+  typeof value === "string" ? value.toLowerCase() : ""
+);
+
+const appendBootstrapDiagnostic = (diagnostics, entry) => {
+  if (diagnostics.length < bootstrapDiagnosticLimit) {
+    diagnostics.push({ sequence: diagnostics.length + 1, ...entry });
+  }
+};
+
+const bootstrapObserverFailure = (diagnostics, stage) => {
+  appendBootstrapDiagnostic(diagnostics, {
+    stage,
+    method: "observer",
+    contextId: null,
+    frameId: null,
+    loaderId: null,
+    result: "failed",
+  });
+  return new Error(
+    `bootstrap observer failed at ${stage}; safe_diagnostics=${JSON.stringify(diagnostics)}`,
+  );
+};
+
+const isMainFrame = (frame) => frame?.parentId === undefined || frame?.parentId === null;
+
+const validateBootstrapBinding = ({ expectation, eventSessionId, params }) => {
+  if (eventSessionId !== expectation.sessionId) {
+    throw bootstrapObserverError("BINDING_SESSION_MISMATCH");
+  }
+  if (params.name !== bootstrapBindingName) {
+    throw bootstrapObserverError("BINDING_NAME_MISMATCH");
+  }
+  if (params.executionContextId !== expectation.contextId) {
+    throw bootstrapObserverError("BINDING_CONTEXT_MISMATCH");
+  }
+  if (!expectation.contextIsDefault || expectation.contextFrameId !== expectation.frameId) {
+    throw bootstrapObserverError("BINDING_FRAME_MISMATCH");
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(params.payload);
+  } catch {
+    throw bootstrapObserverError("BINDING_PAYLOAD_INVALID");
+  }
+  if (payload?.event !== bootstrapEventName || !payload.detail || typeof payload.detail !== "object") {
+    throw bootstrapObserverError("BINDING_EVENT_INVALID");
+  }
+
+  const detail = payload.detail;
+  if (
+    normalizeBootstrapIdentity(detail.projectId) !== expectation.projectId ||
+    normalizeBootstrapIdentity(detail.definitionId) !== expectation.definitionId ||
+    normalizeBootstrapIdentity(detail.operationId) !== expectation.operationId ||
+    detail.projectPrimaryLanguage !== expectation.projectPrimaryLanguage
+  ) {
+    throw bootstrapObserverError("BINDING_IDENTITY_MISMATCH");
+  }
+  return detail;
+};
+
+const validateBootstrapDestinationNavigation = ({ expectation, eventSessionId, params }) => {
+  if (eventSessionId !== expectation.sessionId) {
+    throw bootstrapObserverError("DESTINATION_SESSION_MISMATCH");
+  }
+  const frame = params.frame;
+  if (!isMainFrame(frame)) return null;
+  if (frame?.id !== expectation.frameId) {
+    throw bootstrapObserverError("DESTINATION_FRAME_MISMATCH");
+  }
+  if (new URL(frame.url).href !== expectation.destinationUrl || !frame.loaderId) {
+    throw bootstrapObserverError("DESTINATION_MISMATCH");
+  }
+  return { frameId: frame.id, loaderId: frame.loaderId };
+};
+
+const validateBootstrapDestinationLoad = ({ expectation, destination, eventSessionId, params }) => {
+  if (params.name !== "load") return false;
+  if (eventSessionId !== expectation.sessionId) {
+    throw bootstrapObserverError("DESTINATION_LOAD_SESSION_MISMATCH");
+  }
+  if (params.frameId !== expectation.frameId) return false;
+  if (!destination || params.loaderId !== destination.loaderId) {
+    throw bootstrapObserverError("DESTINATION_LOAD_MISMATCH");
+  }
+  return true;
+};
+
+const createBootstrapObserver = (expectation, { timeoutMs, diagnostics = [] }) => {
+  let bootstrapDetail;
+  let destination;
+  let pendingDestinationLoad;
+  let destinationLoaded = false;
+  let settled = false;
+  let timer;
+  let resolvePromise;
+  let rejectPromise;
+  const promise = new Promise((resolve, reject) => {
+    resolvePromise = resolve;
+    rejectPromise = reject;
+  });
+
+  const fail = (stage) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timer);
+    rejectPromise(bootstrapObserverFailure(diagnostics, stage));
+  };
+  const complete = () => {
+    if (settled || !bootstrapDetail || !destinationLoaded) return;
+    settled = true;
+    clearTimeout(timer);
+    resolvePromise({ detail: bootstrapDetail, destination });
+  };
+  appendBootstrapDiagnostic(diagnostics, {
+    stage: "armed",
+    method: "Runtime.bindingCalled",
+    contextId: expectation.contextId,
+    frameId: expectation.frameId,
+    loaderId: null,
+    result: "waiting",
+  });
+  const consumeDestinationLoad = () => {
+    if (!pendingDestinationLoad) return;
+    destinationLoaded = validateBootstrapDestinationLoad({
+      expectation,
+      destination,
+      eventSessionId: pendingDestinationLoad.eventSessionId,
+      params: pendingDestinationLoad.params,
+    });
+    pendingDestinationLoad = undefined;
+  };
+  timer = setTimeout(() => fail("timeout"), timeoutMs);
+
+  return {
+    cancel() {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+    },
+    diagnostics,
+    promise,
+    observeBinding(params, eventSessionId) {
+      if (settled || params.name !== bootstrapBindingName) return;
+      appendBootstrapDiagnostic(diagnostics, {
+        stage: "binding",
+        method: "Runtime.bindingCalled",
+        contextId: params.executionContextId,
+        frameId: expectation.frameId,
+        loaderId: null,
+        result: "received",
+      });
+      try {
+        bootstrapDetail = validateBootstrapBinding({ expectation, eventSessionId, params });
+      } catch {
+        fail("binding-rejected");
+        return;
+      }
+      complete();
+    },
+    observeNavigation(params, eventSessionId) {
+      if (settled || !isMainFrame(params.frame)) return;
+      appendBootstrapDiagnostic(diagnostics, {
+        stage: "navigation",
+        method: "Page.frameNavigated",
+        contextId: expectation.contextId,
+        frameId: params.frame?.id,
+        loaderId: params.frame?.loaderId || null,
+        result: "received",
+      });
+      try {
+        destination = validateBootstrapDestinationNavigation({ expectation, eventSessionId, params });
+        consumeDestinationLoad();
+      } catch {
+        fail("destination-rejected");
+        return;
+      }
+      complete();
+    },
+    observeLifecycle(params, eventSessionId) {
+      if (settled || params.name !== "load" || params.frameId !== expectation.frameId) return;
+      appendBootstrapDiagnostic(diagnostics, {
+        stage: "destination-load",
+        method: "Page.lifecycleEvent",
+        contextId: expectation.contextId,
+        frameId: params.frameId,
+        loaderId: params.loaderId || null,
+        result: "received",
+      });
+      try {
+        if (!destination) {
+          if (eventSessionId !== expectation.sessionId) {
+            throw bootstrapObserverError("DESTINATION_LOAD_SESSION_MISMATCH");
+          }
+          pendingDestinationLoad = { eventSessionId, params };
+          return;
+        }
+        destinationLoaded = validateBootstrapDestinationLoad({ expectation, destination, eventSessionId, params });
+      } catch {
+        fail("destination-load-rejected");
+        return;
+      }
+      complete();
+    },
+  };
+};
+
+const assertSingleBootstrapWrite = (count) => {
+  assert.equal(count, 1, "bootstrap was retried or an unexpected bootstrap write occurred");
+};
+
+const runBootstrapObserverSelfCheck = async () => {
+  const expectation = Object.freeze({
+    sessionId: "self-check-session",
+    contextId: 17,
+    contextIsDefault: true,
+    contextFrameId: "self-check-main-frame",
+    frameId: "self-check-main-frame",
+    destinationUrl: "https://example.invalid/studio/drafts/definitions/22222222-2222-4222-8222-222222222222/",
+    projectId: "11111111-1111-4111-8111-111111111111",
+    definitionId: "22222222-2222-4222-8222-222222222222",
+    operationId: "33333333-3333-4333-8333-333333333333",
+    projectPrimaryLanguage: "ru",
+  });
+  const detail = Object.freeze({
+    projectId: expectation.projectId,
+    definitionId: expectation.definitionId,
+    operationId: expectation.operationId,
+    projectPrimaryLanguage: expectation.projectPrimaryLanguage,
+  });
+  const binding = (overrides = {}) => ({
+    name: bootstrapBindingName,
+    executionContextId: expectation.contextId,
+    payload: JSON.stringify({ event: bootstrapEventName, detail: { ...detail, ...overrides } }),
+  });
+  const destination = {
+    frame: {
+      id: expectation.frameId,
+      loaderId: "self-check-loader",
+      url: expectation.destinationUrl,
+    },
+  };
+
+  const reordered = createBootstrapObserver(expectation, { timeoutMs: 50 });
+  reordered.observeBinding(binding(), expectation.sessionId);
+  reordered.observeNavigation(destination, expectation.sessionId);
+  reordered.observeLifecycle(
+    { name: "load", frameId: expectation.frameId, loaderId: "self-check-loader" },
+    expectation.sessionId,
+  );
+  assert.deepEqual((await reordered.promise).detail, detail);
+  assert.ok(reordered.diagnostics.length <= bootstrapDiagnosticLimit);
+  assert.deepEqual(
+    reordered.diagnostics.map((entry) => entry.sequence),
+    [1, 2, 3, 4],
+  );
+  assert.equal(JSON.stringify(reordered.diagnostics).includes(expectation.operationId), false);
+
+  const lifecycleFirst = createBootstrapObserver(expectation, { timeoutMs: 50 });
+  lifecycleFirst.observeLifecycle(
+    { name: "load", frameId: expectation.frameId, loaderId: "self-check-loader" },
+    expectation.sessionId,
+  );
+  lifecycleFirst.observeNavigation(destination, expectation.sessionId);
+  lifecycleFirst.observeBinding(binding(), expectation.sessionId);
+  assert.deepEqual((await lifecycleFirst.promise).detail, detail);
+
+  const foreignContext = createBootstrapObserver(expectation, { timeoutMs: 50 });
+  foreignContext.observeBinding(binding({}), expectation.sessionId);
+  foreignContext.observeBinding(
+    { ...binding(), executionContextId: expectation.contextId + 1 },
+    expectation.sessionId,
+  );
+  await assert.rejects(foreignContext.promise, /binding-rejected/);
+
+  const staleIdentity = createBootstrapObserver(expectation, { timeoutMs: 50 });
+  staleIdentity.observeBinding(
+    binding({ operationId: "44444444-4444-4444-8444-444444444444" }),
+    expectation.sessionId,
+  );
+  await assert.rejects(staleIdentity.promise, /binding-rejected/);
+
+  const wrongMainFrame = createBootstrapObserver(expectation, { timeoutMs: 50 });
+  wrongMainFrame.observeNavigation(
+    { frame: { ...destination.frame, id: "self-check-other-main-frame" } },
+    expectation.sessionId,
+  );
+  await assert.rejects(wrongMainFrame.promise, /destination-rejected/);
+
+  const wrongContextFrame = createBootstrapObserver(
+    { ...expectation, contextFrameId: "self-check-wrong-context-frame" },
+    { timeoutMs: 50 },
+  );
+  wrongContextFrame.observeBinding(binding(), expectation.sessionId);
+  await assert.rejects(wrongContextFrame.promise, /binding-rejected/);
+
+  const absent = createBootstrapObserver(expectation, { timeoutMs: 10 });
+  await assert.rejects(absent.promise, /bootstrap observer failed at timeout/);
+  assertSingleBootstrapWrite(1);
+  assert.throws(() => assertSingleBootstrapWrite(2), /bootstrap was retried/);
+};
+
+if (process.argv.includes(bootstrapSelfCheckArgument)) {
+  await runBootstrapObserverSelfCheck();
+  console.log("F1_CHROMIUM_R3_BOOTSTRAP_OBSERVER_SELF_CHECK=PASS");
+  process.exit(0);
+}
+
+
 const requiredEnvironment = (name) => {
   const value = process.env[name];
   if (!value) throw new Error(`${name} is required`);
@@ -59,7 +376,24 @@ try {
     client.send("Runtime.enable", {}, sessionId),
     client.send("Network.enable", { maxTotalBufferSize: 50_000_000 }, sessionId),
   ]);
+  await client.send("Page.setLifecycleEventsEnabled", { enabled: true }, sessionId);
+  const executionContexts = new Map();
+  client.on("Runtime.executionContextCreated", (event, eventSessionId) => {
+    if (eventSessionId !== sessionId || !event.context?.auxData?.frameId) return;
+    executionContexts.set(event.context.id, {
+      id: event.context.id,
+      frameId: event.context.auxData.frameId,
+      isDefault: event.context.auxData.isDefault === true,
+    });
+  });
+  client.on("Runtime.executionContextDestroyed", (event, eventSessionId) => {
+    if (eventSessionId === sessionId) executionContexts.delete(event.executionContextId);
+  });
+  client.on("Runtime.executionContextsCleared", (_event, eventSessionId) => {
+    if (eventSessionId === sessionId) executionContexts.clear();
+  });
   await client.send("Browser.setDownloadBehavior", { behavior: "deny" });
+  await client.send("Runtime.addBinding", { name: bootstrapBindingName }, sessionId);
   await client.send(
     "Page.addScriptToEvaluateOnNewDocument",
     {
@@ -74,6 +408,25 @@ try {
               detail = { serializationError: true };
             }
             window.__studioContractEvents.push({ name, detail });
+          });
+        }
+        const bootstrapBinding = globalThis[${JSON.stringify(bootstrapBindingName)}];
+        if (typeof bootstrapBinding === "function") {
+          window.addEventListener(${JSON.stringify(bootstrapEventName)}, (event) => {
+            const detail = event.detail || {};
+            bootstrapBinding(JSON.stringify({
+              event: ${JSON.stringify(bootstrapEventName)},
+              detail: {
+                projectId: detail.projectId,
+                definitionId: detail.definitionId,
+                operationId: detail.operationId,
+                receiptSha256: detail.receiptSha256,
+                projectPrimaryLanguage: detail.projectPrimaryLanguage,
+                projectPrimaryLanguageAssignment: detail.projectPrimaryLanguageAssignment,
+                replayed: detail.replayed,
+                status: detail.status,
+              },
+            }));
           });
         }
       })();`,
@@ -127,6 +480,28 @@ try {
       `window.__studioContractEvents.filter((item) => item.name === ${JSON.stringify(name)}).at(-1).detail`,
       sessionId,
     );
+  };
+  const mainExecutionContext = (frameId) => [...executionContexts.values()]
+    .filter((context) => context.frameId === frameId && context.isDefault)
+    .at(-1);
+  const waitForMainExecutionContext = async (frameId) => {
+    const existing = mainExecutionContext(frameId);
+    if (existing) return existing;
+    return new Promise((resolve, reject) => {
+      let timer;
+      const removeListener = client.on("Runtime.executionContextCreated", (_event, eventSessionId) => {
+        if (eventSessionId !== sessionId) return;
+        const created = mainExecutionContext(frameId);
+        if (!created) return;
+        clearTimeout(timer);
+        removeListener();
+        resolve(created);
+      });
+      timer = setTimeout(() => {
+        removeListener();
+        reject(bootstrapObserverError("ENTRY_CONTEXT_TIMEOUT"));
+      }, timeoutMs);
+    });
   };
   const navigateAndWait = async ({ reload = false } = {}) => {
     let removeListener;
@@ -236,37 +611,79 @@ try {
     sessionId,
     timeoutMs,
   );
+  const entryFrameTree = await client.send("Page.getFrameTree", {}, sessionId);
+  const entryFrame = entryFrameTree.frameTree?.frame;
+  assert.ok(entryFrame, "bootstrap entry main frame is unavailable");
+  assert.equal(new URL(entryFrame.url).href, new URL(entryUrl).href);
+  const entryContext = await waitForMainExecutionContext(entryFrame.id);
+  assert.equal(entryContext.frameId, entryFrame.id);
+  assert.equal(entryContext.isDefault, true);
+
   const bootstrapRequestOffset = requests.length;
-  let removeBootstrapLoadListener;
-  const bootstrapDestinationLoaded = new Promise((resolve) => {
-    removeBootstrapLoadListener = client.on(
-      "Page.loadEventFired",
-      (_event, eventSessionId) => {
-        if (eventSessionId !== sessionId) return;
-        removeBootstrapLoadListener();
-        resolve();
-      },
-    );
-  });
-  const bootstrap = await client.evaluate(`new Promise((resolve, reject) => {
+  const bootstrapAttempt = await client.evaluate(`(() => {
     const language = document.querySelector("#bootstrap-project-primary-language");
     const form = document.querySelector("#bootstrap-draft-form");
     if (!language || !form) {
-      reject(new Error("bootstrap form is unavailable"));
-      return;
+      throw new Error("bootstrap form is unavailable");
     }
-    const expected = {
+    return {
       projectId: document.querySelector("#bootstrap-project-id").value,
       definitionId: document.querySelector("#bootstrap-definition-id").value,
       operationId: document.querySelector("#bootstrap-operation-key").value,
     };
-    window.addEventListener("studio:bootstrap-complete", (event) => {
-      resolve({ ...expected, ...event.detail });
-    }, { once: true });
+  })()`, sessionId);
+  const bootstrapExpectation = Object.freeze({
+    sessionId,
+    contextId: entryContext.id,
+    contextIsDefault: entryContext.isDefault,
+    contextFrameId: entryContext.frameId,
+    frameId: entryFrame.id,
+    destinationUrl: new URL(
+      `${baseUrl}/studio/drafts/definitions/${bootstrapAttempt.definitionId}/`,
+    ).href,
+    projectId: normalizeBootstrapIdentity(bootstrapAttempt.projectId),
+    definitionId: normalizeBootstrapIdentity(bootstrapAttempt.definitionId),
+    operationId: normalizeBootstrapIdentity(bootstrapAttempt.operationId),
+    projectPrimaryLanguage: "ru",
+  });
+  const bootstrapObserver = createBootstrapObserver(bootstrapExpectation, { timeoutMs });
+  const removeBootstrapBinding = client.on(
+    "Runtime.bindingCalled",
+    (event, eventSessionId) => bootstrapObserver.observeBinding(event, eventSessionId),
+  );
+  const removeBootstrapNavigation = client.on(
+    "Page.frameNavigated",
+    (event, eventSessionId) => bootstrapObserver.observeNavigation(event, eventSessionId),
+  );
+  const removeBootstrapLifecycle = client.on(
+    "Page.lifecycleEvent",
+    (event, eventSessionId) => bootstrapObserver.observeLifecycle(event, eventSessionId),
+  );
+  let bootstrap;
+  try {
+    await client.evaluate(`(() => {
+    const language = document.querySelector("#bootstrap-project-primary-language");
+    const form = document.querySelector("#bootstrap-draft-form");
+    if (!language || !form) {
+      throw new Error("bootstrap form is unavailable");
+    }
     language.value = "ru";
     language.dispatchEvent(new Event("input", { bubbles: true }));
     form.requestSubmit();
-  })`, sessionId);
+  })()`, sessionId);
+    const observedBootstrap = await bootstrapObserver.promise;
+    bootstrap = observedBootstrap.detail;
+    assert.equal(observedBootstrap.destination.frameId, entryFrame.id);
+    assert.ok(observedBootstrap.destination.loaderId);
+  } finally {
+    removeBootstrapBinding();
+    removeBootstrapNavigation();
+    removeBootstrapLifecycle();
+    bootstrapObserver.cancel();
+  }
+  assert.equal(normalizeBootstrapIdentity(bootstrap.projectId), bootstrapExpectation.projectId);
+  assert.equal(normalizeBootstrapIdentity(bootstrap.definitionId), bootstrapExpectation.definitionId);
+  assert.equal(normalizeBootstrapIdentity(bootstrap.operationId), bootstrapExpectation.operationId);
   assert.equal(bootstrap.status, 201);
   assert.equal(bootstrap.replayed, false);
   assert.equal(bootstrap.projectPrimaryLanguage, "ru");
@@ -278,14 +695,15 @@ try {
     /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
   );
   assert.match(bootstrap.receiptSha256, /^[0-9a-f]{64}$/);
-  const bootstrapRequest = requests.slice(bootstrapRequestOffset).find(
+  const bootstrapRequests = requests.slice(bootstrapRequestOffset).filter(
     (item) => item.method === "POST" && new URL(item.url).pathname === bootstrapPath,
   );
+  assertSingleBootstrapWrite(bootstrapRequests.length);
+  const [bootstrapRequest] = bootstrapRequests;
   assert.ok(bootstrapRequest, "real audited-draft bootstrap request was not observed");
   assert.equal(JSON.parse(bootstrapRequest.postData).project_primary_language, "ru");
   assert.equal(bootstrapRequest.headers["idempotency-key"], bootstrap.operationId);
   assert.ok(bootstrapRequest.headers["x-csrftoken"]);
-  await bootstrapDestinationLoaded;
   const bootstrapReadback = await client.evaluate(
     `fetch(${JSON.stringify("/api/foundation/definitions/")} + ${JSON.stringify(bootstrap.definitionId)} + "/", { credentials: "same-origin", cache: "no-store" }).then((response) => response.json())`,
     sessionId,
@@ -606,6 +1024,10 @@ try {
     true,
     "an unauthorized mutation route was called",
   );
+  const allBootstrapRequests = mutationRequests.filter(
+    (item) => item.method === "POST" && new URL(item.url).pathname === bootstrapPath,
+  );
+  assertSingleBootstrapWrite(allBootstrapRequests.length);
   const saveRequests = mutationRequests.filter((item) => item.method === "PUT");
   assert.equal(saveRequests.length, 3, "save was retried or an unexpected write occurred");
   for (const request of saveRequests) {
