@@ -24,6 +24,7 @@ from django.utils import timezone
 from .enums import (
     ActorRoleType,
     ActorType,
+    AssessmentProjectionStatus,
     AnalyticalElementType,
     AnchorStatus,
     AssessmentEvidenceRole,
@@ -152,6 +153,31 @@ def _canonical_document_lineage_write(*authorities: str) -> Iterator[None]:
 
 def _document_lineage_write_is_authorized(authority: str) -> bool:
     return authority in _DOCUMENT_LINEAGE_WRITE_AUTHORITIES.get()
+
+
+# Canonical assessment projections are intentionally narrower than both Studio
+# and document-lineage write lanes.  The service is the sole creator of the
+# deterministic rows; migration historical models never import this guard.
+_ASSESSMENT_PROJECTION_WRITE_AUTHORITIES: ContextVar[frozenset[str]] = ContextVar(
+    "assessment_projection_write_authorities",
+    default=frozenset(),
+)
+
+
+@contextmanager
+def _canonical_assessment_projection_write(*authorities: str) -> Iterator[None]:
+    current = _ASSESSMENT_PROJECTION_WRITE_AUTHORITIES.get()
+    token = _ASSESSMENT_PROJECTION_WRITE_AUTHORITIES.set(
+        current | frozenset(authorities)
+    )
+    try:
+        yield
+    finally:
+        _ASSESSMENT_PROJECTION_WRITE_AUTHORITIES.reset(token)
+
+
+def _assessment_projection_write_is_authorized(authority: str) -> bool:
+    return authority in _ASSESSMENT_PROJECTION_WRITE_AUTHORITIES.get()
 
 
 def _stable_constraints(prefix: str) -> list[models.BaseConstraint]:
@@ -304,6 +330,109 @@ class RevisionedStableVersionedModel(StableVersionedModel):
                     {name: "Analytical corrections require a successor record." for name in changed}
                 )
         super().save(*args, **kwargs)
+
+
+class AssessmentProjectionQuerySet(RevisionedQuerySet):
+    """Protect only canonical assessment-projection identities.
+
+    Legacy Actor/Element/Role and ParameterDefinition rows retain their
+    historic lifecycle.  A row becomes canonical only when its source
+    provenance bridge is populated, at which point the canonical projection
+    service is its sole insert authority and no ORM bulk/cascade shortcut may
+    rewrite or remove it.
+    """
+
+    def _projection_marker(self) -> str:
+        if self.model.__name__ == "ParameterDefinition":
+            return "definition_version"
+        return "source_manifest_entity_id"
+
+    def _has_canonical_rows(self) -> bool:
+        return self.filter(**{f"{self._projection_marker()}__isnull": False}).exists()
+
+    def _is_canonical_object(self, obj: Any) -> bool:
+        marker = self._projection_marker()
+        attribute = f"{marker}_id" if marker == "definition_version" else marker
+        return bool(getattr(obj, attribute, None))
+
+    def _require_insert_authority(self, objects: list[Any]) -> None:
+        if any(self._is_canonical_object(obj) for obj in objects) and not (
+            _assessment_projection_write_is_authorized("projection")
+        ):
+            raise ValidationError(
+                "Canonical assessment projection rows require the projection service."
+            )
+
+    def bulk_create(
+        self,
+        objs: Any,
+        batch_size: int | None = None,
+        ignore_conflicts: bool = False,
+        update_conflicts: bool = False,
+        update_fields: Any = None,
+        unique_fields: Any = None,
+    ) -> Any:
+        objects = list(objs)
+        self._require_insert_authority(objects)
+        return super().bulk_create(
+            objects,
+            batch_size=batch_size,
+            ignore_conflicts=ignore_conflicts,
+            update_conflicts=update_conflicts,
+            update_fields=update_fields,
+            unique_fields=unique_fields,
+        )
+
+    def update(self, **kwargs: Any) -> int:
+        marker = self._projection_marker()
+        if self._has_canonical_rows() or marker in kwargs or f"{marker}_id" in kwargs:
+            raise ValidationError(
+                "Canonical assessment projection rows are append-only and cannot be bulk-updated."
+            )
+        if self.model.__name__ != "ParameterDefinition":
+            return super().update(**kwargs)
+        return models.QuerySet.update(self, **kwargs)
+
+    def bulk_update(
+        self,
+        objs: Any,
+        fields: Any,
+        batch_size: int | None = None,
+    ) -> int:
+        objects = list(objs)
+        marker = self._projection_marker()
+        if (
+            any(self._is_canonical_object(obj) for obj in objects)
+            or marker in fields
+            or f"{marker}_id" in fields
+            or self.filter(pk__in=[obj.pk for obj in objects if obj.pk]).filter(
+                **{f"{marker}__isnull": False}
+            ).exists()
+        ):
+            raise ValidationError(
+                "Canonical assessment projection rows are append-only and cannot be bulk-updated."
+            )
+        if self.model.__name__ != "ParameterDefinition":
+            return super().bulk_update(objects, fields, batch_size=batch_size)
+        return models.QuerySet.bulk_update(self, objects, fields, batch_size=batch_size)
+
+    def delete(self) -> tuple[int, dict[str, int]]:
+        if self._has_canonical_rows():
+            raise ValidationError(
+                "Canonical assessment projection rows cannot be deleted."
+            )
+        return super().delete()
+
+    def _raw_delete(self, using: str) -> int:
+        if self._has_canonical_rows():
+            raise ValidationError(
+                "Canonical assessment projection rows cannot be removed by a cascade fast-delete."
+            )
+        return super()._raw_delete(using)
+
+
+class AssessmentProjectionManager(models.Manager.from_queryset(AssessmentProjectionQuerySet)):
+    pass
 
 
 class ProjectPrimaryLanguageAssignment(models.TextChoices):
@@ -1039,6 +1168,16 @@ class WorkspaceQuerySet(models.QuerySet):
         }
         if protected.intersection(kwargs):
             raise ValidationError("A workspace project/definition pin is immutable.")
+        projection_fields = {
+            "assessment_projection_status",
+            "assessment_projection_sha256",
+        }
+        if projection_fields.intersection(kwargs) and not (
+            _assessment_projection_write_is_authorized("projection")
+        ):
+            raise ValidationError(
+                "Assessment projection evidence is derived only by the projection service."
+            )
         return super().update(**kwargs)
 
     def bulk_update(
@@ -1055,6 +1194,15 @@ class WorkspaceQuerySet(models.QuerySet):
             "definition_manifest_hash",
         }.intersection(fields):
             raise ValidationError("A workspace project/definition pin is immutable.")
+        if {
+            "assessment_projection_status",
+            "assessment_projection_sha256",
+        }.intersection(fields) and not _assessment_projection_write_is_authorized(
+            "projection"
+        ):
+            raise ValidationError(
+                "Assessment projection evidence is derived only by the projection service."
+            )
         return super().bulk_update(objs, fields, batch_size=batch_size)
 
 
@@ -1081,6 +1229,17 @@ class ProjectWorkspace(StableVersionedModel):
         max_length=64,
         validators=[SHA256_VALIDATOR],
     )
+    assessment_projection_status = models.CharField(
+        max_length=32,
+        choices=AssessmentProjectionStatus.choices,
+        default=AssessmentProjectionStatus.NOT_PROVEN,
+    )
+    assessment_projection_sha256 = models.CharField(
+        max_length=64,
+        validators=[SHA256_VALIDATOR],
+        null=True,
+        blank=True,
+    )
     name = models.CharField(max_length=255)
     is_default = models.BooleanField(default=False)
     metadata = models.JSONField(default=dict, blank=True)
@@ -1099,6 +1258,19 @@ class ProjectWorkspace(StableVersionedModel):
                 condition=Q(is_default=True),
                 name="domain_workspace_one_default",
             ),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        assessment_projection_status=AssessmentProjectionStatus.COMPLETE,
+                        assessment_projection_sha256__isnull=False,
+                    )
+                    | (
+                        ~Q(assessment_projection_status=AssessmentProjectionStatus.COMPLETE)
+                        & Q(assessment_projection_sha256__isnull=True)
+                    )
+                ),
+                name="domain_workspace_projection_evidence",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -1114,6 +1286,14 @@ class ProjectWorkspace(StableVersionedModel):
             ):
                 raise ValidationError(
                     {"definition_version": "A workspace definition pin is immutable."}
+                )
+            if previous is not None and (
+                previous.assessment_projection_status != self.assessment_projection_status
+                or previous.assessment_projection_sha256
+                != self.assessment_projection_sha256
+            ) and not _assessment_projection_write_is_authorized("projection"):
+                raise ValidationError(
+                    "Assessment projection evidence is derived only by the projection service."
                 )
         definition = ProjectDefinitionVersion.objects.filter(
             pk=self.definition_version_id
@@ -1840,13 +2020,44 @@ class TimeSlice(ValidatedStableVersionedModel):
     def clean(self) -> None:
         super().clean()
         if self.workspace_id:
-            workspace_project_id = ProjectWorkspace.objects.filter(
-                pk=self.workspace_id
-            ).values_list("project_id", flat=True).first()
+            workspace = (
+                ProjectWorkspace.objects.select_related("definition_version")
+                .filter(pk=self.workspace_id)
+                .first()
+            )
+            workspace_project_id = workspace.project_id if workspace is not None else None
             if workspace_project_id != self.project_id:
                 raise ValidationError(
                     {"workspace": "The workspace belongs to a different project."}
                 )
+            # Typed definitions have an explicit assessment ontology.  A new
+            # temporal lane must therefore be bound only after the exact,
+            # receipt-proven workspace projection exists.  Legacy manifests
+            # deliberately retain their historic TimeSlice behavior.
+            if self._state.adding and workspace is not None:
+                from domain.services.project_definitions import (
+                    identify_typed_project_definition_manifest,
+                )
+
+                if identify_typed_project_definition_manifest(
+                    workspace.definition_version.manifest
+                ):
+                    from domain.services.player_projection import (
+                        AssessmentProjectionError,
+                        require_complete_workspace_assessment_projection,
+                    )
+
+                    try:
+                        require_complete_workspace_assessment_projection(workspace)
+                    except AssessmentProjectionError as exc:
+                        raise ValidationError(
+                            {
+                                "workspace": (
+                                    "A typed workspace requires a complete exact "
+                                    "assessment projection before creating TimeSlice rows."
+                                )
+                            }
+                        ) from exc
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.full_clean()
@@ -1927,6 +2138,8 @@ class ParticipantGroup(StableVersionedModel):
 
 
 class Actor(RevisionedStableVersionedModel):
+    objects = AssessmentProjectionManager()
+
     workspace = models.ForeignKey(
         ProjectWorkspace,
         on_delete=models.CASCADE,
@@ -1944,6 +2157,13 @@ class Actor(RevisionedStableVersionedModel):
     description = models.TextField(blank=True)
     order = models.PositiveIntegerField(default=0)
     metadata = models.JSONField(default=dict, blank=True)
+    source_manifest_entity_id = models.UUIDField(null=True, blank=True)
+    source_manifest_entity_sha256 = models.CharField(
+        max_length=64,
+        validators=[SHA256_VALIDATOR],
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         ordering = ("workspace__code", "order", "code")
@@ -1957,10 +2177,39 @@ class Actor(RevisionedStableVersionedModel):
                 condition=~Q(id=models.F("parent")),
                 name="domain_actor_not_own_parent",
             ),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        source_manifest_entity_id__isnull=True,
+                        source_manifest_entity_sha256__isnull=True,
+                    )
+                    | Q(
+                        source_manifest_entity_id__isnull=False,
+                        source_manifest_entity_sha256__isnull=False,
+                    )
+                ),
+                name="domain_actor_projection_provenance_pair",
+            ),
+            models.UniqueConstraint(
+                fields=("workspace", "source_manifest_entity_id"),
+                condition=Q(source_manifest_entity_id__isnull=False),
+                name="domain_actor_workspace_source_uniq",
+            ),
         ]
 
     def clean(self) -> None:
         super().clean()
+        provenance_present = self.source_manifest_entity_id is not None
+        if provenance_present != (self.source_manifest_entity_sha256 is not None):
+            raise ValidationError(
+                "Canonical actor provenance requires both source identity and hash."
+            )
+        if provenance_present and not _assessment_projection_write_is_authorized(
+            "projection"
+        ) and not Actor.objects.filter(pk=self.pk).exists():
+            raise ValidationError(
+                "Canonical actors require the assessment projection service."
+            )
         if not self.parent_id:
             return
         parent = Actor.objects.filter(pk=self.parent_id).first()
@@ -1987,8 +2236,15 @@ class Actor(RevisionedStableVersionedModel):
     def __str__(self) -> str:
         return f"{self.code}: {self.label}"
 
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        if self.source_manifest_entity_id is not None:
+            raise ValidationError("Canonical actor projection rows cannot be deleted.")
+        return super().delete(*args, **kwargs)
+
 
 class AnalyticalElement(RevisionedStableVersionedModel):
+    objects = AssessmentProjectionManager()
+
     workspace = models.ForeignKey(
         ProjectWorkspace,
         on_delete=models.CASCADE,
@@ -2010,6 +2266,13 @@ class AnalyticalElement(RevisionedStableVersionedModel):
     description = models.TextField(blank=True)
     order = models.PositiveIntegerField(default=0)
     metadata = models.JSONField(default=dict, blank=True)
+    source_manifest_entity_id = models.UUIDField(null=True, blank=True)
+    source_manifest_entity_sha256 = models.CharField(
+        max_length=64,
+        validators=[SHA256_VALIDATOR],
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         ordering = ("workspace__code", "order", "code")
@@ -2023,10 +2286,39 @@ class AnalyticalElement(RevisionedStableVersionedModel):
                 condition=~Q(id=models.F("parent")),
                 name="domain_element_not_own_parent",
             ),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        source_manifest_entity_id__isnull=True,
+                        source_manifest_entity_sha256__isnull=True,
+                    )
+                    | Q(
+                        source_manifest_entity_id__isnull=False,
+                        source_manifest_entity_sha256__isnull=False,
+                    )
+                ),
+                name="domain_element_projection_provenance_pair",
+            ),
+            models.UniqueConstraint(
+                fields=("workspace", "source_manifest_entity_id"),
+                condition=Q(source_manifest_entity_id__isnull=False),
+                name="domain_element_workspace_source_uniq",
+            ),
         ]
 
     def clean(self) -> None:
         super().clean()
+        provenance_present = self.source_manifest_entity_id is not None
+        if provenance_present != (self.source_manifest_entity_sha256 is not None):
+            raise ValidationError(
+                "Canonical element provenance requires both source identity and hash."
+            )
+        if provenance_present and not _assessment_projection_write_is_authorized(
+            "projection"
+        ) and not AnalyticalElement.objects.filter(pk=self.pk).exists():
+            raise ValidationError(
+                "Canonical elements require the assessment projection service."
+            )
         if not self.parent_id:
             return
         parent = AnalyticalElement.objects.filter(pk=self.parent_id).first()
@@ -2052,6 +2344,11 @@ class AnalyticalElement(RevisionedStableVersionedModel):
 
     def __str__(self) -> str:
         return f"{self.code}: {self.label}"
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        if self.source_manifest_entity_id is not None:
+            raise ValidationError("Canonical element projection rows cannot be deleted.")
+        return super().delete(*args, **kwargs)
 
 
 class ActorRelation(RevisionedStableVersionedModel):
@@ -2115,6 +2412,8 @@ class ActorRelation(RevisionedStableVersionedModel):
 
 
 class ActorElementRole(RevisionedStableVersionedModel):
+    objects = AssessmentProjectionManager()
+
     workspace = models.ForeignKey(
         ProjectWorkspace,
         on_delete=models.CASCADE,
@@ -2132,9 +2431,17 @@ class ActorElementRole(RevisionedStableVersionedModel):
     )
     role = models.CharField(max_length=16, choices=ActorRoleType.choices)
     note = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    source_manifest_entity_id = models.UUIDField(null=True, blank=True)
+    source_manifest_entity_sha256 = models.CharField(
+        max_length=64,
+        validators=[SHA256_VALIDATOR],
+        null=True,
+        blank=True,
+    )
 
     class Meta:
-        ordering = ("workspace__code", "actor__code", "element__code", "role")
+        ordering = ("workspace__code", "order", "actor__code", "element__code", "role")
         constraints = [
             *_stable_constraints("domain_actor_element_role"),
             models.UniqueConstraint(
@@ -2145,11 +2452,40 @@ class ActorElementRole(RevisionedStableVersionedModel):
                 fields=("workspace", "actor", "element", "role"),
                 name="domain_actor_element_role_uniq",
             ),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        source_manifest_entity_id__isnull=True,
+                        source_manifest_entity_sha256__isnull=True,
+                    )
+                    | Q(
+                        source_manifest_entity_id__isnull=False,
+                        source_manifest_entity_sha256__isnull=False,
+                    )
+                ),
+                name="domain_actor_role_projection_provenance_pair",
+            ),
+            models.UniqueConstraint(
+                fields=("workspace", "source_manifest_entity_id"),
+                condition=Q(source_manifest_entity_id__isnull=False),
+                name="domain_actor_role_workspace_source_uniq",
+            ),
         ]
 
     def clean(self) -> None:
         super().clean()
         errors: dict[str, str] = {}
+        provenance_present = self.source_manifest_entity_id is not None
+        if provenance_present != (self.source_manifest_entity_sha256 is not None):
+            errors["source_manifest_entity_id"] = (
+                "Canonical role provenance requires both source identity and hash."
+            )
+        if provenance_present and not _assessment_projection_write_is_authorized(
+            "projection"
+        ) and not ActorElementRole.objects.filter(pk=self.pk).exists():
+            errors["source_manifest_entity_id"] = (
+                "Canonical roles require the assessment projection service."
+            )
         _validate_related_workspace(
             workspace_id=self.workspace_id,
             related_model=Actor,
@@ -2166,6 +2502,11 @@ class ActorElementRole(RevisionedStableVersionedModel):
         )
         if errors:
             raise ValidationError(errors)
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        if self.source_manifest_entity_id is not None:
+            raise ValidationError("Canonical role projection rows cannot be deleted.")
+        return super().delete(*args, **kwargs)
 
 
 def _validate_related_project(
@@ -2593,6 +2934,8 @@ class ActorElementAssessment(RevisionedStableVersionedModel):
 
 
 class ParameterDefinition(StableVersionedModel):
+    objects = AssessmentProjectionManager()
+
     project = models.ForeignKey(
         Project,
         on_delete=models.CASCADE,
@@ -2619,6 +2962,29 @@ class ParameterDefinition(StableVersionedModel):
         blank=True,
     )
     scale_metadata = models.JSONField(default=dict, blank=True)
+    definition_version = models.ForeignKey(
+        ProjectDefinitionVersion,
+        on_delete=models.RESTRICT,
+        null=True,
+        blank=True,
+        related_name="canonical_parameter_definitions",
+    )
+    source_manifest_parameter_id = models.UUIDField(null=True, blank=True)
+    manifest_snapshot_sha256 = models.CharField(
+        max_length=64,
+        validators=[SHA256_VALIDATOR],
+        null=True,
+        blank=True,
+    )
+    scale_step = models.DecimalField(
+        max_digits=20,
+        decimal_places=8,
+        null=True,
+        blank=True,
+    )
+    allowed_statuses = models.JSONField(default=list, blank=True)
+    applicability = models.JSONField(default=dict, blank=True)
+    reference_statement = models.TextField(blank=True)
 
     class Meta:
         ordering = ("project__code", "code")
@@ -2626,7 +2992,21 @@ class ParameterDefinition(StableVersionedModel):
             *_stable_constraints("domain_parameter_def"),
             models.UniqueConstraint(
                 fields=("project", "code"),
-                name="domain_parameter_project_code_uniq",
+                condition=Q(definition_version__isnull=True),
+                name="domain_parameter_legacy_project_code_uniq",
+            ),
+            models.UniqueConstraint(
+                fields=("definition_version", "code"),
+                condition=Q(definition_version__isnull=False),
+                name="domain_parameter_definition_code_uniq",
+            ),
+            models.UniqueConstraint(
+                fields=("definition_version", "source_manifest_parameter_id"),
+                condition=(
+                    Q(definition_version__isnull=False)
+                    & Q(source_manifest_parameter_id__isnull=False)
+                ),
+                name="domain_parameter_definition_source_uniq",
             ),
             models.CheckConstraint(
                 condition=(
@@ -2636,11 +3016,78 @@ class ParameterDefinition(StableVersionedModel):
                 ),
                 name="domain_parameter_scale_order",
             ),
+            models.CheckConstraint(
+                condition=Q(scale_step__isnull=True) | Q(scale_step__gt=0),
+                name="domain_parameter_scale_step_positive",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(
+                        definition_version__isnull=True,
+                        source_manifest_parameter_id__isnull=True,
+                        manifest_snapshot_sha256__isnull=True,
+                    )
+                    | Q(
+                        definition_version__isnull=False,
+                        source_manifest_parameter_id__isnull=False,
+                        manifest_snapshot_sha256__isnull=False,
+                    )
+                ),
+                name="domain_parameter_canonical_bridge_pair",
+            ),
         ]
 
     def clean(self) -> None:
         super().clean()
         errors: dict[str, str] = {}
+        canonical = self.definition_version_id is not None
+        bridge_values = (
+            self.definition_version_id,
+            self.source_manifest_parameter_id,
+            self.manifest_snapshot_sha256,
+        )
+        if canonical != all(value is not None for value in bridge_values):
+            errors["definition_version"] = (
+                "Canonical parameter definitions require the exact definition, source UUID, and snapshot hash together."
+            )
+        if canonical:
+            definition = ProjectDefinitionVersion.objects.filter(
+                pk=self.definition_version_id
+            ).first()
+            if definition is None or definition.project_id != self.project_id:
+                errors["definition_version"] = (
+                    "The canonical definition must belong to the same project."
+                )
+            elif definition.publication_status != PublicationStatus.PUBLISHED:
+                errors["definition_version"] = (
+                    "Canonical parameter definitions require a published definition."
+                )
+            if not _assessment_projection_write_is_authorized("projection") and not (
+                ParameterDefinition.objects.filter(pk=self.pk).exists()
+            ):
+                errors["definition_version"] = (
+                    "Canonical parameter snapshots require the assessment projection service."
+                )
+            if not isinstance(self.allowed_statuses, list) or not self.allowed_statuses:
+                errors["allowed_statuses"] = (
+                    "Canonical parameter snapshots require ordered allowed statuses."
+                )
+            if not isinstance(self.applicability, dict):
+                errors["applicability"] = (
+                    "Canonical parameter snapshots require source-manifest applicability."
+                )
+        elif any(
+            value not in (None, [], {}, "")
+            for value in (
+                self.scale_step,
+                self.allowed_statuses,
+                self.applicability,
+                self.reference_statement,
+            )
+        ):
+            errors["definition_version"] = (
+                "Legacy parameter definitions cannot fabricate canonical snapshot fields."
+            )
         if self.code.strip().upper() in {
             "TOTAL_POWER",
             "POW",
@@ -2669,6 +3116,21 @@ class ParameterDefinition(StableVersionedModel):
     def __str__(self) -> str:
         return f"{self.code} ({self.version})"
 
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        if self.definition_version_id is not None and ParameterDefinition.objects.filter(
+            pk=self.pk
+        ).exists():
+            raise ValidationError(
+                "Canonical parameter snapshots are append-only and cannot be updated."
+            )
+        models.Model.save(self, *args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        if self.definition_version_id is not None:
+            raise ValidationError("Canonical parameter snapshots cannot be deleted.")
+        return super().delete(*args, **kwargs)
+
 
 def _target_model(target_type: str) -> type[models.Model] | None:
     return {
@@ -2677,6 +3139,9 @@ def _target_model(target_type: str) -> type[models.Model] | None:
         TargetType.TENSION_POINT: TensionPoint,
         TargetType.PARTICIPANT_GROUP: ParticipantGroup,
         TargetType.GROUP_TENSION_RELATION: GroupTensionRelation,
+        TargetType.ACTOR: Actor,
+        TargetType.ANALYTICAL_ELEMENT: AnalyticalElement,
+        TargetType.ACTOR_ELEMENT_ROLE: ActorElementRole,
         TargetType.ACTOR_ELEMENT_ASSESSMENT: ActorElementAssessment,
     }.get(target_type)
 
@@ -2706,6 +3171,113 @@ def _validate_typed_target(
     if project_id is not None and target_project_id != project_id:
         errors["target_id"] = "The target belongs to a different project."
     return target
+
+
+def _validate_canonical_parameter_target(
+    *,
+    definition: ParameterDefinition | None,
+    workspace_id: uuid.UUID | None,
+    project_id: uuid.UUID | None,
+    target_type: str,
+    target_id: uuid.UUID | None,
+    errors: dict[str, str],
+) -> None:
+    """Admit canonical values only to the exact pinned projection target."""
+
+    if definition is None or definition.definition_version_id is None:
+        return
+    workspace = ProjectWorkspace.objects.filter(pk=workspace_id).first()
+    if workspace is None:
+        return
+    if (
+        workspace.project_id != project_id
+        or workspace.definition_version_id != definition.definition_version_id
+        or workspace.definition_manifest_hash
+        != definition.definition_version.manifest_hash
+    ):
+        errors["workspace"] = (
+            "Canonical parameter values require the exact workspace definition pin."
+        )
+        return
+    target = _target_model(target_type)
+    if target is None or target_id is None:
+        return
+    target_obj = target._default_manager.filter(pk=target_id).first()
+    if target_obj is None:
+        return
+    direct_families: dict[str, str] = {
+        TargetType.ACTOR: "actor_ids",
+        TargetType.ANALYTICAL_ELEMENT: "analytical_element_ids",
+        TargetType.ACTOR_ELEMENT_ROLE: "actor_element_role_ids",
+    }
+    if target_type in direct_families:
+        if target_obj.workspace_id != workspace.pk:
+            errors["target_id"] = (
+                "Canonical projection targets must belong to the exact workspace."
+            )
+            return
+        source_id = getattr(target_obj, "source_manifest_entity_id", None)
+        allowed = definition.applicability.get(direct_families[target_type], [])
+        if not isinstance(allowed, list) or not allowed or source_id is None:
+            errors["target_id"] = (
+                "Canonical target applicability is exact source-manifest identity; empty is not unrestricted."
+            )
+            return
+        if str(source_id) not in [str(value) for value in allowed]:
+            errors["target_id"] = "The canonical target is not applicable to this parameter."
+        return
+    if target_type == TargetType.TIME_SLICE:
+        if target_obj.workspace_id != workspace.pk:
+            errors["target_id"] = "The TimeSlice belongs to another workspace."
+    elif target_type == TargetType.ACTOR_ELEMENT_ASSESSMENT:
+        if target_obj.workspace_id != workspace.pk:
+            errors["target_id"] = "The assessment belongs to another workspace."
+            return
+        applicability = definition.applicability
+        actor_source = Actor.objects.filter(pk=target_obj.actor_id).values_list(
+            "source_manifest_entity_id", flat=True
+        ).first()
+        element_source = AnalyticalElement.objects.filter(
+            pk=target_obj.element_id
+        ).values_list("source_manifest_entity_id", flat=True).first()
+        if actor_source is None or element_source is None:
+            errors["target_id"] = (
+                "Canonical assessments must bind canonical actor and element identities."
+            )
+            return
+        for field, source_id in (
+            ("actor_ids", actor_source),
+            ("analytical_element_ids", element_source),
+        ):
+            allowed = applicability.get(field, [])
+            if not isinstance(allowed, list) or str(source_id) not in {
+                str(value) for value in allowed
+            }:
+                errors["target_id"] = (
+                    "The canonical assessment target is not applicable to this parameter."
+                )
+                return
+        role_ids = applicability.get("actor_element_role_ids", [])
+        if not isinstance(role_ids, list) or not role_ids:
+            errors["target_id"] = (
+                "Canonical assessment applicability requires an exact actor-element role."
+            )
+            return
+        role_sources = {
+            str(value)
+            for value in ActorElementRole.objects.filter(
+                workspace=workspace,
+                actor_id=target_obj.actor_id,
+                element_id=target_obj.element_id,
+                source_manifest_entity_id__isnull=False,
+            ).values_list("source_manifest_entity_id", flat=True)
+        }
+        if not role_sources.intersection(str(value) for value in role_ids):
+            errors["target_id"] = (
+                "The canonical assessment has no applicable source-manifest role."
+            )
+    elif target_type == TargetType.PROJECT and target_obj.pk != workspace.project_id:
+        errors["target_id"] = "The project target must equal the pinned workspace project."
 
 
 def _validate_status_and_value(
@@ -2938,9 +3510,15 @@ class ParameterValue(RevisionedStableVersionedModel):
     def save(self, *args: Any, **kwargs: Any) -> None:
         """Keep PR21 legacy lanes compatible; canonical V4 values are revision-only."""
 
+        definition = (
+            ParameterDefinition.objects.filter(pk=self.parameter_definition_id)
+            .only("definition_version")
+            .first()
+        )
         if (
             self.actor_element_assessment_id is None
             and self.target_type != TargetType.ACTOR_ELEMENT_ASSESSMENT
+            and (definition is None or definition.definition_version_id is None)
         ):
             self.full_clean()
             models.Model.save(self, *args, **kwargs)
@@ -3034,6 +3612,14 @@ class ParameterValue(RevisionedStableVersionedModel):
             target_id=self.target_id,
             errors=errors,
         )
+        _validate_canonical_parameter_target(
+            definition=definition,
+            workspace_id=self.workspace_id,
+            project_id=self.project_id,
+            target_type=self.target_type,
+            target_id=self.target_id,
+            errors=errors,
+        )
         _validate_status_and_value(status=self.status, value=self.value, errors=errors)
         if (
             self.temporal_status == AssessmentTemporalStatus.NO_DIRECT_POSITION
@@ -3048,6 +3634,28 @@ class ParameterValue(RevisionedStableVersionedModel):
                 value=self.value,
                 errors=errors,
             )
+            if definition.definition_version_id is not None:
+                if self.status not in definition.allowed_statuses:
+                    errors["status"] = (
+                        "The value status is not allowed by the canonical parameter snapshot."
+                    )
+                if (
+                    self.value is not None
+                    and definition.scale_step is not None
+                    and definition.value_type
+                    in {ParameterValueType.DECIMAL, ParameterValueType.INTEGER}
+                ):
+                    try:
+                        numeric_value = Decimal(str(self.value))
+                        scale_origin = definition.scale_min or Decimal("0")
+                        if (numeric_value - scale_origin) % definition.scale_step != 0:
+                            errors["value"] = (
+                                "The numeric value does not align to the canonical scale step."
+                            )
+                    except (InvalidOperation, ValueError):
+                        # The type validator already owns the public diagnostic
+                        # for malformed numeric input.
+                        pass
             code = definition.code.upper()
             if self.value is not None and code in {"POS", "POSITION"}:
                 try:

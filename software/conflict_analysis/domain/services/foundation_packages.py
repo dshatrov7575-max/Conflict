@@ -645,7 +645,9 @@ def parse_strong_manifest_if_match(
 FOUNDATION_PACKAGE_FORMAT = "conflict-analysis-foundation"
 FOUNDATION_PACKAGE_VERSION = "2.0.0"
 FOUNDATION_PACKAGE_VERSION_2_1 = "2.1.0"
+FOUNDATION_PACKAGE_VERSION_2_2 = "2.2.0"
 FOUNDATION_PACKAGE_SCOPES_2_1 = frozenset({"WORKSPACE", "PROJECT_DEFINITION"})
+FOUNDATION_PACKAGE_SCOPE_2_2 = "WORKSPACE_ASSESSMENT_PROJECTION"
 HASH_ALGORITHM = "sha256"
 RAW_INPUT_KINDS = frozenset(
     {"PATH_BYTES", "BYTES", "TEXT", "HTTP_BYTES", "CANONICAL_MAPPING"}
@@ -664,6 +666,11 @@ SCHEMA_PATH_2_1 = (
     Path(__file__).resolve().parent
     / "schemas"
     / "foundation-package-2.1.0.schema.json"
+)
+SCHEMA_PATH_2_2 = (
+    Path(__file__).resolve().parent
+    / "schemas"
+    / "foundation-package-2.2.0.schema.json"
 )
 DEFINITION_MANIFEST_SCHEMA_PATH = (
     Path(__file__).resolve().parent
@@ -690,6 +697,28 @@ def _load_foundation_2_1_validator() -> Draft202012Validator:
             manifest_schema = json.load(manifest_file)
     except OSError as exc:
         raise RuntimeError("Foundation 2.1 schemas are not installed.") from exc
+    Draft202012Validator.check_schema(manifest_schema)
+    Draft202012Validator.check_schema(schema)
+    registry = Registry().with_resource(
+        manifest_schema["$id"], Resource.from_contents(manifest_schema)
+    )
+    return Draft202012Validator(
+        schema,
+        format_checker=FormatChecker(),
+        registry=registry,
+    )
+
+
+def _load_foundation_2_2_validator() -> Draft202012Validator:
+    """Load 2.2 independently; 2.0/2.1 validators remain byte-stable."""
+
+    try:
+        with SCHEMA_PATH_2_2.open(encoding="utf-8") as schema_file:
+            schema = json.load(schema_file)
+        with DEFINITION_MANIFEST_SCHEMA_PATH.open(encoding="utf-8") as manifest_file:
+            manifest_schema = json.load(manifest_file)
+    except OSError as exc:
+        raise RuntimeError("Foundation 2.2 schemas are not installed.") from exc
     Draft202012Validator.check_schema(manifest_schema)
     Draft202012Validator.check_schema(schema)
     registry = Registry().with_resource(
@@ -947,6 +976,43 @@ class Foundation21AttemptResult:
     commit: Foundation21CommitResult | None
     receipt_id: str
     errors: tuple[Mapping[str, str], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class Foundation22Preview:
+    """Read-only proof that a 2.2 package exactly names one live projection."""
+
+    valid: bool
+    package_scope: str
+    workspace_id: str
+    definition_id: str
+    receipt_id: str
+    projection_sha256: str
+    raw_input_kind: str
+    raw_input_sha256: str
+    raw_input_byte_length: int
+    raw_input_name: str = ""
+    errors: tuple[str, ...] = ()
+    _payload: Mapping[str, Any] = field(
+        default_factory=dict,
+        repr=False,
+        compare=False,
+    )
+
+    def payload_copy(self) -> dict[str, Any]:
+        return _deep_thaw(self._payload)
+
+
+@dataclass(frozen=True, slots=True)
+class Foundation22CommitResult:
+    """Exact 2.2 reconciliation result; it never represents a restore."""
+
+    package_scope: str
+    action: str
+    workspace_id: str
+    definition_id: str
+    receipt_id: str
+    projection_sha256: str
 
 
 def foundation_import_service_capabilities_2_1(
@@ -2356,9 +2422,38 @@ def _map_pre_freeze_xlsx_profile(
 
     definitions: dict[str, Any] = {}
     for code in ("POS", "SAL"):
-        definition = _model("ParameterDefinition").objects.filter(
-            project=workspace.project, code__iexact=code
-        ).first()
+        Definition = _model("ParameterDefinition")
+        exact_snapshots = list(
+            Definition.objects.filter(
+                definition_version=workspace.definition_version,
+                source_manifest_parameter_id__isnull=False,
+                code__iexact=code,
+            )
+        )
+        if len(exact_snapshots) > 1:
+            raise FoundationPackageConflictError(
+                f"PRE_FREEZE {code} resolves to more than one exact-definition snapshot."
+            )
+        if exact_snapshots:
+            definition = exact_snapshots[0]
+        else:
+            # Existing valid legacy workbooks predate definition-bound
+            # snapshots.  Preserve that lane only when its project-local
+            # identity is unambiguous; never let a newer definition's POS/SAL
+            # snapshot leak across the explicit workspace boundary.
+            legacy_definitions = list(
+                Definition.objects.filter(
+                    project=workspace.project,
+                    definition_version__isnull=True,
+                    code__iexact=code,
+                )
+            )
+            if len(legacy_definitions) != 1:
+                raise FoundationPackageConflictError(
+                    f"PRE_FREEZE {code} requires one exact-definition snapshot "
+                    "or one unambiguous legacy ParameterDefinition."
+                )
+            definition = legacy_definitions[0]
         if definition is None:
             raise FoundationPackageConflictError(
                 f"PRE_FREEZE {code} requires an existing canonical ParameterDefinition."
@@ -4397,6 +4492,715 @@ def export_project_definition_package_2_1(definition: Any) -> dict[str, Any]:
 
 def export_project_definition_json_2_1(definition: Any) -> str:
     return canonical_json(export_project_definition_package_2_1(definition)) + "\n"
+
+
+def _foundation_2_2_sha256(value: Any) -> str:
+    return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def _foundation_2_2_decimal_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    try:
+        decimal = Decimal(str(value))
+    except (InvalidOperation, ValueError) as exc:
+        raise FoundationPackageValidationError(
+            "Foundation 2.2 parameter scale values must be finite decimals."
+        ) from exc
+    if not decimal.is_finite():
+        raise FoundationPackageValidationError(
+            "Foundation 2.2 parameter scale values must be finite decimals."
+        )
+    text = format(decimal.normalize(), "f")
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text or "0"
+
+
+def _foundation_2_2_schema_error(error: Any) -> str:
+    safe_parts: list[str] = []
+    for part in error.absolute_path:
+        value = str(part)
+        safe_parts.append(
+            value if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", value) else "*"
+        )
+    path = ".".join(safe_parts) or "package"
+    validator = str(error.validator or "invalid")
+    if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", validator) is None:
+        validator = "invalid"
+    return (
+        f"FOUNDATION_2_2_SCHEMA_{validator.upper()} at {path}: "
+        "value does not satisfy the exact Foundation 2.2 reconciliation contract."
+    )
+
+
+def _foundation_2_2_projection_records(
+    projection: Mapping[str, Any],
+) -> dict[str, list[dict[str, Any]]]:
+    """Project the internal exact-replay DTO to the intentionally narrow 2.2 wire DTO."""
+
+    actors = [
+        {
+            key: item[key]
+            for key in (
+                "id",
+                "code",
+                "version",
+                "source_manifest_entity_id",
+                "source_manifest_entity_sha256",
+                "source_manifest_parent_id",
+                "actor_type",
+                "label",
+                "description",
+                "order",
+            )
+        }
+        for item in projection["actors"]
+    ]
+    elements = [
+        {
+            key: item[key]
+            for key in (
+                "id",
+                "code",
+                "version",
+                "source_manifest_entity_id",
+                "source_manifest_entity_sha256",
+                "source_manifest_parent_id",
+                "element_type",
+                "label",
+                "description",
+                "reference_statement",
+                "order",
+            )
+        }
+        for item in projection["analytical_elements"]
+    ]
+    roles = [
+        {
+            "id": item["id"],
+            "code": item["code"],
+            "version": item["version"],
+            "source_manifest_entity_id": item["source_manifest_entity_id"],
+            "source_manifest_entity_sha256": item[
+                "source_manifest_entity_sha256"
+            ],
+            "source_manifest_actor_id": item[
+                "actor_source_manifest_entity_id"
+            ],
+            "source_manifest_element_id": item[
+                "element_source_manifest_entity_id"
+            ],
+            "source_manifest_order": item["order"],
+            "role": item["role"],
+            "note": item["note"],
+            "order": item["order"],
+        }
+        for item in projection["actor_element_roles"]
+    ]
+    parameters = [
+        {
+            key: item[key]
+            for key in (
+                "id",
+                "code",
+                "version",
+                "definition_version_id",
+                "source_manifest_parameter_id",
+                "manifest_snapshot_sha256",
+                "name",
+                "description",
+                "target_type",
+                "value_type",
+                "scale_min",
+                "scale_max",
+                "scale_step",
+                "scale_metadata",
+                "allowed_statuses",
+                "applicability",
+                "reference_statement",
+            )
+        }
+        for item in projection["parameter_definitions"]
+    ]
+    return {
+        "actors": actors,
+        "analytical_elements": elements,
+        "actor_element_roles": roles,
+        "parameter_definitions": parameters,
+    }
+
+
+def _foundation_2_2_expected_from_manifest(
+    package: Mapping[str, Any],
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, Any]]:
+    """Rebuild the canonical 2.2 projection solely from its declared manifest pin."""
+
+    from domain.services.project_definitions import parse_project_definition_manifest_v1
+
+    manifest_envelope = package["manifest"]
+    manifest = manifest_envelope["payload"]
+    workspace = package["workspace"]
+    project = package["project"]
+    definition_id = package["selected_definition_id"]
+    try:
+        parsed = parse_project_definition_manifest_v1(manifest).as_dict()
+        workspace_id = UUID(workspace["id"])
+        definition_uuid = UUID(definition_id)
+    except (KeyError, TypeError, ValueError, ValidationError) as exc:
+        raise FoundationPackageValidationError(
+            "Foundation 2.2 manifest identity cannot be parsed exactly."
+        ) from exc
+    if (
+        manifest_envelope["definition_id"] != definition_id
+        or workspace["project_definition_version_id"] != definition_id
+        or workspace["project_definition_hash"] != manifest_envelope["sha256"]
+        or {
+            key: str(parsed["project"][key])
+            for key in ("id", "code", "version")
+        }
+        != project
+    ):
+        raise FoundationPackageValidationError(
+            "Foundation 2.2 project, definition, workspace, and manifest pins differ."
+        )
+
+    def source_hash(item: Mapping[str, Any]) -> str:
+        return _foundation_2_2_sha256(dict(item))
+
+    try:
+        actors = [
+            {
+                "id": str(
+                    uuid5(
+                        workspace_id,
+                        "PROJECT_DEFINITION_MANIFEST_V1:ACTOR:" + str(item["id"]),
+                    )
+                ),
+                "code": str(item["code"]),
+                "version": str(item["version"]),
+                "source_manifest_entity_id": str(UUID(str(item["id"]))),
+                "source_manifest_entity_sha256": source_hash(item),
+                "source_manifest_parent_id": (
+                    str(UUID(str(item["parent_id"])))
+                    if item.get("parent_id") is not None
+                    else None
+                ),
+                "actor_type": str(item["actor_type"]),
+                "label": str(item["label"]),
+                "description": str(item["description"]),
+                "order": int(item["order"]),
+            }
+            for item in parsed["actors"]
+        ]
+        elements = [
+            {
+                "id": str(
+                    uuid5(
+                        workspace_id,
+                        "PROJECT_DEFINITION_MANIFEST_V1:ANALYTICAL_ELEMENT:"
+                        + str(item["id"]),
+                    )
+                ),
+                "code": str(item["code"]),
+                "version": str(item["version"]),
+                "source_manifest_entity_id": str(UUID(str(item["id"]))),
+                "source_manifest_entity_sha256": source_hash(item),
+                "source_manifest_parent_id": (
+                    str(UUID(str(item["parent_id"])))
+                    if item.get("parent_id") is not None
+                    else None
+                ),
+                "element_type": str(item["element_type"]),
+                "label": str(item["label"]),
+                "description": str(item["description"]),
+                "reference_statement": str(item["reference_statement"]),
+                "order": int(item["order"]),
+            }
+            for item in parsed["analytical_elements"]
+        ]
+        roles = [
+            {
+                "id": str(
+                    uuid5(
+                        workspace_id,
+                        "PROJECT_DEFINITION_MANIFEST_V1:ACTOR_ELEMENT_ROLE:"
+                        + str(item["id"]),
+                    )
+                ),
+                "code": str(item["code"]),
+                "version": str(item["version"]),
+                "source_manifest_entity_id": str(UUID(str(item["id"]))),
+                "source_manifest_entity_sha256": source_hash(item),
+                "source_manifest_actor_id": str(UUID(str(item["actor_id"]))),
+                "source_manifest_element_id": str(UUID(str(item["element_id"]))),
+                "source_manifest_order": int(item["order"]),
+                "role": str(item["role"]),
+                "note": str(item["note"]),
+                "order": int(item["order"]),
+            }
+            for item in parsed["actor_element_roles"]
+        ]
+        parameters = [
+            {
+                "id": str(
+                    uuid5(
+                        definition_uuid,
+                        "PROJECT_DEFINITION_MANIFEST_V1:PARAMETER:" + str(item["id"]),
+                    )
+                ),
+                "code": str(item["code"]),
+                "version": str(item["version"]),
+                "definition_version_id": str(definition_uuid),
+                "source_manifest_parameter_id": str(UUID(str(item["id"]))),
+                "manifest_snapshot_sha256": source_hash(item),
+                "name": str(item["name"]),
+                "description": str(item["description"]),
+                "target_type": str(item["target_type"]),
+                "value_type": str(item["value_type"]),
+                "scale_min": _foundation_2_2_decimal_text(item["scale"].get("minimum")),
+                "scale_max": _foundation_2_2_decimal_text(item["scale"].get("maximum")),
+                "scale_step": _foundation_2_2_decimal_text(item["scale"].get("step")),
+                "scale_metadata": {},
+                "allowed_statuses": list(item["allowed_statuses"]),
+                "applicability": {
+                    "actor_ids": list(item["applicability"]["actor_ids"]),
+                    "analytical_element_ids": list(
+                        item["applicability"]["analytical_element_ids"]
+                    ),
+                    "actor_element_role_ids": list(
+                        item["applicability"]["actor_element_role_ids"]
+                    ),
+                },
+                "reference_statement": str(item["reference_statement"]),
+            }
+            for item in parsed["parameter_definitions"]
+        ]
+    except (KeyError, TypeError, ValueError, ValidationError) as exc:
+        raise FoundationPackageValidationError(
+            "Foundation 2.2 rows do not preserve the exact typed manifest snapshot."
+        ) from exc
+
+    for rows, source_key in (
+        (actors, "source_manifest_entity_id"),
+        (elements, "source_manifest_entity_id"),
+        (roles, "source_manifest_entity_id"),
+    ):
+        rows.sort(key=lambda item: (item["order"], item[source_key]))
+    parameters.sort(key=lambda item: (item["code"], item["source_manifest_parameter_id"]))
+    records = {
+        "actors": actors,
+        "analytical_elements": elements,
+        "actor_element_roles": roles,
+        "parameter_definitions": parameters,
+    }
+    actor_ids = {
+        item["source_manifest_entity_id"]: item["id"] for item in actors
+    }
+    element_ids = {
+        item["source_manifest_entity_id"]: item["id"] for item in elements
+    }
+    internal = {
+        "contract": "FOUNDATION_WORKSPACE_ASSESSMENT_PROJECTION_V1",
+        "workspace": {
+            "id": workspace["id"],
+            "project_id": project["id"],
+            "definition_id": definition_id,
+            "manifest_sha256": workspace["project_definition_hash"],
+        },
+        "actors": [
+            {
+                **item,
+                "parent_id": (
+                    actor_ids[item["source_manifest_parent_id"]]
+                    if item["source_manifest_parent_id"] is not None
+                    else None
+                ),
+                "metadata": {},
+            }
+            for item in actors
+        ],
+        "analytical_elements": [
+            {
+                **item,
+                "parent_id": (
+                    element_ids[item["source_manifest_parent_id"]]
+                    if item["source_manifest_parent_id"] is not None
+                    else None
+                ),
+                "metadata": {},
+            }
+            for item in elements
+        ],
+        "actor_element_roles": [
+            {
+                "id": item["id"],
+                "source_manifest_entity_id": item["source_manifest_entity_id"],
+                "source_manifest_entity_sha256": item[
+                    "source_manifest_entity_sha256"
+                ],
+                "actor_source_manifest_entity_id": item[
+                    "source_manifest_actor_id"
+                ],
+                "element_source_manifest_entity_id": item[
+                    "source_manifest_element_id"
+                ],
+                "actor_id": actor_ids[item["source_manifest_actor_id"]],
+                "element_id": element_ids[item["source_manifest_element_id"]],
+                "code": item["code"],
+                "version": item["version"],
+                "role": item["role"],
+                "note": item["note"],
+                "order": item["order"],
+            }
+            for item in roles
+        ],
+        "parameter_definitions": parameters,
+    }
+    source_mapping = {
+        section: [
+            {
+                "source_manifest_id": item["source_manifest_entity_id"],
+                "derived_id": item["id"],
+            }
+            for item in records[section]
+        ]
+        for section in ("actors", "analytical_elements", "actor_element_roles")
+    }
+    source_mapping["parameter_definitions"] = [
+        {
+            "source_manifest_id": item["source_manifest_parameter_id"],
+            "derived_id": item["id"],
+        }
+        for item in parameters
+    ]
+    internal["source_mapping_sha256"] = _foundation_2_2_sha256(source_mapping)
+    internal["snapshot_sha256"] = _foundation_2_2_sha256(parameters)
+    internal["projection_sha256"] = _foundation_2_2_sha256(
+        {key: value for key, value in internal.items() if key != "projection_sha256"}
+    )
+    return records, internal
+
+
+def _validate_foundation_package_2_2_mapping(
+    package: Mapping[str, Any],
+) -> dict[str, Any]:
+    canonical = copy.deepcopy(dict(package))
+    validator = _load_foundation_2_2_validator()
+    errors = sorted(
+        validator.iter_errors(canonical),
+        key=lambda error: (
+            tuple(str(part) for part in error.absolute_path),
+            error.message,
+        ),
+    )
+    if errors:
+        raise FoundationPackageValidationError(_foundation_2_2_schema_error(errors[0]))
+    from domain.services.project_definitions import hash_project_definition_manifest_v1
+
+    manifest = canonical["manifest"]
+    if hash_project_definition_manifest_v1(manifest["payload"]) != manifest["sha256"]:
+        raise FoundationPackageValidationError(
+            "Foundation 2.2 manifest SHA-256 does not match its exact typed payload."
+        )
+    records, internal = _foundation_2_2_expected_from_manifest(canonical)
+    if any(canonical[section] != records[section] for section in records):
+        raise FoundationPackageValidationError(
+            "Foundation 2.2 rows differ from the exact pinned manifest projection."
+        )
+    projection = canonical["projection"]
+    if (
+        projection["projection_sha256"] != internal["projection_sha256"]
+        or projection["source_mapping_sha256"] != internal["source_mapping_sha256"]
+        or projection["snapshot_sha256"] != internal["snapshot_sha256"]
+    ):
+        raise FoundationPackageValidationError(
+            "Foundation 2.2 projection hashes do not replay the exact manifest snapshot."
+        )
+    receipt = projection["receipt"]
+    after = receipt["payload"]
+    try:
+        operation_id = UUID(str(after["operation_id"]))
+        if str(operation_id) != after["operation_id"]:
+            raise ValueError
+        principal = str(after["actor_identifier"]).strip()
+    except (KeyError, TypeError, ValueError) as exc:
+        raise FoundationPackageValidationError(
+            "Foundation 2.2 receipt has no exact canonical operation identity."
+        ) from exc
+    if not principal:
+        raise FoundationPackageValidationError(
+            "Foundation 2.2 receipt has no HUMAN principal."
+        )
+    request = {
+        "operation_id": str(operation_id),
+        "human_principal": principal,
+        "project_id": canonical["project"]["id"],
+        "workspace_id": canonical["workspace"]["id"],
+        "definition_id": canonical["selected_definition_id"],
+        "manifest_sha256": canonical["workspace"]["project_definition_hash"],
+        "source_mapping_sha256": internal["source_mapping_sha256"],
+        "snapshot_sha256": internal["snapshot_sha256"],
+        "projection_sha256": internal["projection_sha256"],
+    }
+    counts = {section: len(rows) for section, rows in records.items()}
+    expected_after = {
+        "contract": "FOUNDATION_WORKSPACE_ASSESSMENT_PROJECTION_V1",
+        "version": "1.0.0",
+        "operation_id": str(operation_id),
+        "audit_event_id": receipt["id"],
+        "actor_type": "HUMAN",
+        "actor_identifier": principal,
+        "project_id": canonical["project"]["id"],
+        "workspace_id": canonical["workspace"]["id"],
+        "definition_id": canonical["selected_definition_id"],
+        "manifest_sha256": canonical["workspace"]["project_definition_hash"],
+        "request": request,
+        "request_sha256": _foundation_2_2_sha256(request),
+        "source_mapping_sha256": internal["source_mapping_sha256"],
+        "snapshot_sha256": internal["snapshot_sha256"],
+        "projection_sha256": internal["projection_sha256"],
+        "source_counts": counts,
+        "projected_counts": counts,
+        "original_http_status": 201,
+    }
+    if (
+        receipt["code"] != f"ASSESSMENT-PROJECTION-{operation_id}"
+        or receipt["sha256"] != _foundation_2_2_sha256(after)
+        or after != expected_after
+    ):
+        raise FoundationPackageValidationError(
+            "Foundation 2.2 receipt does not exactly bind the persisted projection."
+        )
+    return canonical
+
+
+def _parse_and_validate_foundation_package_2_2(
+    raw: Any,
+) -> tuple[dict[str, Any], RawInputIdentity]:
+    try:
+        document = parse_json_source(raw)
+    except RawJSONError as exc:
+        raise FoundationPackageValidationError(
+            f"{exc.code} at {exc.path}: {exc.message}"
+        ) from exc
+    return _validate_foundation_package_2_2_mapping(document.value), document.identity
+
+
+def validate_foundation_package_2_2(package: Any) -> dict[str, Any]:
+    """Validate a portable 2.2 reconciliation envelope without database writes."""
+
+    canonical, _identity = _parse_and_validate_foundation_package_2_2(package)
+    return canonical
+
+
+def seal_foundation_package_2_2(package: Mapping[str, Any]) -> dict[str, Any]:
+    """Return the validated 2.2 envelope; its manifest is a definition pin, not a transport checksum."""
+
+    return _validate_foundation_package_2_2_mapping(package)
+
+
+def _require_complete_foundation_2_2_projection(workspace: Any) -> Any:
+    """Translate the projection service's integrity result at the 2.2 boundary."""
+
+    from domain.services.player_projection import (
+        AssessmentProjectionError,
+        require_complete_workspace_assessment_projection,
+    )
+
+    try:
+        return require_complete_workspace_assessment_projection(workspace)
+    except AssessmentProjectionError as exc:
+        raise FoundationPackageConflictError(
+            "Foundation 2.2 requires one exact, complete persisted workspace projection."
+        ) from exc
+
+
+def export_workspace_package_2_2(workspace: Any) -> dict[str, Any]:
+    """Export only one existing, receipt-proven workspace projection for exact reuse."""
+
+    _workspace_identity(workspace)
+    from domain.services.player_projection import (
+        AssessmentProjectionError,
+        PROJECTION_CONTRACT,
+        _expected_projection,
+    )
+
+    verification = _require_complete_foundation_2_2_projection(workspace)
+    receipt = verification.receipt
+    if receipt is None or verification.projection_sha256 is None:
+        raise FoundationPackageConflictError(
+            "Foundation 2.2 requires one exact persisted projection receipt."
+        )
+    Workspace = _model("ProjectWorkspace")
+    live_workspace = Workspace.objects.select_related("project", "definition_version").get(
+        pk=workspace.pk
+    )
+    definition = live_workspace.definition_version
+    try:
+        projection = _expected_projection(live_workspace)
+    except AssessmentProjectionError as exc:
+        raise FoundationPackageConflictError(
+            "Foundation 2.2 cannot export a drifted workspace projection."
+        ) from exc
+    records = _foundation_2_2_projection_records(projection)
+    receipt_payload = copy.deepcopy(dict(receipt.after))
+    package = {
+        "format": FOUNDATION_PACKAGE_FORMAT,
+        "format_version": FOUNDATION_PACKAGE_VERSION_2_2,
+        "package_scope": FOUNDATION_PACKAGE_SCOPE_2_2,
+        "package_id": _bounded_package_id_2_1("V22", live_workspace.pk),
+        "project": _project_identity_2_1(live_workspace.project),
+        "selected_definition_id": str(definition.pk),
+        "workspace": {
+            "id": str(live_workspace.pk),
+            "code": live_workspace.code,
+            "version": live_workspace.version,
+            "project_definition_version_id": str(definition.pk),
+            "project_definition_hash": live_workspace.definition_manifest_hash,
+            "label": live_workspace.name,
+            "metadata": copy.deepcopy(live_workspace.metadata),
+        },
+        "manifest": {
+            "definition_id": str(definition.pk),
+            "sha256": definition.manifest_hash,
+            "payload": copy.deepcopy(definition.manifest),
+        },
+        "projection": {
+            "contract": PROJECTION_CONTRACT,
+            "status": "COMPLETE",
+            "receipt": {
+                "id": str(receipt.pk),
+                "code": receipt.code,
+                "sha256": _foundation_2_2_sha256(receipt_payload),
+                "payload": receipt_payload,
+            },
+            "projection_sha256": verification.projection_sha256,
+            "source_mapping_sha256": projection["source_mapping_sha256"],
+            "snapshot_sha256": projection["snapshot_sha256"],
+        },
+        **records,
+    }
+    return seal_foundation_package_2_2(package)
+
+
+def export_workspace_json_2_2(workspace: Any) -> str:
+    return canonical_json(export_workspace_package_2_2(workspace)) + "\n"
+
+
+def _reconcile_foundation_package_2_2(
+    package: Mapping[str, Any],
+    *,
+    workspace: Any,
+) -> Any:
+    """Compare a valid envelope to live state; this deliberately has no repair branch."""
+
+    _workspace_identity(workspace)
+    if package["project"] != _project_identity_2_1(workspace.project):
+        raise FoundationPackageConflictError(
+            "Foundation 2.2 package Project identity differs from the explicit target."
+        )
+    definition = workspace.definition_version
+    expected_workspace = {
+        "id": str(workspace.pk),
+        "code": workspace.code,
+        "version": workspace.version,
+        "project_definition_version_id": str(definition.pk),
+        "project_definition_hash": workspace.definition_manifest_hash,
+        "label": workspace.name,
+        "metadata": copy.deepcopy(workspace.metadata),
+    }
+    if package["workspace"] != expected_workspace:
+        raise FoundationPackageConflictError(
+            "Foundation 2.2 package Workspace identity differs from the explicit target."
+        )
+    if package["selected_definition_id"] != str(definition.pk):
+        raise FoundationPackageConflictError(
+            "Foundation 2.2 package definition differs from the exact workspace pin."
+        )
+    verification = _require_complete_foundation_2_2_projection(workspace)
+    if verification.receipt is None or verification.projection_sha256 is None:
+        raise FoundationPackageConflictError(
+            "Foundation 2.2 requires the original complete projection receipt."
+        )
+    if package != export_workspace_package_2_2(workspace):
+        raise FoundationPackageConflictError(
+            "Foundation 2.2 reconciliation refuses projection or receipt drift."
+        )
+    return verification
+
+
+def preview_foundation_package_2_2(
+    raw: Any,
+    *,
+    workspace: Any,
+) -> Foundation22Preview:
+    """Perform an exact, non-mutating 2.2 reconciliation preflight."""
+
+    package, identity = _parse_and_validate_foundation_package_2_2(raw)
+    verification = _reconcile_foundation_package_2_2(package, workspace=workspace)
+    receipt = verification.receipt
+    assert receipt is not None  # guarded by reconciliation, keeps result non-optional
+    return Foundation22Preview(
+        valid=True,
+        package_scope=FOUNDATION_PACKAGE_SCOPE_2_2,
+        workspace_id=str(workspace.pk),
+        definition_id=str(workspace.definition_version_id),
+        receipt_id=str(receipt.pk),
+        projection_sha256=verification.projection_sha256 or "",
+        raw_input_kind=identity.kind,
+        raw_input_sha256=identity.sha256,
+        raw_input_byte_length=identity.byte_length,
+        raw_input_name=identity.name,
+        errors=(),
+        _payload=_deep_freeze(package),
+    )
+
+
+def commit_foundation_package_2_2(
+    raw: Any,
+    *,
+    workspace: Any,
+) -> Foundation22CommitResult:
+    """Reconcile exactly one existing projection and return its original receipt.
+
+    This method intentionally creates no Workspace, projection row, ImportRun, or
+    AuditEvent.  It is not a backup/restore route.
+    """
+
+    package, _identity = _parse_and_validate_foundation_package_2_2(raw)
+    _workspace_identity(workspace)
+    Workspace = _model("ProjectWorkspace")
+    Definition = _model("ProjectDefinitionVersion")
+    with transaction.atomic():
+        locked = Workspace.objects.select_for_update().select_related(
+            "project", "definition_version"
+        ).get(pk=workspace.pk)
+        locked_definition = Definition.objects.select_for_update().get(
+            pk=locked.definition_version_id
+        )
+        locked.definition_version = locked_definition
+        verification = _reconcile_foundation_package_2_2(package, workspace=locked)
+    receipt = verification.receipt
+    assert receipt is not None
+    return Foundation22CommitResult(
+        package_scope=FOUNDATION_PACKAGE_SCOPE_2_2,
+        action="REUSE_EXACT",
+        workspace_id=str(locked.pk),
+        definition_id=str(locked.definition_version_id),
+        receipt_id=str(receipt.pk),
+        projection_sha256=verification.projection_sha256 or "",
+    )
+
+
+def reconcile_workspace_package_2_2(
+    raw: Any,
+    *,
+    workspace: Any,
+) -> Foundation22CommitResult:
+    """Explicitly named alias for the only permitted 2.2 action: exact reuse."""
+
+    return commit_foundation_package_2_2(raw, workspace=workspace)
 
 
 def _require_exact_project_2_1(package: Mapping[str, Any], project: Any) -> None:

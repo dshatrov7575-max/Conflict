@@ -12,6 +12,7 @@ on:
       - codex/ca-suite-i1-foundation-fd06-publication-reconciliation
       - codex/ca-suite-i1-foundation-fd07-publication-readiness
       - codex/ca-suite-i1-project-language-bootstrap-f0l
+      - codex/ca-suite-i1-evidence-multilingual-f1
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -28,6 +29,7 @@ on:
       - codex/ca-suite-i1-project-language-bootstrap-f0l
       - codex/ca-suite-i1-evidence-multilingual-f1
       - codex/ca-suite-i1-production-studio-c2a-lifecycle-publication
+      - codex/ca-suite-i1-foundation-fd08-assessment-projection
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -47,11 +49,13 @@ jobs:
       (github.event_name == 'pull_request' &&
        github.event.pull_request.head.ref != 'codex/ca-suite-i1-project-language-bootstrap-f0l' &&
        github.event.pull_request.head.ref != 'codex/ca-suite-i1-evidence-multilingual-f1' &&
-       github.event.pull_request.head.ref != 'codex/ca-suite-i1-production-studio-c2a-lifecycle-publication') ||
+       github.event.pull_request.head.ref != 'codex/ca-suite-i1-production-studio-c2a-lifecycle-publication' &&
+       github.event.pull_request.head.ref != 'codex/ca-suite-i1-foundation-fd08-assessment-projection') ||
       (github.event_name == 'push' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-project-language-bootstrap-f0l' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-evidence-multilingual-f1' &&
-       github.ref != 'refs/heads/codex/ca-suite-i1-production-studio-c2a-lifecycle-publication')
+       github.ref != 'refs/heads/codex/ca-suite-i1-production-studio-c2a-lifecycle-publication' &&
+       github.ref != 'refs/heads/codex/ca-suite-i1-foundation-fd08-assessment-projection')
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -3847,3 +3851,644 @@ jobs:
           print("F0L_ISOLATED_WHEEL_SCHEMA_AND_IMPORT=PASS")
           PY
           )
+
+  fd08-assessment-projection:
+    name: Python 3.12 / PostgreSQL 18 / SQLite / FD08 exact-head projection gate
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.ref == 'codex/ca-suite-i1-foundation-fd08-assessment-projection' &&
+       github.event.pull_request.base.ref == 'codex/ca-suite-i1-evidence-multilingual-f1') ||
+      (github.event_name == 'push' &&
+       github.ref == 'refs/heads/codex/ca-suite-i1-foundation-fd08-assessment-projection')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: conflict_analysis
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    defaults:
+      run:
+        working-directory: software/conflict_analysis
+
+    env:
+      DJANGO_SECRET_KEY: ci-only-secret-key
+      POSTGRES_DB: conflict_analysis
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_CONN_MAX_AGE: "0"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+      FD08_BASE_BRANCH: codex/ca-suite-i1-evidence-multilingual-f1
+      FD08_BASE_HEAD: d2f5a881e10dbb688371e8c5add6bf9375404738
+      FD08_BASE_TREE: 7f5fd4f321282a48a799698861ce6f2bd3940cd1
+      FD08_TARGET_BRANCH: codex/ca-suite-i1-foundation-fd08-assessment-projection
+      F1_ACCEPTED_HEAD: "${{ vars.F1_ACCEPTED_HEAD }}"
+      F1_ACCEPTED_TREE: "${{ vars.F1_ACCEPTED_TREE }}"
+
+    steps:
+      - name: Check out the exact FD08 delivery head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Resolve exact FD08 event route and accepted F1 pin
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          EVENT_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          EVENT_BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_RUN_ATTEMPT" = "1"
+          test "$F1_ACCEPTED_HEAD" = "$FD08_BASE_HEAD"
+          test "$F1_ACCEPTED_TREE" = "$FD08_BASE_TREE"
+
+          delivery_head="$(git rev-parse HEAD)"
+          delivery_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse "$delivery_head^")" = "$FD08_BASE_HEAD"
+          test "$(git rev-parse "$FD08_BASE_HEAD^{tree}")" = "$FD08_BASE_TREE"
+
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              test "$EVENT_HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"
+              test "$EVENT_BASE_REPOSITORY" = "$GITHUB_REPOSITORY"
+              test "$EVENT_HEAD_REF" = "$FD08_TARGET_BRANCH"
+              test "$EVENT_BASE_REF" = "$FD08_BASE_BRANCH"
+              test "$EVENT_HEAD_SHA" = "$delivery_head"
+              test "$EVENT_BASE_SHA" = "$FD08_BASE_HEAD"
+              ;;
+            push)
+              test "$GITHUB_REF" = "refs/heads/$FD08_TARGET_BRANCH"
+              test "$GITHUB_SHA" = "$delivery_head"
+              ;;
+            *)
+              echo "unsupported FD08 event: $GITHUB_EVENT_NAME" >&2
+              exit 1
+              ;;
+          esac
+
+          git fetch --no-tags origin \
+            "+refs/heads/$FD08_BASE_BRANCH:refs/remotes/origin/fd08-accepted-f1"
+          test "$(git rev-parse refs/remotes/origin/fd08-accepted-f1)" = "$FD08_BASE_HEAD"
+
+          evidence_dir="$RUNNER_TEMP/fd08-exact-head-evidence"
+          mkdir -p "$evidence_dir"
+          printf 'FD08_EVIDENCE_DIR=%s\n' "$evidence_dir" >> "$GITHUB_ENV"
+          printf 'FD08_DELIVERY_HEAD=%s\n' "$delivery_head" >> "$GITHUB_ENV"
+          printf 'FD08_DELIVERY_TREE=%s\n' "$delivery_tree" >> "$GITHUB_ENV"
+          python - \
+            "$evidence_dir/route.json" \
+            "$delivery_head" \
+            "$delivery_tree" <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+
+          path, head, tree = map(str, sys.argv[1:])
+          payload = {
+              "schema": "FD08_EXACT_HEAD_ROUTE_V1",
+              "event_name": os.environ["GITHUB_EVENT_NAME"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "delivery_head": head,
+              "delivery_tree": tree,
+              "base_branch": os.environ["FD08_BASE_BRANCH"],
+              "base_head": os.environ["FD08_BASE_HEAD"],
+              "base_tree": os.environ["FD08_BASE_TREE"],
+          }
+          pathlib.Path(path).write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          echo "FD08_EXACT_EVENT_AND_F1_PIN=PASS"
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: software/conflict_analysis/pyproject.toml
+
+      - name: Install exact application and test dependencies
+        run: |
+          python -m pip install --disable-pip-version-check -e ".[dev]"
+          python -m pip check
+
+      - name: Verify static FD08 contract, migration and allowlist
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/verify_player_projection_allowlist.py --self-check
+          python -m compileall -q conflict_analysis domain scripts
+          python - <<'PY'
+          import json
+          from importlib.resources import files
+
+          root = files("domain.services").joinpath("schemas")
+          expected = root.joinpath("foundation-package-2.2.0.schema.json")
+          assert expected.is_file()
+          schema = json.loads(expected.read_text(encoding="utf-8"))
+          assert "2.2.0" in json.dumps(schema, sort_keys=True)
+          for name in (
+              "foundation-package-2.0.0.schema.json",
+              "foundation-package-2.1.0.schema.json",
+          ):
+              assert root.joinpath(name).is_file()
+          PY
+          python manage.py makemigrations --check --dry-run
+          python manage.py migrate --noinput
+          python manage.py check
+          python scripts/verify_player_projection_allowlist.py \
+            --repo "$GITHUB_WORKSPACE" \
+            --base-head "$FD08_BASE_HEAD" \
+            --base-tree "$FD08_BASE_TREE" \
+            --f1-accepted-head "$F1_ACCEPTED_HEAD" \
+            --f1-accepted-tree "$F1_ACCEPTED_TREE" \
+            | tee "$FD08_EVIDENCE_DIR/verifier.json"
+          python - "$FD08_EVIDENCE_DIR/static.json" <<'PY'
+          import json
+          import os
+          import pathlib
+
+          pathlib.Path(__import__("sys").argv[1]).write_text(
+              json.dumps(
+                  {
+                      "schema": "FD08_STATIC_MIGRATION_EVIDENCE_V1",
+                      "delivery_head": os.environ["FD08_DELIVERY_HEAD"],
+                      "delivery_tree": os.environ["FD08_DELIVERY_TREE"],
+                      "checks": [
+                          "verifier_self_check",
+                          "compileall",
+                          "schema_2_2_json",
+                          "makemigrations_check",
+                          "postgresql_migrate",
+                          "django_check",
+                      ],
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Run exact FD08 and full Foundation contracts on PostgreSQL
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        shell: bash
+        run: |
+          set -euo pipefail
+          focused="$FD08_EVIDENCE_DIR/fd08-focused-postgresql.xml"
+          foundation="$FD08_EVIDENCE_DIR/fd08-foundation-postgresql.xml"
+          python -m pytest domain/tests/test_player_projection.py --junitxml="$focused"
+          python -m pytest domain/tests --junitxml="$foundation"
+          python - "$focused" "$foundation" "$FD08_EVIDENCE_DIR/postgresql-results.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          focused_path, foundation_path, evidence_path = map(pathlib.Path, sys.argv[1:])
+          expected = (
+              "test_manifest_target_enum_and_domain_target_model_are_exactly_aligned",
+              "test_upgrade_preserves_every_legacy_parameter_definition_value_and_target_identity",
+              "test_clean_migration_creates_conditional_legacy_and_canonical_constraints",
+              "test_projection_requires_exact_published_workspace_definition_and_hash_pin",
+              "test_projection_materializes_actor_element_role_hierarchy_with_deterministic_workspace_ids",
+              "test_two_workspaces_same_definition_have_distinct_rows_and_identical_source_mapping",
+              "test_definition_bound_parameter_snapshots_are_exact_immutable_and_replay_safe",
+              "test_successor_definition_gets_separate_parameter_snapshots_without_rewriting_history",
+              "test_canonical_parameter_values_accept_only_exact_workspace_actor_element_role_targets",
+              "test_legacy_targets_remain_backward_only_and_no_tension_group_rows_are_created",
+              "test_partial_extra_or_drifted_projection_fails_closed_without_repair",
+              "test_every_projection_failure_stage_rolls_back_rows_and_immutable_receipt",
+              "test_concurrent_same_workspace_projection_has_one_commit_and_one_exact_replay",
+              "test_competing_projection_identity_or_snapshot_has_one_commit_and_one_typed_loser",
+          )
+
+          def cases(path):
+              root = ET.parse(path).getroot()
+              assert not root.findall(".//failure"), path
+              assert not root.findall(".//error"), path
+              return root.findall(".//testcase")
+
+          focused = cases(focused_path)
+          foundation = cases(foundation_path)
+          assert len(focused) == 14
+          assert {case.attrib["name"] for case in focused} == set(expected)
+          assert not [case for case in focused if case.find("skipped") is not None]
+          assert len(foundation) == 286
+          assert not [case for case in foundation if case.find("skipped") is not None]
+          assert set(expected) <= {case.attrib["name"] for case in foundation}
+          pathlib.Path(evidence_path).write_text(
+              json.dumps(
+                  {
+                      "schema": "FD08_POSTGRESQL_RESULTS_V1",
+                      "focused_total": 14,
+                      "foundation_passed": 286,
+                      "foundation_skipped": 0,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          print("FD08_POSTGRESQL_14_OF_14_AND_FOUNDATION_286=PASS")
+          PY
+
+      - name: Run exact FD08 and full Foundation contracts on SQLite
+        env:
+          USE_SQLITE: "true"
+          SQLITE_PATH: ${{ runner.temp }}/fd08-foundation.sqlite3
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python manage.py migrate --noinput
+          focused="$FD08_EVIDENCE_DIR/fd08-focused-sqlite.xml"
+          foundation="$FD08_EVIDENCE_DIR/fd08-foundation-sqlite.xml"
+          python -m pytest domain/tests/test_player_projection.py --junitxml="$focused"
+          python -m pytest domain/tests --junitxml="$foundation"
+          python - "$focused" "$foundation" "$FD08_EVIDENCE_DIR/sqlite-results.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          focused_path, foundation_path, evidence_path = map(pathlib.Path, sys.argv[1:])
+          portable = (
+              "test_manifest_target_enum_and_domain_target_model_are_exactly_aligned",
+              "test_upgrade_preserves_every_legacy_parameter_definition_value_and_target_identity",
+              "test_clean_migration_creates_conditional_legacy_and_canonical_constraints",
+              "test_projection_requires_exact_published_workspace_definition_and_hash_pin",
+              "test_projection_materializes_actor_element_role_hierarchy_with_deterministic_workspace_ids",
+              "test_two_workspaces_same_definition_have_distinct_rows_and_identical_source_mapping",
+              "test_definition_bound_parameter_snapshots_are_exact_immutable_and_replay_safe",
+              "test_successor_definition_gets_separate_parameter_snapshots_without_rewriting_history",
+              "test_canonical_parameter_values_accept_only_exact_workspace_actor_element_role_targets",
+              "test_legacy_targets_remain_backward_only_and_no_tension_group_rows_are_created",
+              "test_partial_extra_or_drifted_projection_fails_closed_without_repair",
+              "test_every_projection_failure_stage_rolls_back_rows_and_immutable_receipt",
+          )
+          concurrent = {
+              "test_concurrent_same_workspace_projection_has_one_commit_and_one_exact_replay",
+              "test_competing_projection_identity_or_snapshot_has_one_commit_and_one_typed_loser",
+          }
+          inherited = {
+              "test_postgresql_concurrent_bootstrap_has_one_winner_and_one_explicit_conflict",
+              "test_postgresql_competing_successors_have_one_winner_and_preserve_old_pin",
+              "test_postgresql_application_wrapper_has_one_success_and_one_typed_conflict",
+              "test_postgresql_application_bootstrap_has_one_complete_winner_and_no_orphans",
+              "test_postgresql_import_initial_and_successor_paths_share_one_lock_order",
+              "test_concurrent_initial_different_keys_has_one_commit_and_one_typed_loser",
+              "test_concurrent_initial_same_key_has_one_fresh_and_one_replay",
+              "test_concurrent_successor_different_keys_has_one_current_winner_and_one_typed_loser",
+              "test_concurrent_successor_same_key_has_one_fresh_and_one_replay",
+              "test_postgresql_concurrent_bootstrap_same_key_has_one_graph_one_audit_one_reconcile",
+              "test_postgresql_concurrent_create_same_key_has_one_commit_one_reconcile",
+              "test_postgresql_concurrent_stale_saves_have_one_commit_one_draft_stale",
+              "test_postgresql_different_keys_same_create_or_clone_identity_have_one_typed_loser",
+              "test_postgresql_save_validate_race_obeys_project_first_lock_order",
+              "test_clean_test_database_is_at_every_migration_leaf",
+              "test_0015_to_0016_maps_exact_kz_to_ru_and_other_projects_to_und_without_drift",
+              "test_0016_reverse_reapply_and_clean_database_seed_are_exact",
+              "test_0016_to_0017_preserves_project_language_and_all_legacy_evidence_identities",
+              "test_0017_reverse_reapply_and_empty_database_are_deterministic",
+          }
+
+          def cases(path):
+              root = ET.parse(path).getroot()
+              assert not root.findall(".//failure"), path
+              assert not root.findall(".//error"), path
+              return root.findall(".//testcase")
+
+          focused = cases(focused_path)
+          foundation = cases(foundation_path)
+          focused_skipped = {case.attrib["name"] for case in focused if case.find("skipped") is not None}
+          assert len(focused) == 14
+          assert {case.attrib["name"] for case in focused} == set((*portable, *concurrent))
+          assert focused_skipped == concurrent
+          assert len(foundation) == 286
+          skipped = {case.attrib["name"] for case in foundation if case.find("skipped") is not None}
+          assert skipped == inherited | concurrent, sorted(skipped)
+          assert len(skipped) == 21
+          assert len(foundation) - len(skipped) == 265
+          pathlib.Path(evidence_path).write_text(
+              json.dumps(
+                  {
+                      "schema": "FD08_SQLITE_RESULTS_V1",
+                      "focused_passed": 12,
+                      "focused_skipped": 2,
+                      "foundation_passed": 265,
+                      "foundation_skipped": 21,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          print("FD08_SQLITE_12_PLUS_2_EXACT_SKIPS_AND_FOUNDATION_265_PLUS_21=PASS")
+          PY
+
+      - name: Build one exact FD08 wheel for inherited C0 and isolated acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip wheel --no-deps --wheel-dir "$FD08_EVIDENCE_DIR" .
+          mapfile -t wheels < <(find "$FD08_EVIDENCE_DIR" -maxdepth 1 -type f -name '*.whl' -print)
+          test "${#wheels[@]}" -eq 1
+          wheel="${wheels[0]}"
+          test "$(basename "$wheel")" = conflict_analysis-0.1.0-py3-none-any.whl
+          printf 'STUDIO_C0_WHEEL=%s\n' "$wheel" >> "$GITHUB_ENV"
+
+      - name: Run inherited Product and Chromium regressions without FD08 authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          c0_pg="$FD08_EVIDENCE_DIR/fd08-c0-postgresql.xml"
+          c1_pg="$FD08_EVIDENCE_DIR/fd08-c1-postgresql.xml"
+          c0_sqlite="$FD08_EVIDENCE_DIR/fd08-c0-sqlite.xml"
+          c1_sqlite="$FD08_EVIDENCE_DIR/fd08-c1-sqlite.xml"
+          chromium="$FD08_EVIDENCE_DIR/fd08-c1-chromium-postgresql.xml"
+          python -m pytest \
+            production_studio/tests/test_browser_contract.py \
+            production_studio/tests/test_claim_boundaries.py \
+            production_studio/tests/test_read_only_http.py \
+            production_studio/tests/test_read_only_static_contracts.py \
+            --junitxml="$c0_pg"
+          python -m pytest \
+            production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringContractTests \
+            --junitxml="$c1_pg"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/fd08-c0.sqlite3" python -m pytest \
+            production_studio/tests/test_browser_contract.py \
+            production_studio/tests/test_claim_boundaries.py \
+            production_studio/tests/test_read_only_http.py \
+            production_studio/tests/test_read_only_static_contracts.py \
+            --junitxml="$c0_sqlite"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/fd08-c1.sqlite3" python -m pytest \
+            production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringContractTests \
+            --junitxml="$c1_sqlite"
+          chrome="$(command -v google-chrome || command -v chromium || true)"
+          test -n "$chrome"
+          "$chrome" --version
+          STUDIO_CHROME_BIN="$chrome" python -m pytest \
+            production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringBrowserTests::test_authenticated_edit_save_reload_is_bounded_foundation_only_and_receipted \
+            --junitxml="$chromium"
+          python - "$c0_pg" "$c1_pg" "$c0_sqlite" "$c1_sqlite" "$chromium" \
+            "$FD08_EVIDENCE_DIR/product-chromium-results.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+
+          *junit_paths, evidence_path = map(pathlib.Path, sys.argv[1:])
+          expected = (19, 8, 19, 8, 1)
+          actual = []
+          for path in junit_paths:
+              root = ET.parse(path).getroot()
+              assert not root.findall(".//failure"), path
+              assert not root.findall(".//error"), path
+              assert not root.findall(".//skipped"), path
+              actual.append(len(root.findall(".//testcase")))
+          assert tuple(actual) == expected, actual
+          pathlib.Path(evidence_path).write_text(
+              json.dumps(
+                  {
+                      "schema": "FD08_INHERITED_PRODUCT_CHROMIUM_V1",
+                      "postgresql_c0": 19,
+                      "postgresql_c1": 8,
+                      "sqlite_c0": 19,
+                      "sqlite_c1": 8,
+                      "chromium": 1,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          print("FD08_INHERITED_PRODUCT_AND_CHROMIUM_UNCHANGED=PASS")
+          PY
+
+      - name: Inspect the same exact FD08 wheel in isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${STUDIO_C0_WHEEL:-}"
+          mapfile -t wheels < <(find "$FD08_EVIDENCE_DIR" -maxdepth 1 -type f -name '*.whl' -print)
+          test "${#wheels[@]}" -eq 1
+          wheel="${wheels[0]}"
+          test "$wheel" = "$STUDIO_C0_WHEEL"
+          test "$(basename "$wheel")" = conflict_analysis-0.1.0-py3-none-any.whl
+          python - "$wheel" "$FD08_EVIDENCE_DIR/wheel.json" <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import sys
+          from zipfile import ZipFile
+
+          wheel, evidence = map(pathlib.Path, sys.argv[1:])
+          with ZipFile(wheel) as archive:
+              members = set(archive.namelist())
+              assert archive.testzip() is None
+          required = {
+              "domain/migrations/0018_workspace_assessment_projection.py",
+              "domain/services/player_projection.py",
+              "domain/services/foundation_packages.py",
+              "domain/services/schemas/foundation-package-2.0.0.schema.json",
+              "domain/services/schemas/foundation-package-2.1.0.schema.json",
+              "domain/services/schemas/foundation-package-2.2.0.schema.json",
+          }
+          assert required <= members, sorted(required - members)
+          evidence.write_text(
+              json.dumps(
+                  {
+                      "schema": "FD08_WHEEL_EVIDENCE_V1",
+                      "filename": wheel.name,
+                      "bytes": wheel.stat().st_size,
+                      "sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
+                      "required_members": sorted(required),
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          PY
+          isolated_venv="$RUNNER_TEMP/fd08-wheel-venv"
+          python -m venv --system-site-packages "$isolated_venv"
+          "$isolated_venv/bin/python" -m pip install --disable-pip-version-check \
+            --force-reinstall --no-deps "$wheel"
+          (
+            cd "$RUNNER_TEMP"
+            unset PYTHONPATH
+            USE_SQLITE=true \
+            SQLITE_PATH="$RUNNER_TEMP/fd08-wheel.sqlite3" \
+            DJANGO_SETTINGS_MODULE=conflict_analysis.settings \
+              "$isolated_venv/bin/python" - \
+                "$wheel" \
+                "$FD08_EVIDENCE_DIR/wheel-install.json" \
+                "$GITHUB_WORKSPACE/software/conflict_analysis" <<'PY'
+          import hashlib
+          import importlib
+          import json
+          import pathlib
+          import sys
+          from importlib.resources import files
+
+          import django
+
+          wheel, evidence, source_root = map(pathlib.Path, sys.argv[1:])
+          source_root = source_root.resolve(strict=True)
+          venv_root = pathlib.Path(sys.prefix).resolve(strict=True)
+          django.setup()
+
+          imported = {}
+          for name in (
+              "domain.migrations.0018_workspace_assessment_projection",
+              "domain.services.player_projection",
+              "domain.services.foundation_packages",
+          ):
+              module = importlib.import_module(name)
+              origin = pathlib.Path(module.__file__).resolve(strict=True)
+              assert origin.is_relative_to(venv_root), (name, origin, venv_root)
+              assert not origin.is_relative_to(source_root), (name, origin, source_root)
+              imported[name] = str(origin)
+          schema = files("domain.services").joinpath(
+              "schemas/foundation-package-2.2.0.schema.json"
+          )
+          assert schema.is_file()
+          evidence.write_text(
+              json.dumps(
+                  {
+                      "schema": "FD08_ISOLATED_WHEEL_INSTALL_V1",
+                      "wheel_sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
+                      "source_tree_fallback": False,
+                      "imported": imported,
+                      "schema_2_2_packaged": True,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          print("FD08_ISOLATED_WHEEL_NO_SOURCE_TREE_FALLBACK=PASS")
+          PY
+          )
+
+      - name: Require same-run FD08 evidence before archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$FD08_EVIDENCE_DIR" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import sys
+
+          root = pathlib.Path(sys.argv[1]).resolve(strict=True)
+          required = {
+              "route.json",
+              "static.json",
+              "verifier.json",
+              "postgresql-results.json",
+              "sqlite-results.json",
+              "product-chromium-results.json",
+              "wheel.json",
+              "wheel-install.json",
+              "fd08-focused-postgresql.xml",
+              "fd08-foundation-postgresql.xml",
+              "fd08-focused-sqlite.xml",
+              "fd08-foundation-sqlite.xml",
+              "fd08-c0-postgresql.xml",
+              "fd08-c1-postgresql.xml",
+              "fd08-c0-sqlite.xml",
+              "fd08-c1-sqlite.xml",
+              "fd08-c1-chromium-postgresql.xml",
+          }
+          actual = {path.name for path in root.iterdir() if path.is_file()}
+          assert required <= actual, sorted(required - actual)
+          route = json.loads((root / "route.json").read_text(encoding="utf-8"))
+          assert route["event_name"] == os.environ["GITHUB_EVENT_NAME"]
+          assert route["run_id"] == os.environ["GITHUB_RUN_ID"]
+          assert route["run_attempt"] == "1"
+          assert route["delivery_head"] == os.environ["FD08_DELIVERY_HEAD"]
+          assert route["delivery_tree"] == os.environ["FD08_DELIVERY_TREE"]
+          verifier = json.loads((root / "verifier.json").read_text(encoding="utf-8"))
+          assert verifier["allowlist_result"] == "PASS"
+          assert verifier["history"]["final_head"] == route["delivery_head"]
+          assert verifier["history"]["final_tree"] == route["delivery_tree"]
+          assert verifier["history"]["sole_parent"] == route["base_head"]
+          manifest = {
+              path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+              for path in sorted(root.iterdir())
+              if path.is_file() and path.name != "acceptance-ready.json"
+          }
+          (root / "acceptance-ready.json").write_text(
+              json.dumps(
+                  {
+                      "schema": "FD08_SAME_RUN_ACCEPTANCE_EVIDENCE_V1",
+                      "event_name": route["event_name"],
+                      "run_id": route["run_id"],
+                      "run_attempt": route["run_attempt"],
+                      "delivery_head": route["delivery_head"],
+                      "delivery_tree": route["delivery_tree"],
+                      "required_files": sorted(required),
+                      "manifest_sha256": manifest,
+                      "acceptance_ready": True,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          print("FD08_SAME_RUN_EXACT_HEAD_EVIDENCE=PASS")
+          PY
+
+      - name: Upload immutable FD08 exact-head evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fd08-exact-head-${{ github.event_name }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/fd08-exact-head-evidence
+          if-no-files-found: error

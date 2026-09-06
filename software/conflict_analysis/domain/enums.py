@@ -319,10 +319,21 @@ class TargetType(models.TextChoices):
         "GROUP_TENSION_RELATION",
         "Group-tension relation",
     )
+    ACTOR = "ACTOR", "Actor"
+    ANALYTICAL_ELEMENT = "ANALYTICAL_ELEMENT", "Analytical element"
+    ACTOR_ELEMENT_ROLE = "ACTOR_ELEMENT_ROLE", "Actor-element role"
     ACTOR_ELEMENT_ASSESSMENT = (
         "ACTOR_ELEMENT_ASSESSMENT",
         "Actor-element assessment",
     )
+
+
+class AssessmentProjectionStatus(models.TextChoices):
+    """Persisted evidence state for one workspace assessment projection."""
+
+    COMPLETE = "COMPLETE", "Complete"
+    NOT_PROVEN = "NOT_PROVEN", "Not proven"
+    INTEGRITY_CONFLICT = "INTEGRITY_CONFLICT", "Integrity conflict"
 
 
 class ParameterValueType(models.TextChoices):
