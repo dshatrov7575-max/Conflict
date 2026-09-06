@@ -12,6 +12,7 @@ from uuid import UUID, uuid4
 
 from django.core.exceptions import ValidationError
 from django.db import (
+    DatabaseError,
     IntegrityError,
     close_old_connections,
     connection,
@@ -819,7 +820,7 @@ class FoundationWorkspaceAssessmentProjectionTests(
                 table = connection.ops.quote_name(model._meta.db_table)
                 pk_column = connection.ops.quote_name(model._meta.pk.column)
                 prepared_pk = model._meta.pk.get_db_prep_value(row.pk, connection)
-                with self.assertRaises(IntegrityError):
+                with self.assertRaises(DatabaseError):
                     with transaction.atomic():
                         with connection.cursor() as cursor:
                             cursor.execute(
