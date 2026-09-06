@@ -608,6 +608,30 @@ F1_CHROMIUM_R3_EXISTING_PATHS = frozenset(
     F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST - F1_NEW_PATHS
 )
 
+# F1-CHROMIUM-R4 is not a general extension of the R3 exception.  It permits
+# exactly one fifth ordinary child of the fixed, already-delivered R3 object.
+# The final fifth-child object is intentionally not pinned here: it is created
+# only after this verifier's preimage contract has been checked locally.
+F1_CHROMIUM_R4_R3_HEAD = "dbabf019f48b1433a96573476e94d4c7f427a689"
+F1_CHROMIUM_R4_R3_TREE = "090a32743194dd10e0c1a703bbe1d75bb68f2b34"
+F1_CHROMIUM_R4_R3_PARENT = F1_CHROMIUM_R3_RC2_HEAD
+F1_CHROMIUM_R4_DELTA_PATHS = frozenset(
+    {
+        F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH,
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+    }
+)
+F1_CHROMIUM_R4_R3_PREIMAGE_BLOBS = {
+    F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH: "5ba5a6e2930f6f84022aa9923da4dfc931d760c7",
+    "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py": "203b9532e58d4640f5fefcfd692c2e0971c42a59",
+}
+F1_CHROMIUM_R4_FROZEN_BLOBS = {
+    ".github/workflows/conflict-analysis.yml": "24631b5dd4a83ee680dd64e427c35805fbe1c276",
+    f"{F1_CHROMIUM_R3_STUDIO_ROOT}/static/production_studio/audited_draft.js": "f0793b06fb879e00f91f658bba70dace51e22474",
+}
+F1_CHROMIUM_R4_FINAL_AGGREGATE_ALLOWLIST = F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST
+F1_CHROMIUM_R4_EXISTING_PATHS = F1_CHROMIUM_R3_EXISTING_PATHS
+
 C2A_POST_F0L_ALLOWLIST = frozenset(
     {
         ".github/workflows/conflict-analysis.yml",
@@ -1554,6 +1578,92 @@ def _require_f1_chromium_r3_topology(
     )
 
 
+def _require_f1_chromium_r4_active_slice(active_slice: str) -> None:
+    if active_slice != "F1":
+        raise VerificationError("F1 Chromium R4 exception applies only to F1")
+
+
+def _require_f1_chromium_r4_topology(
+    *,
+    base_head: str,
+    delivery_head: str,
+    commit_count: int,
+    ordered_commits: tuple[str, ...],
+    commit_parents: tuple[str, ...],
+    commit_parent_counts: tuple[int, ...],
+    commit_deltas: tuple[set[str] | frozenset[str], ...],
+    aggregate_paths: set[str] | frozenset[str],
+    r3_tree: str,
+) -> None:
+    """Require one fifth ordinary child of the exact, frozen R3 delivery."""
+
+    base_head = _require_exact_object_id("F1 Chromium R4 base HEAD", base_head)
+    delivery_head = _require_exact_object_id(
+        "F1 Chromium R4 delivery HEAD", delivery_head
+    )
+    r3_tree = _require_exact_object_id("F1 Chromium R4 R3 TREE", r3_tree)
+    normalized_commits = tuple(
+        _require_exact_object_id("F1 Chromium R4 commit", commit)
+        for commit in ordered_commits
+    )
+    normalized_parents = tuple(
+        _require_exact_object_id("F1 Chromium R4 commit parent", parent)
+        for parent in commit_parents
+    )
+    normalized_deltas = tuple(frozenset(paths) for paths in commit_deltas)
+    normalized_aggregate = frozenset(aggregate_paths)
+    fixed_prefix = (
+        F1_RECOVERY_COMMIT_1,
+        F1_RECOVERY_COMMIT_2,
+        F1_CHROMIUM_R3_RC2_HEAD,
+        F1_CHROMIUM_R4_R3_HEAD,
+    )
+    if (
+        base_head != F1_RECOVERY_BASE_HEAD
+        or commit_count != 5
+        or len(normalized_commits) != 5
+        or len(normalized_parents) != 5
+        or len(commit_parent_counts) != 5
+        or len(normalized_deltas) != 5
+        or any(type(count) is not int for count in commit_parent_counts)
+        or normalized_commits[:4] != fixed_prefix
+        or normalized_commits[4]
+        in {
+            F1_RECOVERY_BASE_HEAD,
+            *fixed_prefix,
+        }
+        or delivery_head != normalized_commits[4]
+        or normalized_parents
+        != (
+            F1_RECOVERY_BASE_HEAD,
+            F1_RECOVERY_COMMIT_1,
+            F1_RECOVERY_COMMIT_2,
+            F1_CHROMIUM_R4_R3_PARENT,
+            F1_CHROMIUM_R4_R3_HEAD,
+        )
+        or commit_parent_counts != (1, 1, 1, 1, 1)
+        or r3_tree != F1_CHROMIUM_R4_R3_TREE
+        or normalized_deltas[3] != F1_CHROMIUM_R3_DELTA_PATHS
+        or normalized_deltas[4] != F1_CHROMIUM_R4_DELTA_PATHS
+        or normalized_aggregate != F1_CHROMIUM_R4_FINAL_AGGREGATE_ALLOWLIST
+    ):
+        raise VerificationError(
+            "F1 Chromium R4 topology must be exactly base -> bacafab8 -> "
+            "23940d6 -> fixed RC2 -> fixed R3 -> one ordinary fifth child"
+        )
+    _require_f1_chromium_r3_topology(
+        base_head=base_head,
+        delivery_head=F1_CHROMIUM_R4_R3_HEAD,
+        commit_count=4,
+        ordered_commits=normalized_commits[:4],
+        commit_parents=normalized_parents[:4],
+        commit_parent_counts=commit_parent_counts[:4],
+        commit_deltas=normalized_deltas[:4],
+        aggregate_paths=frozenset().union(*normalized_deltas[:4]),
+        rc2_tree=F1_CHROMIUM_R3_RC2_TREE,
+    )
+
+
 def _f1_chromium_r3_tree_entry(
     repo: Path, *, revision: str, path: str
 ) -> tuple[str, str, str]:
@@ -1660,24 +1770,45 @@ def _require_f1_chromium_r3_studio_freeze_entries(
         )
 
 
-def _require_f1_chromium_r3_production_studio_freeze(repo: Path) -> None:
+def _require_f1_chromium_r3_production_studio_freeze(
+    repo: Path, *, delivery_revision: str = "HEAD"
+) -> None:
     _require_f1_chromium_r3_studio_freeze_entries(
         base_entries=_f1_chromium_r3_tree_entries(
             repo,
             revision=F1_CHROMIUM_R3_RC2_HEAD,
         ),
-        delivery_entries=_f1_chromium_r3_tree_entries(repo, revision="HEAD"),
+        delivery_entries=_f1_chromium_r3_tree_entries(
+            repo, revision=delivery_revision
+        ),
     )
 
 
-def _require_f1_chromium_r3_delta_statuses(repo: Path) -> None:
+def _require_f1_chromium_modified_delta_statuses(
+    *,
+    recovery_label: str,
+    statuses: dict[str, str],
+    expected_paths: frozenset[str],
+) -> None:
+    if (
+        frozenset(statuses) != expected_paths
+        or any(status != "M" for status in statuses.values())
+    ):
+        raise VerificationError(
+            f"{recovery_label} delta must be exactly modified authorized paths"
+        )
+
+
+def _require_f1_chromium_r3_delta_statuses(
+    repo: Path, *, delivery_revision: str = "HEAD"
+) -> None:
     statuses: dict[str, str] = {}
     for line in _git(
         repo,
         "diff",
         "--name-status",
         "--no-renames",
-        f"{F1_CHROMIUM_R3_RC2_HEAD}..HEAD",
+        f"{F1_CHROMIUM_R3_RC2_HEAD}..{delivery_revision}",
         "--",
     ).splitlines():
         status, separator, path = line.partition("\t")
@@ -1685,13 +1816,11 @@ def _require_f1_chromium_r3_delta_statuses(repo: Path) -> None:
         if not separator or normalized_path in statuses:
             raise VerificationError("F1 Chromium R3 modified-path status is malformed")
         statuses[normalized_path] = status
-    if (
-        frozenset(statuses) != F1_CHROMIUM_R3_DELTA_PATHS
-        or any(status != "M" for status in statuses.values())
-    ):
-        raise VerificationError(
-            "F1 Chromium R3 fourth-child delta must be exactly three modified paths"
-        )
+    _require_f1_chromium_modified_delta_statuses(
+        recovery_label="F1 Chromium R3 fourth-child",
+        statuses=statuses,
+        expected_paths=F1_CHROMIUM_R3_DELTA_PATHS,
+    )
     for path, expected_blob in F1_CHROMIUM_R3_RC2_MODIFIED_BLOBS.items():
         base_entry = _f1_chromium_r3_tree_entry(
             repo,
@@ -1700,7 +1829,7 @@ def _require_f1_chromium_r3_delta_statuses(repo: Path) -> None:
         )
         delivery_entry = _f1_chromium_r3_tree_entry(
             repo,
-            revision="HEAD",
+            revision=delivery_revision,
             path=path,
         )
         if base_entry != ("100644", "blob", expected_blob):
@@ -1714,7 +1843,137 @@ def _require_f1_chromium_r3_delta_statuses(repo: Path) -> None:
             raise VerificationError(
                 f"F1 Chromium R3 fourth child must modify the regular blob at {path}"
             )
-    _require_f1_chromium_r3_production_studio_freeze(repo)
+    _require_f1_chromium_r3_production_studio_freeze(
+        repo, delivery_revision=delivery_revision
+    )
+
+
+def _require_f1_chromium_r4_studio_freeze_entries(
+    *,
+    base_entries: dict[str, tuple[str, str, str]],
+    delivery_entries: dict[str, tuple[str, str, str]],
+) -> None:
+    exception_path = F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH
+    expected_base = (
+        "100644",
+        "blob",
+        F1_CHROMIUM_R4_R3_PREIMAGE_BLOBS[exception_path],
+    )
+    base_exception = base_entries.get(exception_path)
+    delivery_exception = delivery_entries.get(exception_path)
+    if base_exception != expected_base:
+        raise VerificationError(
+            "F1 Chromium R4 audited_authoring.mjs R3 blob/mode/type drifted"
+        )
+    if (
+        delivery_exception is None
+        or delivery_exception[:2] != expected_base[:2]
+        or delivery_exception[2] == expected_base[2]
+    ):
+        raise VerificationError(
+            "F1 Chromium R4 audited_authoring.mjs must be one modified regular blob"
+        )
+    frozen_base = {
+        path: entry for path, entry in base_entries.items() if path != exception_path
+    }
+    frozen_delivery = {
+        path: entry
+        for path, entry in delivery_entries.items()
+        if path != exception_path
+    }
+    if frozen_delivery != frozen_base:
+        drifted = sorted(
+            path
+            for path in set(frozen_base) | set(frozen_delivery)
+            if frozen_base.get(path) != frozen_delivery.get(path)
+        )
+        raise VerificationError(
+            "F1 Chromium R4 Production Studio freeze drifted outside "
+            f"audited_authoring.mjs: {', '.join(drifted)}"
+        )
+
+
+def _require_f1_chromium_r4_frozen_entries(
+    *,
+    base_entries: dict[str, tuple[str, str, str]],
+    delivery_entries: dict[str, tuple[str, str, str]],
+) -> None:
+    for path, expected_blob in F1_CHROMIUM_R4_FROZEN_BLOBS.items():
+        expected_entry = ("100644", "blob", expected_blob)
+        if base_entries.get(path) != expected_entry:
+            raise VerificationError(
+                f"F1 Chromium R4 fixed R3 blob/mode/type drifted at {path}"
+            )
+        if delivery_entries.get(path) != expected_entry:
+            raise VerificationError(
+                f"F1 Chromium R4 frozen path drifted at {path}"
+            )
+
+
+def _require_f1_chromium_r4_production_studio_freeze(repo: Path) -> None:
+    _require_f1_chromium_r4_studio_freeze_entries(
+        base_entries=_f1_chromium_r3_tree_entries(
+            repo, revision=F1_CHROMIUM_R4_R3_HEAD
+        ),
+        delivery_entries=_f1_chromium_r3_tree_entries(repo, revision="HEAD"),
+    )
+    _require_f1_chromium_r4_frozen_entries(
+        base_entries={
+            path: _f1_chromium_r3_tree_entry(
+                repo, revision=F1_CHROMIUM_R4_R3_HEAD, path=path
+            )
+            for path in F1_CHROMIUM_R4_FROZEN_BLOBS
+        },
+        delivery_entries={
+            path: _f1_chromium_r3_tree_entry(repo, revision="HEAD", path=path)
+            for path in F1_CHROMIUM_R4_FROZEN_BLOBS
+        },
+    )
+
+
+def _require_f1_chromium_r4_delta_statuses(repo: Path) -> None:
+    statuses: dict[str, str] = {}
+    for line in _git(
+        repo,
+        "diff",
+        "--name-status",
+        "--no-renames",
+        f"{F1_CHROMIUM_R4_R3_HEAD}..HEAD",
+        "--",
+    ).splitlines():
+        status, separator, path = line.partition("\t")
+        normalized_path = _normalize(path)
+        if not separator or normalized_path in statuses:
+            raise VerificationError("F1 Chromium R4 modified-path status is malformed")
+        statuses[normalized_path] = status
+    _require_f1_chromium_modified_delta_statuses(
+        recovery_label="F1 Chromium R4 fifth-child",
+        statuses=statuses,
+        expected_paths=F1_CHROMIUM_R4_DELTA_PATHS,
+    )
+    for path, expected_blob in F1_CHROMIUM_R4_R3_PREIMAGE_BLOBS.items():
+        base_entry = _f1_chromium_r3_tree_entry(
+            repo,
+            revision=F1_CHROMIUM_R4_R3_HEAD,
+            path=path,
+        )
+        delivery_entry = _f1_chromium_r3_tree_entry(
+            repo,
+            revision="HEAD",
+            path=path,
+        )
+        if base_entry != ("100644", "blob", expected_blob):
+            raise VerificationError(
+                f"F1 Chromium R4 R3 preimage blob/mode/type drifted at {path}"
+            )
+        if (
+            delivery_entry[:2] != base_entry[:2]
+            or delivery_entry[2] == base_entry[2]
+        ):
+            raise VerificationError(
+                f"F1 Chromium R4 fifth child must modify the regular blob at {path}"
+            )
+    _require_f1_chromium_r4_production_studio_freeze(repo)
 
 
 def _require_f0l_bounded_fast_forward_commits(
@@ -2339,6 +2598,44 @@ def _require_f1_chromium_r3_static_contract() -> None:
         raise VerificationError("F1 Chromium R3 static topology/path contract drifted")
 
 
+def _require_f1_chromium_r4_static_contract() -> None:
+    expected_delta = frozenset(
+        {
+            "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs",
+            "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+        }
+    )
+    expected_preimages = {
+        "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs": "5ba5a6e2930f6f84022aa9923da4dfc931d760c7",
+        "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py": "203b9532e58d4640f5fefcfd692c2e0971c42a59",
+    }
+    expected_frozen = {
+        ".github/workflows/conflict-analysis.yml": "24631b5dd4a83ee680dd64e427c35805fbe1c276",
+        "software/conflict_analysis/production_studio/static/production_studio/audited_draft.js": "f0793b06fb879e00f91f658bba70dace51e22474",
+    }
+    if (
+        F1_CHROMIUM_R4_R3_HEAD
+        != "dbabf019f48b1433a96573476e94d4c7f427a689"
+        or F1_CHROMIUM_R4_R3_TREE
+        != "090a32743194dd10e0c1a703bbe1d75bb68f2b34"
+        or F1_CHROMIUM_R4_R3_PARENT != F1_CHROMIUM_R3_RC2_HEAD
+        or F1_CHROMIUM_R4_DELTA_PATHS != expected_delta
+        or F1_CHROMIUM_R4_R3_PREIMAGE_BLOBS != expected_preimages
+        or F1_CHROMIUM_R4_FROZEN_BLOBS != expected_frozen
+        or F1_CHROMIUM_R4_FINAL_AGGREGATE_ALLOWLIST
+        != F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST
+        or F1_CHROMIUM_R4_EXISTING_PATHS != F1_CHROMIUM_R3_EXISTING_PATHS
+        or (
+            len(F1_CHROMIUM_R4_DELTA_PATHS),
+            len(F1_CHROMIUM_R4_FINAL_AGGREGATE_ALLOWLIST),
+            len(F1_CHROMIUM_R4_EXISTING_PATHS),
+            len(F1_NEW_PATHS),
+        )
+        != (2, 12, 6, 6)
+    ):
+        raise VerificationError("F1 Chromium R4 static topology/path contract drifted")
+
+
 def _successor_static_contract_payload() -> dict[str, object]:
     return {
         "f0l_correction_4_head": PINNED_F0L_CORRECTION_4_HEAD,
@@ -2406,6 +2703,7 @@ def _successor_static_contract_payload() -> dict[str, object]:
 def _require_successor_static_contract() -> None:
     _require_f1_recovery_static_contract()
     _require_f1_chromium_r3_static_contract()
+    _require_f1_chromium_r4_static_contract()
     encoded = json.dumps(
         _successor_static_contract_payload(),
         ensure_ascii=False,
@@ -2699,22 +2997,50 @@ def _require_f1_chromium_r3_workflow_contract(source: str) -> None:
         )
 
 
+def _require_f1_chromium_recovery_workflow_guards(
+    *,
+    source: str,
+    active_slice: str,
+    recovery_version: str | None,
+) -> None:
+    """Apply R3 archive guards only after topology, never by marker discovery."""
+
+    if recovery_version is None:
+        return
+    if active_slice != "F1" or recovery_version not in {"R3", "R4"}:
+        raise VerificationError(
+            "F1 Chromium observer/archive guards require a confirmed F1 R3 or R4 topology"
+        )
+    # R4 deliberately inherits the byte-identical R3 uploader/schema contract.
+    _require_f1_chromium_r3_workflow_contract(source)
+
+
 def _require_successor_repository_contract(
     repo: Path,
     *,
     active_slice: str,
     base_head: str,
     f1_chromium_r3: bool = False,
+    f1_chromium_r4: bool = False,
 ) -> dict[str, object]:
+    if f1_chromium_r3 and f1_chromium_r4:
+        raise VerificationError("F1 Chromium R3 and R4 repository modes are exclusive")
     if f1_chromium_r3:
         _require_f1_chromium_r3_active_slice(active_slice)
+    if f1_chromium_r4:
+        _require_f1_chromium_r4_active_slice(active_slice)
+    f1_chromium_recovery = f1_chromium_r3 or f1_chromium_r4
     allowlist = (
-        F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST
-        if active_slice == "F1" and f1_chromium_r3
+        F1_CHROMIUM_R4_FINAL_AGGREGATE_ALLOWLIST
+        if active_slice == "F1" and f1_chromium_r4
         else (
-            F1_FINAL_AGGREGATE_ALLOWLIST
-            if active_slice == "F1"
-            else C2A_POST_F0L_ALLOWLIST
+            F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST
+            if active_slice == "F1" and f1_chromium_r3
+            else (
+                F1_FINAL_AGGREGATE_ALLOWLIST
+                if active_slice == "F1"
+                else C2A_POST_F0L_ALLOWLIST
+            )
         )
     )
     new_paths = F1_NEW_PATHS if active_slice == "F1" else C2A_NEW_PATHS
@@ -2724,7 +3050,7 @@ def _require_successor_repository_contract(
             for path in F1_FROZEN_PATHS
             if path != F1_CHROMIUM_R3_STUDIO_ROOT
         )
-        if active_slice == "F1" and f1_chromium_r3
+        if active_slice == "F1" and f1_chromium_recovery
         else (F1_FROZEN_PATHS if active_slice == "F1" else C2A_FROZEN_PATHS)
     )
     base_blobs: dict[str, str] = {}
@@ -2754,7 +3080,7 @@ def _require_successor_repository_contract(
         )
 
     if active_slice == "F1":
-        expected_path_proof = (12, 6, 6) if f1_chromium_r3 else (11, 6, 5)
+        expected_path_proof = (12, 6, 6) if f1_chromium_recovery else (11, 6, 5)
         if (len(allowlist), len(new_paths), len(base_blobs)) != expected_path_proof:
             raise VerificationError(
                 "F1 recovery aggregate/new/existing path proof drifted"
@@ -2772,6 +3098,8 @@ def _require_successor_repository_contract(
 
     if f1_chromium_r3:
         _require_f1_chromium_r3_production_studio_freeze(repo)
+    if f1_chromium_r4:
+        _require_f1_chromium_r4_production_studio_freeze(repo)
 
     migrations = tuple(
         line
@@ -2809,6 +3137,7 @@ def _require_successor_repository_contract(
         "existing_base_blobs": dict(sorted(base_blobs.items())),
         "frozen_objects": dict(sorted(frozen_objects.items())),
         "f1_chromium_r3_studio_freeze": f1_chromium_r3,
+        "f1_chromium_r4_studio_freeze": f1_chromium_r4,
         "migration_filenames": list(migrations),
     }
 
@@ -5498,6 +5827,271 @@ def f0l_self_check() -> dict[str, object]:
     else:
         raise VerificationError("F1 Chromium R3 self-check accepted C2A misuse")
 
+    f1_chromium_r4_child = "f" * 40
+    f1_chromium_r4_positive = {
+        "base_head": F1_RECOVERY_BASE_HEAD,
+        "delivery_head": f1_chromium_r4_child,
+        "commit_count": 5,
+        "ordered_commits": (
+            F1_RECOVERY_COMMIT_1,
+            F1_RECOVERY_COMMIT_2,
+            F1_CHROMIUM_R3_RC2_HEAD,
+            F1_CHROMIUM_R4_R3_HEAD,
+            f1_chromium_r4_child,
+        ),
+        "commit_parents": (
+            F1_RECOVERY_BASE_HEAD,
+            F1_RECOVERY_COMMIT_1,
+            F1_RECOVERY_COMMIT_2,
+            F1_CHROMIUM_R3_RC2_HEAD,
+            F1_CHROMIUM_R4_R3_HEAD,
+        ),
+        "commit_parent_counts": (1, 1, 1, 1, 1),
+        "commit_deltas": (
+            F1_POST_F0L_ALLOWLIST,
+            F1_RECOVERY_COMMIT_2_DELTA_PATHS,
+            F1_RECOVERY_COMMIT_3_DELTA_PATHS,
+            F1_CHROMIUM_R3_DELTA_PATHS,
+            F1_CHROMIUM_R4_DELTA_PATHS,
+        ),
+        "aggregate_paths": F1_CHROMIUM_R4_FINAL_AGGREGATE_ALLOWLIST,
+        "r3_tree": F1_CHROMIUM_R4_R3_TREE,
+    }
+    _require_f1_chromium_r4_topology(**f1_chromium_r4_positive)
+    for label, overrides in (
+        (
+            "extra fifth-child path",
+            {
+                "commit_deltas": (
+                    *f1_chromium_r4_positive["commit_deltas"][:4],
+                    F1_CHROMIUM_R4_DELTA_PATHS | {"unauthorized/fifth-path"},
+                )
+            },
+        ),
+        (
+            "missing fifth-child path",
+            {
+                "commit_deltas": (
+                    *f1_chromium_r4_positive["commit_deltas"][:4],
+                    F1_CHROMIUM_R4_DELTA_PATHS
+                    - {sorted(F1_CHROMIUM_R4_DELTA_PATHS)[0]},
+                )
+            },
+        ),
+        (
+            "fourth R3 delta drift",
+            {
+                "commit_deltas": (
+                    *f1_chromium_r4_positive["commit_deltas"][:3],
+                    F1_CHROMIUM_R3_DELTA_PATHS
+                    - {sorted(F1_CHROMIUM_R3_DELTA_PATHS)[0]},
+                    F1_CHROMIUM_R4_DELTA_PATHS,
+                )
+            },
+        ),
+        (
+            "fifth-child parent substitution",
+            {
+                "commit_parents": (
+                    *f1_chromium_r4_positive["commit_parents"][:4],
+                    "a" * 40,
+                )
+            },
+        ),
+        (
+            "fixed R3 parent substitution",
+            {
+                "commit_parents": (
+                    *f1_chromium_r4_positive["commit_parents"][:3],
+                    "a" * 40,
+                    F1_CHROMIUM_R4_R3_HEAD,
+                )
+            },
+        ),
+        ("fixed R3 tree substitution", {"r3_tree": "a" * 40}),
+        ("fifth-child merge", {"commit_parent_counts": (1, 1, 1, 1, 2)}),
+        (
+            "sixth commit",
+            {
+                "commit_count": 6,
+                "ordered_commits": (
+                    *f1_chromium_r4_positive["ordered_commits"],
+                    "a" * 40,
+                ),
+                "commit_parents": (
+                    *f1_chromium_r4_positive["commit_parents"],
+                    f1_chromium_r4_child,
+                ),
+                "commit_parent_counts": (1, 1, 1, 1, 1, 1),
+                "commit_deltas": (
+                    *f1_chromium_r4_positive["commit_deltas"],
+                    F1_CHROMIUM_R4_DELTA_PATHS,
+                ),
+            },
+        ),
+        (
+            "aggregate extra path",
+            {
+                "aggregate_paths": F1_CHROMIUM_R4_FINAL_AGGREGATE_ALLOWLIST
+                | {"unauthorized/thirteenth-path"}
+            },
+        ),
+    ):
+        try:
+            _require_f1_chromium_r4_topology(
+                **{**f1_chromium_r4_positive, **overrides}
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                f"F1 Chromium R4 self-check accepted {label}"
+            )
+    for prefix_index in range(4):
+        substituted_commits = list(f1_chromium_r4_positive["ordered_commits"])
+        substituted_commits[prefix_index] = "a" * 40
+        try:
+            _require_f1_chromium_r4_topology(
+                **{
+                    **f1_chromium_r4_positive,
+                    "ordered_commits": tuple(substituted_commits),
+                }
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                "F1 Chromium R4 self-check accepted fixed-prefix substitution"
+            )
+
+    r4_statuses = {path: "M" for path in F1_CHROMIUM_R4_DELTA_PATHS}
+    _require_f1_chromium_modified_delta_statuses(
+        recovery_label="F1 Chromium R4 fifth-child",
+        statuses=r4_statuses,
+        expected_paths=F1_CHROMIUM_R4_DELTA_PATHS,
+    )
+    for label, statuses in (
+        ("extra status path", {**r4_statuses, "unauthorized/path": "M"}),
+        (
+            "missing status path",
+            {
+                path: status
+                for path, status in r4_statuses.items()
+                if path != sorted(r4_statuses)[0]
+            },
+        ),
+        *(
+            (
+                f"status {status}",
+                {
+                    **r4_statuses,
+                    sorted(r4_statuses)[0]: status,
+                },
+            )
+            for status in ("A", "D", "R")
+        ),
+    ):
+        try:
+            _require_f1_chromium_modified_delta_statuses(
+                recovery_label="F1 Chromium R4 fifth-child",
+                statuses=statuses,
+                expected_paths=F1_CHROMIUM_R4_DELTA_PATHS,
+            )
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                f"F1 Chromium R4 self-check accepted {label}"
+            )
+
+    r4_studio_base = {
+        F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH: (
+            "100644",
+            "blob",
+            F1_CHROMIUM_R4_R3_PREIMAGE_BLOBS[
+                F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH
+            ],
+        ),
+        f"{F1_CHROMIUM_R3_STUDIO_ROOT}/static/production_studio/audited_draft.js": (
+            "100644",
+            "blob",
+            "a" * 40,
+        ),
+    }
+    r4_studio_delivery = {
+        **r4_studio_base,
+        F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH: ("100644", "blob", "b" * 40),
+    }
+    _require_f1_chromium_r4_studio_freeze_entries(
+        base_entries=r4_studio_base,
+        delivery_entries=r4_studio_delivery,
+    )
+    r4_frozen_base = {
+        path: ("100644", "blob", blob)
+        for path, blob in F1_CHROMIUM_R4_FROZEN_BLOBS.items()
+    }
+    _require_f1_chromium_r4_frozen_entries(
+        base_entries=r4_frozen_base,
+        delivery_entries=r4_frozen_base,
+    )
+    for label, callback in (
+        (
+            "audited_authoring mode drift",
+            lambda: _require_f1_chromium_r4_studio_freeze_entries(
+                base_entries=r4_studio_base,
+                delivery_entries={
+                    **r4_studio_delivery,
+                    F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH: (
+                        "100755",
+                        "blob",
+                        "b" * 40,
+                    ),
+                },
+            ),
+        ),
+        (
+            "other Production Studio file drift",
+            lambda: _require_f1_chromium_r4_studio_freeze_entries(
+                base_entries=r4_studio_base,
+                delivery_entries={
+                    **r4_studio_delivery,
+                    f"{F1_CHROMIUM_R3_STUDIO_ROOT}/static/production_studio/audited_draft.js": (
+                        "100644",
+                        "blob",
+                        "c" * 40,
+                    ),
+                },
+            ),
+        ),
+        *(
+            (
+                f"frozen {path} drift",
+                lambda path=path: _require_f1_chromium_r4_frozen_entries(
+                    base_entries=r4_frozen_base,
+                    delivery_entries={
+                        **r4_frozen_base,
+                        path: ("100644", "blob", "a" * 40),
+                    },
+                ),
+            )
+            for path in F1_CHROMIUM_R4_FROZEN_BLOBS
+        ),
+    ):
+        try:
+            callback()
+        except VerificationError:
+            negative_cases += 1
+        else:
+            raise VerificationError(
+                f"F1 Chromium R4 self-check accepted {label}"
+            )
+    try:
+        _require_f1_chromium_r4_active_slice("C2A")
+    except VerificationError:
+        negative_cases += 1
+    else:
+        raise VerificationError("F1 Chromium R4 self-check accepted C2A misuse")
+
     _require_changed_path_contract(
         active_slice="F0L",
         changed=ACTIVE_F0L_ALLOWLIST,
@@ -6223,6 +6817,60 @@ class ProjectQuerySet:
             raise VerificationError(
                 f"F1 Chromium R3 workflow self-check accepted {label}"
             )
+    for recovery_version in ("R3", "R4"):
+        _require_f1_chromium_recovery_workflow_guards(
+            source=f1_r3_workflow_source,
+            active_slice="F1",
+            recovery_version=recovery_version,
+        )
+        for label, invalid_source in (
+            (
+                "missing uploader",
+                f1_r3_workflow_source.replace(
+                    "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+                    "actions/upload-artifact@REMOVED",
+                    1,
+                ),
+            ),
+            (
+                "missing evidence guard",
+                f1_r3_workflow_source.replace(
+                    "F1_CHROMIUM_R3_ARCHIVE_COMPLETE=PASS",
+                    "F1_CHROMIUM_R3_ARCHIVE_COMPLETE=REMOVED",
+                    1,
+                ),
+            ),
+        ):
+            try:
+                _require_f1_chromium_recovery_workflow_guards(
+                    source=invalid_source,
+                    active_slice="F1",
+                    recovery_version=recovery_version,
+                )
+            except VerificationError:
+                negative_cases += 1
+            else:
+                raise VerificationError(
+                    "F1 Chromium recovery workflow self-check accepted "
+                    f"{recovery_version} {label}"
+                )
+    _require_f1_chromium_recovery_workflow_guards(
+        source="generic C2A/RC2 source is intentionally unguarded",
+        active_slice="C2A",
+        recovery_version=None,
+    )
+    try:
+        _require_f1_chromium_recovery_workflow_guards(
+            source=f1_r3_workflow_source,
+            active_slice="C2A",
+            recovery_version="R4",
+        )
+    except VerificationError:
+        negative_cases += 1
+    else:
+        raise VerificationError(
+            "F1 Chromium recovery workflow self-check accepted C2A misuse"
+        )
 
     with TemporaryDirectory(prefix="f0l-successor-self-check-") as temp_name:
         temp_root = Path(temp_name)
@@ -7221,6 +7869,8 @@ def verify_post_f0l(
         raise VerificationError(f"{active_slice} is not based on accepted F0L")
     commit_count = int(_git(repo, "rev-list", "--count", f"{base_head}..HEAD"))
     f1_chromium_r3 = active_slice == "F1" and commit_count == 4
+    f1_chromium_r4 = active_slice == "F1" and commit_count == 5
+    f1_chromium_recovery_version: str | None = None
     delivery_parent = _git(repo, "rev-parse", "HEAD^") if commit_count else base_head
     delivery_head = _require_exact_object_id(
         f"{active_slice} delivery HEAD",
@@ -7250,12 +7900,16 @@ def verify_post_f0l(
         _git(repo, "status", "--porcelain=v1", "--untracked-files=all")
     )
     allowlist = (
-        F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST
-        if f1_chromium_r3
+        F1_CHROMIUM_R4_FINAL_AGGREGATE_ALLOWLIST
+        if f1_chromium_r4
         else (
-            F1_FINAL_AGGREGATE_ALLOWLIST
-            if active_slice == "F1"
-            else C2A_POST_F0L_ALLOWLIST
+            F1_CHROMIUM_R3_FINAL_AGGREGATE_ALLOWLIST
+            if f1_chromium_r3
+            else (
+                F1_FINAL_AGGREGATE_ALLOWLIST
+                if active_slice == "F1"
+                else C2A_POST_F0L_ALLOWLIST
+            )
         )
     )
     changed = _changed_paths(repo, base_head)
@@ -7294,6 +7948,33 @@ def verify_post_f0l(
                 ),
             )
             _require_f1_chromium_r3_delta_statuses(repo)
+            f1_chromium_recovery_version = "R3"
+        elif f1_chromium_r4:
+            _require_f1_chromium_r4_topology(
+                base_head=base_head,
+                delivery_head=delivery_head,
+                commit_count=commit_count,
+                ordered_commits=ordered_commits,
+                commit_parents=commit_parents,
+                commit_parent_counts=tuple(
+                    len(
+                        _git(repo, "show", "-s", "--format=%P", commit).split()
+                    )
+                    for commit in ordered_commits
+                ),
+                commit_deltas=commit_deltas,
+                aggregate_paths=changed,
+                r3_tree=_git(
+                    repo,
+                    "rev-parse",
+                    f"{F1_CHROMIUM_R4_R3_HEAD}^{{tree}}",
+                ),
+            )
+            _require_f1_chromium_r3_delta_statuses(
+                repo, delivery_revision=F1_CHROMIUM_R4_R3_HEAD
+            )
+            _require_f1_chromium_r4_delta_statuses(repo)
+            f1_chromium_recovery_version = "R4"
         else:
             _require_f1_recovery_topology(
                 base_head=base_head,
@@ -7309,13 +7990,18 @@ def verify_post_f0l(
         active_slice=active_slice,
         base_head=base_head,
         f1_chromium_r3=f1_chromium_r3,
+        f1_chromium_r4=f1_chromium_r4,
     )
     _require_successor_test_topology(repo, active_slice=active_slice)
     workflow_source = (
         repo / ".github/workflows/conflict-analysis.yml"
     ).read_text(encoding="utf-8")
     _require_successor_workflow_contract(workflow_source)
-    _require_f1_chromium_r3_workflow_contract(workflow_source)
+    _require_f1_chromium_recovery_workflow_guards(
+        source=workflow_source,
+        active_slice=active_slice,
+        recovery_version=f1_chromium_recovery_version,
+    )
     delivery_tree = _require_exact_object_id(
         f"{active_slice} delivery TREE",
         _git(repo, "rev-parse", "HEAD^{tree}"),
@@ -7343,6 +8029,7 @@ def verify_post_f0l(
         "delivery_commit_count": commit_count,
         "delivery_commits": list(ordered_commits),
         "delivery_parent": delivery_parent,
+        "f1_chromium_recovery_version": f1_chromium_recovery_version,
         "new_paths": repository_contract["new_paths"],
         "existing_base_blobs": repository_contract["existing_base_blobs"],
         "frozen_objects": repository_contract["frozen_objects"],
@@ -7378,8 +8065,30 @@ def verify_post_f0l(
             if f1_chromium_r3
             else None
         ),
+        "f1_chromium_r4_topology": (
+            {
+                "r3_head": F1_CHROMIUM_R4_R3_HEAD,
+                "r3_tree": F1_CHROMIUM_R4_R3_TREE,
+                "r3_parent": F1_CHROMIUM_R4_R3_PARENT,
+                "fifth_parent": F1_CHROMIUM_R4_R3_HEAD,
+                "fourth_delta_paths": sorted(F1_CHROMIUM_R3_DELTA_PATHS),
+                "fifth_delta_paths": sorted(F1_CHROMIUM_R4_DELTA_PATHS),
+                "aggregate_path_count": len(
+                    F1_CHROMIUM_R4_FINAL_AGGREGATE_ALLOWLIST
+                ),
+                "existing_path_count": len(F1_CHROMIUM_R4_EXISTING_PATHS),
+                "new_path_count": len(F1_NEW_PATHS),
+                "production_studio_exception": F1_CHROMIUM_R3_STUDIO_EXCEPTION_PATH,
+                "frozen_r3_blobs": dict(sorted(F1_CHROMIUM_R4_FROZEN_BLOBS.items())),
+            }
+            if f1_chromium_r4
+            else None
+        ),
         "f1_chromium_r3_production_studio_freeze": repository_contract[
             "f1_chromium_r3_studio_freeze"
+        ],
+        "f1_chromium_r4_production_studio_freeze": repository_contract[
+            "f1_chromium_r4_studio_freeze"
         ],
         "functional_ci_evidence": "PASS",
         "successor_ci_evidence": evidence,

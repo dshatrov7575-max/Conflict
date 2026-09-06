@@ -223,6 +223,222 @@ const assertSingleBootstrapWrite = (count) => {
   assert.equal(count, 1, "bootstrap was retried or an unexpected bootstrap write occurred");
 };
 
+const authoringReadyEventName = "studio:authoring-ready";
+const authoringReadyError = (code) => new Error(`authoring-ready barrier ${code}`);
+const sha256Pattern = /^[0-9a-f]{64}$/;
+
+const validateDestinationReadyContext = ({ expectation, destination, context }) => {
+  if (!destination || context?.id === expectation.entryContextId) {
+    throw authoringReadyError("CONTEXT_STALE");
+  }
+  if (
+    context?.sessionId !== expectation.sessionId ||
+    context?.isDefault !== true ||
+    context?.frameId !== destination.frameId
+  ) {
+    throw authoringReadyError("CONTEXT_MISMATCH");
+  }
+  return context;
+};
+
+const validateDestinationAuthoringReady = ({ expectation, detail }) => {
+  if (!detail || typeof detail !== "object") {
+    throw authoringReadyError("EVENT_INVALID");
+  }
+  if (
+    normalizeBootstrapIdentity(detail.definitionId) !== expectation.definitionId ||
+    normalizeBootstrapIdentity(detail.projectId) !== expectation.projectId
+  ) {
+    throw authoringReadyError("EVENT_IDENTITY_MISMATCH");
+  }
+  if (
+    typeof detail.manifestHash !== "string" ||
+    !sha256Pattern.test(detail.manifestHash) ||
+    detail.etag !== `"${detail.manifestHash}"`
+  ) {
+    throw authoringReadyError("EVENT_REPRESENTATION_MISMATCH");
+  }
+  return detail;
+};
+
+const validateDestinationIdentity = ({ expectation, destination, detail, identity }) => {
+  if (
+    !identity ||
+    identity.url !== expectation.destinationUrl ||
+    identity.bufferPresent !== true ||
+    normalizeBootstrapIdentity(identity.definitionId) !== expectation.definitionId ||
+    normalizeBootstrapIdentity(identity.projectId) !== expectation.projectId ||
+    identity.manifestHash !== detail.manifestHash ||
+    identity.etag !== detail.etag ||
+    destination?.frameId !== expectation.frameId
+  ) {
+    throw authoringReadyError("DESTINATION_IDENTITY_MISMATCH");
+  }
+  return identity;
+};
+
+const validateDestinationRepresentation = ({ expectation, detail, representation }) => {
+  if (
+    !representation ||
+    representation.status !== 200 ||
+    normalizeBootstrapIdentity(representation.definitionId) !== expectation.definitionId ||
+    normalizeBootstrapIdentity(representation.projectId) !== expectation.projectId ||
+    typeof representation.manifestHash !== "string" ||
+    !sha256Pattern.test(representation.manifestHash) ||
+    representation.etag !== `"${representation.manifestHash}"` ||
+    detail.manifestHash !== representation.manifestHash ||
+    detail.etag !== representation.etag
+  ) {
+    throw authoringReadyError("REPRESENTATION_MISMATCH");
+  }
+  return representation;
+};
+
+const assertBootstrapPersistenceIsEmpty = ({ localStorageKeys, sessionStorageLength, localStorageValues }) => {
+  assert.deepEqual(localStorageKeys, []);
+  assert.equal(sessionStorageLength, 0);
+  return localStorageValues;
+};
+
+const createDestinationAuthoringReadyGuard = (expectation, { timeoutMs, diagnostics = [] }) => {
+  let destination;
+  let context;
+  let readyDetail;
+  let settled = false;
+  let timer;
+  let resolvePromise;
+  let rejectPromise;
+  const promise = new Promise((resolve, reject) => {
+    resolvePromise = resolve;
+    rejectPromise = reject;
+  });
+  const fail = (stage) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timer);
+    rejectPromise(bootstrapObserverFailure(diagnostics, `authoring-ready-${stage}`));
+  };
+  const complete = () => {
+    if (settled || !destination || !context || !readyDetail) return;
+    settled = true;
+    clearTimeout(timer);
+    resolvePromise({ destination, context, detail: readyDetail });
+  };
+  appendBootstrapDiagnostic(diagnostics, {
+    stage: "authoring-ready-armed",
+    method: "window.__studioContractEvents",
+    contextId: null,
+    frameId: expectation.frameId,
+    loaderId: null,
+    result: "waiting",
+  });
+  timer = setTimeout(() => fail("timeout"), timeoutMs);
+
+  return {
+    cancel() {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+    },
+    diagnostics,
+    get destination() {
+      return destination;
+    },
+    get context() {
+      return context;
+    },
+    get ready() {
+      return readyDetail !== undefined;
+    },
+    promise,
+    acceptContext(candidate) {
+      appendBootstrapDiagnostic(diagnostics, {
+        stage: "authoring-ready-context",
+        method: "Runtime.executionContextCreated",
+        contextId: candidate?.id ?? null,
+        frameId: candidate?.frameId ?? null,
+        loaderId: destination?.loaderId ?? null,
+        result: "received",
+      });
+      try {
+        context = validateDestinationReadyContext({ expectation, destination, context: candidate });
+      } catch {
+        fail("context-rejected");
+        return false;
+      }
+      complete();
+      return true;
+    },
+    acceptReady(detail) {
+      appendBootstrapDiagnostic(diagnostics, {
+        stage: "authoring-ready-event",
+        method: "window.__studioContractEvents",
+        contextId: context?.id ?? null,
+        frameId: destination?.frameId ?? null,
+        loaderId: destination?.loaderId ?? null,
+        result: "received",
+      });
+      try {
+        readyDetail = validateDestinationAuthoringReady({ expectation, detail });
+      } catch {
+        fail("event-rejected");
+        return false;
+      }
+      complete();
+      return true;
+    },
+    observeContextDestroyed(params, eventSessionId) {
+      if (
+        settled ||
+        eventSessionId !== expectation.sessionId ||
+        !context ||
+        params.executionContextId !== context.id
+      ) {
+        return;
+      }
+      appendBootstrapDiagnostic(diagnostics, {
+        stage: "authoring-ready-context-destroyed",
+        method: "Runtime.executionContextDestroyed",
+        contextId: context.id,
+        frameId: context.frameId,
+        loaderId: destination?.loaderId ?? null,
+        result: "received",
+      });
+      fail("context-destroyed");
+    },
+    observeNavigation(params, eventSessionId) {
+      if (settled || eventSessionId !== expectation.sessionId || !isMainFrame(params.frame)) return;
+      const frame = params.frame;
+      appendBootstrapDiagnostic(diagnostics, {
+        stage: "authoring-ready-navigation",
+        method: "Page.frameNavigated",
+        contextId: context?.id ?? null,
+        frameId: frame?.id ?? null,
+        loaderId: frame?.loaderId ?? null,
+        result: "received",
+      });
+      try {
+        if (
+          frame?.id !== expectation.frameId ||
+          new URL(frame.url).href !== expectation.destinationUrl ||
+          !frame.loaderId
+        ) {
+          throw authoringReadyError("UNEXPECTED_NAVIGATION");
+        }
+        if (destination && destination.loaderId !== frame.loaderId) {
+          throw authoringReadyError("UNEXPECTED_NAVIGATION");
+        }
+        destination = { frameId: frame.id, loaderId: frame.loaderId };
+      } catch {
+        fail("navigation-rejected");
+      }
+    },
+    observeLoadOrReadback() {
+      // A load or GET proves neither authoring readiness nor storage cleanup.
+    },
+  };
+};
+
 const runBootstrapObserverSelfCheck = async () => {
   const expectation = Object.freeze({
     sessionId: "self-check-session",
@@ -308,6 +524,102 @@ const runBootstrapObserverSelfCheck = async () => {
   wrongContextFrame.observeBinding(binding(), expectation.sessionId);
   await assert.rejects(wrongContextFrame.promise, /binding-rejected/);
 
+  const readyExpectation = Object.freeze({
+    ...expectation,
+    entryContextId: expectation.contextId,
+  });
+  const readyDetail = Object.freeze({
+    definitionId: expectation.definitionId,
+    projectId: expectation.projectId,
+    manifestHash: "a".repeat(64),
+    etag: `"${"a".repeat(64)}"`,
+  });
+  const readyContext = Object.freeze({
+    id: expectation.contextId + 1,
+    sessionId: expectation.sessionId,
+    isDefault: true,
+    frameId: expectation.frameId,
+  });
+  const readyNavigation = { frame: destination.frame };
+
+  const bufferedReady = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  bufferedReady.observeNavigation(readyNavigation, expectation.sessionId);
+  bufferedReady.acceptReady(readyDetail);
+  assert.equal(bufferedReady.ready, true);
+  bufferedReady.acceptContext(readyContext);
+  assert.deepEqual((await bufferedReady.promise).detail, readyDetail);
+
+  const laterReady = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  laterReady.observeNavigation(readyNavigation, expectation.sessionId);
+  laterReady.acceptContext(readyContext);
+  const afterWaiting = laterReady.promise;
+  laterReady.acceptReady(readyDetail);
+  assert.deepEqual((await afterWaiting).detail, readyDetail);
+
+  const loadOrGetOnly = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  loadOrGetOnly.observeNavigation(readyNavigation, expectation.sessionId);
+  loadOrGetOnly.acceptContext(readyContext);
+  loadOrGetOnly.observeLoadOrReadback();
+  assert.equal(loadOrGetOnly.ready, false);
+  loadOrGetOnly.cancel();
+
+  const staleReady = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  staleReady.observeNavigation(readyNavigation, expectation.sessionId);
+  staleReady.acceptContext(readyContext);
+  staleReady.acceptReady({ ...readyDetail, definitionId: "55555555-5555-4555-8555-555555555555" });
+  await assert.rejects(staleReady.promise, /authoring-ready-event-rejected/);
+
+  const wrongReadyProject = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  wrongReadyProject.observeNavigation(readyNavigation, expectation.sessionId);
+  wrongReadyProject.acceptContext(readyContext);
+  wrongReadyProject.acceptReady({ ...readyDetail, projectId: "66666666-6666-4666-8666-666666666666" });
+  await assert.rejects(wrongReadyProject.promise, /authoring-ready-event-rejected/);
+
+  const wrongReadyContext = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  wrongReadyContext.observeNavigation(readyNavigation, expectation.sessionId);
+  wrongReadyContext.acceptContext({ ...readyContext, id: expectation.contextId });
+  await assert.rejects(wrongReadyContext.promise, /authoring-ready-context-rejected/);
+
+  const wrongReadyFrame = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  wrongReadyFrame.observeNavigation(
+    { frame: { ...destination.frame, id: "self-check-wrong-ready-frame" } },
+    expectation.sessionId,
+  );
+  await assert.rejects(wrongReadyFrame.promise, /authoring-ready-navigation-rejected/);
+
+  const unexpectedNavigation = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  unexpectedNavigation.observeNavigation(readyNavigation, expectation.sessionId);
+  unexpectedNavigation.acceptContext(readyContext);
+  unexpectedNavigation.observeNavigation(
+    { frame: { ...destination.frame, loaderId: "self-check-next-loader" } },
+    expectation.sessionId,
+  );
+  await assert.rejects(unexpectedNavigation.promise, /authoring-ready-navigation-rejected/);
+
+  const destroyedContext = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  destroyedContext.observeNavigation(readyNavigation, expectation.sessionId);
+  destroyedContext.acceptContext(readyContext);
+  destroyedContext.observeContextDestroyed({ executionContextId: readyContext.id }, expectation.sessionId);
+  await assert.rejects(destroyedContext.promise, /authoring-ready-context-destroyed/);
+
+  const absentReady = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 10 });
+  absentReady.observeNavigation(readyNavigation, expectation.sessionId);
+  absentReady.acceptContext(readyContext);
+  await assert.rejects(absentReady.promise, /authoring-ready-timeout/);
+
+  const readyThenPoisonedStorage = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  readyThenPoisonedStorage.observeNavigation(readyNavigation, expectation.sessionId);
+  readyThenPoisonedStorage.acceptContext(readyContext);
+  readyThenPoisonedStorage.acceptReady(readyDetail);
+  await readyThenPoisonedStorage.promise;
+  assert.throws(
+    () => assertBootstrapPersistenceIsEmpty({
+      localStorageKeys: ["conflict-analysis-studio:audited-draft-layout:v1"],
+      sessionStorageLength: 0,
+      localStorageValues: ["poisoned"],
+    }),
+  );
+
   const absent = createBootstrapObserver(expectation, { timeoutMs: 10 });
   await assert.rejects(absent.promise, /bootstrap observer failed at timeout/);
   assertSingleBootstrapWrite(1);
@@ -382,6 +694,7 @@ try {
     if (eventSessionId !== sessionId || !event.context?.auxData?.frameId) return;
     executionContexts.set(event.context.id, {
       id: event.context.id,
+      sessionId: eventSessionId,
       frameId: event.context.auxData.frameId,
       isDefault: event.context.auxData.isDefault === true,
     });
@@ -484,6 +797,17 @@ try {
   const mainExecutionContext = (frameId) => [...executionContexts.values()]
     .filter((context) => context.frameId === frameId && context.isDefault)
     .at(-1);
+  const evaluateInExecutionContext = async (expression, contextId) => {
+    const result = await client.send(
+      "Runtime.evaluate",
+      { expression, contextId, awaitPromise: true, returnByValue: true, userGesture: true },
+      sessionId,
+    );
+    if (result.exceptionDetails) {
+      throw authoringReadyError("DESTINATION_EVALUATION_FAILED");
+    }
+    return result.result?.value;
+  };
   const waitForMainExecutionContext = async (frameId) => {
     const existing = mainExecutionContext(frameId);
     if (existing) return existing;
@@ -635,6 +959,7 @@ try {
   const bootstrapExpectation = Object.freeze({
     sessionId,
     contextId: entryContext.id,
+    entryContextId: entryContext.id,
     contextIsDefault: entryContext.isDefault,
     contextFrameId: entryContext.frameId,
     frameId: entryFrame.id,
@@ -646,7 +971,28 @@ try {
     operationId: normalizeBootstrapIdentity(bootstrapAttempt.operationId),
     projectPrimaryLanguage: "ru",
   });
-  const bootstrapObserver = createBootstrapObserver(bootstrapExpectation, { timeoutMs });
+  const bootstrapDeadline = Date.now() + timeoutMs;
+  const remainingBootstrapBudget = async (promise, stage) => {
+    const remaining = bootstrapDeadline - Date.now();
+    if (remaining <= 0) throw authoringReadyError(`${stage}_TIMEOUT`);
+    let timer;
+    try {
+      return await Promise.race([
+        promise,
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(authoringReadyError(`${stage}_TIMEOUT`)), remaining);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+  const bootstrapObserver = createBootstrapObserver(bootstrapExpectation, {
+    timeoutMs: Math.max(1, bootstrapDeadline - Date.now()),
+  });
+  const bootstrapReadyGuard = createDestinationAuthoringReadyGuard(bootstrapExpectation, {
+    timeoutMs: Math.max(1, bootstrapDeadline - Date.now()),
+  });
   const removeBootstrapBinding = client.on(
     "Runtime.bindingCalled",
     (event, eventSessionId) => bootstrapObserver.observeBinding(event, eventSessionId),
@@ -659,7 +1005,18 @@ try {
     "Page.lifecycleEvent",
     (event, eventSessionId) => bootstrapObserver.observeLifecycle(event, eventSessionId),
   );
+  const removeBootstrapReadyNavigation = client.on(
+    "Page.frameNavigated",
+    (event, eventSessionId) => bootstrapReadyGuard.observeNavigation(event, eventSessionId),
+  );
+  const removeBootstrapReadyContextDestroyed = client.on(
+    "Runtime.executionContextDestroyed",
+    (event, eventSessionId) => bootstrapReadyGuard.observeContextDestroyed(event, eventSessionId),
+  );
   let bootstrap;
+  let bootstrapReady;
+  let bootstrapRepresentation;
+  let bootstrapPersistence;
   try {
     await client.evaluate(`(() => {
     const language = document.querySelector("#bootstrap-project-primary-language");
@@ -671,15 +1028,159 @@ try {
     language.dispatchEvent(new Event("input", { bubbles: true }));
     form.requestSubmit();
   })()`, sessionId);
-    const observedBootstrap = await bootstrapObserver.promise;
+    const observedBootstrap = await remainingBootstrapBudget(bootstrapObserver.promise, "BOOTSTRAP");
     bootstrap = observedBootstrap.detail;
     assert.equal(observedBootstrap.destination.frameId, entryFrame.id);
     assert.ok(observedBootstrap.destination.loaderId);
+    assert.deepEqual(bootstrapReadyGuard.destination, observedBootstrap.destination);
+
+    const destinationFrameTree = await remainingBootstrapBudget(
+      client.send("Page.getFrameTree", {}, sessionId),
+      "DESTINATION_FRAME",
+    );
+    const destinationFrame = destinationFrameTree.frameTree?.frame;
+    if (
+      !destinationFrame ||
+      destinationFrame.id !== observedBootstrap.destination.frameId ||
+      destinationFrame.loaderId !== observedBootstrap.destination.loaderId ||
+      new URL(destinationFrame.url).href !== bootstrapExpectation.destinationUrl
+    ) {
+      throw authoringReadyError("DESTINATION_FRAME_MISMATCH");
+    }
+
+    const waitForDestinationContext = async () => {
+      const acceptExisting = () => {
+        const candidate = mainExecutionContext(observedBootstrap.destination.frameId);
+        if (!candidate || candidate.id === entryContext.id) return null;
+        return bootstrapReadyGuard.acceptContext(candidate) ? candidate : null;
+      };
+      const existing = acceptExisting();
+      if (existing) return existing;
+      let removeContextListener;
+      const contextPromise = new Promise((resolve, reject) => {
+        removeContextListener = client.on(
+          "Runtime.executionContextCreated",
+          (event, eventSessionId) => {
+            if (eventSessionId !== sessionId) return;
+            const candidate = executionContexts.get(event.context?.id);
+            if (
+              !candidate ||
+              candidate.id === entryContext.id ||
+              candidate.frameId !== observedBootstrap.destination.frameId ||
+              candidate.isDefault !== true
+            ) {
+              return;
+            }
+            if (bootstrapReadyGuard.acceptContext(candidate)) {
+              resolve(candidate);
+            } else {
+              reject(authoringReadyError("DESTINATION_CONTEXT_REJECTED"));
+            }
+          },
+        );
+      });
+      try {
+        return await remainingBootstrapBudget(
+          Promise.race([contextPromise, bootstrapReadyGuard.promise]),
+          "DESTINATION_CONTEXT",
+        );
+      } finally {
+        removeContextListener?.();
+      }
+    };
+    const destinationContext = await waitForDestinationContext();
+    if (!destinationContext || destinationContext.id !== bootstrapReadyGuard.context?.id) {
+      throw authoringReadyError("DESTINATION_CONTEXT_MISMATCH");
+    }
+
+    const bufferedReady = evaluateInExecutionContext(`(() => {
+      const events = window.__studioContractEvents;
+      if (!Array.isArray(events)) throw new Error("authoring-ready event buffer is unavailable");
+      const buffered = events.find((item) => item?.name === ${JSON.stringify(authoringReadyEventName)});
+      if (buffered) return buffered.detail || null;
+      return new Promise((resolve) => {
+        window.addEventListener(${JSON.stringify(authoringReadyEventName)}, (event) => {
+          let detail = null;
+          try {
+            detail = JSON.parse(JSON.stringify(event.detail || null));
+          } catch {
+            detail = null;
+          }
+          resolve(detail);
+        }, { once: true });
+      });
+    })()`, destinationContext.id);
+    bufferedReady.catch(() => {});
+    const destinationReadyDetail = await remainingBootstrapBudget(
+      Promise.race([bufferedReady, bootstrapReadyGuard.promise]),
+      "AUTHORING_READY",
+    );
+    if (!bootstrapReadyGuard.acceptReady(destinationReadyDetail)) {
+      await bootstrapReadyGuard.promise;
+    }
+    bootstrapReady = await remainingBootstrapBudget(
+      bootstrapReadyGuard.promise,
+      "AUTHORING_READY",
+    );
+
+    const destinationIdentity = await remainingBootstrapBudget(
+      evaluateInExecutionContext(`({
+        url: location.href,
+        bufferPresent: Array.isArray(window.__studioContractEvents),
+        definitionId: document.querySelector("#audited-draft-app")?.dataset.definitionId || "",
+        projectId: document.querySelector("#audited-draft-app")?.dataset.projectId || "",
+        manifestHash: document.querySelector("#audited-draft-app")?.dataset.manifestHash || "",
+        etag: document.querySelector("#audited-draft-app")?.dataset.etag || "",
+      })`, destinationContext.id),
+      "AUTHORING_IDENTITY",
+    );
+    validateDestinationIdentity({
+      expectation: bootstrapExpectation,
+      destination: bootstrapReady.destination,
+      detail: bootstrapReady.detail,
+      identity: destinationIdentity,
+    });
+
+    bootstrapRepresentation = await remainingBootstrapBudget(
+      evaluateInExecutionContext(`fetch(${JSON.stringify("/api/foundation/definitions/")} + ${JSON.stringify(bootstrap.definitionId)} + "/", {
+        credentials: "same-origin",
+        cache: "no-store",
+      }).then(async (response) => {
+        const dto = await response.json();
+        return {
+          status: response.status,
+          definitionId: dto?.id || "",
+          projectId: dto?.project_id || "",
+          manifestHash: dto?.manifest_hash || "",
+          etag: response.headers.get("ETag") || "",
+          projectPrimaryLanguage: dto?.manifest?.project?.default_locale || "",
+        };
+      })`, destinationContext.id),
+      "AUTHORING_REPRESENTATION",
+    );
+    validateDestinationRepresentation({
+      expectation: bootstrapExpectation,
+      detail: bootstrapReady.detail,
+      representation: bootstrapRepresentation,
+    });
+
+    bootstrapPersistence = await remainingBootstrapBudget(
+      evaluateInExecutionContext(`({
+        localStorageKeys: Object.keys(localStorage).sort(),
+        localStorageValues: Object.values(localStorage),
+        sessionStorageLength: sessionStorage.length,
+      })`, destinationContext.id),
+      "AUTHORING_PERSISTENCE",
+    );
+    assertBootstrapPersistenceIsEmpty(bootstrapPersistence);
   } finally {
     removeBootstrapBinding();
     removeBootstrapNavigation();
     removeBootstrapLifecycle();
+    removeBootstrapReadyNavigation();
+    removeBootstrapReadyContextDestroyed();
     bootstrapObserver.cancel();
+    bootstrapReadyGuard.cancel();
   }
   assert.equal(normalizeBootstrapIdentity(bootstrap.projectId), bootstrapExpectation.projectId);
   assert.equal(normalizeBootstrapIdentity(bootstrap.definitionId), bootstrapExpectation.definitionId);
@@ -704,20 +1205,9 @@ try {
   assert.equal(JSON.parse(bootstrapRequest.postData).project_primary_language, "ru");
   assert.equal(bootstrapRequest.headers["idempotency-key"], bootstrap.operationId);
   assert.ok(bootstrapRequest.headers["x-csrftoken"]);
-  const bootstrapReadback = await client.evaluate(
-    `fetch(${JSON.stringify("/api/foundation/definitions/")} + ${JSON.stringify(bootstrap.definitionId)} + "/", { credentials: "same-origin", cache: "no-store" }).then((response) => response.json())`,
-    sessionId,
-  );
-  assert.equal(bootstrapReadback.id, bootstrap.definitionId);
-  assert.equal(bootstrapReadback.project_id, bootstrap.projectId);
-  assert.equal(bootstrapReadback.manifest.project.default_locale, "ru");
-  const bootstrapPersistence = await client.evaluate(`({
-    localStorageKeys: Object.keys(localStorage).sort(),
-    localStorageValues: Object.values(localStorage),
-    sessionStorageLength: sessionStorage.length,
-  })`, sessionId);
-  assert.deepEqual(bootstrapPersistence.localStorageKeys, []);
-  assert.equal(bootstrapPersistence.sessionStorageLength, 0);
+  assert.equal(bootstrapRepresentation.definitionId, bootstrap.definitionId);
+  assert.equal(bootstrapRepresentation.projectId, bootstrap.projectId);
+  assert.equal(bootstrapRepresentation.projectPrimaryLanguage, "ru");
   assert.equal(
     bootstrapPersistence.localStorageValues.some(
       (value) => value.includes("ru") || value.includes(bootstrap.receiptSha256),
