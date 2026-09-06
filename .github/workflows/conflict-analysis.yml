@@ -2552,6 +2552,15 @@ jobs:
       - name: Run deterministic positive and bounded negative verifier self-checks
         run: python scripts/verify_production_studio_c_allowlist.py --self-check
 
+      - name: Run bounded F1 Chromium bootstrap-observer self-checks
+        if: env.ACTIVE_SLICE == 'F1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node production_studio/browser_tests/audited_authoring.mjs \
+            --self-check-observation
+          echo "F1_CHROMIUM_R3_BOOTSTRAP_OBSERVER_SELF_CHECK=PASS"
+
       - name: Verify exact route, ancestry, 26-path allowlist and bounded fixture deltas
         if: env.ACTIVE_SLICE == 'F0L'
         run: |
@@ -2975,6 +2984,22 @@ jobs:
           print(f"{active_slice}_SQLITE_EXACT_REGISTRY_AND_TOTALS=PASS")
           PY
 
+      - name: Build one exact successor wheel for C0 runtime
+        if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip wheel --no-deps --wheel-dir "$SUCCESSOR_EVIDENCE_DIR" .
+          mapfile -t wheels < <(
+            find "$SUCCESSOR_EVIDENCE_DIR" -maxdepth 1 -type f -name '*.whl' -print
+          )
+          test "${#wheels[@]}" -eq 1
+          wheel="${wheels[0]}"
+          test "$(basename "$wheel")" = conflict_analysis-0.1.0-py3-none-any.whl
+          test "$wheel" = "$SUCCESSOR_EVIDENCE_DIR/conflict_analysis-0.1.0-py3-none-any.whl"
+          printf 'STUDIO_C0_WHEEL=%s\n' "$wheel" >> "$GITHUB_ENV"
+          echo "${ACTIVE_SLICE}_ONE_EXACT_SUCCESSOR_WHEEL_FOR_C0=PASS"
+
       - name: Run C0 and C1 successor regression on PostgreSQL
         if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
         env:
@@ -3116,18 +3141,16 @@ jobs:
           print(f"{active_slice}_EXACT_REAL_CHROMIUM_REGISTRY=PASS")
           PY
 
-      - name: Build and inspect the exact successor wheel in isolation
+      - name: Inspect the same exact successor wheel in isolation
         if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip wheel --no-deps --wheel-dir "$SUCCESSOR_EVIDENCE_DIR" .
-          mapfile -t wheels < <(
-            find "$SUCCESSOR_EVIDENCE_DIR" -maxdepth 1 -type f -name '*.whl' -print
-          )
-          test "${#wheels[@]}" -eq 1
-          wheel="${wheels[0]}"
+          test -n "${STUDIO_C0_WHEEL:-}"
+          wheel="$STUDIO_C0_WHEEL"
+          test -f "$wheel"
           test "$(basename "$wheel")" = conflict_analysis-0.1.0-py3-none-any.whl
+          test "$wheel" = "$SUCCESSOR_EVIDENCE_DIR/conflict_analysis-0.1.0-py3-none-any.whl"
 
           isolated_venv="${RUNNER_TEMP}/successor-wheel-venv"
           python -m venv --system-site-packages "$isolated_venv"
@@ -3362,6 +3385,257 @@ jobs:
           assert report["active_slice"] in {"F1", "C2A"}
           assert report["successor_ci_evidence"]["schema"] == "POST_F0L_SUCCESSOR_CI_EVIDENCE_V1"
           print("POST_F0L_F1_C2A_EXECUTABLE_CI=PASS")
+          PY
+
+      - name: Prepare immutable F1 Chromium R3 same-run evidence archive
+        if: >-
+          ${{
+            always() &&
+            (
+              (github.event_name == 'push' && github.ref == 'refs/heads/codex/ca-suite-i1-evidence-multilingual-f1') ||
+              (github.event_name == 'pull_request' && github.head_ref == 'codex/ca-suite-i1-evidence-multilingual-f1' && github.base_ref == 'codex/ca-suite-i1-project-language-bootstrap-f0l')
+            )
+          }}
+        shell: bash
+        env:
+          F1_R3_PRE_ARCHIVE_JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          archive_root="${RUNNER_TEMP}/f1-chromium-r3-evidence-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_EVENT_NAME}"
+          mkdir "$archive_root"
+          delivery_head="$(git rev-parse HEAD 2>/dev/null || true)"
+          delivery_tree="$(git rev-parse HEAD^{tree} 2>/dev/null || true)"
+          python - \
+            "${SUCCESSOR_EVIDENCE_DIR:-${RUNNER_TEMP}/successor-evidence}" \
+            "$archive_root" \
+            "$RUNNER_TEMP/post-f0l-successor-verifier.json" \
+            "$delivery_head" \
+            "$delivery_tree" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+          import shutil
+          import sys
+
+          evidence_dir, archive_root, verifier_report, delivery_head, delivery_tree = (
+              pathlib.Path(value) if index < 3 else value
+              for index, value in enumerate(sys.argv[1:])
+          )
+          evidence_root = evidence_dir.resolve()
+          runner_temp = pathlib.Path(os.environ["RUNNER_TEMP"]).resolve()
+          expected_wheel = "conflict_analysis-0.1.0-py3-none-any.whl"
+          expected_names = (
+              "manifest.json",
+              "f1-focused-postgresql.xml",
+              "f1-focused-sqlite.xml",
+              "f1-foundation-postgresql.xml",
+              "f1-foundation-sqlite.xml",
+              "f1-c0-postgresql.xml",
+              "f1-c0-sqlite.xml",
+              "f1-c1-postgresql.xml",
+              "f1-c1-sqlite.xml",
+              "f1-c1-chromium-postgresql.xml",
+              "migration.json",
+              expected_wheel,
+              "wheel-install.json",
+              "post-f0l-successor-verifier.json",
+          )
+          source_paths = {
+              name: evidence_dir / name
+              for name in expected_names
+              if name != "post-f0l-successor-verifier.json"
+          }
+          source_paths["post-f0l-successor-verifier.json"] = verifier_report
+
+          def is_safe_regular_file(path, parent):
+              return (
+                  path.is_file()
+                  and not path.is_symlink()
+                  and path.parent.resolve() == parent
+              )
+
+          available_names = []
+          missing_names = []
+          for name in expected_names:
+              source = source_paths[name]
+              parent = runner_temp if name == "post-f0l-successor-verifier.json" else evidence_root
+              if is_safe_regular_file(source, parent):
+                  available_names.append(name)
+              else:
+                  missing_names.append(name)
+
+          # Layout is determined solely by the actual mandatory-file presence.
+          archive_layout = "complete" if not missing_names else "partial"
+          archive_dir = archive_root / archive_layout
+          archive_dir.mkdir()
+          for name in available_names:
+              shutil.copyfile(source_paths[name], archive_dir / name)
+
+          wheel_path = source_paths[expected_wheel]
+          actual_wheel_sha256 = (
+              hashlib.sha256(wheel_path.read_bytes()).hexdigest()
+              if expected_wheel in available_names
+              else None
+          )
+          wheel_evidence_sha256 = None
+          wheel_evidence_error = None
+          if "wheel-install.json" in available_names:
+              try:
+                  wheel_evidence = json.loads(
+                      source_paths["wheel-install.json"].read_text(encoding="utf-8")
+                  )
+                  wheel_evidence_sha256 = wheel_evidence.get("wheel_sha256")
+              except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                  wheel_evidence_error = type(exc).__name__
+          lower_hex_64 = re.compile(r"^[0-9a-f]{64}$")
+          lower_hex_40 = re.compile(r"^[0-9a-f]{40}$")
+          wheel_sha256_matches = (
+              isinstance(actual_wheel_sha256, str)
+              and isinstance(wheel_evidence_sha256, str)
+              and lower_hex_64.fullmatch(wheel_evidence_sha256) is not None
+              and actual_wheel_sha256 == wheel_evidence_sha256
+          )
+          verifier_result = None
+          verifier_error = None
+          if "post-f0l-successor-verifier.json" in available_names:
+              try:
+                  verifier_result = json.loads(
+                      verifier_report.read_text(encoding="utf-8")
+                  ).get("allowlist_result")
+              except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                  verifier_error = type(exc).__name__
+          wheel_candidates = []
+          if evidence_dir.is_dir():
+              wheel_candidates = sorted(
+                  path.name
+                  for path in evidence_dir.glob("*.whl")
+                  if is_safe_regular_file(path, evidence_root)
+              )
+          canonical_wheel_only = wheel_candidates == [expected_wheel]
+          studio_c0_wheel = os.environ.get("STUDIO_C0_WHEEL", "")
+          canonical_wheel_env_matches = (
+              bool(studio_c0_wheel)
+              and expected_wheel in available_names
+              and pathlib.Path(studio_c0_wheel).resolve() == wheel_path.resolve()
+          )
+          pre_archive_job_status = os.environ.get("F1_R3_PRE_ARCHIVE_JOB_STATUS", "unknown")
+          acceptance_ready = (
+              pre_archive_job_status == "success"
+              and not missing_names
+              and canonical_wheel_only
+              and canonical_wheel_env_matches
+              and wheel_sha256_matches
+              and verifier_result == "PASS"
+              and lower_hex_40.fullmatch(delivery_head or "") is not None
+              and lower_hex_40.fullmatch(delivery_tree or "") is not None
+          )
+          metadata = {
+              "schema": "F1_CHROMIUM_R3_SAME_RUN_EVIDENCE_ARCHIVE_V1",
+              "archive_layout": archive_layout,
+              "acceptance_ready": acceptance_ready,
+              "pre_archive_job_status": pre_archive_job_status,
+              "run_id": os.environ.get("GITHUB_RUN_ID"),
+              "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT"),
+              "event_name": os.environ.get("GITHUB_EVENT_NAME"),
+              "ref": os.environ.get("GITHUB_REF"),
+              "delivery_head": delivery_head or None,
+              "delivery_tree": delivery_tree or None,
+              "active_slice": os.environ.get("ACTIVE_SLICE", "UNRESOLVED"),
+              "mandatory_files": list(expected_names),
+              "available_files": available_names,
+              "missing_files": missing_names,
+              "canonical_wheel_candidates": wheel_candidates,
+              "canonical_wheel_env_matches": canonical_wheel_env_matches,
+              "wheel_sha256": actual_wheel_sha256,
+              "wheel_install_sha256": wheel_evidence_sha256,
+              "wheel_sha256_matches": wheel_sha256_matches,
+              "wheel_install_evidence_error": wheel_evidence_error,
+              "verifier_result": verifier_result,
+              "verifier_evidence_error": verifier_error,
+          }
+          (archive_dir / "archive-metadata.json").write_text(
+              json.dumps(metadata, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write(
+                  "F1 Chromium R3 same-run archive prepared: "
+                  f"{archive_layout}; missing={len(missing_names)}; "
+                  f"wheel_sha256_matches={wheel_sha256_matches}.\n"
+              )
+          if archive_layout == "complete":
+              print("F1_CHROMIUM_R3_ARCHIVE_CONTENT_SET=COMPLETE")
+          else:
+              print("F1_CHROMIUM_R3_PARTIAL_DIAGNOSTICS=ARCHIVED")
+          if acceptance_ready:
+              print("F1_CHROMIUM_R3_ARCHIVE_COMPLETE=PASS")
+          if pre_archive_job_status == "success" and not acceptance_ready:
+              raise SystemExit(
+                  "F1 Chromium R3 archive cannot accept a successful run without "
+                  "complete mandatory evidence, canonical same-run wheel binding, "
+                  "matching wheel SHA-256, and verifier PASS"
+              )
+          PY
+
+      - name: Upload immutable F1 Chromium R3 same-run evidence archive
+        id: f1_chromium_r3_upload
+        if: >-
+          ${{
+            always() &&
+            (
+              (github.event_name == 'push' && github.ref == 'refs/heads/codex/ca-suite-i1-evidence-multilingual-f1') ||
+              (github.event_name == 'pull_request' && github.head_ref == 'codex/ca-suite-i1-evidence-multilingual-f1' && github.base_ref == 'codex/ca-suite-i1-project-language-bootstrap-f0l')
+            )
+          }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: f1-chromium-r3-${{ github.run_id }}-attempt-${{ github.run_attempt }}-${{ github.event_name }}
+          path: ${{ runner.temp }}/f1-chromium-r3-evidence-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.event_name }}
+          if-no-files-found: error
+          overwrite: false
+
+      - name: Verify immutable F1 Chromium R3 archive receipt
+        if: >-
+          ${{
+            always() &&
+            (
+              (github.event_name == 'push' && github.ref == 'refs/heads/codex/ca-suite-i1-evidence-multilingual-f1') ||
+              (github.event_name == 'pull_request' && github.head_ref == 'codex/ca-suite-i1-evidence-multilingual-f1' && github.base_ref == 'codex/ca-suite-i1-project-language-bootstrap-f0l')
+            )
+          }}
+        shell: bash
+        env:
+          F1_R3_ARTIFACT_ID: ${{ steps.f1_chromium_r3_upload.outputs.artifact-id }}
+          F1_R3_ARTIFACT_DIGEST: ${{ steps.f1_chromium_r3_upload.outputs.artifact-digest }}
+        run: |
+          set -euo pipefail
+          archive_root="${RUNNER_TEMP}/f1-chromium-r3-evidence-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-${GITHUB_EVENT_NAME}"
+          metadata_file="$(find "$archive_root" -maxdepth 2 -type f -name archive-metadata.json -print -quit)"
+          test -n "$metadata_file"
+          python - "$metadata_file" "$F1_R3_ARTIFACT_ID" "$F1_R3_ARTIFACT_DIGEST" <<'PY'
+          import json
+          import re
+          import sys
+
+          metadata_path, artifact_id, artifact_digest = sys.argv[1:]
+          metadata = json.loads(open(metadata_path, encoding="utf-8").read())
+          full_hex = re.compile(r"^[0-9a-f]{64}$")
+          if metadata["pre_archive_job_status"] == "success":
+              assert metadata["archive_layout"] == "complete"
+              assert metadata["acceptance_ready"] is True
+              assert metadata["missing_files"] == []
+              assert metadata["canonical_wheel_env_matches"] is True
+              assert metadata["wheel_sha256_matches"] is True
+              assert metadata["verifier_result"] == "PASS"
+              assert full_hex.fullmatch(metadata["wheel_sha256"] or "") is not None
+              assert artifact_id
+              assert full_hex.fullmatch(artifact_digest) is not None
+              print("F1_CHROMIUM_R3_ARCHIVE_DIGEST_AND_WHEEL_SHA256=PASS")
+          else:
+              assert metadata["archive_layout"] in {"complete", "partial"}
+              print("F1_CHROMIUM_R3_PARTIAL_DIAGNOSTICS=ARCHIVED")
           PY
 
       - name: Check F0L schemas, migrations, Django and Node syntax
