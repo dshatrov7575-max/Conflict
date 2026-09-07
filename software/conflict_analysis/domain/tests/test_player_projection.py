@@ -13,7 +13,6 @@ from uuid import UUID, uuid4
 from django.core.exceptions import ValidationError
 from django.db import (
     DatabaseError,
-    IntegrityError,
     close_old_connections,
     connection,
     connections,
@@ -490,21 +489,79 @@ class FoundationWorkspaceAssessmentProjectionTests(
         executor = MigrationExecutor(connection)
         executor.migrate(_MIGRATION_TO)
         apps = executor.loader.project_state(_MIGRATION_TO).apps
-        NewParameterDefinition = apps.get_model("domain", "ParameterDefinition")
-        NewParameterValue = apps.get_model("domain", "ParameterValue")
-        migrated_parameter = NewParameterDefinition.objects.get(pk=ids["parameter"])
-        migrated_value = NewParameterValue.objects.get(pk=ids["value"])
 
-        self.assertEqual(migrated_parameter.pk, ids["parameter"])
-        self.assertIsNone(migrated_parameter.definition_version_id)
-        self.assertIsNone(migrated_parameter.source_manifest_parameter_id)
-        self.assertIsNone(migrated_parameter.manifest_snapshot_sha256)
-        self.assertEqual(migrated_parameter.target_type, "TIME_SLICE")
-        self.assertEqual(migrated_value.pk, ids["value"])
-        self.assertEqual(migrated_value.parameter_definition_id, ids["parameter"])
-        self.assertEqual(migrated_value.target_type, "TIME_SLICE")
-        self.assertEqual(migrated_value.target_id, ids["time_slice"])
-        self.assertEqual((migrated_value.status, migrated_value.value), ("CONFIRMED", 0))
+        def assert_legacy_identity(apps, *, bridge_fields_present: bool) -> None:
+            migrated_project = apps.get_model("domain", "Project").objects.get(
+                pk=ids["project"]
+            )
+            migrated_definition = apps.get_model(
+                "domain", "ProjectDefinitionVersion"
+            ).objects.get(pk=ids["definition"])
+            migrated_workspace = apps.get_model(
+                "domain", "ProjectWorkspace"
+            ).objects.get(pk=ids["workspace"])
+            migrated_time_slice = apps.get_model("domain", "TimeSlice").objects.get(
+                pk=ids["time_slice"]
+            )
+            migrated_assessment_set = apps.get_model(
+                "domain", "AssessmentSet"
+            ).objects.get(pk=ids["assessment_set"])
+            migrated_parameter = apps.get_model(
+                "domain", "ParameterDefinition"
+            ).objects.get(pk=ids["parameter"])
+            migrated_value = apps.get_model("domain", "ParameterValue").objects.get(
+                pk=ids["value"]
+            )
+
+            self.assertEqual(migrated_project.pk, ids["project"])
+            self.assertEqual(migrated_definition.pk, ids["definition"])
+            self.assertEqual(migrated_definition.project_id, ids["project"])
+            self.assertEqual(migrated_workspace.pk, ids["workspace"])
+            self.assertEqual(migrated_workspace.project_id, ids["project"])
+            self.assertEqual(migrated_workspace.definition_version_id, ids["definition"])
+            self.assertEqual(migrated_time_slice.pk, ids["time_slice"])
+            self.assertEqual(migrated_time_slice.project_id, ids["project"])
+            self.assertEqual(migrated_time_slice.workspace_id, ids["workspace"])
+            self.assertEqual(migrated_assessment_set.pk, ids["assessment_set"])
+            self.assertEqual(migrated_assessment_set.project_id, ids["project"])
+            self.assertEqual(migrated_assessment_set.workspace_id, ids["workspace"])
+            self.assertEqual(migrated_parameter.pk, ids["parameter"])
+            self.assertEqual(migrated_parameter.project_id, ids["project"])
+            self.assertEqual(migrated_parameter.target_type, "TIME_SLICE")
+            self.assertEqual(migrated_value.pk, ids["value"])
+            self.assertEqual(migrated_value.project_id, ids["project"])
+            self.assertEqual(migrated_value.workspace_id, ids["workspace"])
+            self.assertEqual(migrated_value.time_slice_id, ids["time_slice"])
+            self.assertEqual(migrated_value.assessment_set_id, ids["assessment_set"])
+            self.assertEqual(migrated_value.parameter_definition_id, ids["parameter"])
+            self.assertEqual(migrated_value.target_type, "TIME_SLICE")
+            self.assertEqual(migrated_value.target_id, ids["time_slice"])
+            self.assertEqual(
+                (migrated_value.status, migrated_value.value),
+                ("CONFIRMED", 0),
+            )
+            if bridge_fields_present:
+                self.assertIsNone(migrated_parameter.definition_version_id)
+                self.assertIsNone(migrated_parameter.source_manifest_parameter_id)
+                self.assertIsNone(migrated_parameter.manifest_snapshot_sha256)
+
+        assert_legacy_identity(apps, bridge_fields_present=True)
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(_MIGRATION_FROM)
+        legacy_apps = executor.loader.project_state(_MIGRATION_FROM).apps
+        assert_legacy_identity(legacy_apps, bridge_fields_present=False)
+
+        executor = MigrationExecutor(connection)
+        executor.migrate(_MIGRATION_TO)
+        reapplied_apps = executor.loader.project_state(_MIGRATION_TO).apps
+        assert_legacy_identity(reapplied_apps, bridge_fields_present=True)
+        self.assertTrue(
+            MigrationRecorder(connection).migration_qs.filter(
+                app="domain",
+                name="0018_workspace_assessment_projection",
+            ).exists()
+        )
 
     def test_clean_migration_creates_conditional_legacy_and_canonical_constraints(self):
         with connection.cursor() as cursor:
@@ -531,6 +588,74 @@ class FoundationWorkspaceAssessmentProjectionTests(
             ProjectWorkspace._meta.get_field("assessment_projection_status").default,
             AssessmentProjectionStatus.NOT_PROVEN,
         )
+
+        definition, workspace, principal = self._bootstrap(projection_manifest=True)
+        result = self._materialize(workspace, uuid4(), principal)
+        workspace.refresh_from_db()
+        mapping_before_reverse = _source_mapping(workspace)
+        receipt = AuditEvent.objects.get(pk=result.receipt.pk)
+        receipt_before_reverse = (
+            receipt.pk,
+            receipt.workspace_id,
+            receipt.entity_type,
+            copy.deepcopy(receipt.after),
+        )
+        projection_sha256 = workspace.assessment_projection_sha256
+        verification_before_reverse = verify_workspace_assessment_projection(workspace)
+        self.assertEqual(
+            workspace.assessment_projection_status,
+            AssessmentProjectionStatus.COMPLETE,
+        )
+        self.assertEqual(
+            verification_before_reverse.status,
+            AssessmentProjectionStatus.COMPLETE,
+        )
+        self.assertEqual(verification_before_reverse.projection_sha256, projection_sha256)
+        self.assertEqual(verification_before_reverse.receipt.pk, receipt.pk)
+
+        executor = MigrationExecutor(connection)
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "FD08_CANONICAL_PROJECTION_REVERSE_BLOCKED",
+        ):
+            executor.migrate(_MIGRATION_FROM)
+        self.assertTrue(
+            MigrationRecorder(connection).migration_qs.filter(
+                app="domain",
+                name="0018_workspace_assessment_projection",
+            ).exists()
+        )
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            self.assertEqual(cursor.fetchone(), (1,))
+
+        workspace.refresh_from_db()
+        preserved_receipt = AuditEvent.objects.get(pk=receipt.pk)
+        self.assertEqual(_source_mapping(workspace), mapping_before_reverse)
+        self.assertEqual(
+            (
+                preserved_receipt.pk,
+                preserved_receipt.workspace_id,
+                preserved_receipt.entity_type,
+                preserved_receipt.after,
+            ),
+            receipt_before_reverse,
+        )
+        self.assertEqual(
+            workspace.assessment_projection_status,
+            AssessmentProjectionStatus.COMPLETE,
+        )
+        self.assertEqual(workspace.assessment_projection_sha256, projection_sha256)
+        verification_after_reverse = verify_workspace_assessment_projection(workspace)
+        self.assertEqual(
+            verification_after_reverse.status,
+            AssessmentProjectionStatus.COMPLETE,
+        )
+        self.assertEqual(
+            verification_after_reverse.projection_sha256,
+            projection_sha256,
+        )
+        self.assertEqual(verification_after_reverse.receipt.pk, receipt.pk)
 
     def test_projection_requires_exact_published_workspace_definition_and_hash_pin(self):
         definition, workspace, principal = self._bootstrap(projection_manifest=True)
@@ -834,7 +959,7 @@ class FoundationWorkspaceAssessmentProjectionTests(
                     model._meta.get_field("code").column
                 )
                 prepared_pk = model._meta.pk.get_db_prep_value(row.pk, connection)
-                with self.assertRaises(IntegrityError):
+                with self.assertRaises(DatabaseError):
                     with transaction.atomic():
                         with connection.cursor() as cursor:
                             cursor.execute(
@@ -876,7 +1001,7 @@ class FoundationWorkspaceAssessmentProjectionTests(
                 [prepared_receipt_pk],
             )
         with self.subTest(d09="ancestor-cascade-without-receipt-blocker"):
-            with self.assertRaises((ValidationError, IntegrityError)):
+            with self.assertRaises((ValidationError, DatabaseError)):
                 ProjectWorkspace.objects.filter(pk=cascade_workspace.pk).delete()
             self.assertTrue(
                 ProjectWorkspace.objects.filter(pk=cascade_workspace.pk).exists()

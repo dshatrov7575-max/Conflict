@@ -3896,6 +3896,11 @@ jobs:
       FD08_BASE_HEAD: d2f5a881e10dbb688371e8c5add6bf9375404738
       FD08_BASE_TREE: 7f5fd4f321282a48a799698861ce6f2bd3940cd1
       FD08_TARGET_BRANCH: codex/ca-suite-i1-foundation-fd08-assessment-projection
+      FD08_FIRST_HEAD: bbc89458f65e26a8ec38c4a00ccd0c788bfa73f5
+      FD08_FIRST_TREE: e241824346771bf00732107ffb079f5ec8ae8403
+      FD08_ORACLE_LATE_SECOND_HEAD: 5958117f7702f786f0a99ac2b49a421e6ccdf7c8
+      FD08_ORACLE_LATE_SECOND_TREE: 9878849d527bc76406799bebb1e0f79e28b4f999
+      FD08_ORACLE_LATE_SECOND_PARENT: bbc89458f65e26a8ec38c4a00ccd0c788bfa73f5
       F1_ACCEPTED_HEAD: "${{ vars.F1_ACCEPTED_HEAD }}"
       F1_ACCEPTED_TREE: "${{ vars.F1_ACCEPTED_TREE }}"
 
@@ -3923,8 +3928,22 @@ jobs:
 
           delivery_head="$(git rev-parse HEAD)"
           delivery_tree="$(git rev-parse HEAD^{tree})"
-          test "$(git rev-parse "$delivery_head^")" = "$FD08_BASE_HEAD"
+          test "$(git show -s --format=%P "$delivery_head" | awk '{print NF}')" = "1"
+          second_head="$(git rev-parse "$delivery_head^")"
+          test "$second_head" = "$FD08_ORACLE_LATE_SECOND_HEAD"
+          test "$(git rev-parse "$second_head^{tree}")" = "$FD08_ORACLE_LATE_SECOND_TREE"
+          test "$(git show -s --format=%P "$second_head" | awk '{print NF}')" = "1"
+          test "$(git rev-parse "$second_head^")" = "$FD08_ORACLE_LATE_SECOND_PARENT"
+          test "$(git diff-tree --no-commit-id --name-status -r "$second_head")" = $'M\tsoftware/conflict_analysis/domain/tests/test_player_projection.py'
+
+          first_head="$(git rev-parse "$second_head^")"
+          test "$first_head" = "$FD08_FIRST_HEAD"
+          test "$(git rev-parse "$first_head^{tree}")" = "$FD08_FIRST_TREE"
+          test "$(git show -s --format=%P "$first_head" | awk '{print NF}')" = "1"
+          test "$(git rev-parse "$first_head^")" = "$FD08_BASE_HEAD"
           test "$(git rev-parse "$FD08_BASE_HEAD^{tree}")" = "$FD08_BASE_TREE"
+          test "$(git rev-list --count "$FD08_BASE_HEAD..$delivery_head")" = "3"
+          test -z "$(git rev-list --merges "$FD08_BASE_HEAD..$delivery_head")"
 
           case "$GITHUB_EVENT_NAME" in
             pull_request)
@@ -3957,13 +3976,15 @@ jobs:
           python - \
             "$evidence_dir/route.json" \
             "$delivery_head" \
-            "$delivery_tree" <<'PY'
+            "$delivery_tree" \
+            "$first_head" \
+            "$second_head" <<'PY'
           import json
           import os
           import pathlib
           import sys
 
-          path, head, tree = map(str, sys.argv[1:])
+          path, head, tree, first_head, second_head = map(str, sys.argv[1:])
           payload = {
               "schema": "FD08_EXACT_HEAD_ROUTE_V1",
               "event_name": os.environ["GITHUB_EVENT_NAME"],
@@ -3975,6 +3996,31 @@ jobs:
               "base_branch": os.environ["FD08_BASE_BRANCH"],
               "base_head": os.environ["FD08_BASE_HEAD"],
               "base_tree": os.environ["FD08_BASE_TREE"],
+              "recovery_chain": {
+                  "commit_count_above_f1": 3,
+                  "merge_count": 0,
+                  "first_delivery": {
+                      "head": first_head,
+                      "tree": os.environ["FD08_FIRST_TREE"],
+                      "parent": os.environ["FD08_BASE_HEAD"],
+                  },
+                  "oracle_late_second": {
+                      "head": second_head,
+                      "tree": os.environ["FD08_ORACLE_LATE_SECOND_TREE"],
+                      "parent": os.environ["FD08_ORACLE_LATE_SECOND_PARENT"],
+                      "exact_delta": [
+                          {
+                              "status": "M",
+                              "path": "software/conflict_analysis/domain/tests/test_player_projection.py",
+                          }
+                      ],
+                  },
+                  "final_recovery": {
+                      "head": head,
+                      "tree": tree,
+                      "parent": second_head,
+                  },
+              },
           }
           pathlib.Path(path).write_text(
               json.dumps(payload, indent=2, sort_keys=True) + "\n",
@@ -4070,13 +4116,21 @@ jobs:
           foundation="$FD08_EVIDENCE_DIR/fd08-foundation-postgresql.xml"
           python -m pytest domain/tests/test_player_projection.py --junitxml="$focused"
           python -m pytest domain/tests --junitxml="$foundation"
-          python - "$focused" "$foundation" "$FD08_EVIDENCE_DIR/postgresql-results.json" <<'PY'
+          python - "$focused" "$foundation" "$FD08_EVIDENCE_DIR/postgresql-results.json" \
+            "$FD08_EVIDENCE_DIR/fd08-migration-postgresql.json" <<'PY'
+          import hashlib
           import json
+          import os
           import pathlib
           import sys
           import xml.etree.ElementTree as ET
 
-          focused_path, foundation_path, evidence_path = map(pathlib.Path, sys.argv[1:])
+          (
+              focused_path,
+              foundation_path,
+              evidence_path,
+              migration_evidence_path,
+          ) = map(pathlib.Path, sys.argv[1:])
           expected = (
               "test_manifest_target_enum_and_domain_target_model_are_exactly_aligned",
               "test_upgrade_preserves_every_legacy_parameter_definition_value_and_target_identity",
@@ -4093,6 +4147,10 @@ jobs:
               "test_concurrent_same_workspace_projection_has_one_commit_and_one_exact_replay",
               "test_competing_projection_identity_or_snapshot_has_one_commit_and_one_typed_loser",
           )
+          migration_nodes = (
+              "test_upgrade_preserves_every_legacy_parameter_definition_value_and_target_identity",
+              "test_clean_migration_creates_conditional_legacy_and_canonical_constraints",
+          )
 
           def cases(path):
               root = ET.parse(path).getroot()
@@ -4108,6 +4166,13 @@ jobs:
           assert len(foundation) == 286
           assert not [case for case in foundation if case.find("skipped") is not None]
           assert set(expected) <= {case.attrib["name"] for case in foundation}
+          focused_by_name = {case.attrib["name"]: case for case in focused}
+          assert set(migration_nodes) <= set(focused_by_name)
+          assert not [
+              name
+              for name in migration_nodes
+              if focused_by_name[name].find("skipped") is not None
+          ]
           pathlib.Path(evidence_path).write_text(
               json.dumps(
                   {
@@ -4115,6 +4180,50 @@ jobs:
                       "focused_total": 14,
                       "foundation_passed": 286,
                       "foundation_skipped": 0,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          migration_evidence_path.write_text(
+              json.dumps(
+                  {
+                      "schema": "FD08_MIGRATION_REVERSE_REAPPLY_EVIDENCE_V1",
+                      "engine": "postgresql",
+                      "event_name": os.environ["GITHUB_EVENT_NAME"],
+                      "run_id": os.environ["GITHUB_RUN_ID"],
+                      "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+                      "delivery_head": os.environ["FD08_DELIVERY_HEAD"],
+                      "delivery_tree": os.environ["FD08_DELIVERY_TREE"],
+                      "focused_junit": focused_path.name,
+                      "focused_junit_sha256": hashlib.sha256(
+                          focused_path.read_bytes()
+                      ).hexdigest(),
+                      "frozen_migration_nodes": sorted(migration_nodes),
+                      "junit_passed_nodes": sorted(migration_nodes),
+                      "legacy_empty_0017_0018_reverse_reapply": {
+                          "status": "PASS",
+                          "node": migration_nodes[0],
+                          "assertions": [
+                              "0017_to_0018_to_0017_to_0018",
+                              "legacy_primary_keys_project_workspace_definition_target_parameter_value",
+                              "numeric_zero_preserved",
+                              "legacy_canonical_bridge_fields_null",
+                          ],
+                      },
+                      "populated_canonical_reverse_refusal": {
+                          "status": "PASS",
+                          "node": migration_nodes[1],
+                          "refusal_code": "FD08_CANONICAL_PROJECTION_REVERSE_BLOCKED",
+                          "assertions": [
+                              "migration_recorder_retains_0018",
+                              "connection_remains_usable",
+                              "canonical_rows_source_mapping_receipt_complete_hash_exact",
+                              "verify_workspace_assessment_projection_complete",
+                          ],
+                      },
                   },
                   indent=2,
                   sort_keys=True,
@@ -4144,13 +4253,21 @@ jobs:
           foundation="$FD08_EVIDENCE_DIR/fd08-foundation-sqlite.xml"
           python -m pytest domain/tests/test_player_projection.py --junitxml="$focused"
           python -m pytest domain/tests --junitxml="$foundation"
-          python - "$focused" "$foundation" "$FD08_EVIDENCE_DIR/sqlite-results.json" <<'PY'
+          python - "$focused" "$foundation" "$FD08_EVIDENCE_DIR/sqlite-results.json" \
+            "$FD08_EVIDENCE_DIR/fd08-migration-sqlite.json" <<'PY'
+          import hashlib
           import json
+          import os
           import pathlib
           import sys
           import xml.etree.ElementTree as ET
 
-          focused_path, foundation_path, evidence_path = map(pathlib.Path, sys.argv[1:])
+          (
+              focused_path,
+              foundation_path,
+              evidence_path,
+              migration_evidence_path,
+          ) = map(pathlib.Path, sys.argv[1:])
           portable = (
               "test_manifest_target_enum_and_domain_target_model_are_exactly_aligned",
               "test_upgrade_preserves_every_legacy_parameter_definition_value_and_target_identity",
@@ -4169,6 +4286,10 @@ jobs:
               "test_concurrent_same_workspace_projection_has_one_commit_and_one_exact_replay",
               "test_competing_projection_identity_or_snapshot_has_one_commit_and_one_typed_loser",
           }
+          migration_nodes = (
+              "test_upgrade_preserves_every_legacy_parameter_definition_value_and_target_identity",
+              "test_clean_migration_creates_conditional_legacy_and_canonical_constraints",
+          )
           inherited = {
               "test_postgresql_concurrent_bootstrap_has_one_winner_and_one_explicit_conflict",
               "test_postgresql_competing_successors_have_one_winner_and_preserve_old_pin",
@@ -4208,6 +4329,13 @@ jobs:
           assert skipped == inherited | concurrent, sorted(skipped)
           assert len(skipped) == 21
           assert len(foundation) - len(skipped) == 265
+          focused_by_name = {case.attrib["name"]: case for case in focused}
+          assert set(migration_nodes) <= set(focused_by_name)
+          assert not [
+              name
+              for name in migration_nodes
+              if focused_by_name[name].find("skipped") is not None
+          ]
           pathlib.Path(evidence_path).write_text(
               json.dumps(
                   {
@@ -4216,6 +4344,50 @@ jobs:
                       "focused_skipped": 2,
                       "foundation_passed": 265,
                       "foundation_skipped": 21,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              )
+              + "\n",
+              encoding="utf-8",
+          )
+          migration_evidence_path.write_text(
+              json.dumps(
+                  {
+                      "schema": "FD08_MIGRATION_REVERSE_REAPPLY_EVIDENCE_V1",
+                      "engine": "sqlite",
+                      "event_name": os.environ["GITHUB_EVENT_NAME"],
+                      "run_id": os.environ["GITHUB_RUN_ID"],
+                      "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+                      "delivery_head": os.environ["FD08_DELIVERY_HEAD"],
+                      "delivery_tree": os.environ["FD08_DELIVERY_TREE"],
+                      "focused_junit": focused_path.name,
+                      "focused_junit_sha256": hashlib.sha256(
+                          focused_path.read_bytes()
+                      ).hexdigest(),
+                      "frozen_migration_nodes": sorted(migration_nodes),
+                      "junit_passed_nodes": sorted(migration_nodes),
+                      "legacy_empty_0017_0018_reverse_reapply": {
+                          "status": "PASS",
+                          "node": migration_nodes[0],
+                          "assertions": [
+                              "0017_to_0018_to_0017_to_0018",
+                              "legacy_primary_keys_project_workspace_definition_target_parameter_value",
+                              "numeric_zero_preserved",
+                              "legacy_canonical_bridge_fields_null",
+                          ],
+                      },
+                      "populated_canonical_reverse_refusal": {
+                          "status": "PASS",
+                          "node": migration_nodes[1],
+                          "refusal_code": "FD08_CANONICAL_PROJECTION_REVERSE_BLOCKED",
+                          "assertions": [
+                              "migration_recorder_retains_0018",
+                              "connection_remains_usable",
+                              "canonical_rows_source_mapping_receipt_complete_hash_exact",
+                              "verify_workspace_assessment_projection_complete",
+                          ],
+                      },
                   },
                   indent=2,
                   sort_keys=True,
@@ -4432,6 +4604,8 @@ jobs:
               "verifier.json",
               "postgresql-results.json",
               "sqlite-results.json",
+              "fd08-migration-postgresql.json",
+              "fd08-migration-sqlite.json",
               "product-chromium-results.json",
               "wheel.json",
               "wheel-install.json",
@@ -4453,11 +4627,140 @@ jobs:
           assert route["run_attempt"] == "1"
           assert route["delivery_head"] == os.environ["FD08_DELIVERY_HEAD"]
           assert route["delivery_tree"] == os.environ["FD08_DELIVERY_TREE"]
+          assert route["base_head"] == os.environ["FD08_BASE_HEAD"]
+          assert route["base_tree"] == os.environ["FD08_BASE_TREE"]
+          recovery_chain = route["recovery_chain"]
+          assert recovery_chain["commit_count_above_f1"] == 3
+          assert recovery_chain["merge_count"] == 0
+          assert recovery_chain["first_delivery"] == {
+              "head": os.environ["FD08_FIRST_HEAD"],
+              "tree": os.environ["FD08_FIRST_TREE"],
+              "parent": os.environ["FD08_BASE_HEAD"],
+          }
+          assert recovery_chain["oracle_late_second"] == {
+              "head": os.environ["FD08_ORACLE_LATE_SECOND_HEAD"],
+              "tree": os.environ["FD08_ORACLE_LATE_SECOND_TREE"],
+              "parent": os.environ["FD08_ORACLE_LATE_SECOND_PARENT"],
+              "exact_delta": [
+                  {
+                      "status": "M",
+                      "path": "software/conflict_analysis/domain/tests/test_player_projection.py",
+                  }
+              ],
+          }
+          assert recovery_chain["final_recovery"] == {
+              "head": route["delivery_head"],
+              "tree": route["delivery_tree"],
+              "parent": os.environ["FD08_ORACLE_LATE_SECOND_HEAD"],
+          }
           verifier = json.loads((root / "verifier.json").read_text(encoding="utf-8"))
           assert verifier["allowlist_result"] == "PASS"
           assert verifier["history"]["final_head"] == route["delivery_head"]
           assert verifier["history"]["final_tree"] == route["delivery_tree"]
-          assert verifier["history"]["sole_parent"] == route["base_head"]
+          assert verifier["history"]["final_parent"] == recovery_chain["final_recovery"]["parent"]
+          assert verifier["history"]["commit_count"] == 3
+          assert verifier["history"]["merge_count"] == 0
+          assert verifier["history"]["recovery_chain"] == recovery_chain
+
+          static = json.loads((root / "static.json").read_text(encoding="utf-8"))
+          assert static["schema"] == "FD08_STATIC_MIGRATION_EVIDENCE_V1"
+          assert static["delivery_head"] == route["delivery_head"]
+          assert static["delivery_tree"] == route["delivery_tree"]
+
+          migration_nodes = [
+              "test_clean_migration_creates_conditional_legacy_and_canonical_constraints",
+              "test_upgrade_preserves_every_legacy_parameter_definition_value_and_target_identity",
+          ]
+          migration_evidence = {}
+          for engine in ("postgresql", "sqlite"):
+              filename = f"fd08-migration-{engine}.json"
+              payload_path = root / filename
+              payload = json.loads(payload_path.read_text(encoding="utf-8"))
+              focused_junit = root / f"fd08-focused-{engine}.xml"
+              assert payload["schema"] == "FD08_MIGRATION_REVERSE_REAPPLY_EVIDENCE_V1"
+              assert payload["engine"] == engine
+              assert payload["event_name"] == route["event_name"]
+              assert payload["run_id"] == route["run_id"]
+              assert payload["run_attempt"] == route["run_attempt"]
+              assert payload["delivery_head"] == route["delivery_head"]
+              assert payload["delivery_tree"] == route["delivery_tree"]
+              assert payload["focused_junit"] == focused_junit.name
+              assert payload["focused_junit_sha256"] == hashlib.sha256(
+                  focused_junit.read_bytes()
+              ).hexdigest()
+              assert payload["frozen_migration_nodes"] == migration_nodes
+              assert payload["junit_passed_nodes"] == migration_nodes
+              legacy = payload["legacy_empty_0017_0018_reverse_reapply"]
+              assert legacy["status"] == "PASS"
+              assert legacy["node"] == migration_nodes[1]
+              assert {
+                  "0017_to_0018_to_0017_to_0018",
+                  "legacy_primary_keys_project_workspace_definition_target_parameter_value",
+                  "numeric_zero_preserved",
+                  "legacy_canonical_bridge_fields_null",
+              } <= set(legacy["assertions"])
+              populated = payload["populated_canonical_reverse_refusal"]
+              assert populated["status"] == "PASS"
+              assert populated["node"] == migration_nodes[0]
+              assert populated["refusal_code"] == "FD08_CANONICAL_PROJECTION_REVERSE_BLOCKED"
+              assert {
+                  "migration_recorder_retains_0018",
+                  "connection_remains_usable",
+                  "canonical_rows_source_mapping_receipt_complete_hash_exact",
+                  "verify_workspace_assessment_projection_complete",
+              } <= set(populated["assertions"])
+              migration_evidence[engine] = {
+                  "file": filename,
+                  "sha256": hashlib.sha256(payload_path.read_bytes()).hexdigest(),
+                  "focused_junit": focused_junit.name,
+                  "focused_junit_sha256": payload["focused_junit_sha256"],
+                  "frozen_migration_nodes": payload["frozen_migration_nodes"],
+                  "legacy_empty_0017_0018_reverse_reapply": legacy,
+                  "populated_canonical_reverse_refusal": populated,
+              }
+
+          postgresql_results = json.loads(
+              (root / "postgresql-results.json").read_text(encoding="utf-8")
+          )
+          assert postgresql_results == {
+              "schema": "FD08_POSTGRESQL_RESULTS_V1",
+              "focused_total": 14,
+              "foundation_passed": 286,
+              "foundation_skipped": 0,
+          }
+          sqlite_results = json.loads(
+              (root / "sqlite-results.json").read_text(encoding="utf-8")
+          )
+          assert sqlite_results == {
+              "schema": "FD08_SQLITE_RESULTS_V1",
+              "focused_passed": 12,
+              "focused_skipped": 2,
+              "foundation_passed": 265,
+              "foundation_skipped": 21,
+          }
+          product_chromium = json.loads(
+              (root / "product-chromium-results.json").read_text(encoding="utf-8")
+          )
+          assert product_chromium == {
+              "schema": "FD08_INHERITED_PRODUCT_CHROMIUM_V1",
+              "postgresql_c0": 19,
+              "postgresql_c1": 8,
+              "sqlite_c0": 19,
+              "sqlite_c1": 8,
+              "chromium": 1,
+          }
+          wheel = json.loads((root / "wheel.json").read_text(encoding="utf-8"))
+          wheel_install = json.loads(
+              (root / "wheel-install.json").read_text(encoding="utf-8")
+          )
+          assert wheel["schema"] == "FD08_WHEEL_EVIDENCE_V1"
+          assert wheel["filename"] == "conflict_analysis-0.1.0-py3-none-any.whl"
+          assert isinstance(wheel["bytes"], int) and wheel["bytes"] > 0
+          assert len(wheel["sha256"]) == 64
+          assert wheel_install["schema"] == "FD08_ISOLATED_WHEEL_INSTALL_V1"
+          assert wheel_install["wheel_sha256"] == wheel["sha256"]
+          assert wheel_install["source_tree_fallback"] is False
+          assert wheel_install["schema_2_2_packaged"] is True
           manifest = {
               path.name: hashlib.sha256(path.read_bytes()).hexdigest()
               for path in sorted(root.iterdir())
@@ -4472,6 +4775,17 @@ jobs:
                       "run_attempt": route["run_attempt"],
                       "delivery_head": route["delivery_head"],
                       "delivery_tree": route["delivery_tree"],
+                      "recovery_chain": recovery_chain,
+                      "migration_evidence": migration_evidence,
+                      "foundation_results": {
+                          "postgresql": postgresql_results,
+                          "sqlite": sqlite_results,
+                      },
+                      "wheel_evidence": {
+                          "wheel": wheel,
+                          "isolated_install": wheel_install,
+                      },
+                      "inherited_product_chromium": product_chromium,
                       "required_files": sorted(required),
                       "manifest_sha256": manifest,
                       "acceptance_ready": True,
