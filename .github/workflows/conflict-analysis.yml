@@ -3901,6 +3901,10 @@ jobs:
       FD08_ORACLE_LATE_SECOND_HEAD: 5958117f7702f786f0a99ac2b49a421e6ccdf7c8
       FD08_ORACLE_LATE_SECOND_TREE: 9878849d527bc76406799bebb1e0f79e28b4f999
       FD08_ORACLE_LATE_SECOND_PARENT: bbc89458f65e26a8ec38c4a00ccd0c788bfa73f5
+      FD08_RECOVERY_THIRD_HEAD: 929b52aa765db1b17d3df5793391aafa2692e0dd
+      FD08_RECOVERY_THIRD_TREE: 8a7ef4a5294e2b4f31c39eea2c0afb8e16141a5e
+      FD08_RECOVERY_THIRD_PARENT: 5958117f7702f786f0a99ac2b49a421e6ccdf7c8
+      FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB: 70dba8ee3e1e159e85f112ffc4523cd8d097ba4e
       F1_ACCEPTED_HEAD: "${{ vars.F1_ACCEPTED_HEAD }}"
       F1_ACCEPTED_TREE: "${{ vars.F1_ACCEPTED_TREE }}"
 
@@ -3929,20 +3933,40 @@ jobs:
           delivery_head="$(git rev-parse HEAD)"
           delivery_tree="$(git rev-parse HEAD^{tree})"
           test "$(git show -s --format=%P "$delivery_head" | awk '{print NF}')" = "1"
-          second_head="$(git rev-parse "$delivery_head^")"
+          expected_fourth_delta=$'M\t.github/workflows/conflict-analysis.yml\nM\tsoftware/conflict_analysis/domain/tests/test_postgresql_migrations.py\nM\tsoftware/conflict_analysis/scripts/verify_player_projection_allowlist.py'
+          test "$(git diff-tree --no-commit-id --name-status --no-renames -r "$delivery_head")" = "$expected_fourth_delta"
+
+          third_head="$(git rev-parse "$delivery_head^")"
+          test "$third_head" = "$FD08_RECOVERY_THIRD_HEAD"
+          test "$(git rev-parse "$third_head^{tree}")" = "$FD08_RECOVERY_THIRD_TREE"
+          test "$(git show -s --format=%P "$third_head" | awk '{print NF}')" = "1"
+          test "$(git rev-parse "$third_head^")" = "$FD08_RECOVERY_THIRD_PARENT"
+          expected_third_delta=$'M\t.github/workflows/conflict-analysis.yml\nM\tsoftware/conflict_analysis/domain/tests/test_player_projection.py\nM\tsoftware/conflict_analysis/scripts/verify_player_projection_allowlist.py'
+          test "$(git diff-tree --no-commit-id --name-status --no-renames -r "$third_head")" = "$expected_third_delta"
+
+          second_head="$(git rev-parse "$third_head^")"
           test "$second_head" = "$FD08_ORACLE_LATE_SECOND_HEAD"
           test "$(git rev-parse "$second_head^{tree}")" = "$FD08_ORACLE_LATE_SECOND_TREE"
           test "$(git show -s --format=%P "$second_head" | awk '{print NF}')" = "1"
           test "$(git rev-parse "$second_head^")" = "$FD08_ORACLE_LATE_SECOND_PARENT"
-          test "$(git diff-tree --no-commit-id --name-status -r "$second_head")" = $'M\tsoftware/conflict_analysis/domain/tests/test_player_projection.py'
+          test "$(git diff-tree --no-commit-id --name-status --no-renames -r "$second_head")" = $'M\tsoftware/conflict_analysis/domain/tests/test_player_projection.py'
 
           first_head="$(git rev-parse "$second_head^")"
           test "$first_head" = "$FD08_FIRST_HEAD"
           test "$(git rev-parse "$first_head^{tree}")" = "$FD08_FIRST_TREE"
           test "$(git show -s --format=%P "$first_head" | awk '{print NF}')" = "1"
           test "$(git rev-parse "$first_head^")" = "$FD08_BASE_HEAD"
+          expected_first_delta=$'M\t.github/workflows/conflict-analysis.yml\nA\tsoftware/conflict_analysis/docs/adr/0013-foundation-workspace-assessment-projection.md\nM\tsoftware/conflict_analysis/domain/enums.py\nA\tsoftware/conflict_analysis/domain/migrations/0018_workspace_assessment_projection.py\nM\tsoftware/conflict_analysis/domain/models.py\nM\tsoftware/conflict_analysis/domain/services/foundation_packages.py\nA\tsoftware/conflict_analysis/domain/services/player_projection.py\nA\tsoftware/conflict_analysis/domain/services/schemas/foundation-package-2.2.0.schema.json\nA\tsoftware/conflict_analysis/domain/tests/test_player_projection.py\nA\tsoftware/conflict_analysis/scripts/verify_player_projection_allowlist.py'
+          test "$(git diff-tree --no-commit-id --name-status --no-renames -r "$first_head")" = "$expected_first_delta"
           test "$(git rev-parse "$FD08_BASE_HEAD^{tree}")" = "$FD08_BASE_TREE"
-          test "$(git rev-list --count "$FD08_BASE_HEAD..$delivery_head")" = "3"
+          aggregate_delta="$(git diff --name-status --no-renames "$FD08_BASE_HEAD" "$delivery_head")"
+          expected_aggregate_delta=$'M\t.github/workflows/conflict-analysis.yml\nA\tsoftware/conflict_analysis/docs/adr/0013-foundation-workspace-assessment-projection.md\nM\tsoftware/conflict_analysis/domain/enums.py\nA\tsoftware/conflict_analysis/domain/migrations/0018_workspace_assessment_projection.py\nM\tsoftware/conflict_analysis/domain/models.py\nM\tsoftware/conflict_analysis/domain/services/foundation_packages.py\nA\tsoftware/conflict_analysis/domain/services/player_projection.py\nA\tsoftware/conflict_analysis/domain/services/schemas/foundation-package-2.2.0.schema.json\nA\tsoftware/conflict_analysis/domain/tests/test_player_projection.py\nM\tsoftware/conflict_analysis/domain/tests/test_postgresql_migrations.py\nA\tsoftware/conflict_analysis/scripts/verify_player_projection_allowlist.py'
+          test "$aggregate_delta" = "$expected_aggregate_delta"
+          test "$(printf '%s\n' "$aggregate_delta" | awk '$1 == "M" { count += 1 } END { print count + 0 }')" = "5"
+          test "$(printf '%s\n' "$aggregate_delta" | awk '$1 == "A" { count += 1 } END { print count + 0 }')" = "6"
+          test "$(git rev-parse "$FD08_BASE_HEAD:software/conflict_analysis/domain/tests/test_postgresql_migrations.py")" = "$FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB"
+          test "$(git rev-parse "$third_head:software/conflict_analysis/domain/tests/test_postgresql_migrations.py")" = "$FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB"
+          test "$(git rev-list --count "$FD08_BASE_HEAD..$delivery_head")" = "4"
           test -z "$(git rev-list --merges "$FD08_BASE_HEAD..$delivery_head")"
 
           case "$GITHUB_EVENT_NAME" in
@@ -3978,13 +4002,14 @@ jobs:
             "$delivery_head" \
             "$delivery_tree" \
             "$first_head" \
-            "$second_head" <<'PY'
+            "$second_head" \
+            "$third_head" <<'PY'
           import json
           import os
           import pathlib
           import sys
 
-          path, head, tree, first_head, second_head = map(str, sys.argv[1:])
+          path, head, tree, first_head, second_head, third_head = map(str, sys.argv[1:])
           payload = {
               "schema": "FD08_EXACT_HEAD_ROUTE_V1",
               "event_name": os.environ["GITHUB_EVENT_NAME"],
@@ -3997,7 +4022,7 @@ jobs:
               "base_head": os.environ["FD08_BASE_HEAD"],
               "base_tree": os.environ["FD08_BASE_TREE"],
               "recovery_chain": {
-                  "commit_count_above_f1": 3,
+                  "commit_count_above_f1": 4,
                   "merge_count": 0,
                   "first_delivery": {
                       "head": first_head,
@@ -4015,10 +4040,54 @@ jobs:
                           }
                       ],
                   },
-                  "final_recovery": {
+                  "recovery_third": {
+                      "head": third_head,
+                      "tree": os.environ["FD08_RECOVERY_THIRD_TREE"],
+                      "parent": os.environ["FD08_RECOVERY_THIRD_PARENT"],
+                      "exact_delta": [
+                          {
+                              "status": "M",
+                              "path": ".github/workflows/conflict-analysis.yml",
+                          },
+                          {
+                              "status": "M",
+                              "path": "software/conflict_analysis/domain/tests/test_player_projection.py",
+                          },
+                          {
+                              "status": "M",
+                              "path": "software/conflict_analysis/scripts/verify_player_projection_allowlist.py",
+                          },
+                      ],
+                  },
+                  "final_fourth": {
                       "head": head,
                       "tree": tree,
-                      "parent": second_head,
+                      "parent": third_head,
+                      "exact_delta": [
+                          {
+                              "status": "M",
+                              "path": ".github/workflows/conflict-analysis.yml",
+                          },
+                          {
+                              "status": "M",
+                              "path": "software/conflict_analysis/domain/tests/test_postgresql_migrations.py",
+                          },
+                          {
+                              "status": "M",
+                              "path": "software/conflict_analysis/scripts/verify_player_projection_allowlist.py",
+                          },
+                      ],
+                  },
+              },
+              "final_aggregate": {
+                  "path_count": 11,
+                  "modified_count": 5,
+                  "added_count": 6,
+                  "accepted_f1_inherited_postgresql_migration_test_preimage": {
+                      "path": "software/conflict_analysis/domain/tests/test_postgresql_migrations.py",
+                      "blob": os.environ[
+                          "FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB"
+                      ],
                   },
               },
           }
@@ -4630,7 +4699,15 @@ jobs:
           assert route["base_head"] == os.environ["FD08_BASE_HEAD"]
           assert route["base_tree"] == os.environ["FD08_BASE_TREE"]
           recovery_chain = route["recovery_chain"]
-          assert recovery_chain["commit_count_above_f1"] == 3
+          assert set(recovery_chain) == {
+              "commit_count_above_f1",
+              "merge_count",
+              "first_delivery",
+              "oracle_late_second",
+              "recovery_third",
+              "final_fourth",
+          }
+          assert recovery_chain["commit_count_above_f1"] == 4
           assert recovery_chain["merge_count"] == 0
           assert recovery_chain["first_delivery"] == {
               "head": os.environ["FD08_FIRST_HEAD"],
@@ -4648,19 +4725,93 @@ jobs:
                   }
               ],
           }
-          assert recovery_chain["final_recovery"] == {
+          assert recovery_chain["recovery_third"] == {
+              "head": os.environ["FD08_RECOVERY_THIRD_HEAD"],
+              "tree": os.environ["FD08_RECOVERY_THIRD_TREE"],
+              "parent": os.environ["FD08_RECOVERY_THIRD_PARENT"],
+              "exact_delta": [
+                  {
+                      "status": "M",
+                      "path": ".github/workflows/conflict-analysis.yml",
+                  },
+                  {
+                      "status": "M",
+                      "path": "software/conflict_analysis/domain/tests/test_player_projection.py",
+                  },
+                  {
+                      "status": "M",
+                      "path": "software/conflict_analysis/scripts/verify_player_projection_allowlist.py",
+                  },
+              ],
+          }
+          assert recovery_chain["final_fourth"] == {
               "head": route["delivery_head"],
               "tree": route["delivery_tree"],
-              "parent": os.environ["FD08_ORACLE_LATE_SECOND_HEAD"],
+              "parent": os.environ["FD08_RECOVERY_THIRD_HEAD"],
+              "exact_delta": [
+                  {
+                      "status": "M",
+                      "path": ".github/workflows/conflict-analysis.yml",
+                  },
+                  {
+                      "status": "M",
+                      "path": "software/conflict_analysis/domain/tests/test_postgresql_migrations.py",
+                  },
+                  {
+                      "status": "M",
+                      "path": "software/conflict_analysis/scripts/verify_player_projection_allowlist.py",
+                  },
+              ],
+          }
+          final_aggregate = route["final_aggregate"]
+          assert final_aggregate == {
+              "path_count": 11,
+              "modified_count": 5,
+              "added_count": 6,
+              "accepted_f1_inherited_postgresql_migration_test_preimage": {
+                  "path": "software/conflict_analysis/domain/tests/test_postgresql_migrations.py",
+                  "blob": os.environ[
+                      "FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB"
+                  ],
+              },
           }
           verifier = json.loads((root / "verifier.json").read_text(encoding="utf-8"))
           assert verifier["allowlist_result"] == "PASS"
           assert verifier["history"]["final_head"] == route["delivery_head"]
           assert verifier["history"]["final_tree"] == route["delivery_tree"]
-          assert verifier["history"]["final_parent"] == recovery_chain["final_recovery"]["parent"]
-          assert verifier["history"]["commit_count"] == 3
+          assert verifier["history"]["final_parent"] == recovery_chain["final_fourth"]["parent"]
+          assert verifier["history"]["commit_count"] == 4
           assert verifier["history"]["merge_count"] == 0
           assert verifier["history"]["recovery_chain"] == recovery_chain
+          verifier_paths = verifier["paths"]
+          assert verifier_paths["recovery_third_delta"] == {
+              ".github/workflows/conflict-analysis.yml": "M",
+              "software/conflict_analysis/domain/tests/test_player_projection.py": "M",
+              "software/conflict_analysis/scripts/verify_player_projection_allowlist.py": "M",
+          }
+          assert verifier_paths["fourth_child_delta"] == {
+              ".github/workflows/conflict-analysis.yml": "M",
+              "software/conflict_analysis/domain/tests/test_postgresql_migrations.py": "M",
+              "software/conflict_analysis/scripts/verify_player_projection_allowlist.py": "M",
+          }
+          assert verifier_paths["inherited_postgresql_migration_test_preimage"] == {
+              "path": "software/conflict_analysis/domain/tests/test_postgresql_migrations.py",
+              "accepted_f1": os.environ[
+                  "FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB"
+              ],
+              "recovery_third": os.environ[
+                  "FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB"
+              ],
+          }
+          assert verifier_paths["topology"] == "5 modified + 6 new aggregate across four commits"
+          assert verifier["inherited_postgresql_migration_test"] == {
+              "path": "software/conflict_analysis/domain/tests/test_postgresql_migrations.py",
+              "class": "ProjectPrimaryLanguageMigrationGateTests",
+              "method": "test_0016_reverse_reapply_and_clean_database_seed_are_exact",
+              "only_authorized_method_changed": True,
+              "reverse_reapply_cleanup_before_current_seed": True,
+              "test_names_unchanged": True,
+          }
 
           static = json.loads((root / "static.json").read_text(encoding="utf-8"))
           assert static["schema"] == "FD08_STATIC_MIGRATION_EVIDENCE_V1"
@@ -4776,6 +4927,7 @@ jobs:
                       "delivery_head": route["delivery_head"],
                       "delivery_tree": route["delivery_tree"],
                       "recovery_chain": recovery_chain,
+                      "final_aggregate": final_aggregate,
                       "migration_evidence": migration_evidence,
                       "foundation_results": {
                           "postgresql": postgresql_results,

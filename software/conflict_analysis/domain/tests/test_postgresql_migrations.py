@@ -1447,6 +1447,7 @@ class ProjectPrimaryLanguageMigrationGateTests(TransactionTestCase):
         self.assertEqual(self._project_snapshot(reapplied_project), before_projects)
 
         reapplied_project.objects.all().delete()
+        self._restore_leaf_migrations()
         from domain.demo_data import PROJECT_CODE, stable_demo_uuid
         from domain.services.seed import seed_zhanaozen_demo
 

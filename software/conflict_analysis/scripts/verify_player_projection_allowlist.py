@@ -2,8 +2,8 @@
 """Verify the bounded FD08 assessment-projection delivery contract.
 
 This verifier is intentionally Git-only.  It proves the exact accepted F1
-parent, the owner-authorized three-commit recovery chain, the original ten-path
-4+6 aggregate, frozen package and migration assets, migration evidence route,
+parent, the owner-authorized four-commit recovery chain, the final eleven-path
+5+6 aggregate, frozen package and migration assets, migration evidence route,
 and literal FD08 test registry.  Runtime semantics are proved by the focused
 and full test runs that invoke this verifier in CI.
 """
@@ -30,6 +30,9 @@ FD08_FIRST_COMMIT = "bbc89458f65e26a8ec38c4a00ccd0c788bfa73f5"
 FD08_FIRST_TREE = "e241824346771bf00732107ffb079f5ec8ae8403"
 FD08_SECOND_COMMIT = "5958117f7702f786f0a99ac2b49a421e6ccdf7c8"
 FD08_SECOND_TREE = "9878849d527bc76406799bebb1e0f79e28b4f999"
+FD08_RECOVERY_THIRD_COMMIT = "929b52aa765db1b17d3df5793391aafa2692e0dd"
+FD08_RECOVERY_THIRD_TREE = "8a7ef4a5294e2b4f31c39eea2c0afb8e16141a5e"
+FD08_RECOVERY_THIRD_PARENT = "5958117f7702f786f0a99ac2b49a421e6ccdf7c8"
 
 WORKFLOW_PATH = ".github/workflows/conflict-analysis.yml"
 ENUMS_PATH = "software/conflict_analysis/domain/enums.py"
@@ -43,27 +46,47 @@ MIGRATION_PATH = (
 )
 PROJECTION_PATH = "software/conflict_analysis/domain/services/player_projection.py"
 TEST_PATH = "software/conflict_analysis/domain/tests/test_player_projection.py"
+POSTGRESQL_MIGRATIONS_TEST_PATH = (
+    "software/conflict_analysis/domain/tests/test_postgresql_migrations.py"
+)
+POSTGRESQL_MIGRATION_TEST_CLASS = "ProjectPrimaryLanguageMigrationGateTests"
+POSTGRESQL_MIGRATION_TEST_METHOD = (
+    "test_0016_reverse_reapply_and_clean_database_seed_are_exact"
+)
 VERIFIER_PATH = "software/conflict_analysis/scripts/verify_player_projection_allowlist.py"
 SCHEMA_PATH = (
     "software/conflict_analysis/domain/services/schemas/"
     "foundation-package-2.2.0.schema.json"
 )
 
-FD08_MODIFIED_PATHS = frozenset(
+FD08_FIRST_MODIFIED_PATHS = frozenset(
     {WORKFLOW_PATH, ENUMS_PATH, MODELS_PATH, FOUNDATION_PACKAGES_PATH}
 )
 FD08_NEW_PATHS = frozenset(
     {ADR_PATH, MIGRATION_PATH, PROJECTION_PATH, TEST_PATH, VERIFIER_PATH, SCHEMA_PATH}
 )
-FD08_ALLOWLIST = FD08_MODIFIED_PATHS | FD08_NEW_PATHS
+FD08_FIRST_ALLOWLIST = FD08_FIRST_MODIFIED_PATHS | FD08_NEW_PATHS
+FD08_FINAL_MODIFIED_PATHS = FD08_FIRST_MODIFIED_PATHS | {
+    POSTGRESQL_MIGRATIONS_TEST_PATH
+}
+FD08_FINAL_ALLOWLIST = FD08_FINAL_MODIFIED_PATHS | FD08_NEW_PATHS
 FD08_SECOND_DELTA_STATUSES = {TEST_PATH: "M"}
-FD08_RECOVERY_DELTA_STATUSES = {
+FD08_RECOVERY_THIRD_DELTA_STATUSES = {
     WORKFLOW_PATH: "M",
     TEST_PATH: "M",
     VERIFIER_PATH: "M",
 }
-FD08_RECOVERY_DELTA_PATHS = frozenset(FD08_RECOVERY_DELTA_STATUSES)
+FD08_FOURTH_DELTA_STATUSES = {
+    WORKFLOW_PATH: "M",
+    POSTGRESQL_MIGRATIONS_TEST_PATH: "M",
+    VERIFIER_PATH: "M",
+}
+FD08_RECOVERY_THIRD_DELTA_PATHS = frozenset(FD08_RECOVERY_THIRD_DELTA_STATUSES)
+FD08_FOURTH_DELTA_PATHS = frozenset(FD08_FOURTH_DELTA_STATUSES)
 FD08_FROZEN_MIGRATION_BLOB = "292a8eb4abafeef80d6efc7d3c2d4cda5f771fd9"
+FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB = (
+    "70dba8ee3e1e159e85f112ffc4523cd8d097ba4e"
+)
 
 FD08_PREIMAGE_BLOBS = {
     WORKFLOW_PATH: "24631b5dd4a83ee680dd64e427c35805fbe1c276",
@@ -76,6 +99,10 @@ FROZEN_PACKAGE_BLOBS = {
     "foundation-package-2.0.0.schema.json": "f6d980c1ba298aabd7373b9579b2333ec18a52be",
     "software/conflict_analysis/domain/services/schemas/"
     "foundation-package-2.1.0.schema.json": "6aaf283725c8b929b1996b4e0200abf7f1804130",
+}
+FD08_FINAL_PREIMAGE_BLOBS = {
+    **FD08_PREIMAGE_BLOBS,
+    POSTGRESQL_MIGRATIONS_TEST_PATH: FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB,
 }
 PYPROJECT_PATH = "software/conflict_analysis/pyproject.toml"
 MIGRATION_DEPENDENCY = ("domain", "0017_multilingual_evidence_lineage")
@@ -111,14 +138,21 @@ WORKFLOW_RECOVERY_REQUIRED_TOKENS = (
     "FD08_ORACLE_LATE_SECOND_HEAD",
     "FD08_ORACLE_LATE_SECOND_TREE",
     "FD08_ORACLE_LATE_SECOND_PARENT",
+    "FD08_RECOVERY_THIRD_HEAD",
+    "FD08_RECOVERY_THIRD_TREE",
+    "FD08_RECOVERY_THIRD_PARENT",
+    "FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB",
+    FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB,
     "FD08_EXACT_HEAD_ROUTE_V1",
     "recovery_chain",
     "commit_count_above_f1",
     "merge_count",
     "first_delivery",
     "oracle_late_second",
+    "recovery_third",
     "exact_delta",
-    "final_recovery",
+    "final_fourth",
+    "test_postgresql_migrations.py",
     "fd08-migration-postgresql.json",
     "fd08-migration-sqlite.json",
     "FD08_MIGRATION_REVERSE_REAPPLY_EVIDENCE_V1",
@@ -134,6 +168,21 @@ WORKFLOW_RECOVERY_REQUIRED_TOKENS = (
     "FD08_SAME_RUN_ACCEPTANCE_EVIDENCE_V1",
     "acceptance_ready",
     "final_parent",
+    "FD08_STATIC_MIGRATION_EVIDENCE_V1",
+    "FD08_POSTGRESQL_RESULTS_V1",
+    "FD08_SQLITE_RESULTS_V1",
+    "FD08_INHERITED_PRODUCT_CHROMIUM_V1",
+    "FD08_WHEEL_EVIDENCE_V1",
+    "FD08_ISOLATED_WHEEL_INSTALL_V1",
+    "fd08-focused-postgresql.xml",
+    "fd08-foundation-postgresql.xml",
+    "fd08-focused-sqlite.xml",
+    "fd08-foundation-sqlite.xml",
+    "fd08-c0-postgresql.xml",
+    "fd08-c1-postgresql.xml",
+    "fd08-c0-sqlite.xml",
+    "fd08-c1-sqlite.xml",
+    "fd08-c1-chromium-postgresql.xml",
 )
 
 PORTABLE_TEST_METHODS = (
@@ -155,6 +204,24 @@ POSTGRESQL_ONLY_TEST_METHODS = (
     "test_competing_projection_identity_or_snapshot_has_one_commit_and_one_typed_loser",
 )
 FD08_TEST_METHODS = PORTABLE_TEST_METHODS + POSTGRESQL_ONLY_TEST_METHODS
+
+POSTGRESQL_MIGRATION_TEST_REQUIRED_TOKENS = (
+    "self.addCleanup(self._restore_leaf_migrations)",
+    "executor.migrate(self.migrate_from)",
+    "executor.migrate(self.migrate_to)",
+    "self.assertNotIn(",
+    "self._project_snapshot(reversed_project)",
+    "first_pairs",
+    "self._project_snapshot(reapplied_project)",
+    "reapplied_project.objects.all().delete()",
+    "self._restore_leaf_migrations()",
+    "from domain.services.seed import seed_zhanaozen_demo",
+    "seeded = seed_zhanaozen_demo()",
+    "replayed = seed_zhanaozen_demo()",
+    "stable_demo_uuid(",
+    '"ru"',
+    '"EXPLICIT"',
+)
 
 SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
 
@@ -188,36 +255,87 @@ def _constant_contract() -> None:
     _require_sha(FD08_FIRST_TREE, "FD08 first recovery tree")
     _require_sha(FD08_SECOND_COMMIT, "FD08 second recovery commit")
     _require_sha(FD08_SECOND_TREE, "FD08 second recovery tree")
+    _require_sha(FD08_RECOVERY_THIRD_COMMIT, "FD08 recovery third commit")
+    _require_sha(FD08_RECOVERY_THIRD_TREE, "FD08 recovery third tree")
+    _require_sha(FD08_RECOVERY_THIRD_PARENT, "FD08 recovery third parent")
     _require_sha(FD08_FROZEN_MIGRATION_BLOB, "FD08 frozen migration blob")
-    _require(len(FD08_ALLOWLIST) == 10, "FD08 allowlist must contain exactly ten paths")
-    _require(len(FD08_MODIFIED_PATHS) == 4, "FD08 must modify exactly four paths")
+    _require_sha(
+        FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB,
+        "FD08 accepted-F1 PostgreSQL migration test blob",
+    )
+    _require(
+        FD08_RECOVERY_THIRD_PARENT == FD08_SECOND_COMMIT,
+        "FD08 recovery third parent must be the oracle-late second commit",
+    )
+    _require(
+        len(FD08_FIRST_ALLOWLIST) == 10,
+        "FD08 first delivery allowlist must contain exactly ten paths",
+    )
+    _require(
+        len(FD08_FIRST_MODIFIED_PATHS) == 4,
+        "FD08 first delivery must modify exactly four paths",
+    )
     _require(len(FD08_NEW_PATHS) == 6, "FD08 must add exactly six paths")
     _require(
-        not (FD08_MODIFIED_PATHS & FD08_NEW_PATHS),
-        "FD08 modified and new path sets must not overlap",
+        not (FD08_FIRST_MODIFIED_PATHS & FD08_NEW_PATHS),
+        "FD08 first modified and new path sets must not overlap",
+    )
+    _require(
+        len(FD08_FINAL_ALLOWLIST) == 11,
+        "FD08 final aggregate allowlist must contain exactly eleven paths",
+    )
+    _require(
+        len(FD08_FINAL_MODIFIED_PATHS) == 5,
+        "FD08 final aggregate must modify exactly five paths",
+    )
+    _require(
+        not (FD08_FINAL_MODIFIED_PATHS & FD08_NEW_PATHS),
+        "FD08 final modified and new path sets must not overlap",
+    )
+    _require(
+        POSTGRESQL_MIGRATIONS_TEST_PATH not in FD08_FIRST_ALLOWLIST
+        and POSTGRESQL_MIGRATIONS_TEST_PATH in FD08_FINAL_ALLOWLIST,
+        "FD08 inherited PostgreSQL migration test must be the sole fourth-child aggregate path",
     )
     _require(
         FD08_SECOND_DELTA_STATUSES == {TEST_PATH: "M"},
         "FD08 second recovery delta must be the exact test-file modification",
     )
     _require(
-        FD08_RECOVERY_DELTA_STATUSES
+        FD08_RECOVERY_THIRD_DELTA_STATUSES
         == {
             WORKFLOW_PATH: "M",
             TEST_PATH: "M",
             VERIFIER_PATH: "M",
         },
-        "FD08 final recovery delta must modify only workflow, test, and verifier",
+        "FD08 recovery third delta must modify only workflow, projection test, and verifier",
     )
     _require(
-        FD08_RECOVERY_DELTA_PATHS <= FD08_ALLOWLIST,
-        "FD08 final recovery paths must remain inside the original allowlist",
+        FD08_FOURTH_DELTA_STATUSES
+        == {
+            WORKFLOW_PATH: "M",
+            POSTGRESQL_MIGRATIONS_TEST_PATH: "M",
+            VERIFIER_PATH: "M",
+        },
+        "FD08 fourth-child delta must modify only workflow, PostgreSQL migration test, and verifier",
     )
     _require(
-        set(FD08_PREIMAGE_BLOBS) == set(FD08_MODIFIED_PATHS),
-        "FD08 preimage map must cover exactly the four modified paths",
+        FD08_RECOVERY_THIRD_DELTA_PATHS <= FD08_FIRST_ALLOWLIST,
+        "FD08 recovery third paths must remain inside the original allowlist",
     )
-    for path, object_id in FD08_PREIMAGE_BLOBS.items():
+    _require(
+        FD08_FOURTH_DELTA_PATHS <= FD08_FINAL_ALLOWLIST,
+        "FD08 fourth-child paths must remain inside the final aggregate allowlist",
+    )
+    _require(
+        set(FD08_PREIMAGE_BLOBS) == set(FD08_FIRST_MODIFIED_PATHS),
+        "FD08 original preimage map must cover exactly the four first-delivery modified paths",
+    )
+    _require(
+        set(FD08_FINAL_PREIMAGE_BLOBS) == set(FD08_FINAL_MODIFIED_PATHS),
+        "FD08 final preimage map must cover exactly the five final modified paths",
+    )
+    for path, object_id in FD08_FINAL_PREIMAGE_BLOBS.items():
         _require(PurePosixPath(path).as_posix() == path, f"non-posix FD08 path: {path}")
         _require_sha(object_id, f"FD08 preimage {path}")
     for path, object_id in FROZEN_PACKAGE_BLOBS.items():
@@ -298,9 +416,10 @@ def _validate_recovery_history(
     commit_parents: Iterable[Iterable[str]],
     first_tree: str,
     second_tree: str,
+    third_tree: str,
     merge_count: int,
 ) -> None:
-    """Require only the owner-authorized three-commit FD08 recovery chain."""
+    """Require the owner-authorized four-commit FD08 recovery chain."""
 
     commits = tuple(ordered_commits)
     parents = tuple(tuple(parent_ids) for parent_ids in commit_parents)
@@ -311,16 +430,28 @@ def _validate_recovery_history(
             _require_sha(parent, f"FD08 recovery commit {index} parent")
     _require_sha(first_tree, "FD08 first recovery tree")
     _require_sha(second_tree, "FD08 second recovery tree")
-    _require(commit_count == 3, "FD08 recovery must contain exactly three commits")
-    _require(len(commits) == 3, "FD08 recovery commit sequence must contain three commits")
-    _require(len(parents) == 3, "FD08 recovery parent sequence must contain three commits")
+    _require_sha(third_tree, "FD08 recovery third tree")
+    _require(commit_count == 4, "FD08 recovery must contain exactly four commits")
+    _require(len(commits) == 4, "FD08 recovery commit sequence must contain four commits")
+    _require(len(parents) == 4, "FD08 recovery parent sequence must contain four commits")
     _require(
-        commits[:2] == (FD08_FIRST_COMMIT, FD08_SECOND_COMMIT),
-        "FD08 recovery fixed first or second commit drifted",
+        commits[:3]
+        == (
+            FD08_FIRST_COMMIT,
+            FD08_SECOND_COMMIT,
+            FD08_RECOVERY_THIRD_COMMIT,
+        ),
+        "FD08 recovery fixed first, second, or third commit drifted",
     )
     _require(
-        commits[2] not in {FD08_BASE_HEAD, FD08_FIRST_COMMIT, FD08_SECOND_COMMIT},
-        "FD08 recovery final commit must be a new ordinary child",
+        commits[3]
+        not in {
+            FD08_BASE_HEAD,
+            FD08_FIRST_COMMIT,
+            FD08_SECOND_COMMIT,
+            FD08_RECOVERY_THIRD_COMMIT,
+        },
+        "FD08 recovery fourth commit must be a new ordinary child",
     )
     _require(
         parents
@@ -328,8 +459,9 @@ def _validate_recovery_history(
             (FD08_BASE_HEAD,),
             (FD08_FIRST_COMMIT,),
             (FD08_SECOND_COMMIT,),
+            (FD08_RECOVERY_THIRD_COMMIT,),
         ),
-        "FD08 recovery parent chain must be F1 -> first -> second -> final",
+        "FD08 recovery parent chain must be F1 -> first -> second -> third -> fourth",
     )
     _require(
         first_tree == FD08_FIRST_TREE,
@@ -339,13 +471,23 @@ def _validate_recovery_history(
         second_tree == FD08_SECOND_TREE,
         "FD08 recovery second commit tree drifted",
     )
+    _require(
+        third_tree == FD08_RECOVERY_THIRD_TREE,
+        "FD08 recovery third commit tree drifted",
+    )
     _require(merge_count == 0, "FD08 recovery must not contain merge commits")
 
 
-def _validate_topology(statuses: Mapping[str, str]) -> None:
+def _validate_topology(
+    statuses: Mapping[str, str],
+    *,
+    allowlist: frozenset[str],
+    modified_paths: frozenset[str],
+    label: str,
+) -> None:
     _require(
-        set(statuses) == FD08_ALLOWLIST,
-        "FD08 changed paths must equal the exact ten-path allowlist",
+        set(statuses) == allowlist,
+        f"{label} changed paths must equal its exact allowlist",
     )
     modified = {path for path, status in statuses.items() if status == "M"}
     new = {path for path, status in statuses.items() if status == "A"}
@@ -353,8 +495,26 @@ def _validate_topology(statuses: Mapping[str, str]) -> None:
         set(statuses.values()) <= {"M", "A"},
         "FD08 may contain only ordinary modifications and additions",
     )
-    _require(modified == FD08_MODIFIED_PATHS, "FD08 modified-path topology drifted")
-    _require(new == FD08_NEW_PATHS, "FD08 new-path topology drifted")
+    _require(modified == modified_paths, f"{label} modified-path topology drifted")
+    _require(new == FD08_NEW_PATHS, f"{label} new-path topology drifted")
+
+
+def _validate_first_topology(statuses: Mapping[str, str]) -> None:
+    _validate_topology(
+        statuses,
+        allowlist=FD08_FIRST_ALLOWLIST,
+        modified_paths=FD08_FIRST_MODIFIED_PATHS,
+        label="FD08 first delivery",
+    )
+
+
+def _validate_final_topology(statuses: Mapping[str, str]) -> None:
+    _validate_topology(
+        statuses,
+        allowlist=FD08_FINAL_ALLOWLIST,
+        modified_paths=FD08_FINAL_MODIFIED_PATHS,
+        label="FD08 final aggregate",
+    )
 
 
 def _validate_exact_delta(
@@ -374,18 +534,40 @@ def _validate_second_delta(statuses: Mapping[str, str]) -> None:
     )
 
 
-def _validate_recovery_delta(statuses: Mapping[str, str]) -> None:
+def _validate_recovery_third_delta(statuses: Mapping[str, str]) -> None:
     _validate_exact_delta(
         statuses,
-        FD08_RECOVERY_DELTA_STATUSES,
-        "FD08 final recovery",
+        FD08_RECOVERY_THIRD_DELTA_STATUSES,
+        "FD08 recovery third",
     )
 
 
-def _validate_preimage_map(actual: Mapping[str, str]) -> None:
+def _validate_fourth_delta(statuses: Mapping[str, str]) -> None:
+    _validate_exact_delta(
+        statuses,
+        FD08_FOURTH_DELTA_STATUSES,
+        "FD08 fourth child",
+    )
+
+
+def _validate_original_preimage_map(actual: Mapping[str, str]) -> None:
     _require(
         dict(actual) == FD08_PREIMAGE_BLOBS,
-        "FD08 modified preimage blobs differ from the accepted F1 base",
+        "FD08 original modified preimage blobs differ from the accepted F1 base",
+    )
+
+
+def _validate_final_preimage_map(actual: Mapping[str, str]) -> None:
+    _require(
+        dict(actual) == FD08_FINAL_PREIMAGE_BLOBS,
+        "FD08 final modified preimage blobs differ from the accepted F1 base",
+    )
+
+
+def _validate_inherited_postgresql_migration_test_preimage(actual: str) -> None:
+    _require(
+        actual == FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB,
+        "FD08 inherited PostgreSQL migration test preimage drifted from accepted F1",
     )
 
 
@@ -468,14 +650,172 @@ class _TestNameCollector(ast.NodeVisitor):
     visit_AsyncFunctionDef = visit_FunctionDef
 
 
-def _test_method_names(path: Path) -> tuple[str, ...]:
+def _parse_python_module(source: str, label: str) -> ast.Module:
     try:
-        module = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    except (OSError, SyntaxError) as exc:
-        raise VerificationError(f"cannot parse FD08 test registry: {exc}") from exc
+        return ast.parse(source, filename=label)
+    except SyntaxError as exc:
+        raise VerificationError(f"cannot parse FD08 Python source {label}: {exc}") from exc
+
+
+def _test_method_names_from_module(module: ast.Module) -> tuple[str, ...]:
     collector = _TestNameCollector()
     collector.visit(module)
     return tuple(collector.names)
+
+
+def _test_method_names(path: Path) -> tuple[str, ...]:
+    try:
+        source = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise VerificationError(f"cannot read FD08 test registry: {exc}") from exc
+    return _test_method_names_from_module(_parse_python_module(source, str(path)))
+
+
+def _class_method(
+    module: ast.Module, *, class_name: str, method_name: str, label: str
+) -> ast.FunctionDef:
+    classes = [
+        node
+        for node in module.body
+        if isinstance(node, ast.ClassDef) and node.name == class_name
+    ]
+    _require(len(classes) == 1, f"{label} must contain one {class_name} class")
+    methods = [
+        node
+        for node in classes[0].body
+        if isinstance(node, ast.FunctionDef) and node.name == method_name
+    ]
+    _require(
+        len(methods) == 1,
+        f"{label} must contain one {class_name}.{method_name} method",
+    )
+    return methods[0]
+
+
+def _source_without_method(source: str, method: ast.FunctionDef, label: str) -> str:
+    start_line = min(
+        (decorator.lineno for decorator in method.decorator_list),
+        default=method.lineno,
+    )
+    _require(
+        method.end_lineno is not None,
+        f"{label} {method.name} must have a source end line",
+    )
+    lines = source.splitlines(keepends=True)
+    _require(
+        1 <= start_line <= method.end_lineno <= len(lines),
+        f"{label} {method.name} source span is invalid",
+    )
+    return "".join(lines[: start_line - 1] + lines[method.end_lineno :])
+
+
+def _verify_inherited_postgresql_migration_test_scope(repo: Path) -> dict[str, object]:
+    root = _repo_root(repo)
+    try:
+        final_source = (root / POSTGRESQL_MIGRATIONS_TEST_PATH).read_text(encoding="utf-8")
+    except OSError as exc:
+        raise VerificationError(
+            f"cannot read inherited PostgreSQL migration test: {exc}"
+        ) from exc
+    base_source = _git(
+        repo,
+        "show",
+        f"{FD08_BASE_HEAD}:{POSTGRESQL_MIGRATIONS_TEST_PATH}",
+    )
+    base_module = _parse_python_module(
+        base_source,
+        f"{FD08_BASE_HEAD}:{POSTGRESQL_MIGRATIONS_TEST_PATH}",
+    )
+    final_module = _parse_python_module(
+        final_source,
+        str(root / POSTGRESQL_MIGRATIONS_TEST_PATH),
+    )
+    _require(
+        _test_method_names_from_module(final_module)
+        == _test_method_names_from_module(base_module),
+        "FD08 fourth child must not add or rename PostgreSQL migration tests",
+    )
+    base_method = _class_method(
+        base_module,
+        class_name=POSTGRESQL_MIGRATION_TEST_CLASS,
+        method_name=POSTGRESQL_MIGRATION_TEST_METHOD,
+        label="accepted F1 PostgreSQL migration test",
+    )
+    final_method = _class_method(
+        final_module,
+        class_name=POSTGRESQL_MIGRATION_TEST_CLASS,
+        method_name=POSTGRESQL_MIGRATION_TEST_METHOD,
+        label="final PostgreSQL migration test",
+    )
+    _require(
+        ast.dump(base_method.args, include_attributes=False)
+        == ast.dump(final_method.args, include_attributes=False),
+        "FD08 fourth child must preserve the inherited migration test signature",
+    )
+    _require(
+        tuple(
+            ast.dump(decorator, include_attributes=False)
+            for decorator in base_method.decorator_list
+        )
+        == tuple(
+            ast.dump(decorator, include_attributes=False)
+            for decorator in final_method.decorator_list
+        ),
+        "FD08 fourth child must preserve the inherited migration test decorators",
+    )
+    _require(
+        ast.dump(
+            _parse_python_module(
+                _source_without_method(
+                    base_source,
+                    base_method,
+                    "accepted F1 PostgreSQL migration test",
+                ),
+                "accepted F1 PostgreSQL migration test outside authorized method",
+            ),
+            include_attributes=False,
+        )
+        == ast.dump(
+            _parse_python_module(
+                _source_without_method(
+                    final_source,
+                    final_method,
+                    "final PostgreSQL migration test",
+                ),
+                "final PostgreSQL migration test outside authorized method",
+            ),
+            include_attributes=False,
+        ),
+        "FD08 fourth child may alter only the inherited migration test method",
+    )
+    final_body = ast.get_source_segment(final_source, final_method)
+    _require(
+        final_body is not None,
+        "FD08 fourth child cannot recover its authorized migration test body",
+    )
+    _validate_required_tokens(
+        final_body,
+        POSTGRESQL_MIGRATION_TEST_REQUIRED_TOKENS,
+        "FD08 inherited PostgreSQL migration test contract",
+    )
+    delete_index = final_body.index("reapplied_project.objects.all().delete()")
+    restore_index = final_body.index("self._restore_leaf_migrations()", delete_index)
+    seed_import_index = final_body.index(
+        "from domain.services.seed import seed_zhanaozen_demo", restore_index
+    )
+    seed_call_index = final_body.index("seeded = seed_zhanaozen_demo()", seed_import_index)
+    _require(
+        delete_index < restore_index < seed_import_index < seed_call_index,
+        "FD08 fourth child must restore current leaf migrations after cleanup and before seed import/replay",
+    )
+    return {
+        "path": POSTGRESQL_MIGRATIONS_TEST_PATH,
+        "class": POSTGRESQL_MIGRATION_TEST_CLASS,
+        "method": POSTGRESQL_MIGRATION_TEST_METHOD,
+        "only_authorized_method_changed": True,
+        "reverse_reapply_cleanup_before_current_seed": True,
+        "test_names_unchanged": True,
+    }
 
 
 def _migration_dependencies(path: Path) -> object:
@@ -542,12 +882,14 @@ def _verify_history(repo: Path) -> dict[str, object]:
     merges = _git(repo, "rev-list", "--merges", f"{FD08_BASE_HEAD}..HEAD").splitlines()
     first_tree = _git(repo, "rev-parse", f"{FD08_FIRST_COMMIT}^{{tree}}")
     second_tree = _git(repo, "rev-parse", f"{FD08_SECOND_COMMIT}^{{tree}}")
+    third_tree = _git(repo, "rev-parse", f"{FD08_RECOVERY_THIRD_COMMIT}^{{tree}}")
     _validate_recovery_history(
         commit_count=commit_count,
         ordered_commits=ordered_commits,
         commit_parents=commit_parents,
         first_tree=first_tree,
         second_tree=second_tree,
+        third_tree=third_tree,
         merge_count=len(merges),
     )
     final_head = _git(repo, "rev-parse", "HEAD")
@@ -579,10 +921,25 @@ def _verify_history(repo: Path) -> dict[str, object]:
                     for path, status in sorted(FD08_SECOND_DELTA_STATUSES.items())
                 ],
             },
-            "final_recovery": {
+            "recovery_third": {
+                "head": FD08_RECOVERY_THIRD_COMMIT,
+                "tree": third_tree,
+                "parent": FD08_RECOVERY_THIRD_PARENT,
+                "exact_delta": [
+                    {"status": status, "path": path}
+                    for path, status in sorted(
+                        FD08_RECOVERY_THIRD_DELTA_STATUSES.items()
+                    )
+                ],
+            },
+            "final_fourth": {
                 "head": final_head,
                 "tree": final_tree,
                 "parent": final_parent,
+                "exact_delta": [
+                    {"status": status, "path": path}
+                    for path, status in sorted(FD08_FOURTH_DELTA_STATUSES.items())
+                ],
             },
         },
     }
@@ -591,14 +948,18 @@ def _verify_history(repo: Path) -> dict[str, object]:
 def _verify_paths_and_preimages(repo: Path) -> dict[str, object]:
     first_statuses = _changed_statuses(repo, FD08_BASE_HEAD, FD08_FIRST_COMMIT)
     second_statuses = _changed_statuses(repo, FD08_FIRST_COMMIT, FD08_SECOND_COMMIT)
-    recovery_statuses = _changed_statuses(repo, FD08_SECOND_COMMIT, "HEAD")
+    third_statuses = _changed_statuses(
+        repo, FD08_SECOND_COMMIT, FD08_RECOVERY_THIRD_COMMIT
+    )
+    fourth_statuses = _changed_statuses(repo, FD08_RECOVERY_THIRD_COMMIT, "HEAD")
     aggregate_statuses = _changed_statuses(repo, FD08_BASE_HEAD, "HEAD")
-    _validate_topology(first_statuses)
+    _validate_first_topology(first_statuses)
     _validate_second_delta(second_statuses)
-    _validate_recovery_delta(recovery_statuses)
-    _validate_topology(aggregate_statuses)
+    _validate_recovery_third_delta(third_statuses)
+    _validate_fourth_delta(fourth_statuses)
+    _validate_final_topology(aggregate_statuses)
     preimages: dict[str, str] = {}
-    for path, expected_blob in FD08_PREIMAGE_BLOBS.items():
+    for path, expected_blob in FD08_FINAL_PREIMAGE_BLOBS.items():
         base_entry = _require_regular_file(_entry(repo, FD08_BASE_HEAD, path), f"base {path}")
         preimages[path] = base_entry.object_id
         _require(
@@ -606,13 +967,32 @@ def _verify_paths_and_preimages(repo: Path) -> dict[str, object]:
             f"FD08 base preimage drifted: {path}",
         )
         _require_regular_file(_entry(repo, "HEAD", path), f"final {path}")
-    _validate_preimage_map(preimages)
+    _validate_original_preimage_map(
+        {path: preimages[path] for path in FD08_PREIMAGE_BLOBS}
+    )
+    _validate_final_preimage_map(preimages)
+    inherited_base_blob = preimages[POSTGRESQL_MIGRATIONS_TEST_PATH]
+    _validate_inherited_postgresql_migration_test_preimage(inherited_base_blob)
+    inherited_recovery_third_blob = _require_regular_file(
+        _entry(
+            repo,
+            FD08_RECOVERY_THIRD_COMMIT,
+            POSTGRESQL_MIGRATIONS_TEST_PATH,
+        ),
+        f"{FD08_RECOVERY_THIRD_COMMIT} {POSTGRESQL_MIGRATIONS_TEST_PATH}",
+    ).object_id
+    _validate_inherited_postgresql_migration_test_preimage(inherited_recovery_third_blob)
     frozen_migration_entries = {
         revision: _require_regular_file(
             _entry(repo, revision, MIGRATION_PATH),
             f"{revision} {MIGRATION_PATH}",
         ).object_id
-        for revision in (FD08_FIRST_COMMIT, FD08_SECOND_COMMIT, "HEAD")
+        for revision in (
+            FD08_FIRST_COMMIT,
+            FD08_SECOND_COMMIT,
+            FD08_RECOVERY_THIRD_COMMIT,
+            "HEAD",
+        )
     }
     for object_id in frozen_migration_entries.values():
         _validate_frozen_migration_blob(object_id)
@@ -634,9 +1014,15 @@ def _verify_paths_and_preimages(repo: Path) -> dict[str, object]:
         "modified_preimage_blobs": preimages,
         "first_delivery_delta": first_statuses,
         "second_delivery_delta": second_statuses,
-        "final_recovery_delta": recovery_statuses,
+        "recovery_third_delta": third_statuses,
+        "fourth_child_delta": fourth_statuses,
+        "inherited_postgresql_migration_test_preimage": {
+            "path": POSTGRESQL_MIGRATIONS_TEST_PATH,
+            "accepted_f1": inherited_base_blob,
+            "recovery_third": inherited_recovery_third_blob,
+        },
         "frozen_migration_blobs": frozen_migration_entries,
-        "topology": "4 modified + 6 new aggregate across three commits",
+        "topology": "5 modified + 6 new aggregate across four commits",
     }
 
 
@@ -774,6 +1160,9 @@ def verify_fd08(
         "target_branch": FD08_TARGET_BRANCH,
         "history": _verify_history(resolved),
         "paths": _verify_paths_and_preimages(resolved),
+        "inherited_postgresql_migration_test": _verify_inherited_postgresql_migration_test_scope(
+            resolved
+        ),
         "migration_and_registry": _verify_migration_and_registry(resolved),
         "package_compatibility": _verify_package_compatibility(resolved),
         "workflow_contract": _verify_workflow_contract(resolved),
@@ -791,31 +1180,44 @@ def _expect_verification_error(call: Callable[[], object]) -> bool:
 
 def self_check() -> dict[str, object]:
     _constant_contract()
-    expected_statuses = {
-        **{path: "M" for path in FD08_MODIFIED_PATHS},
+    first_statuses = {
+        **{path: "M" for path in FD08_FIRST_MODIFIED_PATHS},
+        **{path: "A" for path in FD08_NEW_PATHS},
+    }
+    final_statuses = {
+        **{path: "M" for path in FD08_FINAL_MODIFIED_PATHS},
         **{path: "A" for path in FD08_NEW_PATHS},
     }
     recovery_history = {
-        "commit_count": 3,
+        "commit_count": 4,
         "ordered_commits": (
             FD08_FIRST_COMMIT,
             FD08_SECOND_COMMIT,
+            FD08_RECOVERY_THIRD_COMMIT,
             "c" * 40,
         ),
         "commit_parents": (
             (FD08_BASE_HEAD,),
             (FD08_FIRST_COMMIT,),
             (FD08_SECOND_COMMIT,),
+            (FD08_RECOVERY_THIRD_COMMIT,),
         ),
         "first_tree": FD08_FIRST_TREE,
         "second_tree": FD08_SECOND_TREE,
+        "third_tree": FD08_RECOVERY_THIRD_TREE,
         "merge_count": 0,
     }
     _validate_recovery_history(**recovery_history)
-    _validate_topology(expected_statuses)
+    _validate_first_topology(first_statuses)
+    _validate_final_topology(final_statuses)
     _validate_second_delta(FD08_SECOND_DELTA_STATUSES)
-    _validate_recovery_delta(FD08_RECOVERY_DELTA_STATUSES)
-    _validate_preimage_map(FD08_PREIMAGE_BLOBS)
+    _validate_recovery_third_delta(FD08_RECOVERY_THIRD_DELTA_STATUSES)
+    _validate_fourth_delta(FD08_FOURTH_DELTA_STATUSES)
+    _validate_original_preimage_map(FD08_PREIMAGE_BLOBS)
+    _validate_final_preimage_map(FD08_FINAL_PREIMAGE_BLOBS)
+    _validate_inherited_postgresql_migration_test_preimage(
+        FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB
+    )
     _validate_frozen_migration_blob(FD08_FROZEN_MIGRATION_BLOB)
     _validate_registry(FD08_TEST_METHODS)
     _validate_migration_dependency([MIGRATION_DEPENDENCY])
@@ -828,35 +1230,55 @@ def self_check() -> dict[str, object]:
         "FD08 synthetic workflow recovery evidence",
     )
 
-    wrong_statuses = dict(expected_statuses)
-    wrong_statuses["README.md"] = "A"
-    missing_statuses = dict(expected_statuses)
-    missing_statuses.pop(VERIFIER_PATH)
-    swapped_statuses = dict(expected_statuses)
-    swapped_statuses[WORKFLOW_PATH] = "A"
-    wrong_preimages = dict(FD08_PREIMAGE_BLOBS)
-    wrong_preimages[WORKFLOW_PATH] = "0" * 40
+    extra_final_statuses = dict(final_statuses)
+    extra_final_statuses["README.md"] = "A"
+    missing_final_statuses = dict(final_statuses)
+    missing_final_statuses.pop(VERIFIER_PATH)
+    swapped_final_statuses = dict(final_statuses)
+    swapped_final_statuses[POSTGRESQL_MIGRATIONS_TEST_PATH] = "A"
+    wrong_original_preimages = dict(FD08_PREIMAGE_BLOBS)
+    wrong_original_preimages[WORKFLOW_PATH] = "0" * 40
+    wrong_final_preimages = dict(FD08_FINAL_PREIMAGE_BLOBS)
+    wrong_final_preimages[POSTGRESQL_MIGRATIONS_TEST_PATH] = "0" * 40
     wrong_registry = (*FD08_TEST_METHODS[:-1], "test_unapproved_projection_case")
     wrong_migration_dependency = [("domain", "0016_project_language_bootstrap")]
     wrong_frozen_registry = dict(FROZEN_PACKAGE_BLOBS)
     wrong_frozen_registry[next(iter(wrong_frozen_registry))] = "0" * 40
     wrong_second_delta = {TEST_PATH: "A"}
-    wrong_recovery_delta = dict(FD08_RECOVERY_DELTA_STATUSES)
-    wrong_recovery_delta["README.md"] = "M"
-    four_commit_history = {
+    wrong_recovery_third_delta = dict(FD08_RECOVERY_THIRD_DELTA_STATUSES)
+    wrong_recovery_third_delta["README.md"] = "M"
+    wrong_fourth_delta = dict(FD08_FOURTH_DELTA_STATUSES)
+    wrong_fourth_delta[POSTGRESQL_MIGRATIONS_TEST_PATH] = "A"
+    three_commit_history = {
         **recovery_history,
-        "commit_count": 4,
+        "commit_count": 3,
         "ordered_commits": (
             FD08_FIRST_COMMIT,
             FD08_SECOND_COMMIT,
-            "d" * 40,
-            "c" * 40,
+            FD08_RECOVERY_THIRD_COMMIT,
         ),
         "commit_parents": (
             (FD08_BASE_HEAD,),
             (FD08_FIRST_COMMIT,),
             (FD08_SECOND_COMMIT,),
-            ("d" * 40,),
+        ),
+    }
+    five_commit_history = {
+        **recovery_history,
+        "commit_count": 5,
+        "ordered_commits": (
+            FD08_FIRST_COMMIT,
+            FD08_SECOND_COMMIT,
+            FD08_RECOVERY_THIRD_COMMIT,
+            "c" * 40,
+            "d" * 40,
+        ),
+        "commit_parents": (
+            (FD08_BASE_HEAD,),
+            (FD08_FIRST_COMMIT,),
+            (FD08_SECOND_COMMIT,),
+            (FD08_RECOVERY_THIRD_COMMIT,),
+            ("c" * 40,),
         ),
     }
     migration_evidence_token_removed = workflow_recovery_source.replace(
@@ -869,6 +1291,11 @@ def self_check() -> dict[str, object]:
         "",
         1,
     )
+    fourth_evidence_token_removed = workflow_recovery_source.replace(
+        "final_fourth",
+        "",
+        1,
+    )
     negative_cases = {
         "base_parent_drift_rejected": _expect_verification_error(
             lambda: _validate_recovery_history(
@@ -878,6 +1305,7 @@ def self_check() -> dict[str, object]:
                         (FD08_BASE_PARENT,),
                         (FD08_FIRST_COMMIT,),
                         (FD08_SECOND_COMMIT,),
+                        (FD08_RECOVERY_THIRD_COMMIT,),
                     ),
                 }
             )
@@ -889,6 +1317,7 @@ def self_check() -> dict[str, object]:
                     "ordered_commits": (
                         "a" * 40,
                         FD08_SECOND_COMMIT,
+                        FD08_RECOVERY_THIRD_COMMIT,
                         "c" * 40,
                     ),
                 }
@@ -906,6 +1335,7 @@ def self_check() -> dict[str, object]:
                     "ordered_commits": (
                         FD08_FIRST_COMMIT,
                         "b" * 40,
+                        FD08_RECOVERY_THIRD_COMMIT,
                         "c" * 40,
                     ),
                 }
@@ -924,6 +1354,38 @@ def self_check() -> dict[str, object]:
                         (FD08_BASE_HEAD,),
                         ("d" * 40,),
                         (FD08_SECOND_COMMIT,),
+                        (FD08_RECOVERY_THIRD_COMMIT,),
+                    ),
+                }
+            )
+        ),
+        "recovery_third_head_drift_rejected": _expect_verification_error(
+            lambda: _validate_recovery_history(
+                **{
+                    **recovery_history,
+                    "ordered_commits": (
+                        FD08_FIRST_COMMIT,
+                        FD08_SECOND_COMMIT,
+                        "d" * 40,
+                        "c" * 40,
+                    ),
+                }
+            )
+        ),
+        "recovery_third_tree_drift_rejected": _expect_verification_error(
+            lambda: _validate_recovery_history(
+                **{**recovery_history, "third_tree": "d" * 40}
+            )
+        ),
+        "recovery_third_parent_drift_rejected": _expect_verification_error(
+            lambda: _validate_recovery_history(
+                **{
+                    **recovery_history,
+                    "commit_parents": (
+                        (FD08_BASE_HEAD,),
+                        (FD08_FIRST_COMMIT,),
+                        (FD08_SECOND_COMMIT,),
+                        ("d" * 40,),
                     ),
                 }
             )
@@ -935,52 +1397,49 @@ def self_check() -> dict[str, object]:
                     "commit_parents": (
                         (FD08_BASE_HEAD,),
                         (FD08_FIRST_COMMIT,),
+                        (FD08_SECOND_COMMIT,),
                         ("d" * 40,),
                     ),
                 }
             )
         ),
-        "two_commit_chain_rejected": _expect_verification_error(
-            lambda: _validate_recovery_history(
-                **{
-                    **recovery_history,
-                    "commit_count": 2,
-                    "ordered_commits": (
-                        FD08_FIRST_COMMIT,
-                        FD08_SECOND_COMMIT,
-                    ),
-                    "commit_parents": (
-                        (FD08_BASE_HEAD,),
-                        (FD08_FIRST_COMMIT,),
-                    ),
-                }
-            )
+        "three_commit_chain_rejected": _expect_verification_error(
+            lambda: _validate_recovery_history(**three_commit_history)
         ),
-        "four_commit_chain_rejected": _expect_verification_error(
-            lambda: _validate_recovery_history(**four_commit_history)
+        "five_commit_chain_rejected": _expect_verification_error(
+            lambda: _validate_recovery_history(**five_commit_history)
         ),
         "merge_rejected": _expect_verification_error(
             lambda: _validate_recovery_history(
                 **{**recovery_history, "merge_count": 1}
             )
         ),
-        "extra_aggregate_path_rejected": _expect_verification_error(
-            lambda: _validate_topology(wrong_statuses)
+        "extra_aggregate_11_path_rejected": _expect_verification_error(
+            lambda: _validate_final_topology(extra_final_statuses)
         ),
-        "missing_aggregate_path_rejected": _expect_verification_error(
-            lambda: _validate_topology(missing_statuses)
+        "missing_aggregate_11_path_rejected": _expect_verification_error(
+            lambda: _validate_final_topology(missing_final_statuses)
         ),
-        "aggregate_4_plus_6_classification_rejected": _expect_verification_error(
-            lambda: _validate_topology(swapped_statuses)
+        "aggregate_5_plus_6_classification_rejected": _expect_verification_error(
+            lambda: _validate_final_topology(swapped_final_statuses)
         ),
         "second_delta_path_rejected": _expect_verification_error(
             lambda: _validate_second_delta(wrong_second_delta)
         ),
-        "recovery_path_rejected": _expect_verification_error(
-            lambda: _validate_recovery_delta(wrong_recovery_delta)
+        "recovery_third_delta_rejected": _expect_verification_error(
+            lambda: _validate_recovery_third_delta(wrong_recovery_third_delta)
         ),
-        "preimage_drift_rejected": _expect_verification_error(
-            lambda: _validate_preimage_map(wrong_preimages)
+        "fourth_child_delta_rejected": _expect_verification_error(
+            lambda: _validate_fourth_delta(wrong_fourth_delta)
+        ),
+        "original_preimage_drift_rejected": _expect_verification_error(
+            lambda: _validate_original_preimage_map(wrong_original_preimages)
+        ),
+        "inherited_postgresql_migration_test_preimage_drift_rejected": _expect_verification_error(
+            lambda: _validate_final_preimage_map(wrong_final_preimages)
+        ),
+        "inherited_postgresql_migration_test_blob_drift_rejected": _expect_verification_error(
+            lambda: _validate_inherited_postgresql_migration_test_preimage("0" * 40)
         ),
         "frozen_migration_drift_rejected": _expect_verification_error(
             lambda: _validate_frozen_migration_blob("0" * 40)
@@ -1011,15 +1470,23 @@ def self_check() -> dict[str, object]:
                 "FD08 synthetic workflow recovery evidence",
             )
         ),
+        "fourth_evidence_token_removal_rejected": _expect_verification_error(
+            lambda: _validate_required_tokens(
+                fourth_evidence_token_removed,
+                WORKFLOW_RECOVERY_REQUIRED_TOKENS,
+                "FD08 synthetic workflow recovery evidence",
+            )
+        ),
     }
     _require(all(negative_cases.values()), "FD08 verifier negative self-check failed")
     return {
         "contract_self_check": "PASS",
         "slice": "FD08",
-        "marker": "FD08_RECOVERY_3_COMMIT_VERIFIER_SELF_CHECK=PASS",
+        "marker": "FD08_RECOVERY_4_COMMIT_VERIFIER_SELF_CHECK=PASS",
         "negative_cases": negative_cases,
-        "path_counts": {"modified": 4, "new": 6, "total": 10},
-        "recovery_path_count": len(FD08_RECOVERY_DELTA_PATHS),
+        "path_counts": {"modified": 5, "new": 6, "total": 11},
+        "recovery_third_path_count": len(FD08_RECOVERY_THIRD_DELTA_PATHS),
+        "fourth_child_path_count": len(FD08_FOURTH_DELTA_PATHS),
         "registry_counts": {"portable": 12, "postgresql_only": 2},
     }
 
