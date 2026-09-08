@@ -1,0 +1,110 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Player — открыть проект{% endblock %}</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="{% static 'production_player/player.css' %}">
+  <script src="{% static 'production_player/player.js' %}" defer></script>
+</head>
+<body>
+  <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="icon-open" viewBox="0 0 24 24"><path d="M3 7h7l2 3h9l-3 10H3zM3 7V4h7l2 3h7v3"/></symbol>
+    <symbol id="icon-switch" viewBox="0 0 24 24"><path d="M4 7h15l-4-4M20 17H5l4 4M19 7l-4 4M5 17l4-4"/></symbol>
+    <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 13-3l2 3M4 16l2 3a8 8 0 0 0 13-3"/></symbol>
+    <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol>
+    <symbol id="icon-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3M12 17h.01"/></symbol>
+  </defs></svg>
+  <div id="player-app" data-player-page="{{ player_page }}" data-authenticated="{{ player_authenticated|yesno:'true,false' }}" data-project-id="{{ project_id }}" data-workspace-id="{{ workspace_id }}" data-state="loading" data-projection-status="NOT_PROVEN" data-claim-contract="{{ claim_contract }}" data-claim-sha256="{{ claim_sha256 }}">
+    <header class="app-header">
+      <a id="player-home" class="brand" href="{% url 'production_player:entry' %}"><span class="brand-mark">C</span> Conflict <span class="brand-product">/ Player</span></a>
+      <div class="context-title"><span id="project-label">Проект не выбран</span><span class="context-divider">/</span><span id="workspace-label">Рабочее пространство</span></div>
+      <span class="stage-badge" title="{{ claim_by_code.STATUS }}">G7 · Professional shell</span>
+    </header>
+    <nav id="player-toolbar" class="toolbar" aria-label="Команды Player" data-focus-context="workspace">
+      <div class="toolbar-group" aria-label="Рабочее пространство">
+        <button class="primary" type="button" data-command-id="CMD-WORKSPACE-CREATE" aria-disabled="true" aria-label="Создать рабочее пространство" title="Создать рабочее пространство"><svg><use href="#icon-plus"/></svg><span class="primary-label">Создать пространство</span></button>
+        <button type="button" data-command-id="CMD-WORKSPACE-OPEN" aria-disabled="true" aria-label="Открыть рабочее пространство" title="Открыть рабочее пространство"><svg><use href="#icon-open"/></svg></button>
+        <button type="button" data-command-id="CMD-WORKSPACE-SWITCH" aria-disabled="true" aria-label="Выбрать другое рабочее пространство" title="Выбрать другое рабочее пространство"><svg><use href="#icon-switch"/></svg></button>
+      </div>
+      <div class="toolbar-group" aria-label="Временной срез">
+        <button class="primary" type="button" data-command-id="CMD-SLICE-CREATE" aria-disabled="true" aria-label="Создать временной срез" title="Создать временной срез"><svg><use href="#icon-plus"/></svg><span class="primary-label">Создать срез</span></button>
+        <button type="button" data-command-id="CMD-SLICE-OPEN" aria-disabled="true" aria-label="Открыть временной срез" title="Открыть временной срез"><svg><use href="#icon-open"/></svg></button>
+        <button type="button" data-command-id="CMD-SLICE-SWITCH" aria-disabled="true" aria-label="Выбрать другой временной срез" title="Выбрать другой временной срез"><svg><use href="#icon-switch"/></svg></button>
+        <button type="button" data-command-id="CMD-SLICE-REFRESH" aria-disabled="true" aria-label="Обновить временной срез" title="Обновить временной срез"><svg><use href="#icon-refresh"/></svg></button>
+      </div>
+      <div class="toolbar-group" aria-label="Контекстные команды">
+        <button id="experiment-create" type="button" aria-disabled="true" data-boundary="experiments" title="{{ claim_by_code.EXPERIMENTS }}"><svg><use href="#icon-lock"/></svg><span>Эксперимент</span></button>
+        <button id="structure-mutation" type="button" aria-disabled="true" data-boundary="structure" title="Структура опубликованного определения доступна только для чтения"><svg><use href="#icon-lock"/></svg><span class="sr-only">Изменить структуру недоступно</span></button>
+        <button id="context-help" type="button" title="Контекстная справка"><svg><use href="#icon-help"/></svg><span class="sr-only">Контекстная справка</span></button>
+      </div>
+      <span id="toolbar-context" class="toolbar-context">Контекст: рабочее пространство</span>
+      <button id="operation-replay" type="button" hidden>Проверить тем же запросом</button>
+    </nav>
+    <div class="selection-bar" aria-label="Точный выбор контекста">
+      <label>Определение <select id="definition-select" aria-label="Точная опубликованная версия определения"><option value="">Выберите версию</option></select></label>
+      <label>Пространство <select id="workspace-select" aria-label="Точное рабочее пространство"><option value="">Выберите пространство</option></select></label>
+      <label>Срез <select id="slice-select" aria-label="Точный временной срез"><option value="">Выберите срез</option></select></label>
+    </div>
+    <main class="player-layout">
+      <aside id="left-panel" class="panel left-panel" tabindex="0" data-focus-context="structure" aria-label="Структура определения">
+        <div class="panel-heading"><h2>Структура</h2><span id="structure-count" class="counter">0</span></div>
+        <div class="tree-filter" role="tablist" aria-label="Структурный набор">
+          <button id="tree-actors" role="tab" aria-selected="true" data-tree-kind="actors">Акторы</button>
+          <button id="tree-elements" role="tab" aria-selected="false" data-tree-kind="analytical_elements" tabindex="-1">Элементы</button>
+        </div>
+        <div id="structure-tree" role="tree" aria-label="Структура только для чтения" tabindex="0"></div>
+        <div id="structure-window" class="tree-window" aria-live="polite">0–0</div>
+      </aside>
+      <div id="left-divider" class="splitter" role="separator" aria-label="Ширина левой панели" aria-orientation="vertical" aria-valuemin="220" aria-valuemax="420" aria-valuenow="272" tabindex="0"></div>
+      <section id="center-panel" class="panel center-panel" tabindex="0" data-focus-context="workspace" aria-label="Рабочее пространство">
+        <div id="player-state" role="status" aria-live="polite"><span id="player-state-message">Проверяем Foundation…</span></div>
+        {% block main_content %}
+        <section id="onboarding" class="onboarding">
+          <span class="eyebrow">PROFESSIONAL PLAYER</span>
+          <h1>Начните с проекта</h1>
+          <p>Откройте проект по точному идентификатору. Доступ определяется заранее выданной сессией и проверяется Foundation.</p>
+          <form id="project-entry-form"><label for="project-entry-id">Идентификатор проекта (UUID)</label><input id="project-entry-id" name="project_id" type="text" required autocomplete="off" spellcheck="false" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"><button class="primary" type="submit">Открыть проект</button></form>
+          <dl class="onboarding-terms"><dt>Опубликованное определение проекта</dt><dd>Зафиксированная структура, акторы и аналитические элементы конкретной версии.</dd><dt>Рабочее пространство</dt><dd>Контекст работы, закреплённый за точной опубликованной версией и её контрольной суммой.</dd><dt>Временной срез</dt><dd>Неизменяемая сохранённая дата наблюдения внутри рабочего пространства.</dd></dl>
+          <p class="muted">{{ claim_by_code.HELP }}</p>
+        </section>
+        {% endblock %}
+      </section>
+      <div id="right-divider" class="splitter" role="separator" aria-label="Ширина правой панели" aria-orientation="vertical" aria-valuemin="280" aria-valuemax="480" aria-valuenow="320" tabindex="0"></div>
+      <aside id="right-panel" class="panel right-panel" tabindex="0" data-focus-context="help" aria-label="Документ, Чат и Справка">
+        <div class="right-tabs" role="tablist" aria-label="Правая панель">
+          <button id="tab-document" type="button" role="tab" data-right-tab="document" aria-controls="panel-document" aria-disabled="true" title="Доступно после этапа доказательств" aria-selected="false" tabindex="-1">Документ</button>
+          <button id="tab-chat" type="button" role="tab" data-right-tab="chat" aria-controls="panel-chat" aria-disabled="true" title="Доступно после этапа чата" aria-selected="false" tabindex="-1">Чат</button>
+          <button id="tab-help" type="button" role="tab" data-right-tab="help" aria-controls="panel-help" aria-selected="true">Справка</button>
+        </div>
+        <section id="panel-document" class="right-content" role="tabpanel" aria-labelledby="tab-document" hidden><svg class="locked-mark" aria-hidden="true"><use href="#icon-lock"/></svg><h2>Документ</h2><p data-boundary="document">{{ claim_by_code.DOCUMENT }}</p></section>
+        <section id="panel-chat" class="right-content" role="tabpanel" aria-labelledby="tab-chat" hidden><svg class="locked-mark" aria-hidden="true"><use href="#icon-lock"/></svg><h2>Чат</h2><p data-boundary="chat">{{ claim_by_code.CHAT }}</p></section>
+        <section id="panel-help" class="right-content" role="tabpanel" aria-labelledby="tab-help">
+          <label for="help-key">Раздел справки</label><select id="help-key"><option value="player.welcome">Начало работы</option><option value="player.published_definition">Опубликованное определение</option><option value="player.workspace">Рабочее пространство</option><option value="player.time_slice">Временной срез</option><option value="player.experiments_locked">Эксперименты</option><option value="player.document_locked">Документ</option><option value="player.chat_locked">Чат</option><option value="player.method_unavailable">Методика</option></select>
+          <p id="help-state" role="status">Локальное пояснение · полные термины</p>
+          <article id="local-help"><h2>Рабочее пространство</h2><p>{{ claim_by_code.WORKSPACE }}</p><h3>Временной срез</h3><p>{{ claim_by_code.TIME_SLICE }}</p><p>{{ claim_by_code.METHOD }}</p></article>
+          <article id="help-topic" hidden><h2 id="help-title"></h2><p id="help-identity" class="muted"></p><iframe id="help-content" sandbox="" title="Проверенная справка Foundation"></iframe></article>
+          <details id="claim-boundaries"><summary>Границы G7</summary><ul>{% for item in claim_statements %}<li data-claim-code="{{ item.code }}">{{ item.text }}</li>{% endfor %}</ul><code>SHA-256 {{ claim_sha256 }}</code></details>
+        </section>
+      </aside>
+    </main>
+    <footer id="player-status-bar" class="status-bar"><span id="status-state">Нет контекста</span><span id="status-definition">Определение: —</span><span id="status-slice">Срез: —</span><span id="status-focus">Фокус: пространство</span><span id="status-method">Методика не подключена</span></footer>
+    <dialog id="operation-dialog" aria-labelledby="operation-title">
+      <form id="operation-form"><h2 id="operation-title">Создать</h2><p id="operation-intent"></p>
+        <label for="operation-id">UUID новой записи</label><input id="operation-id" readonly autocomplete="off">
+        <label for="operation-code">Код</label><input id="operation-code" required maxlength="64" autocomplete="off">
+        <label for="operation-version">Версия</label><input id="operation-version" required value="1.0.0" maxlength="32" autocomplete="off">
+        <label for="operation-name">Название</label><input id="operation-name" required maxlength="255" autocomplete="off">
+        <div id="slice-fields" hidden><label for="operation-cutoff-date">Дата временного среза</label><input id="operation-cutoff-date" type="date"><label for="operation-order">Порядок</label><input id="operation-order" type="number" min="0" step="1" value="0"></div>
+        <p id="operation-state" role="status" aria-live="polite">Запрос ещё не отправлен.</p>
+        <p class="muted">{{ claim_by_code.UNRESOLVED_OPERATION }}</p>
+        <div class="dialog-actions"><button id="operation-cancel" type="button">Отмена</button><button id="operation-submit" class="primary" type="submit">Создать</button></div>
+      </form>
+    </dialog>
+  </div>
+  <noscript><p>Без JavaScript данные Foundation не загружаются и не показываются. Требуется заранее выданная сессия Player.</p></noscript>
+</body>
+</html>

@@ -2,10 +2,17 @@
 
 from django.urls import path
 
-from domain.api import evidence, studio_definitions
+from domain.api import evidence, player, studio_definitions
 
 
 urlpatterns = [
+    path("player/projects/<uuid:project_id>/definitions/", player.definitions, name="foundation-player-definitions"),
+    path("player/definitions/<uuid:definition_id>/", player.definition, name="foundation-player-definition"),
+    path("player/projects/<uuid:project_id>/workspaces/", player.workspaces, name="foundation-player-workspaces"),
+    path("player/workspaces/<uuid:workspace_id>/", player.workspace, name="foundation-player-workspace"),
+    path("player/workspaces/<uuid:workspace_id>/time-slices/", player.time_slices, name="foundation-player-time-slices"),
+    path("player/workspaces/<uuid:workspace_id>/experiments/", player.experiments, name="foundation-player-experiments"),
+    path("player/workspaces/<uuid:workspace_id>/help/<str:ui_key>/", player.help_topic, name="foundation-player-help"),
     path(
         "projects/<uuid:project_id>/workspaces/<uuid:workspace_id>/facts/<uuid:fact_id>/evidence/",
         evidence.fact_evidence_drilldown,
