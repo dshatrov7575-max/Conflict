@@ -1,0 +1,10 @@
+{% extends 'production_player/entry.html' %}
+{% block title %}Player — рабочее пространство{% endblock %}
+{% block main_content %}
+  <div id="workspace-content" hidden>
+    <div class="workspace-heading"><h1 id="workspace-name">—</h1><span id="projection-badge" class="projection-badge">NOT_PROVEN</span></div>
+    <div id="experiment-tabs" class="experiment-tabs" role="tablist" aria-label="Общие сведения и эксперименты"><button id="experiment-general" type="button" role="tab" aria-selected="true" data-experiment-id="general">Общие</button><button id="experiment-plus" type="button" role="tab" aria-disabled="true" aria-selected="false" title="Доступно после этапа экспериментов">+<span class="sr-only"> Создать эксперимент — Доступно после этапа экспериментов</span></button></div>
+    <section id="general-panel" role="tabpanel" aria-labelledby="experiment-general"><dl class="identity-grid"><dt>Рабочее пространство</dt><dd id="workspace-identity">—</dd><dt>Версия определения</dt><dd id="definition-identity">—</dd><dt>Manifest SHA-256</dt><dd id="definition-hash">—</dd><dt>Проекция</dt><dd id="projection-status">—</dd><dt>Projection SHA-256</dt><dd id="projection-hash">—</dd><dt>Временной срез</dt><dd id="slice-identity">Не выбран</dd><dt>Дата среза</dt><dd id="slice-date">—</dd><dt>Состояние среза</dt><dd id="slice-immutability">—</dd></dl></section>
+    <section id="experiment-panel" role="tabpanel" hidden><h2 id="experiment-name"></h2><dl id="experiment-metadata" class="identity-grid"></dl><p class="boundary-note">Доступно после этапа экспериментов</p></section>
+  </div>
+{% endblock %}

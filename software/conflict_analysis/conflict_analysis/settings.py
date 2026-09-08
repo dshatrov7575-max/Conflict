@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "domain.apps.DomainConfig",
     "production_studio.apps.ProductionStudioConfig",
+    "production_player.apps.ProductionPlayerConfig",
 ]
 
 MIDDLEWARE = [

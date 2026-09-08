@@ -13,6 +13,7 @@ on:
       - codex/ca-suite-i1-foundation-fd07-publication-readiness
       - codex/ca-suite-i1-project-language-bootstrap-f0l
       - codex/ca-suite-i1-evidence-multilingual-f1
+      - codex/ca-suite-i1-foundation-fd08-assessment-projection
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -30,6 +31,7 @@ on:
       - codex/ca-suite-i1-evidence-multilingual-f1
       - codex/ca-suite-i1-production-studio-c2a-lifecycle-publication
       - codex/ca-suite-i1-foundation-fd08-assessment-projection
+      - codex/ca-suite-i1-player-g7-professional-shell
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -50,12 +52,14 @@ jobs:
        github.event.pull_request.head.ref != 'codex/ca-suite-i1-project-language-bootstrap-f0l' &&
        github.event.pull_request.head.ref != 'codex/ca-suite-i1-evidence-multilingual-f1' &&
        github.event.pull_request.head.ref != 'codex/ca-suite-i1-production-studio-c2a-lifecycle-publication' &&
-       github.event.pull_request.head.ref != 'codex/ca-suite-i1-foundation-fd08-assessment-projection') ||
+       github.event.pull_request.head.ref != 'codex/ca-suite-i1-foundation-fd08-assessment-projection' &&
+       github.event.pull_request.head.ref != 'codex/ca-suite-i1-player-g7-professional-shell') ||
       (github.event_name == 'push' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-project-language-bootstrap-f0l' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-evidence-multilingual-f1' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-production-studio-c2a-lifecycle-publication' &&
-       github.ref != 'refs/heads/codex/ca-suite-i1-foundation-fd08-assessment-projection')
+       github.ref != 'refs/heads/codex/ca-suite-i1-foundation-fd08-assessment-projection' &&
+       github.ref != 'refs/heads/codex/ca-suite-i1-player-g7-professional-shell')
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -5250,4 +5254,495 @@ jobs:
         with:
           name: fd08-exact-head-${{ github.event_name }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/fd08-exact-head-evidence
+          if-no-files-found: error
+
+  player-g7-professional-shell:
+    name: Python 3.12 / PostgreSQL 18 / G7 exact-head Professional Player gate
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.ref == 'codex/ca-suite-i1-player-g7-professional-shell' &&
+       github.event.pull_request.base.ref == 'codex/ca-suite-i1-foundation-fd08-assessment-projection') ||
+      (github.event_name == 'push' &&
+       github.ref == 'refs/heads/codex/ca-suite-i1-player-g7-professional-shell')
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: conflict_analysis
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    defaults:
+      run:
+        working-directory: software/conflict_analysis
+
+    env:
+      DJANGO_SECRET_KEY: ci-only-secret-key
+      POSTGRES_DB: conflict_analysis
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_CONN_MAX_AGE: "0"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+      FD08_ACCEPTED_HEAD: "${{ vars.FD08_ACCEPTED_HEAD }}"
+      FD08_ACCEPTED_TREE: "${{ vars.FD08_ACCEPTED_TREE }}"
+      G7_BASE_BRANCH: codex/ca-suite-i1-foundation-fd08-assessment-projection
+      G7_BASE_HEAD: 68b14882a06b2e90710ebd06e584dc5300fdfe7e
+      G7_BASE_TREE: 5969ee705ae935bf305a1b2531bc3bc77ade03cb
+      G7_TARGET_BRANCH: codex/ca-suite-i1-player-g7-professional-shell
+      G7_CHROME_VERSION: 152.0.7977.64
+
+    steps:
+      - name: Check out the exact G7 delivery head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Resolve exact G7 event route and accepted FD08 pin
+        shell: bash
+        env:
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          EVENT_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          EVENT_BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_RUN_ATTEMPT" = "1"
+          [[ "$FD08_ACCEPTED_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$FD08_ACCEPTED_TREE" =~ ^[0-9a-f]{40}$ ]]
+          test "$FD08_ACCEPTED_HEAD" = "$G7_BASE_HEAD"
+          test "$FD08_ACCEPTED_TREE" = "$G7_BASE_TREE"
+          test "$(git rev-parse "$G7_BASE_HEAD^{tree}")" = "$G7_BASE_TREE"
+          delivery_head="$(git rev-parse HEAD)"
+          delivery_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse "$delivery_head^")" = "$G7_BASE_HEAD"
+          test "$(git rev-list --count "$G7_BASE_HEAD..$delivery_head")" = "1"
+          test -z "$(git rev-list --merges "$G7_BASE_HEAD..$delivery_head")"
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              test "$EVENT_HEAD_REF" = "$G7_TARGET_BRANCH"
+              test "$EVENT_BASE_REF" = "$G7_BASE_BRANCH"
+              test "$EVENT_HEAD_SHA" = "$delivery_head"
+              test "$EVENT_BASE_SHA" = "$G7_BASE_HEAD"
+              test "$EVENT_HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"
+              test "$EVENT_BASE_REPOSITORY" = "$GITHUB_REPOSITORY"
+              ;;
+            push)
+              test "$GITHUB_REF" = "refs/heads/$G7_TARGET_BRANCH"
+              test "$GITHUB_SHA" = "$delivery_head"
+              ;;
+            *) exit 1 ;;
+          esac
+          git fetch --no-tags origin "+refs/heads/$G7_BASE_BRANCH:refs/remotes/origin/g7-accepted-fd08"
+          test "$(git rev-parse refs/remotes/origin/g7-accepted-fd08)" = "$G7_BASE_HEAD"
+          evidence_dir="$RUNNER_TEMP/g7-exact-head-evidence"
+          mkdir -p "$evidence_dir"
+          printf 'G7_EVIDENCE_DIR=%s\n' "$evidence_dir" >> "$GITHUB_ENV"
+          printf 'G7_DELIVERY_HEAD=%s\n' "$delivery_head" >> "$GITHUB_ENV"
+          printf 'G7_DELIVERY_TREE=%s\n' "$delivery_tree" >> "$GITHUB_ENV"
+          export G7_DELIVERY_HEAD="$delivery_head"
+          export G7_DELIVERY_TREE="$delivery_tree"
+          python - "$evidence_dir/route.json" <<'PY'
+          import json
+          import os
+          import pathlib
+          path = pathlib.Path(os.sys.argv[1])
+          path.write_text(json.dumps({
+              "schema": "G7_EXACT_HEAD_ROUTE_V1",
+              "event_name": os.environ["GITHUB_EVENT_NAME"],
+              "run_id": os.environ["GITHUB_RUN_ID"],
+              "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "delivery_head": os.environ["G7_DELIVERY_HEAD"],
+              "delivery_tree": os.environ["G7_DELIVERY_TREE"],
+              "base_branch": os.environ["G7_BASE_BRANCH"],
+              "base_head": os.environ["G7_BASE_HEAD"],
+              "base_tree": os.environ["G7_BASE_TREE"],
+              "runtime_fd08_accepted_head": os.environ["FD08_ACCEPTED_HEAD"],
+              "runtime_fd08_accepted_tree": os.environ["FD08_ACCEPTED_TREE"],
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print("G7_EXACT_EVENT_AND_FD08_PIN=PASS")
+          PY
+
+      - name: Set up exact Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js for immutable CDP contracts
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install exact test dependencies
+        shell: bash
+        run: python -m pip install --disable-pip-version-check -e ".[dev]"
+
+      - name: Verify static G7 contract and migration drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/verify_player_g7_allowlist.py --repo "$GITHUB_WORKSPACE" --self-check | tee "$G7_EVIDENCE_DIR/verifier-self-check.json"
+          python scripts/verify_player_g7_allowlist.py --repo "$GITHUB_WORKSPACE" --base-head "$G7_BASE_HEAD" --base-tree "$G7_BASE_TREE" | tee "$G7_EVIDENCE_DIR/verifier.json"
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+          node --version | grep -E '^v2[2-9]\.'
+          node --check production_player/static/production_player/player.js
+          node --check production_player/browser_tests/player_g7.mjs
+          node production_studio/browser_tests/audited_authoring.mjs --self-check-observation
+          python - "$G7_EVIDENCE_DIR/static.json" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          root = pathlib.Path(os.environ["GITHUB_WORKSPACE"]) / "software" / "conflict_analysis"
+          docs = ["docs/adr/0014-production-player-g7.md", "docs/production-player-g7-runtime.md"]
+          pathlib.Path(os.sys.argv[1]).write_text(json.dumps({
+              "schema": "G7_STATIC_EVIDENCE_V1",
+              "delivery_head": os.environ["G7_DELIVERY_HEAD"],
+              "delivery_tree": os.environ["G7_DELIVERY_TREE"],
+              "source_docs": {item: hashlib.sha256((root / item).read_bytes()).hexdigest() for item in docs},
+              "fd08_runtime_pin": [os.environ["FD08_ACCEPTED_HEAD"], os.environ["FD08_ACCEPTED_TREE"]],
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Run Foundation contracts on PostgreSQL and SQLite
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest domain/tests/test_player_foundation.py --junitxml="$G7_EVIDENCE_DIR/g7-focused-postgresql.xml"
+          python -m pytest domain/tests --junitxml="$G7_EVIDENCE_DIR/foundation-postgresql.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g7-focused.sqlite3" python -m pytest domain/tests/test_player_foundation.py --junitxml="$G7_EVIDENCE_DIR/g7-focused-sqlite.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g7-full.sqlite3" python -m pytest domain/tests --junitxml="$G7_EVIDENCE_DIR/foundation-sqlite.xml"
+          python - "$G7_EVIDENCE_DIR" <<'PY'
+          import json
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+          root = pathlib.Path(sys.argv[1])
+          def stats(name):
+              report = ET.parse(root / name).getroot()
+              assert not report.findall(".//failure"), name
+              assert not report.findall(".//error"), name
+              return len(report.findall(".//testcase")), len(report.findall(".//skipped"))
+          assert stats("g7-focused-postgresql.xml") == (14, 0)
+          assert stats("foundation-postgresql.xml") == (300, 0)
+          assert stats("g7-focused-sqlite.xml") == (14, 2)
+          assert stats("foundation-sqlite.xml") == (300, 23)
+          (root / "foundation-results.json").write_text(json.dumps({
+              "schema": "G7_FOUNDATION_RESULTS_V1",
+              "postgresql": {"focused": 14, "full": 300},
+              "sqlite": {"focused_passed": 12, "focused_skipped": 2, "full_passed": 277, "full_skipped": 23},
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print("G7_FOUNDATION_POSTGRESQL_14_300_AND_SQLITE_12_PLUS_2_277_PLUS_23=PASS")
+          PY
+
+      - name: Build one exact G7 wheel before inherited Product contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip wheel --no-deps --wheel-dir "$G7_EVIDENCE_DIR" .
+          mapfile -t wheels < <(find "$G7_EVIDENCE_DIR" -maxdepth 1 -type f -name '*.whl' -print)
+          test "${#wheels[@]}" -eq 1
+          wheel="${wheels[0]}"
+          test "$(basename "$wheel")" = conflict_analysis-0.1.0-py3-none-any.whl
+          printf 'G7_WHEEL=%s\n' "$wheel" >> "$GITHUB_ENV"
+
+      - name: Run inherited C0/C1 and G7 Product contracts on both engines
+        shell: bash
+        run: |
+          set -euo pipefail
+          c0="production_studio/tests/test_browser_contract.py production_studio/tests/test_claim_boundaries.py production_studio/tests/test_read_only_http.py production_studio/tests/test_read_only_static_contracts.py"
+          c1="production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringContractTests"
+          g7="production_player/tests/test_player_g7.py::ProductionPlayerG7Tests"
+          STUDIO_C0_WHEEL="$G7_WHEEL" python -m pytest $c0 --junitxml="$G7_EVIDENCE_DIR/product-c0-postgresql.xml"
+          python -m pytest $c1 --junitxml="$G7_EVIDENCE_DIR/product-c1-postgresql.xml"
+          python -m pytest $g7 --junitxml="$G7_EVIDENCE_DIR/product-g7-postgresql.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g7-c0.sqlite3" STUDIO_C0_WHEEL="$G7_WHEEL" python -m pytest $c0 --junitxml="$G7_EVIDENCE_DIR/product-c0-sqlite.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g7-c1.sqlite3" python -m pytest $c1 --junitxml="$G7_EVIDENCE_DIR/product-c1-sqlite.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g7-product.sqlite3" python -m pytest $g7 --junitxml="$G7_EVIDENCE_DIR/product-g7-sqlite.xml"
+          python - "$G7_EVIDENCE_DIR" <<'PY'
+          import json
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+          root = pathlib.Path(sys.argv[1])
+          names = [
+              "product-c0-postgresql.xml", "product-c1-postgresql.xml", "product-g7-postgresql.xml",
+              "product-c0-sqlite.xml", "product-c1-sqlite.xml", "product-g7-sqlite.xml",
+          ]
+          counts = []
+          for name in names:
+              report = ET.parse(root / name).getroot()
+              assert not report.findall(".//failure"), name
+              assert not report.findall(".//error"), name
+              assert not report.findall(".//skipped"), name
+              counts.append(len(report.findall(".//testcase")))
+          assert counts == [19, 8, 10, 19, 8, 10], counts
+          (root / "product-results.json").write_text(json.dumps({
+              "schema": "G7_PRODUCT_RESULTS_V1",
+              "postgresql": {"c0": 19, "c1": 8, "g7": 10, "total": 37},
+              "sqlite": {"c0": 19, "c1": 8, "g7": 10, "total": 37},
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print("G7_PRODUCT_PORTABLE_37_EACH_BACKEND=PASS")
+          PY
+
+      - name: Run inherited and G7 Chromium contracts on exact Chrome for Testing
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/chrome-for-testing-linux64.zip"
+          curl --fail --location --silent --show-error "https://storage.googleapis.com/chrome-for-testing-public/$G7_CHROME_VERSION/linux64/chrome-linux64.zip" --output "$archive"
+          unzip -q "$archive" -d "$RUNNER_TEMP"
+          chrome="$RUNNER_TEMP/chrome-linux64/chrome"
+          test -x "$chrome"
+          "$chrome" --version | grep -F "$G7_CHROME_VERSION"
+          STUDIO_CHROME_BIN="$chrome" python -m pytest production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringBrowserTests::test_authenticated_edit_save_reload_is_bounded_foundation_only_and_receipted --junitxml="$G7_EVIDENCE_DIR/chromium-c1-postgresql.xml"
+          STUDIO_CHROME_BIN="$chrome" python -m pytest production_player/tests/test_player_g7.py::ProductionPlayerG7ChromiumTests --junitxml="$G7_EVIDENCE_DIR/chromium-g7-postgresql.xml"
+          python - "$G7_EVIDENCE_DIR" <<'PY'
+          import json
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+          root = pathlib.Path(sys.argv[1])
+          def count(name):
+              report = ET.parse(root / name).getroot()
+              assert not report.findall(".//failure"), name
+              assert not report.findall(".//error"), name
+              assert not report.findall(".//skipped"), name
+              return len(report.findall(".//testcase"))
+          assert (count("chromium-c1-postgresql.xml"), count("chromium-g7-postgresql.xml")) == (1, 2)
+          (root / "chromium-results.json").write_text(json.dumps({
+              "schema": "G7_CHROMIUM_POSTGRESQL_V1", "inherited_c1": 1, "g7": 2,
+              "total": 3, "chrome_version": "152.0.7977.64",
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print("G7_CHROMIUM_POSTGRESQL_3=PASS")
+          PY
+
+      - name: Inspect the one exact G7 wheel used by Product contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          wheel="$G7_WHEEL"
+          test -f "$wheel"
+          test "$(basename "$wheel")" = conflict_analysis-0.1.0-py3-none-any.whl
+          python scripts/verify_player_g7_allowlist.py --repo "$GITHUB_WORKSPACE" --base-head "$G7_BASE_HEAD" --base-tree "$G7_BASE_TREE" --wheel "$wheel" | tee "$G7_EVIDENCE_DIR/verifier-wheel.json"
+          python - "$wheel" "$G7_EVIDENCE_DIR/wheel.json" <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import sys
+          wheel, evidence = map(pathlib.Path, sys.argv[1:])
+          evidence.write_text(json.dumps({
+              "schema": "G7_WHEEL_EVIDENCE_V1", "filename": wheel.name,
+              "bytes": wheel.stat().st_size, "sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Prove isolated Player wheel runtime without source fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          isolated_venv="$RUNNER_TEMP/g7-wheel-venv"
+          python -m venv --system-site-packages "$isolated_venv"
+          "$isolated_venv/bin/python" -m pip install --disable-pip-version-check --force-reinstall --no-deps "$G7_WHEEL"
+          (
+            cd "$RUNNER_TEMP"
+            unset PYTHONPATH
+            USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g7-wheel.sqlite3" DJANGO_SETTINGS_MODULE=conflict_analysis.settings "$isolated_venv/bin/python" - "$G7_WHEEL" "$G7_EVIDENCE_DIR/wheel-install.json" "$GITHUB_WORKSPACE/software/conflict_analysis" <<'PY'
+          import hashlib
+          import importlib
+          import json
+          import pathlib
+          import sys
+          from importlib.resources import files
+          import django
+          from django.contrib.staticfiles import finders
+          from django.test import Client, override_settings
+          from django.template.loader import get_template
+          from django.urls import resolve
+          wheel, evidence, source_root = map(pathlib.Path, sys.argv[1:])
+          source_root = source_root.resolve(strict=True)
+          venv_root = pathlib.Path(sys.prefix).resolve(strict=True)
+          django.setup()
+          imported = {}
+          for name in ("production_player", "production_player.views", "production_player.urls", "domain.api.player"):
+              module = importlib.import_module(name)
+              origin = pathlib.Path(module.__file__).resolve(strict=True)
+              assert origin.is_relative_to(venv_root), (name, origin, venv_root)
+              assert not origin.is_relative_to(source_root), (name, origin, source_root)
+              imported[name] = str(origin)
+          runtime_assets = (
+              "contracts/player_g7_claim_boundaries_v1.ru.json",
+              "contracts/player_g7_claim_boundaries_v1.ru.json.sha256",
+              "static/production_player/player.css",
+              "static/production_player/player.js",
+              "templates/production_player/entry.html",
+              "templates/production_player/project.html",
+              "templates/production_player/workspace.html",
+          )
+          for name in runtime_assets:
+              assert files("production_player").joinpath(name).is_file(), name
+          template_origins = {}
+          for name in (
+              "production_player/entry.html",
+              "production_player/project.html",
+              "production_player/workspace.html",
+          ):
+              template = get_template(name)
+              origin = pathlib.Path(template.origin.name).resolve(strict=True)
+              assert origin.is_relative_to(venv_root), (name, origin, venv_root)
+              assert not origin.is_relative_to(source_root), (name, origin, source_root)
+              template_origins[name] = str(origin)
+          static_origins = {}
+          for name in ("production_player/player.css", "production_player/player.js"):
+              found = finders.find(name)
+              assert found, name
+              origin = pathlib.Path(found).resolve(strict=True)
+              assert origin.is_relative_to(venv_root), (name, origin, venv_root)
+              assert not origin.is_relative_to(source_root), (name, origin, source_root)
+              static_origins[name] = str(origin)
+          assert resolve("/player/").namespace == "production_player"
+          with override_settings(ALLOWED_HOSTS=["testserver", "localhost", "127.0.0.1"]):
+              client = Client()
+              for route in (
+                  "/player/",
+                  "/player/projects/00000000-0000-4000-8000-000000000001/",
+                  "/player/workspaces/00000000-0000-4000-8000-000000000001/",
+                  "/api/foundation/player/projects/00000000-0000-4000-8000-000000000001/definitions/",
+              ):
+                  response = client.get(route)
+                  assert response.status_code == 401, (route, response.status_code, response.content)
+          evidence.write_text(json.dumps({
+              "schema": "G7_ISOLATED_WHEEL_INSTALL_V1",
+              "wheel_sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
+              "source_tree_fallback": False, "imported": imported,
+              "player_runtime_assets_packaged": True,
+              "template_origins": template_origins, "static_origins": static_origins,
+              "anonymous_shell_and_foundation_routes": 4,
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print("G7_ISOLATED_WHEEL_NO_SOURCE_TREE_FALLBACK=PASS")
+          PY
+          )
+
+      - name: Require same-run exact-head G7 evidence before archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - "$G7_EVIDENCE_DIR" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import sys
+          import xml.etree.ElementTree as ET
+          root = pathlib.Path(sys.argv[1])
+          required = {
+              "route.json", "verifier-self-check.json", "verifier.json", "verifier-wheel.json", "static.json",
+              "g7-focused-postgresql.xml", "foundation-postgresql.xml", "g7-focused-sqlite.xml", "foundation-sqlite.xml",
+              "foundation-results.json",
+              "product-c0-postgresql.xml", "product-c1-postgresql.xml", "product-g7-postgresql.xml",
+              "product-c0-sqlite.xml", "product-c1-sqlite.xml", "product-g7-sqlite.xml", "product-results.json",
+              "chromium-c1-postgresql.xml", "chromium-g7-postgresql.xml", "chromium-results.json",
+              "conflict_analysis-0.1.0-py3-none-any.whl", "wheel.json", "wheel-install.json",
+          }
+          assert required <= {path.name for path in root.iterdir() if path.is_file()}
+          route = json.loads((root / "route.json").read_text(encoding="utf-8"))
+          assert route["run_attempt"] == "1"
+          assert route["event_name"] == os.environ["GITHUB_EVENT_NAME"]
+          assert route["delivery_head"] == os.environ["G7_DELIVERY_HEAD"]
+          assert route["delivery_tree"] == os.environ["G7_DELIVERY_TREE"]
+          assert route["base_head"] == os.environ["G7_BASE_HEAD"]
+          assert route["base_tree"] == os.environ["G7_BASE_TREE"]
+          assert route["runtime_fd08_accepted_head"] == os.environ["FD08_ACCEPTED_HEAD"]
+          assert route["runtime_fd08_accepted_tree"] == os.environ["FD08_ACCEPTED_TREE"]
+          static = json.loads((root / "static.json").read_text(encoding="utf-8"))
+          assert static["schema"] == "G7_STATIC_EVIDENCE_V1"
+          assert static["delivery_head"] == route["delivery_head"]
+          assert static["delivery_tree"] == route["delivery_tree"]
+          assert static["fd08_runtime_pin"] == [route["runtime_fd08_accepted_head"], route["runtime_fd08_accepted_tree"]]
+          source_root = pathlib.Path(os.environ["GITHUB_WORKSPACE"]) / "software" / "conflict_analysis"
+          expected_source_docs = {
+              item: hashlib.sha256((source_root / item).read_bytes()).hexdigest()
+              for item in ("docs/adr/0014-production-player-g7.md", "docs/production-player-g7-runtime.md")
+          }
+          assert static["source_docs"] == expected_source_docs
+
+          def junit_stats(name):
+              report = ET.parse(root / name).getroot()
+              assert not report.findall(".//failure"), name
+              assert not report.findall(".//error"), name
+              return len(report.findall(".//testcase")), len(report.findall(".//skipped"))
+
+          expected_junit = {
+              "g7-focused-postgresql.xml": (14, 0), "foundation-postgresql.xml": (300, 0),
+              "g7-focused-sqlite.xml": (14, 2), "foundation-sqlite.xml": (300, 23),
+              "product-c0-postgresql.xml": (19, 0), "product-c1-postgresql.xml": (8, 0),
+              "product-g7-postgresql.xml": (10, 0), "product-c0-sqlite.xml": (19, 0),
+              "product-c1-sqlite.xml": (8, 0), "product-g7-sqlite.xml": (10, 0),
+              "chromium-c1-postgresql.xml": (1, 0), "chromium-g7-postgresql.xml": (2, 0),
+          }
+          assert {name: junit_stats(name) for name in expected_junit} == expected_junit
+          foundation = json.loads((root / "foundation-results.json").read_text(encoding="utf-8"))
+          assert foundation == {
+              "schema": "G7_FOUNDATION_RESULTS_V1", "postgresql": {"focused": 14, "full": 300},
+              "sqlite": {"focused_passed": 12, "focused_skipped": 2, "full_passed": 277, "full_skipped": 23},
+          }
+          product = json.loads((root / "product-results.json").read_text(encoding="utf-8"))
+          assert product == {
+              "schema": "G7_PRODUCT_RESULTS_V1", "postgresql": {"c0": 19, "c1": 8, "g7": 10, "total": 37},
+              "sqlite": {"c0": 19, "c1": 8, "g7": 10, "total": 37},
+          }
+          chromium = json.loads((root / "chromium-results.json").read_text(encoding="utf-8"))
+          assert chromium == {
+              "schema": "G7_CHROMIUM_POSTGRESQL_V1", "inherited_c1": 1, "g7": 2,
+              "total": 3, "chrome_version": "152.0.7977.64",
+          }
+          verifier = json.loads((root / "verifier-wheel.json").read_text(encoding="utf-8"))
+          assert verifier["allowlist_result"] == "PASS"
+          assert verifier["delivery"]["head"] == route["delivery_head"]
+          assert verifier["delivery"]["tree"] == route["delivery_tree"]
+          assert verifier["delivery"]["parent"] == route["base_head"]
+          assert verifier["counts"] == {"modified": 6, "new": 23, "total": 29}
+          assert verifier["workflow"] == {"same_run_exact_head": True, "legacy_foundation_excludes_g7": True}
+          wheel = json.loads((root / "wheel.json").read_text(encoding="utf-8"))
+          isolated = json.loads((root / "wheel-install.json").read_text(encoding="utf-8"))
+          wheel_file = root / wheel["filename"]
+          assert wheel_file.name == "conflict_analysis-0.1.0-py3-none-any.whl"
+          assert wheel_file.is_file()
+          actual_wheel_sha256 = hashlib.sha256(wheel_file.read_bytes()).hexdigest()
+          assert wheel["bytes"] > 0
+          assert len(wheel["sha256"]) == 64 and all(character in "0123456789abcdef" for character in wheel["sha256"])
+          assert actual_wheel_sha256 == wheel["sha256"] == verifier["wheel"]["sha256"] == isolated["wheel_sha256"]
+          assert isolated["source_tree_fallback"] is False
+          manifest = {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(root.iterdir()) if path.is_file() and path.name != "acceptance-ready.json"}
+          (root / "acceptance-ready.json").write_text(json.dumps({
+              "schema": "G7_SAME_RUN_ACCEPTANCE_EVIDENCE_V1",
+              "route": route, "static": static, "foundation": foundation, "product": product,
+              "chromium": chromium, "verifier": verifier, "wheel": wheel, "isolated_install": isolated,
+              "required_files": sorted(required), "manifest_sha256": manifest, "acceptance_ready": True,
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print("G7_SAME_RUN_EXACT_HEAD_EVIDENCE=PASS")
+          PY
+
+      - name: Upload immutable G7 exact-head evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g7-exact-head-${{ github.event_name }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/g7-exact-head-evidence
           if-no-files-found: error

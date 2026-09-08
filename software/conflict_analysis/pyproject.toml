@@ -24,7 +24,7 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["conflict_analysis*", "domain*", "production_studio*"]
+include = ["conflict_analysis*", "domain*", "production_studio*", "production_player*"]
 
 [tool.setuptools.package-data]
 "domain.services" = ["schemas/*.json"]
@@ -34,4 +34,11 @@ include = ["conflict_analysis*", "domain*", "production_studio*"]
     "templates/production_studio/*.html",
     "static/production_studio/*.css",
     "static/production_studio/*.js",
+]
+"production_player" = [
+    "contracts/*.json",
+    "contracts/*.sha256",
+    "templates/production_player/*.html",
+    "static/production_player/*.css",
+    "static/production_player/*.js",
 ]
