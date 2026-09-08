@@ -3904,7 +3904,18 @@ jobs:
       FD08_RECOVERY_THIRD_HEAD: 929b52aa765db1b17d3df5793391aafa2692e0dd
       FD08_RECOVERY_THIRD_TREE: 8a7ef4a5294e2b4f31c39eea2c0afb8e16141a5e
       FD08_RECOVERY_THIRD_PARENT: 5958117f7702f786f0a99ac2b49a421e6ccdf7c8
+      FD08_FINAL_FOURTH_HEAD: 333801d8020a8c9e78299eee529a170fc6c7d3dd
+      FD08_FINAL_FOURTH_TREE: ec3ecd42ae80bf243b7747f624dd5ea3bcb45eea
+      FD08_FINAL_FOURTH_PARENT: 929b52aa765db1b17d3df5793391aafa2692e0dd
       FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB: 70dba8ee3e1e159e85f112ffc4523cd8d097ba4e
+      FD08_FIXED_FOURTH_POSTGRESQL_MIGRATION_TEST_BLOB: 3d31f7dabde996e18fbef219f835432c947f24f1
+      FD08_FIFTH_WORKFLOW_PREIMAGE_BLOB: 70c1aed79dbc11235969fccf8f11534ac6674fb6
+      FD08_FIFTH_PLAYER_PROJECTION_PREIMAGE_BLOB: a859643c78a572e17daefda3914f37b7e03868c6
+      FD08_FIFTH_PLAYER_PROJECTION_TEST_PREIMAGE_BLOB: bf050746fcbfad7d77741949b26bbe690d104a20
+      FD08_FIFTH_AUDITED_AUTHORING_PREIMAGE_BLOB: e0078090f235757a3bd8b426eecc8a86bcc250e4
+      FD08_FIFTH_VERIFIER_PREIMAGE_BLOB: 0b21980f5d7e1cdb1d94440ae3e2db21e8504b7c
+      FD08_FINAL_HARNESS_BLOB: f6ad2ff633d9c49ae4e5c69d5fff931b677e8af3
+      FD08_CDP_CLIENT_BLOB: 685faeb3906a0f74815549e272748125bb6fbf65
       F1_ACCEPTED_HEAD: "${{ vars.F1_ACCEPTED_HEAD }}"
       F1_ACCEPTED_TREE: "${{ vars.F1_ACCEPTED_TREE }}"
 
@@ -3933,10 +3944,18 @@ jobs:
           delivery_head="$(git rev-parse HEAD)"
           delivery_tree="$(git rev-parse HEAD^{tree})"
           test "$(git show -s --format=%P "$delivery_head" | awk '{print NF}')" = "1"
-          expected_fourth_delta=$'M\t.github/workflows/conflict-analysis.yml\nM\tsoftware/conflict_analysis/domain/tests/test_postgresql_migrations.py\nM\tsoftware/conflict_analysis/scripts/verify_player_projection_allowlist.py'
-          test "$(git diff-tree --no-commit-id --name-status --no-renames -r "$delivery_head")" = "$expected_fourth_delta"
+          expected_fifth_delta=$'M\t.github/workflows/conflict-analysis.yml\nM\tsoftware/conflict_analysis/domain/services/player_projection.py\nM\tsoftware/conflict_analysis/domain/tests/test_player_projection.py\nM\tsoftware/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs\nM\tsoftware/conflict_analysis/scripts/verify_player_projection_allowlist.py'
+          test "$(git diff-tree --no-commit-id --name-status --no-renames -r "$delivery_head")" = "$expected_fifth_delta"
 
-          third_head="$(git rev-parse "$delivery_head^")"
+          fourth_head="$(git rev-parse "$delivery_head^")"
+          test "$fourth_head" = "$FD08_FINAL_FOURTH_HEAD"
+          test "$(git rev-parse "$fourth_head^{tree}")" = "$FD08_FINAL_FOURTH_TREE"
+          test "$(git show -s --format=%P "$fourth_head" | awk '{print NF}')" = "1"
+          test "$(git rev-parse "$fourth_head^")" = "$FD08_FINAL_FOURTH_PARENT"
+          expected_fourth_delta=$'M\t.github/workflows/conflict-analysis.yml\nM\tsoftware/conflict_analysis/domain/tests/test_postgresql_migrations.py\nM\tsoftware/conflict_analysis/scripts/verify_player_projection_allowlist.py'
+          test "$(git diff-tree --no-commit-id --name-status --no-renames -r "$fourth_head")" = "$expected_fourth_delta"
+
+          third_head="$(git rev-parse "$fourth_head^")"
           test "$third_head" = "$FD08_RECOVERY_THIRD_HEAD"
           test "$(git rev-parse "$third_head^{tree}")" = "$FD08_RECOVERY_THIRD_TREE"
           test "$(git show -s --format=%P "$third_head" | awk '{print NF}')" = "1"
@@ -3960,13 +3979,28 @@ jobs:
           test "$(git diff-tree --no-commit-id --name-status --no-renames -r "$first_head")" = "$expected_first_delta"
           test "$(git rev-parse "$FD08_BASE_HEAD^{tree}")" = "$FD08_BASE_TREE"
           aggregate_delta="$(git diff --name-status --no-renames "$FD08_BASE_HEAD" "$delivery_head")"
-          expected_aggregate_delta=$'M\t.github/workflows/conflict-analysis.yml\nA\tsoftware/conflict_analysis/docs/adr/0013-foundation-workspace-assessment-projection.md\nM\tsoftware/conflict_analysis/domain/enums.py\nA\tsoftware/conflict_analysis/domain/migrations/0018_workspace_assessment_projection.py\nM\tsoftware/conflict_analysis/domain/models.py\nM\tsoftware/conflict_analysis/domain/services/foundation_packages.py\nA\tsoftware/conflict_analysis/domain/services/player_projection.py\nA\tsoftware/conflict_analysis/domain/services/schemas/foundation-package-2.2.0.schema.json\nA\tsoftware/conflict_analysis/domain/tests/test_player_projection.py\nM\tsoftware/conflict_analysis/domain/tests/test_postgresql_migrations.py\nA\tsoftware/conflict_analysis/scripts/verify_player_projection_allowlist.py'
+          expected_aggregate_delta=$'M\t.github/workflows/conflict-analysis.yml\nA\tsoftware/conflict_analysis/docs/adr/0013-foundation-workspace-assessment-projection.md\nM\tsoftware/conflict_analysis/domain/enums.py\nA\tsoftware/conflict_analysis/domain/migrations/0018_workspace_assessment_projection.py\nM\tsoftware/conflict_analysis/domain/models.py\nM\tsoftware/conflict_analysis/domain/services/foundation_packages.py\nA\tsoftware/conflict_analysis/domain/services/player_projection.py\nA\tsoftware/conflict_analysis/domain/services/schemas/foundation-package-2.2.0.schema.json\nA\tsoftware/conflict_analysis/domain/tests/test_player_projection.py\nM\tsoftware/conflict_analysis/domain/tests/test_postgresql_migrations.py\nM\tsoftware/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs\nA\tsoftware/conflict_analysis/scripts/verify_player_projection_allowlist.py'
           test "$aggregate_delta" = "$expected_aggregate_delta"
-          test "$(printf '%s\n' "$aggregate_delta" | awk '$1 == "M" { count += 1 } END { print count + 0 }')" = "5"
+          test "$(printf '%s\n' "$aggregate_delta" | awk '$1 == "M" { count += 1 } END { print count + 0 }')" = "6"
           test "$(printf '%s\n' "$aggregate_delta" | awk '$1 == "A" { count += 1 } END { print count + 0 }')" = "6"
           test "$(git rev-parse "$FD08_BASE_HEAD:software/conflict_analysis/domain/tests/test_postgresql_migrations.py")" = "$FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB"
           test "$(git rev-parse "$third_head:software/conflict_analysis/domain/tests/test_postgresql_migrations.py")" = "$FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB"
-          test "$(git rev-list --count "$FD08_BASE_HEAD..$delivery_head")" = "4"
+          test "$(git rev-parse "$fourth_head:software/conflict_analysis/domain/tests/test_postgresql_migrations.py")" = "$FD08_FIXED_FOURTH_POSTGRESQL_MIGRATION_TEST_BLOB"
+          test "$(git rev-parse "$delivery_head:software/conflict_analysis/domain/tests/test_postgresql_migrations.py")" = "$FD08_FIXED_FOURTH_POSTGRESQL_MIGRATION_TEST_BLOB"
+          test "$(git rev-parse "$fourth_head:.github/workflows/conflict-analysis.yml")" = "$FD08_FIFTH_WORKFLOW_PREIMAGE_BLOB"
+          test "$(git rev-parse "$fourth_head:software/conflict_analysis/domain/services/player_projection.py")" = "$FD08_FIFTH_PLAYER_PROJECTION_PREIMAGE_BLOB"
+          test "$(git rev-parse "$fourth_head:software/conflict_analysis/domain/tests/test_player_projection.py")" = "$FD08_FIFTH_PLAYER_PROJECTION_TEST_PREIMAGE_BLOB"
+          test "$(git rev-parse "$fourth_head:software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs")" = "$FD08_FIFTH_AUDITED_AUTHORING_PREIMAGE_BLOB"
+          test "$(git rev-parse "$fourth_head:software/conflict_analysis/scripts/verify_player_projection_allowlist.py")" = "$FD08_FIFTH_VERIFIER_PREIMAGE_BLOB"
+          for revision in "$FD08_BASE_HEAD" "$fourth_head"; do
+            test "$(git rev-parse "$revision:software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs")" = "$FD08_FIFTH_AUDITED_AUTHORING_PREIMAGE_BLOB"
+          done
+          for revision in "$FD08_BASE_HEAD" "$fourth_head" "$delivery_head"; do
+            test "$(git rev-parse "$revision:software/conflict_analysis/production_studio/browser_tests/cdp_client.mjs")" = "$FD08_CDP_CLIENT_BLOB"
+          done
+          final_harness_blob="$(git rev-parse "$delivery_head:software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs")"
+          test "$final_harness_blob" = "$FD08_FINAL_HARNESS_BLOB"
+          test "$(git rev-list --count "$FD08_BASE_HEAD..$delivery_head")" = "5"
           test -z "$(git rev-list --merges "$FD08_BASE_HEAD..$delivery_head")"
 
           case "$GITHUB_EVENT_NAME" in
@@ -3997,19 +4031,31 @@ jobs:
           printf 'FD08_EVIDENCE_DIR=%s\n' "$evidence_dir" >> "$GITHUB_ENV"
           printf 'FD08_DELIVERY_HEAD=%s\n' "$delivery_head" >> "$GITHUB_ENV"
           printf 'FD08_DELIVERY_TREE=%s\n' "$delivery_tree" >> "$GITHUB_ENV"
+          printf 'FD08_FINAL_FIFTH_AUDITED_AUTHORING_BLOB=%s\n' "$final_harness_blob" >> "$GITHUB_ENV"
           python - \
             "$evidence_dir/route.json" \
             "$delivery_head" \
             "$delivery_tree" \
             "$first_head" \
             "$second_head" \
-            "$third_head" <<'PY'
+            "$third_head" \
+            "$fourth_head" \
+            "$final_harness_blob" <<'PY'
           import json
           import os
           import pathlib
           import sys
 
-          path, head, tree, first_head, second_head, third_head = map(str, sys.argv[1:])
+          (
+              path,
+              head,
+              tree,
+              first_head,
+              second_head,
+              third_head,
+              fourth_head,
+              final_harness_blob,
+          ) = map(str, sys.argv[1:])
           payload = {
               "schema": "FD08_EXACT_HEAD_ROUTE_V1",
               "event_name": os.environ["GITHUB_EVENT_NAME"],
@@ -4021,8 +4067,56 @@ jobs:
               "base_branch": os.environ["FD08_BASE_BRANCH"],
               "base_head": os.environ["FD08_BASE_HEAD"],
               "base_tree": os.environ["FD08_BASE_TREE"],
+              "browser_harness_preimage": {
+                  "path": "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs",
+                  "accepted_f1": os.environ["FD08_FIFTH_AUDITED_AUTHORING_PREIMAGE_BLOB"],
+                  "fixed_fourth": os.environ["FD08_FIFTH_AUDITED_AUTHORING_PREIMAGE_BLOB"],
+                  "final_fifth": final_harness_blob,
+              },
+              "frozen_cdp_client_blobs": {
+                  "path": "software/conflict_analysis/production_studio/browser_tests/cdp_client.mjs",
+                  "accepted_f1": os.environ["FD08_CDP_CLIENT_BLOB"],
+                  "fixed_fourth": os.environ["FD08_CDP_CLIENT_BLOB"],
+                  "final_fifth": os.environ["FD08_CDP_CLIENT_BLOB"],
+              },
+              "rc1_5_combined_receipt": {
+                  "schema": "FD08_RC1_5_COMBINED_RECEIPT_V2",
+                  "contract": "FOUNDATION_PLAYER_WORKSPACE_CREATE_V1",
+                  "legacy_standalone_byte_compatible": True,
+                  "caller_canonical_request_sha256": True,
+                  "canonical_request_sha256_lowercase_64_hex": True,
+                  "server_derived_projection_facts_only": True,
+                  "operation_pk_identity": True,
+                  "one_combined_receipt": True,
+                  "zero_standalone_projection_receipts": True,
+                  "occurred_at_bound": True,
+                  "receipt_sha256": True,
+                  "receipt_sha256_non_self_referential": True,
+                  "exact_replay": True,
+                  "canonical_request_conflict": True,
+                  "collision_before_projection_mutation": True,
+                  "outer_transaction_required": True,
+                  "outer_rollback": True,
+                  "self_contained_read_verification": True,
+                  "sibling_snapshot_provenance": True,
+                  "malformed_dual_drift_unreceipted_fail_closed": True,
+                  "combined_postgresql_concurrency": True,
+                  "late_operation_uuid_collision_typed": True,
+                  "late_collision_zero_write_loser": True,
+                  "late_collision_post_savepoint_requery": True,
+                  "late_collision_narrow_exception_boundary": True,
+                  "test_nodes": [
+                      "test_definition_bound_parameter_snapshots_are_exact_immutable_and_replay_safe",
+                      "test_projection_materializes_actor_element_role_hierarchy_with_deterministic_workspace_ids",
+                      "test_two_workspaces_same_definition_have_distinct_rows_and_identical_source_mapping",
+                      "test_partial_extra_or_drifted_projection_fails_closed_without_repair",
+                      "test_every_projection_failure_stage_rolls_back_rows_and_immutable_receipt",
+                      "test_concurrent_same_workspace_projection_has_one_commit_and_one_exact_replay",
+                      "test_competing_projection_identity_or_snapshot_has_one_commit_and_one_typed_loser",
+                  ],
+              },
               "recovery_chain": {
-                  "commit_count_above_f1": 4,
+                  "commit_count_above_f1": 5,
                   "merge_count": 0,
                   "first_delivery": {
                       "head": first_head,
@@ -4060,9 +4154,9 @@ jobs:
                       ],
                   },
                   "final_fourth": {
-                      "head": head,
-                      "tree": tree,
-                      "parent": third_head,
+                      "head": fourth_head,
+                      "tree": os.environ["FD08_FINAL_FOURTH_TREE"],
+                      "parent": os.environ["FD08_FINAL_FOURTH_PARENT"],
                       "exact_delta": [
                           {
                               "status": "M",
@@ -4078,10 +4172,44 @@ jobs:
                           },
                       ],
                   },
+                  "final_fifth": {
+                      "head": head,
+                      "tree": tree,
+                      "parent": fourth_head,
+                      "exact_delta": [
+                          {
+                              "status": "M",
+                              "path": ".github/workflows/conflict-analysis.yml",
+                          },
+                          {
+                              "status": "M",
+                              "path": "software/conflict_analysis/domain/services/player_projection.py",
+                          },
+                          {
+                              "status": "M",
+                              "path": "software/conflict_analysis/domain/tests/test_player_projection.py",
+                          },
+                          {
+                              "status": "M",
+                              "path": "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs",
+                          },
+                          {
+                              "status": "M",
+                              "path": "software/conflict_analysis/scripts/verify_player_projection_allowlist.py",
+                          },
+                      ],
+                      "fifth_preimage_blobs": {
+                          ".github/workflows/conflict-analysis.yml": os.environ["FD08_FIFTH_WORKFLOW_PREIMAGE_BLOB"],
+                          "software/conflict_analysis/domain/services/player_projection.py": os.environ["FD08_FIFTH_PLAYER_PROJECTION_PREIMAGE_BLOB"],
+                          "software/conflict_analysis/domain/tests/test_player_projection.py": os.environ["FD08_FIFTH_PLAYER_PROJECTION_TEST_PREIMAGE_BLOB"],
+                          "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs": os.environ["FD08_FIFTH_AUDITED_AUTHORING_PREIMAGE_BLOB"],
+                          "software/conflict_analysis/scripts/verify_player_projection_allowlist.py": os.environ["FD08_FIFTH_VERIFIER_PREIMAGE_BLOB"],
+                      },
+                  },
               },
               "final_aggregate": {
-                  "path_count": 11,
-                  "modified_count": 5,
+                  "path_count": 12,
+                  "modified_count": 6,
                   "added_count": 6,
                   "accepted_f1_inherited_postgresql_migration_test_preimage": {
                       "path": "software/conflict_analysis/domain/tests/test_postgresql_migrations.py",
@@ -4146,12 +4274,23 @@ jobs:
           import os
           import pathlib
 
+          route = json.loads(
+              (pathlib.Path(os.environ["FD08_EVIDENCE_DIR"]) / "route.json").read_text(
+                  encoding="utf-8"
+              )
+          )
+
           pathlib.Path(__import__("sys").argv[1]).write_text(
               json.dumps(
                   {
                       "schema": "FD08_STATIC_MIGRATION_EVIDENCE_V1",
                       "delivery_head": os.environ["FD08_DELIVERY_HEAD"],
                       "delivery_tree": os.environ["FD08_DELIVERY_TREE"],
+                      "browser_harness_preimage": route["browser_harness_preimage"],
+                      "frozen_cdp_client_blobs": route["frozen_cdp_client_blobs"],
+                      "rc1_5_combined_receipt": route["rc1_5_combined_receipt"],
+                      "recovery_chain": route["recovery_chain"],
+                      "final_aggregate": route["final_aggregate"],
                       "checks": [
                           "verifier_self_check",
                           "compileall",
@@ -4249,6 +4388,11 @@ jobs:
                       "focused_total": 14,
                       "foundation_passed": 286,
                       "foundation_skipped": 0,
+                      "rc1_5_combined_receipt": json.loads(
+                          (pathlib.Path(os.environ["FD08_EVIDENCE_DIR"]) / "route.json").read_text(
+                              encoding="utf-8"
+                          )
+                      )["rc1_5_combined_receipt"],
                   },
                   indent=2,
                   sort_keys=True,
@@ -4413,6 +4557,11 @@ jobs:
                       "focused_skipped": 2,
                       "foundation_passed": 265,
                       "foundation_skipped": 21,
+                      "rc1_5_combined_receipt": json.loads(
+                          (pathlib.Path(os.environ["FD08_EVIDENCE_DIR"]) / "route.json").read_text(
+                              encoding="utf-8"
+                          )
+                      )["rc1_5_combined_receipt"],
                   },
                   indent=2,
                   sort_keys=True,
@@ -4698,6 +4847,57 @@ jobs:
           assert route["delivery_tree"] == os.environ["FD08_DELIVERY_TREE"]
           assert route["base_head"] == os.environ["FD08_BASE_HEAD"]
           assert route["base_tree"] == os.environ["FD08_BASE_TREE"]
+          expected_browser_harness_preimage = {
+              "path": "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs",
+              "accepted_f1": os.environ["FD08_FIFTH_AUDITED_AUTHORING_PREIMAGE_BLOB"],
+              "fixed_fourth": os.environ["FD08_FIFTH_AUDITED_AUTHORING_PREIMAGE_BLOB"],
+              "final_fifth": os.environ["FD08_FINAL_FIFTH_AUDITED_AUTHORING_BLOB"],
+          }
+          expected_frozen_cdp_client_blobs = {
+              "path": "software/conflict_analysis/production_studio/browser_tests/cdp_client.mjs",
+              "accepted_f1": os.environ["FD08_CDP_CLIENT_BLOB"],
+              "fixed_fourth": os.environ["FD08_CDP_CLIENT_BLOB"],
+              "final_fifth": os.environ["FD08_CDP_CLIENT_BLOB"],
+          }
+          expected_rc1_5 = {
+              "schema": "FD08_RC1_5_COMBINED_RECEIPT_V2",
+              "contract": "FOUNDATION_PLAYER_WORKSPACE_CREATE_V1",
+              "legacy_standalone_byte_compatible": True,
+              "caller_canonical_request_sha256": True,
+              "canonical_request_sha256_lowercase_64_hex": True,
+              "server_derived_projection_facts_only": True,
+              "operation_pk_identity": True,
+              "one_combined_receipt": True,
+              "zero_standalone_projection_receipts": True,
+              "occurred_at_bound": True,
+              "receipt_sha256": True,
+              "receipt_sha256_non_self_referential": True,
+              "exact_replay": True,
+              "canonical_request_conflict": True,
+              "collision_before_projection_mutation": True,
+              "outer_transaction_required": True,
+              "outer_rollback": True,
+              "self_contained_read_verification": True,
+              "sibling_snapshot_provenance": True,
+              "malformed_dual_drift_unreceipted_fail_closed": True,
+              "combined_postgresql_concurrency": True,
+              "late_operation_uuid_collision_typed": True,
+              "late_collision_zero_write_loser": True,
+              "late_collision_post_savepoint_requery": True,
+              "late_collision_narrow_exception_boundary": True,
+              "test_nodes": [
+                  "test_definition_bound_parameter_snapshots_are_exact_immutable_and_replay_safe",
+                  "test_projection_materializes_actor_element_role_hierarchy_with_deterministic_workspace_ids",
+                  "test_two_workspaces_same_definition_have_distinct_rows_and_identical_source_mapping",
+                  "test_partial_extra_or_drifted_projection_fails_closed_without_repair",
+                  "test_every_projection_failure_stage_rolls_back_rows_and_immutable_receipt",
+                  "test_concurrent_same_workspace_projection_has_one_commit_and_one_exact_replay",
+                  "test_competing_projection_identity_or_snapshot_has_one_commit_and_one_typed_loser",
+              ],
+          }
+          assert route["browser_harness_preimage"] == expected_browser_harness_preimage
+          assert route["frozen_cdp_client_blobs"] == expected_frozen_cdp_client_blobs
+          assert route["rc1_5_combined_receipt"] == expected_rc1_5
           recovery_chain = route["recovery_chain"]
           assert set(recovery_chain) == {
               "commit_count_above_f1",
@@ -4706,8 +4906,9 @@ jobs:
               "oracle_late_second",
               "recovery_third",
               "final_fourth",
+              "final_fifth",
           }
-          assert recovery_chain["commit_count_above_f1"] == 4
+          assert recovery_chain["commit_count_above_f1"] == 5
           assert recovery_chain["merge_count"] == 0
           assert recovery_chain["first_delivery"] == {
               "head": os.environ["FD08_FIRST_HEAD"],
@@ -4745,9 +4946,9 @@ jobs:
               ],
           }
           assert recovery_chain["final_fourth"] == {
-              "head": route["delivery_head"],
-              "tree": route["delivery_tree"],
-              "parent": os.environ["FD08_RECOVERY_THIRD_HEAD"],
+              "head": os.environ["FD08_FINAL_FOURTH_HEAD"],
+              "tree": os.environ["FD08_FINAL_FOURTH_TREE"],
+              "parent": os.environ["FD08_FINAL_FOURTH_PARENT"],
               "exact_delta": [
                   {
                       "status": "M",
@@ -4763,10 +4964,44 @@ jobs:
                   },
               ],
           }
+          assert recovery_chain["final_fifth"] == {
+              "head": route["delivery_head"],
+              "tree": route["delivery_tree"],
+              "parent": os.environ["FD08_FINAL_FOURTH_HEAD"],
+              "exact_delta": [
+                  {
+                      "status": "M",
+                      "path": ".github/workflows/conflict-analysis.yml",
+                  },
+                  {
+                      "status": "M",
+                      "path": "software/conflict_analysis/domain/services/player_projection.py",
+                  },
+                  {
+                      "status": "M",
+                      "path": "software/conflict_analysis/domain/tests/test_player_projection.py",
+                  },
+                  {
+                      "status": "M",
+                      "path": "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs",
+                  },
+                  {
+                      "status": "M",
+                      "path": "software/conflict_analysis/scripts/verify_player_projection_allowlist.py",
+                  },
+              ],
+              "fifth_preimage_blobs": {
+                  ".github/workflows/conflict-analysis.yml": os.environ["FD08_FIFTH_WORKFLOW_PREIMAGE_BLOB"],
+                  "software/conflict_analysis/domain/services/player_projection.py": os.environ["FD08_FIFTH_PLAYER_PROJECTION_PREIMAGE_BLOB"],
+                  "software/conflict_analysis/domain/tests/test_player_projection.py": os.environ["FD08_FIFTH_PLAYER_PROJECTION_TEST_PREIMAGE_BLOB"],
+                  "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs": os.environ["FD08_FIFTH_AUDITED_AUTHORING_PREIMAGE_BLOB"],
+                  "software/conflict_analysis/scripts/verify_player_projection_allowlist.py": os.environ["FD08_FIFTH_VERIFIER_PREIMAGE_BLOB"],
+              },
+          }
           final_aggregate = route["final_aggregate"]
           assert final_aggregate == {
-              "path_count": 11,
-              "modified_count": 5,
+              "path_count": 12,
+              "modified_count": 6,
               "added_count": 6,
               "accepted_f1_inherited_postgresql_migration_test_preimage": {
                   "path": "software/conflict_analysis/domain/tests/test_postgresql_migrations.py",
@@ -4779,10 +5014,16 @@ jobs:
           assert verifier["allowlist_result"] == "PASS"
           assert verifier["history"]["final_head"] == route["delivery_head"]
           assert verifier["history"]["final_tree"] == route["delivery_tree"]
-          assert verifier["history"]["final_parent"] == recovery_chain["final_fourth"]["parent"]
-          assert verifier["history"]["commit_count"] == 4
+          assert verifier["history"]["final_parent"] == recovery_chain["final_fifth"]["parent"]
+          assert verifier["history"]["commit_count"] == 5
           assert verifier["history"]["merge_count"] == 0
           assert verifier["history"]["recovery_chain"] == recovery_chain
+          assert verifier["rc1_5_combined_receipt"] == {
+              **expected_rc1_5,
+              "service_path": "software/conflict_analysis/domain/services/player_projection.py",
+              "test_path": "software/conflict_analysis/domain/tests/test_player_projection.py",
+              "late_collision_handler_ast": True,
+          }
           verifier_paths = verifier["paths"]
           assert verifier_paths["recovery_third_delta"] == {
               ".github/workflows/conflict-analysis.yml": "M",
@@ -4794,6 +5035,14 @@ jobs:
               "software/conflict_analysis/domain/tests/test_postgresql_migrations.py": "M",
               "software/conflict_analysis/scripts/verify_player_projection_allowlist.py": "M",
           }
+          assert verifier_paths["fifth_child_delta"] == {
+              ".github/workflows/conflict-analysis.yml": "M",
+              "software/conflict_analysis/domain/services/player_projection.py": "M",
+              "software/conflict_analysis/domain/tests/test_player_projection.py": "M",
+              "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs": "M",
+              "software/conflict_analysis/scripts/verify_player_projection_allowlist.py": "M",
+          }
+          assert verifier_paths["fifth_preimage_blobs"] == recovery_chain["final_fifth"]["fifth_preimage_blobs"]
           assert verifier_paths["inherited_postgresql_migration_test_preimage"] == {
               "path": "software/conflict_analysis/domain/tests/test_postgresql_migrations.py",
               "accepted_f1": os.environ[
@@ -4802,8 +5051,42 @@ jobs:
               "recovery_third": os.environ[
                   "FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB"
               ],
+              "fixed_fourth": os.environ[
+                  "FD08_FIXED_FOURTH_POSTGRESQL_MIGRATION_TEST_BLOB"
+              ],
+              "final_fifth": os.environ[
+                  "FD08_FIXED_FOURTH_POSTGRESQL_MIGRATION_TEST_BLOB"
+              ],
           }
-          assert verifier_paths["topology"] == "5 modified + 6 new aggregate across four commits"
+          assert verifier_paths["browser_harness_preimage"] == expected_browser_harness_preimage
+          assert verifier_paths["frozen_cdp_client_blobs"] == {
+              os.environ["FD08_BASE_HEAD"]: os.environ["FD08_CDP_CLIENT_BLOB"],
+              os.environ["FD08_FINAL_FOURTH_HEAD"]: os.environ["FD08_CDP_CLIENT_BLOB"],
+              "HEAD": os.environ["FD08_CDP_CLIENT_BLOB"],
+          }
+          assert verifier_paths["authoring_ready_replay_contract"] is True
+          assert verifier_paths["topology"] == "6 modified + 6 new aggregate across five commits"
+          expected_aggregate_modified_paths = [
+              ".github/workflows/conflict-analysis.yml",
+              "software/conflict_analysis/domain/enums.py",
+              "software/conflict_analysis/domain/models.py",
+              "software/conflict_analysis/domain/services/foundation_packages.py",
+              "software/conflict_analysis/domain/tests/test_postgresql_migrations.py",
+              "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs",
+          ]
+          expected_aggregate_new_paths = [
+              "software/conflict_analysis/docs/adr/0013-foundation-workspace-assessment-projection.md",
+              "software/conflict_analysis/domain/migrations/0018_workspace_assessment_projection.py",
+              "software/conflict_analysis/domain/services/player_projection.py",
+              "software/conflict_analysis/domain/services/schemas/foundation-package-2.2.0.schema.json",
+              "software/conflict_analysis/domain/tests/test_player_projection.py",
+              "software/conflict_analysis/scripts/verify_player_projection_allowlist.py",
+          ]
+          assert verifier_paths["modified_paths"] == expected_aggregate_modified_paths
+          assert verifier_paths["new_paths"] == expected_aggregate_new_paths
+          assert verifier_paths["changed_paths"] == sorted(
+              expected_aggregate_modified_paths + expected_aggregate_new_paths
+          )
           assert verifier["inherited_postgresql_migration_test"] == {
               "path": "software/conflict_analysis/domain/tests/test_postgresql_migrations.py",
               "class": "ProjectPrimaryLanguageMigrationGateTests",
@@ -4817,6 +5100,11 @@ jobs:
           assert static["schema"] == "FD08_STATIC_MIGRATION_EVIDENCE_V1"
           assert static["delivery_head"] == route["delivery_head"]
           assert static["delivery_tree"] == route["delivery_tree"]
+          assert static["browser_harness_preimage"] == expected_browser_harness_preimage
+          assert static["frozen_cdp_client_blobs"] == expected_frozen_cdp_client_blobs
+          assert static["rc1_5_combined_receipt"] == expected_rc1_5
+          assert static["recovery_chain"] == recovery_chain
+          assert static["final_aggregate"] == final_aggregate
 
           migration_nodes = [
               "test_clean_migration_creates_conditional_legacy_and_canonical_constraints",
@@ -4878,6 +5166,7 @@ jobs:
               "focused_total": 14,
               "foundation_passed": 286,
               "foundation_skipped": 0,
+              "rc1_5_combined_receipt": expected_rc1_5,
           }
           sqlite_results = json.loads(
               (root / "sqlite-results.json").read_text(encoding="utf-8")
@@ -4888,6 +5177,7 @@ jobs:
               "focused_skipped": 2,
               "foundation_passed": 265,
               "foundation_skipped": 21,
+              "rc1_5_combined_receipt": expected_rc1_5,
           }
           product_chromium = json.loads(
               (root / "product-chromium-results.json").read_text(encoding="utf-8")
@@ -4928,6 +5218,9 @@ jobs:
                       "delivery_tree": route["delivery_tree"],
                       "recovery_chain": recovery_chain,
                       "final_aggregate": final_aggregate,
+                      "browser_harness_preimage": expected_browser_harness_preimage,
+                      "frozen_cdp_client_blobs": expected_frozen_cdp_client_blobs,
+                      "rc1_5_combined_receipt": expected_rc1_5,
                       "migration_evidence": migration_evidence,
                       "foundation_results": {
                           "postgresql": postgresql_results,

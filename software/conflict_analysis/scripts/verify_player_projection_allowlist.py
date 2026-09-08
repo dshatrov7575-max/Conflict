@@ -2,10 +2,11 @@
 """Verify the bounded FD08 assessment-projection delivery contract.
 
 This verifier is intentionally Git-only.  It proves the exact accepted F1
-parent, the owner-authorized four-commit recovery chain, the final eleven-path
-5+6 aggregate, frozen package and migration assets, migration evidence route,
-and literal FD08 test registry.  Runtime semantics are proved by the focused
-and full test runs that invoke this verifier in CI.
+parent, the owner-authorized five-commit recovery chain, the final twelve-path
+6+6 aggregate, frozen package and migration assets, corrected RC1-5 combined
+receipt evidence, migration evidence route, and literal FD08 test registry.
+Runtime semantics are proved by the focused and full test runs that invoke this
+verifier in CI.
 """
 
 from __future__ import annotations
@@ -33,6 +34,9 @@ FD08_SECOND_TREE = "9878849d527bc76406799bebb1e0f79e28b4f999"
 FD08_RECOVERY_THIRD_COMMIT = "929b52aa765db1b17d3df5793391aafa2692e0dd"
 FD08_RECOVERY_THIRD_TREE = "8a7ef4a5294e2b4f31c39eea2c0afb8e16141a5e"
 FD08_RECOVERY_THIRD_PARENT = "5958117f7702f786f0a99ac2b49a421e6ccdf7c8"
+FD08_FINAL_FOURTH_COMMIT = "333801d8020a8c9e78299eee529a170fc6c7d3dd"
+FD08_FINAL_FOURTH_TREE = "ec3ecd42ae80bf243b7747f624dd5ea3bcb45eea"
+FD08_FINAL_FOURTH_PARENT = "929b52aa765db1b17d3df5793391aafa2692e0dd"
 
 WORKFLOW_PATH = ".github/workflows/conflict-analysis.yml"
 ENUMS_PATH = "software/conflict_analysis/domain/enums.py"
@@ -54,6 +58,8 @@ POSTGRESQL_MIGRATION_TEST_METHOD = (
     "test_0016_reverse_reapply_and_clean_database_seed_are_exact"
 )
 VERIFIER_PATH = "software/conflict_analysis/scripts/verify_player_projection_allowlist.py"
+HARNESS_PATH = "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs"
+CDP_CLIENT_PATH = "software/conflict_analysis/production_studio/browser_tests/cdp_client.mjs"
 SCHEMA_PATH = (
     "software/conflict_analysis/domain/services/schemas/"
     "foundation-package-2.2.0.schema.json"
@@ -67,7 +73,8 @@ FD08_NEW_PATHS = frozenset(
 )
 FD08_FIRST_ALLOWLIST = FD08_FIRST_MODIFIED_PATHS | FD08_NEW_PATHS
 FD08_FINAL_MODIFIED_PATHS = FD08_FIRST_MODIFIED_PATHS | {
-    POSTGRESQL_MIGRATIONS_TEST_PATH
+    POSTGRESQL_MIGRATIONS_TEST_PATH,
+    HARNESS_PATH,
 }
 FD08_FINAL_ALLOWLIST = FD08_FINAL_MODIFIED_PATHS | FD08_NEW_PATHS
 FD08_SECOND_DELTA_STATUSES = {TEST_PATH: "M"}
@@ -81,12 +88,25 @@ FD08_FOURTH_DELTA_STATUSES = {
     POSTGRESQL_MIGRATIONS_TEST_PATH: "M",
     VERIFIER_PATH: "M",
 }
+FD08_FIFTH_DELTA_STATUSES = {
+    WORKFLOW_PATH: "M",
+    PROJECTION_PATH: "M",
+    TEST_PATH: "M",
+    HARNESS_PATH: "M",
+    VERIFIER_PATH: "M",
+}
 FD08_RECOVERY_THIRD_DELTA_PATHS = frozenset(FD08_RECOVERY_THIRD_DELTA_STATUSES)
 FD08_FOURTH_DELTA_PATHS = frozenset(FD08_FOURTH_DELTA_STATUSES)
+FD08_FIFTH_DELTA_PATHS = frozenset(FD08_FIFTH_DELTA_STATUSES)
 FD08_FROZEN_MIGRATION_BLOB = "292a8eb4abafeef80d6efc7d3c2d4cda5f771fd9"
 FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB = (
     "70dba8ee3e1e159e85f112ffc4523cd8d097ba4e"
 )
+FD08_FIXED_FOURTH_POSTGRESQL_MIGRATION_TEST_BLOB = (
+    "3d31f7dabde996e18fbef219f835432c947f24f1"
+)
+FD08_FINAL_HARNESS_BLOB = "f6ad2ff633d9c49ae4e5c69d5fff931b677e8af3"
+FD08_CDP_CLIENT_BLOB = "685faeb3906a0f74815549e272748125bb6fbf65"
 
 FD08_PREIMAGE_BLOBS = {
     WORKFLOW_PATH: "24631b5dd4a83ee680dd64e427c35805fbe1c276",
@@ -103,6 +123,14 @@ FROZEN_PACKAGE_BLOBS = {
 FD08_FINAL_PREIMAGE_BLOBS = {
     **FD08_PREIMAGE_BLOBS,
     POSTGRESQL_MIGRATIONS_TEST_PATH: FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB,
+    HARNESS_PATH: "e0078090f235757a3bd8b426eecc8a86bcc250e4",
+}
+FD08_FIFTH_PREIMAGE_BLOBS = {
+    WORKFLOW_PATH: "70c1aed79dbc11235969fccf8f11534ac6674fb6",
+    PROJECTION_PATH: "a859643c78a572e17daefda3914f37b7e03868c6",
+    TEST_PATH: "bf050746fcbfad7d77741949b26bbe690d104a20",
+    HARNESS_PATH: "e0078090f235757a3bd8b426eecc8a86bcc250e4",
+    VERIFIER_PATH: "0b21980f5d7e1cdb1d94440ae3e2db21e8504b7c",
 }
 PYPROJECT_PATH = "software/conflict_analysis/pyproject.toml"
 MIGRATION_DEPENDENCY = ("domain", "0017_multilingual_evidence_lineage")
@@ -141,7 +169,13 @@ WORKFLOW_RECOVERY_REQUIRED_TOKENS = (
     "FD08_RECOVERY_THIRD_HEAD",
     "FD08_RECOVERY_THIRD_TREE",
     "FD08_RECOVERY_THIRD_PARENT",
+    "FD08_FINAL_FOURTH_HEAD",
+    "FD08_FINAL_FOURTH_TREE",
+    "FD08_FINAL_FOURTH_PARENT",
     "FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB",
+    "FD08_FIXED_FOURTH_POSTGRESQL_MIGRATION_TEST_BLOB",
+    "FD08_FINAL_HARNESS_BLOB",
+    "FD08_CDP_CLIENT_BLOB",
     FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB,
     "FD08_EXACT_HEAD_ROUTE_V1",
     "recovery_chain",
@@ -152,6 +186,18 @@ WORKFLOW_RECOVERY_REQUIRED_TOKENS = (
     "recovery_third",
     "exact_delta",
     "final_fourth",
+    "final_fifth",
+    "fifth_preimage_blobs",
+    "FD08_RC1_5_COMBINED_RECEIPT_V2",
+    "canonical_request_sha256",
+    "receipt_sha256",
+    "occurred_at_bound",
+    "operation_pk_identity",
+    "collision_before_projection_mutation",
+    "legacy_standalone_byte_compatible",
+    "self_contained_read_verification",
+    "sibling_snapshot_provenance",
+    "combined_postgresql_concurrency",
     "test_postgresql_migrations.py",
     "fd08-migration-postgresql.json",
     "fd08-migration-sqlite.json",
@@ -183,6 +229,68 @@ WORKFLOW_RECOVERY_REQUIRED_TOKENS = (
     "fd08-c0-sqlite.xml",
     "fd08-c1-sqlite.xml",
     "fd08-c1-chromium-postgresql.xml",
+)
+
+RC1_5_TEST_NODES = (
+    "test_definition_bound_parameter_snapshots_are_exact_immutable_and_replay_safe",
+    "test_projection_materializes_actor_element_role_hierarchy_with_deterministic_workspace_ids",
+    "test_two_workspaces_same_definition_have_distinct_rows_and_identical_source_mapping",
+    "test_partial_extra_or_drifted_projection_fails_closed_without_repair",
+    "test_every_projection_failure_stage_rolls_back_rows_and_immutable_receipt",
+    "test_concurrent_same_workspace_projection_has_one_commit_and_one_exact_replay",
+    "test_competing_projection_identity_or_snapshot_has_one_commit_and_one_typed_loser",
+)
+RC1_5_SERVICE_REQUIRED_TOKENS = (
+    "canonical_request_sha256: str | None = None",
+    "_CANONICAL_REQUEST_SHA256",
+    "WORKSPACE_CREATE_CONTRACT",
+    "canonical_request_sha256 = _canonical_request_sha256",
+    '"canonical_request_sha256": canonical_request_sha256',
+    '"receipt_sha256": _sha256(core)',
+    '"occurred_at": _canonical_occurred_at(occurred_at)',
+    '"projection_request_sha256": _sha256(projection_request)',
+    "id=operation_id",
+    "AuditEvent.objects.select_for_update().filter(pk=operation_id).first()",
+    "except (IntegrityError, ValidationError) as exc",
+    "late_operation_receipt",
+    "if late_operation_receipt is not None",
+    "raise AssessmentProjectionConflict",
+    "ASSESSMENT_PROJECTION_COMBINED_TRANSACTION_REQUIRED",
+    "transaction.get_connection().in_atomic_block",
+    "entity_type__in=_PROJECTION_RECEIPT_CONTRACTS",
+    "_standalone_receipt_matches_expected_projection",
+    "_combined_receipt_matches_expected_projection",
+    "Projection facts are server-derived",
+)
+RC1_5_TEST_REQUIRED_TOKENS = (
+    "WORKSPACE_CREATE_CONTRACT",
+    "canonical_request_sha256=",
+    "receipt_sha256",
+    "occurred_at",
+    "ASSESSMENT_PROJECTION_COMBINED_TRANSACTION_REQUIRED",
+    "projection_sha256=\"caller-must-not-assert-this\"",
+    "FD08-COLLISION",
+    "outer rollback",
+    "pause_only_a_save",
+    "A did not reach the real inherited AuditEvent.save path",
+    "test_concurrent_same_workspace_projection_has_one_commit_and_one_exact_replay",
+    "test_competing_projection_identity_or_snapshot_has_one_commit_and_one_typed_loser",
+)
+RC1_5_EVIDENCE_REQUIRED_TOKENS = (
+    "FD08_RC1_5_COMBINED_RECEIPT_V2",
+    "canonical_request_sha256",
+    "receipt_sha256",
+    "occurred_at_bound",
+    "operation_pk_identity",
+    "collision_before_projection_mutation",
+    "legacy_standalone_byte_compatible",
+    "self_contained_read_verification",
+    "sibling_snapshot_provenance",
+    "combined_postgresql_concurrency",
+    "late_operation_uuid_collision_typed",
+    "late_collision_zero_write_loser",
+    "late_collision_post_savepoint_requery",
+    "late_collision_narrow_exception_boundary",
 )
 
 PORTABLE_TEST_METHODS = (
@@ -258,14 +366,27 @@ def _constant_contract() -> None:
     _require_sha(FD08_RECOVERY_THIRD_COMMIT, "FD08 recovery third commit")
     _require_sha(FD08_RECOVERY_THIRD_TREE, "FD08 recovery third tree")
     _require_sha(FD08_RECOVERY_THIRD_PARENT, "FD08 recovery third parent")
+    _require_sha(FD08_FINAL_FOURTH_COMMIT, "FD08 final fourth commit")
+    _require_sha(FD08_FINAL_FOURTH_TREE, "FD08 final fourth tree")
+    _require_sha(FD08_FINAL_FOURTH_PARENT, "FD08 final fourth parent")
     _require_sha(FD08_FROZEN_MIGRATION_BLOB, "FD08 frozen migration blob")
     _require_sha(
         FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB,
         "FD08 accepted-F1 PostgreSQL migration test blob",
     )
+    _require_sha(
+        FD08_FIXED_FOURTH_POSTGRESQL_MIGRATION_TEST_BLOB,
+        "FD08 fixed-fourth PostgreSQL migration test blob",
+    )
+    _require_sha(FD08_FINAL_HARNESS_BLOB, "FD08 final authoring harness blob")
+    _require_sha(FD08_CDP_CLIENT_BLOB, "FD08 frozen CDP client blob")
     _require(
         FD08_RECOVERY_THIRD_PARENT == FD08_SECOND_COMMIT,
         "FD08 recovery third parent must be the oracle-late second commit",
+    )
+    _require(
+        FD08_FINAL_FOURTH_PARENT == FD08_RECOVERY_THIRD_COMMIT,
+        "FD08 final fourth parent must be the recovery third commit",
     )
     _require(
         len(FD08_FIRST_ALLOWLIST) == 10,
@@ -281,12 +402,12 @@ def _constant_contract() -> None:
         "FD08 first modified and new path sets must not overlap",
     )
     _require(
-        len(FD08_FINAL_ALLOWLIST) == 11,
-        "FD08 final aggregate allowlist must contain exactly eleven paths",
+        len(FD08_FINAL_ALLOWLIST) == 12,
+        "FD08 final aggregate allowlist must contain exactly twelve paths",
     )
     _require(
-        len(FD08_FINAL_MODIFIED_PATHS) == 5,
-        "FD08 final aggregate must modify exactly five paths",
+        len(FD08_FINAL_MODIFIED_PATHS) == 6,
+        "FD08 final aggregate must modify exactly six paths",
     )
     _require(
         not (FD08_FINAL_MODIFIED_PATHS & FD08_NEW_PATHS),
@@ -295,7 +416,7 @@ def _constant_contract() -> None:
     _require(
         POSTGRESQL_MIGRATIONS_TEST_PATH not in FD08_FIRST_ALLOWLIST
         and POSTGRESQL_MIGRATIONS_TEST_PATH in FD08_FINAL_ALLOWLIST,
-        "FD08 inherited PostgreSQL migration test must be the sole fourth-child aggregate path",
+        "FD08 inherited PostgreSQL migration test must remain in the final aggregate",
     )
     _require(
         FD08_SECOND_DELTA_STATUSES == {TEST_PATH: "M"},
@@ -320,6 +441,17 @@ def _constant_contract() -> None:
         "FD08 fourth-child delta must modify only workflow, PostgreSQL migration test, and verifier",
     )
     _require(
+        FD08_FIFTH_DELTA_STATUSES
+        == {
+            WORKFLOW_PATH: "M",
+            PROJECTION_PATH: "M",
+            TEST_PATH: "M",
+            HARNESS_PATH: "M",
+            VERIFIER_PATH: "M",
+        },
+        "FD08 corrected fifth delta must modify exactly workflow, service, test, harness, and verifier",
+    )
+    _require(
         FD08_RECOVERY_THIRD_DELTA_PATHS <= FD08_FIRST_ALLOWLIST,
         "FD08 recovery third paths must remain inside the original allowlist",
     )
@@ -328,18 +460,24 @@ def _constant_contract() -> None:
         "FD08 fourth-child paths must remain inside the final aggregate allowlist",
     )
     _require(
+        FD08_FIFTH_DELTA_PATHS <= FD08_FINAL_ALLOWLIST,
+        "FD08 fifth-child paths must remain inside the final aggregate allowlist",
+    )
+    _require(
         set(FD08_PREIMAGE_BLOBS) == set(FD08_FIRST_MODIFIED_PATHS),
         "FD08 original preimage map must cover exactly the four first-delivery modified paths",
     )
     _require(
         set(FD08_FINAL_PREIMAGE_BLOBS) == set(FD08_FINAL_MODIFIED_PATHS),
-        "FD08 final preimage map must cover exactly the five final modified paths",
+        "FD08 final preimage map must cover exactly the six final modified paths",
     )
     for path, object_id in FD08_FINAL_PREIMAGE_BLOBS.items():
         _require(PurePosixPath(path).as_posix() == path, f"non-posix FD08 path: {path}")
         _require_sha(object_id, f"FD08 preimage {path}")
     for path, object_id in FROZEN_PACKAGE_BLOBS.items():
         _require_sha(object_id, f"frozen package blob {path}")
+    for path, object_id in FD08_FIFTH_PREIMAGE_BLOBS.items():
+        _require_sha(object_id, f"FD08 fifth preimage {path}")
     _require(
         len(PORTABLE_TEST_METHODS) == 12,
         "FD08 portable registry must contain exactly twelve nodes",
@@ -365,6 +503,16 @@ def _constant_contract() -> None:
         == len(set(WORKFLOW_RECOVERY_REQUIRED_TOKENS)),
         "FD08 recovery workflow token contract must not contain duplicates",
     )
+    _require(
+        len(RC1_5_TEST_NODES) == 7 and len(set(RC1_5_TEST_NODES)) == 7,
+        "FD08 corrected RC1-5 evidence must bind seven distinct frozen nodes",
+    )
+    for tokens, label in (
+        (RC1_5_SERVICE_REQUIRED_TOKENS, "service"),
+        (RC1_5_TEST_REQUIRED_TOKENS, "test"),
+        (RC1_5_EVIDENCE_REQUIRED_TOKENS, "evidence"),
+    ):
+        _require(len(tokens) == len(set(tokens)), f"FD08 RC1-5 {label} oracle has duplicates")
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -417,9 +565,10 @@ def _validate_recovery_history(
     first_tree: str,
     second_tree: str,
     third_tree: str,
+    fourth_tree: str,
     merge_count: int,
 ) -> None:
-    """Require the owner-authorized four-commit FD08 recovery chain."""
+    """Require the owner-authorized corrected five-commit FD08 recovery chain."""
 
     commits = tuple(ordered_commits)
     parents = tuple(tuple(parent_ids) for parent_ids in commit_parents)
@@ -431,27 +580,30 @@ def _validate_recovery_history(
     _require_sha(first_tree, "FD08 first recovery tree")
     _require_sha(second_tree, "FD08 second recovery tree")
     _require_sha(third_tree, "FD08 recovery third tree")
-    _require(commit_count == 4, "FD08 recovery must contain exactly four commits")
-    _require(len(commits) == 4, "FD08 recovery commit sequence must contain four commits")
-    _require(len(parents) == 4, "FD08 recovery parent sequence must contain four commits")
+    _require_sha(fourth_tree, "FD08 final fourth tree")
+    _require(commit_count == 5, "FD08 recovery must contain exactly five commits")
+    _require(len(commits) == 5, "FD08 recovery commit sequence must contain five commits")
+    _require(len(parents) == 5, "FD08 recovery parent sequence must contain five commits")
     _require(
-        commits[:3]
+        commits[:4]
         == (
             FD08_FIRST_COMMIT,
             FD08_SECOND_COMMIT,
             FD08_RECOVERY_THIRD_COMMIT,
+            FD08_FINAL_FOURTH_COMMIT,
         ),
-        "FD08 recovery fixed first, second, or third commit drifted",
+        "FD08 recovery fixed first, second, third, or fourth commit drifted",
     )
     _require(
-        commits[3]
+        commits[4]
         not in {
             FD08_BASE_HEAD,
             FD08_FIRST_COMMIT,
             FD08_SECOND_COMMIT,
             FD08_RECOVERY_THIRD_COMMIT,
+            FD08_FINAL_FOURTH_COMMIT,
         },
-        "FD08 recovery fourth commit must be a new ordinary child",
+        "FD08 corrected fifth commit must be a new ordinary child",
     )
     _require(
         parents
@@ -460,8 +612,9 @@ def _validate_recovery_history(
             (FD08_FIRST_COMMIT,),
             (FD08_SECOND_COMMIT,),
             (FD08_RECOVERY_THIRD_COMMIT,),
+            (FD08_FINAL_FOURTH_COMMIT,),
         ),
-        "FD08 recovery parent chain must be F1 -> first -> second -> third -> fourth",
+        "FD08 recovery parent chain must be F1 -> first -> second -> third -> fourth -> fifth",
     )
     _require(
         first_tree == FD08_FIRST_TREE,
@@ -474,6 +627,10 @@ def _validate_recovery_history(
     _require(
         third_tree == FD08_RECOVERY_THIRD_TREE,
         "FD08 recovery third commit tree drifted",
+    )
+    _require(
+        fourth_tree == FD08_FINAL_FOURTH_TREE,
+        "FD08 final fourth commit tree drifted",
     )
     _require(merge_count == 0, "FD08 recovery must not contain merge commits")
 
@@ -550,6 +707,14 @@ def _validate_fourth_delta(statuses: Mapping[str, str]) -> None:
     )
 
 
+def _validate_fifth_delta(statuses: Mapping[str, str]) -> None:
+    _validate_exact_delta(
+        statuses,
+        FD08_FIFTH_DELTA_STATUSES,
+        "FD08 corrected fifth child",
+    )
+
+
 def _validate_original_preimage_map(actual: Mapping[str, str]) -> None:
     _require(
         dict(actual) == FD08_PREIMAGE_BLOBS,
@@ -568,6 +733,20 @@ def _validate_inherited_postgresql_migration_test_preimage(actual: str) -> None:
     _require(
         actual == FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB,
         "FD08 inherited PostgreSQL migration test preimage drifted from accepted F1",
+    )
+
+
+def _validate_fixed_fourth_postgresql_migration_test_blob(actual: str) -> None:
+    _require(
+        actual == FD08_FIXED_FOURTH_POSTGRESQL_MIGRATION_TEST_BLOB,
+        "FD08 final fifth must retain the accepted fixed-fourth migration test blob",
+    )
+
+
+def _validate_fifth_preimage_map(actual: Mapping[str, str]) -> None:
+    _require(
+        dict(actual) == FD08_FIFTH_PREIMAGE_BLOBS,
+        "FD08 corrected fifth preimage blobs differ from fixed fourth",
     )
 
 
@@ -883,6 +1062,7 @@ def _verify_history(repo: Path) -> dict[str, object]:
     first_tree = _git(repo, "rev-parse", f"{FD08_FIRST_COMMIT}^{{tree}}")
     second_tree = _git(repo, "rev-parse", f"{FD08_SECOND_COMMIT}^{{tree}}")
     third_tree = _git(repo, "rev-parse", f"{FD08_RECOVERY_THIRD_COMMIT}^{{tree}}")
+    fourth_tree = _git(repo, "rev-parse", f"{FD08_FINAL_FOURTH_COMMIT}^{{tree}}")
     _validate_recovery_history(
         commit_count=commit_count,
         ordered_commits=ordered_commits,
@@ -890,6 +1070,7 @@ def _verify_history(repo: Path) -> dict[str, object]:
         first_tree=first_tree,
         second_tree=second_tree,
         third_tree=third_tree,
+        fourth_tree=fourth_tree,
         merge_count=len(merges),
     )
     final_head = _git(repo, "rev-parse", "HEAD")
@@ -933,13 +1114,23 @@ def _verify_history(repo: Path) -> dict[str, object]:
                 ],
             },
             "final_fourth": {
+                "head": FD08_FINAL_FOURTH_COMMIT,
+                "tree": fourth_tree,
+                "parent": FD08_FINAL_FOURTH_PARENT,
+                "exact_delta": [
+                    {"status": status, "path": path}
+                    for path, status in sorted(FD08_FOURTH_DELTA_STATUSES.items())
+                ],
+            },
+            "final_fifth": {
                 "head": final_head,
                 "tree": final_tree,
                 "parent": final_parent,
                 "exact_delta": [
                     {"status": status, "path": path}
-                    for path, status in sorted(FD08_FOURTH_DELTA_STATUSES.items())
+                    for path, status in sorted(FD08_FIFTH_DELTA_STATUSES.items())
                 ],
+                "fifth_preimage_blobs": FD08_FIFTH_PREIMAGE_BLOBS,
             },
         },
     }
@@ -951,12 +1142,16 @@ def _verify_paths_and_preimages(repo: Path) -> dict[str, object]:
     third_statuses = _changed_statuses(
         repo, FD08_SECOND_COMMIT, FD08_RECOVERY_THIRD_COMMIT
     )
-    fourth_statuses = _changed_statuses(repo, FD08_RECOVERY_THIRD_COMMIT, "HEAD")
+    fourth_statuses = _changed_statuses(
+        repo, FD08_RECOVERY_THIRD_COMMIT, FD08_FINAL_FOURTH_COMMIT
+    )
+    fifth_statuses = _changed_statuses(repo, FD08_FINAL_FOURTH_COMMIT, "HEAD")
     aggregate_statuses = _changed_statuses(repo, FD08_BASE_HEAD, "HEAD")
     _validate_first_topology(first_statuses)
     _validate_second_delta(second_statuses)
     _validate_recovery_third_delta(third_statuses)
     _validate_fourth_delta(fourth_statuses)
+    _validate_fifth_delta(fifth_statuses)
     _validate_final_topology(aggregate_statuses)
     preimages: dict[str, str] = {}
     for path, expected_blob in FD08_FINAL_PREIMAGE_BLOBS.items():
@@ -982,6 +1177,28 @@ def _verify_paths_and_preimages(repo: Path) -> dict[str, object]:
         f"{FD08_RECOVERY_THIRD_COMMIT} {POSTGRESQL_MIGRATIONS_TEST_PATH}",
     ).object_id
     _validate_inherited_postgresql_migration_test_preimage(inherited_recovery_third_blob)
+    inherited_fixed_fourth_blob = _require_regular_file(
+        _entry(
+            repo,
+            FD08_FINAL_FOURTH_COMMIT,
+            POSTGRESQL_MIGRATIONS_TEST_PATH,
+        ),
+        f"{FD08_FINAL_FOURTH_COMMIT} {POSTGRESQL_MIGRATIONS_TEST_PATH}",
+    ).object_id
+    final_postgresql_migration_test_blob = _require_regular_file(
+        _entry(repo, "HEAD", POSTGRESQL_MIGRATIONS_TEST_PATH),
+        f"HEAD {POSTGRESQL_MIGRATIONS_TEST_PATH}",
+    ).object_id
+    _validate_fixed_fourth_postgresql_migration_test_blob(inherited_fixed_fourth_blob)
+    _validate_fixed_fourth_postgresql_migration_test_blob(final_postgresql_migration_test_blob)
+    fifth_preimages = {
+        path: _require_regular_file(
+            _entry(repo, FD08_FINAL_FOURTH_COMMIT, path),
+            f"{FD08_FINAL_FOURTH_COMMIT} {path}",
+        ).object_id
+        for path in FD08_FIFTH_PREIMAGE_BLOBS
+    }
+    _validate_fifth_preimage_map(fifth_preimages)
     frozen_migration_entries = {
         revision: _require_regular_file(
             _entry(repo, revision, MIGRATION_PATH),
@@ -991,6 +1208,7 @@ def _verify_paths_and_preimages(repo: Path) -> dict[str, object]:
             FD08_FIRST_COMMIT,
             FD08_SECOND_COMMIT,
             FD08_RECOVERY_THIRD_COMMIT,
+            FD08_FINAL_FOURTH_COMMIT,
             "HEAD",
         )
     }
@@ -1002,6 +1220,33 @@ def _verify_paths_and_preimages(repo: Path) -> dict[str, object]:
             f"FD08 new path unexpectedly existed at F1 base: {path}",
         )
         _require_regular_file(_entry(repo, "HEAD", path), f"final {path}")
+    harness_preimages = {
+        "path": HARNESS_PATH,
+        "accepted_f1": _require_regular_file(
+            _entry(repo, FD08_BASE_HEAD, HARNESS_PATH), f"{FD08_BASE_HEAD} {HARNESS_PATH}"
+        ).object_id,
+        "fixed_fourth": _require_regular_file(
+            _entry(repo, FD08_FINAL_FOURTH_COMMIT, HARNESS_PATH),
+            f"{FD08_FINAL_FOURTH_COMMIT} {HARNESS_PATH}",
+        ).object_id,
+        "final_fifth": _require_regular_file(_entry(repo, "HEAD", HARNESS_PATH), f"HEAD {HARNESS_PATH}").object_id,
+    }
+    _require(
+        harness_preimages["accepted_f1"] == FD08_FIFTH_PREIMAGE_BLOBS[HARNESS_PATH]
+        and harness_preimages["fixed_fourth"] == FD08_FIFTH_PREIMAGE_BLOBS[HARNESS_PATH]
+        and harness_preimages["final_fifth"] == FD08_FINAL_HARNESS_BLOB,
+        "FD08 corrected fifth authoring harness provenance drifted",
+    )
+    frozen_cdp_client_blobs = {
+        revision: _require_regular_file(
+            _entry(repo, revision, CDP_CLIENT_PATH), f"{revision} {CDP_CLIENT_PATH}"
+        ).object_id
+        for revision in (FD08_BASE_HEAD, FD08_FINAL_FOURTH_COMMIT, "HEAD")
+    }
+    _require(
+        all(blob == FD08_CDP_CLIENT_BLOB for blob in frozen_cdp_client_blobs.values()),
+        "FD08 corrected fifth mutated the frozen CDP client",
+    )
     _git(repo, "diff", "--check", f"{FD08_BASE_HEAD}..HEAD")
     return {
         "changed_paths": sorted(aggregate_statuses),
@@ -1016,13 +1261,20 @@ def _verify_paths_and_preimages(repo: Path) -> dict[str, object]:
         "second_delivery_delta": second_statuses,
         "recovery_third_delta": third_statuses,
         "fourth_child_delta": fourth_statuses,
+        "fifth_child_delta": fifth_statuses,
+        "fifth_preimage_blobs": fifth_preimages,
         "inherited_postgresql_migration_test_preimage": {
             "path": POSTGRESQL_MIGRATIONS_TEST_PATH,
             "accepted_f1": inherited_base_blob,
             "recovery_third": inherited_recovery_third_blob,
+            "fixed_fourth": inherited_fixed_fourth_blob,
+            "final_fifth": final_postgresql_migration_test_blob,
         },
         "frozen_migration_blobs": frozen_migration_entries,
-        "topology": "5 modified + 6 new aggregate across four commits",
+        "browser_harness_preimage": harness_preimages,
+        "frozen_cdp_client_blobs": frozen_cdp_client_blobs,
+        "authoring_ready_replay_contract": True,
+        "topology": "6 modified + 6 new aggregate across five commits",
     }
 
 
@@ -1086,6 +1338,162 @@ def _verify_package_compatibility(repo: Path) -> dict[str, object]:
     }
 
 
+def _ast_dotted_name(node: ast.AST) -> str:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        parent = _ast_dotted_name(node.value)
+        return f"{parent}.{node.attr}" if parent else node.attr
+    if isinstance(node, ast.Call):
+        return _ast_dotted_name(node.func)
+    return ""
+
+
+def _contains_real_combined_receipt_savepoint(nodes: Iterable[ast.stmt]) -> bool:
+    for node in nodes:
+        if not isinstance(node, (ast.With, ast.AsyncWith)):
+            continue
+        has_atomic_context = any(
+            _ast_dotted_name(item.context_expr) == "transaction.atomic"
+            for item in node.items
+        )
+        if not has_atomic_context:
+            continue
+        if "AuditEvent.objects.create" in ast.unparse(node):
+            return True
+    return False
+
+
+def _verify_late_operation_uuid_collision_handler(tree: ast.AST) -> None:
+    """Prove the real late receipt collision boundary is narrow and ordered."""
+
+    candidates: list[ast.Try] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Try):
+            continue
+        if not _contains_real_combined_receipt_savepoint(node.body):
+            continue
+        candidates.append(node)
+    _require(
+        len(candidates) == 1,
+        "FD08 must have exactly one real combined-receipt savepoint handler",
+    )
+    candidate = candidates[0]
+    _require(
+        len(candidate.handlers) == 1,
+        "FD08 late receipt collision handler must not use a broad sibling catch",
+    )
+    handler = candidate.handlers[0]
+    _require(
+        isinstance(handler.type, ast.Tuple)
+        and tuple(_ast_dotted_name(item) for item in handler.type.elts)
+        == ("IntegrityError", "ValidationError"),
+        "FD08 late receipt collision handler must catch exactly IntegrityError and ValidationError",
+    )
+    _require(
+        handler.name == "exc",
+        "FD08 late receipt collision handler must preserve the original exception",
+    )
+    handler_source = "\n".join(ast.unparse(statement) for statement in handler.body)
+    _require(
+        "AuditEvent.objects.select_for_update().filter(pk=operation_id).first()"
+        in handler_source,
+        "FD08 late receipt collision handler must re-read the exact operation ID after savepoint rollback",
+    )
+    occupancy_guards = [
+        node
+        for node in ast.walk(ast.Module(body=handler.body, type_ignores=[]))
+        if isinstance(node, ast.If)
+        and ast.unparse(node.test) == "late_operation_receipt is not None"
+    ]
+    _require(
+        len(occupancy_guards) == 1,
+        "FD08 late receipt collision handler must have one exact occupied-ID guard",
+    )
+    guarded_raises = [
+        node
+        for node in ast.walk(occupancy_guards[0])
+        if isinstance(node, ast.Raise)
+        and isinstance(node.exc, ast.Call)
+        and _ast_dotted_name(node.exc.func) == "AssessmentProjectionConflict"
+    ]
+    _require(
+        len(guarded_raises) == 1,
+        "FD08 late receipt collision handler must raise only typed AssessmentProjectionConflict for occupancy",
+    )
+    _require(
+        any(
+            isinstance(node, ast.Raise) and node.exc is None
+            for node in ast.walk(ast.Module(body=handler.body, type_ignores=[]))
+        ),
+        "FD08 late receipt collision handler must bare re-raise absent-row failures",
+    )
+
+
+def _rc1_5_combined_receipt_evidence() -> dict[str, object]:
+    return {
+        "schema": "FD08_RC1_5_COMBINED_RECEIPT_V2",
+        "contract": "FOUNDATION_PLAYER_WORKSPACE_CREATE_V1",
+        "legacy_standalone_byte_compatible": True,
+        "caller_canonical_request_sha256": True,
+        "canonical_request_sha256_lowercase_64_hex": True,
+        "server_derived_projection_facts_only": True,
+        "operation_pk_identity": True,
+        "one_combined_receipt": True,
+        "zero_standalone_projection_receipts": True,
+        "occurred_at_bound": True,
+        "receipt_sha256": True,
+        "receipt_sha256_non_self_referential": True,
+        "exact_replay": True,
+        "canonical_request_conflict": True,
+        "collision_before_projection_mutation": True,
+        "outer_transaction_required": True,
+        "outer_rollback": True,
+        "self_contained_read_verification": True,
+        "sibling_snapshot_provenance": True,
+        "malformed_dual_drift_unreceipted_fail_closed": True,
+        "combined_postgresql_concurrency": True,
+        "late_operation_uuid_collision_typed": True,
+        "late_collision_zero_write_loser": True,
+        "late_collision_post_savepoint_requery": True,
+        "late_collision_narrow_exception_boundary": True,
+        "test_nodes": list(RC1_5_TEST_NODES),
+    }
+
+
+def _verify_rc1_5_source_contract(repo: Path) -> dict[str, object]:
+    root = _repo_root(repo)
+    try:
+        service_text = (root / PROJECTION_PATH).read_text(encoding="utf-8")
+        test_text = (root / TEST_PATH).read_text(encoding="utf-8")
+        service_tree = ast.parse(service_text)
+        ast.parse(test_text)
+    except (OSError, SyntaxError) as exc:
+        raise VerificationError(f"cannot parse corrected RC1-5 source evidence: {exc}") from exc
+    _validate_required_tokens(
+        service_text,
+        RC1_5_SERVICE_REQUIRED_TOKENS,
+        "FD08 corrected RC1-5 service contract",
+    )
+    _validate_required_tokens(
+        test_text,
+        RC1_5_TEST_REQUIRED_TOKENS,
+        "FD08 corrected RC1-5 test contract",
+    )
+    for node in RC1_5_TEST_NODES:
+        _require(
+            f"def {node}(" in test_text,
+            f"FD08 corrected RC1-5 frozen test node is missing: {node}",
+        )
+    _verify_late_operation_uuid_collision_handler(service_tree)
+    return {
+        **_rc1_5_combined_receipt_evidence(),
+        "service_path": PROJECTION_PATH,
+        "test_path": TEST_PATH,
+        "late_collision_handler_ast": True,
+    }
+
+
 def _verify_workflow_contract(repo: Path) -> dict[str, object]:
     root = _repo_root(repo)
     try:
@@ -1101,6 +1509,11 @@ def _verify_workflow_contract(repo: Path) -> dict[str, object]:
         workflow,
         WORKFLOW_RECOVERY_REQUIRED_TOKENS,
         "FD08 workflow recovery/migration evidence contract",
+    )
+    _validate_required_tokens(
+        workflow,
+        RC1_5_EVIDENCE_REQUIRED_TOKENS,
+        "FD08 corrected RC1-5 workflow evidence contract",
     )
     _require(
         workflow.count(FD08_TARGET_BRANCH) >= 4,
@@ -1128,6 +1541,7 @@ def _verify_workflow_contract(repo: Path) -> dict[str, object]:
         "recovery_migration_evidence_token_count": len(
             WORKFLOW_RECOVERY_REQUIRED_TOKENS
         ),
+        "rc1_5_evidence_token_count": len(RC1_5_EVIDENCE_REQUIRED_TOKENS),
     }
 
 
@@ -1165,6 +1579,7 @@ def verify_fd08(
         ),
         "migration_and_registry": _verify_migration_and_registry(resolved),
         "package_compatibility": _verify_package_compatibility(resolved),
+        "rc1_5_combined_receipt": _verify_rc1_5_source_contract(resolved),
         "workflow_contract": _verify_workflow_contract(resolved),
         "negative_self_checks_required": True,
     }
@@ -1178,7 +1593,9 @@ def _expect_verification_error(call: Callable[[], object]) -> bool:
     return False
 
 
-def self_check() -> dict[str, object]:
+def _legacy_self_check_negative_cases() -> dict[str, bool]:
+    """Keep the inherited FD08 structural and evidence rejection oracles active."""
+
     _constant_contract()
     first_statuses = {
         **{path: "M" for path in FD08_FIRST_MODIFIED_PATHS},
@@ -1189,11 +1606,12 @@ def self_check() -> dict[str, object]:
         **{path: "A" for path in FD08_NEW_PATHS},
     }
     recovery_history = {
-        "commit_count": 4,
+        "commit_count": 5,
         "ordered_commits": (
             FD08_FIRST_COMMIT,
             FD08_SECOND_COMMIT,
             FD08_RECOVERY_THIRD_COMMIT,
+            FD08_FINAL_FOURTH_COMMIT,
             "c" * 40,
         ),
         "commit_parents": (
@@ -1201,10 +1619,12 @@ def self_check() -> dict[str, object]:
             (FD08_FIRST_COMMIT,),
             (FD08_SECOND_COMMIT,),
             (FD08_RECOVERY_THIRD_COMMIT,),
+            (FD08_FINAL_FOURTH_COMMIT,),
         ),
         "first_tree": FD08_FIRST_TREE,
         "second_tree": FD08_SECOND_TREE,
         "third_tree": FD08_RECOVERY_THIRD_TREE,
+        "fourth_tree": FD08_FINAL_FOURTH_TREE,
         "merge_count": 0,
     }
     _validate_recovery_history(**recovery_history)
@@ -1223,6 +1643,7 @@ def self_check() -> dict[str, object]:
     _validate_migration_dependency([MIGRATION_DEPENDENCY])
     _validate_frozen_package_registry(FROZEN_PACKAGE_BLOBS)
     _validate_schema_contract({"format_version": "2.2.0", "workspace": {}})
+
     workflow_recovery_source = "\n".join(WORKFLOW_RECOVERY_REQUIRED_TOKENS)
     _validate_required_tokens(
         workflow_recovery_source,
@@ -1230,12 +1651,6 @@ def self_check() -> dict[str, object]:
         "FD08 synthetic workflow recovery evidence",
     )
 
-    extra_final_statuses = dict(final_statuses)
-    extra_final_statuses["README.md"] = "A"
-    missing_final_statuses = dict(final_statuses)
-    missing_final_statuses.pop(VERIFIER_PATH)
-    swapped_final_statuses = dict(final_statuses)
-    swapped_final_statuses[POSTGRESQL_MIGRATIONS_TEST_PATH] = "A"
     wrong_original_preimages = dict(FD08_PREIMAGE_BLOBS)
     wrong_original_preimages[WORKFLOW_PATH] = "0" * 40
     wrong_final_preimages = dict(FD08_FINAL_PREIMAGE_BLOBS)
@@ -1249,37 +1664,17 @@ def self_check() -> dict[str, object]:
     wrong_recovery_third_delta["README.md"] = "M"
     wrong_fourth_delta = dict(FD08_FOURTH_DELTA_STATUSES)
     wrong_fourth_delta[POSTGRESQL_MIGRATIONS_TEST_PATH] = "A"
-    three_commit_history = {
+    four_commit_history = {
         **recovery_history,
-        "commit_count": 3,
-        "ordered_commits": (
-            FD08_FIRST_COMMIT,
-            FD08_SECOND_COMMIT,
-            FD08_RECOVERY_THIRD_COMMIT,
-        ),
-        "commit_parents": (
-            (FD08_BASE_HEAD,),
-            (FD08_FIRST_COMMIT,),
-            (FD08_SECOND_COMMIT,),
-        ),
+        "commit_count": 4,
+        "ordered_commits": recovery_history["ordered_commits"][:4],
+        "commit_parents": recovery_history["commit_parents"][:4],
     }
-    five_commit_history = {
+    six_commit_history = {
         **recovery_history,
-        "commit_count": 5,
-        "ordered_commits": (
-            FD08_FIRST_COMMIT,
-            FD08_SECOND_COMMIT,
-            FD08_RECOVERY_THIRD_COMMIT,
-            "c" * 40,
-            "d" * 40,
-        ),
-        "commit_parents": (
-            (FD08_BASE_HEAD,),
-            (FD08_FIRST_COMMIT,),
-            (FD08_SECOND_COMMIT,),
-            (FD08_RECOVERY_THIRD_COMMIT,),
-            ("c" * 40,),
-        ),
+        "commit_count": 6,
+        "ordered_commits": (*recovery_history["ordered_commits"], "d" * 40),
+        "commit_parents": (*recovery_history["commit_parents"], ("c" * 40,)),
     }
     migration_evidence_token_removed = workflow_recovery_source.replace(
         "fd08-migration-postgresql.json",
@@ -1291,13 +1686,9 @@ def self_check() -> dict[str, object]:
         "",
         1,
     )
-    fourth_evidence_token_removed = workflow_recovery_source.replace(
-        "final_fourth",
-        "",
-        1,
-    )
+
     negative_cases = {
-        "base_parent_drift_rejected": _expect_verification_error(
+        "legacy_base_parent_drift_rejected": _expect_verification_error(
             lambda: _validate_recovery_history(
                 **{
                     **recovery_history,
@@ -1306,11 +1697,12 @@ def self_check() -> dict[str, object]:
                         (FD08_FIRST_COMMIT,),
                         (FD08_SECOND_COMMIT,),
                         (FD08_RECOVERY_THIRD_COMMIT,),
+                        (FD08_FINAL_FOURTH_COMMIT,),
                     ),
                 }
             )
         ),
-        "first_commit_drift_rejected": _expect_verification_error(
+        "legacy_first_commit_drift_rejected": _expect_verification_error(
             lambda: _validate_recovery_history(
                 **{
                     **recovery_history,
@@ -1318,17 +1710,18 @@ def self_check() -> dict[str, object]:
                         "a" * 40,
                         FD08_SECOND_COMMIT,
                         FD08_RECOVERY_THIRD_COMMIT,
+                        FD08_FINAL_FOURTH_COMMIT,
                         "c" * 40,
                     ),
                 }
             )
         ),
-        "first_tree_drift_rejected": _expect_verification_error(
+        "legacy_first_tree_drift_rejected": _expect_verification_error(
             lambda: _validate_recovery_history(
                 **{**recovery_history, "first_tree": "a" * 40}
             )
         ),
-        "second_commit_drift_rejected": _expect_verification_error(
+        "legacy_second_commit_drift_rejected": _expect_verification_error(
             lambda: _validate_recovery_history(
                 **{
                     **recovery_history,
@@ -1336,17 +1729,18 @@ def self_check() -> dict[str, object]:
                         FD08_FIRST_COMMIT,
                         "b" * 40,
                         FD08_RECOVERY_THIRD_COMMIT,
+                        FD08_FINAL_FOURTH_COMMIT,
                         "c" * 40,
                     ),
                 }
             )
         ),
-        "second_tree_drift_rejected": _expect_verification_error(
+        "legacy_second_tree_drift_rejected": _expect_verification_error(
             lambda: _validate_recovery_history(
                 **{**recovery_history, "second_tree": "b" * 40}
             )
         ),
-        "second_parent_drift_rejected": _expect_verification_error(
+        "legacy_second_parent_drift_rejected": _expect_verification_error(
             lambda: _validate_recovery_history(
                 **{
                     **recovery_history,
@@ -1355,11 +1749,12 @@ def self_check() -> dict[str, object]:
                         ("d" * 40,),
                         (FD08_SECOND_COMMIT,),
                         (FD08_RECOVERY_THIRD_COMMIT,),
+                        (FD08_FINAL_FOURTH_COMMIT,),
                     ),
                 }
             )
         ),
-        "recovery_third_head_drift_rejected": _expect_verification_error(
+        "legacy_recovery_third_head_drift_rejected": _expect_verification_error(
             lambda: _validate_recovery_history(
                 **{
                     **recovery_history,
@@ -1367,127 +1762,332 @@ def self_check() -> dict[str, object]:
                         FD08_FIRST_COMMIT,
                         FD08_SECOND_COMMIT,
                         "d" * 40,
+                        FD08_FINAL_FOURTH_COMMIT,
                         "c" * 40,
                     ),
                 }
             )
         ),
-        "recovery_third_tree_drift_rejected": _expect_verification_error(
+        "legacy_recovery_third_tree_drift_rejected": _expect_verification_error(
             lambda: _validate_recovery_history(
                 **{**recovery_history, "third_tree": "d" * 40}
             )
         ),
-        "recovery_third_parent_drift_rejected": _expect_verification_error(
+        "legacy_recovery_third_parent_drift_rejected": _expect_verification_error(
             lambda: _validate_recovery_history(
                 **{
                     **recovery_history,
                     "commit_parents": (
                         (FD08_BASE_HEAD,),
                         (FD08_FIRST_COMMIT,),
-                        (FD08_SECOND_COMMIT,),
                         ("d" * 40,),
+                        (FD08_RECOVERY_THIRD_COMMIT,),
+                        (FD08_FINAL_FOURTH_COMMIT,),
                     ),
                 }
             )
         ),
-        "final_parent_drift_rejected": _expect_verification_error(
-            lambda: _validate_recovery_history(
-                **{
-                    **recovery_history,
-                    "commit_parents": (
-                        (FD08_BASE_HEAD,),
-                        (FD08_FIRST_COMMIT,),
-                        (FD08_SECOND_COMMIT,),
-                        ("d" * 40,),
-                    ),
-                }
-            )
+        "legacy_four_commit_chain_rejected": _expect_verification_error(
+            lambda: _validate_recovery_history(**four_commit_history)
         ),
-        "three_commit_chain_rejected": _expect_verification_error(
-            lambda: _validate_recovery_history(**three_commit_history)
+        "legacy_six_commit_chain_rejected": _expect_verification_error(
+            lambda: _validate_recovery_history(**six_commit_history)
         ),
-        "five_commit_chain_rejected": _expect_verification_error(
-            lambda: _validate_recovery_history(**five_commit_history)
-        ),
-        "merge_rejected": _expect_verification_error(
-            lambda: _validate_recovery_history(
-                **{**recovery_history, "merge_count": 1}
-            )
-        ),
-        "extra_aggregate_11_path_rejected": _expect_verification_error(
-            lambda: _validate_final_topology(extra_final_statuses)
-        ),
-        "missing_aggregate_11_path_rejected": _expect_verification_error(
-            lambda: _validate_final_topology(missing_final_statuses)
-        ),
-        "aggregate_5_plus_6_classification_rejected": _expect_verification_error(
-            lambda: _validate_final_topology(swapped_final_statuses)
-        ),
-        "second_delta_path_rejected": _expect_verification_error(
-            lambda: _validate_second_delta(wrong_second_delta)
-        ),
-        "recovery_third_delta_rejected": _expect_verification_error(
+        "legacy_recovery_third_delta_rejected": _expect_verification_error(
             lambda: _validate_recovery_third_delta(wrong_recovery_third_delta)
         ),
-        "fourth_child_delta_rejected": _expect_verification_error(
+        "legacy_fourth_child_delta_rejected": _expect_verification_error(
             lambda: _validate_fourth_delta(wrong_fourth_delta)
         ),
-        "original_preimage_drift_rejected": _expect_verification_error(
+        "legacy_second_delta_rejected": _expect_verification_error(
+            lambda: _validate_second_delta(wrong_second_delta)
+        ),
+        "legacy_original_preimage_drift_rejected": _expect_verification_error(
             lambda: _validate_original_preimage_map(wrong_original_preimages)
         ),
-        "inherited_postgresql_migration_test_preimage_drift_rejected": _expect_verification_error(
+        "legacy_final_preimage_drift_rejected": _expect_verification_error(
             lambda: _validate_final_preimage_map(wrong_final_preimages)
         ),
-        "inherited_postgresql_migration_test_blob_drift_rejected": _expect_verification_error(
+        "legacy_inherited_postgresql_migration_test_blob_drift_rejected": _expect_verification_error(
             lambda: _validate_inherited_postgresql_migration_test_preimage("0" * 40)
         ),
-        "frozen_migration_drift_rejected": _expect_verification_error(
+        "legacy_frozen_migration_drift_rejected": _expect_verification_error(
             lambda: _validate_frozen_migration_blob("0" * 40)
         ),
-        "registry_drift_rejected": _expect_verification_error(
+        "legacy_registry_drift_rejected": _expect_verification_error(
             lambda: _validate_registry(wrong_registry)
         ),
-        "migration_dependency_drift_rejected": _expect_verification_error(
+        "legacy_migration_dependency_drift_rejected": _expect_verification_error(
             lambda: _validate_migration_dependency(wrong_migration_dependency)
         ),
-        "frozen_package_registry_drift_rejected": _expect_verification_error(
+        "legacy_frozen_package_registry_drift_rejected": _expect_verification_error(
             lambda: _validate_frozen_package_registry(wrong_frozen_registry)
         ),
-        "schema_drift_rejected": _expect_verification_error(
+        "legacy_schema_drift_rejected": _expect_verification_error(
             lambda: _validate_schema_contract({"format_version": "2.2.0"})
         ),
-        "migration_evidence_token_removal_rejected": _expect_verification_error(
+        "legacy_migration_evidence_token_removal_rejected": _expect_verification_error(
             lambda: _validate_required_tokens(
                 migration_evidence_token_removed,
                 WORKFLOW_RECOVERY_REQUIRED_TOKENS,
                 "FD08 synthetic workflow recovery evidence",
             )
         ),
-        "migration_evidence_key_removal_rejected": _expect_verification_error(
+        "legacy_migration_evidence_key_removal_rejected": _expect_verification_error(
             lambda: _validate_required_tokens(
                 migration_evidence_key_removed,
                 WORKFLOW_RECOVERY_REQUIRED_TOKENS,
                 "FD08 synthetic workflow recovery evidence",
             )
         ),
-        "fourth_evidence_token_removal_rejected": _expect_verification_error(
-            lambda: _validate_required_tokens(
-                fourth_evidence_token_removed,
-                WORKFLOW_RECOVERY_REQUIRED_TOKENS,
-                "FD08 synthetic workflow recovery evidence",
+    }
+    _require(
+        all(negative_cases.values()),
+        "FD08 inherited verifier negative self-check failed",
+    )
+    return negative_cases
+
+def self_check() -> dict[str, object]:
+    """Exercise every corrected topology and RC1-5 source/evidence oracle."""
+
+    _constant_contract()
+    first_statuses = {
+        **{path: "M" for path in FD08_FIRST_MODIFIED_PATHS},
+        **{path: "A" for path in FD08_NEW_PATHS},
+    }
+    final_statuses = {
+        **{path: "M" for path in FD08_FINAL_MODIFIED_PATHS},
+        **{path: "A" for path in FD08_NEW_PATHS},
+    }
+    recovery_history = {
+        "commit_count": 5,
+        "ordered_commits": (
+            FD08_FIRST_COMMIT,
+            FD08_SECOND_COMMIT,
+            FD08_RECOVERY_THIRD_COMMIT,
+            FD08_FINAL_FOURTH_COMMIT,
+            "c" * 40,
+        ),
+        "commit_parents": (
+            (FD08_BASE_HEAD,),
+            (FD08_FIRST_COMMIT,),
+            (FD08_SECOND_COMMIT,),
+            (FD08_RECOVERY_THIRD_COMMIT,),
+            (FD08_FINAL_FOURTH_COMMIT,),
+        ),
+        "first_tree": FD08_FIRST_TREE,
+        "second_tree": FD08_SECOND_TREE,
+        "third_tree": FD08_RECOVERY_THIRD_TREE,
+        "fourth_tree": FD08_FINAL_FOURTH_TREE,
+        "merge_count": 0,
+    }
+    _validate_recovery_history(**recovery_history)
+    _validate_first_topology(first_statuses)
+    _validate_final_topology(final_statuses)
+    _validate_second_delta(FD08_SECOND_DELTA_STATUSES)
+    _validate_recovery_third_delta(FD08_RECOVERY_THIRD_DELTA_STATUSES)
+    _validate_fourth_delta(FD08_FOURTH_DELTA_STATUSES)
+    _validate_fifth_delta(FD08_FIFTH_DELTA_STATUSES)
+    _validate_original_preimage_map(FD08_PREIMAGE_BLOBS)
+    _validate_final_preimage_map(FD08_FINAL_PREIMAGE_BLOBS)
+    _validate_fifth_preimage_map(FD08_FIFTH_PREIMAGE_BLOBS)
+    _validate_inherited_postgresql_migration_test_preimage(
+        FD08_ACCEPTED_F1_POSTGRESQL_MIGRATION_TEST_BLOB
+    )
+    _validate_fixed_fourth_postgresql_migration_test_blob(
+        FD08_FIXED_FOURTH_POSTGRESQL_MIGRATION_TEST_BLOB
+    )
+    _validate_frozen_migration_blob(FD08_FROZEN_MIGRATION_BLOB)
+    _validate_registry(FD08_TEST_METHODS)
+    _validate_migration_dependency([MIGRATION_DEPENDENCY])
+    _validate_frozen_package_registry(FROZEN_PACKAGE_BLOBS)
+    _validate_schema_contract({"format_version": "2.2.0", "workspace": {}})
+
+    service_source = "\n".join(RC1_5_SERVICE_REQUIRED_TOKENS)
+    test_source = "\n".join(dict.fromkeys(RC1_5_TEST_REQUIRED_TOKENS + RC1_5_TEST_NODES))
+    workflow_source = "\n".join(
+        dict.fromkeys(WORKFLOW_RECOVERY_REQUIRED_TOKENS + RC1_5_EVIDENCE_REQUIRED_TOKENS)
+    )
+    _validate_required_tokens(service_source, RC1_5_SERVICE_REQUIRED_TOKENS, "service")
+    _validate_required_tokens(test_source, RC1_5_TEST_REQUIRED_TOKENS, "test")
+    _validate_required_tokens(
+        workflow_source,
+        WORKFLOW_RECOVERY_REQUIRED_TOKENS,
+        "workflow recovery evidence",
+    )
+    _validate_required_tokens(
+        workflow_source,
+        RC1_5_EVIDENCE_REQUIRED_TOKENS,
+        "workflow RC1-5 evidence",
+    )
+
+    def token_removals_fail(source: str, tokens: tuple[str, ...], label: str) -> bool:
+        return all(
+            _expect_verification_error(
+                lambda token=token: _validate_required_tokens(
+                    source.replace(token, ""), tokens, label
+                )
+            )
+            for token in tokens
+        )
+
+    valid_late_collision_handler_source = """
+def materialize():
+    try:
+        with transaction.atomic():
+            AuditEvent.objects.create(id=operation_id)
+    except (IntegrityError, ValidationError) as exc:
+        late_operation_receipt = (
+            AuditEvent.objects.select_for_update().filter(pk=operation_id).first()
+        )
+        if late_operation_receipt is not None:
+            raise AssessmentProjectionConflict() from exc
+        raise
+"""
+    _verify_late_operation_uuid_collision_handler(
+        ast.parse(valid_late_collision_handler_source)
+    )
+
+    extra_final_statuses = {**final_statuses, "README.md": "A"}
+    missing_final_statuses = dict(final_statuses)
+    missing_final_statuses.pop(HARNESS_PATH)
+    wrong_status_classification = dict(final_statuses)
+    wrong_status_classification[HARNESS_PATH] = "A"
+    wrong_fifth_delta = dict(FD08_FIFTH_DELTA_STATUSES)
+    wrong_fifth_delta[HARNESS_PATH] = "A"
+    wrong_final_preimages = dict(FD08_FINAL_PREIMAGE_BLOBS)
+    wrong_final_preimages[HARNESS_PATH] = "0" * 40
+    wrong_fifth_preimages = dict(FD08_FIFTH_PREIMAGE_BLOBS)
+    wrong_fifth_preimages[TEST_PATH] = "0" * 40
+    four_commit_history = {
+        **recovery_history,
+        "commit_count": 4,
+        "ordered_commits": recovery_history["ordered_commits"][:4],
+        "commit_parents": recovery_history["commit_parents"][:4],
+    }
+    six_commit_history = {
+        **recovery_history,
+        "commit_count": 6,
+        "ordered_commits": (*recovery_history["ordered_commits"], "d" * 40),
+        "commit_parents": (*recovery_history["commit_parents"], ("c" * 40,)),
+    }
+    wrong_parent_history = {
+        **recovery_history,
+        "commit_parents": (
+            (FD08_BASE_HEAD,),
+            (FD08_FIRST_COMMIT,),
+            (FD08_SECOND_COMMIT,),
+            (FD08_RECOVERY_THIRD_COMMIT,),
+            ("d" * 40,),
+        ),
+    }
+    legacy_negative_cases = _legacy_self_check_negative_cases()
+    negative_cases = {
+        **legacy_negative_cases,
+        "wrong_final_parent_rejected": _expect_verification_error(
+            lambda: _validate_recovery_history(**wrong_parent_history)
+        ),
+        "four_commit_chain_rejected": _expect_verification_error(
+            lambda: _validate_recovery_history(**four_commit_history)
+        ),
+        "six_commit_chain_rejected": _expect_verification_error(
+            lambda: _validate_recovery_history(**six_commit_history)
+        ),
+        "merge_rejected": _expect_verification_error(
+            lambda: _validate_recovery_history(
+                **{**recovery_history, "merge_count": 1}
+            )
+        ),
+        "wrong_fixed_fourth_tree_rejected": _expect_verification_error(
+            lambda: _validate_recovery_history(
+                **{**recovery_history, "fourth_tree": "0" * 40}
+            )
+        ),
+        "fifth_delta_drift_rejected": _expect_verification_error(
+            lambda: _validate_fifth_delta(wrong_fifth_delta)
+        ),
+        "aggregate_13_path_rejected": _expect_verification_error(
+            lambda: _validate_final_topology(extra_final_statuses)
+        ),
+        "aggregate_11_path_rejected": _expect_verification_error(
+            lambda: _validate_final_topology(missing_final_statuses)
+        ),
+        "aggregate_5m_7a_rejected": _expect_verification_error(
+            lambda: _validate_final_topology(wrong_status_classification)
+        ),
+        "aggregate_preimage_drift_rejected": _expect_verification_error(
+            lambda: _validate_final_preimage_map(wrong_final_preimages)
+        ),
+        "fifth_preimage_drift_rejected": _expect_verification_error(
+            lambda: _validate_fifth_preimage_map(wrong_fifth_preimages)
+        ),
+        "service_oracle_token_removals_rejected": token_removals_fail(
+            service_source, RC1_5_SERVICE_REQUIRED_TOKENS, "service"
+        ),
+        "test_oracle_token_removals_rejected": token_removals_fail(
+            test_source, RC1_5_TEST_REQUIRED_TOKENS, "test"
+        ),
+        "workflow_evidence_token_removals_rejected": token_removals_fail(
+            workflow_source, RC1_5_EVIDENCE_REQUIRED_TOKENS, "workflow"
+        ),
+        "late_collision_ast_broad_catch_rejected": _expect_verification_error(
+            lambda: _verify_late_operation_uuid_collision_handler(
+                ast.parse(
+                    valid_late_collision_handler_source.replace(
+                        "except (IntegrityError, ValidationError) as exc:",
+                        "except Exception as exc:",
+                    )
+                )
+            )
+        ),
+        "late_collision_ast_missing_requery_rejected": _expect_verification_error(
+            lambda: _verify_late_operation_uuid_collision_handler(
+                ast.parse(
+                    valid_late_collision_handler_source.replace(
+                        "AuditEvent.objects.select_for_update().filter(pk=operation_id).first()",
+                        "None",
+                    )
+                )
+            )
+        ),
+        "late_collision_ast_untyped_occupancy_rejected": _expect_verification_error(
+            lambda: _verify_late_operation_uuid_collision_handler(
+                ast.parse(
+                    valid_late_collision_handler_source.replace(
+                        "raise AssessmentProjectionConflict() from exc",
+                        "raise exc",
+                    )
+                )
+            )
+        ),
+        "late_collision_ast_missing_bare_reraise_rejected": _expect_verification_error(
+            lambda: _verify_late_operation_uuid_collision_handler(
+                ast.parse(
+                    valid_late_collision_handler_source.replace(
+                        "\n        raise\n",
+                        "\n        return\n",
+                    )
+                )
             )
         ),
     }
-    _require(all(negative_cases.values()), "FD08 verifier negative self-check failed")
+    failed_negative_cases = [key for key, passed in negative_cases.items() if not passed]
+    _require(
+        not failed_negative_cases,
+        "FD08 corrected verifier negative self-check failed: "
+        + ", ".join(failed_negative_cases),
+    )
     return {
         "contract_self_check": "PASS",
         "slice": "FD08",
-        "marker": "FD08_RECOVERY_4_COMMIT_VERIFIER_SELF_CHECK=PASS",
+        "marker": "FD08_RECOVERY_5_COMMIT_VERIFIER_SELF_CHECK=PASS",
         "negative_cases": negative_cases,
-        "path_counts": {"modified": 5, "new": 6, "total": 11},
+        "path_counts": {"modified": 6, "new": 6, "total": 12},
         "recovery_third_path_count": len(FD08_RECOVERY_THIRD_DELTA_PATHS),
         "fourth_child_path_count": len(FD08_FOURTH_DELTA_PATHS),
+        "fifth_child_path_count": len(FD08_FIFTH_DELTA_PATHS),
         "registry_counts": {"portable": 12, "postgresql_only": 2},
+        "rc1_5_combined_receipt": _rc1_5_combined_receipt_evidence(),
     }
 
 

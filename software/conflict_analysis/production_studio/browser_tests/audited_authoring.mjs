@@ -302,6 +302,7 @@ const assertBootstrapPersistenceIsEmpty = ({ localStorageKeys, sessionStorageLen
 
 const createDestinationAuthoringReadyGuard = (expectation, { timeoutMs, diagnostics = [] }) => {
   let destination;
+  let entryReplaySeen = false;
   let context;
   let readyDetail;
   let settled = false;
@@ -407,7 +408,7 @@ const createDestinationAuthoringReadyGuard = (expectation, { timeoutMs, diagnost
       fail("context-destroyed");
     },
     observeNavigation(params, eventSessionId) {
-      if (settled || eventSessionId !== expectation.sessionId || !isMainFrame(params.frame)) return;
+      if (settled || !isMainFrame(params.frame)) return;
       const frame = params.frame;
       appendBootstrapDiagnostic(diagnostics, {
         stage: "authoring-ready-navigation",
@@ -419,9 +420,28 @@ const createDestinationAuthoringReadyGuard = (expectation, { timeoutMs, diagnost
       });
       try {
         if (
+          eventSessionId !== expectation.sessionId ||
+          !expectation.entryUrl ||
+          !expectation.entryLoaderId
+        ) {
+          throw authoringReadyError("UNEXPECTED_NAVIGATION");
+        }
+        const frameUrl = new URL(frame.url).href;
+        if (!destination && frame?.id === expectation.frameId && frameUrl === expectation.entryUrl) {
+          if (frame.loaderId !== expectation.entryLoaderId || entryReplaySeen) {
+            throw authoringReadyError("UNEXPECTED_NAVIGATION");
+          }
+          entryReplaySeen = true;
+          return;
+        }
+        if (destination) {
+          throw authoringReadyError("UNEXPECTED_NAVIGATION");
+        }
+        if (
           frame?.id !== expectation.frameId ||
-          new URL(frame.url).href !== expectation.destinationUrl ||
-          !frame.loaderId
+          frameUrl !== expectation.destinationUrl ||
+          !frame.loaderId ||
+          frame.loaderId === expectation.entryLoaderId
         ) {
           throw authoringReadyError("UNEXPECTED_NAVIGATION");
         }
@@ -446,6 +466,8 @@ const runBootstrapObserverSelfCheck = async () => {
     contextIsDefault: true,
     contextFrameId: "self-check-main-frame",
     frameId: "self-check-main-frame",
+    entryUrl: "https://example.invalid/studio/drafts/",
+    entryLoaderId: "self-check-entry-loader",
     destinationUrl: "https://example.invalid/studio/drafts/definitions/22222222-2222-4222-8222-222222222222/",
     projectId: "11111111-1111-4111-8111-111111111111",
     definitionId: "22222222-2222-4222-8222-222222222222",
@@ -541,6 +563,21 @@ const runBootstrapObserverSelfCheck = async () => {
     frameId: expectation.frameId,
   });
   const readyNavigation = { frame: destination.frame };
+  const entryReplayNavigation = {
+    frame: {
+      id: expectation.frameId,
+      loaderId: expectation.entryLoaderId,
+      url: expectation.entryUrl,
+    },
+  };
+
+  const exactEntryReplay = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  exactEntryReplay.observeNavigation(entryReplayNavigation, expectation.sessionId);
+  assert.equal(exactEntryReplay.destination, undefined);
+  exactEntryReplay.observeNavigation(readyNavigation, expectation.sessionId);
+  exactEntryReplay.acceptContext(readyContext);
+  exactEntryReplay.acceptReady(readyDetail);
+  assert.deepEqual((await exactEntryReplay.promise).detail, readyDetail);
 
   const bufferedReady = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
   bufferedReady.observeNavigation(readyNavigation, expectation.sessionId);
@@ -582,10 +619,45 @@ const runBootstrapObserverSelfCheck = async () => {
 
   const wrongReadyFrame = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
   wrongReadyFrame.observeNavigation(
-    { frame: { ...destination.frame, id: "self-check-wrong-ready-frame" } },
+    { frame: { ...entryReplayNavigation.frame, id: "self-check-wrong-ready-frame" } },
     expectation.sessionId,
   );
   await assert.rejects(wrongReadyFrame.promise, /authoring-ready-navigation-rejected/);
+
+  const wrongEntryUrl = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  wrongEntryUrl.observeNavigation(
+    { frame: { ...entryReplayNavigation.frame, url: "https://example.invalid/studio/other/" } },
+    expectation.sessionId,
+  );
+  await assert.rejects(wrongEntryUrl.promise, /authoring-ready-navigation-rejected/);
+
+  const wrongEntryLoader = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  wrongEntryLoader.observeNavigation(
+    { frame: { ...entryReplayNavigation.frame, loaderId: "self-check-wrong-entry-loader" } },
+    expectation.sessionId,
+  );
+  await assert.rejects(wrongEntryLoader.promise, /authoring-ready-navigation-rejected/);
+
+  const wrongEntrySession = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  wrongEntrySession.observeNavigation(entryReplayNavigation, "self-check-wrong-session");
+  await assert.rejects(wrongEntrySession.promise, /authoring-ready-navigation-rejected/);
+
+  const secondEntryReplay = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  secondEntryReplay.observeNavigation(entryReplayNavigation, expectation.sessionId);
+  secondEntryReplay.observeNavigation(entryReplayNavigation, expectation.sessionId);
+  await assert.rejects(secondEntryReplay.promise, /authoring-ready-navigation-rejected/);
+
+  const entryLoaderAsDestination = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  entryLoaderAsDestination.observeNavigation(
+    { frame: { ...destination.frame, loaderId: expectation.entryLoaderId } },
+    expectation.sessionId,
+  );
+  await assert.rejects(entryLoaderAsDestination.promise, /authoring-ready-navigation-rejected/);
+
+  const duplicateDestination = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
+  duplicateDestination.observeNavigation(readyNavigation, expectation.sessionId);
+  duplicateDestination.observeNavigation(readyNavigation, expectation.sessionId);
+  await assert.rejects(duplicateDestination.promise, /authoring-ready-navigation-rejected/);
 
   const unexpectedNavigation = createDestinationAuthoringReadyGuard(readyExpectation, { timeoutMs: 50 });
   unexpectedNavigation.observeNavigation(readyNavigation, expectation.sessionId);
@@ -939,6 +1011,7 @@ try {
   const entryFrame = entryFrameTree.frameTree?.frame;
   assert.ok(entryFrame, "bootstrap entry main frame is unavailable");
   assert.equal(new URL(entryFrame.url).href, new URL(entryUrl).href);
+  assert.ok(entryFrame.loaderId, "bootstrap entry main-frame loader is unavailable");
   const entryContext = await waitForMainExecutionContext(entryFrame.id);
   assert.equal(entryContext.frameId, entryFrame.id);
   assert.equal(entryContext.isDefault, true);
@@ -963,6 +1036,8 @@ try {
     contextIsDefault: entryContext.isDefault,
     contextFrameId: entryContext.frameId,
     frameId: entryFrame.id,
+    entryUrl: new URL(entryFrame.url).href,
+    entryLoaderId: entryFrame.loaderId,
     destinationUrl: new URL(
       `${baseUrl}/studio/drafts/definitions/${bootstrapAttempt.definitionId}/`,
     ).href,

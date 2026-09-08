@@ -5,9 +5,10 @@ import hashlib
 from importlib import import_module
 import json
 import threading
-from datetime import date
+from datetime import date, datetime, timezone as datetime_timezone
 from decimal import Decimal
 from unittest import skipUnless
+from unittest.mock import patch
 from uuid import UUID, uuid4
 
 from django.core.exceptions import ValidationError
@@ -24,17 +25,27 @@ from django.db.models.deletion import RestrictedError
 from django.test import TransactionTestCase
 from django.utils import timezone
 
-from domain.enums import AssessmentProjectionStatus, TargetType, ValueStatus
+from domain.enums import (
+    AssessmentProjectionStatus,
+    AuditAction,
+    AuditActorType,
+    AuditScope,
+    TargetType,
+    ValueStatus,
+)
 from domain.models import (
     Actor,
     ActorElementRole,
     AnalyticalElement,
     AssessmentSet,
     AuditEvent,
+    HelpTopic,
     ParameterDefinition,
     ParameterValue,
+    Project,
     ProjectWorkspace,
     TimeSlice,
+    UIHelpBinding,
     _canonical_assessment_projection_write,
     _target_model,
 )
@@ -45,6 +56,8 @@ from domain.policies import (
 from domain.services.player_projection import (
     AssessmentProjectionConflict,
     AssessmentProjectionError,
+    PROJECTION_CONTRACT,
+    WORKSPACE_CREATE_CONTRACT,
     materialize_workspace_assessment_projection,
     verify_workspace_assessment_projection,
 )
@@ -59,6 +72,7 @@ from domain.services.foundation_packages import (
 )
 from domain.services.project_definitions import (
     clone_project_definition_draft,
+    create_project_definition_draft,
     publish_successor_project_definition,
 )
 from domain.tests.test_foundation_studio_bootstrap import (
@@ -695,6 +709,41 @@ class FoundationWorkspaceAssessmentProjectionTests(
         workspace.refresh_from_db()
         self.assertEqual(workspace.definition_version_id, definition.pk)
 
+        combined_operation = uuid4()
+        with transaction.atomic():
+            self._materialize(
+                workspace,
+                combined_operation,
+                principal,
+                receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                canonical_request_sha256="9" * 64,
+            )
+        combined_receipt = AuditEvent.objects.get(pk=combined_operation)
+        receipt_before_pin_drift = copy.deepcopy(combined_receipt.after)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"UPDATE {table} SET {hash_column} = %s WHERE {pk_column} = %s",
+                ["0" * 64, prepared_pk],
+            )
+        with transaction.atomic():
+            with self.assertRaises(AssessmentProjectionConflict):
+                self._materialize(
+                    workspace,
+                    combined_operation,
+                    principal,
+                    receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                    canonical_request_sha256="9" * 64,
+                )
+        combined_receipt.refresh_from_db()
+        self.assertEqual(combined_receipt.after, receipt_before_pin_drift)
+        self.assertEqual(
+            AuditEvent.objects.filter(
+                workspace=workspace,
+                entity_type=WORKSPACE_CREATE_CONTRACT,
+            ).count(),
+            1,
+        )
+
     def test_projection_materializes_actor_element_role_hierarchy_with_deterministic_workspace_ids(self):
         definition, workspace, principal = self._bootstrap(projection_manifest=True)
         operation = uuid4()
@@ -762,6 +811,127 @@ class FoundationWorkspaceAssessmentProjectionTests(
             1,
         )
 
+        # The legacy receipt above remains the byte-compatible standalone
+        # contract.  A fresh workspace proves the separate combined operation
+        # contract does not let a caller provide projection facts, while its
+        # opaque request digest remains distinct from server-derived facts.
+        combined_workspace = _make_workspace(
+            definition=definition,
+            project=self.project,
+            code=f"FD08-COMBINED-{uuid4().hex[:10]}",
+        )
+        combined_operation = uuid4()
+        canonical_request_sha256 = "a" * 64
+        with transaction.atomic():
+            combined = self._materialize(
+                combined_workspace,
+                combined_operation,
+                principal,
+                receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                canonical_request_sha256=canonical_request_sha256,
+            )
+        self.assertFalse(combined.replayed)
+        combined_receipt = AuditEvent.objects.get(pk=combined_operation)
+        self.assertEqual(combined_receipt.pk, combined_operation)
+        self.assertEqual(combined_receipt.entity_type, WORKSPACE_CREATE_CONTRACT)
+        self.assertEqual(combined_receipt.entity_id, combined_workspace.pk)
+        self.assertEqual(
+            AuditEvent.objects.filter(
+                workspace=combined_workspace,
+                entity_type=WORKSPACE_CREATE_CONTRACT,
+            ).count(),
+            1,
+        )
+        self.assertFalse(
+            AuditEvent.objects.filter(
+                workspace=combined_workspace,
+                entity_type=PROJECTION_CONTRACT,
+            ).exists()
+        )
+        combined_after = copy.deepcopy(combined_receipt.after)
+        self.assertEqual(combined_after["contract"], WORKSPACE_CREATE_CONTRACT)
+        self.assertEqual(combined_after["operation_id"], str(combined_operation))
+        self.assertEqual(combined_after["audit_event_id"], str(combined_operation))
+        self.assertEqual(
+            combined_after["canonical_request_sha256"], canonical_request_sha256
+        )
+        self.assertNotIn(
+            "canonical_request_sha256", combined_after["projection_request"]
+        )
+        self.assertEqual(
+            combined_after["projection_request_sha256"],
+            _canonical_json_sha256(combined_after["projection_request"]),
+        )
+        self.assertEqual(
+            combined_after["receipt_sha256"],
+            _canonical_json_sha256(
+                {
+                    key: value
+                    for key, value in combined_after.items()
+                    if key != "receipt_sha256"
+                }
+            ),
+        )
+        occurred_at = datetime.fromisoformat(
+            combined_after["occurred_at"].replace("Z", "+00:00")
+        ).astimezone(datetime_timezone.utc)
+        self.assertEqual(
+            occurred_at,
+            combined_receipt.occurred_at.astimezone(datetime_timezone.utc),
+        )
+        self.assertEqual(combined_after["original_http_status"], 201)
+        self.assertEqual(
+            combined_after["project_id"], str(combined_workspace.project_id)
+        )
+        self.assertEqual(combined_after["workspace_id"], str(combined_workspace.pk))
+        self.assertEqual(
+            combined_after["definition_id"], str(combined_workspace.definition_version_id)
+        )
+        self.assertEqual(
+            combined_after["manifest_sha256"], combined_workspace.definition_manifest_hash
+        )
+        self.assertTrue(combined_after["source_counts"])
+        self.assertEqual(
+            combined_after["source_counts"], combined_after["projected_counts"]
+        )
+        before_combined_replay = _source_mapping(combined_workspace)
+        with transaction.atomic():
+            replay = self._materialize(
+                combined_workspace,
+                combined_operation,
+                principal,
+                receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                canonical_request_sha256=canonical_request_sha256,
+            )
+        self.assertTrue(replay.replayed)
+        combined_receipt.refresh_from_db()
+        self.assertEqual(combined_receipt.after, combined_after)
+        self.assertEqual(_source_mapping(combined_workspace), before_combined_replay)
+        self.assertEqual(
+            verify_workspace_assessment_projection(combined_workspace).status,
+            AssessmentProjectionStatus.COMPLETE,
+        )
+        with transaction.atomic():
+            with self.assertRaises(AssessmentProjectionConflict):
+                self._materialize(
+                    combined_workspace,
+                    combined_operation,
+                    principal,
+                    receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                    canonical_request_sha256="b" * 64,
+                )
+        with transaction.atomic():
+            with self.assertRaises(AssessmentProjectionConflict):
+                self._materialize(
+                    combined_workspace,
+                    combined_operation,
+                    "fd08-other-human",
+                    receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                    canonical_request_sha256=canonical_request_sha256,
+                )
+        with self.assertRaises(AssessmentProjectionConflict):
+            self._materialize(combined_workspace, combined_operation, principal)
+
     def test_two_workspaces_same_definition_have_distinct_rows_and_identical_source_mapping(self):
         definition, workspace_one, principal = self._bootstrap(projection_manifest=True)
         workspace_two = _make_workspace(
@@ -769,8 +939,29 @@ class FoundationWorkspaceAssessmentProjectionTests(
             project=self.project,
             code=f"FD08-SECOND-{uuid4().hex[:10]}",
         )
-        self._materialize(workspace_one, uuid4(), principal)
+        combined_operation = uuid4()
+        with transaction.atomic():
+            self._materialize(
+                workspace_one,
+                combined_operation,
+                principal,
+                receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                canonical_request_sha256="c" * 64,
+            )
         self._materialize(workspace_two, uuid4(), principal)
+        self.assertEqual(
+            AuditEvent.objects.filter(
+                workspace=workspace_one,
+                entity_type=WORKSPACE_CREATE_CONTRACT,
+            ).count(),
+            1,
+        )
+        self.assertFalse(
+            AuditEvent.objects.filter(
+                workspace=workspace_one,
+                entity_type=PROJECTION_CONTRACT,
+            ).exists()
+        )
         one = _source_mapping(workspace_one)
         two = _source_mapping(workspace_two)
         for family in ("actors", "elements", "roles"):
@@ -790,12 +981,15 @@ class FoundationWorkspaceAssessmentProjectionTests(
             verify_workspace_assessment_projection(workspace_two).projection_sha256,
             "The workspace identity is part of a canonical projection.",
         )
-        package = export_workspace_package_2_2(workspace_one)
+        # The frozen Foundation 2.2 package remains the legacy standalone
+        # receipt surface.  The first workspace above proves combined sibling
+        # provenance; the second retains the byte-compatible package route.
+        package = export_workspace_package_2_2(workspace_two)
         baseline = _projection_semantic_counts()
         with self.assertRaises(FoundationPackageConflictError):
-            preview_foundation_package_2_2(package, workspace=workspace_two)
+            preview_foundation_package_2_2(package, workspace=workspace_one)
         with self.assertRaises(FoundationPackageConflictError):
-            commit_foundation_package_2_2(package, workspace=workspace_two)
+            commit_foundation_package_2_2(package, workspace=workspace_one)
         self.assertEqual(_projection_semantic_counts(), baseline)
         empty_workspace = _make_workspace(
             definition=definition,
@@ -818,6 +1012,37 @@ class FoundationWorkspaceAssessmentProjectionTests(
         definition, workspace, principal = self._bootstrap(projection_manifest=True)
         operation = uuid4()
         self._materialize(workspace, operation, principal)
+        legacy_receipt = AuditEvent.objects.get(
+            workspace=workspace,
+            entity_type=PROJECTION_CONTRACT,
+        )
+        legacy_after = copy.deepcopy(legacy_receipt.after)
+        self.assertEqual(
+            set(legacy_after),
+            {
+                "contract",
+                "version",
+                "operation_id",
+                "audit_event_id",
+                "actor_type",
+                "actor_identifier",
+                "project_id",
+                "workspace_id",
+                "definition_id",
+                "manifest_sha256",
+                "request",
+                "request_sha256",
+                "source_mapping_sha256",
+                "snapshot_sha256",
+                "projection_sha256",
+                "source_counts",
+                "projected_counts",
+                "original_http_status",
+            },
+        )
+        self.assertNotIn("canonical_request_sha256", legacy_after)
+        self.assertNotIn("occurred_at", legacy_after)
+        self.assertNotIn("receipt_sha256", legacy_after)
         snapshots = list(
             ParameterDefinition.objects.filter(definition_version=definition).order_by(
                 "source_manifest_parameter_id"
@@ -1010,6 +1235,8 @@ class FoundationWorkspaceAssessmentProjectionTests(
         before = _source_mapping(workspace)
         self._materialize(workspace, operation, principal)
         self.assertEqual(_source_mapping(workspace), before)
+        legacy_receipt.refresh_from_db()
+        self.assertEqual(legacy_receipt.after, legacy_after)
         before_reconciliation = _projection_semantic_counts()
         preview = preview_foundation_package_2_2(package, workspace=workspace)
         self.assertTrue(preview.valid)
@@ -1365,6 +1592,99 @@ class FoundationWorkspaceAssessmentProjectionTests(
             )
         self.assertEqual(_projection_semantic_counts(), before_receipt_refusal)
 
+        combined_workspace = _make_workspace(
+            definition=definition,
+            project=self.project,
+            code=f"FD08-COMBINED-DUAL-{uuid4().hex[:10]}",
+        )
+        combined_operation = uuid4()
+        with transaction.atomic():
+            self._materialize(
+                combined_workspace,
+                combined_operation,
+                principal,
+                receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                canonical_request_sha256="1" * 64,
+            )
+        self.assertEqual(
+            verify_workspace_assessment_projection(combined_workspace).status,
+            AssessmentProjectionStatus.COMPLETE,
+            "The combined reader is self-contained and needs no caller request.",
+        )
+        AuditEvent.objects.create(
+            id=uuid4(),
+            code=f"FD08-DUAL-{uuid4().hex[:10]}",
+            version="1.0.0",
+            project=self.project,
+            workspace=combined_workspace,
+            scope=AuditScope.WORKSPACE,
+            action=AuditAction.CREATE,
+            actor_type=AuditActorType.HUMAN,
+            actor_identifier="fd08-malformed-human",
+            entity_type=PROJECTION_CONTRACT,
+            entity_id=combined_workspace.pk,
+            before=None,
+            after={"malformed": "dual receipt has no immutable projection evidence"},
+        )
+        self.assertEqual(
+            verify_workspace_assessment_projection(combined_workspace).status,
+            AssessmentProjectionStatus.INTEGRITY_CONFLICT,
+        )
+        combined_before_dual_replay = _source_mapping(combined_workspace)
+        with transaction.atomic():
+            with self.assertRaises(AssessmentProjectionConflict):
+                self._materialize(
+                    combined_workspace,
+                    combined_operation,
+                    principal,
+                    receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                    canonical_request_sha256="1" * 64,
+                )
+        self.assertEqual(_source_mapping(combined_workspace), combined_before_dual_replay)
+
+        malformed_workspace = _make_workspace(
+            definition=definition,
+            project=self.project,
+            code=f"FD08-MALFORMED-{uuid4().hex[:10]}",
+        )
+        malformed_operation = uuid4()
+        AuditEvent.objects.create(
+            id=malformed_operation,
+            code=f"WORKSPACE-CREATE-PROJECTION-{malformed_operation}",
+            version="1.0.0",
+            project=self.project,
+            workspace=malformed_workspace,
+            scope=AuditScope.WORKSPACE,
+            action=AuditAction.CREATE,
+            actor_type=AuditActorType.HUMAN,
+            actor_identifier=getattr(principal, "actor_identifier", principal),
+            entity_type=WORKSPACE_CREATE_CONTRACT,
+            entity_id=malformed_workspace.pk,
+            before=None,
+            after={
+                "contract": WORKSPACE_CREATE_CONTRACT,
+                "operation_id": str(malformed_operation),
+                "audit_event_id": str(malformed_operation),
+                "canonical_request_sha256": "2" * 64,
+                "occurred_at": "not-a-canonical-timestamp",
+                "receipt_sha256": "not-a-valid-receipt-hash",
+            },
+        )
+        self.assertEqual(
+            verify_workspace_assessment_projection(malformed_workspace).status,
+            AssessmentProjectionStatus.INTEGRITY_CONFLICT,
+        )
+        with transaction.atomic():
+            with self.assertRaises(AssessmentProjectionConflict):
+                self._materialize(
+                    malformed_workspace,
+                    malformed_operation,
+                    principal,
+                    receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                    canonical_request_sha256="2" * 64,
+                )
+        self.assertFalse(_canonical_rows(malformed_workspace)["actors"])
+
     def test_every_projection_failure_stage_rolls_back_rows_and_immutable_receipt(self):
         definition, workspace, principal = self._bootstrap(projection_manifest=True)
         stages = (
@@ -1406,6 +1726,120 @@ class FoundationWorkspaceAssessmentProjectionTests(
                 self.assertIsNone(candidate.assessment_projection_sha256)
         self.assertFalse(_canonical_rows(workspace)["actors"])
 
+        no_outer_workspace = _make_workspace(
+            definition=definition,
+            project=self.project,
+            code=f"FD08-NO-OUTER-{uuid4().hex[:10]}",
+        )
+        with self.assertRaises(AssessmentProjectionError) as no_outer:
+            self._materialize(
+                no_outer_workspace,
+                uuid4(),
+                principal,
+                receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                canonical_request_sha256="d" * 64,
+            )
+        self.assertEqual(
+            no_outer.exception.code,
+            "ASSESSMENT_PROJECTION_COMBINED_TRANSACTION_REQUIRED",
+        )
+
+        invalid_caller_workspace = _make_workspace(
+            definition=definition,
+            project=self.project,
+            code=f"FD08-CALLER-INVALID-{uuid4().hex[:10]}",
+        )
+        with transaction.atomic():
+            with self.assertRaises(AssessmentProjectionError):
+                self._materialize(
+                    invalid_caller_workspace,
+                    uuid4(),
+                    principal,
+                    receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                    canonical_request_sha256="A" * 64,
+                )
+            with self.assertRaises(AssessmentProjectionError):
+                self._materialize(
+                    invalid_caller_workspace,
+                    uuid4(),
+                    principal,
+                    receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                    canonical_request_sha256="e" * 64,
+                    projection_sha256="caller-must-not-assert-this",
+                )
+        self.assertFalse(_canonical_rows(invalid_caller_workspace)["actors"])
+        self.assertFalse(AuditEvent.objects.filter(workspace=invalid_caller_workspace).exists())
+
+        foreign_workspace = _make_workspace(
+            definition=definition,
+            project=self.project,
+            code=f"FD08-FOREIGN-{uuid4().hex[:10]}",
+        )
+        collision_workspace = _make_workspace(
+            definition=definition,
+            project=self.project,
+            code=f"FD08-COLLISION-{uuid4().hex[:10]}",
+        )
+        collision_operation = uuid4()
+        AuditEvent.objects.create(
+            id=collision_operation,
+            code=f"FD08-FOREIGN-{collision_operation}",
+            version="1.0.0",
+            project=self.project,
+            workspace=foreign_workspace,
+            scope=AuditScope.WORKSPACE,
+            action=AuditAction.CREATE,
+            actor_type=AuditActorType.HUMAN,
+            actor_identifier="foreign-operation-owner",
+            entity_type="FD08-FOREIGN-OPERATION",
+            entity_id=foreign_workspace.pk,
+            before=None,
+            after={"foreign": True},
+        )
+        collision_before = _projection_semantic_counts()
+        with transaction.atomic():
+            with self.assertRaises(AssessmentProjectionConflict):
+                self._materialize(
+                    collision_workspace,
+                    collision_operation,
+                    principal,
+                    receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                    canonical_request_sha256="f" * 64,
+                )
+        collision_workspace.refresh_from_db()
+        self.assertFalse(_canonical_rows(collision_workspace)["actors"])
+        self.assertEqual(
+            collision_workspace.assessment_projection_status,
+            AssessmentProjectionStatus.NOT_PROVEN,
+        )
+        self.assertIsNone(collision_workspace.assessment_projection_sha256)
+        self.assertEqual(_projection_semantic_counts(), collision_before)
+
+        rollback_workspace = _make_workspace(
+            definition=definition,
+            project=self.project,
+            code=f"FD08-ROLLBACK-{uuid4().hex[:10]}",
+        )
+        rollback_operation = uuid4()
+        with self.assertRaisesRegex(RuntimeError, "outer rollback"):
+            with transaction.atomic():
+                self._materialize(
+                    rollback_workspace,
+                    rollback_operation,
+                    principal,
+                    receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                    canonical_request_sha256="0" * 64,
+                )
+                raise RuntimeError("outer rollback")
+        rollback_workspace.refresh_from_db()
+        self.assertFalse(_canonical_rows(rollback_workspace)["actors"])
+        self.assertFalse(AuditEvent.objects.filter(pk=rollback_operation).exists())
+        self.assertEqual(
+            rollback_workspace.assessment_projection_status,
+            AssessmentProjectionStatus.NOT_PROVEN,
+        )
+        self.assertIsNone(rollback_workspace.assessment_projection_sha256)
+
 
 @skipUnless(connection.vendor == "postgresql", "requires PostgreSQL")
 class FoundationWorkspaceAssessmentProjectionPostgreSQLTests(
@@ -1430,21 +1864,24 @@ class FoundationWorkspaceAssessmentProjectionPostgreSQLTests(
         return bootstrap.workspace, principal
 
     @staticmethod
-    def _race(workspace_id, operation_ids, principal):
-        barrier = threading.Barrier(len(operation_ids))
+    def _race(workspace_id, attempts, principal):
+        barrier = threading.Barrier(len(attempts))
         lock = threading.Lock()
         outcomes: list[tuple[str, object]] = []
 
-        def worker(operation_identity):
+        def worker(operation_identity, canonical_request_sha256):
             close_old_connections()
             try:
                 workspace = ProjectWorkspace.objects.get(pk=workspace_id)
                 barrier.wait(timeout=15)
-                result = materialize_workspace_assessment_projection(
-                    workspace,
-                    operation_identity,
-                    getattr(principal, "actor_identifier", principal),
-                )
+                with transaction.atomic():
+                    result = materialize_workspace_assessment_projection(
+                        workspace,
+                        operation_identity,
+                        getattr(principal, "actor_identifier", principal),
+                        receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                        canonical_request_sha256=canonical_request_sha256,
+                    )
                 outcome: tuple[str, object] = ("result", result)
             except Exception as exc:  # captured so both contenders join deterministically
                 outcome = ("error", exc)
@@ -1453,7 +1890,7 @@ class FoundationWorkspaceAssessmentProjectionPostgreSQLTests(
             with lock:
                 outcomes.append(outcome)
 
-        threads = [threading.Thread(target=worker, args=(identity,)) for identity in operation_ids]
+        threads = [threading.Thread(target=worker, args=attempt) for attempt in attempts]
         for thread in threads:
             thread.start()
         for thread in threads:
@@ -1465,35 +1902,317 @@ class FoundationWorkspaceAssessmentProjectionPostgreSQLTests(
     def test_concurrent_same_workspace_projection_has_one_commit_and_one_exact_replay(self):
         workspace, principal = self._bootstrap()
         operation = uuid4()
-        outcomes = self._race(workspace.pk, (operation, operation), principal)
+        outcomes = self._race(
+            workspace.pk,
+            ((operation, "3" * 64), (operation, "3" * 64)),
+            principal,
+        )
         self.assertEqual([kind for kind, _ in outcomes].count("error"), 0, outcomes)
         self.assertEqual([kind for kind, _ in outcomes].count("result"), 2, outcomes)
+        results = [value for kind, value in outcomes if kind == "result"]
+        self.assertEqual(sorted(result.replayed for result in results), [False, True])
         workspace.refresh_from_db()
         verification = verify_workspace_assessment_projection(workspace)
         self.assertEqual(verification.status, AssessmentProjectionStatus.COMPLETE)
         self.assertEqual(
             AuditEvent.objects.filter(
                 workspace=workspace,
-                entity_type=_PROJECTION_RECEIPT_ENTITY_TYPE,
+                entity_type=WORKSPACE_CREATE_CONTRACT,
             ).count(),
             1,
+        )
+        self.assertFalse(
+            AuditEvent.objects.filter(
+                workspace=workspace,
+                entity_type=PROJECTION_CONTRACT,
+            ).exists()
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                workspace=workspace,
+                entity_type=WORKSPACE_CREATE_CONTRACT,
+            ).pk,
+            operation,
         )
         self.assertEqual(len(_canonical_rows(workspace)["actors"]), len(self.manifest["actors"]))
 
     def test_competing_projection_identity_or_snapshot_has_one_commit_and_one_typed_loser(self):
+        # The late collision must be reproduced across independently locked
+        # Projects/Definitions/Workspaces.  Bootstrap the only global help
+        # topic/binding once for A, then construct B directly from a deep copy
+        # of the manifest with new Project and binding identities.
         workspace, principal = self._bootstrap()
-        outcomes = self._race(workspace.pk, (uuid4(), uuid4()), principal)
+        target_a = _make_workspace(
+            definition=workspace.definition_version,
+            project=self.project,
+            code=f"FD08-PG-A-TARGET-{uuid4().hex[:10].upper()}",
+        )
+        global_topics_before = tuple(
+            HelpTopic.objects.order_by("pk").values_list("pk", "content_sha256")
+        )
+        global_bindings_before = tuple(
+            UIHelpBinding.objects.filter(workspace__isnull=True)
+            .order_by("pk")
+            .values_list("pk", "help_topic_id")
+        )
+        project_b = Project.objects.create(
+            id=uuid4(),
+            code=f"FD08-PG-B-{uuid4().hex[:10].upper()}",
+            version="1.0.0",
+            name="FD08 independent Project B",
+            description="Independent late operation-UUID collision fixture.",
+            metadata={"fd08": "late-operation-uuid-project-b"},
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
+        )
+        manifest_b = copy.deepcopy(self.manifest)
+        manifest_b["project"].update(
+            {
+                "id": str(project_b.pk),
+                "code": project_b.code,
+                "version": project_b.version,
+                "name": project_b.name,
+                "description": project_b.description,
+                "metadata": copy.deepcopy(project_b.metadata),
+            }
+        )
+        for binding in manifest_b["help_bindings"]:
+            binding["id"] = str(uuid4())
+        definition_b = create_project_definition_draft(
+            project=project_b,
+            code=f"FD08-PG-B-DEF-{uuid4().hex[:10].upper()}",
+            version="1.0.0",
+            manifest=manifest_b,
+            principal=self.editor(actor="fd08-postgresql-b-editor"),
+        )
+        b_principal = self.publisher(actor="fd08-postgresql-b-human")
+        bootstrap_b = bootstrap_initial_project_definition(
+            definition=definition_b,
+            principal=b_principal,
+            actor_identifier=b_principal.actor_identifier,
+            workspace_spec={
+                "id": str(uuid4()),
+                "code": f"FD08-PG-B-DEFAULT-{uuid4().hex[:10].upper()}",
+                "version": "1.0.0",
+                "name": "FD08 independent default workspace B",
+                "is_default": True,
+                "metadata": {"fd08": "late-operation-uuid-project-b-default"},
+            },
+            locale="en",
+        )
+        target_b = _make_workspace(
+            definition=bootstrap_b.definition,
+            project=project_b,
+            code=f"FD08-PG-B-TARGET-{uuid4().hex[:10].upper()}",
+        )
+        self.assertNotEqual(target_a.project_id, target_b.project_id)
+        self.assertNotEqual(
+            target_a.definition_version_id,
+            target_b.definition_version_id,
+        )
+        self.assertNotEqual(target_a.pk, workspace.pk)
+        self.assertNotEqual(target_b.pk, bootstrap_b.workspace.pk)
+        self.assertEqual(
+            tuple(HelpTopic.objects.order_by("pk").values_list("pk", "content_sha256")),
+            global_topics_before,
+        )
+        self.assertEqual(
+            tuple(
+                UIHelpBinding.objects.filter(workspace__isnull=True)
+                .order_by("pk")
+                .values_list("pk", "help_topic_id")
+            ),
+            global_bindings_before,
+        )
+        a_workspace_binding_ids = set(
+            UIHelpBinding.objects.filter(workspace=workspace).values_list(
+                "pk",
+                flat=True,
+            )
+        )
+        b_workspace_bindings = tuple(
+            UIHelpBinding.objects.filter(workspace=bootstrap_b.workspace).order_by("pk")
+        )
+        self.assertTrue(a_workspace_binding_ids)
+        self.assertEqual(
+            len(b_workspace_bindings),
+            len(manifest_b["help_bindings"]),
+        )
+        self.assertTrue(
+            a_workspace_binding_ids.isdisjoint(
+                {binding.pk for binding in b_workspace_bindings}
+            )
+        )
+        self.assertEqual(
+            {binding.help_topic_id for binding in b_workspace_bindings},
+            {self.topic.pk},
+        )
+        self.assertEqual(
+            {str(binding.pk) for binding in bootstrap_b.help_bindings},
+            {binding["id"] for binding in manifest_b["help_bindings"]},
+        )
+        self.assertFalse(AuditEvent.objects.filter(workspace=target_a).exists())
+        self.assertFalse(AuditEvent.objects.filter(workspace=target_b).exists())
+        self.assertTrue(
+            all(not rows for rows in _canonical_rows(target_a).values()),
+            _canonical_rows(target_a),
+        )
+        self.assertTrue(
+            all(not rows for rows in _canonical_rows(target_b).values()),
+            _canonical_rows(target_b),
+        )
+
+        operation = uuid4()
+        a_save_entered = threading.Event()
+        release_a_save = threading.Event()
+        a_outcomes: list[tuple[str, object, bool]] = []
+        a_outcomes_lock = threading.Lock()
+        original_audit_event_save = AuditEvent.save
+
+        def pause_only_a_save(event, *args, **kwargs):
+            if event.pk == operation and event.workspace_id == target_a.pk:
+                a_save_entered.set()
+                if not release_a_save.wait(timeout=30):
+                    raise RuntimeError("FD08 late collision observer was not released")
+            return original_audit_event_save(event, *args, **kwargs)
+
+        def contender_a():
+            close_old_connections()
+            connection_usable = False
+            try:
+                contender_workspace = ProjectWorkspace.objects.get(pk=target_a.pk)
+                with transaction.atomic():
+                    result = materialize_workspace_assessment_projection(
+                        contender_workspace,
+                        operation,
+                        principal.actor_identifier,
+                        receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                        canonical_request_sha256="4" * 64,
+                    )
+                outcome: tuple[str, object] = ("result", result)
+            except Exception as exc:  # the typed public boundary is asserted below
+                outcome = ("error", exc)
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT 1")
+                    connection_usable = cursor.fetchone()[0] == 1
+            finally:
+                close_old_connections()
+            with a_outcomes_lock:
+                a_outcomes.append((outcome[0], outcome[1], connection_usable))
+
+        with patch.object(AuditEvent, "save", new=pause_only_a_save):
+            contender = threading.Thread(target=contender_a)
+            contender.start()
+            try:
+                self.assertTrue(
+                    a_save_entered.wait(timeout=30),
+                    "A did not reach the real inherited AuditEvent.save path",
+                )
+                with transaction.atomic():
+                    result_b = materialize_workspace_assessment_projection(
+                        ProjectWorkspace.objects.get(pk=target_b.pk),
+                        operation,
+                        b_principal.actor_identifier,
+                        receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                        canonical_request_sha256="5" * 64,
+                    )
+                self.assertFalse(result_b.replayed)
+                winner = AuditEvent.objects.get(pk=operation)
+                self.assertEqual(winner.workspace_id, target_b.pk)
+                self.assertEqual(winner.entity_type, WORKSPACE_CREATE_CONTRACT)
+            finally:
+                release_a_save.set()
+                contender.join(timeout=30)
+        self.assertFalse(contender.is_alive(), "A contender did not complete")
+        self.assertEqual(len(a_outcomes), 1, a_outcomes)
+        self.assertEqual(a_outcomes[0][0], "error", a_outcomes)
+        self.assertIsInstance(a_outcomes[0][1], AssessmentProjectionConflict)
+        self.assertTrue(a_outcomes[0][2], a_outcomes)
+
+        target_a.refresh_from_db()
+        self.assertEqual(
+            target_a.assessment_projection_status,
+            AssessmentProjectionStatus.NOT_PROVEN,
+        )
+        self.assertIsNone(target_a.assessment_projection_sha256)
+        self.assertTrue(
+            all(not rows for rows in _canonical_rows(target_a).values()),
+            _canonical_rows(target_a),
+        )
+        self.assertFalse(AuditEvent.objects.filter(workspace=target_a).exists())
+        self.assertFalse(
+            AuditEvent.objects.filter(
+                pk=operation,
+                workspace=target_a,
+                entity_type=WORKSPACE_CREATE_CONTRACT,
+            ).exists()
+        )
+
+        target_b.refresh_from_db()
+        self.assertEqual(
+            verify_workspace_assessment_projection(target_b).status,
+            AssessmentProjectionStatus.COMPLETE,
+        )
+        self.assertEqual(
+            AuditEvent.objects.filter(
+                workspace=target_b,
+                entity_type=WORKSPACE_CREATE_CONTRACT,
+            ).count(),
+            1,
+        )
+        self.assertFalse(
+            AuditEvent.objects.filter(
+                workspace=target_b,
+                entity_type=PROJECTION_CONTRACT,
+            ).exists()
+        )
+        self.assertEqual(AuditEvent.objects.get(pk=operation).workspace_id, target_b.pk)
+        self.assertEqual(
+            len(_canonical_rows(target_b)["actors"]),
+            len(manifest_b["actors"]),
+        )
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            self.assertEqual(cursor.fetchone()[0], 1)
+
+        # Retain the inherited same-workspace different-snapshot boundary.
+        same_workspace_operation = uuid4()
+        outcomes = self._race(
+            workspace.pk,
+            (
+                (same_workspace_operation, "6" * 64),
+                (same_workspace_operation, "7" * 64),
+            ),
+            principal,
+        )
         results = [value for kind, value in outcomes if kind == "result"]
         errors = [value for kind, value in outcomes if kind == "error"]
         self.assertEqual(len(results), 1, outcomes)
         self.assertEqual(len(errors), 1, outcomes)
         self.assertIsInstance(errors[0], AssessmentProjectionConflict)
         workspace.refresh_from_db()
-        self.assertEqual(verify_workspace_assessment_projection(workspace).status, AssessmentProjectionStatus.COMPLETE)
+        self.assertEqual(
+            verify_workspace_assessment_projection(workspace).status,
+            AssessmentProjectionStatus.COMPLETE,
+        )
         self.assertEqual(
             AuditEvent.objects.filter(
                 workspace=workspace,
-                entity_type=_PROJECTION_RECEIPT_ENTITY_TYPE,
+                entity_type=WORKSPACE_CREATE_CONTRACT,
             ).count(),
             1,
+        )
+        self.assertFalse(
+            AuditEvent.objects.filter(
+                workspace=workspace,
+                entity_type=PROJECTION_CONTRACT,
+            ).exists()
+        )
+        self.assertEqual(
+            AuditEvent.objects.get(
+                workspace=workspace,
+                entity_type=WORKSPACE_CREATE_CONTRACT,
+            ).pk,
+            same_workspace_operation,
         )

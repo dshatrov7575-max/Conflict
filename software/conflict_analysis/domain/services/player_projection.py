@@ -11,12 +11,16 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone as datetime_timezone
 from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping
 
-from django.db import transaction
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from domain.enums import (
     AssessmentProjectionStatus,
@@ -41,6 +45,8 @@ from domain.services.project_definitions import parse_project_definition_manifes
 PROJECTION_CONTRACT = "FOUNDATION_WORKSPACE_ASSESSMENT_PROJECTION_V1"
 WORKSPACE_CREATE_CONTRACT = "FOUNDATION_PLAYER_WORKSPACE_CREATE_V1"
 _IDENTITY_PREFIX = "PROJECT_DEFINITION_MANIFEST_V1"
+_PROJECTION_RECEIPT_CONTRACTS = (PROJECTION_CONTRACT, WORKSPACE_CREATE_CONTRACT)
+_CANONICAL_REQUEST_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
 
 class AssessmentProjectionError(RuntimeError):
@@ -147,7 +153,7 @@ def _projection_receipts(workspace: ProjectWorkspace) -> list[AuditEvent]:
     return list(
         AuditEvent.objects.filter(
             workspace=workspace,
-            entity_type=PROJECTION_CONTRACT,
+            entity_type__in=_PROJECTION_RECEIPT_CONTRACTS,
         ).order_by("occurred_at", "created_at", "pk")
     )
 
@@ -157,7 +163,114 @@ def _projection_receipt(workspace: ProjectWorkspace) -> AuditEvent | None:
     return receipts[0] if len(receipts) == 1 else None
 
 
-def _receipt_matches_expected_projection(
+def _canonical_request_sha256(value: object) -> str:
+    """Accept only the opaque caller-owned combined-operation request digest."""
+
+    if not isinstance(value, str) or _CANONICAL_REQUEST_SHA256.fullmatch(value) is None:
+        raise AssessmentProjectionError(
+            "canonical_request_sha256 must be exactly 64 lowercase hexadecimal characters.",
+            code="ASSESSMENT_PROJECTION_REQUEST_SHA256_INVALID",
+        )
+    return value
+
+
+def _canonical_occurred_at(value: datetime) -> str:
+    if timezone.is_naive(value):
+        raise AssessmentProjectionConflict("Combined receipt time must be timezone-aware.")
+    return (
+        value.astimezone(datetime_timezone.utc)
+        .isoformat(timespec="microseconds")
+        .replace("+00:00", "Z")
+    )
+
+
+def _parse_canonical_occurred_at(value: object) -> datetime:
+    if not isinstance(value, str):
+        raise AssessmentProjectionConflict("Combined receipt time is not canonical text.")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise AssessmentProjectionConflict("Combined receipt time cannot be parsed.") from exc
+    if timezone.is_naive(parsed) or _canonical_occurred_at(parsed) != value:
+        raise AssessmentProjectionConflict("Combined receipt time is not canonical UTC text.")
+    return parsed.astimezone(datetime_timezone.utc)
+
+
+def _projection_counts(expected: Mapping[str, Any]) -> dict[str, int]:
+    return {
+        section: len(expected[section])
+        for section in (
+            "actors",
+            "analytical_elements",
+            "actor_element_roles",
+            "parameter_definitions",
+        )
+    }
+
+
+def _combined_receipt_core(
+    workspace: ProjectWorkspace,
+    expected: Mapping[str, Any],
+    *,
+    operation_id: uuid.UUID,
+    principal: str,
+    canonical_request_sha256: str,
+    occurred_at: datetime,
+) -> dict[str, Any]:
+    """Return the immutable, independently hashable combined-operation evidence."""
+
+    projection_request = _projection_request(
+        workspace,
+        expected,
+        operation_id=operation_id,
+        principal=principal,
+    )
+    counts = _projection_counts(expected)
+    return {
+        "contract": WORKSPACE_CREATE_CONTRACT,
+        "version": "1.0.0",
+        "operation_id": str(operation_id),
+        "audit_event_id": str(operation_id),
+        "actor_type": AuditActorType.HUMAN,
+        "actor_identifier": principal,
+        "project_id": str(workspace.project_id),
+        "workspace_id": str(workspace.pk),
+        "definition_id": str(workspace.definition_version_id),
+        "manifest_sha256": workspace.definition_manifest_hash,
+        "canonical_request_sha256": canonical_request_sha256,
+        "projection_request": projection_request,
+        "projection_request_sha256": _sha256(projection_request),
+        "source_mapping_sha256": expected["source_mapping_sha256"],
+        "snapshot_sha256": expected["snapshot_sha256"],
+        "projection_sha256": expected["projection_sha256"],
+        "source_counts": counts,
+        "projected_counts": counts,
+        "occurred_at": _canonical_occurred_at(occurred_at),
+        "original_http_status": 201,
+    }
+
+
+def _combined_receipt_payload(
+    workspace: ProjectWorkspace,
+    expected: Mapping[str, Any],
+    *,
+    operation_id: uuid.UUID,
+    principal: str,
+    canonical_request_sha256: str,
+    occurred_at: datetime,
+) -> dict[str, Any]:
+    core = _combined_receipt_core(
+        workspace,
+        expected,
+        operation_id=operation_id,
+        principal=principal,
+        canonical_request_sha256=canonical_request_sha256,
+        occurred_at=occurred_at,
+    )
+    return {**core, "receipt_sha256": _sha256(core)}
+
+
+def _standalone_receipt_matches_expected_projection(
     workspace: ProjectWorkspace,
     expected: Mapping[str, Any],
     receipt: AuditEvent,
@@ -194,6 +307,89 @@ def _receipt_matches_expected_projection(
         or receipt.version != "1.0.0"
         or after != expected_receipt
     )
+
+
+def _combined_receipt_matches_expected_projection(
+    workspace: ProjectWorkspace,
+    expected: Mapping[str, Any],
+    receipt: AuditEvent,
+) -> bool:
+    """Verify combined evidence from its immutable payload alone.
+
+    This deliberately never consumes a caller request: a later verifier has
+    only the persisted audit event and current pinned graph to inspect.
+    """
+
+    after = dict(receipt.after) if isinstance(receipt.after, Mapping) else {}
+    try:
+        operation_id = _exact_uuid(after.get("operation_id"), field="receipt.operation_id")
+        canonical_request_sha256 = _canonical_request_sha256(
+            after.get("canonical_request_sha256")
+        )
+        principal = str(after.get("actor_identifier", "")).strip()
+        if not principal:
+            return False
+        occurred_at = _parse_canonical_occurred_at(after.get("occurred_at"))
+        expected_receipt = _combined_receipt_payload(
+            workspace,
+            expected,
+            operation_id=operation_id,
+            principal=principal,
+            canonical_request_sha256=canonical_request_sha256,
+            occurred_at=occurred_at,
+        )
+    except AssessmentProjectionError:
+        return False
+    return not (
+        receipt.pk != operation_id
+        or receipt.project_id != workspace.project_id
+        or receipt.workspace_id != workspace.pk
+        or receipt.definition_version_id is not None
+        or receipt.scope != AuditScope.WORKSPACE
+        or receipt.action != AuditAction.CREATE
+        or receipt.actor_type != AuditActorType.HUMAN
+        or receipt.actor_identifier != principal
+        or receipt.entity_type != WORKSPACE_CREATE_CONTRACT
+        or receipt.entity_id != workspace.pk
+        or receipt.before is not None
+        or receipt.code != f"WORKSPACE-CREATE-PROJECTION-{operation_id}"
+        or receipt.version != "1.0.0"
+        or _canonical_occurred_at(receipt.occurred_at) != after.get("occurred_at")
+        or after != expected_receipt
+    )
+
+
+def _combined_receipt_matches_materialize_request(
+    workspace: ProjectWorkspace,
+    expected: Mapping[str, Any],
+    receipt: AuditEvent,
+    *,
+    operation_id: uuid.UUID,
+    principal: str,
+    canonical_request_sha256: str,
+) -> bool:
+    """Require exact persisted combined evidence for a caller-owned replay."""
+
+    after = dict(receipt.after) if isinstance(receipt.after, Mapping) else {}
+    return (
+        receipt.pk == operation_id
+        and after.get("operation_id") == str(operation_id)
+        and after.get("canonical_request_sha256") == canonical_request_sha256
+        and after.get("actor_identifier") == principal
+        and _combined_receipt_matches_expected_projection(workspace, expected, receipt)
+    )
+
+
+def _receipt_matches_expected_projection(
+    workspace: ProjectWorkspace,
+    expected: Mapping[str, Any],
+    receipt: AuditEvent,
+) -> bool:
+    if receipt.entity_type == PROJECTION_CONTRACT:
+        return _standalone_receipt_matches_expected_projection(workspace, expected, receipt)
+    if receipt.entity_type == WORKSPACE_CREATE_CONTRACT:
+        return _combined_receipt_matches_expected_projection(workspace, expected, receipt)
+    return False
 
 
 def _definition_snapshot_is_receipt_proven(
@@ -838,7 +1034,10 @@ def materialize_workspace_assessment_projection(
     operation_identity: uuid.UUID | str,
     human_principal: str,
     *,
+    receipt_contract: str = PROJECTION_CONTRACT,
+    canonical_request_sha256: str | None = None,
     inject_failure_at: str | None = None,
+    **caller_projection_facts: Any,
 ) -> AssessmentProjectionResult:
     """Create one all-or-nothing projection or return its exact immutable replay."""
 
@@ -847,6 +1046,31 @@ def materialize_workspace_assessment_projection(
     if not principal:
         raise AssessmentProjectionError(
             "A HUMAN principal is required.", code="ASSESSMENT_PROJECTION_PRINCIPAL_REQUIRED"
+        )
+    if caller_projection_facts:
+        raise AssessmentProjectionError(
+            "Projection facts are server-derived and cannot be supplied by a caller.",
+            code="ASSESSMENT_PROJECTION_CALLER_FACTS_FORBIDDEN",
+        )
+    if receipt_contract == PROJECTION_CONTRACT:
+        if canonical_request_sha256 is not None:
+            raise AssessmentProjectionError(
+                "Standalone projection receipts do not accept a caller request hash.",
+                code="ASSESSMENT_PROJECTION_CONTRACT_INVALID",
+            )
+        is_combined_receipt = False
+    elif receipt_contract == WORKSPACE_CREATE_CONTRACT:
+        canonical_request_sha256 = _canonical_request_sha256(canonical_request_sha256)
+        is_combined_receipt = True
+        if not transaction.get_connection().in_atomic_block:
+            raise AssessmentProjectionError(
+                "Combined workspace creation requires a caller-owned outer transaction.",
+                code="ASSESSMENT_PROJECTION_COMBINED_TRANSACTION_REQUIRED",
+            )
+    else:
+        raise AssessmentProjectionError(
+            "The projection receipt contract is not recognized.",
+            code="ASSESSMENT_PROJECTION_CONTRACT_INVALID",
         )
     with transaction.atomic():
         locked = (
@@ -866,6 +1090,11 @@ def materialize_workspace_assessment_projection(
             principal=principal,
         )
         request_sha256 = _sha256(request)
+        operation_receipt = (
+            AuditEvent.objects.select_for_update().filter(pk=operation_id).first()
+            if is_combined_receipt
+            else None
+        )
         receipts = _projection_receipts(locked)
         if len(receipts) > 1:
             raise AssessmentProjectionConflict(
@@ -874,14 +1103,31 @@ def materialize_workspace_assessment_projection(
         receipt = receipts[0] if receipts else None
         actual = _actual_projection(locked)
         if receipt is not None:
-            persisted = receipt.after if isinstance(receipt.after, Mapping) else {}
-            if (
-                persisted.get("operation_id") != str(operation_id)
-                or persisted.get("request_sha256") != request_sha256
-            ):
+            if receipt.entity_type != receipt_contract:
                 raise AssessmentProjectionConflict(
-                    "A different immutable projection receipt already exists for this workspace."
+                    "A different immutable projection receipt contract already exists for this workspace."
                 )
+            if is_combined_receipt:
+                if not _combined_receipt_matches_materialize_request(
+                    locked,
+                    expected,
+                    receipt,
+                    operation_id=operation_id,
+                    principal=principal,
+                    canonical_request_sha256=canonical_request_sha256,
+                ) or operation_receipt is None:
+                    raise AssessmentProjectionConflict(
+                        "A different immutable combined workspace receipt already exists."
+                    )
+            else:
+                persisted = receipt.after if isinstance(receipt.after, Mapping) else {}
+                if (
+                    persisted.get("operation_id") != str(operation_id)
+                    or persisted.get("request_sha256") != request_sha256
+                ):
+                    raise AssessmentProjectionConflict(
+                        "A different immutable projection receipt already exists for this workspace."
+                    )
             verification = verify_workspace_assessment_projection(locked)
             if not verification.complete:
                 raise AssessmentProjectionConflict(verification.reason)
@@ -890,6 +1136,14 @@ def materialize_workspace_assessment_projection(
                 receipt=receipt,
                 projection_sha256=verification.projection_sha256 or "",
                 replayed=True,
+            )
+        # The operation UUID is the combined AuditEvent primary key.  Classify a
+        # foreign/malformed occupancy before any projection row or workspace
+        # status can be written; a late occupancy is classified after the inner
+        # receipt savepoint has rolled back.
+        if is_combined_receipt and operation_receipt is not None:
+            raise AssessmentProjectionConflict(
+                "The combined operation UUID is already bound to another immutable audit event."
             )
         if (
             locked.assessment_projection_status
@@ -927,6 +1181,49 @@ def materialize_workspace_assessment_projection(
                 raise AssessmentProjectionConflict(
                     "Unreceipted definition snapshots cannot be adopted or repaired."
                 )
+        if is_combined_receipt:
+            occurred_at = timezone.now()
+            receipt_payload = _combined_receipt_payload(
+                locked,
+                expected,
+                operation_id=operation_id,
+                principal=principal,
+                canonical_request_sha256=canonical_request_sha256,
+                occurred_at=occurred_at,
+            )
+            try:
+                # Insert immutable combined evidence before any projection/status
+                # mutation.  The surrounding outer transaction makes receipt,
+                # graph, and status one rollback unit for the workspace caller.
+                with transaction.atomic():
+                    receipt = AuditEvent.objects.create(
+                        id=operation_id,
+                        code=f"WORKSPACE-CREATE-PROJECTION-{operation_id}",
+                        version="1.0.0",
+                        project=locked.project,
+                        workspace=locked,
+                        scope=AuditScope.WORKSPACE,
+                        action=AuditAction.CREATE,
+                        actor_type=AuditActorType.HUMAN,
+                        actor_identifier=principal,
+                        entity_type=WORKSPACE_CREATE_CONTRACT,
+                        entity_id=locked.pk,
+                        before=None,
+                        after=receipt_payload,
+                        occurred_at=occurred_at,
+                    )
+            except (IntegrityError, ValidationError) as exc:
+                # The inner savepoint has rolled back.  A row that appeared only
+                # now proves a late identity collision; absence preserves an
+                # unrelated model/database validation failure unchanged.
+                late_operation_receipt = (
+                    AuditEvent.objects.select_for_update().filter(pk=operation_id).first()
+                )
+                if late_operation_receipt is not None:
+                    raise AssessmentProjectionConflict(
+                        "The combined operation UUID collides with immutable audit evidence."
+                    ) from exc
+                raise
         with _canonical_assessment_projection_write("projection"):
             _materialize_expected(
                 locked,
@@ -936,29 +1233,30 @@ def materialize_workspace_assessment_projection(
             )
             if inject_failure_at == "before_receipt":
                 raise AssessmentProjectionError("Injected failure before receipt.")
-            receipt_id = uuid.uuid4()
-            receipt_payload = _projection_receipt_payload(
-                locked,
-                expected,
-                operation_id=operation_id,
-                principal=principal,
-                receipt_id=receipt_id,
-            )
-            receipt = AuditEvent.objects.create(
-                id=receipt_id,
-                code=f"ASSESSMENT-PROJECTION-{operation_id}",
-                version="1.0.0",
-                project=locked.project,
-                workspace=locked,
-                scope=AuditScope.WORKSPACE,
-                action=AuditAction.CREATE,
-                actor_type=AuditActorType.HUMAN,
-                actor_identifier=principal,
-                entity_type=PROJECTION_CONTRACT,
-                entity_id=locked.pk,
-                before=None,
-                after=receipt_payload,
-            )
+            if not is_combined_receipt:
+                receipt_id = uuid.uuid4()
+                receipt_payload = _projection_receipt_payload(
+                    locked,
+                    expected,
+                    operation_id=operation_id,
+                    principal=principal,
+                    receipt_id=receipt_id,
+                )
+                receipt = AuditEvent.objects.create(
+                    id=receipt_id,
+                    code=f"ASSESSMENT-PROJECTION-{operation_id}",
+                    version="1.0.0",
+                    project=locked.project,
+                    workspace=locked,
+                    scope=AuditScope.WORKSPACE,
+                    action=AuditAction.CREATE,
+                    actor_type=AuditActorType.HUMAN,
+                    actor_identifier=principal,
+                    entity_type=PROJECTION_CONTRACT,
+                    entity_id=locked.pk,
+                    before=None,
+                    after=receipt_payload,
+                )
             locked.assessment_projection_status = AssessmentProjectionStatus.COMPLETE
             locked.assessment_projection_sha256 = expected["projection_sha256"]
             locked.save()
