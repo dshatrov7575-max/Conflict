@@ -1,0 +1,36 @@
+import assert from "node:assert/strict";
+import { launchChromium } from "../../production_studio/browser_tests/cdp_client.mjs";
+
+const required=name=>{const value=process.env[name];if(!value)throw new Error(`${name} is required`);return value;};
+const base=required("PLAYER_BASE_URL").replace(/\/$/,""), workspace=required("PLAYER_WORKSPACE_ID"), cookieName=required("PLAYER_SESSION_COOKIE_NAME"), cookieValue=required("PLAYER_SESSION_COOKIE_VALUE"), expectedClaim=required("PLAYER_EXPECTED_G8_CLAIM_SHA256"), scenario=required("PLAYER_G8_SCENARIO"), xlsx=required("PLAYER_XLSX_PATH"), boundaryXlsx=required("PLAYER_BOUNDARY_XLSX_PATH"), duplicateXlsx=required("PLAYER_DUPLICATE_XLSX_PATH"), timeout=Number(process.env.PLAYER_CDP_TIMEOUT_MS||"90000");
+const browser=await launchChromium({timeoutMs:timeout}); let sessionId; const origins=new Set();
+try{
+ const client=browser.client,created=await client.send("Target.createTarget",{url:"about:blank"}),attached=await client.send("Target.attachToTarget",{targetId:created.targetId,flatten:true});sessionId=attached.sessionId;
+ await Promise.all([client.send("Page.enable",{},sessionId),client.send("Runtime.enable",{},sessionId),client.send("Network.enable",{},sessionId),client.send("DOM.enable",{},sessionId)]);
+ client.on("Network.requestWillBeSent",(event,sid)=>{if(sid===sessionId&&/^https?:/.test(event.request.url))origins.add(new URL(event.request.url).origin);});
+ const set=await client.send("Network.setCookie",{name:cookieName,value:cookieValue,url:base+"/",httpOnly:true,sameSite:"Lax"},sessionId);assert.equal(set.success,true);
+ await client.send("Page.navigate",{url:`${base}/player/workspaces/${workspace}/`},sessionId);
+ await client.waitForExpression("document.querySelector('#player-app')?.dataset.state==='ready' && document.querySelector('#experiment-plus')?.getAttribute('aria-disabled')==='false'",sessionId,timeout);
+ const evaluate=expression=>client.evaluate(expression,sessionId);
+ const selectLane=async kind=>{await evaluate(`(()=>{const tab=[...document.querySelectorAll('[data-g8-experiment]')].find(node=>node.textContent.startsWith(${JSON.stringify(kind+' ')}));if(!tab)return false;tab.click();return true})()`);await client.waitForExpression(`document.querySelector('#experiment-panel')?.hidden===false && document.querySelector('#experiment-name')?.textContent.startsWith(${JSON.stringify(kind+' ')})`,sessionId,timeout);};
+ const setFile=async(path,index)=>{const handle=await client.send("Runtime.evaluate",{expression:"document.querySelector('#g8-file')",returnByValue:false},sessionId);assert.ok(handle.result.objectId);await client.send("DOM.setFileInputFiles",{files:[path],objectId:handle.result.objectId},sessionId);await evaluate(`(()=>{const select=document.querySelector('#g8-source-column');select.selectedIndex=${index};return true})()`);};
+ const preview=async(path,index,allowed=true)=>{await setFile(path,index);const column=index===0?"ИИ_Значение":"Эксперт_Значение";await evaluate("document.querySelector('#g8-preview').click();true");await client.waitForExpression(`(()=>{try{return document.querySelector('#g8-preview-result')?.hidden===false && JSON.parse(document.querySelector('#g8-preview-result').textContent).source_column===${JSON.stringify(column)}}catch(_){return false}})()`,sessionId,timeout);const value=await evaluate("JSON.parse(document.querySelector('#g8-preview-result').textContent)");if(allowed)assert.equal(value.commit_allowed,true);else assert.equal(value.commit_allowed,false);return value;};
+ const commit=async(expected)=>{await evaluate("document.querySelector('#g8-import').click();true");await client.waitForExpression(`document.querySelectorAll('#g8-records tbody tr').length===${expected} && document.querySelector('#g8-import-state')?.textContent.includes('Импорт завершён')`,sessionId,timeout);};
+ let sameChecksum=false,reopened=false;
+ if(scenario==="lanes"){
+   await selectLane("AI");const ai=await preview(xlsx,0);await commit(288);
+   await selectLane("HUMAN");const human=await preview(xlsx,1);await commit(288);sameChecksum=ai.raw_file_sha256===human.raw_file_sha256;
+   await client.waitForExpression("document.querySelectorAll('#g8-comparison tbody tr').length===576",sessionId,timeout);
+   const permalink=await evaluate("document.querySelector('#g8-permalink').href");await client.send("Page.navigate",{url:permalink},sessionId);await client.waitForExpression("document.querySelector('#player-app')?.dataset.state==='ready' && document.querySelectorAll('#g8-records tbody tr').length===288 && document.querySelectorAll('#g8-comparison tbody tr').length===576",sessionId,timeout);reopened=true;
+ }else{
+   await selectLane("AI");const boundary=await preview(boundaryXlsx,0);assert.equal(boundary.counts.explicit_unknown,1);await commit(288);
+   const values=await evaluate("[...document.querySelectorAll('#g8-records tbody tr td:nth-child(3)')].map(node=>node.textContent)");assert.ok(values.includes('UNKNOWN'));assert.ok(values.includes('0'));
+   await evaluate("document.querySelector('#g8-freeze').click();true");await client.waitForExpression("document.querySelector('#g8-experiment-status')?.textContent==='FROZEN' && document.querySelector('#g8-preview')?.disabled===true && document.querySelector('#g8-import-state')?.textContent==='Готово.'",sessionId,timeout);
+   await selectLane("HUMAN");const duplicate=await preview(duplicateXlsx,1,false);assert.ok(duplicate.diagnostics.some(item=>item.code==='G8_XLSX_DUPLICATE_ID'));assert.equal(await evaluate("document.querySelector('#g8-import').disabled"),true);
+ }
+ const result=await evaluate(`(()=>{const root=document.querySelector('#workspace-content'),tabs=[...document.querySelectorAll('[data-g8-experiment]')],rows=[...document.querySelectorAll('#g8-comparison tbody tr')];return {claim:root?.dataset.g8ClaimSha256,tabs:tabs.map(n=>n.textContent),rows:rows.length,storage:Object.keys(localStorage).sort(),sessionStorage:Object.keys(sessionStorage),indexedDB:typeof indexedDB,modelingText:document.body.textContent.includes('Расчётное ядро'),blocked42:document.body.textContent.includes('18 METHOD_BLOCKED')}})()`);
+ assert.equal(result.claim,expectedClaim);assert.deepEqual(result.sessionStorage,[]);assert.equal(result.indexedDB,"object");assert.equal(result.modelingText,true);assert.ok(result.storage.every(key=>key==="conflict-analysis-player:layout:v1"));assert.ok(result.tabs.length>=2);
+ if(scenario==="boundaries")assert.equal(result.blocked42,true);
+ assert.deepEqual([...origins],[new URL(base).origin]);
+ console.log(JSON.stringify({browser_result:"PASS",scenario,tabs:result.tabs.length,raw_rows:result.rows,claim_sha256:result.claim,storage:result.storage,off_origin_free:true,same_checksum:sameChecksum,reopened}));
+}finally{if(sessionId)await browser.client.send("Target.detachFromTarget",{sessionId}).catch(()=>{});await browser.close();}

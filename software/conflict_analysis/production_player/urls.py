@@ -10,4 +10,5 @@ urlpatterns = [
     path("", views.entry, name="entry"),
     path("projects/<uuid:project_id>/", views.project, name="project"),
     path("workspaces/<uuid:workspace_id>/", views.workspace, name="workspace"),
+    path("workspaces/<uuid:workspace_id>/experiments/<uuid:experiment_id>/", views.experiment, name="experiment"),
 ]

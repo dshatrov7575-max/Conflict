@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import re
 import zipfile
+from io import BytesIO
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
 from xml.etree import ElementTree
@@ -27,6 +28,12 @@ MAX_ROWS_PER_SHEET = 100_000
 MAX_COLUMNS = 512
 MAX_CELLS_PER_SHEET = 1_000_000
 MAX_SHARED_STRINGS = 1_000_000
+MAX_XML_DEPTH = 64
+MAX_CELL_TEXT_BYTES = 1_048_576
+_ACTIVE_CONTENT_PREFIXES = (
+    "xl/activeX/", "xl/connections", "xl/embeddings/", "xl/externalLinks/",
+    "xl/macrosheets/", "xl/vbaProject", "xl/webExtensions/",
+)
 
 CANONICAL_SECTIONS = (
     "project_definition_versions",
@@ -170,6 +177,28 @@ class FoundationXlsxAdapterError(ValueError):
     pass
 
 
+def read_xlsx_tables(raw: bytes) -> Mapping[str, list[dict[int, str]]]:
+    """Expose the existing bounded OOXML core for checksum-bound import profiles.
+
+    The result retains cell text by zero-based column. Formula cells are rejected
+    before cached values can be observed. No workbook engine or network fetch is
+    involved.
+    """
+    if type(raw) is not bytes or not raw or len(raw) > MAX_XLSX_BYTES:
+        raise FoundationXlsxAdapterError("XLSX bytes are empty or exceed the configured limit.")
+    try:
+        with zipfile.ZipFile(BytesIO(raw)) as archive:
+            _validate_archive(archive)
+            return _read_workbook(archive, reject_all_formulas=True)
+    except FoundationXlsxAdapterError:
+        raise
+    except (
+        OSError, zipfile.BadZipFile, zipfile.LargeZipFile, ElementTree.ParseError,
+        IndexError, KeyError, ValueError, OverflowError,
+    ) as exc:
+        raise FoundationXlsxAdapterError(f"Cannot parse XLSX input: {exc}.") from exc
+
+
 def adapt_foundation_xlsx(raw: Any) -> Mapping[str, Any]:
     """Read a technical-key XLSX workbook and return an unsealed canonical DTO."""
 
@@ -285,16 +314,45 @@ def _validate_archive(archive: zipfile.ZipFile) -> None:
         raise FoundationXlsxAdapterError("XLSX uncompressed size exceeds the configured limit.")
     if any(member.file_size > MAX_MEMBER_BYTES for member in members):
         raise FoundationXlsxAdapterError("XLSX contains an oversized archive member.")
+    for member in members:
+        name = member.filename
+        path = PurePosixPath(name)
+        if (
+            "\\" in name or path.is_absolute() or ".." in path.parts
+            or member.flag_bits & 0x1
+        ):
+            raise FoundationXlsxAdapterError("XLSX contains an unsafe archive member.")
+        if any(name.casefold().startswith(prefix.casefold()) for prefix in _ACTIVE_CONTENT_PREFIXES):
+            raise FoundationXlsxAdapterError("XLSX active or external content is forbidden.")
     required = {"xl/workbook.xml", "xl/_rels/workbook.xml.rels"}
     missing = required - set(names)
     if missing:
         raise FoundationXlsxAdapterError(f"XLSX is missing required members {sorted(missing)}.")
 
 
-def _read_workbook(archive: zipfile.ZipFile) -> dict[str, list[dict[int, str]]]:
+def _parse_xml(xml: bytes):
+    upper = xml[:4096].upper()
+    if b"<!DOCTYPE" in upper or b"<!ENTITY" in upper:
+        raise FoundationXlsxAdapterError("DTD and entity declarations are forbidden in XLSX XML.")
+    root = ElementTree.fromstring(xml)
+    stack = [(root, 1)]
+    while stack:
+        node, depth = stack.pop()
+        if depth > MAX_XML_DEPTH:
+            raise FoundationXlsxAdapterError("XLSX XML nesting limit exceeded.")
+        for value in (node.text, node.tail):
+            if value is not None and len(value.encode("utf-8")) > MAX_CELL_TEXT_BYTES:
+                raise FoundationXlsxAdapterError("XLSX contains oversized cell text.")
+        stack.extend((child, depth + 1) for child in node)
+    return root
+
+
+def _read_workbook(
+    archive: zipfile.ZipFile, *, reject_all_formulas: bool = False,
+) -> dict[str, list[dict[int, str]]]:
     shared = _shared_strings(archive)
-    workbook = ElementTree.fromstring(archive.read("xl/workbook.xml"))
-    relations = ElementTree.fromstring(archive.read("xl/_rels/workbook.xml.rels"))
+    workbook = _parse_xml(archive.read("xl/workbook.xml"))
+    relations = _parse_xml(archive.read("xl/_rels/workbook.xml.rels"))
     targets = {
         relation.attrib["Id"]: relation.attrib["Target"]
         for relation in relations.findall(f"{{{_PKG_REL_NS}}}Relationship")
@@ -325,14 +383,14 @@ def _read_workbook(archive: zipfile.ZipFile) -> dict[str, list[dict[int, str]]]:
         result[name] = _worksheet_rows(
             archive.read(str(normalized)),
             shared,
-            reject_formulas=name not in _IGNORED_FORMULA_SHEETS,
+            reject_formulas=reject_all_formulas or name not in _IGNORED_FORMULA_SHEETS,
         )
     return result
 
 
 def _shared_strings(archive: zipfile.ZipFile) -> list[str]:
     try:
-        root = ElementTree.fromstring(archive.read("xl/sharedStrings.xml"))
+        root = _parse_xml(archive.read("xl/sharedStrings.xml"))
     except KeyError:
         return []
     values = [
@@ -341,6 +399,8 @@ def _shared_strings(archive: zipfile.ZipFile) -> list[str]:
     ]
     if len(values) > MAX_SHARED_STRINGS:
         raise FoundationXlsxAdapterError("XLSX contains too many shared strings.")
+    if any(len(value.encode("utf-8")) > MAX_CELL_TEXT_BYTES for value in values):
+        raise FoundationXlsxAdapterError("XLSX contains an oversized shared string.")
     return values
 
 
@@ -363,7 +423,7 @@ def _worksheet_rows(
     *,
     reject_formulas: bool = True,
 ) -> list[dict[int, str]]:
-    root = ElementTree.fromstring(xml)
+    root = _parse_xml(xml)
     result: list[dict[int, str]] = []
     rows = root.findall(f".//{{{_MAIN_NS}}}row")
     if len(rows) > MAX_ROWS_PER_SHEET:
@@ -402,6 +462,8 @@ def _worksheet_rows(
                         raise FoundationXlsxAdapterError("Boolean cells must contain 0 or 1.")
                     value = "true" if value == "1" else "false"
             values[index] = value
+            if len(value.encode("utf-8")) > MAX_CELL_TEXT_BYTES:
+                raise FoundationXlsxAdapterError("XLSX contains oversized cell text.")
         if any(value != "" for value in values.values()):
             result.append(values)
     return result

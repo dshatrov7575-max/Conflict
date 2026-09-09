@@ -2,16 +2,25 @@
 
 from django.urls import path
 
-from domain.api import evidence, player, studio_definitions
+from domain.api import evidence, player, player_experiments, studio_definitions
 
 
 urlpatterns = [
+    path("player/workspaces/<uuid:workspace_id>/expert-profiles/", player_experiments.expert_profiles, name="foundation-player-g8-expert-profiles"),
+    path("player/workspaces/<uuid:workspace_id>/experiments/", player_experiments.experiments, name="foundation-player-experiments"),
+    path("player/experiments/<uuid:experiment_id>/", player_experiments.experiment, name="foundation-player-g8-experiment"),
+    path("player/experiments/<uuid:experiment_id>/freeze/", player_experiments.freeze, name="foundation-player-g8-experiment-freeze"),
+    path("player/experiments/<uuid:experiment_id>/archive/", player_experiments.archive, name="foundation-player-g8-experiment-archive"),
+    path("player/experiments/<uuid:experiment_id>/values/", player_experiments.values, name="foundation-player-g8-values"),
+    path("player/experiments/<uuid:experiment_id>/xlsx-preview/", player_experiments.xlsx_preview, name="foundation-player-g8-xlsx-preview"),
+    path("player/experiments/<uuid:experiment_id>/xlsx-import/", player_experiments.xlsx_import, name="foundation-player-g8-xlsx-import"),
+    path("player/experiments/<uuid:experiment_id>/imports/<uuid:operation_id>/", player_experiments.import_recovery, name="foundation-player-g8-import-recovery"),
+    path("player/workspaces/<uuid:workspace_id>/experiment-comparison/", player_experiments.experiment_comparison, name="foundation-player-g8-comparison"),
     path("player/projects/<uuid:project_id>/definitions/", player.definitions, name="foundation-player-definitions"),
     path("player/definitions/<uuid:definition_id>/", player.definition, name="foundation-player-definition"),
     path("player/projects/<uuid:project_id>/workspaces/", player.workspaces, name="foundation-player-workspaces"),
     path("player/workspaces/<uuid:workspace_id>/", player.workspace, name="foundation-player-workspace"),
     path("player/workspaces/<uuid:workspace_id>/time-slices/", player.time_slices, name="foundation-player-time-slices"),
-    path("player/workspaces/<uuid:workspace_id>/experiments/", player.experiments, name="foundation-player-experiments"),
     path("player/workspaces/<uuid:workspace_id>/help/<str:ui_key>/", player.help_topic, name="foundation-player-help"),
     path(
         "projects/<uuid:project_id>/workspaces/<uuid:workspace_id>/facts/<uuid:fact_id>/evidence/",

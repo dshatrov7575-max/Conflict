@@ -2692,6 +2692,28 @@ class ExpertProfile(ValidatedStableVersionedModel):
         if self.kind == AssessmentKind.AI and not self.model_name.strip():
             raise ValidationError({"model_name": "AI profiles require a model name."})
 
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.pk and ExpertProfile.objects.filter(pk=self.pk).exists():
+            previous = ExpertProfile.objects.get(pk=self.pk)
+            if Experiment.objects.filter(expert_profile_id=self.pk).exists():
+                changed = [
+                    field.name
+                    for field in self._meta.concrete_fields
+                    if field.name not in {"created_at", "updated_at"}
+                    and getattr(previous, field.attname) != getattr(self, field.attname)
+                ]
+                if changed:
+                    raise ValidationError({
+                        name: "A used ExpertProfile is immutable; create a new profile."
+                        for name in changed
+                    })
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        if Experiment.objects.filter(expert_profile_id=self.pk).exists():
+            raise ValidationError("A used ExpertProfile cannot be deleted.")
+        return super().delete(*args, **kwargs)
+
 
 class Experiment(ValidatedStableVersionedModel):
     workspace = models.ForeignKey(
@@ -2777,6 +2799,43 @@ class Experiment(ValidatedStableVersionedModel):
             errors["frozen_at"] = "Frozen experiments require a timestamp."
         if errors:
             raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.pk and Experiment.objects.filter(pk=self.pk).exists():
+            previous = Experiment.objects.get(pk=self.pk)
+            g8 = (
+                previous.metadata.get("contract") == "FOUNDATION_PLAYER_EXPERIMENT_V1"
+                if isinstance(previous.metadata, dict) else False
+            )
+            if g8:
+                changed = {
+                    field.name
+                    for field in self._meta.concrete_fields
+                    if field.name not in {"created_at", "updated_at"}
+                    and getattr(previous, field.attname) != getattr(self, field.attname)
+                }
+                transition = (previous.status, self.status)
+                allowed_transitions = {
+                    (ExperimentStatus.DRAFT, ExperimentStatus.DRAFT),
+                    (ExperimentStatus.DRAFT, ExperimentStatus.FROZEN),
+                    (ExperimentStatus.DRAFT, ExperimentStatus.ARCHIVED),
+                    (ExperimentStatus.FROZEN, ExperimentStatus.ARCHIVED),
+                }
+                if transition not in allowed_transitions:
+                    raise ValidationError({"status": "This G8 experiment lifecycle transition is forbidden."})
+                allowed = {"name", "color", "order"} if transition[0] == transition[1] == ExperimentStatus.DRAFT else {"status", "frozen_at"}
+                unexpected = changed - allowed
+                if unexpected:
+                    raise ValidationError({
+                        name: "This field is immutable in the current experiment state."
+                        for name in unexpected
+                    })
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        if isinstance(self.metadata, dict) and self.metadata.get("contract") == "FOUNDATION_PLAYER_EXPERIMENT_V1":
+            raise ValidationError("G8 experiment history cannot be deleted.")
+        return super().delete(*args, **kwargs)
 
 
 class ActorElementAssessment(RevisionedStableVersionedModel):
@@ -2883,6 +2942,12 @@ class ActorElementAssessment(RevisionedStableVersionedModel):
         experiment = Experiment.objects.filter(pk=self.experiment_id).first()
         if experiment is not None and experiment.assessment_set_id != self.assessment_set_id:
             errors["assessment_set"] = "AssessmentSet must match the experiment binding."
+        if (
+            experiment is not None
+            and experiment.status != ExperimentStatus.DRAFT
+            and not ActorElementAssessment.objects.filter(pk=self.pk).exists()
+        ):
+            errors["experiment"] = "New assessments require an empty DRAFT experiment."
         time_slice = TimeSlice.objects.filter(pk=self.time_slice_id).first()
         if time_slice is not None and self.knowledge_cutoff > time_slice.cutoff_date:
             errors["knowledge_cutoff"] = (
@@ -3599,6 +3664,17 @@ class ParameterValue(RevisionedStableVersionedModel):
                     errors["time_slice"] = (
                         "ParameterValue and actor assessment must use the same TimeSlice."
                     )
+                assessment_experiment = Experiment.objects.filter(
+                    pk=assessment.experiment_id
+                ).first()
+                if (
+                    assessment_experiment is not None
+                    and assessment_experiment.status != ExperimentStatus.DRAFT
+                    and not ParameterValue.objects.filter(pk=self.pk).exists()
+                ):
+                    errors["actor_element_assessment"] = (
+                        "New values require an empty DRAFT experiment."
+                    )
         if self.target_type == TargetType.ACTOR_ELEMENT_ASSESSMENT:
             if self.actor_element_assessment_id is None:
                 errors["actor_element_assessment"] = (
@@ -3680,6 +3756,22 @@ class ParameterValue(RevisionedStableVersionedModel):
                     numeric < Decimal("0") or numeric > Decimal("10")
                 ):
                     errors["value"] = "SAL must be between 0 and 10."
+        categorical_metadata_complete = False
+        if assessment is not None and isinstance(assessment.provenance, dict):
+            parameter_confidence = assessment.provenance.get("parameter_confidence")
+            if parameter_confidence is not None:
+                allowed_categories = {"LOW", "MEDIUM", "HIGH", "UNKNOWN"}
+                if (
+                    not isinstance(parameter_confidence, dict)
+                    or set(parameter_confidence) != {"POS", "SAL"}
+                    or any(value not in allowed_categories for value in parameter_confidence.values())
+                    or assessment.confidence_level != ConfidenceLevel.UNKNOWN
+                ):
+                    errors["actor_element_assessment"] = (
+                        "Categorical confidence requires exact POS/SAL categories and UNKNOWN assessment confidence."
+                    )
+                elif definition is not None and definition.code in parameter_confidence:
+                    categorical_metadata_complete = bool(self.rationale.strip())
         _validate_assessment_metadata(
             definition=definition,
             status=self.status,
@@ -3689,9 +3781,12 @@ class ParameterValue(RevisionedStableVersionedModel):
             range_max=self.range_max,
             rationale=self.rationale,
             inherited_metadata_complete=(
-                assessment is not None
-                and assessment.confidence_level != ConfidenceLevel.UNKNOWN
-                and bool(assessment.reference_statement.strip())
+                categorical_metadata_complete
+                or (
+                    assessment is not None
+                    and assessment.confidence_level != ConfidenceLevel.UNKNOWN
+                    and bool(assessment.reference_statement.strip())
+                )
             ),
             errors=errors,
         )
@@ -3737,6 +3832,8 @@ class ParameterValue(RevisionedStableVersionedModel):
             raise ValidationError(errors)
 
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        if self.actor_element_assessment_id is not None:
+            raise ValidationError("Canonical assessment values are append-only.")
         protected = (
             hasattr(self, "successor")
             or self.audit_events.exists()
@@ -6543,6 +6640,13 @@ class ImportRun(ImmutableCapturedModel):
                 if experiment.assessment_set_id != self.target_assessment_set_id:
                     errors["target_assessment_set"] = (
                         "Import target AssessmentSet must match the Experiment binding."
+                    )
+                if (
+                    experiment.status != ExperimentStatus.DRAFT
+                    and not ImportRun.objects.filter(pk=self.pk).exists()
+                ):
+                    errors["target_experiment"] = (
+                        "New import receipts require an empty DRAFT experiment."
                     )
         if self.status == ImportRunStatus.COMMITTED and self.committed_at is None:
             errors["committed_at"] = "Committed runs require a timestamp."
