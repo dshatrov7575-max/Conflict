@@ -19,6 +19,7 @@ on:
       - ".github/workflows/conflict-analysis.yml"
   push:
     branches:
+      - codex/ca-suite-i1-g8-pre-canonical-zhanaozen-manifest
       - codex/ca-suite-i1-foundation-fd01-validation-preview
       - codex/ca-suite-i1-foundation-fd05-audited-write-reconciliation
       - codex/ca-suite-i1-production-studio-c1-r0-ci-pin
@@ -49,12 +50,14 @@ jobs:
     name: Python 3.12 / PostgreSQL 18 / SQLite / FD01-FD05-R0-C1-FD02-FD03-FD06-FD07 slice gate
     if: >-
       (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.ref != 'codex/ca-suite-i1-g8-pre-canonical-zhanaozen-manifest' &&
        github.event.pull_request.head.ref != 'codex/ca-suite-i1-project-language-bootstrap-f0l' &&
        github.event.pull_request.head.ref != 'codex/ca-suite-i1-evidence-multilingual-f1' &&
        github.event.pull_request.head.ref != 'codex/ca-suite-i1-production-studio-c2a-lifecycle-publication' &&
        github.event.pull_request.head.ref != 'codex/ca-suite-i1-foundation-fd08-assessment-projection' &&
        github.event.pull_request.head.ref != 'codex/ca-suite-i1-player-g7-professional-shell') ||
       (github.event_name == 'push' &&
+       github.ref != 'refs/heads/codex/ca-suite-i1-g8-pre-canonical-zhanaozen-manifest' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-project-language-bootstrap-f0l' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-evidence-multilingual-f1' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-production-studio-c2a-lifecycle-publication' &&
@@ -5745,4 +5748,218 @@ jobs:
         with:
           name: g7-exact-head-${{ github.event_name }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/g7-exact-head-evidence
+          if-no-files-found: error
+
+
+  zhanaozen-canonical-manifest-repair:
+    name: Zhanaozen canonical manifest repair / exact attempt-1 push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/codex/ca-suite-i1-g8-pre-canonical-zhanaozen-manifest'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: conflict_analysis
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    defaults:
+      run:
+        working-directory: software/conflict_analysis
+        shell: bash
+    env:
+      EVIDENCE_DIR: ${{ runner.temp }}/zhanaozen-repair-evidence
+      DJANGO_SECRET_KEY: ci-only-secret-key
+      POSTGRES_DB: conflict_analysis
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_CONN_MAX_AGE: "0"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prove exact accepted ancestry and authorized eight-path delta
+        run: |
+          set -euo pipefail
+          mkdir -p "$EVIDENCE_DIR"
+          python - <<'PY'
+          import json, os, pathlib, subprocess
+          root = pathlib.Path(os.environ['GITHUB_WORKSPACE'])
+          evidence = pathlib.Path(os.environ['EVIDENCE_DIR'])
+          def git(*args):
+              return subprocess.check_output(['git', *args], cwd=root, text=True).strip()
+          base = '319450a64cb381df2e392027c64de157e2ed830c'
+          base_tree = '95a8a2a5a7248dd3ec030963c3b25709d49364b0'
+          base_parent = '68b14882a06b2e90710ebd06e584dc5300fdfe7e'
+          branch = 'codex/ca-suite-i1-g8-pre-canonical-zhanaozen-manifest'
+          assert os.environ['GITHUB_REPOSITORY'] == 'dshatrov7575-max/Conflict'
+          assert os.environ['GITHUB_EVENT_NAME'] == 'push'
+          assert os.environ['GITHUB_REF'] == 'refs/heads/' + branch
+          assert os.environ['GITHUB_RUN_ATTEMPT'] == '1'
+          head = git('rev-parse', 'HEAD')
+          assert head == os.environ['GITHUB_SHA']
+          assert git('rev-list', '--parents', '-n', '1', head) == head + ' ' + base
+          assert git('rev-parse', base+'^{tree}') == base_tree
+          assert git('rev-list', '--parents', '-n', '1', base) == base + ' ' + base_parent
+          assert git('rev-list', '--count', base+'..'+head) == '1'
+          assert not git('status', '--porcelain=v1', '--untracked-files=all')
+          allow = [{'classification': 'M', 'path': '.github/workflows/conflict-analysis.yml', 'preimage': '31ce25e00ccbde1e1cb9bee0e4bb23d435078444'}, {'classification': 'M', 'path': 'software/conflict_analysis/domain/services/seed.py', 'preimage': 'cc03537defa0a750e970faab7480718f188f045d'}, {'classification': 'M', 'path': 'software/conflict_analysis/domain/services/player_projection.py', 'preimage': '1455939048c784fb75ec7a1ed2e16a6025bf4fbc'}, {'classification': 'M', 'path': 'software/conflict_analysis/domain/tests/test_data_foundation.py', 'preimage': 'a989357513c0bb5759f6dc59fa7a7491a25fc078'}, {'classification': 'M', 'path': 'software/conflict_analysis/domain/services/project_packages.py', 'preimage': '96921e3cd3c34d4f77f0483de13b6a950518a43c'}, {'classification': 'M', 'path': 'software/conflict_analysis/domain/tests/test_foundation_p1_legacy_boundary.py', 'preimage': '46f555f2a7301a429187b56bdeea7f06aa8ae036'}, {'classification': 'A', 'path': 'software/conflict_analysis/domain/services/zhanaozen_typed_manifest.py', 'preimage': 'ABSENT'}, {'classification': 'A', 'path': 'software/conflict_analysis/domain/tests/test_zhanaozen_typed_manifest_repair.py', 'preimage': 'ABSENT'}]
+          expected = sorted(x['classification']+'\t'+x['path'] for x in allow)
+          delta = sorted(git('diff', '--no-renames', '--name-status', base, head).splitlines())
+          assert delta == expected, delta
+          for item in allow:
+              path = item['path']
+              if item['classification'] == 'M':
+                  assert git('rev-parse', base+':'+path) == item['preimage']
+              else:
+                  assert not git('ls-tree', base, '--', path)
+          frozen = {}
+          for path in ('software/conflict_analysis/domain/models.py', 'software/conflict_analysis/domain/enums.py',
+              'software/conflict_analysis/domain/policies.py', 'software/conflict_analysis/domain/services/project_definitions.py',
+              'software/conflict_analysis/domain/services/foundation_packages.py', 'software/conflict_analysis/domain/services/schemas',
+              'software/conflict_analysis/domain/migrations', 'software/conflict_analysis/pyproject.toml',
+              'software/conflict_analysis/domain/management/commands/seed_zhanaozen.py',
+              'software/conflict_analysis/domain/tests/test_player_projection.py',
+              'software/conflict_analysis/production_studio', 'software/conflict_analysis/production_player'):
+              frozen[path] = git('rev-parse', base+':'+path)
+              assert git('rev-parse', head+':'+path) == frozen[path]
+          result = dict(head=head, tree=git('rev-parse', 'HEAD^{tree}'), sole_parent=base,
+              base_tree=base_tree, base_parent=base_parent, event='push', ref=os.environ['GITHUB_REF'],
+              run_id=os.environ['GITHUB_RUN_ID'], attempt=1, delta=delta, allowlist=allow, frozen=frozen)
+          (evidence/'route.json').write_text(json.dumps(result, indent=2)+'\n')
+          PY
+      - name: Build one wheel and install test dependencies
+        run: |
+          set -euo pipefail
+          python -m pip wheel --no-deps --wheel-dir "$EVIDENCE_DIR" .
+          python -m pip install "$EVIDENCE_DIR/conflict_analysis-0.1.0-py3-none-any.whl" 'pytest>=8.3,<9' 'pytest-django>=4.10,<5'
+          python -m pip freeze > "$EVIDENCE_DIR/dependencies.txt"
+      - name: Focused repair and full Foundation PostgreSQL regression
+        run: |
+          set -euo pipefail
+          python -m pytest domain/tests/test_zhanaozen_typed_manifest_repair.py -p no:cacheprovider --junitxml="$EVIDENCE_DIR/repair-postgresql.xml" | tee "$EVIDENCE_DIR/repair-postgresql.log"
+          python -m pytest domain/tests -p no:cacheprovider --junitxml="$EVIDENCE_DIR/foundation-postgresql.xml" | tee "$EVIDENCE_DIR/foundation-postgresql.log"
+      - name: Focused repair and full Foundation SQLite regression
+        run: |
+          set -euo pipefail
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/repair-focused.sqlite3" python -m pytest domain/tests/test_zhanaozen_typed_manifest_repair.py -p no:cacheprovider --junitxml="$EVIDENCE_DIR/repair-sqlite.xml" | tee "$EVIDENCE_DIR/repair-sqlite.log"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/repair-foundation.sqlite3" python -m pytest domain/tests -p no:cacheprovider --junitxml="$EVIDENCE_DIR/foundation-sqlite.xml" | tee "$EVIDENCE_DIR/foundation-sqlite.log"
+      - name: Applicable G7 Player PostgreSQL and SQLite regression
+        run: |
+          set -euo pipefail
+          python -m pytest production_player/tests/test_player_g7.py::ProductionPlayerG7Tests -p no:cacheprovider --junitxml="$EVIDENCE_DIR/player-postgresql.xml" | tee "$EVIDENCE_DIR/player-postgresql.log"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/repair-player.sqlite3" python -m pytest production_player/tests/test_player_g7.py::ProductionPlayerG7Tests -p no:cacheprovider --junitxml="$EVIDENCE_DIR/player-sqlite.xml" | tee "$EVIDENCE_DIR/player-sqlite.log"
+      - name: No migration delta
+        run: |
+          set -euo pipefail
+          python manage.py makemigrations --check --dry-run | tee "$EVIDENCE_DIR/makemigrations.txt"
+      - name: Isolated wheel import, installation and two exact seed replays
+        run: |
+          set -euo pipefail
+          wheel="$EVIDENCE_DIR/conflict_analysis-0.1.0-py3-none-any.whl"
+          isolated="$RUNNER_TEMP/zhanaozen-wheel-venv"
+          python -m venv "$isolated"
+          "$isolated/bin/python" -m pip install "$wheel"
+          mkdir -p "$RUNNER_TEMP/zhanaozen-wheel-empty"
+          cd "$RUNNER_TEMP/zhanaozen-wheel-empty"
+          unset PYTHONPATH
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/zhanaozen-wheel.sqlite3" DJANGO_SETTINGS_MODULE=conflict_analysis.settings "$isolated/bin/python" -I - "$wheel" "$EVIDENCE_DIR" <<'PY'
+          import hashlib, json, pathlib, sys
+          import django
+          django.setup()
+          from django.core.management import call_command
+          from domain.services import zhanaozen_typed_manifest as fixture
+          from domain.services.seed import seed_zhanaozen_demo, _verify_typed_installation
+          from domain.services.player_projection import verify_workspace_assessment_projection
+          from domain.services.project_definitions import canonicalize_project_definition_manifest_v1
+          from domain.models import Project, ProjectDefinitionVersion, ProjectWorkspace, ProjectPublication, TimeSlice, AuditEvent
+          wheel, evidence = map(pathlib.Path, sys.argv[1:])
+          module = pathlib.Path(fixture.__file__).resolve()
+          assert module.is_relative_to(pathlib.Path(sys.prefix).resolve())
+          assert 'site-packages' in module.parts
+          raw = canonicalize_project_definition_manifest_v1(fixture.manifest())
+          assert len(raw) == 42602
+          assert hashlib.sha256(raw).hexdigest() == '6f149d681d4413d0e8f5cb61c2ed790cf277a385b900b2db35395794c94391ca'
+          call_command('migrate', verbosity=0, interactive=False)
+          project = seed_zhanaozen_demo()
+          def snapshot():
+              return {m.__name__:list(m.objects.order_by('pk').values()) for m in (
+                  Project, ProjectDefinitionVersion, ProjectWorkspace, ProjectPublication, TimeSlice, AuditEvent)}
+          before = snapshot()
+          seed_zhanaozen_demo()
+          assert snapshot() == before
+          seed_zhanaozen_demo()
+          assert snapshot() == before
+          _verify_typed_installation(project)
+          workspace = ProjectWorkspace.objects.get(pk=fixture.WORKSPACE_ID)
+          verified = verify_workspace_assessment_projection(workspace)
+          assert verified.complete and verified.receipt.after == fixture.system_audit()['after']
+          assert TimeSlice.objects.filter(project=project).count() == 6
+          wheel_info = dict(filename=wheel.name, bytes=wheel.stat().st_size, sha256=hashlib.sha256(wheel.read_bytes()).hexdigest(),
+              manifest_bytes=len(raw), manifest_sha256=hashlib.sha256(raw).hexdigest())
+          result = dict(module=str(module), source_tree_fallback=False, seed_runs=3,
+              unchanged_replays=2, projection_status=verified.status, projection_sha256=verified.projection_sha256,
+              system_receipt=verified.receipt.after, topology=before, wheel_sha256=wheel_info['sha256'])
+          (evidence/'wheel.json').write_text(json.dumps(wheel_info,indent=2)+'\n')
+          (evidence/'wheel-install.json').write_text(json.dumps(result,indent=2,default=str,ensure_ascii=False)+'\n',encoding='utf-8')
+          (evidence/'manifest.json').write_bytes(raw)
+          PY
+      - name: Verify acceptance evidence and seal artifact checksums
+        if: always()
+        env:
+          PRIOR_JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$EVIDENCE_DIR"
+          python - <<'PY'
+          import hashlib, json, os, pathlib, xml.etree.ElementTree as ET
+          root = pathlib.Path(os.environ['EVIDENCE_DIR'])
+          names = ['repair-postgresql','foundation-postgresql','repair-sqlite','foundation-sqlite','player-postgresql','player-sqlite']
+          junit = {}
+          missing = []
+          for name in names:
+              path = root/(name+'.xml')
+              if not path.exists():
+                  missing.append(path.name)
+                  continue
+              suites = ET.parse(path).getroot()
+              cases = list(suites.iter('testcase'))
+              junit[name] = dict(tests=len(cases), failures=len(list(suites.iter('failure'))),
+                  errors=len(list(suites.iter('error'))), skipped=len(list(suites.iter('skipped'))))
+          for name in ['route.json','wheel.json','wheel-install.json','manifest.json','makemigrations.txt','dependencies.txt','conflict_analysis-0.1.0-py3-none-any.whl']:
+              if not (root/name).is_file(): missing.append(name)
+          accepted = (os.environ['PRIOR_JOB_STATUS'] == 'success' and not missing
+              and all(x['tests'] > 0 and x['failures'] == x['errors'] == 0 for x in junit.values()))
+          (root/'acceptance.json').write_text(json.dumps(dict(accepted=accepted, missing=missing, junit=junit),indent=2)+'\n')
+          lines = []
+          for path in sorted(root.iterdir()):
+              if path.is_file() and path.name != 'SHA256SUMS':
+                  lines.append(hashlib.sha256(path.read_bytes()).hexdigest()+'  '+path.name)
+          (root/'SHA256SUMS').write_text('\n'.join(lines)+'\n')
+          for line in lines:
+              digest, name = line.split('  ', 1)
+              assert hashlib.sha256((root/name).read_bytes()).hexdigest() == digest
+          assert accepted, (missing, junit, os.environ['PRIOR_JOB_STATUS'])
+          PY
+      - name: Upload exact-head attempt-1 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhanaozen-canonical-manifest-repair-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ env.EVIDENCE_DIR }}
           if-no-files-found: error

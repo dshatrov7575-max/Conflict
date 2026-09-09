@@ -93,12 +93,12 @@ class DemoSeedTests(TestCase):
             )
         }
 
-        self.assertEqual(TimeSlice.objects.filter(project=project).count(), 3)
+        self.assertEqual(TimeSlice.objects.filter(project=project, workspace__code="DEFAULT").count(), 3)
         self.assertEqual(TensionPoint.objects.filter(project=project).count(), 6)
         self.assertEqual(ParticipantGroup.objects.filter(project=project).count(), 8)
         self.assertEqual(GroupTensionRelation.objects.filter(project=project).count(), 48)
         self.assertEqual(
-            set(TimeSlice.objects.filter(project=project).values_list("cutoff_date", flat=True)),
+            set(TimeSlice.objects.filter(project=project, workspace__code="DEFAULT").values_list("cutoff_date", flat=True)),
             {date(2011, 12, 15), date(2022, 1, 2), date(2026, 8, 21)},
         )
         self.assertEqual(
@@ -109,12 +109,12 @@ class DemoSeedTests(TestCase):
             48,
         )
         self.assertEqual(
-            set(AssessmentSet.objects.filter(project=project).values_list("code", flat=True)),
+            set(AssessmentSet.objects.filter(project=project, workspace__code="DEFAULT").values_list("code", flat=True)),
             {"HUMAN_DRAFT", "AI_DRAFT"},
         )
         self.assertEqual(
             set(
-                ParameterDefinition.objects.filter(project=project).values_list(
+                ParameterDefinition.objects.filter(project=project, definition_version__isnull=True).values_list(
                     "code", "version"
                 )
             ),
@@ -1045,7 +1045,7 @@ class ProjectPrimaryLanguageContractTests(TestCase):
 class AssessmentIsolationTests(TestCase):
     def setUp(self):
         self.project = seed_zhanaozen_demo()
-        self.time_slice = TimeSlice.objects.get(project=self.project, code="2011-12-15")
+        self.time_slice = TimeSlice.objects.get(project=self.project, workspace__code="DEFAULT", code="2011-12-15")
         self.relation = GroupTensionRelation.objects.filter(project=self.project).first()
         self.definition = ParameterDefinition.objects.get(project=self.project, code="UOS")
 
@@ -1182,7 +1182,7 @@ class ProjectPackageTests(TestCase):
         self.project = seed_zhanaozen_demo()
 
     def _add_assessments_and_evidence(self):
-        time_slice = TimeSlice.objects.get(project=self.project, code="2011-12-15")
+        time_slice = TimeSlice.objects.get(project=self.project, workspace__code="DEFAULT", code="2011-12-15")
         relation = GroupTensionRelation.objects.filter(project=self.project).first()
         definition = ParameterDefinition.objects.get(project=self.project, code="UOS")
         human_set = AssessmentSet.objects.get(project=self.project, code="HUMAN_DRAFT")
@@ -1257,7 +1257,7 @@ class ProjectPackageTests(TestCase):
         return present, unknown, source, link, audit
 
     def _add_scenario_override_without_range(self):
-        time_slice = TimeSlice.objects.get(project=self.project, code="2011-12-15")
+        time_slice = TimeSlice.objects.get(project=self.project, workspace__code="DEFAULT", code="2011-12-15")
         base_set = AssessmentSet.objects.get(
             project=self.project, code="HUMAN_DRAFT"
         )
@@ -1515,7 +1515,7 @@ class ProjectPackageTests(TestCase):
         )
 
     def test_present_value_requires_evidence_and_audit_target_must_resolve(self):
-        time_slice = TimeSlice.objects.get(project=self.project, code="2011-12-15")
+        time_slice = TimeSlice.objects.get(project=self.project, workspace__code="DEFAULT", code="2011-12-15")
         relation = GroupTensionRelation.objects.filter(project=self.project).first()
         definition = ParameterDefinition.objects.get(project=self.project, code="UOS")
         value = clean_save(
