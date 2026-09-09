@@ -8,7 +8,11 @@ from datetime import date, datetime, timezone
 from typing import Any, TypeVar
 from uuid import UUID
 
-from django.db import models, transaction
+from django.core.exceptions import ValidationError, ObjectDoesNotExist, MultipleObjectsReturned
+from django.db import IntegrityError, models, transaction
+from django.utils import timezone as django_timezone
+
+from domain.services import zhanaozen_typed_manifest as typed
 
 from domain.demo_data import (
     ASSESSMENT_SETS,
@@ -26,6 +30,7 @@ from domain.demo_data import (
 )
 from domain.models import (
     AssessmentSet,
+    AuditEvent,
     ExpertProfile,
     Experiment,
     GroupTensionRelation,
@@ -85,6 +90,7 @@ def _assert_stable_identity(
     object_id: UUID,
     code: str,
     project: Project | None = None,
+    scope: dict | None = None,
 ) -> None:
     identity_match = model.objects.filter(pk=object_id).first()
     if identity_match is not None and identity_match.code != code:
@@ -104,8 +110,8 @@ def _assert_stable_identity(
     code_query: dict[str, Any] = {"code": code}
     if project is not None:
         code_query["project"] = project
-    code_match = model.objects.filter(**code_query).first()
-    if code_match is not None and code_match.pk != object_id:
+    code_query.update(scope or {})
+    if model.objects.filter(**code_query).exclude(pk=object_id).exists():
         raise SeedConflictError(
             f"{model.__name__} code {code!r} already has a different stable id."
         )
@@ -119,12 +125,44 @@ def _upsert(
     defaults: dict[str, Any],
     project: Project | None = None,
 ) -> ModelT:
+    scope = {}
+    if model in (TimeSlice, AssessmentSet):
+        scope["workspace"] = defaults["workspace"]
+    elif model is ParameterDefinition:
+        scope["definition_version__isnull"] = True
+    project = project or defaults.get("project")
     _assert_stable_identity(
         model,
         object_id=object_id,
         code=code,
-        project=project,
+        project=project, scope=scope,
     )
+    existing = model.objects.filter(pk=object_id).first()
+    if existing is not None and all(
+        getattr(existing, field) == value for field, value in defaults.items()
+    ):
+        return existing
+    if existing is None and model is Project:
+        try:
+            obj, _ = model.objects.get_or_create(
+                pk=object_id,
+                defaults={"code": code, **defaults},
+            )
+        except (IntegrityError, ValidationError) as exc:
+            raise SeedConflictError(
+                "A concurrent Project creation conflicts with the stable seed fields."
+            ) from exc
+        if (
+            obj.pk != object_id
+            or obj.code != code
+            or any(
+                getattr(obj, field) != value for field, value in defaults.items()
+            )
+        ):
+            raise SeedConflictError(
+                "A concurrent Project creation conflicts with the stable seed fields."
+            )
+        return obj
     obj, _ = model.objects.update_or_create(
         pk=object_id,
         defaults={"code": code, **defaults},
@@ -133,9 +171,9 @@ def _upsert(
 
 
 def _require_exact_codes(
-    model: type[ModelT], project: Project, expected_codes: set[str]
+    model: type[ModelT], project: Project, expected_codes: set[str], **scope
 ) -> None:
-    actual_codes = set(model.objects.filter(project=project).values_list("code", flat=True))
+    actual_codes = set(model.objects.filter(project=project, **scope).values_list("code", flat=True))
     if actual_codes != expected_codes:
         unexpected = sorted(actual_codes - expected_codes)
         missing = sorted(expected_codes - actual_codes)
@@ -145,8 +183,17 @@ def _require_exact_codes(
         )
 
 
-@transaction.atomic
 def seed_zhanaozen_demo() -> Project:
+    """Atomically install/reconcile the exact predecessor repair."""
+    from domain.services.player_projection import AssessmentProjectionError
+    try:
+        with transaction.atomic():
+            return _seed_zhanaozen_demo()
+    except (IntegrityError, ValidationError, AssessmentProjectionError) as exc:
+        raise SeedConflictError(f"Zhanaozen installation conflict: {exc}") from exc
+
+
+def _seed_zhanaozen_demo() -> Project:
     """Create or refresh the demo project without duplicating stable entities.
 
     The service never deletes or silently adopts unexpected structural rows.  A
@@ -156,15 +203,16 @@ def seed_zhanaozen_demo() -> Project:
 
     project_id = stable_demo_uuid("project", PROJECT_CODE)
     _assert_stable_identity(Project, object_id=project_id, code=PROJECT_CODE)
-    existing_project = Project.objects.filter(pk=project_id).first()
+    existing_project = Project.objects.select_for_update().filter(pk=project_id).first()
     if existing_project is not None and (
-        existing_project.primary_language_tag != "ru"
+        existing_project.version != SCHEMA_VERSION
+        or existing_project.primary_language_tag != "ru"
         or existing_project.primary_language_assignment
         != ProjectPrimaryLanguageAssignment.EXPLICIT
     ):
         raise SeedConflictError(
             "The stable Zhanaozen Project identity has a different immutable "
-            "primary language."
+            "version or primary language."
         )
     project = _upsert(
         Project,
@@ -185,12 +233,11 @@ def seed_zhanaozen_demo() -> Project:
         },
     )
 
+    project = Project.objects.select_for_update().get(pk=project.pk)
+    typed_present = ProjectDefinitionVersion.objects.filter(pk=typed.DEFINITION_ID).exists()
     seed_manifest, seed_manifest_hash = _stable_manifest()
     definition_code = f"DEFINITION-{SCHEMA_VERSION}"
-    ProjectDefinitionVersion.objects.filter(project=project).exclude(
-        code=definition_code
-    ).update(is_current=False)
-    definition = _upsert(
+    definition = _create_or_verify(
         ProjectDefinitionVersion,
         object_id=stable_demo_uuid("project-definition-version", definition_code),
         code=definition_code,
@@ -198,7 +245,7 @@ def seed_zhanaozen_demo() -> Project:
         defaults={
             "project": project,
             "version": SCHEMA_VERSION,
-            "is_current": True,
+            "is_current": not typed_present,
             "publication_status": "PUBLISHED",
             "manifest": seed_manifest,
             "manifest_hash": seed_manifest_hash,
@@ -213,7 +260,7 @@ def seed_zhanaozen_demo() -> Project:
             "supersedes": None,
         },
     )
-    _upsert(
+    _create_or_verify(
         ProjectPublication,
         object_id=stable_demo_uuid("project-publication", definition_code),
         code=f"PUBLICATION-{SCHEMA_VERSION}",
@@ -223,12 +270,13 @@ def seed_zhanaozen_demo() -> Project:
             "definition_version": definition,
             "version": SCHEMA_VERSION,
             "locale": "en",
+            "initial_workspace": None,
             "actor_identifier": "SEED-ZHANAOZEN-1.0.0",
             "validation_result": {"valid": True, "source": "LEGACY_V1_SEED"},
             "published_at": datetime(2025, 1, 1, tzinfo=timezone.utc),
         },
     )
-    workspace = _upsert(
+    workspace = _create_or_verify(
         ProjectWorkspace,
         object_id=stable_demo_uuid("project-workspace", "DEFAULT"),
         code="DEFAULT",
@@ -397,17 +445,18 @@ def seed_zhanaozen_demo() -> Project:
         )
 
     # Verify exact demo membership.  Unexpected structure is never pruned.
-    _require_exact_codes(TimeSlice, project, set(time_slices))
+    _require_exact_codes(TimeSlice, project, set(time_slices), workspace=workspace)
     _require_exact_codes(TensionPoint, project, set(tension_points))
     _require_exact_codes(ParticipantGroup, project, set(participant_groups))
     _require_exact_codes(GroupTensionRelation, project, relation_codes)
     _require_exact_codes(
-        AssessmentSet, project, {item["code"] for item in ASSESSMENT_SETS}
+        AssessmentSet, project, {item["code"] for item in ASSESSMENT_SETS}, workspace=workspace
     )
     _require_exact_codes(
         ParameterDefinition,
         project,
         {item["code"] for item in PARAMETER_DEFINITIONS},
+        definition_version__isnull=True,
     )
 
     schema_code = f"SCHEMA-{SCHEMA_VERSION}"
@@ -446,4 +495,184 @@ def seed_zhanaozen_demo() -> Project:
             ),
         },
     )
+    _install_typed_zhanaozen(project, definition, workspace, typed_present=typed_present)
     return project
+
+
+def _verify_fields(obj, expected):
+    for field, value in expected.items():
+        if getattr(obj, field) != value:
+            raise SeedConflictError(f"{type(obj).__name__} {obj.pk}: {field} drift.")
+    return obj
+
+
+def _create_or_verify(model, *, object_id, code, defaults, project=None):
+    project = project or defaults.get("project")
+    _assert_stable_identity(model, object_id=object_id, code=code, project=project)
+    obj = model.objects.filter(pk=object_id).first()
+    if obj is not None:
+        return _verify_fields(obj, {"code": code, **defaults})
+    return model.objects.create(id=object_id, code=code, **defaults)
+
+
+def _system_principal():
+    from domain.policies import StudioPrincipal
+    return StudioPrincipal.service(
+        actor_identifier=typed.SYSTEM_ACTOR, purpose=typed.SYSTEM_PURPOSE,
+        capabilities=typed.SYSTEM_CAPABILITIES,
+    )
+
+
+def _initial_repair_fields(project, definition, workspace):
+    return dict(
+        project=project, definition_version=definition, initial_workspace=workspace,
+        code=typed.LEGACY_INITIAL_CODE, version="1.0.0", locale="ru",
+        actor_identifier=typed.SYSTEM_ACTOR,
+        validation_result={
+            "valid": True, "source": "LEGACY_INITIAL_WORKSPACE_COMPATIBILITY_REPAIR_V1",
+            "authority": "https://github.com/dshatrov7575-max/Conflict/issues/90#issuecomment-5599337791",
+            "legacy_manifest_sha256": typed.LEGACY_MANIFEST_SHA256,
+        },
+    )
+
+
+def _install_typed_zhanaozen(project, legacy, legacy_workspace, *, typed_present):
+    from domain.enums import AuditAction
+    from domain.policies import (
+        FoundationAuditContext, record_definition_audit,
+        validate_project_definition, publish_project_definition,
+    )
+    from domain.services.project_definitions import (
+        create_project_definition_draft, publication_readiness_snapshot,
+    )
+    from domain.services.player_projection import (
+        _materialize_zhanaozen_system_projection,
+        require_complete_workspace_assessment_projection,
+    )
+    if typed_present:
+        _verify_typed_installation(project)
+        return
+    # An atomic installation cannot leave any fragment to be adopted on retry.
+    if (ProjectDefinitionVersion.objects.filter(project=project).exclude(pk=legacy.pk).exists()
+        or ProjectWorkspace.objects.filter(project=project).exclude(pk=legacy_workspace.pk).exists()
+        or not legacy.is_current
+        or ProjectPublication.objects.filter(project=project).count() != 1):
+        raise SeedConflictError("Unexpected predecessor installation topology.")
+    principal = _system_principal()
+    repair = ProjectPublication(
+        id=UUID(typed.LEGACY_INITIAL_RECEIPT_ID),
+        **_initial_repair_fields(project, legacy, legacy_workspace),
+        published_at=django_timezone.now(),
+    )
+    repair.full_clean()
+    repair.save(force_insert=True)
+    record_definition_audit(
+        context=FoundationAuditContext.for_principal_definition(definition=legacy, principal=principal),
+        action=AuditAction.CREATE, entity_type="PROJECT_PUBLICATION", entity_id=repair.pk,
+        after={"publication_id": str(repair.pk), **repair.validation_result},
+    )
+    definition = create_project_definition_draft(
+        project=project, code=typed.DEFINITION_CODE, version=typed.DEFINITION_ROW_VERSION,
+        manifest=typed.manifest(), principal=principal, definition_id=UUID(typed.DEFINITION_ID),
+        supersedes=legacy, semantic_version="1.0.0", construct_version="V4-TERM-2.0",
+    )
+    record_definition_audit(
+        context=FoundationAuditContext.for_principal_definition(definition=definition, principal=principal),
+        action=AuditAction.CREATE, entity_type="PROJECT_DEFINITION_VERSION", entity_id=definition.pk,
+        after={"manifest_hash": typed.MANIFEST_SHA256, "supersedes_id": str(legacy.pk)},
+    )
+    definition = validate_project_definition(
+        definition, actor_identifier=typed.SYSTEM_ACTOR, principal=principal,
+    )
+    readiness = publication_readiness_snapshot(scoped_project_id=project.pk, definition_id=definition.pk)
+    if (readiness["blocker_codes"] or readiness["initial_publication_receipt_count"] != 1
+        or readiness["required_next_action"] != "SUCCESSOR_PUBLISH"):
+        raise SeedConflictError(f"Typed successor readiness failed: {readiness}")
+    publish_project_definition(
+        definition, actor_identifier=typed.SYSTEM_ACTOR, locale="ru", principal=principal,
+        publication_code=typed.PUBLICATION_CODE,
+    )
+    definition.refresh_from_db()
+    pin = typed.workspace()
+    workspace = ProjectWorkspace(
+        id=UUID(typed.WORKSPACE_ID), project=project, definition_version=definition,
+        definition_manifest_hash=typed.MANIFEST_SHA256, code=pin["code"],
+        version=pin["version"], name=pin["label"], metadata=pin["metadata"], is_default=False,
+    )
+    workspace.full_clean()
+    workspace.save(force_insert=True)
+    _materialize_zhanaozen_system_projection(workspace, principal=principal)
+    require_complete_workspace_assessment_projection(workspace)
+    for item in typed.time_slices():
+        time_slice = TimeSlice(
+            id=UUID(item["typed_pk"]), project=project, workspace=workspace,
+            code=item["code"], name=item["code"], version="1.0.0",
+            cutoff_date=date.fromisoformat(item["code"]), order=item["order"],
+        )
+        time_slice.full_clean()
+        time_slice.save(force_insert=True)
+    _verify_typed_installation(project)
+
+
+def _verify_typed_installation(project):
+    """Read-only exact topology proof, also bounding the V1 export compatibility view."""
+    from domain.enums import AuditAction, AuditActorType, AuditScope
+    from domain.services.player_projection import (
+        _require_zhanaozen_workspace, require_complete_workspace_assessment_projection,
+    )
+    try:
+        legacy = ProjectDefinitionVersion.objects.get(pk=typed.LEGACY_DEFINITION_ID, project=project)
+        default = ProjectWorkspace.objects.get(pk=typed.LEGACY_WORKSPACE_ID, project=project)
+        definition = ProjectDefinitionVersion.objects.get(pk=typed.DEFINITION_ID, project=project)
+        workspace = ProjectWorkspace.objects.select_related("project", "definition_version").get(
+            pk=typed.WORKSPACE_ID, project=project,
+        )
+        repair = ProjectPublication.objects.get(pk=typed.LEGACY_INITIAL_RECEIPT_ID)
+        publication = ProjectPublication.objects.get(definition_version=definition)
+    except (ObjectDoesNotExist, MultipleObjectsReturned) as exc:
+        raise SeedConflictError("Incomplete/duplicate typed installation.") from exc
+    _verify_fields(project, dict(id=UUID(typed.PROJECT_ID), code=PROJECT_CODE, version="1.0.0",
+        primary_language_tag="ru", primary_language_assignment=ProjectPrimaryLanguageAssignment.EXPLICIT))
+    manifest, legacy_hash = _stable_manifest()
+    _verify_fields(legacy, dict(code="DEFINITION-1.0.0", version="1.0.0", manifest=manifest,
+        manifest_hash=legacy_hash, publication_status="PUBLISHED", is_current=False))
+    _verify_fields(default, dict(code="DEFAULT", definition_version=legacy,
+        definition_manifest_hash=legacy_hash, is_default=True))
+    _verify_fields(definition, dict(manifest=typed.manifest(), manifest_hash=typed.MANIFEST_SHA256,
+        publication_status="PUBLISHED", is_current=True, validated_by=typed.SYSTEM_ACTOR,
+        published_by=typed.SYSTEM_ACTOR))
+    _verify_fields(repair, _initial_repair_fields(project, legacy, default))
+    _verify_fields(publication, dict(project=project, code=typed.PUBLICATION_CODE, version="1.0.0",
+        locale="ru", actor_identifier=typed.SYSTEM_ACTOR, initial_workspace=None,
+        validation_result=definition.validation_result))
+    if (definition.validation_result.get("valid") is not True
+        or not all((definition.validated_at, definition.published_at, publication.published_at, repair.published_at))
+        or ProjectDefinitionVersion.objects.filter(project=project, is_current=True).count() != 1
+        or ProjectPublication.objects.filter(project=project).count() != 3
+        or ProjectPublication.objects.filter(project=project, initial_workspace__isnull=False).count() != 1
+        or ProjectWorkspace.objects.filter(project=project, is_default=True).count() != 1):
+        raise SeedConflictError("Typed publication/current/default topology drift.")
+    _require_zhanaozen_workspace(workspace)
+    require_complete_workspace_assessment_projection(workspace)
+    expected_slices = {UUID(t["typed_pk"]):t for t in typed.time_slices()}
+    slices = list(TimeSlice.objects.filter(workspace=workspace))
+    if {x.pk for x in slices} != set(expected_slices):
+        raise SeedConflictError("Typed TimeSlice identity/membership drift.")
+    for obj in slices:
+        t = expected_slices[obj.pk]
+        _verify_fields(obj, dict(project=project, code=t["code"], name=t["code"], version="1.0.0",
+            cutoff_date=date.fromisoformat(t["code"]), order=t["order"]))
+    events = list(AuditEvent.objects.filter(definition_version=definition))
+    if len(events) != 3 or {e.action for e in events} != {AuditAction.CREATE, AuditAction.VALIDATE, AuditAction.PUBLISH}:
+        raise SeedConflictError("Typed lifecycle audit topology drift.")
+    repair_events = list(AuditEvent.objects.filter(definition_version=legacy, entity_id=repair.pk))
+    if len(repair_events) != 1:
+        raise SeedConflictError("Compatibility publication audit drift.")
+    for event in events + repair_events:
+        if (event.scope != AuditScope.DEFINITION or event.actor_type != AuditActorType.SYSTEM
+            or event.actor_identifier != typed.SYSTEM_ACTOR or event.project_id != project.pk
+            or event.after.get("foundation_audit_context") != {
+                "actor_identifier": typed.SYSTEM_ACTOR, "service_purpose": typed.SYSTEM_PURPOSE,
+            }):
+            raise SeedConflictError("Lifecycle SYSTEM provenance drift.")
+    return default
