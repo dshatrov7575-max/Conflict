@@ -40,12 +40,15 @@ from domain.models import (
     _canonical_assessment_projection_write,
 )
 from domain.services.project_definitions import parse_project_definition_manifest_v1
+from domain.services import zhanaozen_typed_manifest as zhanaozen
 
 
 PROJECTION_CONTRACT = "FOUNDATION_WORKSPACE_ASSESSMENT_PROJECTION_V1"
 WORKSPACE_CREATE_CONTRACT = "FOUNDATION_PLAYER_WORKSPACE_CREATE_V1"
 _IDENTITY_PREFIX = "PROJECT_DEFINITION_MANIFEST_V1"
-_PROJECTION_RECEIPT_CONTRACTS = (PROJECTION_CONTRACT, WORKSPACE_CREATE_CONTRACT)
+_PROJECTION_RECEIPT_CONTRACTS = (
+    PROJECTION_CONTRACT, WORKSPACE_CREATE_CONTRACT, zhanaozen.SYSTEM_CONTRACT,
+)
 _CANONICAL_REQUEST_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
 
@@ -389,6 +392,8 @@ def _receipt_matches_expected_projection(
         return _standalone_receipt_matches_expected_projection(workspace, expected, receipt)
     if receipt.entity_type == WORKSPACE_CREATE_CONTRACT:
         return _combined_receipt_matches_expected_projection(workspace, expected, receipt)
+    if receipt.entity_type == zhanaozen.SYSTEM_CONTRACT:
+        return _system_receipt_matches_expected_projection(workspace, expected, receipt)
     return False
 
 
@@ -1029,6 +1034,88 @@ def _materialize_expected(
         raise AssessmentProjectionError("Injected failure after parameters.")
 
 
+def _require_zhanaozen_workspace(workspace):
+    pin = zhanaozen.workspace()
+    definition = workspace.definition_version
+    facts = {
+        "id": str(workspace.pk), "code": workspace.code,
+        "version": workspace.version, "label": workspace.name,
+        "metadata": workspace.metadata,
+        "project_definition_version_id": str(workspace.definition_version_id),
+        "project_definition_hash": workspace.definition_manifest_hash,
+    }
+    if (facts != pin or workspace.is_default
+        or str(workspace.project_id) != zhanaozen.PROJECT_ID
+        or workspace.project.code != "KZ-ZHANAOZEN-DEMO"
+        or workspace.project.version != "1.0.0"
+        or definition.code != zhanaozen.DEFINITION_CODE
+        or definition.version != zhanaozen.DEFINITION_ROW_VERSION
+        or definition.schema_version != "1.0.0"
+        or definition.semantic_version != "1.0.0"
+        or definition.construct_version != "V4-TERM-2.0"
+        or str(definition.supersedes_id) != zhanaozen.LEGACY_DEFINITION_ID):
+        raise AssessmentProjectionConflict("SYSTEM installation identity/pin mismatch.")
+
+
+def _require_zhanaozen_system_authority(workspace, principal):
+    from domain.policies import (
+        FoundationAuditContext, StudioPrincipal, StudioDefinitionRole,
+        StructureActor, require_project_structure_mutation,
+    )
+    if (not isinstance(principal, StudioPrincipal)
+        or principal.role != StudioDefinitionRole.SERVICE
+        or principal.actor_identifier != zhanaozen.SYSTEM_ACTOR
+        or principal.service_purpose != zhanaozen.SYSTEM_PURPOSE
+        or principal.capabilities != zhanaozen.SYSTEM_CAPABILITIES):
+        raise AssessmentProjectionConflict("Exact bounded Zhanaozen SERVICE required.")
+    # This existing authority checks the unforgeable SERVICE context seal.
+    FoundationAuditContext.for_principal_workspace(workspace=workspace, principal=principal)
+    _require_zhanaozen_workspace(workspace)
+    require_project_structure_mutation(
+        workspace.project, actor=StructureActor.SERVICE, service_principal=principal,
+    )
+
+
+def _system_receipt_payload(workspace, expected):
+    _require_zhanaozen_workspace(workspace)
+    payload = zhanaozen.system_audit()["after"]
+    accepted = zhanaozen.system_audit()["after"]
+    for key in ("source_mapping_sha256", "snapshot_sha256", "projection_sha256"):
+        payload[key] = payload["request"][key] = expected[key]
+    payload["source_counts"] = payload["projected_counts"] = _projection_counts(expected)
+    payload["request_sha256"] = _sha256(payload["request"])
+    if payload != accepted:
+        raise AssessmentProjectionConflict("SYSTEM graph differs from the exact V3 receipt.")
+    return payload
+
+
+def _system_receipt_matches_expected_projection(workspace, expected, receipt):
+    try:
+        payload = _system_receipt_payload(workspace, expected)
+    except AssessmentProjectionError:
+        return False
+    row = zhanaozen.system_audit()
+    for key, value in row.items():
+        actual = getattr(receipt, key)
+        if isinstance(actual, uuid.UUID):
+            actual = str(actual)
+        if actual != (payload if key == "after" else value):
+            return False
+    return all(getattr(receipt, key) is None for key in (
+        "definition_version_id", "assessment_set_id", "parameter_value_id",
+    ))
+
+
+def _materialize_zhanaozen_system_projection(workspace, *, principal, inject_failure_at=None):
+    """Private seed lane: no caller-selected identity, contract or graph facts."""
+    _require_zhanaozen_system_authority(workspace, principal)
+    return _materialize_projection_core(
+        workspace, uuid.UUID(zhanaozen.PROJECTION_OPERATION_ID), zhanaozen.SYSTEM_ACTOR,
+        receipt_contract=zhanaozen.SYSTEM_CONTRACT, system_principal=principal,
+        inject_failure_at=inject_failure_at,
+    )
+
+
 def materialize_workspace_assessment_projection(
     workspace: ProjectWorkspace,
     operation_identity: uuid.UUID | str,
@@ -1072,6 +1159,21 @@ def materialize_workspace_assessment_projection(
             "The projection receipt contract is not recognized.",
             code="ASSESSMENT_PROJECTION_CONTRACT_INVALID",
         )
+    return _materialize_projection_core(
+        workspace, operation_id, principal, receipt_contract=receipt_contract,
+        is_combined_receipt=is_combined_receipt,
+        canonical_request_sha256=canonical_request_sha256,
+        inject_failure_at=inject_failure_at,
+    )
+
+
+def _materialize_projection_core(
+    workspace, operation_id, principal, *, receipt_contract,
+    is_combined_receipt=False, canonical_request_sha256=None,
+    inject_failure_at=None, system_principal=None,
+):
+    """Shared graph/locking/replay engine; public receipt semantics stay unchanged."""
+    is_system = system_principal is not None
     with transaction.atomic():
         locked = (
             ProjectWorkspace.objects.select_for_update()
@@ -1082,6 +1184,8 @@ def materialize_workspace_assessment_projection(
             pk=locked.definition_version_id
         )
         locked.definition_version = locked_definition
+        if is_system:
+            _require_zhanaozen_system_authority(locked, system_principal)
         expected = _expected_projection(locked)
         request = _projection_request(
             locked,
@@ -1089,11 +1193,15 @@ def materialize_workspace_assessment_projection(
             operation_id=operation_id,
             principal=principal,
         )
+        if is_system:
+            request = _system_receipt_payload(locked, expected)["request"]
         request_sha256 = _sha256(request)
         operation_receipt = (
             AuditEvent.objects.select_for_update().filter(pk=operation_id).first()
             if is_combined_receipt
-            else None
+            else (AuditEvent.objects.select_for_update().filter(
+                pk=zhanaozen.PROJECTION_RECEIPT_ID
+            ).first() if is_system else None)
         )
         receipts = _projection_receipts(locked)
         if len(receipts) > 1:
@@ -1141,7 +1249,7 @@ def materialize_workspace_assessment_projection(
         # foreign/malformed occupancy before any projection row or workspace
         # status can be written; a late occupancy is classified after the inner
         # receipt savepoint has rolled back.
-        if is_combined_receipt and operation_receipt is not None:
+        if (is_combined_receipt or is_system) and operation_receipt is not None:
             raise AssessmentProjectionConflict(
                 "The combined operation UUID is already bound to another immutable audit event."
             )
@@ -1233,7 +1341,17 @@ def materialize_workspace_assessment_projection(
             )
             if inject_failure_at == "before_receipt":
                 raise AssessmentProjectionError("Injected failure before receipt.")
-            if not is_combined_receipt:
+            if is_system:
+                from domain.policies import FoundationAuditContext, _audit_after_payload
+                context = FoundationAuditContext.for_principal_workspace(
+                    workspace=locked, principal=system_principal,
+                )
+                payload = _system_receipt_payload(locked, expected)
+                payload.pop("foundation_audit_context")
+                row = zhanaozen.system_audit()
+                row["after"] = _audit_after_payload(context, payload)
+                receipt = AuditEvent.objects.create(**row)
+            elif not is_combined_receipt:
                 receipt_id = uuid.uuid4()
                 receipt_payload = _projection_receipt_payload(
                     locked,

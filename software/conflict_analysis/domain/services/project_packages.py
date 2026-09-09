@@ -286,7 +286,27 @@ def _ordered(queryset: Any) -> Iterable[Any]:
     return queryset.order_by("code", "id")
 
 
+def _repaired_zhanaozen_legacy_workspace(project):
+    """V1 cannot encode duplicate workspace codes or canonical typed targets."""
+    from domain.models import ProjectDefinitionVersion, ProjectWorkspace
+    from domain.services import zhanaozen_typed_manifest as typed
+    from domain.services.seed import _verify_typed_installation, SeedConflictError
+    if str(project.pk) != typed.PROJECT_ID:
+        return None
+    has_typed = (ProjectDefinitionVersion.objects.filter(pk=typed.DEFINITION_ID).exists()
+        or ProjectWorkspace.objects.filter(pk=typed.WORKSPACE_ID).exists())
+    if not has_typed:
+        return None
+    try:
+        return _verify_typed_installation(project)
+    except (SeedConflictError, ValidationError) as exc:
+        raise ProjectPackageValidationError("Repaired Zhanaozen topology cannot be verified.") from exc
+
+
 def _payload_for_project(project: Project) -> dict[str, Any]:
+    legacy_workspace = _repaired_zhanaozen_legacy_workspace(project)
+    workspace_scope = {"workspace": legacy_workspace} if legacy_workspace is not None else {}
+    parameter_scope = {"definition_version__isnull": True} if legacy_workspace is not None else {}
     lock = ProjectLock.objects.filter(project=project).first()
 
     payload: dict[str, Any] = {
@@ -336,7 +356,7 @@ def _payload_for_project(project: Project) -> dict[str, Any]:
             }
         )
 
-    for obj in _ordered(TimeSlice.objects.filter(project=project)):
+    for obj in _ordered(TimeSlice.objects.filter(project=project, **workspace_scope)):
         payload["time_slices"].append(
             {
                 **_base(obj),
@@ -370,7 +390,7 @@ def _payload_for_project(project: Project) -> dict[str, Any]:
             }
         )
 
-    for obj in _ordered(AssessmentSet.objects.filter(project=project)):
+    for obj in _ordered(AssessmentSet.objects.filter(project=project, **workspace_scope)):
         payload["assessment_sets"].append(
             {
                 **_base(obj),
@@ -380,7 +400,7 @@ def _payload_for_project(project: Project) -> dict[str, Any]:
             }
         )
 
-    for obj in _ordered(ParameterDefinition.objects.filter(project=project)):
+    for obj in _ordered(ParameterDefinition.objects.filter(project=project, **parameter_scope)):
         payload["parameter_definitions"].append(
             {
                 **_base(obj),
@@ -394,7 +414,7 @@ def _payload_for_project(project: Project) -> dict[str, Any]:
             }
         )
 
-    for obj in _ordered(ParameterValue.objects.filter(project=project)):
+    for obj in _ordered(ParameterValue.objects.filter(project=project, **workspace_scope)):
         payload["parameter_values"].append(
             {
                 **_base(obj),
@@ -483,7 +503,7 @@ def _payload_for_project(project: Project) -> dict[str, Any]:
             }
         )
 
-    for obj in _ordered(AuditEvent.objects.filter(project=project)):
+    for obj in _ordered(AuditEvent.objects.filter(project=project, **workspace_scope)):
         payload["audit_events"].append(
             {
                 **_base(obj),

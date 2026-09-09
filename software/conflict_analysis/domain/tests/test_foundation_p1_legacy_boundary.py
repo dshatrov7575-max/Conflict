@@ -126,7 +126,7 @@ class FoundationP1LegacyBoundaryRuntimeTests(TestCase):
             workspace=ProjectWorkspace.objects.get(project=project, is_default=True),
             code="LEGACY-VALUE-P1",
             version="1.0.0",
-            time_slice=TimeSlice.objects.get(project=project, code="2011-12-15"),
+            time_slice=TimeSlice.objects.get(project=project, workspace__code="DEFAULT", code="2011-12-15"),
             assessment_set=AssessmentSet.objects.get(
                 project=project,
                 code="HUMAN_DRAFT",
