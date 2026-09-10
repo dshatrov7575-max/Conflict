@@ -20,8 +20,15 @@ from domain.services.xlsx_import_profiles import (
 def profile_workbook(*, source_column="ИИ_Значение", missing=(), duplicate=None,
                      unknown=(), zero=(), formula=None, header_drift=False,
                      xml_depth=0, oversized_text=False, stored=False, auxiliary_formula=False,
-                     both_columns=False):
+                     both_columns=False, production_confidence=False):
     profile = load_profile(); headers = list(profile["input"]["headers"]); rows = [headers]
+    literal_unknown = {
+        row["legacy_id"]
+        for row in profile["normalization_exceptions"]["AI_NULL_TO_UNKNOWN"]
+    }
+    confidence_source = {
+        "LOW": "Низкая", "MEDIUM": "Средняя", "HIGH": "Высокая", "UNKNOWN": "",
+    }
     oversized_id=next(row["legacy_id"] for row in profile["records"] if row["migration_status"]=="TRANSFER_WITH_REVIEW")
     if header_drift: rows.append(["ID параметра"] + headers[1:])
     for item in profile["records"]:
@@ -31,12 +38,18 @@ def profile_workbook(*, source_column="ИИ_Значение", missing=(), dupli
         selected = headers.index(source_column)
         if item["migration_status"] == "TRANSFER_WITH_REVIEW":
             if source_column == "ИИ_Значение" or both_columns:
-                row[headers.index("ИИ_Значение")] = (
+                ai_unknown = identity in literal_unknown or identity in unknown
+                row[headers.index("ИИ_Значение")] = "" if ai_unknown else (
                     "x" * (MAX_CELL_TEXT_BYTES + 1) if oversized_text and identity==oversized_id
                     else "0" if identity in zero else "1"
                 )
-                row[headers.index("Статус ИИ")] = "Предварительная оценка ИИ"
-                row[headers.index("Уверенность ИИ")] = "Средняя"
+                row[headers.index("Статус ИИ")] = (
+                    "Неизвестно" if ai_unknown else "Предварительная оценка ИИ"
+                )
+                row[headers.index("Уверенность ИИ")] = "" if ai_unknown else (
+                    confidence_source[item["production_ai_confidence_category"]]
+                    if production_confidence else "Средняя"
+                )
                 row[headers.index("Обоснование ИИ")] = "Точное исходное обоснование"
             if source_column == "Эксперт_Значение" or both_columns:
                 row[headers.index("Эксперт_Значение")] = "2"
@@ -110,9 +123,23 @@ class PlayerXlsxImportTests(TestCase):
         self.assertTrue(all(row["source_manifest_role_code"] and row["source_manifest_role_uuid"] for row in transfers))
 
     def test_unknown_blank_zero_and_per_value_categorical_confidence_are_not_collapsed(self):
-        profile=load_profile(); ids=[r["legacy_id"] for r in profile["records"] if r["migration_status"]=="TRANSFER_WITH_REVIEW"]
-        result=self.preview(profile_workbook(unknown={ids[0]},zero={ids[1]})); by_id={r["profile"]["legacy_id"]:r for r in result["creates"]}
-        self.assertIsNone(by_id[ids[0]]["value"]); self.assertEqual(by_id[ids[0]]["status"],"UNKNOWN"); self.assertEqual(by_id[ids[1]]["value"],0)
+        profile=load_profile(); records={row["legacy_id"]:row for row in profile["records"]}
+        unknown_ids={row["legacy_id"] for row in profile["normalization_exceptions"]["AI_NULL_TO_UNKNOWN"]}
+        self.assertEqual(unknown_ids,{"2026-ПТН-01-ГУ-08-УОС","2026-ПТН-04-ГУ-08-УОС"})
+        numeric_id=next(row["legacy_id"] for row in profile["records"] if row["migration_status"]=="TRANSFER_WITH_REVIEW" and row["legacy_id"] not in unknown_ids)
+        result=self.preview(profile_workbook(zero={numeric_id},production_confidence=True)); by_id={r["profile"]["legacy_id"]:r for r in result["creates"]}
+        self.assertEqual({identity for identity,row in by_id.items() if row["status"]=="UNKNOWN"},unknown_ids)
+        self.assertTrue(all(by_id[identity]["value"] is None for identity in unknown_ids)); self.assertEqual(by_id[numeric_id]["value"],0)
+        contexts={}
+        for item in result["creates"]:
+            mapped=item["profile"]
+            self.assertEqual(item["confidence_category"],mapped["production_ai_confidence_category"])
+            key=(mapped["source_manifest_actor_code"],mapped["source_manifest_element_code"],mapped["time_slice_code"])
+            contexts.setdefault(key,{})[mapped["canonical_parameter_code"]]=item["confidence_category"]
+        self.assertEqual(sum(set(values)=={"POS","SAL"} and values["POS"]!=values["SAL"] for values in contexts.values()),32)
+        prose_only=next(identity for identity in records if records[identity]["migration_status"]=="TRANSFER_WITH_REVIEW" and identity not in unknown_ids)
+        prose_result=self.preview(profile_workbook(unknown={prose_only}))
+        self.assertNotIn(prose_only,{row["profile"]["legacy_id"] for row in prose_result["creates"]})
 
     def test_a5_288_transfer_review_flags_and_18_24_exclusions_never_create_values(self):
         result=self.preview(); self.assertEqual(result["rows_to_create"],288); self.assertEqual(result["counts"]["method_blocked"],18); self.assertEqual(result["counts"]["recoding_required"],24)

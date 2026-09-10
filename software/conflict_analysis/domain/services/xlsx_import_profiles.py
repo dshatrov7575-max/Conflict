@@ -18,6 +18,10 @@ CONFIDENCE_MAP = {
 }
 ABSENT_STATUSES = frozenset({"UNKNOWN", "INSUFFICIENT_DATA", "NOT_APPLICABLE", "OPEN_METHOD"})
 _SECTION_RE = re.compile(r"^(?:ГЛАВА \d{4}:|\d{4}\.[0-9]+ )")
+_PRODUCTION_UNKNOWN_ROWS = {
+    ("2026-ПТН-01-ГУ-08-УОС", "KZ-2026-KVK01-AK08-PAV"),
+    ("2026-ПТН-04-ГУ-08-УОС", "KZ-2026-KVK04-AK08-PAV"),
+}
 
 
 class XlsxImportProfileError(ValueError):
@@ -75,6 +79,37 @@ def load_profile() -> Mapping[str, Any]:
                 "assessment_code", "parameter_value_code",
             )) or row["canonical_parameter_code"] not in {"POS", "SAL"}:
                 raise XlsxImportProfileError("G8_PROFILE_INVALID", "Transfer target is incomplete.")
+            if row.get("production_ai_confidence_category") not in {
+                "LOW", "MEDIUM", "HIGH", "UNKNOWN",
+            }:
+                raise XlsxImportProfileError(
+                    "G8_PROFILE_INVALID", "Production confidence literal is incomplete."
+                )
+    exceptions = profile.get("normalization_exceptions")
+    unknown_rows = exceptions.get("AI_NULL_TO_UNKNOWN") if type(exceptions) is dict else None
+    if type(unknown_rows) is not list or len(unknown_rows) != 2:
+        raise XlsxImportProfileError(
+            "G8_PROFILE_INVALID", "Profile requires the two literal AI null exceptions."
+        )
+    expected_exception_keys = {
+        "legacy_id", "a5_v4_id", "source_column", "source_value",
+        "result_status", "result_value", "source_artifact_sha256",
+    }
+    if any(type(row) is not dict for row in unknown_rows) or {
+        (row.get("legacy_id"), row.get("a5_v4_id")) for row in unknown_rows
+    } != _PRODUCTION_UNKNOWN_ROWS or any(
+        set(row) != expected_exception_keys
+        or row["source_column"] != "ИИ_Значение"
+        or row["source_value"] is not None
+        or row["result_status"] != "UNKNOWN"
+        or row["result_value"] is not None
+        or row["source_artifact_sha256"]
+        != profile["source_artifacts"]["EXPERT_FORM"]["sha256"]
+        for row in unknown_rows
+    ):
+        raise XlsxImportProfileError(
+            "G8_PROFILE_INVALID", "Literal AI null exception identity drifted."
+        )
     payload = dict(profile)
     payload_hash = payload.pop("profile_payload_sha256", None)
     if payload_hash != hashlib.sha256(_canonical(payload)).hexdigest():
@@ -118,6 +153,10 @@ def preview_profile_xlsx(
     headers = profile["input"]["headers"]
     expected = {index: value for index, value in enumerate(headers)}
     known = {row["legacy_id"]: row for row in profile["records"]}
+    literal_ai_unknown_ids = {
+        row["legacy_id"]
+        for row in profile["normalization_exceptions"]["AI_NULL_TO_UNKNOWN"]
+    }
     source_rows: dict[str, dict[str, Any]] = {}
     header_seen = False
     diagnostics: list[dict[str, Any]] = []
@@ -192,12 +231,15 @@ def preview_profile_xlsx(
         if mapped["migration_status"] != "TRANSFER_WITH_REVIEW" or source is None:
             continue
         if selected == "":
-            if source_column == "ИИ_Значение" and source_status == "Неизвестно":
+            if source_column == "ИИ_Значение" and identity in literal_ai_unknown_ids:
                 value, status = None, "UNKNOWN"; counts["explicit_unknown"] += 1
             else:
                 counts["empty"] += 1
                 continue
         else:
+            if source_column == "ИИ_Значение" and identity in literal_ai_unknown_ids:
+                diagnostics.append({"code": "G8_XLSX_UNKNOWN_LITERAL_MISMATCH", "id": identity})
+                continue
             if source_column == "ИИ_Значение" and source_status != "Предварительная оценка ИИ":
                 diagnostics.append({"code": "G8_XLSX_STATUS_INVALID", "id": identity})
                 continue
@@ -212,10 +254,19 @@ def preview_profile_xlsx(
             "profile": mapped, "status": status, "value": value,
             "confidence_category": confidence, "rationale": rationale, "note": note,
         })
+    crosswalk_lineage = {
+        "a3_sha256": profile["source_artifacts"]["A3"]["sha256"],
+        "a4_sha256": profile["source_artifacts"]["A4"]["sha256"],
+        "a5_sha256": profile["source_artifacts"]["A5"]["sha256"],
+        "expert_form_sha256": profile["source_artifacts"]["EXPERT_FORM"]["sha256"],
+        "accepted_manifest_sha256": profile["accepted_manifest"]["sha256"],
+        "profile_payload_sha256": profile["profile_payload_sha256"],
+    }
     core = {
         "contract": "FOUNDATION_PLAYER_XLSX_PREVIEW_V1", "version": "1.0.0",
         "raw_file_sha256": hashlib.sha256(raw).hexdigest(), "byte_length": len(raw),
         "profile_id": profile_id, "profile_sha256": profile["file_sha256"],
+        "crosswalk_lineage": crosswalk_lineage,
         "sheet": sheet, "source_column": source_column,
         "counts": counts, "rows_to_create": len(creates),
         "assessment_contexts_to_create": len({row["profile"]["assessment_code"] for row in creates}),

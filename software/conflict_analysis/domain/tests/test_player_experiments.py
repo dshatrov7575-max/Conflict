@@ -20,7 +20,8 @@ from domain.models import (
 from domain.services import zhanaozen_typed_manifest as typed
 from domain.services.player_experiments import (
     G8_REQUIRED_PERMISSIONS, PlayerExperimentError, comparison, create_experiment,
-    create_manual_value, import_xlsx, list_experiments, list_values, mutate_experiment,
+    create_manual_value, create_or_update_expert_profile, import_xlsx,
+    list_experiments, list_expert_profiles, list_values, mutate_experiment,
     preview_xlsx, recover_import,
 )
 from domain.services.player_workspaces import PlayerError
@@ -67,6 +68,19 @@ class PlayerExperimentsFixture:
         create_manual_value(user=self.user,experiment_id=experiment.pk,operation_id=str(uuid4()),if_match=f'"{etag}"',body=body)
         return ParameterValue.objects.get(pk=body["id"])
 
+    def import_ticket(self, *, preview, experiment, operation, request):
+        return {
+            "contract":"FOUNDATION_PLAYER_XLSX_IMPORT_TICKET_V1","contract_version":"1.0.0",
+            "workspace_id":str(self.workspace.pk),"experiment_id":str(experiment.pk),
+            "operation_id":str(operation),"raw_file_sha256":preview["raw_file_sha256"],
+            "byte_length":preview["byte_length"],"profile_id":request["profile_id"],
+            "profile_sha256":preview["profile_sha256"],"sheet":request["sheet"],
+            "source_column":request["source_column"],
+            "crosswalk_lineage":preview["crosswalk_lineage"],
+            "preview_sha256":preview["preview_sha256"],
+            "request_plan_sha256":preview["request_plan_sha256"],
+        }
+
 
 class PlayerExperimentsTests(PlayerExperimentsFixture, TestCase):
     def test_assessment_author_permission_family_scope_hiding_and_no_studio_mixing_are_exact(self):
@@ -75,7 +89,13 @@ class PlayerExperimentsTests(PlayerExperimentsFixture, TestCase):
         with self.assertRaises((PlayerExperimentError,PlayerError)): list_experiments(user=outsider,workspace_id=self.workspace.pk)
 
     def test_expert_profile_assessment_set_experiment_create_replay_and_receipt_are_atomic(self):
-        operation=uuid4(); first,experiment,body=self.aggregate(operation_id=operation); second=create_experiment(user=self.user,workspace_id=self.workspace.pk,operation_id=str(operation),if_match=f'"{typed.MANIFEST_SHA256}"',body=body)
+        experiment_id,body=self.aggregate_body(); profile_body=body["expert_profile"]
+        profile_operation=uuid4(); created=create_or_update_expert_profile(user=self.user,workspace_id=self.workspace.pk,operation_id=str(profile_operation),if_match=f'"{typed.MANIFEST_SHA256}"',body=profile_body)
+        replay=create_or_update_expert_profile(user=self.user,workspace_id=self.workspace.pk,operation_id=str(profile_operation),if_match=f'"{typed.MANIFEST_SHA256}"',body=profile_body)
+        self.assertFalse(created.replayed); self.assertTrue(replay.replayed); self.assertEqual(created.body,replay.body)
+        profile=list_expert_profiles(user=self.user,workspace_id=self.workspace.pk)["profiles"][0]; profile_body={key:profile_body[key] for key in profile_body}; profile_body["display_name"]="Edited before first use"
+        edited=create_or_update_expert_profile(user=self.user,workspace_id=self.workspace.pk,operation_id=str(uuid4()),if_match=f'"{profile["etag"]}"',body=profile_body); self.assertFalse(edited.replayed)
+        body["expert_profile"]=profile_body; operation=uuid4(); first=create_experiment(user=self.user,workspace_id=self.workspace.pk,operation_id=str(operation),if_match=f'"{typed.MANIFEST_SHA256}"',body=body); experiment=Experiment.objects.get(pk=experiment_id); second=create_experiment(user=self.user,workspace_id=self.workspace.pk,operation_id=str(operation),if_match=f'"{typed.MANIFEST_SHA256}"',body=body)
         self.assertFalse(first.replayed); self.assertTrue(second.replayed); self.assertEqual(first.body,second.body); self.assertEqual((Experiment.objects.filter(metadata__contract="FOUNDATION_PLAYER_EXPERIMENT_V1").count(),AuditEvent.objects.filter(entity_type="FOUNDATION_PLAYER_EXPERIMENT_V1").count()),(1,1))
 
     def test_human_and_ai_experiments_keep_independent_values_without_overwrite(self):
@@ -86,8 +106,31 @@ class PlayerExperimentsTests(PlayerExperimentsFixture, TestCase):
         _,experiment,_=self.aggregate(); profile=experiment.expert_profile; body=self.value_body(experiment); operation=uuid4(); value_etag=list_values(user=self.user,experiment_id=experiment.pk)["experiment"]["etag"]
         first=create_manual_value(user=self.user,experiment_id=experiment.pk,operation_id=str(operation),if_match=f'"{value_etag}"',body=body); self.assertFalse(first.replayed); profile.display_name="changed"
         with self.assertRaises(ValidationError): profile.save()
+        with self.assertRaises(ValidationError): ExpertProfile.objects.filter(pk=profile.pk).update(display_name="bulk")
+        with self.assertRaises(ValidationError): ExpertProfile.objects.filter(pk=profile.pk).delete()
+        profile.refresh_from_db(); profile.display_name="bulk-update"
+        with self.assertRaises(ValidationError): ExpertProfile.objects.bulk_update([profile],["display_name"])
+        experiment.refresh_from_db()
+        with self.assertRaises(ValidationError): Experiment.objects.filter(pk=experiment.pk).update(status=ExperimentStatus.ACTIVE)
+        with self.assertRaises(ValidationError): Experiment.objects.filter(pk=experiment.pk).delete()
+        experiment.name="bulk-update"
+        with self.assertRaises(ValidationError): Experiment.objects.bulk_update([experiment],["name"])
+        experiment.refresh_from_db()
+        invalid=Experiment(id=uuid4(),workspace=experiment.workspace,expert_profile=profile,assessment_set=experiment.assessment_set,code=f"G8-ACTIVE-{uuid4().hex[:8]}",version="1.0.0",name="Forbidden ACTIVE",experiment_type="ASSESSMENT",status=ExperimentStatus.ACTIVE,metadata={"contract":"FOUNDATION_PLAYER_EXPERIMENT_V1"})
+        with self.assertRaises(ValidationError): invalid.save(force_insert=True)
+        with self.assertRaises(ValidationError): Experiment.objects.bulk_create([invalid])
+        suffix=uuid4().hex[:8]
+        legacy_set=AssessmentSet(id=uuid4(),project=self.project,workspace=self.workspace,code=f"LEGACY-SET-{suffix}",version="1.0.0",kind=profile.kind,name="Legacy active set",description="pre-contract")
+        legacy_set.save(force_insert=True)
+        legacy=Experiment(id=uuid4(),workspace=self.workspace,expert_profile=profile,assessment_set=legacy_set,code=f"LEGACY-EXP-{suffix}",version="1.0.0",name="Legacy active",experiment_type="ASSESSMENT",status=ExperimentStatus.ACTIVE,metadata={})
+        legacy.save(force_insert=True); legacy.metadata={"contract":"FOUNDATION_PLAYER_EXPERIMENT_V1"}
+        with self.assertRaises(ValidationError): legacy.save(update_fields=["metadata","updated_at"])
+        with self.assertRaises(ValidationError): Experiment.objects.filter(pk=legacy.pk).update(metadata={"contract":"FOUNDATION_PLAYER_EXPERIMENT_V1"})
         mutate_experiment(user=self.user,experiment_id=experiment.pk,operation_id=str(uuid4()),if_match=f'"{list_experiments(user=self.user,workspace_id=self.workspace.pk)["experiments"][0]["etag"]}"',action="freeze",body={})
-        experiment.refresh_from_db(); self.assertEqual(experiment.status,ExperimentStatus.FROZEN)
+        experiment.refresh_from_db(); frozen_at=experiment.frozen_at; self.assertEqual(experiment.status,ExperimentStatus.FROZEN); self.assertIsNotNone(frozen_at)
+        frozen_dto=next(row for row in list_experiments(user=self.user,workspace_id=self.workspace.pk)["experiments"] if row["id"]==str(experiment.pk)); mutate_experiment(user=self.user,experiment_id=experiment.pk,operation_id=str(uuid4()),if_match=f'"{frozen_dto["etag"]}"',action="archive",body={})
+        experiment.refresh_from_db(); self.assertEqual((experiment.status,experiment.frozen_at),(ExperimentStatus.ARCHIVED,frozen_at))
+        _,draft,_=self.aggregate(); draft_dto=next(row for row in list_experiments(user=self.user,workspace_id=self.workspace.pk)["experiments"] if row["id"]==str(draft.pk)); mutate_experiment(user=self.user,experiment_id=draft.pk,operation_id=str(uuid4()),if_match=f'"{draft_dto["etag"]}"',action="archive",body={}); draft.refresh_from_db(); self.assertEqual((draft.status,draft.frozen_at),(ExperimentStatus.ARCHIVED,None))
         replay=create_manual_value(user=self.user,experiment_id=experiment.pk,operation_id=str(operation),if_match=f'"{value_etag}"',body=body); self.assertTrue(replay.replayed); self.assertEqual(replay.body,first.body)
         with self.assertRaises(PlayerExperimentError): self.create_value(experiment)
 
@@ -109,13 +152,19 @@ class PlayerExperimentsTests(PlayerExperimentsFixture, TestCase):
     def test_import_candidates_are_experiment_scoped_and_general_does_not_leak_them(self):
         _,one,_=self.aggregate(); _,two,_=self.aggregate(); raw=profile_workbook(); operation=uuid4()
         request={"raw_file":raw,"profile_id":"KZ_ZHANAOZEN_EXPERT_V2_A5_0_1","sheet":"По_главам","source_column":"ИИ_Значение"}; preview=preview_xlsx(user=self.user,experiment_id=one.pk,body=request)
-        ticket={"contract":"FOUNDATION_PLAYER_XLSX_IMPORT_TICKET_V1","contract_version":"1.0.0","workspace_id":str(self.workspace.pk),"experiment_id":str(one.pk),"operation_id":str(operation),"raw_file_sha256":preview["raw_file_sha256"],"byte_length":preview["byte_length"],"profile_id":request["profile_id"],"profile_sha256":preview["profile_sha256"],"sheet":request["sheet"],"source_column":request["source_column"],"preview_sha256":preview["preview_sha256"],"request_plan_sha256":preview["request_plan_sha256"]}
+        ticket=self.import_ticket(preview=preview,experiment=one,operation=operation,request=request)
         commit={**request,"preview_sha256":preview["preview_sha256"],"excluded_42_acknowledged":True,"ticket":ticket}; result=import_xlsx(user=self.user,experiment_id=one.pk,operation_id=str(operation),if_match=f'"{preview["preview_sha256"]}"',body=commit)
         self.assertFalse(result.replayed); run=ImportRun.objects.get(pk=operation); self.assertEqual(run.intended_changes["source_snapshot"]["schema"],"POLARIZATION_V1_IMPORT_SNAPSHOT_V1"); self.assertEqual(run.intended_changes["source_snapshot"]["source_row_count"],330)
         self.assertEqual((ActorElementAssessment.objects.filter(experiment=one).count(),ParameterValue.objects.filter(actor_element_assessment__experiment=one).count()),(144,288)); self.assertFalse(ImportRun.objects.filter(target_experiment=two).exists())
         self.assertEqual(recover_import(user=self.user,experiment_id=one.pk,operation_id=operation)["receipt_sha256"],run.intended_changes["receipt"]["receipt_sha256"])
         dto=next(row for row in list_experiments(user=self.user,workspace_id=self.workspace.pk)["experiments"] if row["id"]==str(one.pk)); mutate_experiment(user=self.user,experiment_id=one.pk,operation_id=str(uuid4()),if_match=f'"{dto["etag"]}"',action="freeze",body={}); one.refresh_from_db(); self.assertEqual(one.status,"FROZEN")
         replay=import_xlsx(user=self.user,experiment_id=one.pk,operation_id=str(operation),if_match=f'"{preview["preview_sha256"]}"',body=commit); self.assertTrue(replay.replayed); self.assertEqual(replay.body,result.body)
+        with self.assertRaises(PlayerExperimentError) as different_bytes:
+            import_xlsx(user=self.user,experiment_id=one.pk,operation_id=str(operation),if_match="not-reparsed",body={**commit,"raw_file":b"not an OOXML package"})
+        self.assertEqual(different_bytes.exception.code,"PLAYER_OPERATION_KEY_REUSE")
+        with self.assertRaises(PlayerExperimentError) as different_mapping:
+            import_xlsx(user=self.user,experiment_id=one.pk,operation_id=str(operation),if_match="not-reparsed",body={**commit,"source_column":"Эксперт_Значение"})
+        self.assertEqual(different_mapping.exception.code,"PLAYER_OPERATION_KEY_REUSE")
         with self.assertRaises(PlayerExperimentError): recover_import(user=self.user,experiment_id=two.pk,operation_id=operation)
 
 
@@ -162,7 +211,7 @@ class PlayerExperimentsPostgreSQLTests(PlayerExperimentsFixture, TransactionTest
     def test_concurrent_import_same_key_creates_one_graph_and_one_exact_replay(self):
         _,experiment,_=self.aggregate(); raw=profile_workbook(); operation=uuid4()
         request={"raw_file":raw,"profile_id":"KZ_ZHANAOZEN_EXPERT_V2_A5_0_1","sheet":"По_главам","source_column":"ИИ_Значение"}; preview=preview_xlsx(user=self.user,experiment_id=experiment.pk,body=request)
-        ticket={"contract":"FOUNDATION_PLAYER_XLSX_IMPORT_TICKET_V1","contract_version":"1.0.0","workspace_id":str(self.workspace.pk),"experiment_id":str(experiment.pk),"operation_id":str(operation),"raw_file_sha256":preview["raw_file_sha256"],"byte_length":preview["byte_length"],"profile_id":request["profile_id"],"profile_sha256":preview["profile_sha256"],"sheet":request["sheet"],"source_column":request["source_column"],"preview_sha256":preview["preview_sha256"],"request_plan_sha256":preview["request_plan_sha256"]}
+        ticket=self.import_ticket(preview=preview,experiment=experiment,operation=operation,request=request)
         body={**request,"preview_sha256":preview["preview_sha256"],"excluded_42_acknowledged":True,"ticket":ticket}
         call=lambda:import_xlsx(user=self.user,experiment_id=experiment.pk,operation_id=str(operation),if_match=f'"{preview["preview_sha256"]}"',body=body)
         results=self._parallel([call,call])
@@ -175,7 +224,7 @@ class PlayerExperimentsPostgreSQLTests(PlayerExperimentsFixture, TransactionTest
         _,experiment,_=self.aggregate(); raw=profile_workbook(); request={"raw_file":raw,"profile_id":"KZ_ZHANAOZEN_EXPERT_V2_A5_0_1","sheet":"По_главам","source_column":"ИИ_Значение"}; preview=preview_xlsx(user=self.user,experiment_id=experiment.pk,body=request)
         operations=[uuid4(),uuid4()]
         def call(operation):
-            ticket={"contract":"FOUNDATION_PLAYER_XLSX_IMPORT_TICKET_V1","contract_version":"1.0.0","workspace_id":str(self.workspace.pk),"experiment_id":str(experiment.pk),"operation_id":str(operation),"raw_file_sha256":preview["raw_file_sha256"],"byte_length":preview["byte_length"],"profile_id":request["profile_id"],"profile_sha256":preview["profile_sha256"],"sheet":request["sheet"],"source_column":request["source_column"],"preview_sha256":preview["preview_sha256"],"request_plan_sha256":preview["request_plan_sha256"]}
+            ticket=self.import_ticket(preview=preview,experiment=experiment,operation=operation,request=request)
             return import_xlsx(user=self.user,experiment_id=experiment.pk,operation_id=str(operation),if_match=f'"{preview["preview_sha256"]}"',body={**request,"preview_sha256":preview["preview_sha256"],"excluded_42_acknowledged":True,"ticket":ticket})
         results=self._parallel([lambda:call(operations[0]),lambda:call(operations[1])])
         self.assertEqual(sum(kind=="ok" for kind,_ in results),1)

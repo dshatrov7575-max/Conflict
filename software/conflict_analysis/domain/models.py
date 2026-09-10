@@ -2654,6 +2654,90 @@ class AssessmentSet(ValidatedStableVersionedModel):
                 )
 
 
+_G8_EXPERIMENT_CONTRACT = "FOUNDATION_PLAYER_EXPERIMENT_V1"
+
+
+class ExpertProfileQuerySet(models.QuerySet):
+    """Keep the first-use immutability rule effective for bulk ORM operations."""
+
+    def _contains_used_profile(self) -> bool:
+        return Experiment.objects.filter(expert_profile_id__in=self.values("pk")).exists()
+
+    def update(self, **kwargs: Any) -> int:
+        if self._contains_used_profile() and set(kwargs) - {"updated_at"}:
+            raise ValidationError("A used ExpertProfile is immutable; create a new profile.")
+        return super().update(**kwargs)
+
+    def delete(self) -> tuple[int, dict[str, int]]:
+        if self._contains_used_profile():
+            raise ValidationError("A used ExpertProfile cannot be deleted.")
+        return super().delete()
+
+    def bulk_update(
+        self, objs: Any, fields: Any, batch_size: int | None = None
+    ) -> int:
+        objects = list(objs)
+        protected = set(fields) - {"updated_at"}
+        if protected and Experiment.objects.filter(
+            expert_profile_id__in=[obj.pk for obj in objects if obj.pk]
+        ).exists():
+            raise ValidationError("A used ExpertProfile is immutable; create a new profile.")
+        return super().bulk_update(objects, fields, batch_size=batch_size)
+
+    def bulk_create(self, objs: Any, **kwargs: Any) -> list[Any]:
+        objects = list(objs)
+        for obj in objects:
+            obj.full_clean()
+        return super().bulk_create(objects, **kwargs)
+
+
+class ExperimentQuerySet(models.QuerySet):
+    """Disallow ORM shortcuts around the bounded G8 lifecycle."""
+
+    def _contains_g8(self) -> bool:
+        return self.filter(metadata__contract=_G8_EXPERIMENT_CONTRACT).exists()
+
+    def update(self, **kwargs: Any) -> int:
+        entering_g8 = (
+            isinstance(kwargs.get("metadata"), dict)
+            and kwargs["metadata"].get("contract") == _G8_EXPERIMENT_CONTRACT
+        )
+        if self._contains_g8() or entering_g8:
+            raise ValidationError("G8 experiments must use the guarded lifecycle service.")
+        return super().update(**kwargs)
+
+    def delete(self) -> tuple[int, dict[str, int]]:
+        if self._contains_g8():
+            raise ValidationError("G8 experiment history cannot be deleted.")
+        return super().delete()
+
+    def bulk_update(
+        self, objs: Any, fields: Any, batch_size: int | None = None
+    ) -> int:
+        objects = list(objs)
+        if any(
+            isinstance(obj.metadata, dict)
+            and obj.metadata.get("contract") == _G8_EXPERIMENT_CONTRACT
+            for obj in objects
+        ):
+            raise ValidationError("G8 experiments must use the guarded lifecycle service.")
+        return super().bulk_update(objects, fields, batch_size=batch_size)
+
+    def bulk_create(self, objs: Any, **kwargs: Any) -> list[Any]:
+        objects = list(objs)
+        for obj in objects:
+            if (
+                isinstance(obj.metadata, dict)
+                and obj.metadata.get("contract") == _G8_EXPERIMENT_CONTRACT
+            ):
+                if obj.status != ExperimentStatus.DRAFT or obj.frozen_at is not None:
+                    raise ValidationError({
+                        "status": "A new G8 experiment must be DRAFT with no frozen timestamp."
+                    })
+                obj.full_clean()
+        return super().bulk_create(objects, **kwargs)
+
+
 class ExpertProfile(ValidatedStableVersionedModel):
     """Stable HUMAN or AI coder identity; never a value store."""
 
@@ -2668,6 +2752,7 @@ class ExpertProfile(ValidatedStableVersionedModel):
     provider = models.CharField(max_length=128, blank=True)
     model_name = models.CharField(max_length=255, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
+    objects = ExpertProfileQuerySet.as_manager()
 
     class Meta:
         ordering = ("workspace__code", "kind", "code")
@@ -2746,6 +2831,7 @@ class Experiment(ValidatedStableVersionedModel):
     method_version = models.CharField(max_length=64, blank=True)
     frozen_at = models.DateTimeField(null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
+    objects = ExperimentQuerySet.as_manager()
 
     class Meta:
         ordering = ("workspace__code", "order", "code")
@@ -2795,19 +2881,40 @@ class Experiment(ValidatedStableVersionedModel):
         if self.experiment_type == ExperimentType.MODELING:
             if self.status != ExperimentStatus.DRAFT:
                 errors["status"] = "MODELING is reserved and cannot be activated in I1."
+        g8 = (
+            isinstance(self.metadata, dict)
+            and self.metadata.get("contract") == _G8_EXPERIMENT_CONTRACT
+        )
         if self.status == ExperimentStatus.FROZEN and self.frozen_at is None:
             errors["frozen_at"] = "Frozen experiments require a timestamp."
+        if g8 and self.status == ExperimentStatus.ACTIVE:
+            errors["status"] = "ACTIVE is unreachable for a G8 assessment experiment."
+        if g8 and self.status == ExperimentStatus.DRAFT and self.frozen_at is not None:
+            errors["frozen_at"] = "A DRAFT G8 experiment has no frozen timestamp."
         if errors:
             raise ValidationError(errors)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
-        if self.pk and Experiment.objects.filter(pk=self.pk).exists():
-            previous = Experiment.objects.get(pk=self.pk)
-            g8 = (
-                previous.metadata.get("contract") == "FOUNDATION_PLAYER_EXPERIMENT_V1"
-                if isinstance(previous.metadata, dict) else False
-            )
-            if g8:
+        incoming_g8 = (
+            isinstance(self.metadata, dict)
+            and self.metadata.get("contract") == _G8_EXPERIMENT_CONTRACT
+        )
+        previous = (
+            Experiment.objects.filter(pk=self.pk).first()
+            if self.pk else None
+        )
+        previous_g8 = (
+            previous is not None
+            and isinstance(previous.metadata, dict)
+            and previous.metadata.get("contract") == _G8_EXPERIMENT_CONTRACT
+        )
+        if incoming_g8 and not previous_g8:
+            if self.status != ExperimentStatus.DRAFT or self.frozen_at is not None:
+                raise ValidationError({
+                    "status": "A G8 experiment must enter the contract as DRAFT with no frozen timestamp."
+                })
+        if previous is not None:
+            if previous_g8:
                 changed = {
                     field.name
                     for field in self._meta.concrete_fields
@@ -2823,17 +2930,26 @@ class Experiment(ValidatedStableVersionedModel):
                 }
                 if transition not in allowed_transitions:
                     raise ValidationError({"status": "This G8 experiment lifecycle transition is forbidden."})
-                allowed = {"name", "color", "order"} if transition[0] == transition[1] == ExperimentStatus.DRAFT else {"status", "frozen_at"}
+                if transition[0] == transition[1] == ExperimentStatus.DRAFT:
+                    allowed = {"name", "color", "order"}
+                elif transition == (ExperimentStatus.DRAFT, ExperimentStatus.FROZEN):
+                    allowed = {"status", "frozen_at"}
+                else:
+                    allowed = {"status"}
                 unexpected = changed - allowed
                 if unexpected:
                     raise ValidationError({
                         name: "This field is immutable in the current experiment state."
                         for name in unexpected
                     })
+                if transition == (ExperimentStatus.DRAFT, ExperimentStatus.ARCHIVED) and self.frozen_at is not None:
+                    raise ValidationError({"frozen_at": "Archiving a DRAFT experiment keeps frozen_at null."})
+                if transition == (ExperimentStatus.FROZEN, ExperimentStatus.ARCHIVED) and self.frozen_at != previous.frozen_at:
+                    raise ValidationError({"frozen_at": "Archiving a FROZEN experiment preserves frozen_at."})
         super().save(*args, **kwargs)
 
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
-        if isinstance(self.metadata, dict) and self.metadata.get("contract") == "FOUNDATION_PLAYER_EXPERIMENT_V1":
+        if isinstance(self.metadata, dict) and self.metadata.get("contract") == _G8_EXPERIMENT_CONTRACT:
             raise ValidationError("G8 experiment history cannot be deleted.")
         return super().delete(*args, **kwargs)
 

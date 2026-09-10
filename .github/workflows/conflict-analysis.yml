@@ -6015,7 +6015,9 @@ jobs:
       G8_BASE_BRANCH: codex/ca-suite-i1-g8-pre-canonical-zhanaozen-manifest-r2
       G8_BASE_HEAD: f2255b6d76cf8efa46b5bea5756e09af4273b46a
       G8_BASE_TREE: 249b5e826511072c6fbcb0ea3cb7441d83c25faf
+      G8_FIRST_HEAD: 7cbdc6f7e13cf1965077a89406f89c6eaec91858
       G8_TARGET_BRANCH: codex/ca-suite-i1-player-g8-experiments-xlsx
+      G8_EVENT_DELIVERY_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       G8_CHROME_VERSION: 152.0.7977.64
 
     steps:
@@ -6025,8 +6027,10 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - name: Prove exact attempt-1 route, R2 parent, and G7 runtime lineage
+      - name: Prove exact attempt-1 route, corrective chain, and G7 runtime lineage
         env:
+          EVENT_REF: ${{ github.ref }}
+          EVENT_DELIVERY_SHA: ${{ env.G8_EVENT_DELIVERY_SHA }}
           EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           EVENT_HEAD_REF: ${{ github.event.pull_request.head.ref }}
           EVENT_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
@@ -6043,8 +6047,9 @@ jobs:
           test "$(git rev-parse "$G8_BASE_HEAD^")" = "$G8_G7_HEAD"
           delivery_head="$(git rev-parse HEAD)"
           delivery_tree="$(git rev-parse HEAD^{tree})"
-          test "$(git rev-parse "$delivery_head^")" = "$G8_BASE_HEAD"
-          test "$(git rev-list --count "$G8_BASE_HEAD..$delivery_head")" = "1"
+          test "$(git rev-parse "$delivery_head^")" = "$G8_FIRST_HEAD"
+          test "$(git rev-parse "$G8_FIRST_HEAD^")" = "$G8_BASE_HEAD"
+          test "$(git rev-list --count "$G8_BASE_HEAD..$delivery_head")" = "2"
           test -z "$(git rev-list --merges "$G8_BASE_HEAD..$delivery_head")"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
           case "$GITHUB_EVENT_NAME" in
@@ -6076,6 +6081,14 @@ jobs:
           pathlib.Path(sys.argv[1]).write_text(json.dumps({
               "schema": "G8_EXACT_HEAD_ROUTE_V1",
               "event_name": os.environ["GITHUB_EVENT_NAME"],
+              "event_ref": os.environ["EVENT_REF"],
+              "event_delivery_sha": os.environ["EVENT_DELIVERY_SHA"],
+              "event_head_ref": os.environ.get("EVENT_HEAD_REF") or os.environ["G8_TARGET_BRANCH"],
+              "event_head_sha": os.environ.get("EVENT_HEAD_SHA") or os.environ["EVENT_DELIVERY_SHA"],
+              "event_head_repository": os.environ.get("EVENT_HEAD_REPOSITORY") or os.environ["GITHUB_REPOSITORY"],
+              "event_base_ref": os.environ.get("EVENT_BASE_REF") or None,
+              "event_base_sha": os.environ.get("EVENT_BASE_SHA") or None,
+              "event_base_repository": os.environ.get("EVENT_BASE_REPOSITORY") or None,
               "run_id": os.environ["GITHUB_RUN_ID"],
               "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
               "delivery_head": os.environ["G8_DELIVERY_HEAD"],
@@ -6084,6 +6097,7 @@ jobs:
               "base_branch": os.environ["G8_BASE_BRANCH"],
               "base_head": os.environ["G8_BASE_HEAD"],
               "base_tree": os.environ["G8_BASE_TREE"],
+              "first_delivery_head": os.environ["G8_FIRST_HEAD"],
               "runtime_g7_accepted_head": os.environ["G7_ACCEPTED_HEAD"],
               "runtime_g7_accepted_tree": os.environ["G7_ACCEPTED_TREE"],
           }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -6144,15 +6158,7 @@ jobs:
           USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g8-focused.sqlite3" python -m pytest domain/tests/test_player_experiments.py domain/tests/test_player_xlsx_import.py -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/g8-foundation-sqlite.xml"
           USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g8-foundation.sqlite3" python -m pytest domain/tests -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/foundation-sqlite.xml"
 
-      - name: Run G8 Product and inherited G7 Product regressions on both engines
-        run: |
-          set -euo pipefail
-          python -m pytest production_player/tests/test_player_g8.py::ProductionPlayerG8Tests -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/product-g8-postgresql.xml"
-          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g8-product.sqlite3" python -m pytest production_player/tests/test_player_g8.py::ProductionPlayerG8Tests -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/product-g8-sqlite.xml"
-          python -m pytest production_player/tests/test_player_g7.py::ProductionPlayerG7Tests -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/product-g7-postgresql.xml"
-          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g8-g7-product.sqlite3" python -m pytest production_player/tests/test_player_g7.py::ProductionPlayerG7Tests -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/product-g7-sqlite.xml"
-
-      - name: Build one exact G8 wheel
+      - name: Build one exact G8 wheel before full Product contracts
         run: |
           set -euo pipefail
           python -m pip wheel --no-deps --wheel-dir "$G8_EVIDENCE_DIR" .
@@ -6161,7 +6167,21 @@ jobs:
           test "$(basename "${wheels[0]}")" = conflict_analysis-0.1.0-py3-none-any.whl
           printf 'G8_WHEEL=%s\n' "${wheels[0]}" >> "$GITHUB_ENV"
 
-      - name: Run two G8 Chromium nodes on exact Chrome for Testing
+      - name: Run focused G8 and full Product 49 regressions on both engines
+        run: |
+          set -euo pipefail
+          python -m pytest production_player/tests/test_player_g8.py::ProductionPlayerG8Tests -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/product-g8-postgresql.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g8-product.sqlite3" python -m pytest production_player/tests/test_player_g8.py::ProductionPlayerG8Tests -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/product-g8-sqlite.xml"
+          python -m pytest production_player/tests/test_player_g7.py::ProductionPlayerG7Tests -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/product-g7-postgresql.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g8-g7-product.sqlite3" python -m pytest production_player/tests/test_player_g7.py::ProductionPlayerG7Tests -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/product-g7-sqlite.xml"
+          c0="production_studio/tests/test_browser_contract.py production_studio/tests/test_claim_boundaries.py production_studio/tests/test_read_only_http.py production_studio/tests/test_read_only_static_contracts.py"
+          c1="production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringContractTests"
+          g7="production_player/tests/test_player_g7.py::ProductionPlayerG7Tests"
+          g8="production_player/tests/test_player_g8.py::ProductionPlayerG8Tests"
+          STUDIO_C0_WHEEL="$G8_WHEEL" python -m pytest $c0 $c1 $g7 $g8 -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/product-full-postgresql.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g8-product-full.sqlite3" STUDIO_C0_WHEEL="$G8_WHEEL" python -m pytest $c0 $c1 $g7 $g8 -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/product-full-sqlite.xml"
+
+      - name: Run focused G8 and full Chromium 5 on exact Chrome for Testing
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/chrome-for-testing-linux64.zip"
@@ -6171,6 +6191,10 @@ jobs:
           test -x "$chrome"
           "$chrome" --version | grep -F "$G8_CHROME_VERSION"
           STUDIO_CHROME_BIN="$chrome" python -m pytest production_player/tests/test_player_g8.py::ProductionPlayerG8ChromiumTests -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/chromium-g8-postgresql.xml"
+          c1="production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringBrowserTests::test_authenticated_edit_save_reload_is_bounded_foundation_only_and_receipted"
+          g7="production_player/tests/test_player_g7.py::ProductionPlayerG7ChromiumTests"
+          g8="production_player/tests/test_player_g8.py::ProductionPlayerG8ChromiumTests"
+          STUDIO_CHROME_BIN="$chrome" python -m pytest $c1 $g7 $g8 -p no:cacheprovider --junitxml="$G8_EVIDENCE_DIR/chromium-full-postgresql.xml"
 
       - name: Prove isolated wheel runtime without source fallback
         run: |
@@ -6247,6 +6271,9 @@ jobs:
               "product-g7-postgresql.xml": (10, 0),
               "product-g7-sqlite.xml": (10, 0),
               "chromium-g8-postgresql.xml": (2, 0),
+              "product-full-postgresql.xml": (49, 0),
+              "product-full-sqlite.xml": (49, 0),
+              "chromium-full-postgresql.xml": (5, 0),
           }
           def stats(name):
               report = ET.parse(root/name).getroot()
@@ -6265,6 +6292,8 @@ jobs:
           assert route["delivery_tree"] == os.environ["G8_DELIVERY_TREE"]
           assert route["base_head"] == os.environ["G8_BASE_HEAD"]
           assert route["base_tree"] == os.environ["G8_BASE_TREE"]
+          assert route["first_delivery_head"] == os.environ["G8_FIRST_HEAD"]
+          assert route["event_delivery_sha"] == os.environ["G8_DELIVERY_HEAD"]
           assert route["runtime_g7_accepted_head"] == os.environ["G7_ACCEPTED_HEAD"]
           assert route["runtime_g7_accepted_tree"] == os.environ["G7_ACCEPTED_TREE"]
           wheel = root/"conflict_analysis-0.1.0-py3-none-any.whl"
@@ -6280,19 +6309,28 @@ jobs:
               "registry": {"foundation_portable": 20, "postgresql_only": 4,
                            "product_portable": 12, "chromium": 2},
               "junit": {name: {"tests": value[0], "skipped": value[1]} for name, value in expected.items()},
-              "postgresql": {"foundation_passed": 342, "product_g8_passed": 12, "chromium_passed": 2},
-              "sqlite": {"foundation_passed": 314, "foundation_skipped": 28, "product_g8_passed": 12},
+              "postgresql": {"foundation_passed": 342, "product_g8_passed": 12,
+                              "product_full_passed": 49, "chromium_g8_passed": 2,
+                              "chromium_full_passed": 5},
+              "sqlite": {"foundation_passed": 314, "foundation_skipped": 28,
+                         "product_g8_passed": 12, "product_full_passed": 49},
           }
           (root/"results.json").write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")
           manifest = {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
                       for path in sorted(root.iterdir()) if path.is_file() and path.name != "acceptance-ready.json"}
+          acceptance_ready = (
+              os.environ["PRIOR_JOB_STATUS"] == "success"
+              and stats("product-full-postgresql.xml") == (49, 0)
+              and stats("product-full-sqlite.xml") == (49, 0)
+              and stats("chromium-full-postgresql.xml") == (5, 0)
+          )
           (root/"acceptance-ready.json").write_text(json.dumps({
               "schema": "G8_SAME_RUN_ACCEPTANCE_EVIDENCE_V1", "route": route,
               "results": results, "wheel": wheel_info, "isolated_install": isolated,
               "required_files": sorted(required | {"wheel.json", "results.json"}),
-              "manifest_sha256": manifest, "acceptance_ready": os.environ["PRIOR_JOB_STATUS"] == "success",
+              "manifest_sha256": manifest, "acceptance_ready": acceptance_ready,
           }, indent=2, sort_keys=True) + "\n")
-          assert os.environ["PRIOR_JOB_STATUS"] == "success"
+          assert acceptance_ready
           print("G8_SAME_RUN_EXACT_HEAD_20_4_12_2=PASS")
           PY
 
@@ -6300,6 +6338,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: g8-experiments-xlsx-${{ github.event_name }}-${{ github.sha }}-${{ github.run_attempt }}
+          name: g8-experiments-xlsx-${{ github.event_name }}-${{ env.G8_EVENT_DELIVERY_SHA }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/g8-experiments-xlsx-evidence
           if-no-files-found: error

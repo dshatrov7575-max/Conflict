@@ -14,12 +14,14 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.exceptions import PermissionDenied
 
+from domain.api import player as legacy_player
 from domain.services.foundation_packages import RawJSONError, validate_json_content_type
 from domain.services.xlsx_adapter import MAX_XLSX_BYTES
 from domain.services.player_experiments import (
-    PlayerExperimentError, admit_assessment_scope, comparison, create_experiment,
-    create_manual_value, import_xlsx, list_experiments, list_expert_profiles,
-    list_values, mutate_experiment, open_experiment, preview_xlsx, recover_import,
+    PlayerExperimentError, admit_assessment_scope, assessment_principal, comparison,
+    create_experiment, create_manual_value, create_or_update_expert_profile,
+    import_xlsx, list_experiments, list_expert_profiles, list_values,
+    mutate_experiment, open_experiment, preview_xlsx, recover_import,
 )
 from domain.services.player_workspaces import (
     PlayerError, admit_player_scope, canonical_receipt_bytes, list_player_experiments,
@@ -226,14 +228,18 @@ def _headers(request):
             "if_match": request.META.get("HTTP_IF_MATCH")}
 
 
-@_endpoint(methods=["GET"], scope="workspace", identity_key="workspace_id")
-def expert_profiles(request, workspace_id):
+@_endpoint(methods=["GET", "POST"], scope="workspace", identity_key="workspace_id")
+def expert_profiles(request, workspace_id, body=None):
+    if request.method == "POST":
+        return create_or_update_expert_profile(
+            user=request.user, workspace_id=workspace_id, body=body, **_headers(request),
+        )
     return list_expert_profiles(user=request.user, workspace_id=workspace_id)
 
 
 @_endpoint(methods=["GET", "POST"], scope="workspace", identity_key="workspace_id", query=True,
-           legacy_experiments_get=True)
-def experiments(request, workspace_id, body=None):
+           legacy_experiments_get=False)
+def _g8_experiments(request, workspace_id, body=None):
     if request.method == "POST":
         if request._request.GET:
             raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
@@ -242,13 +248,21 @@ def experiments(request, workspace_id, body=None):
     values = request._request.GET.getlist("include_archived")
     if set(request._request.GET) - {"include_archived"} or len(values) > 1:
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
+    return list_experiments(user=request.user, workspace_id=workspace_id,
+                            include_archived=values == ["true"])
+
+
+def experiments(request, workspace_id):
+    """Preserve the complete inherited G7 GET transport for legacy principals."""
+
     try:
-        return list_experiments(user=request.user, workspace_id=workspace_id,
-                                include_archived=values == ["true"])
-    except PlayerExperimentError as exc:
-        if exc.code != "PLAYER_PERMISSION_DENIED" or values:
-            raise
-        return list_player_experiments(user=request.user, workspace_id=workspace_id)
+        assessment_principal(request.user)
+    except PlayerExperimentError:
+        return legacy_player.experiments(request, workspace_id=workspace_id)
+    return _g8_experiments(request, workspace_id=workspace_id)
+
+
+experiments.csrf_exempt = _g8_experiments.csrf_exempt
 
 
 @_endpoint(methods=["GET", "PUT"], scope="experiment", identity_key="experiment_id")
