@@ -19,7 +19,9 @@ from django.db import connection
 from django.urls import resolve, reverse
 
 from domain.models import ActorElementAssessment, ImportRun, ParameterValue
-from domain.services.player_experiments import comparison, list_experiments, list_values, mutate_experiment
+from domain.services.player_experiments import (
+    comparison, create_manual_value, list_experiments, list_values, mutate_experiment,
+)
 from domain.services.player_experiments import G8_REQUIRED_PERMISSIONS
 from domain.api.studio_definitions import project_access_group_name
 from domain.services.seed import seed_zhanaozen_demo
@@ -57,12 +59,21 @@ class ProductionPlayerG8Tests(PlayerExperimentsFixture,TestCase):
         patterns=[str(pattern.pattern) for pattern in __import__("domain.urls",fromlist=["urlpatterns"]).urlpatterns]
         self.assertEqual(patterns.count("player/workspaces/<uuid:workspace_id>/experiments/"),1)
         self.assertNotIn("domain.change_expertprofile",G8_REQUIRED_PERMISSIONS)
-        profile_url=self.api(f"workspaces/{self.workspace.pk}/expert-profiles/"); profile_id=uuid4(); profile_body={"id":str(profile_id),"code":f"PROFILE-{profile_id.hex[:8]}","version":"1.0.0","kind":"HUMAN","display_name":"Editable profile","identity_key":f"human:{profile_id}","provider":"","model_name":"","metadata":{"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1"}}
+        profile_url=self.api(f"workspaces/{self.workspace.pk}/expert-profiles/"); profile_id=uuid4(); profile_body={"id":str(profile_id),"code":f"PROFILE-{profile_id.hex[:8]}","version":"1.0.0","kind":"HUMAN","display_name":"Editable profile","identity_key":f"human:{profile_id}","provider":"","model_name":"","metadata":{"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","organization":"Organization","role":"Expert","description":"Bounded HUMAN profile"}}
         csrf=self.client.cookies[settings.CSRF_COOKIE_NAME].value
         self.assertEqual(self.client.post(profile_url,data=json.dumps(profile_body),content_type="application/json",HTTP_IDEMPOTENCY_KEY=str(uuid4()),HTTP_IF_MATCH=f'"{typed.MANIFEST_SHA256}"').status_code,403)
         created=self.client.post(profile_url,data=json.dumps(profile_body),content_type="application/json",HTTP_IDEMPOTENCY_KEY=str(uuid4()),HTTP_IF_MATCH=f'"{typed.MANIFEST_SHA256}"',HTTP_X_CSRFTOKEN=csrf); self.assertEqual(created.status_code,201,created.content)
-        listed=self.client.get(profile_url).json()["profiles"]; item=next(row for row in listed if row["id"]==str(profile_id)); profile_body["display_name"]="Edited before use"
+        listed=self.client.get(profile_url).json()["profiles"]; item=next(row for row in listed if row["id"]==str(profile_id)); profile_body["display_name"]="Edited before use"; profile_body["metadata"]["organization"]="Edited organization"
         edited=self.client.post(profile_url,data=json.dumps(profile_body),content_type="application/json",HTTP_IDEMPOTENCY_KEY=str(uuid4()),HTTP_IF_MATCH=f'"{item["etag"]}"',HTTP_X_CSRFTOKEN=csrf); self.assertEqual(edited.status_code,201,edited.content)
+        oversize={**profile_body,"metadata":{**profile_body["metadata"],"description":"x"*2001}}
+        self.assertEqual(self.client.post(profile_url,data=json.dumps(oversize),content_type="application/json",HTTP_IDEMPOTENCY_KEY=str(uuid4()),HTTP_IF_MATCH=f'"{edited.json()["expert_profile"]["etag"]}"',HTTP_X_CSRFTOKEN=csrf).status_code,400)
+        ai_missing={**profile_body,"id":str(uuid4()),"code":f"PROFILE-{uuid4().hex[:8]}","identity_key":f"ai:{uuid4()}","kind":"AI","provider":"","model_name":"model","metadata":{"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1"}}
+        self.assertEqual(self.client.post(profile_url,data=json.dumps(ai_missing),content_type="application/json",HTTP_IDEMPOTENCY_KEY=str(uuid4()),HTTP_IF_MATCH=f'"{typed.MANIFEST_SHA256}"',HTTP_X_CSRFTOKEN=csrf).status_code,400)
+        ai_missing["provider"]="provider"; ai_missing["model_name"]=""
+        self.assertEqual(self.client.post(profile_url,data=json.dumps(ai_missing),content_type="application/json",HTTP_IDEMPOTENCY_KEY=str(uuid4()),HTTP_IF_MATCH=f'"{typed.MANIFEST_SHA256}"',HTTP_X_CSRFTOKEN=csrf).status_code,400)
+        source=SCRIPT.read_text(encoding="utf-8"); html=TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn('organization: $("g8-organization").value',source); self.assertIn('role: $("g8-profile-role").value',source); self.assertIn('description: $("g8-profile-description").value',source)
+        self.assertIn('id="g8-human-profile-fields"',html); self.assertIn('maxlength="2000"',html)
         legacy=get_user_model().objects.create_user(username=f"g7-legacy-{uuid4()}"); legacy.user_permissions.add(*Permission.objects.filter(content_type__app_label="domain",codename__in=[value.removeprefix("domain.") for value in PLAYER_REQUIRED_PERMISSIONS])); legacy.groups.add(Group.objects.get(name=project_access_group_name(self.project.pk))); legacy_client=Client(); legacy_client.force_login(legacy); collection=self.api(f"workspaces/{self.workspace.pk}/experiments/")
         inherited=legacy_client.get(collection); self.assertEqual(inherited.content,canonical_receipt_bytes(list_player_experiments(user=legacy,workspace_id=self.workspace.pk)))
         invalid=legacy_client.get(collection+"?include_archived=true"); self.assertEqual((invalid.status_code,invalid.json()["code"]),(400,"PLAYER_REQUEST_INVALID"))
@@ -118,6 +129,18 @@ class ProductionPlayerG8Tests(PlayerExperimentsFixture,TestCase):
         _,experiment,_=self.aggregate(); first=self.create_value(experiment,value=0); second=self.create_value(experiment,predecessor=first,value=1,version="1.0.1"); self.assertEqual(second.supersedes_id,first.pk); self.assertIn("Преемник предыдущего",self.shell.content.decode())
         values=list_values(user=self.user,experiment_id=experiment.pk)["values"]; self.assertEqual({item["focus"]["id"] for item in values},{str(first.pk),str(second.pk)}); self.assertTrue(all(item["focus"]["kind"]=="parameter-value" for item in values))
         source=SCRIPT.read_text(encoding="utf-8"); html=TEMPLATE.read_text(encoding="utf-8"); self.assertIn('request(`experiments/${state.selected.id}/values/`',source); self.assertIn("supersedes_id: predecessor?.id || null",source); self.assertIn("bindFocus(button, item.focus)",source); self.assertIn('id="g8-manual-form"',html); self.assertFalse(ParameterValue.objects.filter(code=focus_id).exists())
+        _,paired,_=self.aggregate(); first_body=self.value_body(paired,value=None); etag=list_values(user=self.user,experiment_id=paired.pk)["experiment"]["etag"]
+        create_manual_value(user=self.user,experiment_id=paired.pk,operation_id=str(uuid4()),if_match=f'"{etag}"',body=first_body); first_value=ParameterValue.objects.get(pk=first_body["id"]); first_assessment=first_value.actor_element_assessment
+        record=next(row for row in load_profile()["records"] if row["migration_status"]=="TRANSFER_WITH_REVIEW" and row["source_manifest_actor_code"]==first_body["actor_code"] and row["source_manifest_element_code"]==first_body["element_code"] and row["time_slice_manifest_uuid"]==first_body["time_slice_id"] and row["canonical_parameter_code"]==first_body["parameter_code"])
+        other=next(row for row in load_profile()["records"] if row["migration_status"]=="TRANSFER_WITH_REVIEW" and row["source_manifest_actor_code"]==record["source_manifest_actor_code"] and row["source_manifest_element_code"]==record["source_manifest_element_code"] and row["time_slice_code"]==record["time_slice_code"] and row["canonical_parameter_code"]!=record["canonical_parameter_code"])
+        second_body={**first_body,"id":str(uuid4()),"code":f"G8-VALUE-{uuid4().hex[:10]}","assessment_id":str(uuid4()),"assessment_code":f"G8-ASSESS-{uuid4().hex[:10]}","parameter_code":other["canonical_parameter_code"],"confidence_category":"UNKNOWN"}
+        etag=list_values(user=self.user,experiment_id=paired.pk)["experiment"]["etag"]; create_manual_value(user=self.user,experiment_id=paired.pk,operation_id=str(uuid4()),if_match=f'"{etag}"',body=second_body)
+        paired_leaf=ParameterValue.objects.get(pk=second_body["id"]).actor_element_assessment; frozen=(first_assessment.status,first_assessment.version,json.dumps(first_assessment.provenance,sort_keys=True))
+        correction={**first_body,"id":str(uuid4()),"code":f"G8-VALUE-{uuid4().hex[:10]}","version":"1.0.1","assessment_id":str(uuid4()),"assessment_code":f"G8-ASSESS-{uuid4().hex[:10]}","status":"PROVISIONAL","value":5,"confidence_category":"LOW","supersedes_id":str(first_value.pk)}
+        first_dto=next(row for row in list_values(user=self.user,experiment_id=paired.pk)["values"] if row["id"]==str(first_value.pk)); create_manual_value(user=self.user,experiment_id=paired.pk,operation_id=str(uuid4()),if_match=f'"{first_dto["etag"]}"',body=correction)
+        corrected=ParameterValue.objects.get(pk=correction["id"]); first_assessment.refresh_from_db(); self.assertEqual((first_assessment.status,first_assessment.version,json.dumps(first_assessment.provenance,sort_keys=True)),frozen)
+        self.assertEqual(corrected.actor_element_assessment.supersedes_id,paired_leaf.pk); self.assertEqual(corrected.actor_element_assessment.status,"PROVISIONAL_PRE_METHOD_FREEZE"); self.assertEqual(corrected.actor_element_assessment.provenance["parameter_confidence"][first_body["parameter_code"]],"LOW")
+        visible=list_values(user=self.user,experiment_id=paired.pk)["values"]; self.assertTrue({str(first_value.pk),str(corrected.pk)} <= {row["focus"]["id"] for row in visible})
 
     def test_general_comparison_shows_only_raw_series_without_mean_rank_consensus_or_fill(self):
         focus_id="G8-G9-FOCUS-R1"

@@ -2658,6 +2658,43 @@ _G8_EXPERIMENT_CONTRACT = "FOUNDATION_PLAYER_EXPERIMENT_V1"
 _G8_EXPERT_PROFILE_CONTRACT = "FOUNDATION_PLAYER_EXPERT_PROFILE_V1"
 
 
+def _g8_expert_profile_contract_errors(
+    *, kind: str, provider: Any, model_name: Any, metadata: Any
+) -> dict[str, str]:
+    """Validate the exact bounded G8 HUMAN/AI profile contract."""
+
+    errors: dict[str, str] = {}
+    marker = {"contract": _G8_EXPERT_PROFILE_CONTRACT}
+    if kind == AssessmentKind.AI:
+        if not isinstance(provider, str) or not provider.strip() or len(provider) > 128:
+            errors["provider"] = "AI profiles require a provider of at most 128 characters."
+        if not isinstance(model_name, str) or not model_name.strip() or len(model_name) > 255:
+            errors["model_name"] = "AI profiles require a model name of at most 255 characters."
+        if metadata != marker:
+            errors["metadata"] = "AI G8 profile metadata must be the exact contract marker."
+    elif kind == AssessmentKind.HUMAN:
+        if provider != "":
+            errors["provider"] = "HUMAN G8 profiles require an empty provider."
+        if model_name != "":
+            errors["model_name"] = "HUMAN G8 profiles require an empty model name."
+        exact_keys = {"contract", "organization", "role", "description"}
+        if type(metadata) is not dict or set(metadata) != exact_keys:
+            errors["metadata"] = "HUMAN G8 profile metadata requires the exact bounded key set."
+        elif metadata.get("contract") != _G8_EXPERT_PROFILE_CONTRACT:
+            errors["metadata"] = "HUMAN G8 profile metadata requires the exact contract marker."
+        else:
+            for key, limit in (("organization", 255), ("role", 255), ("description", 2000)):
+                value = metadata[key]
+                if not isinstance(value, str) or len(value) > limit:
+                    errors["metadata"] = (
+                        "HUMAN G8 organization/role/description must be bounded strings."
+                    )
+                    break
+    else:
+        errors["kind"] = "A G8 expert profile must use the HUMAN or AI lane."
+    return errors
+
+
 class ExpertProfileQuerySet(models.QuerySet):
     """Keep the first-use immutability rule effective for bulk ORM operations."""
 
@@ -2670,14 +2707,12 @@ class ExpertProfileQuerySet(models.QuerySet):
     def update(self, **kwargs: Any) -> int:
         if self._contains_used_profile() and set(kwargs) - {"updated_at"}:
             raise ValidationError("A used ExpertProfile is immutable; create a new profile.")
-        if "metadata" in kwargs and (
-            self._contains_g8_profile()
-            or (
-                isinstance(kwargs["metadata"], dict)
-                and kwargs["metadata"].get("contract") == _G8_EXPERT_PROFILE_CONTRACT
-            )
-        ) and kwargs["metadata"] != {"contract": _G8_EXPERT_PROFILE_CONTRACT}:
-            raise ValidationError("G8 ExpertProfile metadata must remain the exact contract marker.")
+        entering_g8 = (
+            isinstance(kwargs.get("metadata"), dict)
+            and kwargs["metadata"].get("contract") == _G8_EXPERT_PROFILE_CONTRACT
+        )
+        if (self._contains_g8_profile() or entering_g8) and set(kwargs) - {"updated_at"}:
+            raise ValidationError("G8 ExpertProfile edits require the guarded Foundation service.")
         return super().update(**kwargs)
 
     def delete(self) -> tuple[int, dict[str, int]]:
@@ -2694,23 +2729,17 @@ class ExpertProfileQuerySet(models.QuerySet):
             expert_profile_id__in=[obj.pk for obj in objects if obj.pk]
         ).exists():
             raise ValidationError("A used ExpertProfile is immutable; create a new profile.")
-        if "metadata" in set(fields):
-            object_ids = [obj.pk for obj in objects if obj.pk]
-            persisted_g8 = self.model._base_manager.filter(
-                pk__in=object_ids, metadata__contract=_G8_EXPERT_PROFILE_CONTRACT,
-            ).exists()
-            invalid_incoming = any(
-                isinstance(obj.metadata, dict)
-                and obj.metadata.get("contract") == _G8_EXPERT_PROFILE_CONTRACT
-                and obj.metadata != {"contract": _G8_EXPERT_PROFILE_CONTRACT}
-                for obj in objects
-            )
-            removed_marker = persisted_g8 and any(
-                obj.metadata != {"contract": _G8_EXPERT_PROFILE_CONTRACT}
-                for obj in objects
-            )
-            if invalid_incoming or removed_marker:
-                raise ValidationError("G8 ExpertProfile metadata must remain the exact contract marker.")
+        object_ids = [obj.pk for obj in objects if obj.pk]
+        persisted_g8 = self.model._base_manager.filter(
+            pk__in=object_ids, metadata__contract=_G8_EXPERT_PROFILE_CONTRACT,
+        ).exists()
+        incoming_g8 = any(
+            isinstance(obj.metadata, dict)
+            and obj.metadata.get("contract") == _G8_EXPERT_PROFILE_CONTRACT
+            for obj in objects
+        )
+        if protected and (persisted_g8 or incoming_g8):
+            raise ValidationError("G8 ExpertProfile edits require the guarded Foundation service.")
         return super().bulk_update(objects, fields, batch_size=batch_size)
 
     def bulk_create(self, objs: Any, **kwargs: Any) -> list[Any]:
@@ -2807,19 +2836,18 @@ class ExpertProfile(ValidatedStableVersionedModel):
             raise ValidationError(
                 {"kind": "An expert profile must use the HUMAN or AI lane."}
             )
-        if self.kind == AssessmentKind.AI and not self.model_name.strip():
-            raise ValidationError({"model_name": "AI profiles require a model name."})
         if (
             isinstance(self.metadata, dict)
             and self.metadata.get("contract") == _G8_EXPERT_PROFILE_CONTRACT
-            and self.metadata != {"contract": _G8_EXPERT_PROFILE_CONTRACT}
         ):
-            raise ValidationError({
-                "metadata": (
-                    "G8 ExpertProfile metadata is the exact contract marker; lifecycle, "
-                    "archive, provenance, secret and prompt payloads are forbidden."
-                )
-            })
+            errors = _g8_expert_profile_contract_errors(
+                kind=self.kind, provider=self.provider,
+                model_name=self.model_name, metadata=self.metadata,
+            )
+            if errors:
+                raise ValidationError(errors)
+        elif self.kind == AssessmentKind.AI and not self.model_name.strip():
+            raise ValidationError({"model_name": "AI profiles require a model name."})
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         if self.pk and ExpertProfile.objects.filter(pk=self.pk).exists():
@@ -2827,10 +2855,13 @@ class ExpertProfile(ValidatedStableVersionedModel):
             if (
                 isinstance(previous.metadata, dict)
                 and previous.metadata.get("contract") == _G8_EXPERT_PROFILE_CONTRACT
-                and self.metadata != {"contract": _G8_EXPERT_PROFILE_CONTRACT}
+                and not (
+                    isinstance(self.metadata, dict)
+                    and self.metadata.get("contract") == _G8_EXPERT_PROFILE_CONTRACT
+                )
             ):
                 raise ValidationError({
-                    "metadata": "G8 ExpertProfile metadata must remain the exact contract marker."
+                    "metadata": "G8 ExpertProfile metadata must retain its contract marker."
                 })
             if Experiment.objects.filter(expert_profile_id=self.pk).exists():
                 changed = [
@@ -3133,6 +3164,7 @@ class ActorElementAssessment(RevisionedStableVersionedModel):
                     "actor_id",
                     "element_id",
                     "time_slice_id",
+                    "experiment_id",
                     "assessment_set_id",
                 )
                 if any(
@@ -3155,6 +3187,7 @@ class ActorElementAssessment(RevisionedStableVersionedModel):
             actor_id=self.actor_id,
             element_id=self.element_id,
             time_slice_id=self.time_slice_id,
+            experiment_id=self.experiment_id,
             assessment_set_id=self.assessment_set_id,
             supersedes__isnull=True,
         ).exclude(pk=self.pk).exists():
@@ -3962,17 +3995,59 @@ class ParameterValue(RevisionedStableVersionedModel):
             previous = ParameterValue.objects.filter(pk=self.supersedes_id).first()
             if previous is not None:
                 context_fields = (
+                    "project_id",
                     "workspace_id",
                     "time_slice_id",
                     "assessment_set_id",
-                    "actor_element_assessment_id",
                     "parameter_definition_id",
                     "target_type",
-                    "target_id",
                 )
                 if any(
                     getattr(previous, field) != getattr(self, field)
                     for field in context_fields
+                ):
+                    errors["supersedes"] = "Value successor context must remain exact."
+                if self.target_type == TargetType.ACTOR_ELEMENT_ASSESSMENT:
+                    previous_assessment = ActorElementAssessment.objects.filter(
+                        pk=previous.actor_element_assessment_id
+                    ).first()
+                    if (
+                        previous.target_type != TargetType.ACTOR_ELEMENT_ASSESSMENT
+                        or previous.target_id != previous.actor_element_assessment_id
+                        or previous_assessment is None
+                        or assessment is None
+                    ):
+                        errors["supersedes"] = "Canonical value lineage requires exact AEA targets."
+                    elif previous_assessment.pk != assessment.pk:
+                        assessment_context = (
+                            "workspace_id", "actor_id", "element_id", "time_slice_id",
+                            "experiment_id", "assessment_set_id",
+                        )
+                        if any(
+                            getattr(previous_assessment, field) != getattr(assessment, field)
+                            for field in assessment_context
+                        ):
+                            errors["supersedes"] = "Value successor AEA context must remain exact."
+                        else:
+                            seen: set[Any] = set()
+                            cursor = assessment
+                            while cursor is not None and cursor.pk not in seen:
+                                seen.add(cursor.pk)
+                                if cursor.pk == previous_assessment.pk:
+                                    break
+                                cursor = (
+                                    ActorElementAssessment.objects.filter(
+                                        pk=cursor.supersedes_id
+                                    ).first()
+                                    if cursor.supersedes_id else None
+                                )
+                            if previous_assessment.pk not in seen:
+                                errors["supersedes"] = (
+                                    "Value successor may advance only to a descendant AEA."
+                                )
+                elif (
+                    previous.actor_element_assessment_id != self.actor_element_assessment_id
+                    or previous.target_id != self.target_id
                 ):
                     errors["supersedes"] = "Value successor context must remain exact."
                 if previous.version == self.version:

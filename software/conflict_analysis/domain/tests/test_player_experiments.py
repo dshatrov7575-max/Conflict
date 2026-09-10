@@ -44,10 +44,15 @@ class PlayerExperimentsFixture:
 
     def aggregate_body(self, *, kind="AI", suffix=None):
         suffix = suffix or uuid4().hex[:10]; experiment_id, set_id, profile_id = uuid4(), uuid4(), uuid4()
+        profile_metadata = (
+            {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1"}
+            if kind == "AI" else
+            {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","organization":"","role":"","description":""}
+        )
         body = {
             "experiment":{"id":str(experiment_id),"code":f"G8-EXP-{suffix}","version":"1.0.0","name":f"{kind} {suffix}","color":"#255cca","order":0,"method_version":"A5-v0.1"},
             "assessment_set":{"id":str(set_id),"code":f"G8-SET-{suffix}","version":"1.0.0","kind":kind,"name":f"{kind} set","description":"independent lane"},
-            "expert_profile":{"id":str(profile_id),"code":f"G8-PROFILE-{suffix}","version":"1.0.0","kind":kind,"display_name":f"{kind} expert","identity_key":f"g8:{kind}:{suffix}","provider":"test" if kind=="AI" else "","model_name":"test-model" if kind=="AI" else "","metadata":{"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1"}},
+            "expert_profile":{"id":str(profile_id),"code":f"G8-PROFILE-{suffix}","version":"1.0.0","kind":kind,"display_name":f"{kind} expert","identity_key":f"g8:{kind}:{suffix}","provider":"test" if kind=="AI" else "","model_name":"test-model" if kind=="AI" else "","metadata":profile_metadata},
         }
         return experiment_id, body
 
@@ -91,6 +96,32 @@ class PlayerExperimentsTests(PlayerExperimentsFixture, TestCase):
 
     def test_expert_profile_assessment_set_experiment_create_replay_and_receipt_are_atomic(self):
         experiment_id,body=self.aggregate_body(); profile_body=body["expert_profile"]
+        for missing in ("provider", "model_name"):
+            invalid={**profile_body,missing:""}
+            with self.assertRaises(PlayerExperimentError) as rejected:
+                create_or_update_expert_profile(user=self.user,workspace_id=self.workspace.pk,operation_id=str(uuid4()),if_match=f'"{typed.MANIFEST_SHA256}"',body=invalid)
+            self.assertEqual(rejected.exception.code,"PLAYER_REQUEST_INVALID")
+        _,human_aggregate=self.aggregate_body(kind="HUMAN"); human_body=human_aggregate["expert_profile"]
+        human_body["metadata"]={"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","organization":"Международная организация","role":"Эксперт","description":"Описание профиля"}
+        human_created=create_or_update_expert_profile(user=self.user,workspace_id=self.workspace.pk,operation_id=str(uuid4()),if_match=f'"{typed.MANIFEST_SHA256}"',body=human_body)
+        human_created_body=json.loads(human_created.body)
+        self.assertEqual(human_created_body["expert_profile"]["metadata"],human_body["metadata"])
+        human_dto=next(row for row in list_expert_profiles(user=self.user,workspace_id=self.workspace.pk)["profiles"] if row["id"]==human_body["id"])
+        human_body["metadata"]={"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","organization":"","role":"","description":""}
+        human_edited=create_or_update_expert_profile(user=self.user,workspace_id=self.workspace.pk,operation_id=str(uuid4()),if_match=f'"{human_dto["etag"]}"',body=human_body)
+        human_edited_body=json.loads(human_edited.body)
+        self.assertEqual(human_edited_body["expert_profile"]["metadata"],human_body["metadata"])
+        for invalid_metadata in (
+            {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","organization":"x"*256,"role":"","description":""},
+            {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","organization":"","role":"x"*256,"description":""},
+            {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","organization":"","role":"","description":"x"*2001},
+            {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","organization":{},"role":"","description":""},
+            {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","organization":"","role":"","description":"","prompt_body":"hidden"},
+        ):
+            invalid={**human_body,"metadata":invalid_metadata}
+            with self.assertRaises(PlayerExperimentError) as rejected:
+                create_or_update_expert_profile(user=self.user,workspace_id=self.workspace.pk,operation_id=str(uuid4()),if_match=f'"{human_edited_body["expert_profile"]["etag"]}"',body=invalid)
+            self.assertEqual(rejected.exception.code,"PLAYER_REQUEST_INVALID")
         for forbidden in (
             {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","archived":True},
             {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","lifecycle":{"status":"ARCHIVED"}},
@@ -187,6 +218,37 @@ class PlayerExperimentsTests(PlayerExperimentsFixture, TestCase):
         create_manual_value(user=self.user,experiment_id=unknown_pair.pk,operation_id=str(uuid4()),if_match=f'"{unknown_etag}"',body=unknown_second)
         unknown_successor=ParameterValue.objects.get(pk=unknown_second["id"]).actor_element_assessment
         self.assertEqual(unknown_successor.status,"UNKNOWN"); self.assertEqual(unknown_successor.provenance["parameter_confidence"],{unknown_first["parameter_code"]:"MEDIUM",unknown_second["parameter_code"]:"UNKNOWN"})
+        unknown_first_value=ParameterValue.objects.get(pk=unknown_first["id"]); unknown_second_value=ParameterValue.objects.get(pk=unknown_second["id"])
+        def immutable_bytes(row):
+            return json.dumps({field.name:getattr(row,field.attname) for field in row._meta.concrete_fields if field.name not in {"created_at","updated_at"}},sort_keys=True,default=str)
+        frozen_history={row.pk:immutable_bytes(row) for row in (unknown_first_value,unknown_second_value,unknown_first_value.actor_element_assessment,unknown_successor)}
+        def correct(predecessor, source, *, value, confidence, version):
+            body={**source,"id":str(uuid4()),"code":f"G8-VALUE-{uuid4().hex[:10]}","version":version,"assessment_id":str(uuid4()),"assessment_code":f"G8-ASSESS-{uuid4().hex[:10]}","status":"UNKNOWN" if value is None else "PROVISIONAL","value":value,"confidence_category":confidence,"supersedes_id":str(predecessor.pk)}
+            etag=next(row["etag"] for row in list_values(user=self.user,experiment_id=unknown_pair.pk)["values"] if row["id"]==str(predecessor.pk))
+            create_manual_value(user=self.user,experiment_id=unknown_pair.pk,operation_id=str(uuid4()),if_match=f'"{etag}"',body=body)
+            return ParameterValue.objects.get(pk=body["id"]),body
+        numeric_first,numeric_first_body=correct(unknown_first_value,unknown_first,value=3,confidence="LOW",version="1.0.1")
+        self.assertEqual(numeric_first.actor_element_assessment.supersedes_id,unknown_successor.pk); self.assertEqual(numeric_first.actor_element_assessment.status,"PROVISIONAL_PRE_METHOD_FREEZE")
+        numeric_second,numeric_second_body=correct(unknown_second_value,unknown_second,value=4,confidence="HIGH",version="1.0.1")
+        self.assertEqual(numeric_second.actor_element_assessment.status,"PROVISIONAL_PRE_METHOD_FREEZE")
+        cleared_first,cleared_first_body=correct(numeric_first,numeric_first_body,value=None,confidence="UNKNOWN",version="1.0.2")
+        self.assertEqual(cleared_first.actor_element_assessment.status,"PROVISIONAL_PRE_METHOD_FREEZE")
+        cleared_second,_=correct(numeric_second,numeric_second_body,value=None,confidence="MEDIUM",version="1.0.2")
+        current_assessment=cleared_second.actor_element_assessment
+        self.assertEqual(current_assessment.status,"UNKNOWN"); self.assertEqual(current_assessment.confidence_level,"UNKNOWN")
+        self.assertEqual(current_assessment.provenance["parameter_confidence"],{unknown_first["parameter_code"]:"UNKNOWN",unknown_second["parameter_code"]:"MEDIUM"})
+        for model in (ParameterValue,ActorElementAssessment):
+            for pk,content in tuple(frozen_history.items()):
+                if model.objects.filter(pk=pk).exists(): self.assertEqual(immutable_bytes(model.objects.get(pk=pk)),content)
+        stale={**unknown_first,"id":str(uuid4()),"code":f"G8-VALUE-{uuid4().hex[:10]}","version":"1.0.9","assessment_id":str(uuid4()),"assessment_code":f"G8-ASSESS-{uuid4().hex[:10]}","supersedes_id":str(unknown_first_value.pk)}
+        stale_etag=next(row["etag"] for row in list_values(user=self.user,experiment_id=unknown_pair.pk)["values"] if row["id"]==str(unknown_first_value.pk))
+        with self.assertRaises(PlayerExperimentError) as rejected:
+            create_manual_value(user=self.user,experiment_id=unknown_pair.pk,operation_id=str(uuid4()),if_match=f'"{stale_etag}"',body=stale)
+        self.assertEqual(rejected.exception.code,"PLAYER_STALE")
+        values=list_values(user=self.user,experiment_id=unknown_pair.pk)["values"]
+        expected_ids={str(row.pk) for row in (unknown_first_value,unknown_second_value,numeric_first,numeric_second,cleared_first,cleared_second)}
+        self.assertTrue(expected_ids <= {row["focus"]["id"] for row in values})
+        self.assertEqual(set(ParameterValue.objects.filter(actor_element_assessment__experiment=unknown_pair,successor__isnull=True).values_list("pk",flat=True)),{cleared_first.pk,cleared_second.pk})
 
     def test_frozen_computed_and_a5_blocked_targets_deny_value_writes(self):
         _,experiment,_=self.aggregate(); dto=list_experiments(user=self.user,workspace_id=self.workspace.pk)["experiments"][0]

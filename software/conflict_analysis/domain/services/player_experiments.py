@@ -144,10 +144,35 @@ def _profile_dto(row: ExpertProfile) -> dict[str, Any]:
     return {**core, "etag": hashlib.sha256(_canonical(core)).hexdigest()}
 
 
-def _require_profile_metadata(metadata: object) -> None:
-    """Admit the sole bounded G8 profile marker; profile metadata is not a payload store."""
+def _require_profile_contract(profile: Mapping[str, Any]) -> None:
+    """Admit only the frozen bounded HUMAN/AI G8 profile wire shapes."""
 
-    if metadata != {"contract": PROFILE_CONTRACT}:
+    kind = profile.get("kind")
+    provider = profile.get("provider")
+    model_name = profile.get("model_name")
+    metadata = profile.get("metadata")
+    marker = {"contract": PROFILE_CONTRACT}
+    if kind == AssessmentKind.AI:
+        valid = (
+            isinstance(provider, str) and bool(provider.strip()) and len(provider) <= 128
+            and isinstance(model_name, str) and bool(model_name.strip()) and len(model_name) <= 255
+            and metadata == marker
+        )
+    elif kind == AssessmentKind.HUMAN:
+        valid = (
+            provider == "" and model_name == "" and type(metadata) is dict
+            and set(metadata) == {"contract", "organization", "role", "description"}
+            and metadata.get("contract") == PROFILE_CONTRACT
+            and isinstance(metadata.get("organization"), str)
+            and len(metadata["organization"]) <= 255
+            and isinstance(metadata.get("role"), str)
+            and len(metadata["role"]) <= 255
+            and isinstance(metadata.get("description"), str)
+            and len(metadata["description"]) <= 2000
+        )
+    else:
+        valid = False
+    if not valid:
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
 
 
@@ -186,9 +211,7 @@ def create_or_update_expert_profile(
         "provider", "model_name", "metadata",
     }
     _require_keys(body, expected)
-    if body["kind"] not in {AssessmentKind.HUMAN, AssessmentKind.AI}:
-        raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
-    _require_profile_metadata(body["metadata"])
+    _require_profile_contract(body)
     profile_id = _uuid(body["id"])
     operation_id = _uuid(operation_id, operation=True)
     request_sha = _request_hash(
@@ -354,7 +377,7 @@ def create_experiment(*, user, workspace_id, operation_id, if_match, body):
     _require_keys(experiment_body, {"id","code","version","name","color","order","method_version"})
     _require_keys(set_body, {"id","code","version","kind","name","description"})
     _require_keys(profile_body, {"id","code","version","kind","display_name","identity_key","provider","model_name","metadata"})
-    _require_profile_metadata(profile_body["metadata"])
+    _require_profile_contract(profile_body)
     if set_body["kind"] not in {AssessmentKind.HUMAN, AssessmentKind.AI} or profile_body["kind"] != set_body["kind"]:
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
     operation_id = _uuid(operation_id, operation=True)
@@ -554,7 +577,7 @@ def create_manual_value(*, user, experiment_id, operation_id, if_match, body):
             "workspace": workspace, "actor": actor, "element": element, "time_slice": ts,
             "experiment": experiment, "assessment_set": experiment.assessment_set,
         }
-        assessment=ActorElementAssessment.objects.filter(
+        assessment=ActorElementAssessment.objects.select_for_update(of=("self",)).filter(
             **context, successor__isnull=True,
         ).first()
         if assessment is None:
@@ -615,10 +638,73 @@ def create_manual_value(*, user, experiment_id, operation_id, if_match, body):
             )
             assessment.save(force_insert=True)
         else:
-            assessment = predecessor.actor_element_assessment
-            confidence = assessment.provenance.get("parameter_confidence", {})
-            if confidence.get(definition.code) != body["confidence_category"]:
+            predecessor_assessment = predecessor.actor_element_assessment
+            if (
+                predecessor.workspace_id != workspace.pk
+                or predecessor.time_slice_id != ts.pk
+                or predecessor.assessment_set_id != experiment.assessment_set_id
+                or predecessor.parameter_definition_id != definition.pk
+                or predecessor.target_type != TargetType.ACTOR_ELEMENT_ASSESSMENT
+                or predecessor.target_id != predecessor.actor_element_assessment_id
+                or predecessor_assessment.actor_id != actor.pk
+                or predecessor_assessment.element_id != element.pk
+                or predecessor_assessment.experiment_id != experiment.pk
+            ):
                 raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
+            lineage = set()
+            cursor = assessment
+            while cursor is not None and cursor.pk not in lineage:
+                lineage.add(cursor.pk)
+                if cursor.pk == predecessor_assessment.pk:
+                    break
+                cursor = (
+                    ActorElementAssessment.objects.select_for_update(of=("self",))
+                    .filter(pk=cursor.supersedes_id).first()
+                    if cursor.supersedes_id else None
+                )
+            if predecessor_assessment.pk not in lineage:
+                raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
+
+            provenance = json.loads(_canonical(assessment.provenance))
+            confidence = dict(provenance.get("parameter_confidence", {}))
+            if set(confidence) != {"POS", "SAL"}:
+                raise PlayerExperimentError("PLAYER_OPERATION_FAILED", 503)
+            confidence[definition.code] = body["confidence_category"]
+            provenance["parameter_confidence"] = confidence
+            other_numeric = ParameterValue.objects.filter(
+                actor_element_assessment__workspace=workspace,
+                actor_element_assessment__actor=actor,
+                actor_element_assessment__element=element,
+                actor_element_assessment__time_slice=ts,
+                actor_element_assessment__experiment=experiment,
+                actor_element_assessment__assessment_set=experiment.assessment_set,
+                parameter_definition__code__in={"POS", "SAL"},
+                status=ValueStatus.PROVISIONAL, successor__isnull=True,
+            ).exclude(parameter_definition=definition).exists()
+            next_status = (
+                AssessmentRecordStatus.PROVISIONAL_PRE_METHOD_FREEZE
+                if body["status"] == ValueStatus.PROVISIONAL or other_numeric
+                else AssessmentRecordStatus.UNKNOWN
+            )
+            if (
+                provenance != assessment.provenance
+                or next_status != assessment.status
+            ):
+                version_parts = assessment.version.split(".")
+                if len(version_parts) != 3 or not all(part.isdigit() for part in version_parts):
+                    raise PlayerExperimentError("PLAYER_OPERATION_FAILED", 503)
+                assessment = ActorElementAssessment(
+                    id=_uuid(body["assessment_id"]), code=body["assessment_code"],
+                    version=f"{version_parts[0]}.{version_parts[1]}.{int(version_parts[2]) + 1}",
+                    supersedes=assessment,
+                    reference_statement=assessment.reference_statement,
+                    reference_statement_incomplete=assessment.reference_statement_incomplete,
+                    status=next_status, confidence_level=ConfidenceLevel.UNKNOWN,
+                    knowledge_cutoff=assessment.knowledge_cutoff,
+                    method_version=assessment.method_version, provenance=provenance,
+                    **context,
+                )
+                assessment.save(force_insert=True)
         value=ParameterValue(
             id=_uuid(body["id"]),project=project,workspace=workspace,time_slice=ts,
             assessment_set=experiment.assessment_set,actor_element_assessment=assessment,

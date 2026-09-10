@@ -104,6 +104,18 @@
     $("g8-manual-cancel").hidden = !state.correcting;
   }
 
+  function syncProfileKind() {
+    const ai = $("g8-kind").value === "AI";
+    $("g8-provider").disabled = !ai;
+    $("g8-provider").required = ai;
+    $("g8-model").disabled = !ai;
+    $("g8-model").required = ai;
+    $("g8-human-profile-fields").hidden = ai;
+    for (const id of ["g8-organization", "g8-profile-role", "g8-profile-description"]) {
+      $(id).disabled = ai;
+    }
+  }
+
   function setBusy(value, message) {
     state.busy = value;
     syncControls();
@@ -333,9 +345,14 @@
         name: `${$("g8-name").value} values`, description: "Independent assessment lane"},
       expert_profile: {id: profileId, code: identity("PROFILE"), version: "1.0.0", kind,
         display_name: $("g8-profile-name").value, identity_key: `${kind}:${profileId}`,
-        provider: $("g8-provider").value,
+        provider: kind === "AI" ? $("g8-provider").value : "",
         model_name: kind === "AI" ? $("g8-model").value : "",
-        metadata: {contract: "FOUNDATION_PLAYER_EXPERT_PROFILE_V1"}},
+        metadata: kind === "AI"
+          ? {contract: "FOUNDATION_PLAYER_EXPERT_PROFILE_V1"}
+          : {contract: "FOUNDATION_PLAYER_EXPERT_PROFILE_V1",
+            organization: $("g8-organization").value,
+            role: $("g8-profile-role").value,
+            description: $("g8-profile-description").value}},
     };
     setBusy(true, "Создаём атомарный эксперимент…");
     try {
@@ -514,6 +531,7 @@
     if (!state.busy && app.dataset.projectionStatus === "COMPLETE") $("g8-create-dialog").showModal();
   });
   $("g8-create-cancel").addEventListener("click", () => $("g8-create-dialog").close());
+  $("g8-kind").addEventListener("change", syncProfileKind);
   $("g8-create-form").addEventListener("submit", event => create(event)
     .catch(error => $("g8-create-state").textContent = error.message));
   $("g8-freeze").addEventListener("click", () => transition("freeze")
@@ -552,5 +570,6 @@
   const observer = new MutationObserver(loadOrClear);
   observer.observe(app, {attributes: true,
     attributeFilter: ["data-state", "data-workspace-id", "data-projection-status"]});
+  syncProfileKind();
   loadOrClear();
 })();
