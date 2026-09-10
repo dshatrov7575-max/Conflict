@@ -83,3 +83,61 @@ def load_claim_boundaries() -> VerifiedClaimBoundaries:
         payload, CLAIM_BOUNDARY_CONTRACT_SHA256, decoded["contract"],
         decoded["locale"], decoded["version"], tuple(statements),
     )
+
+
+EVIDENCE_CLAIM_CONTRACT_NAME: Final = "player_g9_evidence_claim_boundaries_v1.ru.json"
+EVIDENCE_CLAIM_CONTRACT_ID: Final = "PLAYER_G9_EVIDENCE_CLAIM_BOUNDARIES_V1"
+EVIDENCE_CLAIM_CONTRACT_VERSION: Final = "1.0.0"
+EVIDENCE_CLAIM_CONTRACT_LOCALE: Final = "ru"
+EVIDENCE_CLAIM_CONTRACT_SHA256: Final = "6883dbb22b85f45404d5c6e1b338fe3e844486dadddc32e207cf3f369f3ccdc3"
+EVIDENCE_CLAIM_CONTRACT_BYTES: Final = 3102
+EVIDENCE_CLAIM_CONTRACT_PATH: Final = Path(__file__).resolve().parent / "contracts" / EVIDENCE_CLAIM_CONTRACT_NAME
+EVIDENCE_CLAIM_SIDECAR_PATH: Final = EVIDENCE_CLAIM_CONTRACT_PATH.with_suffix(".json.sha256")
+
+
+def load_evidence_claim_boundaries() -> VerifiedClaimBoundaries:
+    """Verify the immutable, presentation-only G9 evidence contract."""
+
+    try:
+        payload = EVIDENCE_CLAIM_CONTRACT_PATH.read_bytes()
+        sidecar = EVIDENCE_CLAIM_SIDECAR_PATH.read_bytes()
+    except OSError as exc:
+        raise ClaimBoundaryContractError("PLAYER_G9_CLAIM_BOUNDARY_CONTRACT_UNAVAILABLE") from exc
+    expected = f"{EVIDENCE_CLAIM_CONTRACT_SHA256}  {EVIDENCE_CLAIM_CONTRACT_NAME}\n".encode("ascii")
+    if (
+        len(payload) != EVIDENCE_CLAIM_CONTRACT_BYTES
+        or payload.startswith(b"\xef\xbb\xbf")
+        or not payload.endswith(b"\n")
+        or hashlib.sha256(payload).hexdigest() != EVIDENCE_CLAIM_CONTRACT_SHA256
+        or sidecar != expected
+    ):
+        raise ClaimBoundaryContractError("PLAYER_G9_CLAIM_BOUNDARY_CONTRACT_DRIFT")
+    try:
+        decoded = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ClaimBoundaryContractError("PLAYER_G9_CLAIM_BOUNDARY_CONTRACT_INVALID") from exc
+    if (
+        not isinstance(decoded, dict)
+        or set(decoded) != {"contract", "locale", "statements", "version"}
+        or decoded["contract"] != EVIDENCE_CLAIM_CONTRACT_ID
+        or decoded["locale"] != EVIDENCE_CLAIM_CONTRACT_LOCALE
+        or decoded["version"] != EVIDENCE_CLAIM_CONTRACT_VERSION
+        or not isinstance(decoded["statements"], list)
+        or len(decoded["statements"]) != 14
+    ):
+        raise ClaimBoundaryContractError("PLAYER_G9_CLAIM_BOUNDARY_CONTRACT_SHAPE")
+    statements, seen = [], set()
+    for item in decoded["statements"]:
+        if (
+            not isinstance(item, dict)
+            or set(item) != {"code", "text"}
+            or not all(isinstance(item[key], str) and item[key] for key in ("code", "text"))
+            or item["code"] in seen
+        ):
+            raise ClaimBoundaryContractError("PLAYER_G9_CLAIM_BOUNDARY_STATEMENT_INVALID")
+        seen.add(item["code"])
+        statements.append(MappingProxyType(dict(item)))
+    return VerifiedClaimBoundaries(
+        payload, EVIDENCE_CLAIM_CONTRACT_SHA256, decoded["contract"],
+        decoded["locale"], decoded["version"], tuple(statements),
+    )

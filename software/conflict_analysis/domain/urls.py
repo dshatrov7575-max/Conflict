@@ -23,6 +23,16 @@ urlpatterns = [
     path("player/workspaces/<uuid:workspace_id>/time-slices/", player.time_slices, name="foundation-player-time-slices"),
     path("player/workspaces/<uuid:workspace_id>/help/<str:ui_key>/", player.help_topic, name="foundation-player-help"),
     path(
+        "projects/<uuid:project_id>/workspaces/<uuid:workspace_id>/parameter-values/<uuid:parameter_value_id>/facts/",
+        evidence.parameter_value_fact_list,
+        name="foundation-parameter-value-facts",
+    ),
+    path(
+        "projects/<uuid:project_id>/workspaces/<uuid:workspace_id>/assessments/<uuid:assessment_id>/facts/",
+        evidence.assessment_fact_list,
+        name="foundation-assessment-facts",
+    ),
+    path(
         "projects/<uuid:project_id>/workspaces/<uuid:workspace_id>/facts/<uuid:fact_id>/evidence/",
         evidence.fact_evidence_drilldown,
         name="foundation-fact-evidence-drilldown",

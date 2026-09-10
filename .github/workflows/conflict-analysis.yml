@@ -15,6 +15,7 @@ on:
       - codex/ca-suite-i1-evidence-multilingual-f1
       - codex/ca-suite-i1-foundation-fd08-assessment-projection
       - codex/ca-suite-i1-g8-pre-canonical-zhanaozen-manifest-r2
+      - codex/ca-suite-i1-player-g8-experiments-xlsx
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -35,6 +36,7 @@ on:
       - codex/ca-suite-i1-foundation-fd08-assessment-projection
       - codex/ca-suite-i1-player-g7-professional-shell
       - codex/ca-suite-i1-player-g8-experiments-xlsx
+      - codex/ca-suite-i1-player-g9-evidence-ui
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -58,7 +60,8 @@ jobs:
        github.event.pull_request.head.ref != 'codex/ca-suite-i1-production-studio-c2a-lifecycle-publication' &&
        github.event.pull_request.head.ref != 'codex/ca-suite-i1-foundation-fd08-assessment-projection' &&
        github.event.pull_request.head.ref != 'codex/ca-suite-i1-player-g7-professional-shell' &&
-       github.event.pull_request.head.ref != 'codex/ca-suite-i1-player-g8-experiments-xlsx') ||
+       github.event.pull_request.head.ref != 'codex/ca-suite-i1-player-g8-experiments-xlsx' &&
+       github.event.pull_request.head.ref != 'codex/ca-suite-i1-player-g9-evidence-ui') ||
       (github.event_name == 'push' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-g8-pre-canonical-zhanaozen-manifest-r2' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-project-language-bootstrap-f0l' &&
@@ -66,7 +69,8 @@ jobs:
        github.ref != 'refs/heads/codex/ca-suite-i1-production-studio-c2a-lifecycle-publication' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-foundation-fd08-assessment-projection' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-player-g7-professional-shell' &&
-       github.ref != 'refs/heads/codex/ca-suite-i1-player-g8-experiments-xlsx')
+       github.ref != 'refs/heads/codex/ca-suite-i1-player-g8-experiments-xlsx' &&
+       github.ref != 'refs/heads/codex/ca-suite-i1-player-g9-evidence-ui')
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -6348,4 +6352,320 @@ jobs:
         with:
           name: g8-experiments-xlsx-${{ github.event_name }}-${{ env.G8_EVENT_DELIVERY_SHA }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/g8-experiments-xlsx-evidence
+          if-no-files-found: error
+
+  player-g9-evidence-ui:
+    name: Python 3.12 / PostgreSQL 18 / SQLite / G9 evidence UI exact-head gate
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.ref == 'codex/ca-suite-i1-player-g9-evidence-ui' &&
+       github.event.pull_request.base.ref == 'codex/ca-suite-i1-player-g8-experiments-xlsx') ||
+      (github.event_name == 'push' &&
+       github.ref == 'refs/heads/codex/ca-suite-i1-player-g9-evidence-ui')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: conflict_analysis
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    defaults:
+      run:
+        working-directory: software/conflict_analysis
+        shell: bash
+    env:
+      DJANGO_SECRET_KEY: ci-only-secret-key
+      POSTGRES_DB: conflict_analysis
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_CONN_MAX_AGE: "0"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+      G8_ACCEPTED_HEAD: "${{ vars.G8_ACCEPTED_HEAD }}"
+      G8_ACCEPTED_TREE: "${{ vars.G8_ACCEPTED_TREE }}"
+      G9_BASE_BRANCH: codex/ca-suite-i1-player-g8-experiments-xlsx
+      G9_BASE_HEAD: df537ee138088a1fc691cc89a257259817db4644
+      G9_BASE_TREE: 67739a84d7bcc9406cbb830d9a58656b05eee06a
+      G9_TARGET_BRANCH: codex/ca-suite-i1-player-g9-evidence-ui
+      G9_EVENT_DELIVERY_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      G9_CHROME_VERSION: 152.0.7977.64
+
+    steps:
+      - name: Check out exact G9 event head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Prove exact attempt-1 route and accepted G8 ancestry
+        env:
+          EVENT_REF: ${{ github.ref }}
+          EVENT_DELIVERY_SHA: ${{ env.G9_EVENT_DELIVERY_SHA }}
+          EVENT_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          EVENT_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          EVENT_BASE_REPOSITORY: ${{ github.event.pull_request.base.repo.full_name }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_RUN_ATTEMPT" = "1"
+          test "$G8_ACCEPTED_HEAD" = "$G9_BASE_HEAD"
+          test "$G8_ACCEPTED_TREE" = "$G9_BASE_TREE"
+          test "$(git rev-parse "$G9_BASE_HEAD^{tree}")" = "$G9_BASE_TREE"
+          delivery_head="$(git rev-parse HEAD)"
+          delivery_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse "$delivery_head^")" = "$G9_BASE_HEAD"
+          test "$(git rev-list --count "$G9_BASE_HEAD..$delivery_head")" = "1"
+          test -z "$(git rev-list --merges d2f5a881e10dbb688371e8c5add6bf9375404738..$delivery_head)"
+          git merge-base --is-ancestor d2f5a881e10dbb688371e8c5add6bf9375404738 "$delivery_head"
+          git merge-base --is-ancestor 68b14882a06b2e90710ebd06e584dc5300fdfe7e "$delivery_head"
+          git merge-base --is-ancestor 319450a64cb381df2e392027c64de157e2ed830c "$delivery_head"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+          case "$GITHUB_EVENT_NAME" in
+            pull_request)
+              test "$EVENT_HEAD_REF" = "$G9_TARGET_BRANCH"
+              test "$EVENT_BASE_REF" = "$G9_BASE_BRANCH"
+              test "$EVENT_HEAD_SHA" = "$delivery_head"
+              test "$EVENT_BASE_SHA" = "$G9_BASE_HEAD"
+              test "$EVENT_HEAD_REPOSITORY" = "$GITHUB_REPOSITORY"
+              test "$EVENT_BASE_REPOSITORY" = "$GITHUB_REPOSITORY"
+              ;;
+            push)
+              test "$GITHUB_REF" = "refs/heads/$G9_TARGET_BRANCH"
+              test "$GITHUB_SHA" = "$delivery_head"
+              ;;
+            *) exit 1 ;;
+          esac
+          git fetch --no-tags origin "+refs/heads/$G9_BASE_BRANCH:refs/remotes/origin/g9-g8-accepted"
+          test "$(git rev-parse refs/remotes/origin/g9-g8-accepted)" = "$G9_BASE_HEAD"
+          test "$(git ls-remote origin "refs/heads/$G9_TARGET_BRANCH" | cut -f1)" = "$delivery_head"
+          evidence_dir="$RUNNER_TEMP/g9-evidence-ui-evidence"
+          mkdir -p "$evidence_dir"
+          printf 'G9_EVIDENCE_DIR=%s\n' "$evidence_dir" >> "$GITHUB_ENV"
+          printf 'G9_DELIVERY_HEAD=%s\n' "$delivery_head" >> "$GITHUB_ENV"
+          printf 'G9_DELIVERY_TREE=%s\n' "$delivery_tree" >> "$GITHUB_ENV"
+          export G9_DELIVERY_HEAD="$delivery_head" G9_DELIVERY_TREE="$delivery_tree"
+          python - "$evidence_dir/route.json" <<'PY'
+          import json, os, pathlib, sys
+          pathlib.Path(sys.argv[1]).write_text(json.dumps({
+              "schema": "G9_EXACT_HEAD_ROUTE_V1",
+              "event_name": os.environ["GITHUB_EVENT_NAME"],
+              "event_ref": os.environ["EVENT_REF"],
+              "event_delivery_sha": os.environ["EVENT_DELIVERY_SHA"],
+              "event_head_ref": os.environ.get("EVENT_HEAD_REF") or os.environ["G9_TARGET_BRANCH"],
+              "event_head_sha": os.environ.get("EVENT_HEAD_SHA") or os.environ["EVENT_DELIVERY_SHA"],
+              "event_head_repository": os.environ.get("EVENT_HEAD_REPOSITORY") or os.environ["GITHUB_REPOSITORY"],
+              "event_base_ref": os.environ.get("EVENT_BASE_REF") or None,
+              "event_base_sha": os.environ.get("EVENT_BASE_SHA") or None,
+              "event_base_repository": os.environ.get("EVENT_BASE_REPOSITORY") or None,
+              "run_id": os.environ["GITHUB_RUN_ID"], "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "delivery_head": os.environ["G9_DELIVERY_HEAD"], "delivery_tree": os.environ["G9_DELIVERY_TREE"],
+              "target_branch": os.environ["G9_TARGET_BRANCH"], "base_branch": os.environ["G9_BASE_BRANCH"],
+              "base_head": os.environ["G9_BASE_HEAD"], "base_tree": os.environ["G9_BASE_TREE"],
+              "runtime_g8_accepted_head": os.environ["G8_ACCEPTED_HEAD"],
+              "runtime_g8_accepted_tree": os.environ["G8_ACCEPTED_TREE"],
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Set up exact Python and Node.js
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install exact test dependencies
+        run: python -m pip install --disable-pip-version-check -e ".[dev]" build
+
+      - name: Verify G9 scope package and migration drift
+        run: |
+          set -euo pipefail
+          python scripts/verify_player_g9_allowlist.py > "$G9_EVIDENCE_DIR/verifier.json"
+          python manage.py check
+          python manage.py makemigrations --check --dry-run > "$G9_EVIDENCE_DIR/makemigrations.txt"
+          git diff --check "$G9_BASE_HEAD" HEAD
+          node --check production_player/static/production_player/evidence.js
+          node --check production_player/browser_tests/player_g9_evidence.mjs
+          python - "$G9_EVIDENCE_DIR/static.json" <<'PY'
+          import hashlib, json, os, pathlib, sys
+          root = pathlib.Path(os.environ["GITHUB_WORKSPACE"]) / "software" / "conflict_analysis"
+          paths = (
+              "production_player/contracts/player_g9_evidence_claim_boundaries_v1.ru.json",
+              "production_player/contracts/player_g9_evidence_claim_boundaries_v1.ru.json.sha256",
+              "production_player/static/production_player/evidence.css",
+              "production_player/static/production_player/evidence.js",
+              "docs/adr/0016-production-player-g9-evidence-ui.md",
+          )
+          pathlib.Path(sys.argv[1]).write_text(json.dumps({
+              "schema": "G9_STATIC_EVIDENCE_V1", "delivery_head": os.environ["G9_DELIVERY_HEAD"],
+              "delivery_tree": os.environ["G9_DELIVERY_TREE"],
+              "files": {name: {"bytes": (root/name).stat().st_size,
+                       "sha256": hashlib.sha256((root/name).read_bytes()).hexdigest()} for name in paths},
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Run frozen G9 and full Foundation on PostgreSQL
+        run: |
+          set -euo pipefail
+          python -m pytest domain/tests/test_evidence_access.py -p no:cacheprovider --junitxml="$G9_EVIDENCE_DIR/g9-foundation-postgresql.xml"
+          python -m pytest domain/tests -p no:cacheprovider --junitxml="$G9_EVIDENCE_DIR/foundation-postgresql.xml"
+
+      - name: Run frozen G9 and full Foundation on SQLite
+        run: |
+          set -euo pipefail
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g9-focused.sqlite3" python -m pytest domain/tests/test_evidence_access.py -p no:cacheprovider --junitxml="$G9_EVIDENCE_DIR/g9-foundation-sqlite.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g9-foundation.sqlite3" python -m pytest domain/tests -p no:cacheprovider --junitxml="$G9_EVIDENCE_DIR/foundation-sqlite.xml"
+
+      - name: Build one exact G9 wheel
+        run: |
+          set -euo pipefail
+          python -m pip wheel --no-deps --wheel-dir "$G9_EVIDENCE_DIR" .
+          mapfile -t wheels < <(find "$G9_EVIDENCE_DIR" -maxdepth 1 -type f -name '*.whl' -print)
+          test "${#wheels[@]}" -eq 1
+          test "$(basename "${wheels[0]}")" = conflict_analysis-0.1.0-py3-none-any.whl
+          printf 'G9_WHEEL=%s\n' "${wheels[0]}" >> "$GITHUB_ENV"
+
+      - name: Run focused G9 and full Product 55 on both engines
+        run: |
+          set -euo pipefail
+          g9="production_player/tests/test_player_g9_evidence.py::ProductionPlayerG9EvidenceTests"
+          python -m pytest $g9 -p no:cacheprovider --junitxml="$G9_EVIDENCE_DIR/product-g9-postgresql.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g9-product.sqlite3" python -m pytest $g9 -p no:cacheprovider --junitxml="$G9_EVIDENCE_DIR/product-g9-sqlite.xml"
+          c0="production_studio/tests/test_browser_contract.py production_studio/tests/test_claim_boundaries.py production_studio/tests/test_read_only_http.py production_studio/tests/test_read_only_static_contracts.py"
+          c1="production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringContractTests"
+          g7="production_player/tests/test_player_g7.py::ProductionPlayerG7Tests"
+          g8="production_player/tests/test_player_g8.py::ProductionPlayerG8Tests"
+          STUDIO_C0_WHEEL="$G9_WHEEL" python -m pytest $c0 $c1 $g7 $g8 $g9 -p no:cacheprovider --junitxml="$G9_EVIDENCE_DIR/product-full-postgresql.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g9-product-full.sqlite3" STUDIO_C0_WHEEL="$G9_WHEEL" python -m pytest $c0 $c1 $g7 $g8 $g9 -p no:cacheprovider --junitxml="$G9_EVIDENCE_DIR/product-full-sqlite.xml"
+
+      - name: Run focused G9 and full Chromium 8 on exact Chrome for Testing
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/chrome-for-testing-linux64.zip"
+          curl --fail --location --silent --show-error "https://storage.googleapis.com/chrome-for-testing-public/$G9_CHROME_VERSION/linux64/chrome-linux64.zip" --output "$archive"
+          unzip -q "$archive" -d "$RUNNER_TEMP"
+          chrome="$RUNNER_TEMP/chrome-linux64/chrome"
+          test -x "$chrome"
+          "$chrome" --version | grep -F "$G9_CHROME_VERSION"
+          g9="production_player/tests/test_player_g9_evidence.py::ProductionPlayerG9ChromiumTests"
+          STUDIO_CHROME_BIN="$chrome" python -m pytest $g9 -p no:cacheprovider --junitxml="$G9_EVIDENCE_DIR/chromium-g9-postgresql.xml"
+          c1="production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringBrowserTests::test_authenticated_edit_save_reload_is_bounded_foundation_only_and_receipted"
+          g7="production_player/tests/test_player_g7.py::ProductionPlayerG7ChromiumTests"
+          g8="production_player/tests/test_player_g8.py::ProductionPlayerG8ChromiumTests"
+          STUDIO_CHROME_BIN="$chrome" python -m pytest $c1 $g7 $g8 $g9 -p no:cacheprovider --junitxml="$G9_EVIDENCE_DIR/chromium-full-postgresql.xml"
+
+      - name: Prove isolated G9 wheel runtime
+        run: |
+          set -euo pipefail
+          isolated="$RUNNER_TEMP/g9-wheel-venv"
+          python -m venv --system-site-packages "$isolated"
+          "$isolated/bin/python" -m pip install --disable-pip-version-check --force-reinstall --no-deps "$G9_WHEEL"
+          mkdir -p "$RUNNER_TEMP/g9-wheel-empty"
+          cd "$RUNNER_TEMP/g9-wheel-empty"
+          unset PYTHONPATH
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/g9-wheel.sqlite3" DJANGO_SETTINGS_MODULE=conflict_analysis.settings "$isolated/bin/python" -I - "$G9_WHEEL" "$G9_EVIDENCE_DIR/wheel-install.json" "$GITHUB_WORKSPACE/software/conflict_analysis" <<'PY'
+          import hashlib, importlib, json, pathlib, sys
+          from importlib.resources import files
+          import django
+          wheel, evidence, source_root = map(pathlib.Path, sys.argv[1:])
+          source_root = source_root.resolve(strict=True); venv_root = pathlib.Path(sys.prefix).resolve(strict=True)
+          django.setup(); imported = {}
+          for name in ("domain.api.evidence", "domain.services.evidence_access", "production_player.claim_boundaries"):
+              module = importlib.import_module(name); origin = pathlib.Path(module.__file__).resolve(strict=True)
+              assert origin.is_relative_to(venv_root) and not origin.is_relative_to(source_root)
+              imported[name] = str(origin)
+          assets = (
+              ("production_player", "contracts/player_g9_evidence_claim_boundaries_v1.ru.json"),
+              ("production_player", "contracts/player_g9_evidence_claim_boundaries_v1.ru.json.sha256"),
+              ("production_player", "static/production_player/evidence.css"),
+              ("production_player", "static/production_player/evidence.js"),
+              ("production_player", "templates/production_player/workspace.html"),
+          )
+          for package, name in assets: assert files(package).joinpath(name).is_file(), (package, name)
+          from production_player.claim_boundaries import load_evidence_claim_boundaries
+          from django.urls import resolve, reverse
+          claim = load_evidence_claim_boundaries()
+          value_route = reverse("foundation-parameter-value-facts", kwargs={
+              "project_id": "00000000-0000-4000-8000-000000000001",
+              "workspace_id": "00000000-0000-4000-8000-000000000002",
+              "parameter_value_id": "00000000-0000-4000-8000-000000000003"})
+          assert resolve(value_route).url_name == "foundation-parameter-value-facts"
+          payload = {"schema": "G9_ISOLATED_WHEEL_INSTALL_V1",
+              "wheel_sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
+              "source_tree_fallback": False, "imported": imported,
+              "claim_sha256": claim.sha256, "runtime_assets_packaged": True,
+              "parameter_value_route": value_route}
+          evidence.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Require frozen cardinalities and seal same-run evidence
+        env:
+          PRIOR_JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          python - "$G9_EVIDENCE_DIR" <<'PY'
+          import hashlib, json, os, pathlib, sys, xml.etree.ElementTree as ET
+          root = pathlib.Path(sys.argv[1])
+          expected = {
+              "g9-foundation-postgresql.xml": (8, 0), "g9-foundation-sqlite.xml": (8, 0),
+              "foundation-postgresql.xml": (350, 0), "foundation-sqlite.xml": (350, 28),
+              "product-g9-postgresql.xml": (6, 0), "product-g9-sqlite.xml": (6, 0),
+              "product-full-postgresql.xml": (55, 0), "product-full-sqlite.xml": (55, 0),
+              "chromium-g9-postgresql.xml": (3, 0), "chromium-full-postgresql.xml": (8, 0),
+          }
+          def stats(name):
+              report = ET.parse(root/name).getroot(); cases = list(report.iter("testcase"))
+              assert not list(report.iter("failure")) and not list(report.iter("error")), name
+              return len(cases), len(list(report.iter("skipped")))
+          actual = {name: stats(name) for name in expected}; assert actual == expected, actual
+          required = set(expected) | {"route.json", "static.json", "verifier.json", "makemigrations.txt",
+              "conflict_analysis-0.1.0-py3-none-any.whl", "wheel-install.json"}
+          assert required <= {path.name for path in root.iterdir() if path.is_file()}
+          route = json.loads((root/"route.json").read_text()); assert route["run_attempt"] == "1"
+          assert route["delivery_head"] == os.environ["G9_DELIVERY_HEAD"]
+          assert route["delivery_tree"] == os.environ["G9_DELIVERY_TREE"]
+          assert route["event_delivery_sha"] == os.environ["G9_DELIVERY_HEAD"]
+          wheel = root/"conflict_analysis-0.1.0-py3-none-any.whl"
+          wheel_info = {"filename": wheel.name, "bytes": wheel.stat().st_size,
+                        "sha256": hashlib.sha256(wheel.read_bytes()).hexdigest()}
+          isolated = json.loads((root/"wheel-install.json").read_text())
+          assert isolated["wheel_sha256"] == wheel_info["sha256"] and isolated["source_tree_fallback"] is False
+          results = {"schema": "G9_FROZEN_RESULTS_V1",
+              "registry": {"foundation_portable": 8, "postgresql_only": 0, "product_portable": 6, "chromium": 3},
+              "junit": {name: {"tests": value[0], "skipped": value[1]} for name, value in expected.items()},
+              "postgresql": {"foundation_passed": 350, "product_full_passed": 55, "chromium_full_passed": 8},
+              "sqlite": {"foundation_passed": 322, "foundation_skipped": 28, "product_full_passed": 55}}
+          (root/"wheel.json").write_text(json.dumps(wheel_info, indent=2, sort_keys=True) + "\n")
+          (root/"results.json").write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")
+          manifest = {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+                      for path in sorted(root.iterdir()) if path.is_file() and path.name != "acceptance-ready.json"}
+          ready = os.environ["PRIOR_JOB_STATUS"] == "success"
+          (root/"acceptance-ready.json").write_text(json.dumps({
+              "schema": "G9_SAME_RUN_ACCEPTANCE_EVIDENCE_V1", "route": route,
+              "results": results, "wheel": wheel_info, "isolated_install": isolated,
+              "required_files": sorted(required | {"wheel.json", "results.json"}),
+              "manifest_sha256": manifest, "acceptance_ready": ready,
+          }, indent=2, sort_keys=True) + "\n")
+          assert ready
+          PY
+
+      - name: Upload immutable G9 exact-head evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g9-evidence-ui-${{ github.event_name }}-${{ env.G9_EVENT_DELIVERY_SHA }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/g9-evidence-ui-evidence
           if-no-files-found: error
