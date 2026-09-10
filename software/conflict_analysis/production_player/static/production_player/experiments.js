@@ -220,6 +220,9 @@
   async function select(id, force = false) {
     if (state.busy && !force) return;
     invalidatePreview(id === "general" ? "Готово." : "Файл не выбран.");
+    $("g8-recovery-operation").value = "";
+    $("g8-recovery-result").textContent = "";
+    $("g8-recovery-result").hidden = true;
     cancelCorrection();
     if (id === "general") {
       state.selected = null;
@@ -492,6 +495,21 @@
     } finally { setBusy(false, "Импорт завершён; квитанция сохранена."); }
   }
 
+  async function recoverTicket() {
+    if (!state.selected) fail("PLAYER_NOT_FOUND");
+    const operationId = $("g8-recovery-operation").value.trim();
+    if (!UUID.test(operationId)) fail("PLAYER_REQUEST_INVALID");
+    setBusy(true, "Восстанавливаем сохранённую квитанцию…");
+    try {
+      const receipt = await request(
+        `experiments/${state.selected.id}/imports/${operationId}/`,
+      );
+      const output = $("g8-recovery-result");
+      output.textContent = canonical(receipt);
+      output.hidden = false;
+    } finally { setBusy(false, "Сохранённая квитанция восстановлена."); }
+  }
+
   $("experiment-plus").addEventListener("click", () => {
     if (!state.busy && app.dataset.projectionStatus === "COMPLETE") $("g8-create-dialog").showModal();
   });
@@ -510,6 +528,8 @@
     .catch(error => $("g8-import-state").textContent = error.message));
   $("g8-ticket-download").addEventListener("click", () => retainTicket("download")
     .catch(error => $("g8-import-state").textContent = error.message));
+  $("g8-recover-ticket").addEventListener("click", () => recoverTicket()
+    .catch(error => { state.busy = false; syncControls(); $("g8-import-state").textContent = error.message; }));
   $("g8-ticket-ack").addEventListener("change", syncControls);
   $("g8-manual-form").addEventListener("submit", event => submitManual(event)
     .catch(error => { state.busy = false; syncControls(); $("g8-manual-state").textContent = error.message; }));

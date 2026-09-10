@@ -129,7 +129,11 @@ def _xlsx_body(request):
     ):
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
     upload = request.FILES["file"]
-    if upload.size <= 0 or upload.size > MAX_XLSX_BYTES:
+    if (
+        upload.size <= 0 or upload.size > MAX_XLSX_BYTES
+        or not isinstance(upload.name, str)
+        or not upload.name.lower().endswith(".xlsx")
+    ):
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
     try:
         metadata = json.loads(
@@ -310,6 +314,12 @@ def import_recovery(request, experiment_id, operation_id):
                           operation_id=operation_id)
 
 
-@_endpoint(methods=["GET"], scope="workspace", identity_key="workspace_id")
+@_endpoint(methods=["GET"], scope="workspace", identity_key="workspace_id", query=True)
 def experiment_comparison(request, workspace_id):
-    return comparison(user=request.user, workspace_id=workspace_id)
+    values = request._request.GET.getlist("include_archived")
+    if set(request._request.GET) - {"include_archived"} or len(values) > 1:
+        raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
+    return comparison(
+        user=request.user, workspace_id=workspace_id,
+        include_archived=values == ["true"],
+    )

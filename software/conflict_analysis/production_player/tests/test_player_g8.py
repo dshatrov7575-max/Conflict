@@ -56,6 +56,7 @@ class ProductionPlayerG8Tests(PlayerExperimentsFixture,TestCase):
         self.assertEqual(self.client.post(self.api(f"workspaces/{self.workspace.pk}/experiments/"),data=b"{}",content_type="application/json").status_code,403)
         patterns=[str(pattern.pattern) for pattern in __import__("domain.urls",fromlist=["urlpatterns"]).urlpatterns]
         self.assertEqual(patterns.count("player/workspaces/<uuid:workspace_id>/experiments/"),1)
+        self.assertNotIn("domain.change_expertprofile",G8_REQUIRED_PERMISSIONS)
         profile_url=self.api(f"workspaces/{self.workspace.pk}/expert-profiles/"); profile_id=uuid4(); profile_body={"id":str(profile_id),"code":f"PROFILE-{profile_id.hex[:8]}","version":"1.0.0","kind":"HUMAN","display_name":"Editable profile","identity_key":f"human:{profile_id}","provider":"","model_name":"","metadata":{"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1"}}
         csrf=self.client.cookies[settings.CSRF_COOKIE_NAME].value
         self.assertEqual(self.client.post(profile_url,data=json.dumps(profile_body),content_type="application/json",HTTP_IDEMPOTENCY_KEY=str(uuid4()),HTTP_IF_MATCH=f'"{typed.MANIFEST_SHA256}"').status_code,403)
@@ -72,6 +73,8 @@ class ProductionPlayerG8Tests(PlayerExperimentsFixture,TestCase):
         upload=SimpleUploadedFile("expert.xlsx",raw,content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         preview=self.client.post(self.api(f"experiments/{experiment.pk}/xlsx-preview/"),data={"metadata":json.dumps({"profile_id":"KZ_ZHANAOZEN_EXPERT_V2_A5_0_1","sheet":"По_главам","source_column":"ИИ_Значение"}),"file":upload},HTTP_X_CSRFTOKEN=csrf)
         self.assertEqual(preview.status_code,200,preview.content); self.assertEqual(preview.json()["raw_file_sha256"],hashlib.sha256(raw).hexdigest())
+        rejected=self.client.post(self.api(f"experiments/{experiment.pk}/xlsx-preview/"),data={"metadata":json.dumps({"profile_id":"KZ_ZHANAOZEN_EXPERT_V2_A5_0_1","sheet":"По_главам","source_column":"ИИ_Значение"}),"file":SimpleUploadedFile("expert.xls",raw)},HTTP_X_CSRFTOKEN=csrf)
+        self.assertEqual((rejected.status_code,rejected.json()["code"]),(400,"PLAYER_REQUEST_INVALID"))
         self.assertEqual(self.client.get(detail,HTTP_AUTHORIZATION="Bearer forbidden").status_code,400)
 
     def test_only_projection_complete_workspaces_and_draft_assessment_experiments_enable_g8_actions(self):
@@ -99,6 +102,10 @@ class ProductionPlayerG8Tests(PlayerExperimentsFixture,TestCase):
 
     def test_retained_ticket_acknowledgement_commit_recovery_and_key_reuse_ui_are_exact(self):
         source=SCRIPT.read_text(encoding="utf-8"); html=TEMPLATE.read_text(encoding="utf-8"); self.assertIn("FOUNDATION_PLAYER_XLSX_IMPORT_TICKET_V1",source); self.assertIn("excluded_42_acknowledged: true",source); self.assertIn("deterministicOperationId",source); self.assertIn("crosswalk_lineage",source); self.assertIn("ticketRetained",source); self.assertIn("Idempotency-Key",source); self.assertIn("new FormData",source); self.assertIn('id="g8-ticket-ack"',html); self.assertNotIn("file_base64",source)
+        self.assertIn('id="g8-recovery-operation"',html); self.assertIn('autocomplete="off"',html); self.assertIn('id="g8-recover-ticket"',html); self.assertIn('id="g8-recovery-result"',html)
+        self.assertIn("async function recoverTicket()",source); self.assertIn('`experiments/${state.selected.id}/imports/${operationId}/`',source); self.assertIn('$("g8-recovery-operation").value.trim()',source)
+        for storage in ("localStorage","sessionStorage","indexedDB"):
+            self.assertNotIn(storage,source)
 
     def test_unknown_blank_zero_confidence_review_flags_and_blocked42_render_distinctly(self):
         source=SCRIPT.read_text(encoding="utf-8"); html=TEMPLATE.read_text(encoding="utf-8"); profile=load_profile(); result=preview_profile_xlsx(profile_workbook(production_confidence=True),profile_id=profile["profile_id"],sheet=profile["input"]["sheet"],source_column="ИИ_Значение"); unknown={row["profile"]["legacy_id"] for row in result["creates"] if row["status"]=="UNKNOWN"}; contexts={}
@@ -117,6 +124,8 @@ class ProductionPlayerG8Tests(PlayerExperimentsFixture,TestCase):
         _,experiment,_=self.aggregate(); value=self.create_value(experiment,value=0); result=comparison(user=self.user,workspace_id=self.workspace.pk); row=result["values"][0]; self.assertIsNone(result["aggregation"]); self.assertEqual(row["value"],0)
         self.assertEqual((result["project_id"],result["workspace_id"]),(str(self.project.pk),str(self.workspace.pk))); self.assertEqual(row["focus"],{"kind":"parameter-value","id":str(value.pk)}); self.assertEqual(row["confidence_category"],"MEDIUM"); self.assertEqual(row["review_flag"],row["review_flags"][row["parameter_code"]]); self.assertIn(row["review_flag"],{"REFERENCE_STATEMENT_REVIEW_REQUIRED","SCALE_CONSTRUCT_REVIEW_REQUIRED"})
         self.assertFalse(any(item.get("focus",{}).get("id")==focus_id for item in result["values"]))
+        dto=next(item for item in list_experiments(user=self.user,workspace_id=self.workspace.pk)["experiments"] if item["id"]==str(experiment.pk)); mutate_experiment(user=self.user,experiment_id=experiment.pk,operation_id=str(uuid4()),if_match=f'"{dto["etag"]}"',action="archive",body={})
+        self.assertEqual(comparison(user=self.user,workspace_id=self.workspace.pk)["values"],[]); self.assertEqual(len(comparison(user=self.user,workspace_id=self.workspace.pk,include_archived=True)["values"]),1)
 
     def test_import_candidates_and_receipts_are_experiment_scoped_non_html_and_not_evidence(self):
         source=FOUNDATION.read_text(encoding="utf-8"); self.assertIn("target_experiment=experiment",source); self.assertNotIn("EvidenceSource.objects",source); self.assertNotIn("Document.objects",source); self.assertNotIn("Fragment.objects",source)

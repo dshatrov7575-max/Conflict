@@ -85,18 +85,42 @@ class PlayerExperimentsFixture:
 class PlayerExperimentsTests(PlayerExperimentsFixture, TestCase):
     def test_assessment_author_permission_family_scope_hiding_and_no_studio_mixing_are_exact(self):
         self.assertEqual(set(self.user.get_all_permissions()),set(G8_REQUIRED_PERMISSIONS)); self.assertEqual(list_experiments(user=self.user,workspace_id=self.workspace.pk)["experiments"],[])
+        self.assertNotIn("domain.change_expertprofile",G8_REQUIRED_PERMISSIONS)
         outsider=get_user_model().objects.create_user(username=f"outsider-{uuid4()}"); outsider.user_permissions.add(*Permission.objects.filter(content_type__app_label="domain",codename__in=[p.removeprefix("domain.") for p in G8_REQUIRED_PERMISSIONS]))
         with self.assertRaises((PlayerExperimentError,PlayerError)): list_experiments(user=outsider,workspace_id=self.workspace.pk)
 
     def test_expert_profile_assessment_set_experiment_create_replay_and_receipt_are_atomic(self):
         experiment_id,body=self.aggregate_body(); profile_body=body["expert_profile"]
+        for forbidden in (
+            {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","archived":True},
+            {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","lifecycle":{"status":"ARCHIVED"}},
+            {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","provenance":{"unbounded":["payload"]}},
+            {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","secret":"hidden"},
+            {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","prompt_body":"hidden"},
+        ):
+            invalid={**profile_body,"metadata":forbidden}
+            with self.assertRaises(PlayerExperimentError) as rejected:
+                create_or_update_expert_profile(user=self.user,workspace_id=self.workspace.pk,operation_id=str(uuid4()),if_match=f'"{typed.MANIFEST_SHA256}"',body=invalid)
+            self.assertEqual(rejected.exception.code,"PLAYER_REQUEST_INVALID")
         profile_operation=uuid4(); created=create_or_update_expert_profile(user=self.user,workspace_id=self.workspace.pk,operation_id=str(profile_operation),if_match=f'"{typed.MANIFEST_SHA256}"',body=profile_body)
         replay=create_or_update_expert_profile(user=self.user,workspace_id=self.workspace.pk,operation_id=str(profile_operation),if_match=f'"{typed.MANIFEST_SHA256}"',body=profile_body)
         self.assertFalse(created.replayed); self.assertTrue(replay.replayed); self.assertEqual(created.body,replay.body)
-        profile=list_expert_profiles(user=self.user,workspace_id=self.workspace.pk)["profiles"][0]; profile_body={key:profile_body[key] for key in profile_body}; profile_body["display_name"]="Edited before first use"
+        profile_row=ExpertProfile.objects.get(pk=profile_body["id"]); profile_row.metadata={}
+        with self.assertRaises(ValidationError): profile_row.save(update_fields=["metadata","updated_at"])
+        profile_row.refresh_from_db(); profile_row.metadata={"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","prompt_body":"hidden"}
+        with self.assertRaises(ValidationError): ExpertProfile.objects.bulk_update([profile_row],["metadata"])
+        with self.assertRaises(ValidationError): ExpertProfile.objects.filter(pk=profile_row.pk).update(metadata={})
+        profile_row.refresh_from_db(); self.assertEqual(profile_row.metadata,{"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1"})
+        profile=next(row for row in list_expert_profiles(user=self.user,workspace_id=self.workspace.pk)["profiles"] if row["id"]==profile_body["id"]); profile_body={key:profile_body[key] for key in profile_body}; profile_body["display_name"]="Edited before first use"
         edited=create_or_update_expert_profile(user=self.user,workspace_id=self.workspace.pk,operation_id=str(uuid4()),if_match=f'"{profile["etag"]}"',body=profile_body); self.assertFalse(edited.replayed)
         body["expert_profile"]=profile_body; operation=uuid4(); first=create_experiment(user=self.user,workspace_id=self.workspace.pk,operation_id=str(operation),if_match=f'"{typed.MANIFEST_SHA256}"',body=body); experiment=Experiment.objects.get(pk=experiment_id); second=create_experiment(user=self.user,workspace_id=self.workspace.pk,operation_id=str(operation),if_match=f'"{typed.MANIFEST_SHA256}"',body=body)
         self.assertFalse(first.replayed); self.assertTrue(second.replayed); self.assertEqual(first.body,second.body); self.assertEqual((Experiment.objects.filter(metadata__contract="FOUNDATION_PLAYER_EXPERIMENT_V1").count(),AuditEvent.objects.filter(entity_type="FOUNDATION_PLAYER_EXPERIMENT_V1").count()),(1,1))
+        stored=ExpertProfile.objects.get(pk=profile_body["id"]); historical=json.dumps({field.name:getattr(stored,field.attname) for field in stored._meta.concrete_fields if field.name not in {"created_at","updated_at"}},sort_keys=True,default=str)
+        used_edit={**profile_body,"display_name":"Forbidden after first use"}; used_dto=next(row for row in list_expert_profiles(user=self.user,workspace_id=self.workspace.pk)["profiles"] if row["id"]==str(stored.pk))
+        with self.assertRaises(PlayerExperimentError) as immutable:
+            create_or_update_expert_profile(user=self.user,workspace_id=self.workspace.pk,operation_id=str(uuid4()),if_match=f'"{used_dto["etag"]}"',body=used_edit)
+        self.assertEqual(immutable.exception.code,"PLAYER_IDENTITY_CONFLICT")
+        stored.refresh_from_db(); self.assertEqual(historical,json.dumps({field.name:getattr(stored,field.attname) for field in stored._meta.concrete_fields if field.name not in {"created_at","updated_at"}},sort_keys=True,default=str))
 
     def test_human_and_ai_experiments_keep_independent_values_without_overwrite(self):
         _,ai,_=self.aggregate(kind="AI"); _,human,_=self.aggregate(kind="HUMAN"); ai_value=self.create_value(ai,value=0); human_value=self.create_value(human,value=5)
@@ -115,6 +139,9 @@ class PlayerExperimentsTests(PlayerExperimentsFixture, TestCase):
         with self.assertRaises(ValidationError): Experiment.objects.filter(pk=experiment.pk).delete()
         experiment.name="bulk-update"
         with self.assertRaises(ValidationError): Experiment.objects.bulk_update([experiment],["name"])
+        experiment.refresh_from_db(); experiment.metadata={}
+        with self.assertRaises(ValidationError): Experiment.objects.bulk_update([experiment],["metadata"])
+        experiment.refresh_from_db(); self.assertEqual(experiment.metadata,{"contract":"FOUNDATION_PLAYER_EXPERIMENT_V1"})
         experiment.refresh_from_db()
         invalid=Experiment(id=uuid4(),workspace=experiment.workspace,expert_profile=profile,assessment_set=experiment.assessment_set,code=f"G8-ACTIVE-{uuid4().hex[:8]}",version="1.0.0",name="Forbidden ACTIVE",experiment_type="ASSESSMENT",status=ExperimentStatus.ACTIVE,metadata={"contract":"FOUNDATION_PLAYER_EXPERIMENT_V1"})
         with self.assertRaises(ValidationError): invalid.save(force_insert=True)
@@ -138,6 +165,28 @@ class PlayerExperimentsTests(PlayerExperimentsFixture, TestCase):
         _,experiment,_=self.aggregate(); first=self.create_value(experiment,value=1); second=self.create_value(experiment,predecessor=first,value=2,version="1.0.1")
         self.assertEqual(second.supersedes_id,first.pk); self.assertEqual(ParameterValue.objects.filter(actor_element_assessment__experiment=experiment).count(),2)
         with self.assertRaises(ValidationError): first.delete()
+        _,paired,_=self.aggregate(); first_body=self.value_body(paired,value=1); paired_etag=list_values(user=self.user,experiment_id=paired.pk)["experiment"]["etag"]
+        create_manual_value(user=self.user,experiment_id=paired.pk,operation_id=str(uuid4()),if_match=f'"{paired_etag}"',body=first_body)
+        first_value=ParameterValue.objects.get(pk=first_body["id"]); first_assessment=first_value.actor_element_assessment
+        immutable_bytes=json.dumps({"status":first_assessment.status,"version":first_assessment.version,"provenance":first_assessment.provenance},sort_keys=True)
+        first_record=next(row for row in load_profile()["records"] if row["migration_status"]=="TRANSFER_WITH_REVIEW" and row["source_manifest_actor_code"]==first_body["actor_code"] and row["source_manifest_element_code"]==first_body["element_code"] and row["time_slice_manifest_uuid"]==first_body["time_slice_id"] and row["canonical_parameter_code"]==first_body["parameter_code"])
+        second_record=next(row for row in load_profile()["records"] if row["migration_status"]=="TRANSFER_WITH_REVIEW" and row["source_manifest_actor_code"]==first_record["source_manifest_actor_code"] and row["source_manifest_element_code"]==first_record["source_manifest_element_code"] and row["time_slice_code"]==first_record["time_slice_code"] and row["canonical_parameter_code"]!=first_record["canonical_parameter_code"])
+        second_body={**first_body,"id":str(uuid4()),"code":f"G8-VALUE-{uuid4().hex[:10]}","assessment_id":str(uuid4()),"assessment_code":f"G8-ASSESS-{uuid4().hex[:10]}","parameter_code":second_record["canonical_parameter_code"],"value":2,"confidence_category":"HIGH"}
+        paired_etag=list_values(user=self.user,experiment_id=paired.pk)["experiment"]["etag"]
+        create_manual_value(user=self.user,experiment_id=paired.pk,operation_id=str(uuid4()),if_match=f'"{paired_etag}"',body=second_body)
+        first_assessment.refresh_from_db(); self.assertEqual(immutable_bytes,json.dumps({"status":first_assessment.status,"version":first_assessment.version,"provenance":first_assessment.provenance},sort_keys=True))
+        successor=ParameterValue.objects.get(pk=second_body["id"]).actor_element_assessment
+        self.assertEqual(successor.supersedes_id,first_assessment.pk); self.assertEqual(successor.status,"PROVISIONAL_PRE_METHOD_FREEZE")
+        self.assertEqual(successor.provenance["parameter_confidence"],{first_body["parameter_code"]:"MEDIUM",second_body["parameter_code"]:"HIGH"})
+        _,unknown_pair,_=self.aggregate(); unknown_first=self.value_body(unknown_pair,value=None); unknown_etag=list_values(user=self.user,experiment_id=unknown_pair.pk)["experiment"]["etag"]
+        create_manual_value(user=self.user,experiment_id=unknown_pair.pk,operation_id=str(uuid4()),if_match=f'"{unknown_etag}"',body=unknown_first)
+        unknown_record=next(row for row in load_profile()["records"] if row["migration_status"]=="TRANSFER_WITH_REVIEW" and row["source_manifest_actor_code"]==unknown_first["actor_code"] and row["source_manifest_element_code"]==unknown_first["element_code"] and row["time_slice_manifest_uuid"]==unknown_first["time_slice_id"] and row["canonical_parameter_code"]==unknown_first["parameter_code"])
+        unknown_other=next(row for row in load_profile()["records"] if row["migration_status"]=="TRANSFER_WITH_REVIEW" and row["source_manifest_actor_code"]==unknown_record["source_manifest_actor_code"] and row["source_manifest_element_code"]==unknown_record["source_manifest_element_code"] and row["time_slice_code"]==unknown_record["time_slice_code"] and row["canonical_parameter_code"]!=unknown_record["canonical_parameter_code"])
+        unknown_second={**unknown_first,"id":str(uuid4()),"code":f"G8-VALUE-{uuid4().hex[:10]}","assessment_id":str(uuid4()),"assessment_code":f"G8-ASSESS-{uuid4().hex[:10]}","parameter_code":unknown_other["canonical_parameter_code"],"confidence_category":"UNKNOWN"}
+        unknown_etag=list_values(user=self.user,experiment_id=unknown_pair.pk)["experiment"]["etag"]
+        create_manual_value(user=self.user,experiment_id=unknown_pair.pk,operation_id=str(uuid4()),if_match=f'"{unknown_etag}"',body=unknown_second)
+        unknown_successor=ParameterValue.objects.get(pk=unknown_second["id"]).actor_element_assessment
+        self.assertEqual(unknown_successor.status,"UNKNOWN"); self.assertEqual(unknown_successor.provenance["parameter_confidence"],{unknown_first["parameter_code"]:"MEDIUM",unknown_second["parameter_code"]:"UNKNOWN"})
 
     def test_frozen_computed_and_a5_blocked_targets_deny_value_writes(self):
         _,experiment,_=self.aggregate(); dto=list_experiments(user=self.user,workspace_id=self.workspace.pk)["experiments"][0]
@@ -148,6 +197,10 @@ class PlayerExperimentsTests(PlayerExperimentsFixture, TestCase):
     def test_general_comparison_returns_raw_values_without_aggregation_or_fill_across(self):
         _,experiment,_=self.aggregate(); self.create_value(experiment,value=0); result=comparison(user=self.user,workspace_id=self.workspace.pk)
         self.assertIsNone(result["aggregation"]); self.assertEqual(len(result["values"]),1); self.assertEqual(result["values"][0]["value"],0)
+        dto=next(row for row in list_experiments(user=self.user,workspace_id=self.workspace.pk)["experiments"] if row["id"]==str(experiment.pk))
+        mutate_experiment(user=self.user,experiment_id=experiment.pk,operation_id=str(uuid4()),if_match=f'"{dto["etag"]}"',action="archive",body={})
+        self.assertEqual(comparison(user=self.user,workspace_id=self.workspace.pk)["values"],[])
+        self.assertEqual(len(comparison(user=self.user,workspace_id=self.workspace.pk,include_archived=True)["values"]),1)
 
     def test_import_candidates_are_experiment_scoped_and_general_does_not_leak_them(self):
         _,one,_=self.aggregate(); _,two,_=self.aggregate(); raw=profile_workbook(); operation=uuid4()

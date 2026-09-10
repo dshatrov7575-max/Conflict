@@ -2655,6 +2655,7 @@ class AssessmentSet(ValidatedStableVersionedModel):
 
 
 _G8_EXPERIMENT_CONTRACT = "FOUNDATION_PLAYER_EXPERIMENT_V1"
+_G8_EXPERT_PROFILE_CONTRACT = "FOUNDATION_PLAYER_EXPERT_PROFILE_V1"
 
 
 class ExpertProfileQuerySet(models.QuerySet):
@@ -2663,9 +2664,20 @@ class ExpertProfileQuerySet(models.QuerySet):
     def _contains_used_profile(self) -> bool:
         return Experiment.objects.filter(expert_profile_id__in=self.values("pk")).exists()
 
+    def _contains_g8_profile(self) -> bool:
+        return self.filter(metadata__contract=_G8_EXPERT_PROFILE_CONTRACT).exists()
+
     def update(self, **kwargs: Any) -> int:
         if self._contains_used_profile() and set(kwargs) - {"updated_at"}:
             raise ValidationError("A used ExpertProfile is immutable; create a new profile.")
+        if "metadata" in kwargs and (
+            self._contains_g8_profile()
+            or (
+                isinstance(kwargs["metadata"], dict)
+                and kwargs["metadata"].get("contract") == _G8_EXPERT_PROFILE_CONTRACT
+            )
+        ) and kwargs["metadata"] != {"contract": _G8_EXPERT_PROFILE_CONTRACT}:
+            raise ValidationError("G8 ExpertProfile metadata must remain the exact contract marker.")
         return super().update(**kwargs)
 
     def delete(self) -> tuple[int, dict[str, int]]:
@@ -2682,6 +2694,23 @@ class ExpertProfileQuerySet(models.QuerySet):
             expert_profile_id__in=[obj.pk for obj in objects if obj.pk]
         ).exists():
             raise ValidationError("A used ExpertProfile is immutable; create a new profile.")
+        if "metadata" in set(fields):
+            object_ids = [obj.pk for obj in objects if obj.pk]
+            persisted_g8 = self.model._base_manager.filter(
+                pk__in=object_ids, metadata__contract=_G8_EXPERT_PROFILE_CONTRACT,
+            ).exists()
+            invalid_incoming = any(
+                isinstance(obj.metadata, dict)
+                and obj.metadata.get("contract") == _G8_EXPERT_PROFILE_CONTRACT
+                and obj.metadata != {"contract": _G8_EXPERT_PROFILE_CONTRACT}
+                for obj in objects
+            )
+            removed_marker = persisted_g8 and any(
+                obj.metadata != {"contract": _G8_EXPERT_PROFILE_CONTRACT}
+                for obj in objects
+            )
+            if invalid_incoming or removed_marker:
+                raise ValidationError("G8 ExpertProfile metadata must remain the exact contract marker.")
         return super().bulk_update(objects, fields, batch_size=batch_size)
 
     def bulk_create(self, objs: Any, **kwargs: Any) -> list[Any]:
@@ -2715,7 +2744,11 @@ class ExperimentQuerySet(models.QuerySet):
         self, objs: Any, fields: Any, batch_size: int | None = None
     ) -> int:
         objects = list(objs)
-        if any(
+        object_ids = [obj.pk for obj in objects if obj.pk]
+        persisted_g8 = self.model._base_manager.filter(
+            pk__in=object_ids, metadata__contract=_G8_EXPERIMENT_CONTRACT,
+        ).exists()
+        if persisted_g8 or any(
             isinstance(obj.metadata, dict)
             and obj.metadata.get("contract") == _G8_EXPERIMENT_CONTRACT
             for obj in objects
@@ -2776,10 +2809,29 @@ class ExpertProfile(ValidatedStableVersionedModel):
             )
         if self.kind == AssessmentKind.AI and not self.model_name.strip():
             raise ValidationError({"model_name": "AI profiles require a model name."})
+        if (
+            isinstance(self.metadata, dict)
+            and self.metadata.get("contract") == _G8_EXPERT_PROFILE_CONTRACT
+            and self.metadata != {"contract": _G8_EXPERT_PROFILE_CONTRACT}
+        ):
+            raise ValidationError({
+                "metadata": (
+                    "G8 ExpertProfile metadata is the exact contract marker; lifecycle, "
+                    "archive, provenance, secret and prompt payloads are forbidden."
+                )
+            })
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         if self.pk and ExpertProfile.objects.filter(pk=self.pk).exists():
             previous = ExpertProfile.objects.get(pk=self.pk)
+            if (
+                isinstance(previous.metadata, dict)
+                and previous.metadata.get("contract") == _G8_EXPERT_PROFILE_CONTRACT
+                and self.metadata != {"contract": _G8_EXPERT_PROFILE_CONTRACT}
+            ):
+                raise ValidationError({
+                    "metadata": "G8 ExpertProfile metadata must remain the exact contract marker."
+                })
             if Experiment.objects.filter(expert_profile_id=self.pk).exists():
                 changed = [
                     field.name

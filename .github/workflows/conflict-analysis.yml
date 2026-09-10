@@ -6016,6 +6016,7 @@ jobs:
       G8_BASE_HEAD: f2255b6d76cf8efa46b5bea5756e09af4273b46a
       G8_BASE_TREE: 249b5e826511072c6fbcb0ea3cb7441d83c25faf
       G8_FIRST_HEAD: 7cbdc6f7e13cf1965077a89406f89c6eaec91858
+      G8_SECOND_HEAD: fb11eb3b62429ef4dc61ce156dbf1f365ad96c77
       G8_TARGET_BRANCH: codex/ca-suite-i1-player-g8-experiments-xlsx
       G8_EVENT_DELIVERY_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       G8_CHROME_VERSION: 152.0.7977.64
@@ -6047,9 +6048,10 @@ jobs:
           test "$(git rev-parse "$G8_BASE_HEAD^")" = "$G8_G7_HEAD"
           delivery_head="$(git rev-parse HEAD)"
           delivery_tree="$(git rev-parse HEAD^{tree})"
-          test "$(git rev-parse "$delivery_head^")" = "$G8_FIRST_HEAD"
+          test "$(git rev-parse "$delivery_head^")" = "$G8_SECOND_HEAD"
+          test "$(git rev-parse "$G8_SECOND_HEAD^")" = "$G8_FIRST_HEAD"
           test "$(git rev-parse "$G8_FIRST_HEAD^")" = "$G8_BASE_HEAD"
-          test "$(git rev-list --count "$G8_BASE_HEAD..$delivery_head")" = "2"
+          test "$(git rev-list --count "$G8_BASE_HEAD..$delivery_head")" = "3"
           test -z "$(git rev-list --merges "$G8_BASE_HEAD..$delivery_head")"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
           case "$GITHUB_EVENT_NAME" in
@@ -6098,6 +6100,7 @@ jobs:
               "base_head": os.environ["G8_BASE_HEAD"],
               "base_tree": os.environ["G8_BASE_TREE"],
               "first_delivery_head": os.environ["G8_FIRST_HEAD"],
+              "second_delivery_head": os.environ["G8_SECOND_HEAD"],
               "runtime_g7_accepted_head": os.environ["G7_ACCEPTED_HEAD"],
               "runtime_g7_accepted_tree": os.environ["G7_ACCEPTED_TREE"],
           }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -6293,6 +6296,7 @@ jobs:
           assert route["base_head"] == os.environ["G8_BASE_HEAD"]
           assert route["base_tree"] == os.environ["G8_BASE_TREE"]
           assert route["first_delivery_head"] == os.environ["G8_FIRST_HEAD"]
+          assert route["second_delivery_head"] == os.environ["G8_SECOND_HEAD"]
           assert route["event_delivery_sha"] == os.environ["G8_DELIVERY_HEAD"]
           assert route["runtime_g7_accepted_head"] == os.environ["G7_ACCEPTED_HEAD"]
           assert route["runtime_g7_accepted_tree"] == os.environ["G7_ACCEPTED_TREE"]

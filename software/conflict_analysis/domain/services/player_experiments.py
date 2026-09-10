@@ -39,7 +39,7 @@ VALUE_CONTRACT = "FOUNDATION_PLAYER_PARAMETER_VALUE_V1"
 IMPORT_CONTRACT = "FOUNDATION_PLAYER_XLSX_IMPORT_V1"
 PROFILE_CONTRACT = "FOUNDATION_PLAYER_EXPERT_PROFILE_V1"
 G8_REQUIRED_PERMISSIONS = PLAYER_REQUIRED_PERMISSIONS | frozenset({
-    "domain.add_expertprofile", "domain.change_expertprofile", "domain.view_expertprofile",
+    "domain.add_expertprofile", "domain.view_expertprofile",
     "domain.add_experiment", "domain.change_experiment", "domain.view_experiment",
     "domain.add_assessmentset", "domain.view_assessmentset",
     "domain.add_actorelementassessment", "domain.view_actorelementassessment",
@@ -144,6 +144,13 @@ def _profile_dto(row: ExpertProfile) -> dict[str, Any]:
     return {**core, "etag": hashlib.sha256(_canonical(core)).hexdigest()}
 
 
+def _require_profile_metadata(metadata: object) -> None:
+    """Admit the sole bounded G8 profile marker; profile metadata is not a payload store."""
+
+    if metadata != {"contract": PROFILE_CONTRACT}:
+        raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
+
+
 def _experiment_dto(row: Experiment) -> dict[str, Any]:
     core = {
         "id": str(row.pk), "workspace_id": str(row.workspace_id), "code": row.code,
@@ -181,6 +188,7 @@ def create_or_update_expert_profile(
     _require_keys(body, expected)
     if body["kind"] not in {AssessmentKind.HUMAN, AssessmentKind.AI}:
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
+    _require_profile_metadata(body["metadata"])
     profile_id = _uuid(body["id"])
     operation_id = _uuid(operation_id, operation=True)
     request_sha = _request_hash(
@@ -346,6 +354,7 @@ def create_experiment(*, user, workspace_id, operation_id, if_match, body):
     _require_keys(experiment_body, {"id","code","version","name","color","order","method_version"})
     _require_keys(set_body, {"id","code","version","kind","name","description"})
     _require_keys(profile_body, {"id","code","version","kind","display_name","identity_key","provider","model_name","metadata"})
+    _require_profile_metadata(profile_body["metadata"])
     if set_body["kind"] not in {AssessmentKind.HUMAN, AssessmentKind.AI} or profile_body["kind"] != set_body["kind"]:
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
     operation_id = _uuid(operation_id, operation=True)
@@ -541,9 +550,12 @@ def create_manual_value(*, user, experiment_id, operation_id, if_match, body):
             _validator(if_match,_value_dto(predecessor)["etag"])
             if hasattr(predecessor,"successor"): raise PlayerExperimentError("PLAYER_STALE")
         ts,actor,element,definition,role=_exact_targets(workspace,experiment,time_slice_id=body["time_slice_id"],actor_code=body["actor_code"],element_code=body["element_code"],parameter_code=body["parameter_code"])
+        context = {
+            "workspace": workspace, "actor": actor, "element": element, "time_slice": ts,
+            "experiment": experiment, "assessment_set": experiment.assessment_set,
+        }
         assessment=ActorElementAssessment.objects.filter(
-            workspace=workspace,actor=actor,element=element,time_slice=ts,
-            assessment_set=experiment.assessment_set,supersedes__isnull=True,
+            **context, successor__isnull=True,
         ).first()
         if assessment is None:
             confidence={"POS":"UNKNOWN","SAL":"UNKNOWN"}; confidence[definition.code]=body["confidence_category"]
@@ -557,10 +569,56 @@ def create_manual_value(*, user, experiment_id, operation_id, if_match, body):
                 method_version=experiment.method_version,
                 provenance={"contract":VALUE_CONTRACT,"role_code":role.code,"role_uuid":str(role.source_manifest_entity_id),"parameter_confidence":confidence,"review_flags":{"POS":"REFERENCE_STATEMENT_REVIEW_REQUIRED","SAL":"SCALE_CONSTRUCT_REVIEW_REQUIRED"}},
             ); assessment.save(force_insert=True)
-        elif predecessor is None and ParameterValue.objects.filter(
-            actor_element_assessment=assessment,parameter_definition=definition,
-        ).exists():
-            raise PlayerExperimentError("PLAYER_STALE")
+        elif predecessor is None:
+            if ParameterValue.objects.filter(
+                actor_element_assessment__workspace=workspace,
+                actor_element_assessment__actor=actor,
+                actor_element_assessment__element=element,
+                actor_element_assessment__time_slice=ts,
+                actor_element_assessment__experiment=experiment,
+                actor_element_assessment__assessment_set=experiment.assessment_set,
+                parameter_definition=definition, successor__isnull=True,
+            ).exists():
+                raise PlayerExperimentError("PLAYER_STALE")
+            provenance = dict(assessment.provenance)
+            confidence = dict(provenance.get("parameter_confidence", {}))
+            if set(confidence) != {"POS", "SAL"}:
+                confidence = {"POS": "UNKNOWN", "SAL": "UNKNOWN"}
+            confidence[definition.code] = body["confidence_category"]
+            provenance["parameter_confidence"] = confidence
+            has_numeric = (
+                body["status"] == ValueStatus.PROVISIONAL
+                or ParameterValue.objects.filter(
+                    actor_element_assessment__workspace=workspace,
+                    actor_element_assessment__actor=actor,
+                    actor_element_assessment__element=element,
+                    actor_element_assessment__time_slice=ts,
+                    actor_element_assessment__experiment=experiment,
+                    actor_element_assessment__assessment_set=experiment.assessment_set,
+                    status=ValueStatus.PROVISIONAL, successor__isnull=True,
+                ).exists()
+            )
+            version_parts = assessment.version.split(".")
+            if len(version_parts) != 3 or not all(part.isdigit() for part in version_parts):
+                raise PlayerExperimentError("PLAYER_OPERATION_FAILED", 503)
+            assessment = ActorElementAssessment(
+                id=_uuid(body["assessment_id"]), code=body["assessment_code"],
+                version=f"{version_parts[0]}.{version_parts[1]}.{int(version_parts[2]) + 1}",
+                supersedes=assessment, reference_statement=assessment.reference_statement,
+                reference_statement_incomplete=assessment.reference_statement_incomplete,
+                status=(
+                    AssessmentRecordStatus.PROVISIONAL_PRE_METHOD_FREEZE
+                    if has_numeric else AssessmentRecordStatus.UNKNOWN
+                ),
+                confidence_level=ConfidenceLevel.UNKNOWN, knowledge_cutoff=assessment.knowledge_cutoff,
+                method_version=assessment.method_version, provenance=provenance, **context,
+            )
+            assessment.save(force_insert=True)
+        else:
+            assessment = predecessor.actor_element_assessment
+            confidence = assessment.provenance.get("parameter_confidence", {})
+            if confidence.get(definition.code) != body["confidence_category"]:
+                raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
         value=ParameterValue(
             id=_uuid(body["id"]),project=project,workspace=workspace,time_slice=ts,
             assessment_set=experiment.assessment_set,actor_element_assessment=assessment,
@@ -584,11 +642,66 @@ def _raw_body(body):
     return body["raw_file"]
 
 
+def _validated_import_projection(project, workspace, parsed):
+    """Resolve every portable row against the live accepted projection before admission."""
+
+    profile = load_profile()
+    accepted = profile["accepted_manifest"]
+    if (
+        str(workspace.pk) != accepted["workspace_id"]
+        or str(workspace.definition_version_id) != accepted["definition_id"]
+        or workspace.definition_manifest_hash != accepted["sha256"]
+        or accepted["head"] != "f2255b6d76cf8efa46b5bea5756e09af4273b46a"
+        or accepted["tree"] != "249b5e826511072c6fbcb0ea3cb7441d83c25faf"
+    ):
+        raise PlayerExperimentError("G8_TARGET_MAPPING_MISMATCH")
+    actors = {row.code: row for row in Actor.objects.filter(workspace=workspace)}
+    elements = {row.code: row for row in AnalyticalElement.objects.filter(workspace=workspace)}
+    times = {row.code: row for row in TimeSlice.objects.filter(workspace=workspace)}
+    definitions = {
+        row.code: row for row in ParameterDefinition.objects.filter(
+            project=project, definition_version=workspace.definition_version,
+            code__in=("POS", "SAL"),
+        )
+    }
+    if set(definitions) != {"POS", "SAL"}:
+        raise PlayerExperimentError("G8_TARGET_MAPPING_MISMATCH")
+    roles_by_pair: dict[tuple[object, object], list[ActorElementRole]] = {}
+    for role in ActorElementRole.objects.filter(workspace=workspace):
+        roles_by_pair.setdefault((role.actor_id, role.element_id), []).append(role)
+    role_cache: dict[tuple[object, object], ActorElementRole] = {}
+    for item in parsed["creates"]:
+        mapped = item["profile"]
+        actor = actors.get(mapped["source_manifest_actor_code"])
+        element = elements.get(mapped["source_manifest_element_code"])
+        time_slice = times.get(mapped["time_slice_code"])
+        definition = definitions.get(mapped["canonical_parameter_code"])
+        roles = roles_by_pair.get((actor.pk, element.pk), []) if actor and element else []
+        if (
+            actor is None or element is None or time_slice is None or definition is None
+            or len(roles) != 1
+            or str(actor.source_manifest_entity_id) != mapped["source_manifest_actor_uuid"]
+            or str(element.source_manifest_entity_id) != mapped["source_manifest_element_uuid"]
+            or str(time_slice.pk) != mapped["time_slice_manifest_uuid"]
+            or time_slice.cutoff_date.isoformat() != mapped["cutoff_date"]
+            or str(definition.source_manifest_parameter_id) != mapped["canonical_parameter_uuid"]
+            or roles[0].code != mapped["source_manifest_role_code"]
+            or str(roles[0].source_manifest_entity_id) != mapped["source_manifest_role_uuid"]
+            or mapped["source_manifest_role_uuid"] not in {
+                str(value) for value in definition.applicability.get("actor_element_role_ids", [])
+            }
+        ):
+            raise PlayerExperimentError("G8_TARGET_MAPPING_MISMATCH")
+        role_cache[(actor.pk, element.pk)] = roles[0]
+    return profile, actors, elements, times, definitions, role_cache
+
+
 def preview_xlsx(*, user, experiment_id, body):
-    principal=assessment_principal(user); _,_,experiment=_experiment_scope(principal,experiment_id)
+    principal=assessment_principal(user); project,workspace,experiment=_experiment_scope(principal,experiment_id)
     raw=_raw_body(body)
     try: parsed=preview_profile_xlsx(raw,profile_id=body["profile_id"],sheet=body["sheet"],source_column=body["source_column"])
     except XlsxImportProfileError as exc: raise PlayerExperimentError(exc.code,400,exc.detail) from exc
+    _validated_import_projection(project, workspace, parsed)
     public={key:value for key,value in parsed.items() if key not in {"creates","import_snapshot"}}
     public["experiment_id"]=str(experiment.pk); public["experiment_etag"]=_experiment_dto(experiment)["etag"]
     public["commit_allowed"]=(
@@ -616,9 +729,11 @@ def import_xlsx(*, user, experiment_id, operation_id, if_match, body):
     def existing_result(existing):
         selected_input = dict(existing.selected_input)
         stored_request_sha = selected_input.pop("canonical_request_sha256", None)
+        sealed_if_match = selected_input.pop("sealed_if_match", None)
         submitted_ticket = body["ticket"]
         exact_request = (
             existing.actor_identifier == principal.actor_identifier
+            and if_match == sealed_if_match
             and type(submitted_ticket) is dict
             and submitted_ticket == selected_input
             and submitted_ticket.get("operation_id") == str(operation_id)
@@ -633,7 +748,7 @@ def import_xlsx(*, user, experiment_id, operation_id, if_match, body):
         )
         request_sha = _request_hash(
             IMPORT_CONTRACT, experiment_id=str(experiment.pk),
-            ticket=selected_input, ack=True,
+            ticket=selected_input, ack=True, if_match=if_match,
         )
         if not exact_request or stored_request_sha != request_sha:
             raise PlayerExperimentError("PLAYER_OPERATION_KEY_REUSE")
@@ -662,25 +777,21 @@ def import_xlsx(*, user, experiment_id, operation_id, if_match, body):
         ticket_expected={"contract":"FOUNDATION_PLAYER_XLSX_IMPORT_TICKET_V1","contract_version":VERSION,"workspace_id":str(workspace.pk),"experiment_id":str(experiment.pk),"operation_id":str(operation_id),"raw_file_sha256":reparsed["raw_file_sha256"],"byte_length":reparsed["byte_length"],"profile_id":body["profile_id"],"profile_sha256":reparsed["profile_sha256"],"sheet":body["sheet"],"source_column":body["source_column"],"crosswalk_lineage":reparsed["crosswalk_lineage"],"preview_sha256":body["preview_sha256"],"request_plan_sha256":reparsed["request_plan_sha256"]}
         if body["ticket"]!=ticket_expected or reparsed["preview_sha256"]!=body["preview_sha256"]:
             raise PlayerExperimentError("G8_IMPORT_PRECONDITION_FAILED",412)
-        request_sha=_request_hash(IMPORT_CONTRACT,experiment_id=str(experiment.pk),ticket=ticket_expected,ack=True)
+        request_sha=_request_hash(
+            IMPORT_CONTRACT, experiment_id=str(experiment.pk), ticket=ticket_expected,
+            ack=True, if_match=if_match,
+        )
         if reparsed["diagnostics"] or not reparsed["creates"]:
             raise PlayerExperimentError("G8_IMPORT_PRECONDITION_FAILED",412)
-        profile=load_profile(); accepted=profile["accepted_manifest"]
-        if (
-            str(workspace.pk)!=accepted["workspace_id"]
-            or str(workspace.definition_version_id)!=accepted["definition_id"]
-            or workspace.definition_manifest_hash!=accepted["sha256"]
-            or accepted["head"]!="f2255b6d76cf8efa46b5bea5756e09af4273b46a"
-            or accepted["tree"]!="249b5e826511072c6fbcb0ea3cb7441d83c25faf"
-        ): raise PlayerExperimentError("G8_TARGET_MAPPING_MISMATCH")
-        actors={r.code:r for r in Actor.objects.filter(workspace=workspace)}; elements={r.code:r for r in AnalyticalElement.objects.filter(workspace=workspace)}; times={r.code:r for r in TimeSlice.objects.filter(workspace=workspace)}; definitions={r.code:r for r in ParameterDefinition.objects.filter(project=project,definition_version=workspace.definition_version,code__in=("POS","SAL"))}
-        if set(definitions)!={"POS","SAL"}: raise PlayerExperimentError("G8_TARGET_MAPPING_MISMATCH")
+        profile,actors,elements,times,definitions,roles=_validated_import_projection(
+            project, workspace, reparsed,
+        )
         grouped: dict[str,list[dict[str,Any]]]={}
         for item in reparsed["creates"]: grouped.setdefault(item["profile"]["assessment_code"],[]).append(item)
         assessments={}
         for base_code,items in grouped.items():
             p=items[0]["profile"]; actor=actors.get(p["source_manifest_actor_code"]); element=elements.get(p["source_manifest_element_code"]); ts=times.get(p["time_slice_code"])
-            role=list(ActorElementRole.objects.filter(workspace=workspace,actor=actor,element=element)) if actor and element else []
+            role=[roles[(actor.pk,element.pk)]] if actor and element and (actor.pk,element.pk) in roles else []
             if (
                 not actor or not element or not ts or len(role)!=1
                 or str(actor.source_manifest_entity_id)!=p["source_manifest_actor_uuid"]
@@ -722,7 +833,7 @@ def import_xlsx(*, user, experiment_id, operation_id, if_match, body):
         run=ImportRun(
             id=operation_id,code=f"G8-IMPORT-{operation_id}",version=VERSION,project=project,workspace=workspace,definition_version=workspace.definition_version,package_scope=ImportPackageScope.WORKSPACE,target_experiment=experiment,target_assessment_set=experiment.assessment_set,
             package_format="XLSX",package_id=PROFILE_ID,package_version=VERSION,schema_version=VERSION,template_version="2.0",method_version=experiment.method_version or "UNSPECIFIED",ontology_version="V4-TERM-2.0",dataset_version="A5-v0.1",checksum=reparsed["raw_file_sha256"],adapter="domain.services.xlsx_adapter",
-            selected_input={**ticket_expected,"canonical_request_sha256":request_sha},selected_source_column=body["source_column"],source_identity_map={"profile_sha256":profile["file_sha256"],"source_artifacts":profile["source_artifacts"],"accepted_manifest":profile["accepted_manifest"]},correction_lineage=[],
+            selected_input={**ticket_expected,"sealed_if_match":if_match,"canonical_request_sha256":request_sha},selected_source_column=body["source_column"],source_identity_map={"profile_sha256":profile["file_sha256"],"source_artifacts":profile["source_artifacts"],"accepted_manifest":profile["accepted_manifest"]},correction_lineage=[],
             intended_changes={"source_snapshot":snapshot,"receipt":response},row_counts=reparsed["counts"],warnings=reparsed["missing_ids"],errors=[],allow_nonempty=False,status=ImportRunStatus.COMMITTED,actor_identifier=principal.actor_identifier,committed_at=timezone.now(),
         ); run.save(force_insert=True)
         _audit(operation_id=operation_id,project=project,workspace=workspace,principal=principal,contract=IMPORT_CONTRACT,entity_id=run.pk,action=AuditAction.IMPORT,request_sha=request_sha,payload={"import":response},assessment_set=experiment.assessment_set)
@@ -738,8 +849,10 @@ def recover_import(*, user, experiment_id, operation_id):
     return receipt
 
 
-def comparison(*, user, workspace_id):
+def comparison(*, user, workspace_id, include_archived=False):
     principal=assessment_principal(user); project,workspace=_projection_workspace(principal,workspace_id)
     experiments=Experiment.objects.filter(workspace=workspace,experiment_type=ExperimentType.ASSESSMENT,metadata__contract=EXPERIMENT_CONTRACT).select_related("expert_profile","assessment_set")
+    if not include_archived:
+        experiments=experiments.exclude(status=ExperimentStatus.ARCHIVED)
     values=ParameterValue.objects.filter(actor_element_assessment__experiment__in=experiments).select_related("actor_element_assessment__actor","actor_element_assessment__element","actor_element_assessment__experiment__expert_profile","parameter_definition","time_slice")
     return {"contract":"FOUNDATION_PLAYER_EXPERIMENT_COMPARISON_V1","project_id":str(project.pk),"workspace_id":str(workspace.pk),"aggregation":None,"values":[{**_value_dto(row),"actor_code":row.actor_element_assessment.actor.code,"element_code":row.actor_element_assessment.element.code,"experiment_name":row.actor_element_assessment.experiment.name,"expert_name":row.actor_element_assessment.experiment.expert_profile.display_name,"color":row.actor_element_assessment.experiment.color} for row in values]}
