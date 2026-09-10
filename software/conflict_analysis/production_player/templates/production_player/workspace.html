@@ -2,6 +2,7 @@
 {% block title %}Player — эксперименты оценивания{% endblock %}
 {% block main_content %}
   <link rel="stylesheet" href="{% static 'production_player/experiments.css' %}">
+  <link rel="stylesheet" href="{% static 'production_player/evidence.css' %}">
   <div id="workspace-content" hidden data-g8-shell="{{ g8_shell|yesno:'true,false' }}" data-g8-claim-contract="{{ experiment_claim_contract }}" data-g8-claim-sha256="{{ experiment_claim_sha256 }}" data-initial-experiment-id="{{ experiment_id }}">
     <div class="workspace-heading"><h1 id="workspace-name">—</h1><span id="projection-badge" class="projection-badge">NOT_PROVEN</span></div>
     <div id="experiment-tabs" class="experiment-tabs" role="tablist" aria-label="Общее и эксперименты"><button id="experiment-general" type="button" role="tab" aria-selected="true" data-experiment-id="general">Общее</button><button id="experiment-plus" type="button" role="tab" aria-disabled="true" aria-selected="false" title="{% if g8_shell %}Создать независимый эксперимент{% else %}Доступно после этапа экспериментов{% endif %}">+<span class="sr-only"> Создать эксперимент оценивания</span></button></div>
@@ -21,5 +22,25 @@
     <span hidden>Доступно после этапа экспериментов</span>
     <details id="g8-claim-boundaries"><summary>Границы G8</summary><ul>{% for item in experiment_claim_statements %}<li data-g8-claim-code="{{ item.code }}">{{ item.text }}</li>{% endfor %}</ul><code>SHA-256 {{ experiment_claim_sha256 }}</code></details>
   </div>
+  <template id="g9-evidence-template" data-g9-claim-contract="PLAYER_G9_EVIDENCE_CLAIM_BOUNDARIES_V1" data-g9-claim-sha256="6883dbb22b85f45404d5c6e1b338fe3e844486dadddc32e207cf3f369f3ccdc3">
+    <section class="g9-evidence" aria-labelledby="g9-evidence-title">
+      <h2 id="g9-evidence-title">Доказательства</h2>
+      <p id="g9-state" class="g9-notice" role="status" aria-live="polite">Выберите значение или оценку в рабочей области.</p>
+      <nav class="g9-command-bar" aria-label="Команды доказательств">
+        <button id="g9-related" type="button" disabled>Связанные факты</button>
+        <button id="g9-open-fact" type="button" disabled>Открыть факт</button>
+        <button id="g9-open-fragment" type="button" disabled>Открыть фрагмент</button>
+        <button id="g9-open-document" type="button" disabled>Открыть документ</button>
+        <button id="g9-show-original" type="button" disabled aria-label="Показать оригинал" title="Показать оригинал">⇄</button>
+        <button id="g9-open-external" type="button" disabled aria-label="Открыть внешний адрес" title="Открыть внешний адрес">↗</button>
+      </nav>
+      <p id="g9-original-reason" class="g9-disabled-reason">Точное соответствие оригиналу не подтверждено</p>
+      <h3>Связанные факты</h3><ol id="g9-fact-list" class="g9-evidence-list" role="listbox" aria-label="Доступные связанные факты"></ol>
+      <h3>Связи с доказательствами</h3><ol id="g9-evidence-list" class="g9-evidence-list" role="listbox" aria-label="Точные связи факта"></ol>
+      <article id="g9-detail" aria-live="polite"></article>
+      <details id="g9-claim-boundaries"><summary>Границы G9</summary><p>Факты и доказательства показываются как сохранённые утверждения и связи, без вывода об истинности, вине, причинности или корректности оценки.</p><code>PLAYER_G9_EVIDENCE_CLAIM_BOUNDARIES_V1 · SHA-256 6883dbb22b85f45404d5c6e1b338fe3e844486dadddc32e207cf3f369f3ccdc3</code></details>
+    </section>
+  </template>
   <script src="{% static 'production_player/experiments.js' %}" defer></script>
+  <script src="{% static 'production_player/evidence.js' %}" defer></script>
 {% endblock %}
