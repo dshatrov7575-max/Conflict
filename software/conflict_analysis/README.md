@@ -1,5 +1,32 @@
 # Conflict Analysis
 
+## Production Player G8: assessment experiments and bounded XLSX import
+
+G8 adds independent HUMAN and AI assessment experiments to the accepted Player
+workspace. The single Foundation route
+`/api/foundation/player/workspaces/<workspace_id>/experiments/` retains the G7
+GET contract and also accepts G8 experiment creation. Experiment values use the
+existing `ParameterValue` record as the only numeric persistence lane. DRAFT,
+FROZEN and ARCHIVED lifecycle rules, immutable successor corrections and exact
+operation-key replay are enforced by Foundation services.
+
+The browser sends a bounded raw XLSX upload with same-origin session and CSRF
+protection. Foundation parses the archive through one bounded XML adapter,
+rejects formulas including cached formula values, and performs a deterministic
+zero-write preview before an atomic import. The packaged
+`KZ_ZHANAOZEN_EXPERT_V2_A5_0_1` profile contains all 330 source records: 288 are
+transferable with review, while 18 `METHOD_BLOCKED` and 24
+`RECODING_REQUIRED` records remain `BETA_COMPATIBILITY_INPUT_ONLY`. A
+`POLARIZATION_V1_IMPORT_SNAPSHOT_V1` receipt is stored only for a complete
+330-row file and never acts as a second value store.
+
+G8 does not create Fact, Document or Fragment records, write Product ORM data,
+or implement evidence, calculation or modeling behavior. The decision and
+runtime contracts are documented in
+[`docs/adr/0015-production-player-g8-experiments-xlsx.md`](docs/adr/0015-production-player-g8-experiments-xlsx.md)
+and
+[`docs/production-player-g8-import-profile.md`](docs/production-player-g8-import-profile.md).
+
 ## Production Studio C1: authenticated audited DRAFT
 
 `C1_AUTHENTICATED_DRAFT` adds a testable Russian authoring shell without

@@ -2654,6 +2654,152 @@ class AssessmentSet(ValidatedStableVersionedModel):
                 )
 
 
+_G8_EXPERIMENT_CONTRACT = "FOUNDATION_PLAYER_EXPERIMENT_V1"
+_G8_EXPERT_PROFILE_CONTRACT = "FOUNDATION_PLAYER_EXPERT_PROFILE_V1"
+
+
+def _g8_expert_profile_contract_errors(
+    *, kind: str, provider: Any, model_name: Any, metadata: Any
+) -> dict[str, str]:
+    """Validate the exact bounded G8 HUMAN/AI profile contract."""
+
+    errors: dict[str, str] = {}
+    marker = {"contract": _G8_EXPERT_PROFILE_CONTRACT}
+    if kind == AssessmentKind.AI:
+        if not isinstance(provider, str) or not provider.strip() or len(provider) > 128:
+            errors["provider"] = "AI profiles require a provider of at most 128 characters."
+        if not isinstance(model_name, str) or not model_name.strip() or len(model_name) > 255:
+            errors["model_name"] = "AI profiles require a model name of at most 255 characters."
+        if metadata != marker:
+            errors["metadata"] = "AI G8 profile metadata must be the exact contract marker."
+    elif kind == AssessmentKind.HUMAN:
+        if provider != "":
+            errors["provider"] = "HUMAN G8 profiles require an empty provider."
+        if model_name != "":
+            errors["model_name"] = "HUMAN G8 profiles require an empty model name."
+        exact_keys = {"contract", "organization", "role", "description"}
+        if type(metadata) is not dict or set(metadata) != exact_keys:
+            errors["metadata"] = "HUMAN G8 profile metadata requires the exact bounded key set."
+        elif metadata.get("contract") != _G8_EXPERT_PROFILE_CONTRACT:
+            errors["metadata"] = "HUMAN G8 profile metadata requires the exact contract marker."
+        else:
+            for key, limit in (("organization", 255), ("role", 255), ("description", 2000)):
+                value = metadata[key]
+                if not isinstance(value, str) or len(value) > limit:
+                    errors["metadata"] = (
+                        "HUMAN G8 organization/role/description must be bounded strings."
+                    )
+                    break
+    else:
+        errors["kind"] = "A G8 expert profile must use the HUMAN or AI lane."
+    return errors
+
+
+class ExpertProfileQuerySet(models.QuerySet):
+    """Keep the first-use immutability rule effective for bulk ORM operations."""
+
+    def _contains_used_profile(self) -> bool:
+        return Experiment.objects.filter(expert_profile_id__in=self.values("pk")).exists()
+
+    def _contains_g8_profile(self) -> bool:
+        return self.filter(metadata__contract=_G8_EXPERT_PROFILE_CONTRACT).exists()
+
+    def update(self, **kwargs: Any) -> int:
+        if self._contains_used_profile() and set(kwargs) - {"updated_at"}:
+            raise ValidationError("A used ExpertProfile is immutable; create a new profile.")
+        entering_g8 = (
+            isinstance(kwargs.get("metadata"), dict)
+            and kwargs["metadata"].get("contract") == _G8_EXPERT_PROFILE_CONTRACT
+        )
+        if (self._contains_g8_profile() or entering_g8) and set(kwargs) - {"updated_at"}:
+            raise ValidationError("G8 ExpertProfile edits require the guarded Foundation service.")
+        return super().update(**kwargs)
+
+    def delete(self) -> tuple[int, dict[str, int]]:
+        if self._contains_used_profile():
+            raise ValidationError("A used ExpertProfile cannot be deleted.")
+        return super().delete()
+
+    def bulk_update(
+        self, objs: Any, fields: Any, batch_size: int | None = None
+    ) -> int:
+        objects = list(objs)
+        protected = set(fields) - {"updated_at"}
+        if protected and Experiment.objects.filter(
+            expert_profile_id__in=[obj.pk for obj in objects if obj.pk]
+        ).exists():
+            raise ValidationError("A used ExpertProfile is immutable; create a new profile.")
+        object_ids = [obj.pk for obj in objects if obj.pk]
+        persisted_g8 = self.model._base_manager.filter(
+            pk__in=object_ids, metadata__contract=_G8_EXPERT_PROFILE_CONTRACT,
+        ).exists()
+        incoming_g8 = any(
+            isinstance(obj.metadata, dict)
+            and obj.metadata.get("contract") == _G8_EXPERT_PROFILE_CONTRACT
+            for obj in objects
+        )
+        if protected and (persisted_g8 or incoming_g8):
+            raise ValidationError("G8 ExpertProfile edits require the guarded Foundation service.")
+        return super().bulk_update(objects, fields, batch_size=batch_size)
+
+    def bulk_create(self, objs: Any, **kwargs: Any) -> list[Any]:
+        objects = list(objs)
+        for obj in objects:
+            obj.full_clean()
+        return super().bulk_create(objects, **kwargs)
+
+
+class ExperimentQuerySet(models.QuerySet):
+    """Disallow ORM shortcuts around the bounded G8 lifecycle."""
+
+    def _contains_g8(self) -> bool:
+        return self.filter(metadata__contract=_G8_EXPERIMENT_CONTRACT).exists()
+
+    def update(self, **kwargs: Any) -> int:
+        entering_g8 = (
+            isinstance(kwargs.get("metadata"), dict)
+            and kwargs["metadata"].get("contract") == _G8_EXPERIMENT_CONTRACT
+        )
+        if self._contains_g8() or entering_g8:
+            raise ValidationError("G8 experiments must use the guarded lifecycle service.")
+        return super().update(**kwargs)
+
+    def delete(self) -> tuple[int, dict[str, int]]:
+        if self._contains_g8():
+            raise ValidationError("G8 experiment history cannot be deleted.")
+        return super().delete()
+
+    def bulk_update(
+        self, objs: Any, fields: Any, batch_size: int | None = None
+    ) -> int:
+        objects = list(objs)
+        object_ids = [obj.pk for obj in objects if obj.pk]
+        persisted_g8 = self.model._base_manager.filter(
+            pk__in=object_ids, metadata__contract=_G8_EXPERIMENT_CONTRACT,
+        ).exists()
+        if persisted_g8 or any(
+            isinstance(obj.metadata, dict)
+            and obj.metadata.get("contract") == _G8_EXPERIMENT_CONTRACT
+            for obj in objects
+        ):
+            raise ValidationError("G8 experiments must use the guarded lifecycle service.")
+        return super().bulk_update(objects, fields, batch_size=batch_size)
+
+    def bulk_create(self, objs: Any, **kwargs: Any) -> list[Any]:
+        objects = list(objs)
+        for obj in objects:
+            if (
+                isinstance(obj.metadata, dict)
+                and obj.metadata.get("contract") == _G8_EXPERIMENT_CONTRACT
+            ):
+                if obj.status != ExperimentStatus.DRAFT or obj.frozen_at is not None:
+                    raise ValidationError({
+                        "status": "A new G8 experiment must be DRAFT with no frozen timestamp."
+                    })
+                obj.full_clean()
+        return super().bulk_create(objects, **kwargs)
+
+
 class ExpertProfile(ValidatedStableVersionedModel):
     """Stable HUMAN or AI coder identity; never a value store."""
 
@@ -2668,6 +2814,7 @@ class ExpertProfile(ValidatedStableVersionedModel):
     provider = models.CharField(max_length=128, blank=True)
     model_name = models.CharField(max_length=255, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
+    objects = ExpertProfileQuerySet.as_manager()
 
     class Meta:
         ordering = ("workspace__code", "kind", "code")
@@ -2689,8 +2836,51 @@ class ExpertProfile(ValidatedStableVersionedModel):
             raise ValidationError(
                 {"kind": "An expert profile must use the HUMAN or AI lane."}
             )
-        if self.kind == AssessmentKind.AI and not self.model_name.strip():
+        if (
+            isinstance(self.metadata, dict)
+            and self.metadata.get("contract") == _G8_EXPERT_PROFILE_CONTRACT
+        ):
+            errors = _g8_expert_profile_contract_errors(
+                kind=self.kind, provider=self.provider,
+                model_name=self.model_name, metadata=self.metadata,
+            )
+            if errors:
+                raise ValidationError(errors)
+        elif self.kind == AssessmentKind.AI and not self.model_name.strip():
             raise ValidationError({"model_name": "AI profiles require a model name."})
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.pk and ExpertProfile.objects.filter(pk=self.pk).exists():
+            previous = ExpertProfile.objects.get(pk=self.pk)
+            if (
+                isinstance(previous.metadata, dict)
+                and previous.metadata.get("contract") == _G8_EXPERT_PROFILE_CONTRACT
+                and not (
+                    isinstance(self.metadata, dict)
+                    and self.metadata.get("contract") == _G8_EXPERT_PROFILE_CONTRACT
+                )
+            ):
+                raise ValidationError({
+                    "metadata": "G8 ExpertProfile metadata must retain its contract marker."
+                })
+            if Experiment.objects.filter(expert_profile_id=self.pk).exists():
+                changed = [
+                    field.name
+                    for field in self._meta.concrete_fields
+                    if field.name not in {"created_at", "updated_at"}
+                    and getattr(previous, field.attname) != getattr(self, field.attname)
+                ]
+                if changed:
+                    raise ValidationError({
+                        name: "A used ExpertProfile is immutable; create a new profile."
+                        for name in changed
+                    })
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        if Experiment.objects.filter(expert_profile_id=self.pk).exists():
+            raise ValidationError("A used ExpertProfile cannot be deleted.")
+        return super().delete(*args, **kwargs)
 
 
 class Experiment(ValidatedStableVersionedModel):
@@ -2724,6 +2914,7 @@ class Experiment(ValidatedStableVersionedModel):
     method_version = models.CharField(max_length=64, blank=True)
     frozen_at = models.DateTimeField(null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
+    objects = ExperimentQuerySet.as_manager()
 
     class Meta:
         ordering = ("workspace__code", "order", "code")
@@ -2773,10 +2964,77 @@ class Experiment(ValidatedStableVersionedModel):
         if self.experiment_type == ExperimentType.MODELING:
             if self.status != ExperimentStatus.DRAFT:
                 errors["status"] = "MODELING is reserved and cannot be activated in I1."
+        g8 = (
+            isinstance(self.metadata, dict)
+            and self.metadata.get("contract") == _G8_EXPERIMENT_CONTRACT
+        )
         if self.status == ExperimentStatus.FROZEN and self.frozen_at is None:
             errors["frozen_at"] = "Frozen experiments require a timestamp."
+        if g8 and self.status == ExperimentStatus.ACTIVE:
+            errors["status"] = "ACTIVE is unreachable for a G8 assessment experiment."
+        if g8 and self.status == ExperimentStatus.DRAFT and self.frozen_at is not None:
+            errors["frozen_at"] = "A DRAFT G8 experiment has no frozen timestamp."
         if errors:
             raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        incoming_g8 = (
+            isinstance(self.metadata, dict)
+            and self.metadata.get("contract") == _G8_EXPERIMENT_CONTRACT
+        )
+        previous = (
+            Experiment.objects.filter(pk=self.pk).first()
+            if self.pk else None
+        )
+        previous_g8 = (
+            previous is not None
+            and isinstance(previous.metadata, dict)
+            and previous.metadata.get("contract") == _G8_EXPERIMENT_CONTRACT
+        )
+        if incoming_g8 and not previous_g8:
+            if self.status != ExperimentStatus.DRAFT or self.frozen_at is not None:
+                raise ValidationError({
+                    "status": "A G8 experiment must enter the contract as DRAFT with no frozen timestamp."
+                })
+        if previous is not None:
+            if previous_g8:
+                changed = {
+                    field.name
+                    for field in self._meta.concrete_fields
+                    if field.name not in {"created_at", "updated_at"}
+                    and getattr(previous, field.attname) != getattr(self, field.attname)
+                }
+                transition = (previous.status, self.status)
+                allowed_transitions = {
+                    (ExperimentStatus.DRAFT, ExperimentStatus.DRAFT),
+                    (ExperimentStatus.DRAFT, ExperimentStatus.FROZEN),
+                    (ExperimentStatus.DRAFT, ExperimentStatus.ARCHIVED),
+                    (ExperimentStatus.FROZEN, ExperimentStatus.ARCHIVED),
+                }
+                if transition not in allowed_transitions:
+                    raise ValidationError({"status": "This G8 experiment lifecycle transition is forbidden."})
+                if transition[0] == transition[1] == ExperimentStatus.DRAFT:
+                    allowed = {"name", "color", "order"}
+                elif transition == (ExperimentStatus.DRAFT, ExperimentStatus.FROZEN):
+                    allowed = {"status", "frozen_at"}
+                else:
+                    allowed = {"status"}
+                unexpected = changed - allowed
+                if unexpected:
+                    raise ValidationError({
+                        name: "This field is immutable in the current experiment state."
+                        for name in unexpected
+                    })
+                if transition == (ExperimentStatus.DRAFT, ExperimentStatus.ARCHIVED) and self.frozen_at is not None:
+                    raise ValidationError({"frozen_at": "Archiving a DRAFT experiment keeps frozen_at null."})
+                if transition == (ExperimentStatus.FROZEN, ExperimentStatus.ARCHIVED) and self.frozen_at != previous.frozen_at:
+                    raise ValidationError({"frozen_at": "Archiving a FROZEN experiment preserves frozen_at."})
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        if isinstance(self.metadata, dict) and self.metadata.get("contract") == _G8_EXPERIMENT_CONTRACT:
+            raise ValidationError("G8 experiment history cannot be deleted.")
+        return super().delete(*args, **kwargs)
 
 
 class ActorElementAssessment(RevisionedStableVersionedModel):
@@ -2883,6 +3141,12 @@ class ActorElementAssessment(RevisionedStableVersionedModel):
         experiment = Experiment.objects.filter(pk=self.experiment_id).first()
         if experiment is not None and experiment.assessment_set_id != self.assessment_set_id:
             errors["assessment_set"] = "AssessmentSet must match the experiment binding."
+        if (
+            experiment is not None
+            and experiment.status != ExperimentStatus.DRAFT
+            and not ActorElementAssessment.objects.filter(pk=self.pk).exists()
+        ):
+            errors["experiment"] = "New assessments require an empty DRAFT experiment."
         time_slice = TimeSlice.objects.filter(pk=self.time_slice_id).first()
         if time_slice is not None and self.knowledge_cutoff > time_slice.cutoff_date:
             errors["knowledge_cutoff"] = (
@@ -2900,6 +3164,7 @@ class ActorElementAssessment(RevisionedStableVersionedModel):
                     "actor_id",
                     "element_id",
                     "time_slice_id",
+                    "experiment_id",
                     "assessment_set_id",
                 )
                 if any(
@@ -2922,6 +3187,7 @@ class ActorElementAssessment(RevisionedStableVersionedModel):
             actor_id=self.actor_id,
             element_id=self.element_id,
             time_slice_id=self.time_slice_id,
+            experiment_id=self.experiment_id,
             assessment_set_id=self.assessment_set_id,
             supersedes__isnull=True,
         ).exclude(pk=self.pk).exists():
@@ -3599,6 +3865,17 @@ class ParameterValue(RevisionedStableVersionedModel):
                     errors["time_slice"] = (
                         "ParameterValue and actor assessment must use the same TimeSlice."
                     )
+                assessment_experiment = Experiment.objects.filter(
+                    pk=assessment.experiment_id
+                ).first()
+                if (
+                    assessment_experiment is not None
+                    and assessment_experiment.status != ExperimentStatus.DRAFT
+                    and not ParameterValue.objects.filter(pk=self.pk).exists()
+                ):
+                    errors["actor_element_assessment"] = (
+                        "New values require an empty DRAFT experiment."
+                    )
         if self.target_type == TargetType.ACTOR_ELEMENT_ASSESSMENT:
             if self.actor_element_assessment_id is None:
                 errors["actor_element_assessment"] = (
@@ -3680,6 +3957,22 @@ class ParameterValue(RevisionedStableVersionedModel):
                     numeric < Decimal("0") or numeric > Decimal("10")
                 ):
                     errors["value"] = "SAL must be between 0 and 10."
+        categorical_metadata_complete = False
+        if assessment is not None and isinstance(assessment.provenance, dict):
+            parameter_confidence = assessment.provenance.get("parameter_confidence")
+            if parameter_confidence is not None:
+                allowed_categories = {"LOW", "MEDIUM", "HIGH", "UNKNOWN"}
+                if (
+                    not isinstance(parameter_confidence, dict)
+                    or set(parameter_confidence) != {"POS", "SAL"}
+                    or any(value not in allowed_categories for value in parameter_confidence.values())
+                    or assessment.confidence_level != ConfidenceLevel.UNKNOWN
+                ):
+                    errors["actor_element_assessment"] = (
+                        "Categorical confidence requires exact POS/SAL categories and UNKNOWN assessment confidence."
+                    )
+                elif definition is not None and definition.code in parameter_confidence:
+                    categorical_metadata_complete = bool(self.rationale.strip())
         _validate_assessment_metadata(
             definition=definition,
             status=self.status,
@@ -3689,9 +3982,12 @@ class ParameterValue(RevisionedStableVersionedModel):
             range_max=self.range_max,
             rationale=self.rationale,
             inherited_metadata_complete=(
-                assessment is not None
-                and assessment.confidence_level != ConfidenceLevel.UNKNOWN
-                and bool(assessment.reference_statement.strip())
+                categorical_metadata_complete
+                or (
+                    assessment is not None
+                    and assessment.confidence_level != ConfidenceLevel.UNKNOWN
+                    and bool(assessment.reference_statement.strip())
+                )
             ),
             errors=errors,
         )
@@ -3699,17 +3995,59 @@ class ParameterValue(RevisionedStableVersionedModel):
             previous = ParameterValue.objects.filter(pk=self.supersedes_id).first()
             if previous is not None:
                 context_fields = (
+                    "project_id",
                     "workspace_id",
                     "time_slice_id",
                     "assessment_set_id",
-                    "actor_element_assessment_id",
                     "parameter_definition_id",
                     "target_type",
-                    "target_id",
                 )
                 if any(
                     getattr(previous, field) != getattr(self, field)
                     for field in context_fields
+                ):
+                    errors["supersedes"] = "Value successor context must remain exact."
+                if self.target_type == TargetType.ACTOR_ELEMENT_ASSESSMENT:
+                    previous_assessment = ActorElementAssessment.objects.filter(
+                        pk=previous.actor_element_assessment_id
+                    ).first()
+                    if (
+                        previous.target_type != TargetType.ACTOR_ELEMENT_ASSESSMENT
+                        or previous.target_id != previous.actor_element_assessment_id
+                        or previous_assessment is None
+                        or assessment is None
+                    ):
+                        errors["supersedes"] = "Canonical value lineage requires exact AEA targets."
+                    elif previous_assessment.pk != assessment.pk:
+                        assessment_context = (
+                            "workspace_id", "actor_id", "element_id", "time_slice_id",
+                            "experiment_id", "assessment_set_id",
+                        )
+                        if any(
+                            getattr(previous_assessment, field) != getattr(assessment, field)
+                            for field in assessment_context
+                        ):
+                            errors["supersedes"] = "Value successor AEA context must remain exact."
+                        else:
+                            seen: set[Any] = set()
+                            cursor = assessment
+                            while cursor is not None and cursor.pk not in seen:
+                                seen.add(cursor.pk)
+                                if cursor.pk == previous_assessment.pk:
+                                    break
+                                cursor = (
+                                    ActorElementAssessment.objects.filter(
+                                        pk=cursor.supersedes_id
+                                    ).first()
+                                    if cursor.supersedes_id else None
+                                )
+                            if previous_assessment.pk not in seen:
+                                errors["supersedes"] = (
+                                    "Value successor may advance only to a descendant AEA."
+                                )
+                elif (
+                    previous.actor_element_assessment_id != self.actor_element_assessment_id
+                    or previous.target_id != self.target_id
                 ):
                     errors["supersedes"] = "Value successor context must remain exact."
                 if previous.version == self.version:
@@ -3737,6 +4075,8 @@ class ParameterValue(RevisionedStableVersionedModel):
             raise ValidationError(errors)
 
     def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        if self.actor_element_assessment_id is not None:
+            raise ValidationError("Canonical assessment values are append-only.")
         protected = (
             hasattr(self, "successor")
             or self.audit_events.exists()
@@ -6543,6 +6883,13 @@ class ImportRun(ImmutableCapturedModel):
                 if experiment.assessment_set_id != self.target_assessment_set_id:
                     errors["target_assessment_set"] = (
                         "Import target AssessmentSet must match the Experiment binding."
+                    )
+                if (
+                    experiment.status != ExperimentStatus.DRAFT
+                    and not ImportRun.objects.filter(pk=self.pk).exists()
+                ):
+                    errors["target_experiment"] = (
+                        "New import receipts require an empty DRAFT experiment."
                     )
         if self.status == ImportRunStatus.COMMITTED and self.committed_at is None:
             errors["committed_at"] = "Committed runs require a timestamp."

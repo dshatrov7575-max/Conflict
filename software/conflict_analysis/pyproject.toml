@@ -27,6 +27,10 @@ where = ["."]
 include = ["conflict_analysis*", "domain*", "production_studio*", "production_player*"]
 
 [tool.setuptools.package-data]
+"domain" = [
+    "import_profiles/*.json",
+    "import_profiles/*.sha256",
+]
 "domain.services" = ["schemas/*.json"]
 "production_studio" = [
     "contracts/*.json",
