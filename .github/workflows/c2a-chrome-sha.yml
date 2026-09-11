@@ -1,0 +1,42 @@
+name: C2A pinned Chrome digest
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-builder
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chrome-linux64-sha256:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      C2A_CHROME_VERSION: 152.0.7977.64
+    steps:
+      - name: Download exact Chrome-for-Testing archive and hash bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://storage.googleapis.com/chrome-for-testing-public/${C2A_CHROME_VERSION}/linux64/chrome-linux64.zip"
+          curl --fail --location --silent --show-error \
+            --retry 0 \
+            --output "$RUNNER_TEMP/chrome-linux64.zip" \
+            "$url"
+          digest="$(sha256sum "$RUNNER_TEMP/chrome-linux64.zip" | awk '{print $1}')"
+          size="$(stat -c '%s' "$RUNNER_TEMP/chrome-linux64.zip")"
+          test "$size" -gt 0
+          printf 'version=%s\nurl=%s\nbytes=%s\nsha256=%s\n' \
+            "$C2A_CHROME_VERSION" "$url" "$size" "$digest" \
+            | tee "$RUNNER_TEMP/chrome-linux64-sha256.txt"
+          echo "C2A_CHROME_LINUX64_SHA256=$digest"
+
+      - name: Upload digest evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2a-chrome-linux64-sha256-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/chrome-linux64-sha256.txt
+          if-no-files-found: error
+          retention-days: 7
