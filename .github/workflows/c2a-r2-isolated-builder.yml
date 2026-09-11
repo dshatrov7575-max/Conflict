@@ -29,6 +29,20 @@ jobs:
           test "$(git rev-parse HEAD^)" = "561ef5327bf655a558adb21c54d0fdf0559d7024"
           test -z "$(git status --porcelain=v1)"
 
+      - name: Export exact immutable R1 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c2a-r2-builder"
+          git archive \
+            --format=tar.gz \
+            --output="$RUNNER_TEMP/c2a-r2-builder/r1-source.tar.gz" \
+            HEAD \
+            .github \
+            software
+          sha256sum "$RUNNER_TEMP/c2a-r2-builder/r1-source.tar.gz" \
+            > "$RUNNER_TEMP/c2a-r2-builder/r1-source.tar.gz.sha256"
+
       - name: Restore six independently prepared blobs
         shell: bash
         env:
@@ -93,12 +107,17 @@ jobs:
             software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py
           git diff --check
 
-      - name: Emit deterministic reconstruction report
+      - name: Emit deterministic reconstruction report and worktree snapshot
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/c2a-r2-builder"
           git diff --binary --full-index > "$RUNNER_TEMP/c2a-r2-builder/known-six.patch"
+          tar -czf "$RUNNER_TEMP/c2a-r2-builder/known-six-worktree.tar.gz" \
+            .github/workflows/conflict-analysis.yml \
+            software/conflict_analysis
+          sha256sum "$RUNNER_TEMP/c2a-r2-builder/known-six-worktree.tar.gz" \
+            > "$RUNNER_TEMP/c2a-r2-builder/known-six-worktree.tar.gz.sha256"
           python - <<'PY'
           import hashlib
           import json
@@ -133,10 +152,10 @@ jobs:
           print(json.dumps(report, ensure_ascii=False, sort_keys=True))
           PY
 
-      - name: Upload reconstruction evidence
+      - name: Upload reconstruction evidence and source snapshots
         uses: actions/upload-artifact@v4
         with:
-          name: c2a-r2-known-six-${{ github.run_id }}-${{ github.run_attempt }}
+          name: c2a-r2-builder-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/c2a-r2-builder
           if-no-files-found: error
           retention-days: 7
