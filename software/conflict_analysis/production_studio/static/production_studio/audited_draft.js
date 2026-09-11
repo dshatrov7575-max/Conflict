@@ -1154,12 +1154,21 @@
     const save = byId("save-draft");
     const preview = byId("preview-validation");
     const manual = byId("manual-reconcile");
+    const lifecycle = byId("open-lifecycle-publication");
     if (save) save.disabled = !editable || !memory.dirty;
     if (preview) preview.disabled = !editable;
     if (manual) {
       manual.hidden = !memory.unresolvedWrite;
       manual.disabled = memory.busy || !memory.unresolvedWrite;
     }
+    if (lifecycle) {
+      lifecycle.disabled = !memory.definition || memory.busy || Boolean(memory.unresolvedWrite);
+      lifecycle.setAttribute("aria-disabled", String(lifecycle.disabled));
+    }
+    const saveBeforeNavigation = byId("lifecycle-save-before-navigation");
+    const discardAndOpen = byId("lifecycle-discard-and-open");
+    if (saveBeforeNavigation) saveBeforeNavigation.disabled = memory.busy || Boolean(memory.unresolvedWrite);
+    if (discardAndOpen) discardAndOpen.disabled = memory.busy || Boolean(memory.unresolvedWrite);
     ["project-name", "project-description"].forEach((id) => {
       const control = byId(id);
       if (control) control.disabled = !editable;
@@ -1183,6 +1192,43 @@
       "attention",
     );
     updateDefinitionControls();
+  }
+
+  function lifecycleTargetUrl() {
+    const control = byId("open-lifecycle-publication");
+    const target = control?.dataset.targetUrl || "";
+    if (!target.startsWith("/studio/lifecycle/definitions/") || !target.endsWith("/")) {
+      throw new TypeError("Lifecycle navigation target is invalid.");
+    }
+    return target;
+  }
+
+  function requestLifecycleNavigation() {
+    if (memory.busy || memory.unresolvedWrite || !memory.definition) return;
+    if (memory.dirty) {
+      const guard = byId("lifecycle-navigation-guard");
+      if (guard) guard.hidden = false;
+      setState(
+        "authoring",
+        "DIRTY_NAVIGATION_REQUIRES_HUMAN_DECISION",
+        "Переход не выполнен: явно сохраните DRAFT или явно отбросьте изменения.",
+        "attention",
+      );
+      emit("studio:lifecycle-navigation-guarded", { dirty: true, busy: false, unresolvedWrite: false });
+      return;
+    }
+    window.location.assign(lifecycleTargetUrl());
+  }
+
+  function discardDraftAndOpenLifecycle() {
+    if (memory.busy || memory.unresolvedWrite || !memory.dirty) return;
+    memory.dirty = false;
+    const guard = byId("lifecycle-navigation-guard");
+    if (guard) guard.hidden = true;
+    emit("studio:lifecycle-navigation-discarded", {
+      definitionId: memory.app.dataset.definitionId.toLowerCase(),
+    });
+    window.location.assign(lifecycleTargetUrl());
   }
 
   function renderProject() {
@@ -2144,6 +2190,26 @@
     byId("manual-reconcile")?.addEventListener("click", () => {
       if (!memory.busy && memory.unresolvedWrite) performSave(memory.unresolvedWrite);
     });
+    byId("open-lifecycle-publication")?.addEventListener("click", requestLifecycleNavigation);
+    byId("lifecycle-save-before-navigation")?.addEventListener("click", async () => {
+      if (memory.busy || memory.unresolvedWrite || !memory.dirty) return;
+      await beginSave();
+      if (!memory.dirty && !memory.unresolvedWrite) {
+        const guard = byId("lifecycle-navigation-guard");
+        if (guard) guard.hidden = true;
+        setState(
+          "authoring",
+          "DRAFT_SAVED_NAVIGATION_NOT_AUTOMATIC",
+          "DRAFT сохранён. Для перехода нажмите кнопку C2A ещё раз; автоматический redirect запрещён.",
+          "success",
+        );
+      }
+    });
+    byId("lifecycle-discard-and-open")?.addEventListener("click", discardDraftAndOpenLifecycle);
+    byId("lifecycle-cancel-navigation")?.addEventListener("click", () => {
+      const guard = byId("lifecycle-navigation-guard");
+      if (guard) guard.hidden = true;
+    });
     byId("load-help")?.addEventListener("click", loadSelectedHelp);
   }
 
@@ -2177,6 +2243,12 @@
     bindDefinitionControls();
     await openDefinition();
   }
+
+  window.addEventListener("beforeunload", (event) => {
+    if (!memory.dirty && !memory.busy && !memory.unresolvedWrite) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initialise, { once: true });
