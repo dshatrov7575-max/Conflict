@@ -115,6 +115,9 @@ F1_TARGET_BRANCH = "codex/ca-suite-i1-evidence-multilingual-f1"
 C2A_TARGET_BRANCH = (
     "codex/ca-suite-i1-production-studio-c2a-lifecycle-publication"
 )
+C2A_BASE_BRANCH = "codex/ca-suite-i1-player-g9-evidence-ui"
+PINNED_C2A_BASE_HEAD = "561ef5327bf655a558adb21c54d0fdf0559d7024"
+PINNED_C2A_BASE_TREE = "5b209c782e1ac1a4783b01391dd59d813559ce57"
 F0L_EXACT_PATH_COUNT = 26
 F0L_NEW_PATH_COUNT = 4
 F0L_PORTABLE_TEST_COUNT = 16
@@ -237,9 +240,13 @@ C2A_FROZEN_PATHS = (
 )
 C2A_PORTABLE_TOTAL = 13
 C2A_CHROMIUM_TOTAL = 2
-C2A_FOUNDATION_POSTGRESQL_TOTAL = 254
-C2A_FOUNDATION_SQLITE_PASSED = 237
-C2A_FOUNDATION_SQLITE_SKIPPED = 17
+C2A_FOUNDATION_POSTGRESQL_TOTAL = 350
+C2A_FOUNDATION_SQLITE_PASSED = 322
+C2A_FOUNDATION_SQLITE_SKIPPED = 28
+C2A_INHERITED_PRODUCT_TOTAL = 55
+C2A_PRODUCT_FULL_TOTAL = 68
+C2A_INHERITED_CHROMIUM_TOTAL = 8
+C2A_CHROMIUM_FULL_TOTAL = 10
 SUCCESSOR_C0_TOTAL = 19
 SUCCESSOR_C1_PORTABLE_TOTAL = 8
 SUCCESSOR_C1_CHROMIUM_TOTAL = 1
@@ -272,6 +279,9 @@ SUCCESSOR_JUNIT_FILES = {
         "c2a-c1-sqlite.xml",
         "c2a-c1-chromium-postgresql.xml",
         "c2a-chromium-postgresql.xml",
+        "c2a-product-full-postgresql.xml",
+        "c2a-product-full-sqlite.xml",
+        "c2a-chromium-full-postgresql.xml",
     ),
 }
 SUCCESSOR_MIGRATION_GATES = {
@@ -653,6 +663,16 @@ C2A_POST_F0L_ALLOWLIST = frozenset(
         "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
     }
 )
+C2A_EXISTING_BASE_BLOBS = {
+    ".github/workflows/conflict-analysis.yml": "2c33a42ffb7d125238b438a335c65361ac652d61",
+    "software/conflict_analysis/README.md": "3db58e373702a70ffa248445395e4adbaba668d9",
+    "software/conflict_analysis/docs/production-studio-c-read-only-runtime.md": "68756c004e203092187dab794efb212908441977",
+    "software/conflict_analysis/production_studio/templates/production_studio/audited_draft_definition.html": "7cd363045aefd836f8ffe160c2f87dd4325547d9",
+    "software/conflict_analysis/production_studio/static/production_studio/audited_draft.js": "f0793b06fb879e00f91f658bba70dace51e22474",
+    "software/conflict_analysis/production_studio/urls.py": "ae436ed997c0b9a446449986abc49481ed0cee8e",
+    "software/conflict_analysis/production_studio/views.py": "954cbc5bc543dc3ae9da65872e15fdc714542338",
+    "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py": "65063b2aeed8a8fab7b0adc3a385dc1d812184e3",
+}
 
 F0L_EXISTING_BASE_BLOBS = {
     ".github/workflows/conflict-analysis.yml": "d8187433716431bc2e6c93468f826cd21d08792d",
@@ -829,6 +849,54 @@ F0L_SQLITE_SKIPPED_TEST_NODES = (
     (
         "domain.tests.test_postgresql_migrations.ProjectPrimaryLanguageMigrationGateTests",
         "test_0016_reverse_reapply_and_clean_database_seed_are_exact",
+    ),
+)
+
+C2A_SQLITE_SKIPPED_TEST_NODES = (
+    *F0L_SQLITE_SKIPPED_TEST_NODES,
+    (
+        "domain.tests.test_multilingual_evidence_lineage.MultilingualEvidenceLineageMigrationTests",
+        "test_0016_to_0017_preserves_project_language_and_all_legacy_evidence_identities",
+    ),
+    (
+        "domain.tests.test_multilingual_evidence_lineage.MultilingualEvidenceLineageMigrationTests",
+        "test_0017_reverse_reapply_and_empty_database_are_deterministic",
+    ),
+    (
+        "domain.tests.test_player_experiments.PlayerExperimentsPostgreSQLTests",
+        "test_competing_import_keys_into_one_empty_experiment_have_one_commit_and_one_typed_loser",
+    ),
+    (
+        "domain.tests.test_player_experiments.PlayerExperimentsPostgreSQLTests",
+        "test_concurrent_experiment_same_key_creates_one_aggregate_and_one_exact_replay",
+    ),
+    (
+        "domain.tests.test_player_experiments.PlayerExperimentsPostgreSQLTests",
+        "test_concurrent_import_same_key_creates_one_graph_and_one_exact_replay",
+    ),
+    (
+        "domain.tests.test_player_experiments.PlayerExperimentsPostgreSQLTests",
+        "test_concurrent_manual_corrections_have_one_successor_and_one_stale_loser",
+    ),
+    (
+        "domain.tests.test_player_foundation.FoundationPlayerConcurrencyTests",
+        "test_concurrent_time_slice_same_key_and_competing_date_have_one_slice_and_typed_loser",
+    ),
+    (
+        "domain.tests.test_player_foundation.FoundationPlayerConcurrencyTests",
+        "test_concurrent_workspace_same_key_and_competing_identity_have_one_graph_and_typed_loser",
+    ),
+    (
+        "domain.tests.test_player_projection.FoundationWorkspaceAssessmentProjectionPostgreSQLTests",
+        "test_competing_projection_identity_or_snapshot_has_one_commit_and_one_typed_loser",
+    ),
+    (
+        "domain.tests.test_player_projection.FoundationWorkspaceAssessmentProjectionPostgreSQLTests",
+        "test_concurrent_same_workspace_projection_has_one_commit_and_one_exact_replay",
+    ),
+    (
+        "domain.tests.test_zhanaozen_typed_manifest_repair.ZhanaozenRepairConcurrentTests",
+        "test_postgresql_concurrent_bootstrap",
     ),
 )
 
@@ -2349,16 +2417,18 @@ def _resolve_post_f0l_route(
     if target is None:
         raise VerificationError("post-F0L routing supports only F1 or C2A")
     if event_name == "push" and event_ref == f"refs/heads/{target}":
-        return "PINNED_ACCEPTED_F0L"
+        return "PINNED_ACCEPTED_F0L" if active_slice == "F1" else "PINNED_ACCEPTED_G9"
     if (
         event_name == "pull_request"
         and head_ref == target
-        and base_ref == F0L_TARGET_BRANCH
+        and base_ref
+        == (F0L_TARGET_BRANCH if active_slice == "F1" else C2A_BASE_BRANCH)
     ):
-        return "EVENT_ACCEPTED_F0L"
+        return "EVENT_ACCEPTED_F0L" if active_slice == "F1" else "EVENT_ACCEPTED_G9"
+    base_label = "F0L" if active_slice == "F1" else "G9"
     raise VerificationError(
         f"{active_slice} routing accepts only its exact push ref or exact "
-        "F0L-targeted pull-request ref pair"
+        f"{base_label}-targeted pull-request ref pair"
     )
 
 
@@ -2473,6 +2543,15 @@ def _require_f0l_accepted_pin(
     if base_head != accepted_head or base_tree != accepted_tree:
         raise VerificationError(
             "post-F0L base HEAD/TREE does not match external accepted-F0L pins"
+        )
+
+
+def _require_c2a_accepted_pin(*, base_head: str, base_tree: str) -> None:
+    base_head = _require_exact_object_id("C2A accepted G9 HEAD", base_head)
+    base_tree = _require_exact_object_id("C2A accepted G9 TREE", base_tree)
+    if (base_head, base_tree) != (PINNED_C2A_BASE_HEAD, PINNED_C2A_BASE_TREE):
+        raise VerificationError(
+            "C2A base HEAD/TREE does not match the exact accepted G9 pins"
         )
 
 
@@ -2670,6 +2749,10 @@ def _successor_static_contract_payload() -> dict[str, object]:
             F1_FOUNDATION_SQLITE_SKIPPED,
         ),
         "c2a_allowlist": sorted(C2A_POST_F0L_ALLOWLIST),
+        "c2a_base_branch": C2A_BASE_BRANCH,
+        "c2a_base_head": PINNED_C2A_BASE_HEAD,
+        "c2a_base_tree": PINNED_C2A_BASE_TREE,
+        "c2a_existing_base_blobs": dict(sorted(C2A_EXISTING_BASE_BLOBS.items())),
         "c2a_new_paths": sorted(C2A_NEW_PATHS),
         "c2a_frozen_paths": C2A_FROZEN_PATHS,
         "c2a_portable_class": C2A_PORTABLE_TEST_CLASS,
@@ -2684,8 +2767,13 @@ def _successor_static_contract_payload() -> dict[str, object]:
             SUCCESSOR_C0_TOTAL,
             SUCCESSOR_C1_PORTABLE_TOTAL,
             SUCCESSOR_C1_CHROMIUM_TOTAL,
+            C2A_INHERITED_PRODUCT_TOTAL,
+            C2A_PRODUCT_FULL_TOTAL,
+            C2A_INHERITED_CHROMIUM_TOTAL,
+            C2A_CHROMIUM_FULL_TOTAL,
         ),
         "f0l_sqlite_skipped_nodes": F0L_SQLITE_SKIPPED_TEST_NODES,
+        "c2a_sqlite_skipped_nodes": C2A_SQLITE_SKIPPED_TEST_NODES,
         "successor_junit_files": SUCCESSOR_JUNIT_FILES,
         "successor_migration_gates": SUCCESSOR_MIGRATION_GATES,
         "successor_wheel_checks": SUCCESSOR_WHEEL_CHECKS,
@@ -2711,7 +2799,7 @@ def _require_successor_static_contract() -> None:
         sort_keys=True,
     ).encode("utf-8")
     digest = hashlib.sha256(encoded).hexdigest()
-    expected = "d456b88e5cc85b8851c9d26fccce548f9ecd868b7e614091e7a4d59b00eb9013"
+    expected = "30d7c01ba49a0fdcb69a525a89064042d687fca1a8fb5f60f168462e4fde7b03"
     if digest != expected:
         raise VerificationError(
             "post-F0L successor static contract drifted: "
@@ -2747,6 +2835,12 @@ def _successor_workflow_required_tokens() -> tuple[str, ...]:
         "if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'",
         terminal_cli,
         "POST_F0L_F1_C2A_EXECUTABLE_CI=PASS",
+        "C2A_EXACT_G9_PIN_SELF_CHECK=PASS",
+        "name: Run exact inherited Product 55 and C2A Product 68 on both engines",
+        "C2A_INHERITED_PRODUCT_55_PLUS_PORTABLE_13_EQUALS_68=PASS",
+        C2A_BASE_BRANCH,
+        PINNED_C2A_BASE_HEAD,
+        PINNED_C2A_BASE_TREE,
         "-k",
         *C2A_CHROMIUM_TEST_METHODS,
         SUCCESSOR_EVIDENCE_SCHEMA,
@@ -2764,6 +2858,17 @@ def _successor_workflow_required_tokens() -> tuple[str, ...]:
 
 
 def _require_successor_workflow_contract(source: str) -> None:
+    job_start = "\n  project-language-bootstrap:\n"
+    job_end = "\n  fd08-assessment-projection:\n"
+    boundary_counts = (source.count(job_start), source.count(job_end))
+    if boundary_counts == (0, 0):
+        job_source = source
+    elif boundary_counts == (1, 1):
+        job_source = source[
+            source.index(job_start) : source.index(job_end, source.index(job_start))
+        ]
+    else:
+        raise VerificationError("successor workflow job boundaries drifted")
     terminal_cli = '--successor-evidence-dir "$RUNNER_TEMP/successor-evidence"'
     runtime_evidence_binding = (
         '"$RUNNER_TEMP/successor-evidence" >> "$GITHUB_ENV"'
@@ -2787,7 +2892,7 @@ def _require_successor_workflow_contract(source: str) -> None:
         )
     )
     successor_wheel_order = all(
-        token in source
+        token in job_source
         for token in (
             successor_wheel_build,
             c0_wheel_binding,
@@ -2796,19 +2901,19 @@ def _require_successor_workflow_contract(source: str) -> None:
             wheel_reuse,
         )
     ) and (
-        source.index(successor_wheel_build)
-        < source.index(c0_wheel_binding)
-        < source.index(c0_postgresql_step)
-        < source.index(wheel_inspection_step)
-        < source.index(wheel_reuse)
+        job_source.index(successor_wheel_build)
+        < job_source.index(c0_wheel_binding)
+        < job_source.index(c0_postgresql_step)
+        < job_source.index(wheel_inspection_step)
+        < job_source.index(wheel_reuse)
     )
     if (
         missing
-        or source.count(terminal_cli) != 1
-        or source.count(runtime_evidence_binding) != 1
-        or source.count(successor_wheel_build) != 1
-        or source.count(c0_wheel_binding) != 1
-        or source.count(wheel_reuse) != 1
+        or job_source.count(terminal_cli) != 1
+        or job_source.count(runtime_evidence_binding) != 1
+        or job_source.count(successor_wheel_build) != 1
+        or job_source.count(c0_wheel_binding) != 1
+        or job_source.count(wheel_reuse) != 1
         or not successor_wheel_order
         or invalid_job_level_runner_temp
     ):
@@ -2817,15 +2922,15 @@ def _require_successor_workflow_contract(source: str) -> None:
             + json.dumps(
                 {
                     "missing": missing,
-                    "terminal_invocation_count": source.count(terminal_cli),
-                    "runtime_evidence_binding_count": source.count(
+                    "terminal_invocation_count": job_source.count(terminal_cli),
+                    "runtime_evidence_binding_count": job_source.count(
                         runtime_evidence_binding
                     ),
-                    "successor_wheel_build_count": source.count(
+                    "successor_wheel_build_count": job_source.count(
                         successor_wheel_build
                     ),
-                    "c0_wheel_binding_count": source.count(c0_wheel_binding),
-                    "wheel_reuse_count": source.count(wheel_reuse),
+                    "c0_wheel_binding_count": job_source.count(c0_wheel_binding),
+                    "wheel_reuse_count": job_source.count(wheel_reuse),
                     "successor_wheel_order": successor_wheel_order,
                     "invalid_job_level_runner_temp": invalid_job_level_runner_temp,
                 }
@@ -3060,7 +3165,7 @@ def _require_successor_repository_contract(
         if path in new_paths:
             if base_entry:
                 raise VerificationError(
-                    f"{active_slice} required-new path already exists at accepted F0L: {path}"
+                    f"{active_slice} required-new path already exists at accepted base: {path}"
                 )
             _require_regular_blob_tree_entry(
                 path=path,
@@ -3079,6 +3184,18 @@ def _require_successor_repository_contract(
             entry=head_entry,
         )
 
+    if active_slice == "C2A" and base_blobs != C2A_EXISTING_BASE_BLOBS:
+        raise VerificationError(
+            "C2A exact accepted-G9 existing-path preimages drifted: "
+            + json.dumps(
+                {
+                    "expected": C2A_EXISTING_BASE_BLOBS,
+                    "actual": base_blobs,
+                },
+                sort_keys=True,
+            )
+        )
+
     if active_slice == "F1":
         expected_path_proof = (12, 6, 6) if f1_chromium_recovery else (11, 6, 5)
         if (len(allowlist), len(new_paths), len(base_blobs)) != expected_path_proof:
@@ -3092,7 +3209,7 @@ def _require_successor_repository_contract(
         head_object = _git(repo, "rev-parse", f"HEAD:{path}")
         if base_object != head_object:
             raise VerificationError(
-                f"{active_slice} accepted-F0L frozen input drifted at {path}"
+                f"{active_slice} accepted-base frozen input drifted at {path}"
             )
         frozen_objects[path] = base_object
 
@@ -3110,7 +3227,23 @@ def _require_successor_repository_contract(
         ).splitlines()
         if line
     )
-    expected_migrations = F1_MIGRATIONS if active_slice == "F1" else F0L_MIGRATIONS
+    expected_migrations = (
+        F1_MIGRATIONS
+        if active_slice == "F1"
+        else tuple(
+            line
+            for line in _git(
+                repo,
+                "ls-tree",
+                "-r",
+                "--name-only",
+                base_head,
+                "--",
+                "software/conflict_analysis/domain/migrations",
+            ).splitlines()
+            if line
+        )
+    )
     if migrations != expected_migrations:
         raise VerificationError(
             f"{active_slice} migration filename set drifted: "
@@ -3837,7 +3970,7 @@ def _successor_junit_contracts(
             "expected_total": C2A_FOUNDATION_POSTGRESQL_TOTAL,
             "expected_skipped": C2A_FOUNDATION_SQLITE_SKIPPED,
             "required_nodes": f0l_nodes,
-            "exact_skipped_nodes": F0L_SQLITE_SKIPPED_TEST_NODES,
+            "exact_skipped_nodes": C2A_SQLITE_SKIPPED_TEST_NODES,
         },
         "c2a-c0-postgresql.xml": {
             "expected_total": SUCCESSOR_C0_TOTAL,
@@ -3864,6 +3997,20 @@ def _successor_junit_contracts(
             "expected_total": C2A_CHROMIUM_TOTAL,
             "expected_skipped": 0,
             "exact_method_names": C2A_CHROMIUM_TEST_METHODS,
+        },
+        "c2a-product-full-postgresql.xml": {
+            "expected_total": C2A_PRODUCT_FULL_TOTAL,
+            "expected_skipped": 0,
+            "required_nodes": C2A_PORTABLE_TEST_NODES,
+        },
+        "c2a-product-full-sqlite.xml": {
+            "expected_total": C2A_PRODUCT_FULL_TOTAL,
+            "expected_skipped": 0,
+            "required_nodes": C2A_PORTABLE_TEST_NODES,
+        },
+        "c2a-chromium-full-postgresql.xml": {
+            "expected_total": C2A_CHROMIUM_FULL_TOTAL,
+            "expected_skipped": 0,
         },
     }
 
@@ -5565,8 +5712,32 @@ def f0l_self_check() -> dict[str, object]:
         active_slice="C2A",
         event_name="push",
         event_ref=f"refs/heads/{C2A_TARGET_BRANCH}",
-    ) != "PINNED_ACCEPTED_F0L":
+    ) != "PINNED_ACCEPTED_G9":
         raise VerificationError("C2A route self-check resolved the wrong base source")
+    if _resolve_post_f0l_route(
+        active_slice="C2A",
+        event_name="pull_request",
+        head_ref=C2A_TARGET_BRANCH,
+        base_ref=C2A_BASE_BRANCH,
+    ) != "EVENT_ACCEPTED_G9":
+        raise VerificationError("C2A PR route self-check resolved the wrong base source")
+
+    _require_c2a_accepted_pin(
+        base_head=PINNED_C2A_BASE_HEAD,
+        base_tree=PINNED_C2A_BASE_TREE,
+    )
+    c2a_pin_negative_cases = 0
+    for base_head, base_tree in (
+        ("a" * 40, PINNED_C2A_BASE_TREE),
+        (PINNED_C2A_BASE_HEAD, "b" * 40),
+        ("", PINNED_C2A_BASE_TREE),
+    ):
+        try:
+            _require_c2a_accepted_pin(base_head=base_head, base_tree=base_tree)
+        except VerificationError:
+            c2a_pin_negative_cases += 1
+        else:
+            raise VerificationError("C2A pin self-check accepted a negative case")
 
     negative_cases = 0
     for call in (
@@ -5583,8 +5754,9 @@ def f0l_self_check() -> dict[str, object]:
         ),
         lambda: _resolve_post_f0l_route(
             active_slice="C2A",
-            event_name="push",
-            event_ref=f"refs/heads/{C2A_TARGET_BRANCH}-unexpected",
+            event_name="pull_request",
+            head_ref=C2A_TARGET_BRANCH,
+            base_ref=F0L_TARGET_BRANCH,
         ),
     ):
         try:
@@ -7018,7 +7190,7 @@ class ProjectQuerySet:
         "caller_repository_access": False,
         "temporary_repository_access": True,
         "positive_slices": ["F0L", "F1", "C2A"],
-        "negative_cases": negative_cases,
+        "negative_cases": negative_cases + c2a_pin_negative_cases,
     }
 
 
@@ -7849,7 +8021,7 @@ def verify_post_f0l(
     accepted_tree: str | None,
     evidence_dir: Path | None,
 ) -> dict[str, object]:
-    """Fail closed around externally accepted F0L pins for future F1/C2A."""
+    """Fail closed around the exact accepted base for each successor slice."""
 
     if active_slice not in {"F1", "C2A"}:
         raise VerificationError("post-F0L verifier supports only F1 or C2A")
@@ -7857,16 +8029,23 @@ def verify_post_f0l(
     _require_successor_static_contract()
     base_head = _require_exact_object_id("post-F0L base HEAD", base_head)
     base_tree = _require_exact_object_id("post-F0L base TREE", base_tree)
-    _require_f0l_accepted_pin(
-        accepted_head=accepted_head,
-        accepted_tree=accepted_tree,
-        base_head=base_head,
-        base_tree=base_tree,
-    )
+    if active_slice == "F1":
+        _require_f0l_accepted_pin(
+            accepted_head=accepted_head,
+            accepted_tree=accepted_tree,
+            base_head=base_head,
+            base_tree=base_tree,
+        )
+    else:
+        if accepted_head is not None or accepted_tree is not None:
+            raise VerificationError(
+                "C2A uses the internal exact G9 pin and rejects external F0L pins"
+            )
+        _require_c2a_accepted_pin(base_head=base_head, base_tree=base_tree)
     if _git(repo, "rev-parse", f"{base_head}^{{tree}}") != base_tree:
-        raise VerificationError("accepted-F0L commit TREE does not match its pin")
+        raise VerificationError("accepted-base commit TREE does not match its pin")
     if _git(repo, "merge-base", base_head, "HEAD") != base_head:
-        raise VerificationError(f"{active_slice} is not based on accepted F0L")
+        raise VerificationError(f"{active_slice} is not based on its accepted base")
     commit_count = int(_git(repo, "rev-list", "--count", f"{base_head}..HEAD"))
     f1_chromium_r3 = active_slice == "F1" and commit_count == 4
     f1_chromium_r4 = active_slice == "F1" and commit_count == 5

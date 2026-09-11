@@ -27,6 +27,35 @@ runtime contracts are documented in
 and
 [`docs/production-player-g8-import-profile.md`](docs/production-player-g8-import-profile.md).
 
+## Production Studio C2A: lifecycle publication
+
+`C2A_LIFECYCLE_PUBLICATION` adds one Russian, server-rendered composition shell
+at `/studio/lifecycle/definitions/<UUID>/`. It reads the accepted Foundation
+definition and publication-readiness snapshots, optionally previews an initial
+DRAFT, validates a successor, and prepares initial or successor publication.
+The Studio view owns no model, lifecycle inference or mutation endpoint;
+Foundation remains the sole object-scope, capability, validation, publication,
+audit and recovery authority.
+
+Every action is enabled from a fresh definition plus fresh no-store readiness
+snapshot and both are fetched again before an attempt is prepared. Readiness is
+advice only. Each write attempt is sealed in memory with one visible UUIDv4,
+strong `If-Match` and canonical body. POST stays disabled until the HUMAN has
+downloaded or exactly copied its non-authoritative recovery ticket. Unknown
+validation outcomes permit only an explicit byte-identical replay; unknown
+publication outcomes permit only the Foundation operation-recovery GET and
+never a blind POST retry.
+
+Definitions, hashes, lifecycle/readiness state, operation IDs, tickets,
+receipts, roles and workspace fields are not written to browser persistence.
+The checksum-bound public Russian claim contract is served at
+`/studio/claim-boundaries/lifecycle-publication/v1/`. Package workflows,
+Document, Chat, formulas, scalar Power, prediction, risk, ranking and
+recommendations remain unavailable. See
+[`docs/adr/0009-production-studio-c-lifecycle-publication.md`](docs/adr/0009-production-studio-c-lifecycle-publication.md)
+and the
+[`Production Studio runtime runbook`](docs/production-studio-c-read-only-runtime.md).
+
 ## Production Studio C1: authenticated audited DRAFT
 
 `C1_AUTHENTICATED_DRAFT` adds a testable Russian authoring shell without

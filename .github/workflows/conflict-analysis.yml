@@ -16,6 +16,7 @@ on:
       - codex/ca-suite-i1-foundation-fd08-assessment-projection
       - codex/ca-suite-i1-g8-pre-canonical-zhanaozen-manifest-r2
       - codex/ca-suite-i1-player-g8-experiments-xlsx
+      - codex/ca-suite-i1-player-g9-evidence-ui
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -2334,7 +2335,7 @@ jobs:
         github.ref == 'refs/heads/codex/ca-suite-i1-evidence-multilingual-f1' ||
         github.ref == 'refs/heads/codex/ca-suite-i1-production-studio-c2a-lifecycle-publication'))
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
 
     services:
       postgres:
@@ -2371,6 +2372,10 @@ jobs:
       F0L_BRANCH: codex/ca-suite-i1-project-language-bootstrap-f0l
       F1_BRANCH: codex/ca-suite-i1-evidence-multilingual-f1
       C2A_BRANCH: codex/ca-suite-i1-production-studio-c2a-lifecycle-publication
+      C2A_BASE_BRANCH: codex/ca-suite-i1-player-g9-evidence-ui
+      C2A_BASE_HEAD: 561ef5327bf655a558adb21c54d0fdf0559d7024
+      C2A_BASE_TREE: 5b209c782e1ac1a4783b01391dd59d813559ce57
+      C2A_CHROME_VERSION: 152.0.7977.64
       F0L_ACCEPTED_HEAD: "${{ vars.F0L_ACCEPTED_HEAD }}"
       F0L_ACCEPTED_TREE: "${{ vars.F0L_ACCEPTED_TREE }}"
 
@@ -2409,7 +2414,7 @@ jobs:
                 "${F1_BRANCH}|${F0L_BRANCH}")
                   active_slice=F1
                   ;;
-                "${C2A_BRANCH}|${F0L_BRANCH}")
+                "${C2A_BRANCH}|${C2A_BASE_BRANCH}")
                   active_slice=C2A
                   ;;
                 *)
@@ -2431,16 +2436,22 @@ jobs:
                   ;;
                 "refs/heads/${C2A_BRANCH}")
                   active_slice=C2A
+                  slice_base_head="$C2A_BASE_HEAD"
                   ;;
                 *)
                   echo "unsupported F0L/F1/C2A push ref" >&2
                   exit 1
                   ;;
               esac
-              if [[ "$active_slice" != F0L ]]; then
+              if [[ "$active_slice" = F1 ]]; then
                 git fetch --no-tags origin \
                   "+refs/heads/${F0L_BRANCH}:refs/remotes/origin/accepted-f0l-base"
                 slice_base_head="$(git rev-parse refs/remotes/origin/accepted-f0l-base)"
+              elif [[ "$active_slice" = C2A ]]; then
+                git fetch --no-tags origin \
+                  "+refs/heads/${C2A_BASE_BRANCH}:refs/remotes/origin/accepted-c2a-base"
+                test "$(git rev-parse refs/remotes/origin/accepted-c2a-base)" = \
+                  "$C2A_BASE_HEAD"
               fi
               ;;
             *)
@@ -2455,7 +2466,7 @@ jobs:
             test "$slice_base_head" = "$F0L_BASE_HEAD"
             test "$slice_base_tree" = "$F0L_BASE_TREE"
             accepted_pin=NOT_APPLICABLE_CURRENT_F0L
-          else
+          elif [[ "$active_slice" = F1 ]]; then
             [[ "$F0L_ACCEPTED_HEAD" =~ ^[0-9a-f]{40}$ ]] || {
               echo "F0L_ACCEPTED_HEAD must be an exact lowercase 40-hex commit id" >&2
               exit 1
@@ -2467,6 +2478,10 @@ jobs:
             test "$slice_base_head" = "$F0L_ACCEPTED_HEAD"
             test "$slice_base_tree" = "$F0L_ACCEPTED_TREE"
             accepted_pin=PIN_VERIFIED_EXTERNAL
+          else
+            test "$slice_base_head" = "$C2A_BASE_HEAD"
+            test "$slice_base_tree" = "$C2A_BASE_TREE"
+            accepted_pin=PIN_VERIFIED_EXACT_G9
           fi
 
           {
@@ -2501,7 +2516,7 @@ jobs:
                 case "${head_ref}|${base_ref}" in
                   "${F0L_BRANCH}|${F0L_BASE_BRANCH}") resolved=F0L ;;
                   "${F1_BRANCH}|${F0L_BRANCH}") resolved=F1 ;;
-                  "${C2A_BRANCH}|${F0L_BRANCH}") resolved=C2A ;;
+                  "${C2A_BRANCH}|${C2A_BASE_BRANCH}") resolved=C2A ;;
                   *) return 1 ;;
                 esac
                 ;;
@@ -2531,15 +2546,31 @@ jobs:
               return 1
             fi
           }
+          assert_exact_pin() {
+            local expected_head="$1"
+            local expected_tree="$2"
+            local actual_head="$3"
+            local actual_tree="$4"
+            assert_pin_pair "$expected_head" "$expected_tree"
+            assert_pin_pair "$actual_head" "$actual_tree"
+            test "$actual_head" = "$expected_head"
+            test "$actual_tree" = "$expected_tree"
+          }
+          assert_exact_pin_failure() {
+            if assert_exact_pin "$@" >/dev/null 2>&1; then
+              echo "workflow accepted a mismatched exact C2A G9 pin" >&2
+              return 1
+            fi
+          }
 
           assert_route F0L push "refs/heads/${F0L_BRANCH}" "" ""
           assert_route F1 push "refs/heads/${F1_BRANCH}" "" ""
           assert_route C2A push "refs/heads/${C2A_BRANCH}" "" ""
           assert_route F0L pull_request "" "$F0L_BRANCH" "$F0L_BASE_BRANCH"
           assert_route F1 pull_request "" "$F1_BRANCH" "$F0L_BRANCH"
-          assert_route C2A pull_request "" "$C2A_BRANCH" "$F0L_BRANCH"
+          assert_route C2A pull_request "" "$C2A_BRANCH" "$C2A_BASE_BRANCH"
           assert_route_failure pull_request "" "$F1_BRANCH" "$F0L_BASE_BRANCH"
-          assert_route_failure pull_request "" "$C2A_BRANCH" "$F0L_BASE_BRANCH"
+          assert_route_failure pull_request "" "$C2A_BRANCH" "$F0L_BRANCH"
           assert_route_failure push "refs/heads/${F0L_BRANCH}-unexpected" "" ""
           assert_route_failure workflow_dispatch "" "" ""
           pin_head="$(printf 'a%.0s' {1..40})"
@@ -2548,8 +2579,15 @@ jobs:
           assert_pin_failure "" "$pin_tree"
           assert_pin_failure "$pin_head" ""
           assert_pin_failure "${pin_head^^}" "$pin_tree"
+          assert_exact_pin "$C2A_BASE_HEAD" "$C2A_BASE_TREE" \
+            "$C2A_BASE_HEAD" "$C2A_BASE_TREE"
+          assert_exact_pin_failure "$C2A_BASE_HEAD" "$C2A_BASE_TREE" \
+            "$pin_head" "$C2A_BASE_TREE"
+          assert_exact_pin_failure "$C2A_BASE_HEAD" "$C2A_BASE_TREE" \
+            "$C2A_BASE_HEAD" "$pin_tree"
           echo "F0L_WORKFLOW_ROUTING_SELF_CHECK=PASS"
           echo "POST_F0L_EXTERNAL_PIN_SELF_CHECK=PASS"
+          echo "C2A_EXACT_G9_PIN_SELF_CHECK=PASS"
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -2666,6 +2704,9 @@ jobs:
                   "c2a-c1-sqlite.xml",
                   "c2a-c1-chromium-postgresql.xml",
                   "c2a-chromium-postgresql.xml",
+                  "c2a-product-full-postgresql.xml",
+                  "c2a-product-full-sqlite.xml",
+                  "c2a-chromium-full-postgresql.xml",
               ],
           }[active_slice]
           payload = {
@@ -2831,7 +2872,7 @@ jobs:
               assert actual == methods, actual
               assert len(focused) == 13
               assert all(node.find("skipped") is None for node in focused)
-              assert len(foundation) == 254
+              assert len(foundation) == 350
               assert all(node.find("skipped") is None for node in foundation)
           print(f"{active_slice}_POSTGRESQL_EXACT_REGISTRY_AND_TOTALS=PASS")
           PY
@@ -2976,9 +3017,9 @@ jobs:
               assert actual == methods, actual
               assert len(focused) == 13
               assert all(node.find("skipped") is None for node in focused)
-              assert len(foundation) == 254
-              assert sum(node.find("skipped") is None for node in foundation) == 237
-              assert sum(node.find("skipped") is not None for node in foundation) == 17
+              assert len(foundation) == 350
+              assert sum(node.find("skipped") is None for node in foundation) == 322
+              assert sum(node.find("skipped") is not None for node in foundation) == 28
               gates = [
                   "compileall",
                   "django_check",
@@ -3113,15 +3154,55 @@ jobs:
           print(f"{active_slice}_SQLITE_C0_19_C1_8_PRODUCT_TOTAL=PASS")
           PY
 
+      - name: Run exact inherited Product 55 and C2A Product 68 on both engines
+        if: env.ACTIVE_SLICE == 'C2A'
+        shell: bash
+        run: |
+          set -euo pipefail
+          c0="production_studio/tests/test_browser_contract.py production_studio/tests/test_claim_boundaries.py production_studio/tests/test_read_only_http.py production_studio/tests/test_read_only_static_contracts.py"
+          c1="production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringContractTests"
+          c2a="production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests"
+          g7="production_player/tests/test_player_g7.py::ProductionPlayerG7Tests"
+          g8="production_player/tests/test_player_g8.py::ProductionPlayerG8Tests"
+          g9="production_player/tests/test_player_g9_evidence.py::ProductionPlayerG9EvidenceTests"
+          STUDIO_C0_WHEEL="$STUDIO_C0_WHEEL" python -m pytest \
+            $c0 $c1 $g7 $g8 $g9 $c2a -p no:cacheprovider \
+            --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-product-full-postgresql.xml"
+          USE_SQLITE=true \
+            SQLITE_PATH="$RUNNER_TEMP/c2a-product-full.sqlite3" \
+            STUDIO_C0_WHEEL="$STUDIO_C0_WHEEL" python -m pytest \
+            $c0 $c1 $g7 $g8 $g9 $c2a -p no:cacheprovider \
+            --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-product-full-sqlite.xml"
+          python - \
+            "$SUCCESSOR_EVIDENCE_DIR/c2a-product-full-postgresql.xml" \
+            "$SUCCESSOR_EVIDENCE_DIR/c2a-product-full-sqlite.xml" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          for path in sys.argv[1:]:
+              root = ET.parse(path).getroot()
+              cases = root.findall(".//testcase")
+              assert len(cases) == 68, (path, len(cases))
+              assert not root.findall(".//failure"), path
+              assert not root.findall(".//error"), path
+              assert not root.findall(".//skipped"), path
+          print("C2A_INHERITED_PRODUCT_55_PLUS_PORTABLE_13_EQUALS_68=PASS")
+          PY
+
       - name: Run exact successor real Chromium registries on PostgreSQL
         if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'
         shell: bash
         run: |
           set -euo pipefail
           prefix="$(printf '%s' "$ACTIVE_SLICE" | tr '[:upper:]' '[:lower:]')"
-          chrome="$(command -v google-chrome || command -v chromium || true)"
-          test -n "$chrome"
-          "$chrome" --version
+          archive="$RUNNER_TEMP/c2a-chrome-for-testing-linux64.zip"
+          curl --fail --location --silent --show-error \
+            "https://storage.googleapis.com/chrome-for-testing-public/$C2A_CHROME_VERSION/linux64/chrome-linux64.zip" \
+            --output "$archive"
+          unzip -q "$archive" -d "$RUNNER_TEMP/c2a-chrome"
+          chrome="$RUNNER_TEMP/c2a-chrome/chrome-linux64/chrome"
+          test -x "$chrome"
+          "$chrome" --version | grep -F "$C2A_CHROME_VERSION"
           c1="$SUCCESSOR_EVIDENCE_DIR/${prefix}-c1-chromium-postgresql.xml"
           STUDIO_CHROME_BIN="$chrome" python -m pytest \
             production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringBrowserTests::test_authenticated_edit_save_reload_is_bounded_foundation_only_and_receipted \
@@ -3134,6 +3215,16 @@ jobs:
               -k 'test_chromium_draft_preview_atomic_initial_publish_recover_and_reload or test_chromium_successor_validate_publish_lost_response_recovery_and_predecessor_noncurrent' \
               --junitxml="$c2a"
             paths+=("$c2a")
+            c2a_full="$SUCCESSOR_EVIDENCE_DIR/c2a-chromium-full-postgresql.xml"
+            c1_full="production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringBrowserTests::test_authenticated_edit_save_reload_is_bounded_foundation_only_and_receipted"
+            c2a_full_nodes="production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationBrowserTests"
+            g7="production_player/tests/test_player_g7.py::ProductionPlayerG7ChromiumTests"
+            g8="production_player/tests/test_player_g8.py::ProductionPlayerG8ChromiumTests"
+            g9="production_player/tests/test_player_g9_evidence.py::ProductionPlayerG9ChromiumTests"
+            STUDIO_CHROME_BIN="$chrome" python -m pytest \
+              $c1_full $g7 $g8 $g9 $c2a_full_nodes -p no:cacheprovider \
+              --junitxml="$c2a_full"
+            paths+=("$c2a_full")
           fi
           python - "$ACTIVE_SLICE" "${paths[@]}" <<'PY'
           import sys
@@ -3156,6 +3247,7 @@ jobs:
                   "test_chromium_draft_preview_atomic_initial_publish_recover_and_reload",
                   "test_chromium_successor_validate_publish_lost_response_recovery_and_predecessor_noncurrent",
               )
+              assert len(method_sets[2]) == 10
               assert 19 + 8 + 13 + len(method_sets[0]) + len(method_sets[1]) == 43
           print(f"{active_slice}_EXACT_REAL_CHROMIUM_REGISTRY=PASS")
           PY
@@ -3387,14 +3479,21 @@ jobs:
         run: |
           set -euo pipefail
           verifier_report="${RUNNER_TEMP}/post-f0l-successor-verifier.json"
+          verifier_args=(
+            --slice "$ACTIVE_SLICE"
+            --base-head "$SLICE_BASE_HEAD"
+            --base-tree "$SLICE_BASE_TREE"
+            --successor-evidence-dir "$RUNNER_TEMP/successor-evidence"
+            --repo "$GITHUB_WORKSPACE"
+          )
+          if [[ "$ACTIVE_SLICE" = F1 ]]; then
+            verifier_args+=(
+              --f0l-accepted-head "$F0L_ACCEPTED_HEAD"
+              --f0l-accepted-tree "$F0L_ACCEPTED_TREE"
+            )
+          fi
           python scripts/verify_production_studio_c_allowlist.py \
-            --slice "$ACTIVE_SLICE" \
-            --base-head "$SLICE_BASE_HEAD" \
-            --base-tree "$SLICE_BASE_TREE" \
-            --f0l-accepted-head "$F0L_ACCEPTED_HEAD" \
-            --f0l-accepted-tree "$F0L_ACCEPTED_TREE" \
-            --successor-evidence-dir "$RUNNER_TEMP/successor-evidence" \
-            --repo "$GITHUB_WORKSPACE" | tee "$verifier_report"
+            "${verifier_args[@]}" | tee "$verifier_report"
           python - "$verifier_report" <<'PY'
           import json
           import sys
