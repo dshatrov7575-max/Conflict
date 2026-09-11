@@ -2858,6 +2858,17 @@ def _successor_workflow_required_tokens() -> tuple[str, ...]:
 
 
 def _require_successor_workflow_contract(source: str) -> None:
+    job_start = "\n  project-language-bootstrap:\n"
+    job_end = "\n  fd08-assessment-projection:\n"
+    boundary_counts = (source.count(job_start), source.count(job_end))
+    if boundary_counts == (0, 0):
+        job_source = source
+    elif boundary_counts == (1, 1):
+        job_source = source[
+            source.index(job_start) : source.index(job_end, source.index(job_start))
+        ]
+    else:
+        raise VerificationError("successor workflow job boundaries drifted")
     terminal_cli = '--successor-evidence-dir "$RUNNER_TEMP/successor-evidence"'
     runtime_evidence_binding = (
         '"$RUNNER_TEMP/successor-evidence" >> "$GITHUB_ENV"'
@@ -2881,7 +2892,7 @@ def _require_successor_workflow_contract(source: str) -> None:
         )
     )
     successor_wheel_order = all(
-        token in source
+        token in job_source
         for token in (
             successor_wheel_build,
             c0_wheel_binding,
@@ -2890,19 +2901,19 @@ def _require_successor_workflow_contract(source: str) -> None:
             wheel_reuse,
         )
     ) and (
-        source.index(successor_wheel_build)
-        < source.index(c0_wheel_binding)
-        < source.index(c0_postgresql_step)
-        < source.index(wheel_inspection_step)
-        < source.index(wheel_reuse)
+        job_source.index(successor_wheel_build)
+        < job_source.index(c0_wheel_binding)
+        < job_source.index(c0_postgresql_step)
+        < job_source.index(wheel_inspection_step)
+        < job_source.index(wheel_reuse)
     )
     if (
         missing
-        or source.count(terminal_cli) != 1
-        or source.count(runtime_evidence_binding) != 1
-        or source.count(successor_wheel_build) != 1
-        or source.count(c0_wheel_binding) != 1
-        or source.count(wheel_reuse) != 1
+        or job_source.count(terminal_cli) != 1
+        or job_source.count(runtime_evidence_binding) != 1
+        or job_source.count(successor_wheel_build) != 1
+        or job_source.count(c0_wheel_binding) != 1
+        or job_source.count(wheel_reuse) != 1
         or not successor_wheel_order
         or invalid_job_level_runner_temp
     ):
@@ -2911,15 +2922,15 @@ def _require_successor_workflow_contract(source: str) -> None:
             + json.dumps(
                 {
                     "missing": missing,
-                    "terminal_invocation_count": source.count(terminal_cli),
-                    "runtime_evidence_binding_count": source.count(
+                    "terminal_invocation_count": job_source.count(terminal_cli),
+                    "runtime_evidence_binding_count": job_source.count(
                         runtime_evidence_binding
                     ),
-                    "successor_wheel_build_count": source.count(
+                    "successor_wheel_build_count": job_source.count(
                         successor_wheel_build
                     ),
-                    "c0_wheel_binding_count": source.count(c0_wheel_binding),
-                    "wheel_reuse_count": source.count(wheel_reuse),
+                    "c0_wheel_binding_count": job_source.count(c0_wheel_binding),
+                    "wheel_reuse_count": job_source.count(wheel_reuse),
                     "successor_wheel_order": successor_wheel_order,
                     "invalid_job_level_runner_temp": invalid_job_level_runner_temp,
                 }
