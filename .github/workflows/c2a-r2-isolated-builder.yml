@@ -1,0 +1,142 @@
+name: C2A R2 isolated builder
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-builder
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reconstruct-known-six:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out immutable R1
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: 22f0f173a941de88d6920b6e19821168e9b30cc8
+
+      - name: Verify exact base identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "22f0f173a941de88d6920b6e19821168e9b30cc8"
+          test "$(git rev-parse HEAD^{tree})" = "f407e609adb2a8b94770b521a1302feb79281822"
+          test "$(git rev-parse HEAD^)" = "561ef5327bf655a558adb21c54d0fdf0559d7024"
+          test -z "$(git status --porcelain=v1)"
+
+      - name: Restore six independently prepared blobs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          fetch_blob() {
+            local expected_sha="$1"
+            local destination="$2"
+            local response
+            response="$(mktemp)"
+            gh api "repos/${REPOSITORY}/git/blobs/${expected_sha}" > "$response"
+            python - "$response" "$destination" <<'PY'
+          import base64
+          import json
+          import pathlib
+          import sys
+
+          response_path, destination = sys.argv[1:]
+          payload = json.loads(pathlib.Path(response_path).read_text(encoding="utf-8"))
+          data = base64.b64decode(payload["content"], validate=False)
+          target = pathlib.Path(destination)
+          target.parent.mkdir(parents=True, exist_ok=True)
+          target.write_bytes(data)
+          PY
+            rm -f "$response"
+            test "$(git hash-object "$destination")" = "$expected_sha"
+          }
+
+          fetch_blob e0da5bcf5f24809f6ca788a1a8f6b0f0144bf1f3 software/conflict_analysis/README.md
+          fetch_blob c0889c969db86b55af2613fe2f633cfa2123866a software/conflict_analysis/docs/adr/0009-production-studio-c-lifecycle-publication.md
+          fetch_blob f50dd1fbc0cf967ad658327f37cd0ea70eba6a8f software/conflict_analysis/docs/production-studio-c-read-only-runtime.md
+          fetch_blob a1e7e9f3fac0be61bbce6a2a4f6e8bb221f62101 software/conflict_analysis/production_studio/templates/production_studio/lifecycle_publication_definition.html
+          fetch_blob 4190bcc1871679a3b1e0a29f6991e3dc6876c912 software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py
+          fetch_blob 955e715cb083f7e4467836ace77281de30ef1d39 software/conflict_analysis/production_studio/views.py
+
+      - name: Verify exact six-path reconstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="$(mktemp)"
+          actual="$(mktemp)"
+          cat > "$expected" <<'EOF'
+          M	software/conflict_analysis/README.md
+          M	software/conflict_analysis/docs/adr/0009-production-studio-c-lifecycle-publication.md
+          M	software/conflict_analysis/docs/production-studio-c-read-only-runtime.md
+          M	software/conflict_analysis/production_studio/templates/production_studio/lifecycle_publication_definition.html
+          M	software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py
+          M	software/conflict_analysis/production_studio/views.py
+          EOF
+          git diff --name-status --no-renames | LC_ALL=C sort > "$actual"
+          LC_ALL=C sort -o "$expected" "$expected"
+          diff -u "$expected" "$actual"
+          test "$(wc -l < "$actual" | tr -d ' ')" = "6"
+          while IFS=$'\t' read -r status path; do
+            test "$status" = "M"
+            test "$(git ls-files -s -- "$path" | awk '{print $1}')" = "100644"
+          done < "$actual"
+          python -m compileall -q \
+            software/conflict_analysis/production_studio/views.py \
+            software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py
+          git diff --check
+
+      - name: Emit deterministic reconstruction report
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c2a-r2-builder"
+          git diff --binary --full-index > "$RUNNER_TEMP/c2a-r2-builder/known-six.patch"
+          python - <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import subprocess
+
+          paths = [
+              "software/conflict_analysis/README.md",
+              "software/conflict_analysis/docs/adr/0009-production-studio-c-lifecycle-publication.md",
+              "software/conflict_analysis/docs/production-studio-c-read-only-runtime.md",
+              "software/conflict_analysis/production_studio/templates/production_studio/lifecycle_publication_definition.html",
+              "software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py",
+              "software/conflict_analysis/production_studio/views.py",
+          ]
+          report = {
+              "status": "KNOWN_SIX_RECONSTRUCTED",
+              "base_head": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+              "base_tree": subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], text=True).strip(),
+              "path_count": len(paths),
+              "paths": [],
+          }
+          for name in paths:
+              data = pathlib.Path(name).read_bytes()
+              report["paths"].append({
+                  "path": name,
+                  "bytes": len(data),
+                  "sha256": hashlib.sha256(data).hexdigest(),
+                  "git_blob": subprocess.check_output(["git", "hash-object", name], text=True).strip(),
+              })
+          out = pathlib.Path(__import__("os").environ["RUNNER_TEMP"]) / "c2a-r2-builder" / "report.json"
+          out.write_text(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+          PY
+
+      - name: Upload reconstruction evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2a-r2-known-six-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/c2a-r2-builder
+          if-no-files-found: error
+          retention-days: 7
