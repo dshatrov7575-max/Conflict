@@ -13,7 +13,7 @@ Proven PASS before portable execution:
 - `node --check software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js` PASS;
 - exact portable collection `PORTABLE_NODE_COUNT=13`.
 
-Unchanged R1 portable test file then produced `11 passed, 2 failed in 50.89s`. Both failures are stale test assertions directly superseded by final R2 authority; no other portable node failed.
+Unchanged R1 portable test file then produced `11 passed, 2 failed in 50.89s`. Both observed failures are stale R1 assertions directly superseded by final R2 authority; independent readback also found one latent stale assertion masked by the old recovery-function anchor.
 
 ## Exact path 10 scope
 
@@ -30,22 +30,40 @@ Final R2 authority requires the opposite: `link.click()` / download initiation a
 1. exact-copy acknowledgement; and
 2. byte-exact re-import of the saved ticket file.
 
-It must fail if download initiation alone sets `memory.ticketRetained = true` or calls `retainTicket("download")`.
-
-Preserve the existing gate that POST remains blocked while `!memory.ticketRetained`.
+Required static proof in the existing node:
+- `retainTicket` accepts only `exact-copy` and `byte-exact-file`;
+- `downloadTicket()` does not call `retainTicket` and leaves the send gate locked;
+- `ticket-file-proof` and `acknowledge-ticket-file` are bound;
+- file size must exactly equal ticket byte length and every byte must compare equal before `retainTicket("byte-exact-file")`;
+- exact-copy mismatch leaves POST locked;
+- preserve the existing send-boundary guard `!memory.ticketRetained` before publication POST.
 
 ### Required repair B — process-loss publication recovery
 
 R1 source slicing assumes the exact old declaration `async function recoverPublication()`.
 
-The authorized candidate uses `async function recoverPublication(override = null)` so an imported publication ticket can supply a recovery-only identity after tab/process loss. Update the static source anchor accordingly (robustly to the function declaration or exact new signature) without weakening the GET-only proof.
+The authorized candidate uses `async function recoverPublication(override = null)` so an imported publication ticket can supply a recovery-only identity after tab/process loss. Update the static source anchor accordingly without weakening the GET-only proof.
 
 The same existing portable node must positively enforce that publication-ticket process-loss import:
-- uses `FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1`;
-- restores only recovery identity;
-- reaches exact FD06 operation GET `/api/foundation/projects/{project_id}/publication-operations/{operation_id}/`;
-- does NOT reconstruct or issue publication POST;
-- preserves zero publication POST replay.
+- uses `FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1` version `1.0.0`;
+- exact publication ticket key set is only: `contract`, `contract_version`, `project_id`, `definition_id`, `operation_id`, `operation_kind`, `expected_manifest_hash`, `request_body_sha256`;
+- exact-key validation rejects extras, so no route/method/If-Match/body/body bytes/content type/CSRF/header material can enter the publication recovery ticket;
+- imported publication ticket creates `recoveryOnly: true`, does not assign/reconstruct a sealed POST attempt, and reaches only exact FD06 operation GET `/api/foundation/projects/{project_id}/publication-operations/{operation_id}/`;
+- `recoverPublication` contains GET and no publication POST reconstruction/replay;
+- validation recovery remains the separate `FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1` full semantic request and explicit same-request FD05 replay only;
+- cross-kind misuse remains fail closed.
+
+### Required repair C — latent 404 wording drift
+
+After repair B, the old node would next reach an obsolete exact source-string assertion: `404 означает только отсутствие видимого результата`.
+
+Final R2 candidate intentionally uses bounded/non-fingerprinting recovery semantics: code `FOUNDATION_OBJECT_NOT_VISIBLE` and user text `404 не раскрывает существование operation; исход остаётся неизвестным.`
+
+Update the existing assertion to prove the semantic invariant, not a broad substring: 404 must not disclose operation existence, outcome stays unresolved, and the recovery path remains GET-only with zero publication POST reconstruction.
+
+## Existing-node strengthening, no cardinality growth
+
+Keep exactly 13 methods in `ProductionStudioLifecyclePublicationTests`. In the existing recovery-ticket node, preserve the full HUMAN ticket exact-key oracle and additionally assert the exact publication-ticket key set above plus forbidden transport fields. Do not create a 14th node.
 
 ## Non-negotiable constraints
 
@@ -55,4 +73,4 @@ The same existing portable node must positively enforce that publication-ticket 
 - Preserve all unrelated R1 assertions byte-for-byte where practical.
 - Work only in an isolated carrier/recovery lane. Do not update PR #94 or target branch.
 - Return: candidate test blob SHA, exact one-path `M` delta for this step, and a coupled executable run using the accepted nine-path tree + candidate test file.
-- Coupled acceptance requires `node --check` PASS, `PORTABLE_NODE_COUNT=13`, and `13 passed`.
+- Coupled acceptance requires Node 24 `node --check` PASS, `PORTABLE_NODE_COUNT=13`, and `13 passed`.
