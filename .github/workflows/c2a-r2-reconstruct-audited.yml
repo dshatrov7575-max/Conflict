@@ -1,0 +1,79 @@
+name: C2A R2 audited-authoring reconstruction diagnostic
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-builder
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reconstruct-audited-authoring:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out immutable R1
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: 22f0f173a941de88d6920b6e19821168e9b30cc8
+          persist-credentials: false
+
+      - name: Verify immutable R1 and export recovery inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "22f0f173a941de88d6920b6e19821168e9b30cc8"
+          test "$(git rev-parse HEAD^{tree})" = "f407e609adb2a8b94770b521a1302feb79281822"
+          mkdir -p "$RUNNER_TEMP/r2-reconstruction-inputs"
+          for path in \
+            software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs \
+            software/conflict_analysis/production_studio/browser_tests/lifecycle_publication.mjs \
+            software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js \
+            software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py \
+            software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py
+          do
+            cp --parents "$path" "$RUNNER_TEMP/r2-reconstruction-inputs"
+            printf '%s\t%s\t%s\n' "$path" "$(git hash-object "$path")" "$(wc -c < "$path" | tr -d ' ')"
+          done
+
+      - name: Emit bounded audited-authoring source contexts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs')
+          lines = p.read_text(encoding='utf-8').splitlines()
+          needles = (
+              'Page.loadEventFired', 'Page.lifecycleEvent', 'Page.frameNavigated',
+              'Page.reload', 'Page.navigate', 'navigateAndWait',
+              'runBootstrapObserverSelfCheck', '--self-check-observation',
+              'DEFINITION_RELOAD_LOAD_TIMEOUT', 'DRAFT_STALE',
+          )
+          spans=[]
+          for i,line in enumerate(lines,1):
+              if any(n in line for n in needles):
+                  spans.append((max(1,i-14), min(len(lines),i+24)))
+          merged=[]
+          for a,b in spans:
+              if merged and a <= merged[-1][1]+1:
+                  merged[-1]=(merged[-1][0], max(merged[-1][1],b))
+              else:
+                  merged.append((a,b))
+          print(f'LINES={len(lines)} SPANS={merged}')
+          for a,b in merged:
+              print(f'--- {a}:{b} ---')
+              for n in range(a,b+1):
+                  print(f'{n:04d}: {lines[n-1]}')
+          PY
+
+      - name: Upload immutable R1 reconstruction inputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2a-r2-r1-five-inputs
+          path: ${{ runner.temp }}/r2-reconstruction-inputs
+          if-no-files-found: error
+          retention-days: 7
