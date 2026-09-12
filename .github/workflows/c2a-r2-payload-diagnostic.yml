@@ -1,0 +1,108 @@
+name: C2A R2 candidate payload diagnostic
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-builder
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  payload-diagnostic:
+    runs-on: ubuntu-24.04
+    env:
+      R1_HEAD: 22f0f173a941de88d6920b6e19821168e9b30cc8
+      R1_TREE: f407e609adb2a8b94770b521a1302feb79281822
+      PATCH_SOURCE_COMMIT: fe54ac184bd654e9830b2cd6f1f35609fe51024e
+      PATCH_TEXT_SHA256: b7c6f45c77881672c6f1fb024e3fa8c39601e1ce6d38eaeb875333b9d3711aa9
+      PATCH_GZIP_SHA256: d6c79334d9066a7f68efb6ef0055f8e34d1c5847592cc0c4c7dc577b5951b641
+      PATCH_BASE64_SHA256: 42f90f9476241d5d152c7e451edb0000549cd209803f4e97f7eac950b64c872d
+
+    steps:
+      - name: Check out builder history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Diagnose exact payload bytes without mutating candidate refs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          api_file="$RUNNER_TEMP/api-file.b64"
+          git_file="$RUNNER_TEMP/git-file.b64"
+          api_stripped="$RUNNER_TEMP/api-file-stripped.b64"
+          git_stripped="$RUNNER_TEMP/git-file-stripped.b64"
+          payload_gz="$RUNNER_TEMP/payload.gz"
+          payload_patch="$RUNNER_TEMP/payload.patch"
+
+          git cat-file -e "$PATCH_SOURCE_COMMIT^{commit}"
+          git show "$PATCH_SOURCE_COMMIT:.github/c2a-r2/full.patch.gz.b64" > "$git_file"
+          gh api \
+            "repos/$GITHUB_REPOSITORY/contents/.github/c2a-r2/full.patch.gz.b64?ref=$PATCH_SOURCE_COMMIT" \
+            --jq .content \
+            | tr -d '\n' \
+            | base64 --decode > "$api_file"
+
+          python - "$api_file" "$api_stripped" "$git_file" "$git_stripped" <<'PY'
+          import pathlib
+          import sys
+
+          for src, dst, label in (
+              (sys.argv[1], sys.argv[2], "api"),
+              (sys.argv[3], sys.argv[4], "git"),
+          ):
+              data = pathlib.Path(src).read_bytes()
+              terminal_lf = data.endswith(bytes([10]))
+              terminal_crlf = data.endswith(bytes([13, 10]))
+              stripped = data.rstrip(bytes([13, 10]))
+              pathlib.Path(dst).write_bytes(stripped)
+              print(f"{label.upper()}_BYTES={len(data)}")
+              print(f"{label.upper()}_TERMINAL_LF={str(terminal_lf).lower()}")
+              print(f"{label.upper()}_TERMINAL_CRLF={str(terminal_crlf).lower()}")
+              print(f"{label.upper()}_STRIPPED_BYTES={len(stripped)}")
+          PY
+
+          echo "EXPECTED_BASE64_SHA256=$PATCH_BASE64_SHA256"
+          for f in "$api_file" "$git_file" "$api_stripped" "$git_stripped"; do
+            echo "$(basename "$f") bytes=$(wc -c < "$f") sha256=$(sha256sum "$f" | awk '{print $1}')"
+          done
+          if cmp -s "$api_file" "$git_file"; then
+            echo "API_EQ_GIT=true"
+          else
+            echo "API_EQ_GIT=false"
+          fi
+
+          tr -d '\r\n' < "$git_file" | base64 --decode > "$payload_gz"
+          actual_gzip_sha="$(sha256sum "$payload_gz" | awk '{print $1}')"
+          echo "EXPECTED_GZIP_SHA256=$PATCH_GZIP_SHA256"
+          echo "ACTUAL_GZIP_SHA256=$actual_gzip_sha"
+
+          gzip --decompress --stdout "$payload_gz" > "$payload_patch"
+          actual_patch_sha="$(sha256sum "$payload_patch" | awk '{print $1}')"
+          echo "EXPECTED_PATCH_SHA256=$PATCH_TEXT_SHA256"
+          echo "ACTUAL_PATCH_SHA256=$actual_patch_sha"
+
+          git checkout --detach "$R1_HEAD"
+          echo "R1_HEAD_ACTUAL=$(git rev-parse HEAD)"
+          echo "R1_TREE_ACTUAL=$(git rev-parse HEAD^{tree})"
+          if git apply --check "$payload_patch"; then
+            echo "GIT_APPLY_CHECK=true"
+          else
+            echo "GIT_APPLY_CHECK=false"
+            exit 1
+          fi
+
+          if [ "$actual_gzip_sha" = "$PATCH_GZIP_SHA256" ]; then
+            echo "GZIP_HASH_MATCH=true"
+          else
+            echo "GZIP_HASH_MATCH=false"
+          fi
+          if [ "$actual_patch_sha" = "$PATCH_TEXT_SHA256" ]; then
+            echo "PATCH_HASH_MATCH=true"
+          else
+            echo "PATCH_HASH_MATCH=false"
+          fi
