@@ -54,7 +54,14 @@ jobs:
           patch="$RUNNER_TEMP/full.patch"
           git show "$source_ref:.github/c2a-r2/full.patch.gz.b64" > "$carrier"
           test "$(sha256sum "$carrier" | awk '{print $1}')" = "$SOURCE_BYTES_SHA256"
-          base64 --decode "$carrier" > "$archive"
+          python - "$carrier" "$archive" <<'PY'
+          import base64
+          import pathlib
+          import sys
+          source, target = sys.argv[1:]
+          text = pathlib.Path(source).read_text(encoding="ascii")
+          pathlib.Path(target).write_bytes(base64.b64decode("".join(text.split()), validate=False))
+          PY
           gzip --decompress --stdout "$archive" > "$patch"
           echo "PATCH_GZIP_SHA256=$(sha256sum "$archive" | awk '{print $1}')"
           echo "PATCH_TEXT_SHA256=$(sha256sum "$patch" | awk '{print $1}')"
