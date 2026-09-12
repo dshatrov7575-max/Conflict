@@ -42,6 +42,19 @@ Refactor/parameterize the existing helper rather than adding scenarios:
 - Use byte-exact saved-file re-import through `#ticket-file-proof` + `#acknowledge-ticket-file` in the other accepted publication flow.
 - The emitted retained methods must be exactly `exact-copy` or `byte-exact-file` as applicable.
 
+### B1. Exact byte-file proof implementation seam — no cdp_client change
+
+The corrected template exposes `<input id="ticket-file-proof" type="file">` and button `#acknowledge-ticket-file`. R1 `CDPClient.send()` is generic and already supports arbitrary protocol methods, so `cdp_client.mjs` must stay frozen.
+
+Implement byte-exact file proof inside `lifecycle_publication.mjs` only:
+1. create one disposable temp file containing the exact saved ticket text bytes, including terminal LF; do not normalize/reformat JSON;
+2. use the existing page session with CDP `DOM.getDocument`, `DOM.querySelector` for `#ticket-file-proof`, then `DOM.setFileInputFiles` with exactly that temp file path;
+3. click `#acknowledge-ticket-file` normally and require `studio:lifecycle-ticket-retained` with method `byte-exact-file`;
+4. delete the temp file/directory in a `finally` path even on failure;
+5. no persistent browser storage or project-tree file may be used for this proof.
+
+Do not emulate file selection by assigning `.value` or fabricating `input.files` in page JavaScript; the proof must exercise the actual file-input path used by `File.arrayBuffer()` in final JS.
+
 ### C. Initial publication scenario — one POST only
 
 Preserve preview/editor -> publisher -> initial publication semantics.
@@ -62,6 +75,7 @@ Preserve the existing validation process-loss proof:
 - force lost FD05 response;
 - close the page;
 - create a fresh page with the same pre-issued publisher session;
+- explicitly reapply the same `publisherSessionCookieValue` to the fresh page via existing `setSessionCookie`; this reuses the already-issued session and must not mint credentials/session state;
 - import through `#import-recovery-ticket` + `#import-validation-ticket`;
 - explicit `#replay-validation-attempt` performs the same FD05 request only;
 - exactly two validation POSTs total with identical Idempotency-Key, If-Match and `{}` body.
@@ -75,7 +89,7 @@ Replace R1 same-page publication recovery with the final process-loss proof:
 2. assert contract `FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1`, operation kind `SUCCESSOR`, and a different operation ID from the validation ticket;
 3. force loss of the single successor publication POST response;
 4. observe `studio:lifecycle-unknown-outcome`;
-5. record the request-log cutoff, close the page, create a fresh page, restore only the same pre-issued publisher session, and navigate normally;
+5. record the request-log cutoff, close the page, create a fresh page, explicitly reapply only the same pre-issued publisher session cookie, and navigate normally;
 6. fill `#import-publication-ticket` with the saved exact publication ticket bytes;
 7. click `#import-publication-ticket-action`;
 8. observe `studio:lifecycle-publication-ticket-imported`, then wait only for `studio:lifecycle-publication-recovery-complete` or the already-bounded recovery failure state;
@@ -103,6 +117,8 @@ The final harness must make request accounting explicit:
 - validation POST count in successor scenario = 2, identical same-request reconciliation;
 - publication process-loss recovery after page close = exact operation GET only;
 - cross-kind negative imports = zero mutation.
+
+For process-loss publication recovery, define the request-log cutoff immediately after observing `studio:lifecycle-unknown-outcome` and before closing the old page. After the fresh-page import, filter requests after that index and require the exact operation endpoint GET while rejecting any POST to either publication route.
 
 ## Promotion gates
 
