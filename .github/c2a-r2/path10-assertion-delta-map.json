@@ -1,0 +1,124 @@
+{
+  "schema": "C2A_R2_PATH10_ASSERTION_DELTA_MAP_V1",
+  "control_plane_only": true,
+  "must_not_enter_final_r2": true,
+  "target_path": "software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py",
+  "immutable_r1_head": "22f0f173a941de88d6920b6e19821168e9b30cc8",
+  "r1_test_blob": "6c2bb510f11a36db9b62138f637f09bf5588753a",
+  "lifecycle_js_candidate_blob": "f9ee82c148e1659c122024dd43a2f876348e6073",
+  "portable_method_count": 13,
+  "observed_gate": {
+    "run": 34706180227,
+    "job": 103586525631,
+    "node24_check": "PASS",
+    "collected": 13,
+    "passed": 11,
+    "failed": 2
+  },
+  "existing_methods_to_edit_only": [
+    {
+      "method": "test_publication_requires_human_retained_recovery_ticket_and_busy_unload_is_guarded",
+      "obsolete_positive_anchor": "retainTicket(\\\"download\\\")",
+      "required_semantics": [
+        "downloadTicket() must not call retainTicket and download initiation alone must leave execute disabled",
+        "retainTicket accepts only exact-copy and byte-exact-file",
+        "exact-copy mismatch leaves memory.ticketRetained false",
+        "ticket-file-proof and acknowledge-ticket-file bindings are present",
+        "acknowledgeTicketFile requires exact byte length and byte-for-byte equality before retainTicket(\\\"byte-exact-file\\\")",
+        "performSealedAttempt preserves the !memory.ticketRetained guard before fetch(attempt.route)"
+      ],
+      "exact_js_anchors": [
+        "new Set([\\\"exact-copy\\\", \\\"byte-exact-file\\\"])",
+        "retainTicket(\\\"exact-copy\\\")",
+        "retainTicket(\\\"byte-exact-file\\\")",
+        "ticket-file-proof",
+        "acknowledge-ticket-file",
+        "(!reconciliation && !memory.ticketRetained)",
+        "response = await fetch(attempt.route"
+      ]
+    },
+    {
+      "method": "test_publication_unknown_outcome_disables_post_and_uses_only_operation_recovery_get",
+      "obsolete_source_anchor": "async function recoverPublication()",
+      "required_source_anchor": "async function recoverPublication(override = null)",
+      "obsolete_404_text": "404 означает только отсутствие видимого результата",
+      "required_404_semantics": {
+        "code": "FOUNDATION_OBJECT_NOT_VISIBLE",
+        "text": "404 не раскрывает существование operation; исход остаётся неизвестным."
+      },
+      "required_semantics": [
+        "recoverPublication slice contains method GET and no method POST",
+        "publication ticket import supplies only recoveryOnly identity",
+        "404 remains non-fingerprinting and outcome unresolved",
+        "no publication POST reconstruction or replay"
+      ]
+    },
+    {
+      "method": "test_recovery_ticket_and_post_share_one_frozen_attempt_and_edits_require_new_operation",
+      "preserve_validation_ticket_keys": [
+        "body_byte_length",
+        "body_sha256",
+        "body_utf8",
+        "content_type",
+        "contract",
+        "contract_version",
+        "definition_id",
+        "if_match",
+        "method",
+        "operation_id",
+        "operation_kind",
+        "project_id",
+        "route",
+        "ticket_sha256"
+      ],
+      "add_publication_ticket_exact_keys": [
+        "contract",
+        "contract_version",
+        "definition_id",
+        "expected_manifest_hash",
+        "operation_id",
+        "operation_kind",
+        "project_id",
+        "request_body_sha256"
+      ],
+      "publication_forbidden_fields": [
+        "route",
+        "method",
+        "if_match",
+        "body_utf8",
+        "body_sha256",
+        "body_byte_length",
+        "content_type",
+        "csrf",
+        "headers",
+        "ticket_sha256"
+      ],
+      "required_semantics": [
+        "FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1 remains validation-only full same-request replay authority",
+        "FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1 version 1.0.0 uses exactly the eight publication keys",
+        "verifyImportedPublicationTicket enforces exactKeys against PUBLICATION_TICKET_KEYS",
+        "importPublicationTicket creates recoveryOnly true and does not assign memory.sealedAttempt",
+        "publication import ends in recoverPublication(recovery) and never reconstructs publication POST",
+        "validation and publication ticket contracts remain cross-kind fail closed"
+      ]
+    }
+  ],
+  "do_not_change": [
+    "test method count",
+    "unrelated assertions",
+    "timeouts",
+    "retry policy",
+    "skip/xfail policy",
+    "product JS",
+    "browser harness",
+    "template",
+    "verifier",
+    "PR #94 or target branch"
+  ],
+  "acceptance": [
+    "delta from e8af8eb8f137b760553d6dedc7f4b335869be61e is exactly one modified path: test_lifecycle_publication.py",
+    "Node 24 node --check lifecycle_publication.js PASS",
+    "portable collection exactly 13",
+    "ProductionStudioLifecyclePublicationTests => 13 passed"
+  ]
+}
