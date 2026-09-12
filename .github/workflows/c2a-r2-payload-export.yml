@@ -1,0 +1,31 @@
+name: C2A R2 payload export
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-builder
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Export payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/c2a-payload"
+          git show fe54ac184bd654e9830b2cd6f1f35609fe51024e:.github/c2a-r2/full.patch.gz.b64 > "$RUNNER_TEMP/c2a-payload/full.patch.gz.b64"
+          sha256sum "$RUNNER_TEMP/c2a-payload/full.patch.gz.b64" > "$RUNNER_TEMP/c2a-payload/full.patch.gz.b64.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c2a-r2-payload-${{ github.run_id }}
+          path: ${{ runner.temp }}/c2a-payload
+          if-no-files-found: error
+          retention-days: 2
