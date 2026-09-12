@@ -1,0 +1,111 @@
+{
+  "schema": "C2A_R2_PATH10_CANDIDATE_ACCEPTANCE_PROCEDURE_V1",
+  "control_plane_only": true,
+  "must_not_enter_final_r2": true,
+  "base_candidate_head": "e8af8eb8f137b760553d6dedc7f4b335869be61e",
+  "base_candidate_tree": "5fa4d96d3577fe585507309bec4a5a34b8160904",
+  "immutable_r1_head": "22f0f173a941de88d6920b6e19821168e9b30cc8",
+  "path10_target": "software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py",
+  "path10_r1_preimage_blob": "6c2bb510f11a36db9b62138f637f09bf5588753a",
+  "path9_js_blob": "f9ee82c148e1659c122024dd43a2f876348e6073",
+  "binding_map_commit": "962a2273ac5163defb6079a7545d4fb13c92dc40",
+  "binding_map_blob": "7c9268797cebbdf68165e6fd92db9ced31f780d9",
+  "binding_prose_oracle_commit": "217ab93fe9b0941f960d4438b8d949b1498a8a7d",
+  "executor_blocker": {
+    "state": "BLOCKED_PATH10_CODEX_CLOUD_ENVIRONMENT_NOT_CONFIGURED",
+    "dispatch_comment": "5647730329",
+    "blocker_comment": "5647731176"
+  },
+  "authorized_mutable_methods": [
+    "test_publication_unknown_outcome_disables_post_and_uses_only_operation_recovery_get",
+    "test_publication_requires_human_retained_recovery_ticket_and_busy_unload_is_guarded",
+    "test_recovery_ticket_and_post_share_one_frozen_attempt_and_edits_require_new_operation"
+  ],
+  "acceptance_sequence": [
+    {
+      "step": 1,
+      "name": "identity",
+      "require": [
+        "candidate HEAD is an ordinary single child of base_candidate_head",
+        "candidate has exactly one parent",
+        "no merge/rebase/cherry-pick/amend/squash/history rewrite evidence"
+      ]
+    },
+    {
+      "step": 2,
+      "name": "path_delta",
+      "require": [
+        "base_candidate_head -> candidate changes exactly one path",
+        "the path is path10_target",
+        "status is modified",
+        "mode remains 100644 and type remains blob"
+      ]
+    },
+    {
+      "step": 3,
+      "name": "method_boundary",
+      "require": [
+        "all added/deleted lines are inside the three authorized_mutable_methods",
+        "imports, helpers, fixtures, class structure and browser methods are unchanged",
+        "the other ten portable method bodies are byte-for-byte unchanged",
+        "portable method inventory remains exactly 13"
+      ]
+    },
+    {
+      "step": 4,
+      "name": "semantic_oracle",
+      "require": [
+        "download initiation is not retention",
+        "retention accepts only exact-copy or byte-exact-file",
+        "recoverPublication(override = null) remains GET-only",
+        "PUBLICATION ticket uses exact eight-key contract and import is recoveryOnly",
+        "publication import never reconstructs publication POST",
+        "validation HUMAN ticket/replay remains separate",
+        "404 remains non-fingerprinting and unresolved"
+      ]
+    },
+    {
+      "step": 5,
+      "name": "coupled_gate",
+      "require": [
+        "Node 24 node --check lifecycle_publication.js PASS",
+        "pytest collect-only for ProductionStudioLifecyclePublicationTests yields exactly 13",
+        "ProductionStudioLifecyclePublicationTests yields 13 passed and zero failed/skipped/xfail"
+      ]
+    },
+    {
+      "step": 6,
+      "name": "capture",
+      "require": [
+        "record exact candidate HEAD, TREE, sole parent and path10 blob",
+        "record exact changed-path inventory and test evidence",
+        "re-read PR #94 and prove it is still OPEN/DRAFT/UNMERGED at immutable R1"
+      ]
+    },
+    {
+      "step": 7,
+      "name": "promotion",
+      "require": [
+        "only after steps 1-6 PASS, count paths 9 and 10 prepared together",
+        "prepared count moves from 8/12 to 10/12",
+        "path11 carrier may then ordinary non-force fast-forward to the accepted path10 child",
+        "verifier carrier remains behind path11 until path11 acceptance"
+      ]
+    }
+  ],
+  "reject_codes": [
+    "REJECT_PATH10_PARENT_DRIFT",
+    "REJECT_PATH10_EXTRA_COMMIT",
+    "REJECT_PATH10_PATHSET_DRIFT",
+    "REJECT_PATH10_NON_MODIFIED_STATUS",
+    "REJECT_PATH10_MODE_OR_TYPE_DRIFT",
+    "REJECT_PATH10_METHOD_BOUNDARY_DRIFT",
+    "REJECT_PATH10_METHOD_COUNT_DRIFT",
+    "REJECT_PATH10_ASSERTION_WEAKENING",
+    "REJECT_PATH10_NODE24_FAILURE",
+    "REJECT_PATH10_COLLECTION_DRIFT",
+    "REJECT_PATH10_PORTABLE_GATE_NOT_13_OF_13",
+    "REJECT_PATH10_PR94_MUTATION"
+  ],
+  "promotion_is_forbidden_while_executor_blocker_remains_without_candidate": true
+}
