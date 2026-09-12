@@ -130,15 +130,18 @@
             <dt>Body SHA-256</dt><dd><code id="attempt-body-sha256">—</code></dd>
             <dt>Body bytes</dt><dd><code id="attempt-body-length">—</code></dd>
           </dl>
-          <label for="recovery-ticket">FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1</label>
+          <label for="recovery-ticket">Recovery ticket: <code id="recovery-ticket-contract">—</code></label>
           <textarea id="recovery-ticket" rows="13" readonly spellcheck="false"></textarea>
           <div class="controls">
             <button id="download-recovery-ticket" type="button">Скачать HUMAN-ticket</button>
-            <label for="ticket-copy-proof">Или вставьте точный скопированный ticket</label>
+            <label for="ticket-copy-proof">Или вставьте точную копию ticket</label>
             <textarea id="ticket-copy-proof" rows="4" spellcheck="false" autocomplete="off"></textarea>
-            <button id="acknowledge-ticket-copy" type="button">Подтвердить точную копию</button>
+            <button id="acknowledge-ticket-copy" type="button">Проверить точную копию</button>
+            <label for="ticket-file-proof">Или повторно выберите сохранённый ticket-файл</label>
+            <input id="ticket-file-proof" type="file" accept="application/json,.json">
+            <button id="acknowledge-ticket-file" type="button">Проверить байт-точный файл</button>
           </div>
-          <p id="ticket-retention-state">POST заблокирован до HUMAN-retention ticket.</p>
+          <p id="ticket-retention-state">POST заблокирован до exact-copy либо байт-точного re-import сохранённого ticket.</p>
           <button id="execute-sealed-attempt" type="button" disabled>Выполнить sealed POST</button>
         </section>
 
@@ -151,10 +154,17 @@
 
         <section class="attempt-panel" aria-labelledby="import-title">
           <h3 id="import-title">Восстановление после потери вкладки/процесса</h3>
-          <p>Ticket не даёт полномочий. Перед предложением точного FD05 replay Studio заново читает FD03, FD07 и серверные presentation-факты.</p>
-          <label for="import-recovery-ticket">Вставьте сохранённый validation ticket</label>
-          <textarea id="import-recovery-ticket" rows="8" spellcheck="false" autocomplete="off"></textarea>
-          <button id="import-validation-ticket" type="button">Проверить и восстановить точный FD05 attempt</button>
+          <p>Ticket не даёт полномочий. Studio заново читает свежие Foundation-факты и строго разделяет validation replay и publication recovery GET.</p>
+          <div id="validation-ticket-import-panel">
+            <label for="import-recovery-ticket"><code>FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1</code> — validation ticket</label>
+            <textarea id="import-recovery-ticket" rows="8" spellcheck="false" autocomplete="off"></textarea>
+            <button id="import-validation-ticket" type="button">Проверить и восстановить точный FD05 attempt</button>
+          </div>
+          <div id="publication-ticket-import-panel">
+            <label for="import-publication-ticket"><code>FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1</code> — publication ticket</label>
+            <textarea id="import-publication-ticket" rows="8" spellcheck="false" autocomplete="off"></textarea>
+            <button id="import-publication-ticket-action" type="button">Проверить ticket и выполнить только operation-recovery GET</button>
+          </div>
         </section>
 
         <section id="operation-result" class="attempt-panel" hidden aria-labelledby="result-title">

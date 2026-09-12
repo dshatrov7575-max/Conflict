@@ -4,6 +4,7 @@
   const CLAIM_CONTRACT = "STUDIO_LIFECYCLE_PUBLICATION_CLAIM_BOUNDARIES_V1";
   const READINESS_CONTRACT = "FOUNDATION_PUBLICATION_READINESS_V1";
   const HUMAN_TICKET_CONTRACT = "FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1";
+  const PUBLICATION_TICKET_CONTRACT = "FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1";
   const HUMAN_RECEIPT_CONTRACT = "FOUNDATION_AUDITED_DEFINITION_WRITE_V1";
   const PUBLICATION_RESULT_CONTRACT = "FOUNDATION_PUBLICATION_OPERATION_RESULT_V1";
   const PUBLICATION_REQUEST_CONTRACT = "FOUNDATION_PUBLICATION_OPERATION_REQUEST_V1";
@@ -70,6 +71,31 @@
     "route",
     "ticket_sha256",
   ]);
+  const PUBLICATION_TICKET_KEYS = Object.freeze([
+    "contract",
+    "contract_version",
+    "definition_id",
+    "expected_manifest_hash",
+    "operation_id",
+    "operation_kind",
+    "project_id",
+    "request_body_sha256",
+  ]);
+  const SAFE_FAILURE_CODE_PATTERN = /^[A-Z][A-Z0-9_]{0,127}$/;
+  const SAFE_FAILURE_CODES = Object.freeze({
+    VALIDATE_DEFINITION: Object.freeze({
+      400: Object.freeze(["WRITE_OPERATION_KEY_REQUIRED", "WRITE_OPERATION_KEY_INVALID", "WRITE_IF_MATCH_REQUIRED", "WRITE_IF_MATCH_INVALID", "WRITE_ENVELOPE_INVALID"]),
+      409: Object.freeze(["WRITE_OPERATION_KEY_REUSED", "WRITE_STALE", "WRITE_TARGET_STATE_CONFLICT", "WRITE_DEFINITION_CONFLICT"]),
+    }),
+    PUBLISH_INITIAL: Object.freeze({
+      400: Object.freeze(["PUBLICATION_OPERATION_KEY_REQUIRED", "PUBLICATION_OPERATION_KEY_INVALID", "PUBLICATION_IF_MATCH_REQUIRED", "PUBLICATION_IF_MATCH_INVALID", "PUBLICATION_ENVELOPE_INVALID"]),
+      409: Object.freeze(["PUBLICATION_OPERATION_KEY_REUSE", "PUBLICATION_STALE", "PUBLICATION_TARGET_STATE_CONFLICT", "PUBLICATION_ALREADY_COMMITTED", "PUBLICATION_ID_CONFLICT", "PUBLICATION_WORKSPACE_CONFLICT", "PUBLICATION_OPERATION_IDENTITY_CORRUPT"]),
+    }),
+    PUBLISH_SUCCESSOR: Object.freeze({
+      400: Object.freeze(["PUBLICATION_OPERATION_KEY_REQUIRED", "PUBLICATION_OPERATION_KEY_INVALID", "PUBLICATION_IF_MATCH_REQUIRED", "PUBLICATION_IF_MATCH_INVALID", "PUBLICATION_ENVELOPE_INVALID"]),
+      409: Object.freeze(["PUBLICATION_OPERATION_KEY_REUSE", "PUBLICATION_STALE", "PUBLICATION_TARGET_STATE_CONFLICT", "PUBLICATION_ALREADY_COMMITTED", "PUBLICATION_ID_CONFLICT", "PUBLICATION_WORKSPACE_CONFLICT", "PUBLICATION_OPERATION_IDENTITY_CORRUPT"]),
+    }),
+  });
   const HUMAN_RECEIPT_KEYS = Object.freeze([
     "actor_identifier",
     "actor_type",
@@ -867,32 +893,70 @@
     );
   }
 
-  function routeForAction(kind) {
+  function expectedRouteForAction(kind, definitionId = null) {
+    const resolved = String(
+      definitionId ||
+      memory.definition?.identity.definition_id ||
+      memory.app?.dataset.definitionId ||
+      "",
+    ).toLowerCase();
+    if (!UUID_PATTERN.test(resolved)) return null;
     return {
+      VALIDATE_DEFINITION: `/api/foundation/definitions/${resolved}/validate/`,
+      PUBLISH_INITIAL: `/api/foundation/definitions/${resolved}/publish-initial/`,
+      PUBLISH_SUCCESSOR: `/api/foundation/definitions/${resolved}/publish-successor/`,
+    }[kind] || null;
+  }
+
+  function routeForAction(kind) {
+    const presented = {
       VALIDATE_DEFINITION: memory.app.dataset.validateUrl,
       PUBLISH_INITIAL: memory.app.dataset.publishInitialUrl,
       PUBLISH_SUCCESSOR: memory.app.dataset.publishSuccessorUrl,
     }[kind] || null;
+    const expected = expectedRouteForAction(kind);
+    return presented === expected ? expected : null;
   }
 
+
   async function buildTicket(attemptCore) {
-    const ticketCore = {
-      contract: HUMAN_TICKET_CONTRACT,
+    if (attemptCore.operationKind === "VALIDATE_DEFINITION") {
+      const ticketCore = {
+        contract: HUMAN_TICKET_CONTRACT,
+        contract_version: "1.0.0",
+        operation_kind: attemptCore.operationKind,
+        operation_id: attemptCore.operationId,
+        project_id: attemptCore.projectId,
+        definition_id: attemptCore.definitionId,
+        method: "POST",
+        route: attemptCore.route,
+        if_match: attemptCore.ifMatch,
+        content_type: JSON_CONTENT_TYPE,
+        body_utf8: attemptCore.body,
+        body_sha256: attemptCore.bodySha256,
+        body_byte_length: attemptCore.bodyByteLength,
+      };
+      const ticketSha256 = await sha256Text(stableJSON(ticketCore));
+      const ticket = Object.freeze({ ...ticketCore, ticket_sha256: ticketSha256 });
+      return Object.freeze({ ticket, text: `${stableJSON(ticket)}\n` });
+    }
+    const publicationKind = {
+      PUBLISH_INITIAL: "INITIAL",
+      PUBLISH_SUCCESSOR: "SUCCESSOR",
+    }[attemptCore.operationKind];
+    if (!publicationKind || !/^"[0-9a-f]{64}"$/.test(attemptCore.ifMatch)) {
+      throw new TypeError("Publication recovery ticket identity is unavailable.");
+    }
+    const ticket = Object.freeze({
+      contract: PUBLICATION_TICKET_CONTRACT,
       contract_version: "1.0.0",
-      operation_kind: attemptCore.operationKind,
-      operation_id: attemptCore.operationId,
       project_id: attemptCore.projectId,
       definition_id: attemptCore.definitionId,
-      method: "POST",
-      route: attemptCore.route,
-      if_match: attemptCore.ifMatch,
-      content_type: JSON_CONTENT_TYPE,
-      body_utf8: attemptCore.body,
-      body_sha256: attemptCore.bodySha256,
-      body_byte_length: attemptCore.bodyByteLength,
-    };
-    const ticketSha256 = await sha256Text(stableJSON(ticketCore));
-    const ticket = Object.freeze({ ...ticketCore, ticket_sha256: ticketSha256 });
+      operation_id: attemptCore.operationId,
+      operation_kind: publicationKind,
+      expected_manifest_hash: attemptCore.ifMatch.slice(1, -1),
+      request_body_sha256: attemptCore.bodySha256,
+    });
     return Object.freeze({ ticket, text: `${stableJSON(ticket)}\n` });
   }
 
@@ -907,10 +971,9 @@
         setState("LIFECYCLE_ACTION_CHANGED", "Доступное действие изменилось; POST не выполнен.", "attention");
         return;
       }
-      const token = csrfToken();
       const route = routeForAction(selectedAction);
-      if (!token || !route || !route.startsWith("/api/foundation/definitions/") || route.includes("?")) {
-        throw new TypeError("Sealed request metadata is unavailable.");
+      if (!route || route !== expectedRouteForAction(selectedAction)) {
+        throw new TypeError("Sealed request route identity is unavailable.");
       }
       const body = exactAttemptBody(selectedAction);
       const operationId = randomUUIDv4();
@@ -934,15 +997,8 @@
         readinessSha256: memory.readiness.readiness_sha256,
       };
       const ticket = await buildTicket(attemptCore);
-      const headers = Object.freeze({
-        "Content-Type": JSON_CONTENT_TYPE,
-        "X-CSRFToken": token,
-        "If-Match": attemptCore.ifMatch,
-        "Idempotency-Key": operationId,
-      });
       memory.sealedAttempt = Object.freeze({
         ...attemptCore,
-        headers,
         ticket: ticket.ticket,
         ticketText: ticket.text,
         imported: false,
@@ -963,7 +1019,8 @@
         ifMatch: attemptCore.ifMatch,
         bodySha256: attemptCore.bodySha256,
         bodyByteLength: attemptCore.bodyByteLength,
-        ticketSha256: ticket.ticket.ticket_sha256,
+        ticketContract: ticket.ticket.contract,
+        ticketSha256: ticket.ticket.ticket_sha256 || await sha256Text(ticket.text),
       });
     } catch (_error) {
       discardUnsentAttempt("ATTEMPT_PREPARATION_FAILED", false);
@@ -978,6 +1035,7 @@
     }
   }
 
+
   function renderAttempt(attempt) {
     const panel = byId("sealed-attempt-panel");
     if (panel) panel.hidden = false;
@@ -987,33 +1045,42 @@
     setText("attempt-if-match", attempt.ifMatch);
     setText("attempt-body-sha256", attempt.bodySha256);
     setText("attempt-body-length", attempt.bodyByteLength);
+    setText("recovery-ticket-contract", attempt.ticket.contract);
     const ticket = byId("recovery-ticket");
     if (ticket) ticket.value = attempt.ticketText;
     const proof = byId("ticket-copy-proof");
     if (proof) proof.value = "";
-    setText("ticket-retention-state", "POST заблокирован до HUMAN-retention ticket.");
+    const fileProof = byId("ticket-file-proof");
+    if (fileProof) fileProof.value = "";
+    setText(
+      "ticket-retention-state",
+      "POST заблокирован до exact-copy либо байт-точного re-import сохранённого ticket.",
+    );
     const unknown = byId("unknown-outcome-panel");
     if (unknown) unknown.hidden = true;
     updateControls();
   }
 
+
   function retainTicket(method) {
     if (!memory.sealedAttempt || memory.busy || memory.unresolvedWrite) return;
+    if (!new Set(["exact-copy", "byte-exact-file"]).has(method)) return;
     memory.ticketRetained = true;
     setText(
       "ticket-retention-state",
-      method === "download"
-        ? "HUMAN download инициирован; sealed POST разблокирован."
-        : "Точное совпадение скопированного ticket подтверждено; sealed POST разблокирован.",
+      method === "byte-exact-file"
+        ? "Байт-точный сохранённый ticket повторно прочитан; sealed POST разблокирован."
+        : "Точная копия ticket подтверждена; sealed POST разблокирован.",
     );
     updateControls();
     emit("studio:lifecycle-ticket-retained", {
       method,
       operationKind: memory.sealedAttempt.operationKind,
       operationId: memory.sealedAttempt.operationId,
-      ticketSha256: memory.sealedAttempt.ticket.ticket_sha256,
+      ticketContract: memory.sealedAttempt.ticket.contract,
     });
   }
+
 
   function downloadTicket() {
     if (!memory.sealedAttempt || memory.busy || memory.unresolvedWrite) return;
@@ -1023,13 +1090,23 @@
     const href = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = href;
-    link.download = `foundation-human-write-recovery-${memory.sealedAttempt.operationId}.json`;
+    link.download = memory.sealedAttempt.ticket.contract === PUBLICATION_TICKET_CONTRACT
+      ? `foundation-publication-recovery-${memory.sealedAttempt.operationId}.json`
+      : `foundation-human-write-recovery-${memory.sealedAttempt.operationId}.json`;
     link.hidden = true;
     document.body.append(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(href);
-    retainTicket("download");
+    setText(
+      "ticket-retention-state",
+      "Скачивание инициировано, но не доказывает сохранение. POST остаётся заблокирован до exact-copy или байт-точного re-import.",
+    );
+    emit("studio:lifecycle-ticket-download-initiated", {
+      operationKind: memory.sealedAttempt.operationKind,
+      operationId: memory.sealedAttempt.operationId,
+      ticketContract: memory.sealedAttempt.ticket.contract,
+    });
   }
 
   function acknowledgeExactCopy() {
@@ -1039,6 +1116,36 @@
       return;
     }
     retainTicket("exact-copy");
+  }
+
+
+  async function acknowledgeTicketFile() {
+    if (!memory.sealedAttempt || memory.busy || memory.unresolvedWrite) return;
+    const input = byId("ticket-file-proof");
+    const file = input?.files?.length === 1 ? input.files[0] : null;
+    const expected = encoder.encode(memory.sealedAttempt.ticketText);
+    if (!file || file.size !== expected.byteLength || file.size > 16_384) {
+      setText("ticket-retention-state", "Файл не совпал с exact ticket; POST остаётся заблокирован.");
+      return;
+    }
+    let actual;
+    try {
+      actual = new Uint8Array(await file.arrayBuffer());
+    } catch (_error) {
+      setText("ticket-retention-state", "Файл не прочитан; POST остаётся заблокирован.");
+      return;
+    }
+    if (actual.byteLength !== expected.byteLength) {
+      setText("ticket-retention-state", "Файл не совпал с exact ticket; POST остаётся заблокирован.");
+      return;
+    }
+    for (let index = 0; index < expected.byteLength; index += 1) {
+      if (actual[index] !== expected[index]) {
+        setText("ticket-retention-state", "Файл не совпал с exact ticket; POST остаётся заблокирован.");
+        return;
+      }
+    }
+    retainTicket("byte-exact-file");
   }
 
   function discardUnsentAttempt(reason = "ATTEMPT_CANCELLED", announce = true) {
@@ -1052,6 +1159,8 @@
     const proof = byId("ticket-copy-proof");
     if (ticket) ticket.value = "";
     if (proof) proof.value = "";
+    const fileProof = byId("ticket-file-proof");
+    if (fileProof) fileProof.value = "";
     updateControls();
     if (attempt) {
       if (announce) {
@@ -1501,16 +1610,42 @@
     return [408, 425, 429].includes(response.status) || response.status >= 500;
   }
 
-  async function handleKnownFailure(response, attempt) {
-    let code = `HTTP_${response.status}`;
-    try {
-      const body = await response.json();
-      if (typeof body?.code === "string") code = body.code;
-    } catch (_error) {
-      // The bounded HTTP status remains sufficient for a fail-closed display.
+
+  function boundedFailureCode(status, operationKind, rawCode) {
+    if (status === 401) return "FOUNDATION_AUTHENTICATION_REQUIRED";
+    if (status === 403) return "FOUNDATION_PRESENTATION_DENIED";
+    if (status === 404) return "FOUNDATION_OBJECT_NOT_VISIBLE";
+    const table = SAFE_FAILURE_CODES[operationKind] || Object.freeze({});
+    const allowed = table[status] || Object.freeze([]);
+    const accepted = (
+      typeof rawCode === "string" &&
+      SAFE_FAILURE_CODE_PATTERN.test(rawCode) &&
+      allowed.includes(rawCode)
+    ) ? rawCode : null;
+    if (status === 409 || status === 412) {
+      if (accepted === "WRITE_STALE" || accepted === "PUBLICATION_STALE" || status === 412) {
+        return "FOUNDATION_STALE";
+      }
+      return "FOUNDATION_CONFLICT";
     }
+    if (status === 400) return "FOUNDATION_REQUEST_REJECTED";
+    if (status === 405) return "FOUNDATION_METHOD_REJECTED";
+    return "FOUNDATION_OPERATION_REJECTED";
+  }
+
+  async function handleKnownFailure(response, attempt) {
+    let rawCode = null;
+    if (response.status !== 404) {
+      try {
+        const body = await response.json();
+        rawCode = body?.code;
+      } catch (_error) {
+        rawCode = null;
+      }
+    }
+    const code = boundedFailureCode(response.status, attempt.operationKind, rawCode);
     clearResolvedAttempt();
-    setState(code, "Foundation вернул определённый отказ; attempt не повторяется автоматически.", "error");
+    setState(code, "Foundation вернул ограниченный определённый отказ; attempt не повторяется автоматически.", "error");
     emit("studio:lifecycle-operation-failed", {
       operationKind: attempt.operationKind,
       operationId: attempt.operationId,
@@ -1529,13 +1664,49 @@
     memory.busy = true;
     updateControls();
     let response;
+    let headers;
+    try {
+      await readCurrentServerAuthority({
+        requireValidate: attempt.operationKind === "VALIDATE_DEFINITION",
+        requirePublish: attempt.operationKind !== "VALIDATE_DEFINITION",
+      });
+    } catch (_error) {
+      memory.busy = false;
+      const code = _error?.lifecycleCode === "FOUNDATION_AUTHENTICATION_REQUIRED"
+        ? "FOUNDATION_AUTHENTICATION_REQUIRED"
+        : "FOUNDATION_PRESENTATION_DENIED";
+      setState(code, "Свежая presentation authority не подтверждена; POST не выполнен.", "error");
+      updateControls();
+      return;
+    }
+    const currentRoute = routeForAction(attempt.operationKind);
+    const expectedRoute = expectedRouteForAction(attempt.operationKind, attempt.definitionId);
+    const token = csrfToken();
+    if (!token) {
+      memory.busy = false;
+      setState("CSRF_TOKEN_UNAVAILABLE", "Свежий CSRF отсутствует; POST не выполнен.", "error");
+      updateControls();
+      return;
+    }
+    if (!currentRoute || currentRoute !== attempt.route || currentRoute !== expectedRoute) {
+      memory.busy = false;
+      setState("FOUNDATION_PRESENTATION_DENIED", "Свежий route не совпал; POST не выполнен.", "error");
+      updateControls();
+      return;
+    }
+    headers = Object.freeze({
+      "Content-Type": JSON_CONTENT_TYPE,
+      "X-CSRFToken": token,
+      "If-Match": attempt.ifMatch,
+      "Idempotency-Key": attempt.operationId,
+    });
     try {
       response = await fetch(attempt.route, {
         method: "POST",
         credentials: "same-origin",
         cache: "no-store",
         redirect: "error",
-        headers: attempt.headers,
+        headers,
         body: attempt.body,
       });
     } catch (_error) {
@@ -1601,29 +1772,31 @@
     }
   }
 
-  async function recoverPublication() {
-    const attempt = memory.unresolvedWrite;
+
+  async function recoverPublication(override = null) {
+    const attempt = override || memory.unresolvedWrite;
+    const recoveryOnly = attempt?.recoveryOnly === true;
     if (
       memory.busy ||
       !attempt ||
       attempt.operationKind === "VALIDATE_DEFINITION" ||
-      memory.sealedAttempt !== attempt
+      (!recoveryOnly && memory.sealedAttempt !== attempt) ||
+      (recoveryOnly && memory.sealedAttempt)
     ) return;
     const template = memory.app.dataset.publicationOperationTemplate || "";
+    const expectedRoute =
+      `/api/foundation/projects/${attempt.projectId}/publication-operations/${attempt.operationId}/`;
     const route = template
       .replace("__PROJECT_ID__", attempt.projectId)
       .replace("__OPERATION_ID__", attempt.operationId);
-    if (
-      !route.startsWith("/api/foundation/projects/") ||
-      route.includes("__") ||
-      route.includes("?")
-    ) {
+    if (route !== expectedRoute || route.includes("?") || route.includes("#")) {
       setState("PUBLICATION_RECOVERY_ROUTE_INVALID", "Recovery GET не выполнен.", "error");
       return;
     }
     memory.busy = true;
     updateControls();
     try {
+      await readCurrentServerAuthority();
       const response = await fetch(route, {
         method: "GET",
         credentials: "same-origin",
@@ -1638,8 +1811,8 @@
       ) throw new TypeError("Recovery cache boundary mismatch.");
       if (response.status === 404) {
         setState(
-          "PUBLICATION_RECOVERY_NOT_VISIBLE",
-          "404 означает только отсутствие видимого результата в этой области; факт commit остаётся неизвестным.",
+          "FOUNDATION_OBJECT_NOT_VISIBLE",
+          "404 не раскрывает существование operation; исход остаётся неизвестным.",
           "attention",
         );
         emit("studio:lifecycle-publication-recovery-not-visible", {
@@ -1649,14 +1822,20 @@
         return;
       }
       if (response.status !== 200) {
-        setState(`PUBLICATION_RECOVERY_HTTP_${response.status}`, "Recovery не разрешил неопределённый исход.", "error");
+        setState(
+          boundedFailureCode(response.status, attempt.operationKind, null),
+          "Recovery GET не разрешил неопределённый исход.",
+          "error",
+        );
         return;
       }
       const parsed = await responseDocument(response);
-      const verified = await verifyPublicationReceipt(response, parsed, attempt);
+      const verified = recoveryOnly
+        ? await verifyRecoveredPublicationReceipt(response, parsed, attempt)
+        : await verifyPublicationReceipt(response, parsed, attempt);
       if (!verified.replayed) throw new TypeError("Recovery response is not marked replayed.");
       renderVerifiedResult(attempt.operationKind, verified.receipt, verified.receiptSha, true);
-      clearResolvedAttempt({ consumeInputs: true });
+      clearResolvedAttempt({ consumeInputs: !recoveryOnly });
       await refreshAfterDefinitiveResult(
         "PUBLICATION_RECOVERED",
         "Exact FD06 operation GET вернул проверенную неизменяемую квитанцию.",
@@ -1666,13 +1845,97 @@
         operationId: attempt.operationId,
         publicationId: verified.receipt.publication_id,
         resultSha256: verified.receiptSha,
+        recoveryOnly,
       });
     } catch (_error) {
-      setState("PUBLICATION_RECOVERY_UNVERIFIED", "Recovery-ответ не прошёл identity/hash-проверку; исход остаётся неизвестным.", "error");
+      const code = _error?.lifecycleCode === "FOUNDATION_AUTHENTICATION_REQUIRED"
+        ? "FOUNDATION_AUTHENTICATION_REQUIRED"
+        : "PUBLICATION_RECOVERY_UNVERIFIED";
+      setState(code, "Recovery-ответ не прошёл ограниченную authority/identity/hash-проверку; исход остаётся неизвестным.", "error");
     } finally {
       memory.busy = false;
       updateControls();
     }
+  }
+
+  async function verifyRecoveredPublicationReceipt(response, parsed, recovery) {
+    const receipt = parsed.value;
+    const definition = receipt?.definition;
+    const definitionSyntax = objectMember(parsed.syntax, "definition");
+    const manifestSyntax = definitionSyntax ? objectMember(definitionSyntax, "manifest") : null;
+    const expectedKind = recovery.operationKind === "PUBLISH_INITIAL" ? "INITIAL" : "SUCCESSOR";
+    const resultSha = parsed.syntax
+      ? await sha256Text(canonicalLosslessJSON(parsed.syntax, new Set(["result_sha256"])))
+      : "";
+    const validation = receipt?.validation_result;
+    const expectedBindingIds = Array.isArray(definition?.manifest?.help_bindings)
+      ? definition.manifest.help_bindings.map((binding) => binding?.id)
+      : null;
+    const initialShapeValid = expectedKind === "INITIAL"
+      ? (
+        UUID_PATTERN.test(String(receipt?.initial_workspace_id || "")) &&
+        receipt?.initial_workspace_definition_id === recovery.definitionId &&
+        receipt?.initial_workspace_definition_manifest_hash === recovery.expectedManifestHash &&
+        Array.isArray(expectedBindingIds) &&
+        expectedBindingIds.every((item) => UUID_PATTERN.test(String(item || ""))) &&
+        stableJSON(receipt?.help_binding_ids) === stableJSON(expectedBindingIds)
+      )
+      : (
+        receipt?.initial_workspace_id === null &&
+        receipt?.initial_workspace_definition_id === null &&
+        receipt?.initial_workspace_definition_manifest_hash === null &&
+        Array.isArray(receipt?.help_binding_ids) &&
+        receipt.help_binding_ids.length === 0
+      );
+    if (
+      !exactKeys(receipt, PUBLICATION_RECEIPT_KEYS) ||
+      !exactKeys(definition, PUBLICATION_DEFINITION_KEYS) ||
+      receipt?.contract !== PUBLICATION_RESULT_CONTRACT ||
+      receipt?.contract_version !== "1.0.0" ||
+      parsed.text !== `${canonicalLosslessJSON(parsed.syntax)}\n` ||
+      receipt?.operation_id !== recovery.operationId ||
+      receipt?.operation_kind !== expectedKind ||
+      receipt?.project_id !== recovery.projectId ||
+      definition?.id !== recovery.definitionId ||
+      definition?.project_id !== recovery.projectId ||
+      definition?.manifest_hash !== recovery.expectedManifestHash ||
+      definition?.publication_status !== "PUBLISHED" ||
+      !exactBoundedText(definition?.code, 128) ||
+      !exactBoundedText(definition?.version, 64) ||
+      !exactBoundedText(definition?.schema_version, 64) ||
+      !exactBoundedText(definition?.semantic_version, 64) ||
+      !exactBoundedText(definition?.construct_version, 64) ||
+      (expectedKind === "INITIAL"
+        ? definition?.supersedes_id !== null
+        : !UUID_PATTERN.test(String(definition?.supersedes_id || ""))) ||
+      !manifestSyntax ||
+      (await sha256Text(canonicalLosslessJSON(manifestSyntax))) !== recovery.expectedManifestHash ||
+      !SHA256_PATTERN.test(String(receipt?.operation_request_sha256 || "")) ||
+      !SHA256_PATTERN.test(String(receipt?.result_sha256 || "")) ||
+      receipt.result_sha256 !== resultSha ||
+      !UUID_PATTERN.test(String(receipt?.publication_id || "")) ||
+      !exactHumanActor(receipt?.actor_identifier) ||
+      !exactTimestamp(receipt?.published_at) ||
+      !LOCALE_PATTERN.test(String(receipt?.locale || "")) ||
+      !exactKeys(validation, PERSISTED_VALIDATION_KEYS) ||
+      validation.contract !== MANIFEST_VALIDATION_CONTRACT ||
+      validation.schema_id !== MANIFEST_SCHEMA_ID ||
+      validation.schema_version !== "1.0.0" ||
+      validation.manifest_sha256 !== recovery.expectedManifestHash ||
+      validation.valid !== true ||
+      !Array.isArray(validation.diagnostics) ||
+      validation.diagnostics.length !== 0 ||
+      !initialShapeValid ||
+      response.headers.get("ETag") !== `"${await sha256Text(parsed.text)}"` ||
+      response.headers.get("Location") !==
+        `/api/foundation/projects/${recovery.projectId}/publication-results/${receipt.publication_id}/` ||
+      response.headers.get("Cache-Control") !== "no-store" ||
+      !["authorization|cookie", "accept|authorization|cookie"].includes(normalizedVary(response)) ||
+      (response.headers.get("Content-Type") || "").split(";", 1)[0] !== JSON_CONTENT_TYPE ||
+      response.headers.get("Idempotency-Replayed") !== "true" ||
+      response.status !== 200
+    ) throw new TypeError("FD06 recovery receipt identity mismatch.");
+    return { receipt, receiptSha: receipt.result_sha256, replayed: true };
   }
 
   async function verifyImportedValidationTicket(text) {
@@ -1712,15 +1975,60 @@
     return ticket;
   }
 
-  async function readCurrentServerAuthority() {
-    const response = await fetch(window.location.pathname, {
-      method: "GET",
-      credentials: "same-origin",
-      cache: "no-store",
-      redirect: "error",
-      headers: { Accept: "text/html" },
-    });
-    if (response.status !== 200) throw new TypeError("Current Studio authority is unavailable.");
+
+  async function verifyImportedPublicationTicket(text) {
+    if (
+      typeof text !== "string" ||
+      !text.endsWith("\n") ||
+      text.endsWith("\n\n") ||
+      utf8Length(text) > 8_192
+    ) throw new TypeError("Publication ticket representation is invalid.");
+    const parsed = parseLosslessJSON(text);
+    const ticket = parsed.value;
+    if (
+      !exactKeys(ticket, PUBLICATION_TICKET_KEYS) ||
+      ticket.contract !== PUBLICATION_TICKET_CONTRACT ||
+      ticket.contract_version !== "1.0.0" ||
+      !["INITIAL", "SUCCESSOR"].includes(ticket.operation_kind) ||
+      !UUID_V4_PATTERN.test(String(ticket.operation_id || "")) ||
+      String(ticket.project_id || "").toLowerCase() !== ticket.project_id ||
+      !UUID_PATTERN.test(ticket.project_id) ||
+      String(ticket.definition_id || "").toLowerCase() !== ticket.definition_id ||
+      !UUID_PATTERN.test(ticket.definition_id) ||
+      ticket.definition_id !== memory.app.dataset.definitionId.toLowerCase() ||
+      !SHA256_PATTERN.test(String(ticket.expected_manifest_hash || "")) ||
+      !SHA256_PATTERN.test(String(ticket.request_body_sha256 || "")) ||
+      text !== `${stableJSON(ticket)}\n`
+    ) throw new TypeError("Publication ticket identity is invalid.");
+    return ticket;
+  }
+
+
+  async function readCurrentServerAuthority({ requireValidate = false, requirePublish = false } = {}) {
+    let response;
+    try {
+      response = await fetch(window.location.pathname, {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+        redirect: "error",
+        headers: { Accept: "text/html" },
+      });
+    } catch (_error) {
+      const error = new TypeError("Current Studio presentation authority is unavailable.");
+      error.lifecycleCode = "FOUNDATION_PRESENTATION_DENIED";
+      throw error;
+    }
+    if (response.status === 401) {
+      const error = new TypeError("Current Studio authentication is unavailable.");
+      error.lifecycleCode = "FOUNDATION_AUTHENTICATION_REQUIRED";
+      throw error;
+    }
+    if (response.status !== 200) {
+      const error = new TypeError("Current Studio presentation authority is denied.");
+      error.lifecycleCode = "FOUNDATION_PRESENTATION_DENIED";
+      throw error;
+    }
     const html = await response.text();
     const documentCopy = new DOMParser().parseFromString(html, "text/html");
     const app = documentCopy.getElementById("lifecycle-publication-app");
@@ -1728,12 +2036,22 @@
       !app ||
       app.dataset.authenticated !== "true" ||
       app.dataset.canRead !== "true" ||
-      app.dataset.canValidate !== "true" ||
+      (requireValidate && app.dataset.canValidate !== "true") ||
+      (requirePublish && app.dataset.canPublish !== "true") ||
       app.dataset.definitionId.toLowerCase() !== memory.app.dataset.definitionId.toLowerCase() ||
       app.dataset.openUrl !== memory.app.dataset.openUrl ||
       app.dataset.readinessUrl !== memory.app.dataset.readinessUrl ||
-      app.dataset.validateUrl !== memory.app.dataset.validateUrl
-    ) throw new TypeError("Current Studio presentation authority is denied or incoherent.");
+      app.dataset.validateUrl !== memory.app.dataset.validateUrl ||
+      app.dataset.publishInitialUrl !== memory.app.dataset.publishInitialUrl ||
+      app.dataset.publishSuccessorUrl !== memory.app.dataset.publishSuccessorUrl ||
+      app.dataset.validateUrl !== expectedRouteForAction("VALIDATE_DEFINITION", app.dataset.definitionId) ||
+      app.dataset.publishInitialUrl !== expectedRouteForAction("PUBLISH_INITIAL", app.dataset.definitionId) ||
+      app.dataset.publishSuccessorUrl !== expectedRouteForAction("PUBLISH_SUCCESSOR", app.dataset.definitionId)
+    ) {
+      const error = new TypeError("Current Studio presentation authority is denied or incoherent.");
+      error.lifecycleCode = "FOUNDATION_PRESENTATION_DENIED";
+      throw error;
+    }
     memory.app.dataset.canRead = app.dataset.canRead;
     memory.app.dataset.canPreview = app.dataset.canPreview;
     memory.app.dataset.canValidate = app.dataset.canValidate;
@@ -1746,7 +2064,7 @@
     updateControls();
     try {
       const ticket = await verifyImportedValidationTicket(byId("import-recovery-ticket")?.value || "");
-      await readCurrentServerAuthority();
+      await readCurrentServerAuthority({ requireValidate: true });
       await readFreshSnapshot();
       if (
         memory.definition.identity.project_id !== ticket.project_id ||
@@ -1754,14 +2072,6 @@
         memory.definition.identity.manifest_hash !== ticket.if_match.slice(1, -1) ||
         memory.definition.identity.supersedes_id === null
       ) throw new TypeError("Current Foundation identity no longer matches the ticket.");
-      const token = csrfToken();
-      if (!token) throw new TypeError("Current CSRF token is unavailable.");
-      const headers = Object.freeze({
-        "Content-Type": ticket.content_type,
-        "X-CSRFToken": token,
-        "If-Match": ticket.if_match,
-        "Idempotency-Key": ticket.operation_id,
-      });
       const attempt = Object.freeze({
         operationKind: ticket.operation_kind,
         operationId: ticket.operation_id,
@@ -1773,7 +2083,6 @@
         bodySha256: ticket.body_sha256,
         bodyByteLength: ticket.body_byte_length,
         readinessSha256: memory.readiness.readiness_sha256,
-        headers,
         ticket: Object.freeze({ ...ticket }),
         ticketText: `${stableJSON(ticket)}\n`,
         imported: true,
@@ -1809,6 +2118,57 @@
       memory.busy = false;
       updateControls();
     }
+  }
+
+
+  async function importPublicationTicket() {
+    if (memory.busy || memory.sealedAttempt || memory.unresolvedWrite) return;
+    memory.busy = true;
+    updateControls();
+    let recovery = null;
+    try {
+      const ticket = await verifyImportedPublicationTicket(byId("import-publication-ticket")?.value || "");
+      await readCurrentServerAuthority();
+      await readFreshSnapshot();
+      if (
+        memory.definition.identity.project_id !== ticket.project_id ||
+        memory.definition.identity.definition_id !== ticket.definition_id ||
+        memory.definition.identity.manifest_hash !== ticket.expected_manifest_hash
+      ) throw new TypeError("Current Foundation identity no longer matches the publication ticket.");
+      recovery = Object.freeze({
+        recoveryOnly: true,
+        operationKind: ticket.operation_kind === "INITIAL" ? "PUBLISH_INITIAL" : "PUBLISH_SUCCESSOR",
+        operationId: ticket.operation_id,
+        projectId: ticket.project_id,
+        definitionId: ticket.definition_id,
+        expectedManifestHash: ticket.expected_manifest_hash,
+        requestBodySha256: ticket.request_body_sha256,
+        ticket: Object.freeze({ ...ticket }),
+      });
+      memory.unresolvedWrite = recovery;
+      setState(
+        "PUBLICATION_TICKET_RESTORED_GET_ONLY",
+        "Ticket восстановил только identity для exact FD06 operation GET; publication POST не реконструирован.",
+        "attention",
+      );
+      emit("studio:lifecycle-publication-ticket-imported", {
+        operationKind: recovery.operationKind,
+        operationId: recovery.operationId,
+        projectId: recovery.projectId,
+        definitionId: recovery.definitionId,
+      });
+    } catch (_error) {
+      memory.unresolvedWrite = null;
+      setState(
+        "PUBLICATION_TICKET_REJECTED",
+        "Publication ticket, текущая identity/topology или presentation authority не совпали; POST не создан.",
+        "error",
+      );
+    } finally {
+      memory.busy = false;
+      updateControls();
+    }
+    if (recovery) await recoverPublication(recovery);
   }
 
   async function manualRefresh() {
@@ -1877,6 +2237,7 @@
     byId("cancel-lifecycle-attempt")?.addEventListener("click", () => discardUnsentAttempt());
     byId("download-recovery-ticket")?.addEventListener("click", downloadTicket);
     byId("acknowledge-ticket-copy")?.addEventListener("click", acknowledgeExactCopy);
+    byId("acknowledge-ticket-file")?.addEventListener("click", acknowledgeTicketFile);
     byId("execute-sealed-attempt")?.addEventListener("click", () => {
       if (memory.sealedAttempt) performSealedAttempt(memory.sealedAttempt);
     });
@@ -1887,6 +2248,7 @@
     });
     byId("recover-publication-operation")?.addEventListener("click", recoverPublication);
     byId("import-validation-ticket")?.addEventListener("click", importValidationTicket);
+    byId("import-publication-ticket-action")?.addEventListener("click", importPublicationTicket);
     document
       .querySelectorAll("#publication-inputs input, #publication-inputs textarea")
       .forEach((control) => control.addEventListener("input", markInputsDirty));
@@ -1897,6 +2259,7 @@
     });
   }
 
+
   async function initialise() {
     memory.app = byId("lifecycle-publication-app");
     if (!memory.app || memory.app.dataset.authenticated !== "true") return;
@@ -1905,11 +2268,6 @@
     if (workspaceId && !workspaceId.value) workspaceId.value = randomUUIDv4();
     try {
       await verifyClaimContract();
-      if (
-        memory.app.dataset.canRead !== "true" ||
-        !UUID_PATTERN.test(memory.app.dataset.definitionId.toLowerCase())
-      ) throw new TypeError("Presentation identity is denied.");
-      await manualRefresh();
     } catch (_error) {
       memory.actionKind = "NONE";
       setState(
@@ -1920,22 +2278,46 @@
       document.querySelectorAll("button, input, textarea, select").forEach((control) => {
         control.disabled = true;
       });
+      return;
     }
+    if (
+      memory.app.dataset.canRead !== "true" ||
+      !UUID_PATTERN.test(memory.app.dataset.definitionId.toLowerCase())
+    ) {
+      memory.actionKind = "NONE";
+      setState(
+        "FOUNDATION_PRESENTATION_DENIED",
+        "Presentation authority не разрешает lifecycle read; все действия закрыты.",
+        "error",
+      );
+      document.querySelectorAll("button, input, textarea, select").forEach((control) => {
+        control.disabled = true;
+      });
+      return;
+    }
+    await manualRefresh();
   }
+
 
   window.__productionStudioLifecycleContract = Object.freeze({
     version: "C2A_V1",
     claimContract: CLAIM_CONTRACT,
     readinessContract: READINESS_CONTRACT,
     recoveryTicketContract: HUMAN_TICKET_CONTRACT,
+    recoveryTicketContracts: Object.freeze({
+      validation: HUMAN_TICKET_CONTRACT,
+      publication: PUBLICATION_TICKET_CONTRACT,
+    }),
     storagePolicy: "NO_OPERATION_DATA_IN_PERSISTENT_BROWSER_STORAGE",
     events: Object.freeze([
       "studio:lifecycle-ready",
       "studio:lifecycle-preview-complete",
       "studio:lifecycle-attempt-prepared",
       "studio:lifecycle-ticket-retained",
+      "studio:lifecycle-ticket-download-initiated",
       "studio:lifecycle-unknown-outcome",
       "studio:lifecycle-validation-ticket-imported",
+      "studio:lifecycle-publication-ticket-imported",
       "studio:lifecycle-validation-complete",
       "studio:lifecycle-publication-complete",
       "studio:lifecycle-publication-recovery-complete",
