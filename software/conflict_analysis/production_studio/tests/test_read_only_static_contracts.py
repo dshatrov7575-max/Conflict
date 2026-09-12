@@ -19,6 +19,14 @@ ENTRY_TEMPLATE = APP_ROOT / "templates" / "production_studio" / "entry.html"
 DEFINITION_TEMPLATE = APP_ROOT / "templates" / "production_studio" / "definition.html"
 CSS_PATH = APP_ROOT / "static" / "production_studio" / "studio.css"
 JS_PATH = APP_ROOT / "static" / "production_studio" / "studio.js"
+POLICY_SEAM_PATH = APP_ROOT / "views.py"
+POLICY_SEAM_SYMBOLS = frozenset(
+    {
+        "studio_principal_from_user",
+        "StudioCapability",
+        "StudioAuthorizationDenied",
+    }
+)
 
 
 class _HiddenAncestorParser(HTMLParser):
@@ -88,6 +96,7 @@ class ProductionStudioReadOnlyStaticContractTests(SimpleTestCase):
             if "tests" not in path.parts and "browser_tests" not in path.parts
         )
         self.assertTrue(production_python)
+        policy_seam_import_count = 0
         for path in production_python:
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             imported: set[str] = set()
@@ -95,6 +104,35 @@ class ProductionStudioReadOnlyStaticContractTests(SimpleTestCase):
                 if isinstance(node, ast.Import):
                     imported.update(alias.name for alias in node.names)
                 elif isinstance(node, ast.ImportFrom) and node.module:
+                    if node.module == "domain.policies":
+                        self.assertEqual(
+                            path,
+                            POLICY_SEAM_PATH,
+                            "domain.policies may be imported only by production_studio/views.py",
+                        )
+                        self.assertEqual(
+                            node.level,
+                            0,
+                            "the accepted policy seam must be an absolute import",
+                        )
+                        names = [alias.name for alias in node.names]
+                        self.assertNotIn("*", names, "wildcard policy imports are forbidden")
+                        self.assertTrue(
+                            all(alias.asname is None for alias in node.names),
+                            "policy seam aliases are forbidden",
+                        )
+                        self.assertEqual(
+                            len(names),
+                            len(POLICY_SEAM_SYMBOLS),
+                            "the policy seam must import exactly three symbols",
+                        )
+                        self.assertEqual(
+                            frozenset(names),
+                            POLICY_SEAM_SYMBOLS,
+                            "the policy seam imported an unauthorized symbol",
+                        )
+                        policy_seam_import_count += 1
+                        continue
                     imported.add(node.module)
                 elif isinstance(node, ast.Attribute):
                     self.assertNotEqual(
@@ -111,6 +149,11 @@ class ProductionStudioReadOnlyStaticContractTests(SimpleTestCase):
                     module == "django.db" or module.startswith("django.db."),
                     f"database authority imported by {path.relative_to(PROJECT_ROOT)}",
                 )
+        self.assertEqual(
+            policy_seam_import_count,
+            1,
+            "production_studio/views.py must use exactly one accepted domain.policies seam",
+        )
 
     def test_forbidden_studio_authority_files_do_not_exist(self):
         forbidden = (
