@@ -48,6 +48,9 @@ jobs:
           path = Path(sys.argv[1])
           text = path.read_text(encoding="utf-8")
 
+          def block(*lines: str) -> str:
+              return "\n".join(lines) + "\n"
+
           def replace_once(old: str, new: str, label: str) -> None:
               global text
               count = text.count(old)
@@ -56,181 +59,193 @@ jobs:
               text = text.replace(old, new, 1)
 
           replace_once(
-          '''  function routeForAction(kind) {
-            return {
-              VALIDATE_DEFINITION: memory.app.dataset.validateUrl,
-              PUBLISH_INITIAL: memory.app.dataset.publishInitialUrl,
-              PUBLISH_SUCCESSOR: memory.app.dataset.publishSuccessorUrl,
-            }[kind] || null;
-          }
-          ''',
-          '''  function expectedRouteForAction(kind, definitionId = null) {
-            const resolved = String(
-              definitionId ||
-              memory.definition?.identity.definition_id ||
-              memory.app?.dataset.definitionId ||
-              "",
-            ).toLowerCase();
-            if (!UUID_PATTERN.test(resolved)) return null;
-            return {
-              VALIDATE_DEFINITION: `/api/foundation/definitions/${resolved}/validate/`,
-              PUBLISH_INITIAL: `/api/foundation/definitions/${resolved}/publish-initial/`,
-              PUBLISH_SUCCESSOR: `/api/foundation/definitions/${resolved}/publish-successor/`,
-            }[kind] || null;
-          }
-
-          function routeForAction(kind) {
-            const presented = {
-              VALIDATE_DEFINITION: memory.app.dataset.validateUrl,
-              PUBLISH_INITIAL: memory.app.dataset.publishInitialUrl,
-              PUBLISH_SUCCESSOR: memory.app.dataset.publishSuccessorUrl,
-            }[kind] || null;
-            const expected = expectedRouteForAction(kind);
-            return presented === expected ? expected : null;
-          }
-          ''',
-          "exact-action-route",
+              block(
+                  "  function routeForAction(kind) {",
+                  "    return {",
+                  "      VALIDATE_DEFINITION: memory.app.dataset.validateUrl,",
+                  "      PUBLISH_INITIAL: memory.app.dataset.publishInitialUrl,",
+                  "      PUBLISH_SUCCESSOR: memory.app.dataset.publishSuccessorUrl,",
+                  "    }[kind] || null;",
+                  "  }",
+              ),
+              block(
+                  "  function expectedRouteForAction(kind, definitionId = null) {",
+                  "    const resolved = String(",
+                  "      definitionId ||",
+                  "      memory.definition?.identity.definition_id ||",
+                  "      memory.app?.dataset.definitionId ||",
+                  "      \"\",",
+                  "    ).toLowerCase();",
+                  "    if (!UUID_PATTERN.test(resolved)) return null;",
+                  "    return {",
+                  "      VALIDATE_DEFINITION: `/api/foundation/definitions/${resolved}/validate/`,",
+                  "      PUBLISH_INITIAL: `/api/foundation/definitions/${resolved}/publish-initial/`,",
+                  "      PUBLISH_SUCCESSOR: `/api/foundation/definitions/${resolved}/publish-successor/`,",
+                  "    }[kind] || null;",
+                  "  }",
+                  "",
+                  "  function routeForAction(kind) {",
+                  "    const presented = {",
+                  "      VALIDATE_DEFINITION: memory.app.dataset.validateUrl,",
+                  "      PUBLISH_INITIAL: memory.app.dataset.publishInitialUrl,",
+                  "      PUBLISH_SUCCESSOR: memory.app.dataset.publishSuccessorUrl,",
+                  "    }[kind] || null;",
+                  "    const expected = expectedRouteForAction(kind);",
+                  "    return presented === expected ? expected : null;",
+                  "  }",
+              ),
+              "exact-action-route",
           )
 
           replace_once(
-          '''      const token = csrfToken();
-                const route = routeForAction(selectedAction);
-                if (!token || !route || !route.startsWith("/api/foundation/definitions/") || route.includes("?")) {
-                  throw new TypeError("Sealed request metadata is unavailable.");
-                }
-          ''',
-          '''      const route = routeForAction(selectedAction);
-                if (!route || route !== expectedRouteForAction(selectedAction)) {
-                  throw new TypeError("Sealed request route identity is unavailable.");
-                }
-          ''',
-          "prepare-route-without-csrf",
+              block(
+                  "      const token = csrfToken();",
+                  "      const route = routeForAction(selectedAction);",
+                  "      if (!token || !route || !route.startsWith(\"/api/foundation/definitions/\") || route.includes(\"?\")) {",
+                  "        throw new TypeError(\"Sealed request metadata is unavailable.\");",
+                  "      }",
+              ),
+              block(
+                  "      const route = routeForAction(selectedAction);",
+                  "      if (!route || route !== expectedRouteForAction(selectedAction)) {",
+                  "        throw new TypeError(\"Sealed request route identity is unavailable.\");",
+                  "      }",
+              ),
+              "prepare-route-without-csrf",
           )
 
           replace_once(
-          '''      const ticket = await buildTicket(attemptCore);
-                const headers = Object.freeze({
-                  "Content-Type": JSON_CONTENT_TYPE,
-                  "X-CSRFToken": token,
-                  "If-Match": attemptCore.ifMatch,
-                  "Idempotency-Key": operationId,
-                });
-                memory.sealedAttempt = Object.freeze({
-                  ...attemptCore,
-                  headers,
-                  ticket: ticket.ticket,
-          ''',
-          '''      const ticket = await buildTicket(attemptCore);
-                memory.sealedAttempt = Object.freeze({
-                  ...attemptCore,
-                  ticket: ticket.ticket,
-          ''',
-          "remove-sealed-transport-headers",
+              block(
+                  "      const ticket = await buildTicket(attemptCore);",
+                  "      const headers = Object.freeze({",
+                  "        \"Content-Type\": JSON_CONTENT_TYPE,",
+                  "        \"X-CSRFToken\": token,",
+                  "        \"If-Match\": attemptCore.ifMatch,",
+                  "        \"Idempotency-Key\": operationId,",
+                  "      });",
+                  "      memory.sealedAttempt = Object.freeze({",
+                  "        ...attemptCore,",
+                  "        headers,",
+                  "        ticket: ticket.ticket,",
+              ),
+              block(
+                  "      const ticket = await buildTicket(attemptCore);",
+                  "      memory.sealedAttempt = Object.freeze({",
+                  "        ...attemptCore,",
+                  "        ticket: ticket.ticket,",
+              ),
+              "remove-sealed-transport-headers",
           )
 
           replace_once(
-          '''    let response;
-              try {
-                response = await fetch(attempt.route, {
-                  method: "POST",
-                  credentials: "same-origin",
-                  cache: "no-store",
-                  redirect: "error",
-                  headers: attempt.headers,
-                  body: attempt.body,
-                });
-              } catch (_error) {
-                memory.busy = false;
-                showUnknownOutcome(attempt);
-                return;
-              }
-          ''',
-          '''    let response;
-              let headers;
-              try {
-                await readCurrentServerAuthority();
-                const currentRoute = routeForAction(attempt.operationKind);
-                const expectedRoute = expectedRouteForAction(attempt.operationKind, attempt.definitionId);
-                const token = csrfToken();
-                if (!token || !currentRoute || currentRoute !== attempt.route || currentRoute !== expectedRoute) {
-                  throw new TypeError("Fresh transport authority is unavailable or changed.");
-                }
-                headers = Object.freeze({
-                  "Content-Type": JSON_CONTENT_TYPE,
-                  "X-CSRFToken": token,
-                  "If-Match": attempt.ifMatch,
-                  "Idempotency-Key": attempt.operationId,
-                });
-              } catch (_error) {
-                memory.busy = false;
-                setState(
-                  "SEALED_ATTEMPT_TRANSPORT_AUTHORITY_CHANGED",
-                  "Текущие presentation authority, route или CSRF изменились; POST не выполнен.",
-                  "error",
-                );
-                updateControls();
-                return;
-              }
-              try {
-                response = await fetch(attempt.route, {
-                  method: "POST",
-                  credentials: "same-origin",
-                  cache: "no-store",
-                  redirect: "error",
-                  headers,
-                  body: attempt.body,
-                });
-              } catch (_error) {
-                memory.busy = false;
-                showUnknownOutcome(attempt);
-                return;
-              }
-          ''',
-          "fresh-send-boundary",
+              block(
+                  "    let response;",
+                  "    try {",
+                  "      response = await fetch(attempt.route, {",
+                  "        method: \"POST\",",
+                  "        credentials: \"same-origin\",",
+                  "        cache: \"no-store\",",
+                  "        redirect: \"error\",",
+                  "        headers: attempt.headers,",
+                  "        body: attempt.body,",
+                  "      });",
+                  "    } catch (_error) {",
+                  "      memory.busy = false;",
+                  "      showUnknownOutcome(attempt);",
+                  "      return;",
+                  "    }",
+              ),
+              block(
+                  "    let response;",
+                  "    let headers;",
+                  "    try {",
+                  "      await readCurrentServerAuthority();",
+                  "      const currentRoute = routeForAction(attempt.operationKind);",
+                  "      const expectedRoute = expectedRouteForAction(attempt.operationKind, attempt.definitionId);",
+                  "      const token = csrfToken();",
+                  "      if (!token || !currentRoute || currentRoute !== attempt.route || currentRoute !== expectedRoute) {",
+                  "        throw new TypeError(\"Fresh transport authority is unavailable or changed.\");",
+                  "      }",
+                  "      headers = Object.freeze({",
+                  "        \"Content-Type\": JSON_CONTENT_TYPE,",
+                  "        \"X-CSRFToken\": token,",
+                  "        \"If-Match\": attempt.ifMatch,",
+                  "        \"Idempotency-Key\": attempt.operationId,",
+                  "      });",
+                  "    } catch (_error) {",
+                  "      memory.busy = false;",
+                  "      setState(",
+                  "        \"SEALED_ATTEMPT_TRANSPORT_AUTHORITY_CHANGED\",",
+                  "        \"Текущие presentation authority, route или CSRF изменились; POST не выполнен.\",",
+                  "        \"error\",",
+                  "      );",
+                  "      updateControls();",
+                  "      return;",
+                  "    }",
+                  "    try {",
+                  "      response = await fetch(attempt.route, {",
+                  "        method: \"POST\",",
+                  "        credentials: \"same-origin\",",
+                  "        cache: \"no-store\",",
+                  "        redirect: \"error\",",
+                  "        headers,",
+                  "        body: attempt.body,",
+                  "      });",
+                  "    } catch (_error) {",
+                  "      memory.busy = false;",
+                  "      showUnknownOutcome(attempt);",
+                  "      return;",
+                  "    }",
+              ),
+              "fresh-send-boundary",
           )
 
           replace_once(
-          '''      const token = csrfToken();
-                if (!token) throw new TypeError("Current CSRF token is unavailable.");
-                const headers = Object.freeze({
-                  "Content-Type": ticket.content_type,
-                  "X-CSRFToken": token,
-                  "If-Match": ticket.if_match,
-                  "Idempotency-Key": ticket.operation_id,
-                });
-                const attempt = Object.freeze({
-          ''',
-          '''      const attempt = Object.freeze({
-          ''',
-          "import-no-frozen-csrf",
+              block(
+                  "      const token = csrfToken();",
+                  "      if (!token) throw new TypeError(\"Current CSRF token is unavailable.\");",
+                  "      const headers = Object.freeze({",
+                  "        \"Content-Type\": ticket.content_type,",
+                  "        \"X-CSRFToken\": token,",
+                  "        \"If-Match\": ticket.if_match,",
+                  "        \"Idempotency-Key\": ticket.operation_id,",
+                  "      });",
+                  "      const attempt = Object.freeze({",
+              ),
+              block("      const attempt = Object.freeze({"),
+              "import-no-frozen-csrf",
           )
 
           replace_once(
-          '''        readinessSha256: memory.readiness.readiness_sha256,
-                headers,
-                ticket: Object.freeze({ ...ticket }),
-          ''',
-          '''        readinessSha256: memory.readiness.readiness_sha256,
-                ticket: Object.freeze({ ...ticket }),
-          ''',
-          "import-no-frozen-headers",
+              block(
+                  "        readinessSha256: memory.readiness.readiness_sha256,",
+                  "        headers,",
+                  "        ticket: Object.freeze({ ...ticket }),",
+              ),
+              block(
+                  "        readinessSha256: memory.readiness.readiness_sha256,",
+                  "        ticket: Object.freeze({ ...ticket }),",
+              ),
+              "import-no-frozen-headers",
           )
 
           replace_once(
-          '''      app.dataset.openUrl !== memory.app.dataset.openUrl ||
-                app.dataset.readinessUrl !== memory.app.dataset.readinessUrl ||
-                app.dataset.validateUrl !== memory.app.dataset.validateUrl
-          ''',
-          '''      app.dataset.openUrl !== memory.app.dataset.openUrl ||
-                app.dataset.readinessUrl !== memory.app.dataset.readinessUrl ||
-                app.dataset.validateUrl !== memory.app.dataset.validateUrl ||
-                app.dataset.publishInitialUrl !== memory.app.dataset.publishInitialUrl ||
-                app.dataset.publishSuccessorUrl !== memory.app.dataset.publishSuccessorUrl ||
-                app.dataset.validateUrl !== expectedRouteForAction("VALIDATE_DEFINITION", app.dataset.definitionId) ||
-                app.dataset.publishInitialUrl !== expectedRouteForAction("PUBLISH_INITIAL", app.dataset.definitionId) ||
-                app.dataset.publishSuccessorUrl !== expectedRouteForAction("PUBLISH_SUCCESSOR", app.dataset.definitionId)
-          ''',
-          "fresh-server-route-authority",
+              block(
+                  "      app.dataset.openUrl !== memory.app.dataset.openUrl ||",
+                  "      app.dataset.readinessUrl !== memory.app.dataset.readinessUrl ||",
+                  "      app.dataset.validateUrl !== memory.app.dataset.validateUrl",
+              ),
+              block(
+                  "      app.dataset.openUrl !== memory.app.dataset.openUrl ||",
+                  "      app.dataset.readinessUrl !== memory.app.dataset.readinessUrl ||",
+                  "      app.dataset.validateUrl !== memory.app.dataset.validateUrl ||",
+                  "      app.dataset.publishInitialUrl !== memory.app.dataset.publishInitialUrl ||",
+                  "      app.dataset.publishSuccessorUrl !== memory.app.dataset.publishSuccessorUrl ||",
+                  "      app.dataset.validateUrl !== expectedRouteForAction(\"VALIDATE_DEFINITION\", app.dataset.definitionId) ||",
+                  "      app.dataset.publishInitialUrl !== expectedRouteForAction(\"PUBLISH_INITIAL\", app.dataset.definitionId) ||",
+                  "      app.dataset.publishSuccessorUrl !== expectedRouteForAction(\"PUBLISH_SUCCESSOR\", app.dataset.definitionId)",
+              ),
+              "fresh-server-route-authority",
           )
 
           path.write_text(text, encoding="utf-8", newline="")
