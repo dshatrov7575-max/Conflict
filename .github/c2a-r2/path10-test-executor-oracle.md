@@ -61,6 +61,16 @@ Final R2 candidate intentionally uses bounded/non-fingerprinting recovery semant
 
 Update the existing assertion to prove the semantic invariant, not a broad substring: 404 must not disclose operation existence, outcome stays unresolved, and the recovery path remains GET-only with zero publication POST reconstruction.
 
+## Masked-assertion readback completed
+
+MAIN independently read every assertion after the two observed failure points against the exact durable JS candidate `f9ee82c148e1659c122024dd43a2f876348e6073`.
+
+For `test_publication_requires_human_retained_recovery_ticket_and_busy_unload_is_guarded`, every post-failure R1 invariant other than the obsolete download-positive assertion remains present in the candidate: exact-copy retention, byte-exact file seam, exact ticket-copy comparison, `buildTicket(attemptCore)` before freezing the sealed attempt, reset of `memory.ticketRetained = false`, the `!memory.ticketRetained` send gate before `fetch(attempt.route, { method: "POST" ... })`, and the dirty/busy/sealed/unresolved beforeunload guard.
+
+For `test_publication_unknown_outcome_disables_post_and_uses_only_operation_recovery_get`, after changing the declaration anchor to `recoverPublication(override = null)`, the remaining receipt/cache/Vary assertions still bind to candidate source; the only additional stale exact string is repair C above. Therefore no fourth masked stale R1 source-string assertion is currently identified in those two failing nodes.
+
+This does not substitute for executable `13/13`; it narrows the next executor cycle and forbids broad unrelated test edits.
+
 ## Existing-node strengthening, no cardinality growth
 
 Keep exactly 13 methods in `ProductionStudioLifecyclePublicationTests`. In the existing recovery-ticket node, preserve the full HUMAN ticket exact-key oracle and additionally assert the exact publication-ticket key set above plus forbidden transport fields. Do not create a 14th node.
