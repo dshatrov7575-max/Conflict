@@ -1,0 +1,85 @@
+{
+  "schema": "C2A_R2_LIFECYCLE_JS_P1BE_DELTA_MAP_V1",
+  "target_path": "software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js",
+  "immutable_r1_head": "22f0f173a941de88d6920b6e19821168e9b30cc8",
+  "p1cd_carrier_commit": "72e45cdd13f48fc2444840925d06335fb7f267ce",
+  "p1cd_source_blob": "07cd319ffb46f9226590f69f90bac5a83602183d",
+  "p1cd_preserve": [
+    "expectedRouteForAction derives exact literal Foundation route from opened definition UUID and operation kind",
+    "routeForAction requires byte equality between rendered route and derived route",
+    "prepareAttempt does not seal CSRF or request headers",
+    "performSealedAttempt re-reads current presentation authority and current CSRF immediately before send",
+    "readCurrentServerAuthority re-confirms exact validate/publish route facts",
+    "imported validation reconciliation also obtains transport authority only at the send boundary"
+  ],
+  "missing_p1b_change_sites": {
+    "constants_and_exact_keys": [
+      "add FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1",
+      "keep FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1 for validation only",
+      "split validation-ticket exact keys from publication-ticket exact keys",
+      "publication ticket exact keys: contract, contract_version, project_id, definition_id, operation_id, operation_kind, expected_manifest_hash, request_body_sha256",
+      "publication operation_kind admits INITIAL or SUCCESSOR only"
+    ],
+    "buildTicket": [
+      "VALIDATE_DEFINITION builds the existing byte-replay-capable validation ticket",
+      "PUBLISH_INITIAL/PUBLISH_SUCCESSOR build the reduced publication recovery ticket only",
+      "publication ticket contains no route, method, body_utf8, if_match, content_type, csrf, cookie, credential, role or capability"
+    ],
+    "retention": [
+      "downloadTicket exports bytes but must not call retainTicket and must not unlock execute-sealed-attempt",
+      "exact-copy unlocks only when proof text equals sealedAttempt.ticketText byte-for-byte",
+      "bind ticket-file-proof + acknowledge-ticket-file to byte-exact saved-file re-import; any mismatch remains locked",
+      "cross-kind or malformed proof fails closed"
+    ],
+    "publication_process_loss": [
+      "add strict publication-ticket parser/importer bound to the opened definition",
+      "import creates only recovery identity for exact project_id + operation_id + expected publication kind/definition identity",
+      "import must never create or replace sealedAttempt and must never enable a publication POST",
+      "recoverPublication must accept the in-memory unresolved publication attempt or the imported GET-only recovery identity",
+      "post-loss recovery issues exactly the Foundation publication-operation GET and zero publication POST replay"
+    ],
+    "validation_process_loss": [
+      "verifyImportedValidationTicket remains strict HUMAN ticket only and VALIDATE_DEFINITION only",
+      "validation import may restore only explicit byte-identical FD05 replay",
+      "validation ticket must never activate publication recovery"
+    ]
+  },
+  "missing_p1e_change_sites": {
+    "handleKnownFailure": [
+      "remove arbitrary body.code passthrough",
+      "use a finite status/operation-compatible accepted-code map",
+      "reject unknown, malformed, control, bidi or overlong code values to a bounded generic state",
+      "404 is non-fingerprinting FOUNDATION_OBJECT_NOT_VISIBLE or binding bounded equivalent"
+    ],
+    "manualRefresh_and_initialise": [
+      "do not collapse authentication loss, presentation denial, not-visible object, transport/representation failure and claim-contract failure into one state",
+      "distinguish claim-contract failure from legitimate canRead=false presentation denial",
+      "render no exception text, detail prose or unchecked server token"
+    ],
+    "minimum_bounded_state_classes": [
+      "claim-contract failure",
+      "presentation denial",
+      "authentication loss",
+      "object not visible / inaccessible",
+      "stale or conflict",
+      "unverified transport or representation"
+    ]
+  },
+  "binding_acceptance": [
+    "node --check under Node 24 passes",
+    "existing portable registry remains 13 nodes",
+    "existing Chromium registry remains 2 scenarios",
+    "download-only never unlocks POST",
+    "exact-copy and byte-exact file re-import are the only retention proofs",
+    "publication response loss + tab/process loss + publication-ticket import + exact GET recovery is proven",
+    "publication POST count remains exactly one across process-loss recovery",
+    "validation lost-response replay stays byte-identical and explicit",
+    "no retry, timeout increase, assertion weakening, path growth, cdp_client.mjs change or target PR mutation"
+  ],
+  "historical_provisional_oracle_only": {
+    "git_blob": "02cb5dca806ee3bd18030d6d7020933ac313ca50",
+    "sha256": "9968143c700d474fa932b10d94c2fdb5f1d1c0cf5a1941f335a2660baf732477",
+    "bytes": 96341,
+    "warning": "not repository-addressable; regenerate semantics from durable P1-C/P1-D source and authority, then persist the new candidate before expensive gates"
+  }
+}
