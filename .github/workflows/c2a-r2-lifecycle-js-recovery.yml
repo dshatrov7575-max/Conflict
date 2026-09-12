@@ -1,0 +1,100 @@
+name: C2A R2 lifecycle JS recovery
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-workflow-recovery
+    paths:
+      - .github/workflows/c2a-r2-lifecycle-js-recovery.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  recover-and-validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      R1_HEAD: 22f0f173a941de88d6920b6e19821168e9b30cc8
+      R1_TREE: f407e609adb2a8b94770b521a1302feb79281822
+      SOURCE_BRANCH: agent/c2a-r2-builder
+      SOURCE_BLOB: 9d297a8bdb82414945b2e6f45f883c8c44d8c7cb
+      PATCH_BASE64_SHA256: 42f90f9476241d5d152c7e451edb0000549cd209803f4e97f7eac950b64c872d
+      PATCH_GZIP_SHA256: d6c79334d9066a7f68efb6ef0055f8e34d1c5847592cc0c4c7dc577b5951b641
+      PATCH_TEXT_SHA256: b7c6f45c77881672c6f1fb024e3fa8c39601e1ce6d38eaeb875333b9d3711aa9
+      TARGET_PATH: software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js
+      TARGET_BLOB: 12efd1dc9dc5fcb922be2844df1a716f4cb66f09
+      TARGET_BRANCH: agent/c2a-r2-lifecycle-js-carrier
+
+    steps:
+      - name: Check out immutable R1
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.R1_HEAD }}
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Recover exact historical lifecycle JS and validate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test "$(git rev-parse HEAD)" = "$R1_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$R1_TREE"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          source_ref=refs/remotes/origin/c2a-r2-builder
+          git fetch --no-tags origin "+refs/heads/$SOURCE_BRANCH:$source_ref"
+          test "$(git rev-parse "$source_ref:.github/c2a-r2/full.patch.gz.b64")" = "$SOURCE_BLOB"
+
+          carrier="$RUNNER_TEMP/full.patch.gz.b64"
+          archive="$RUNNER_TEMP/full.patch.gz"
+          patch="$RUNNER_TEMP/full.patch"
+          git show "$source_ref:.github/c2a-r2/full.patch.gz.b64" > "$carrier"
+          test "$(sha256sum "$carrier" | awk '{print $1}')" = "$PATCH_BASE64_SHA256"
+          base64 --decode "$carrier" > "$archive"
+          test "$(sha256sum "$archive" | awk '{print $1}')" = "$PATCH_GZIP_SHA256"
+          gzip --decompress --stdout "$archive" > "$patch"
+          test "$(sha256sum "$patch" | awk '{print $1}')" = "$PATCH_TEXT_SHA256"
+
+          git apply --check "$patch"
+          git apply "$patch"
+
+          while IFS= read -r path; do
+            if [ "$path" != "$TARGET_PATH" ]; then
+              git restore -- "$path"
+            fi
+          done < <(git diff --name-only)
+
+          test "$(git diff --name-status --no-renames)" = $'M\t'"$TARGET_PATH"
+          test "$(git hash-object "$TARGET_PATH")" = "$TARGET_BLOB"
+          git diff --check
+          node --check "$TARGET_PATH"
+
+          grep -Fq 'FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1' "$TARGET_PATH"
+          grep -Fq 'FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1' "$TARGET_PATH"
+          grep -Fq 'acknowledge-ticket-file' "$TARGET_PATH"
+          grep -Fq 'import-publication-ticket-action' "$TARGET_PATH"
+          ! grep -Fq 'retainTicket("download")' "$TARGET_PATH"
+          ! grep -Fq 'headers: attempt.headers' "$TARGET_PATH"
+
+          test -z "$(git ls-remote --heads origin "refs/heads/$TARGET_BRANCH")"
+          git switch -c "$TARGET_BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$TARGET_PATH"
+          test "$(git diff --cached --name-status --no-renames)" = $'M\t'"$TARGET_PATH"
+          git commit -m "chore(c2a-r2): preserve validated lifecycle JS candidate"
+          test "$(git rev-parse HEAD^)" = "$R1_HEAD"
+          test "$(git show -s --format=%P HEAD | awk '{print NF}')" = "1"
+          test "$(git diff-tree --no-commit-id --name-status --no-renames -r HEAD)" = $'M\t'"$TARGET_PATH"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+
+          echo "C2A_R2_LIFECYCLE_JS_RECOVERY=PASS"
+          echo "CANDIDATE_HEAD=$(git rev-parse HEAD)"
+          echo "CANDIDATE_TREE=$(git rev-parse HEAD^{tree})"
+          echo "CANDIDATE_BLOB=$(git rev-parse HEAD:$TARGET_PATH)"
