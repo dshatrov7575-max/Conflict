@@ -24,57 +24,24 @@ jobs:
           ref: agent/c2a-r2-builder
           persist-credentials: true
 
-      - name: Replace corrupt patch-envelope transport with immutable blob materialization
+      - name: Replace corrupt patch transport with immutable blob materialization
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
+          replacement_b64='ICAgICAgLSBuYW1lOiBNYXRlcmlhbGl6ZSBleGFjdCBjYW5kaWRhdGUgZnJvbSBpbW11dGFibGUgR2l0IGJsb2IgaWRlbnRpdGllcwogICAgICAgIHNoZWxsOiBiYXNoCiAgICAgICAgZW52OgogICAgICAgICAgR0hfVE9LRU46ICR7eyBnaXRodWIudG9rZW4gfX0KICAgICAgICBydW46IHwKICAgICAgICAgIHNldCAtZXVvIHBpcGVmYWlsCiAgICAgICAgICBtYW5pZmVzdD0iJFJVTk5FUl9URU1QL2MyYS1yMi10YXJnZXQtYmxvYnMudHN2IgogICAgICAgICAgY2F0ID4gIiRtYW5pZmVzdCIgPDwnRU9GJwogICAgICAgICAgLmdpdGh1Yi93b3JrZmxvd3MvY29uZmxpY3QtYW5hbHlzaXMueW1sCTIxYzRiNjI0ZDc4ZjI1NjcwMjg1ZjE2OTliNjdiZDBkNmUzOTNmMjYKICAgICAgICAgIHNvZnR3YXJlL2NvbmZsaWN0X2FuYWx5c2lzL1JFQURNRS5tZAllMGRhNWJjZjVmMjQ4MDlmNmNhNzg4YTFhOGY2YjBmMDE0NGJmMWYzCiAgICAgICAgICBzb2Z0d2FyZS9jb25mbGljdF9hbmFseXNpcy9kb2NzL2Fkci8wMDA5LXByb2R1Y3Rpb24tc3R1ZGlvLWMtbGlmZWN5Y2xlLXB1YmxpY2F0aW9uLm1kCWMwODg5Yzk2OWRiODZiNTVhZjI2MTNmZTJmNjMzY2ZhMjEyMzg2NmEKICAgICAgICAgIHNvZnR3YXJlL2NvbmZsaWN0X2FuYWx5c2lzL2RvY3MvcHJvZHVjdGlvbi1zdHVkaW8tYy1yZWFkLW9ubHktcnVudGltZS5tZAlmNTBkZDFmYmMwY2Y5NjdhZDY1ODMyN2YzN2NkMGVhNzBlYmE2YThmCiAgICAgICAgICBzb2Z0d2FyZS9jb25mbGljdF9hbmFseXNpcy9wcm9kdWN0aW9uX3N0dWRpby9icm93c2VyX3Rlc3RzL2F1ZGl0ZWRfYXV0aG9yaW5nLm1qcwk0ZTEwZjk1NDQ0MWFiZjI1ZWM1YjVkNjBiMWYzMTAwNzFmOTIzZDk5CiAgICAgICAgICBzb2Z0d2FyZS9jb25mbGljdF9hbmFseXNpcy9wcm9kdWN0aW9uX3N0dWRpby9icm93c2VyX3Rlc3RzL2xpZmVjeWNsZV9wdWJsaWNhdGlvbi5tanMJMTFjY2YzY2U5MGI2MjlmMTQ0NDNiOTZlZTkwMjBhOGE0ZWUzNWEyZQogICAgICAgICAgc29mdHdhcmUvY29uZmxpY3RfYW5hbHlzaXMvcHJvZHVjdGlvbl9zdHVkaW8vc3RhdGljL3Byb2R1Y3Rpb25fc3R1ZGlvL2xpZmVjeWNsZV9wdWJsaWNhdGlvbi5qcwkxMmVmZDFkYzlkYzVmY2I5MjJiZTI4NDRkZjFhNzE2ZjRjYjY2ZjA5CiAgICAgICAgICBzb2Z0d2FyZS9jb25mbGljdF9hbmFseXNpcy9wcm9kdWN0aW9uX3N0dWRpby90ZW1wbGF0ZXMvcHJvZHVjdGlvbl9zdHVkaW8vbGlmZWN5Y2xlX3B1YmxpY2F0aW9uX2RlZmluaXRpb24uaHRtbAlhMWU3ZTlmM2ZhYzBiZTYxYmJjZTZhMmE0ZjZlOGJiMjIxZjYyMTAxCiAgICAgICAgICBzb2Z0d2FyZS9jb25mbGljdF9hbmFseXNpcy9wcm9kdWN0aW9uX3N0dWRpby90ZXN0cy90ZXN0X2xpZmVjeWNsZV9wdWJsaWNhdGlvbi5weQk4YjgwMTE3YTEwZmU4ZWJjODA0ZTVlZWQzMzg0NmUwZjYwYjA5Y2MzCiAgICAgICAgICBzb2Z0d2FyZS9jb25mbGljdF9hbmFseXNpcy9wcm9kdWN0aW9uX3N0dWRpby90ZXN0cy90ZXN0X3JlYWRfb25seV9zdGF0aWNfY29udHJhY3RzLnB5CTQxOTBiY2MxODcxNjc5YTNiMWUwYTI5ZjY5OTFlM2RjNjg3NmM5MTIKICAgICAgICAgIHNvZnR3YXJlL2NvbmZsaWN0X2FuYWx5c2lzL3Byb2R1Y3Rpb25fc3R1ZGlvL3ZpZXdzLnB5CTk1NWU3MTVjYjA4M2Y3ZTQ0Njc4MzZhY2U3NzI4MWRlMzBlZjFkMzkKICAgICAgICAgIHNvZnR3YXJlL2NvbmZsaWN0X2FuYWx5c2lzL3NjcmlwdHMvdmVyaWZ5X3Byb2R1Y3Rpb25fc3R1ZGlvX2NfYWxsb3dsaXN0LnB5CTdmYzQwMjkyZTRjNDc4ZGJmZDVhZmVhMjcxZDBhMjM0MTNmNWY1YWIKICAgICAgICAgIEVPRgogICAgICAgICAgd2hpbGUgSUZTPSQnXHQnIHJlYWQgLXIgcGF0aCBibG9iOyBkbwogICAgICAgICAgICBta2RpciAtcCAiJChkaXJuYW1lICIkcGF0aCIpIgogICAgICAgICAgICBnaCBhcGkgInJlcG9zLyRHSVRIVUJfUkVQT1NJVE9SWS9naXQvYmxvYnMvJGJsb2IiIC0tanEgLmNvbnRlbnQgXAogICAgICAgICAgICAgIHwgdHIgLWQgJ1xuJyBcCiAgICAgICAgICAgICAgfCBiYXNlNjQgLS1kZWNvZGUgPiAiJHBhdGgiCiAgICAgICAgICAgIHRlc3QgIiQoZ2l0IGhhc2gtb2JqZWN0ICIkcGF0aCIpIiA9ICIkYmxvYiIKICAgICAgICAgICAgdGVzdCAiJChnaXQgbHMtZmlsZXMgLXMgLS0gIiRwYXRoIiB8IGF3ayAne3ByaW50ICQxfScpIiA9IDEwMDY0NAogICAgICAgICAgICBnaXQgYWRkIC0tICIkcGF0aCIKICAgICAgICAgIGRvbmUgPCAiJG1hbmlmZXN0IgogICAgICAgICAgdGVzdCAiJChnaXQgZGlmZiAtLWNhY2hlZCAtLW5hbWUtb25seSB8IHdjIC1sIHwgdHIgLWQgJyAnKSIgPSAxMgoK'
+          python - "$replacement_b64" <<'PY'
+          import base64
+          import sys
           from pathlib import Path
-
           workflow = Path('.github/workflows/c2a-r2-full-validation.yml')
           text = workflow.read_text(encoding='utf-8')
           start_marker = '      - name: Fetch, verify and apply exact candidate patch\n'
           end_marker = '      - name: Verify exact twelve-path staged inventory and blob identities\n'
           start = text.index(start_marker)
           end = text.index(end_marker)
-          replacement = '''      - name: Materialize exact candidate from immutable Git blob identities
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          manifest="$RUNNER_TEMP/c2a-r2-target-blobs.tsv"
-          cat > "$manifest" <<'EOF'
-          .github/workflows/conflict-analysis.yml	21c4b624d78f25670285f1699b67bd0d6e393f26
-          software/conflict_analysis/README.md	e0da5bcf5f24809f6ca788a1a8f6b0f0144bf1f3
-          software/conflict_analysis/docs/adr/0009-production-studio-c-lifecycle-publication.md	c0889c969db86b55af2613fe2f633cfa2123866a
-          software/conflict_analysis/docs/production-studio-c-read-only-runtime.md	f50dd1fbc0cf967ad658327f37cd0ea70eba6a8f
-          software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs	4e10f954441abf25ec5b5d60b1f310071f923d99
-          software/conflict_analysis/production_studio/browser_tests/lifecycle_publication.mjs	11ccf3ce90b629f14443b96ee9020a8a4ee35a2e
-          software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js	12efd1dc9dc5fcb922be2844df1a716f4cb66f09
-          software/conflict_analysis/production_studio/templates/production_studio/lifecycle_publication_definition.html	a1e7e9f3fac0be61bbce6a2a4f6e8bb221f62101
-          software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py	8b80117a10fe8ebc804e5eed33846e0f60b09cc3
-          software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py	4190bcc1871679a3b1e0a29f6991e3dc6876c912
-          software/conflict_analysis/production_studio/views.py	955e715cb083f7e4467836ace77281de30ef1d39
-          software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py	7fc40292e4c478dbfd5afea271d0a23413f5f5ab
-          EOF
-          while IFS=$'\t' read -r path blob; do
-            mkdir -p "$(dirname "$path")"
-            gh api "repos/$GITHUB_REPOSITORY/git/blobs/$blob" --jq .content \
-              | tr -d '\n' \
-              | base64 --decode > "$path"
-            test "$(git hash-object "$path")" = "$blob"
-            test "$(git ls-files -s -- "$path" | awk '{print $1}')" = 100644
-            git add -- "$path"
-          done < "$manifest"
-          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = 12
-
-'''
-          updated = text[:start] + replacement + text[end:]
-          if updated != text:
-              workflow.write_text(updated, encoding='utf-8')
+          replacement = base64.b64decode(sys.argv[1]).decode('utf-8')
+          workflow.write_text(text[:start] + replacement + text[end:], encoding='utf-8')
           PY
-
           if git diff --quiet -- .github/workflows/c2a-r2-full-validation.yml; then
             echo "VALIDATOR_REPAIR_ALREADY_APPLIED=true"
             exit 0
