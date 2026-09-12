@@ -45,7 +45,7 @@ jobs:
           raw = Path('.github/workflows/c2a-r2-lifecycle-js-rebuild.yml').read_text(encoding='utf-8')
           start_marker = "          python - <<'PY'\n"
           end_marker = "\n          PY\n\n          candidate_blob="
-          if raw.count(start_marker) != 1 or raw.count(end_marker) != 1:
+          if start_marker not in raw or raw.count(end_marker) != 1:
               raise SystemExit('transformation carrier markers are not exact')
           body = raw.split(start_marker, 1)[1].split(end_marker, 1)[0]
           rebuilt = []
