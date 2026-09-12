@@ -1,0 +1,93 @@
+{
+  "schema": "C2A_R2_FINAL_ACCEPTANCE_CHAIN_CONSISTENCY_V1",
+  "control_plane_only": true,
+  "must_not_enter_final_r2": true,
+  "accepted_g9": {
+    "head": "561ef5327bf655a558adb21c54d0fdf0559d7024",
+    "tree": "5b209c782e1ac1a4783b01391dd59d813559ce57"
+  },
+  "immutable_r1": {
+    "head": "22f0f173a941de88d6920b6e19821168e9b30cc8",
+    "tree": "f407e609adb2a8b94770b521a1302feb79281822",
+    "sole_parent": "561ef5327bf655a558adb21c54d0fdf0559d7024"
+  },
+  "current_partial": {
+    "formal_prepared_count": "8/12",
+    "nine_path_candidate_head": "e8af8eb8f137b760553d6dedc7f4b335869be61e",
+    "nine_path_candidate_tree": "5fa4d96d3577fe585507309bec4a5a34b8160904",
+    "path9_js_blob": "f9ee82c148e1659c122024dd43a2f876348e6073"
+  },
+  "path10": {
+    "target": "software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py",
+    "acceptance_procedure_commit": "032ce6bdf67a2ead6f20f0c1b55e7c3809e6dcbd",
+    "acceptance_procedure_blob": "176101805a7b235df41103034735c403593af592",
+    "execution_map_commit": "962a2273ac5163defb6079a7545d4fb13c92dc40",
+    "execution_map_blob": "7c9268797cebbdf68165e6fd92db9ced31f780d9",
+    "executor_state": "BLOCKED_PATH10_CODEX_CLOUD_ENVIRONMENT_NOT_CONFIGURED",
+    "dispatch_comment": "5647730329",
+    "blocker_comment": "5647731176",
+    "input_prepared_count": "8/12",
+    "output_prepared_count_after_acceptance": "10/12",
+    "coupled_promotion": ["path9", "path10"]
+  },
+  "path11": {
+    "target": "software/conflict_analysis/production_studio/browser_tests/lifecycle_publication.mjs",
+    "acceptance_procedure_commit": "64b556c4c4894665328e7adf57fa55f083dbca80",
+    "acceptance_procedure_blob": "8ff8a4fca23da22cbb41c48909caf800e2b03fd1",
+    "execution_map_commit": "f03af8ffd646e1aea82d2738755884c8e224317a",
+    "execution_map_blob": "ff43d50527020de509ed53cfc393089c2f5c1643",
+    "prerequisite_prepared_count": "10/12",
+    "prerequisite": "path10 independently accepted",
+    "carrier": "agent/c2a-r2-lifecycle-browser-carrier",
+    "carrier_rule": "ordinary non-force fast-forward to accepted path10 child before path11 implementation",
+    "output_prepared_count_after_acceptance": "11/12"
+  },
+  "path12": {
+    "target": "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+    "acceptance_procedure_commit": "45e839a95a9b9e5001dd27a25cbe97cd5ef078ad",
+    "acceptance_procedure_blob": "ec621cf897e39c177bf54ce5bc32d63e63c1fbbb",
+    "execution_map_commit": "f89ee39f9637e0b86a59220cb326cf2b86c88915",
+    "execution_map_blob": "44521ccd8f72784a8bd7f801772d823753f90c25",
+    "prerequisite_prepared_count": "11/12",
+    "prerequisite": "path10 and path11 independently accepted",
+    "carrier": "agent/c2a-r2-verifier-carrier",
+    "carrier_rule": "ordinary non-force fast-forward through accepted path10 then accepted path11 validation ancestry before verifier implementation",
+    "output_prepared_count_after_acceptance": "12/12"
+  },
+  "final_assembly": {
+    "recipe_branch": "agent/c2a-r2-workflow-recovery",
+    "recipe_commit": "95393fe324c76faaeb5474dd07ade635d91c9e6d",
+    "recipe_blob": "b6bd8e3221e9b21618d632847ff3838651dcd602",
+    "pending_green_blobs": ["PATH10_GREEN_BLOB", "PATH11_GREEN_BLOB", "PATH12_GREEN_BLOB"],
+    "r1_to_final_r2_commit_count": 1,
+    "g9_to_final_r2_commit_count": 2,
+    "r1_to_r2_changed_paths": 12,
+    "r1_to_r2_required_status": "M",
+    "g9_to_r2_changed_paths": 19,
+    "g9_to_r2_added": 9,
+    "g9_to_r2_modified": 10,
+    "final_parent": "22f0f173a941de88d6920b6e19821168e9b30cc8",
+    "validation_chain_is_not_final_history": true
+  },
+  "cross_stage_consistency_assertions": [
+    "path10 acceptance output 10/12 exactly equals path11 prerequisite 10/12",
+    "path11 acceptance output 11/12 exactly equals path12 prerequisite 11/12",
+    "path12 acceptance output 12/12 is the sole condition that unlocks final assembly",
+    "path11 carrier cannot advance before accepted path10 evidence",
+    "path12 carrier cannot advance before accepted path10 and accepted path11 evidence",
+    "validation carriers may provide accepted blobs only and must never be promoted as final R2 history",
+    "final R2 must be rebuilt directly as one ordinary child of immutable R1 using exactly the 12 accepted replacement blobs",
+    "final aggregate must remain exactly 19 paths with 9 new and 10 existing",
+    "PR #94 must remain OPEN, DRAFT, UNMERGED and exact immutable R1 until independent final acceptance"
+  ],
+  "reject_if": [
+    "any acceptance procedure target path disagrees with the final recipe entry",
+    "any prerequisite prepared count does not equal the prior stage output count",
+    "any carrier is advanced by merge, rebase, cherry-pick, amend, squash, rewrite or force push",
+    "any validation-chain commit is proposed as final R2 history",
+    "any final R2 parent is not exact immutable R1",
+    "R1->R2 is not exactly one commit with 12 modified paths",
+    "G9->R2 is not exactly two commits with 19 paths = 9 added + 10 modified",
+    "PR #94 identity or state drifts before acceptance"
+  ]
+}
