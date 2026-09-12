@@ -17,7 +17,7 @@ jobs:
       R1: 22f0f173a941de88d6920b6e19821168e9b30cc8
       ACCEPTED_8_TREE: 85eb00ed30263b49381c1994cb266754396c0683
       CANDIDATE_COMMIT: 9097fb3ecb62be88fb313e71256ce0f00af4a071
-      CANDIDATE_BLOB: f9ee9f206ea1fe5d4d041e5e806523f347a6975a
+      CANDIDATE_BLOB: f9ee82c148e1659c122024dd43a2f876348e6073
       USE_SQLITE: "true"
       DJANGO_SETTINGS_MODULE: conflict_analysis.settings
     steps:
@@ -71,7 +71,7 @@ jobs:
           100644 blob 955e715cb083f7e4467836ace77281de30ef1d39 software/conflict_analysis/production_studio/views.py
           100644 blob 21c4b624d78f25670285f1699b67bd0d6e393f26 .github/workflows/conflict-analysis.yml
           100644 blob 6ce3fededdae818d0b13b92ebc04bfff982e5162 software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs
-          100644 blob f9ee9f206ea1fe5d4d041e5e806523f347a6975a software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js
+          100644 blob f9ee82c148e1659c122024dd43a2f876348e6073 software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js
           EOF
           candidate_tree="$(GIT_INDEX_FILE="$index" git write-tree)"
           test "$candidate_tree" != "$ACCEPTED_8_TREE"
