@@ -1,0 +1,156 @@
+{
+  "schema": "C2A_R2_PATH12_CANDIDATE_ACCEPTANCE_PROCEDURE_V1",
+  "control_plane_only": true,
+  "must_not_enter_final_r2": true,
+  "prerequisite": {
+    "path10_must_be_independently_accepted": true,
+    "path11_must_be_independently_accepted": true,
+    "formal_prepared_count_before_path12": "11/12",
+    "accepted_path10_head": null,
+    "accepted_path11_head": null,
+    "verifier_carrier": "agent/c2a-r2-verifier-carrier",
+    "carrier_promotion_rule": "ordinary non-force fast-forward through independently accepted path10 then accepted path11 validation ancestry before verifier implementation"
+  },
+  "target_path": "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
+  "r1_preimage_blob": "2ee1c9efac4c314ca0144767e6893b3a9aae18c2",
+  "binding_map_commit": "f89ee39f9637e0b86a59220cb326cf2b86c88915",
+  "binding_map_blob": "44521ccd8f72784a8bd7f801772d823753f90c25",
+  "binding_prose_oracle_commit": "4cb990b1ec367abcc8db79f803ae94cf7a40f4ab",
+  "binding_prose_oracle_blob": "d7fb8630496a351b426d9d967357c2788b7d478b",
+  "fixed_identities": {
+    "accepted_g9_head": "561ef5327bf655a558adb21c54d0fdf0559d7024",
+    "accepted_g9_tree": "5b209c782e1ac1a4783b01391dd59d813559ce57",
+    "immutable_r1_head": "22f0f173a941de88d6920b6e19821168e9b30cc8",
+    "immutable_r1_tree": "f407e609adb2a8b94770b521a1302feb79281822"
+  },
+  "acceptance_sequence": [
+    {
+      "step": 1,
+      "name": "accepted_path11_ancestry",
+      "require": [
+        "accepted_path10_head and accepted_path11_head are filled only from independent acceptance evidence",
+        "verifier carrier is identical to accepted_path11_head before path12 implementation",
+        "validation-chain history is used only to obtain the verifier blob and is never promoted as final R2 history"
+      ]
+    },
+    {
+      "step": 2,
+      "name": "path_delta",
+      "require": [
+        "accepted_path11_head -> path12 candidate changes exactly one path",
+        "the path is target_path",
+        "status is modified",
+        "mode remains 100644 and type remains blob"
+      ]
+    },
+    {
+      "step": 3,
+      "name": "historical_contract_preservation",
+      "require": [
+        "_require_single_fast_forward_commit historical semantics remain unchanged",
+        "C2A_POST_F0L_ALLOWLIST remains the historical R1 allowlist",
+        "C2A_NEW_PATHS remains exactly 9",
+        "G9->R1 historical shape remains exactly 17 paths = 9 added + 8 modified"
+      ]
+    },
+    {
+      "step": 4,
+      "name": "dedicated_r2_topology",
+      "require": [
+        "dedicated _require_c2a_r2_topology or semantic equivalent exists",
+        "exact G9 base is enforced",
+        "exactly two commits above G9 are enforced",
+        "ordered commit 1 is exact immutable R1 with exact tree and sole G9 parent",
+        "ordered commit 2 is final R2 with sole exact R1 parent",
+        "merge ancestry, R1-only state, third commit, wrong parent/tree or predecessor drift fail closed"
+      ]
+    },
+    {
+      "step": 5,
+      "name": "exact_path_and_preimage_contract",
+      "require": [
+        "R1->R2 exact correction set is exactly 12 paths and every status is M",
+        "all 12 R1 preimage blobs and 100644 blob modes/types are exact",
+        "every final R2 entry remains 100644 blob and differs from its R1 preimage",
+        "G9->R2 aggregate is exactly 19 paths = 9 new + 10 existing",
+        "the two additional existing aggregate paths are audited_authoring.mjs and test_read_only_static_contracts.py"
+      ]
+    },
+    {
+      "step": 6,
+      "name": "freeze_and_registry_preservation",
+      "require": [
+        "audited_authoring.mjs receives only the exact R2-only frozen-path exemption",
+        "no global weakening of C2A_FROZEN_PATHS occurs",
+        "models, migrations, schemas, pyproject.toml, domain lifecycle/persistence authority, G9 evidence semantics and cdp_client.mjs remain frozen",
+        "portable registry remains exactly 13 and Chromium registry exactly 2"
+      ]
+    },
+    {
+      "step": 7,
+      "name": "negative_self_check_matrix",
+      "require": [
+        "self-check rejects R1-only topology",
+        "self-check rejects third commit, wrong R1 identity/tree/parent, wrong R2 parent and merge parent count",
+        "self-check rejects missing/extra correction path and any non-M status",
+        "self-check rejects aggregate 18/20, wrong 9-new/10-existing split, preimage or mode drift, and exemption leakage"
+      ]
+    },
+    {
+      "step": 8,
+      "name": "preserved_verification_surfaces",
+      "require": [
+        "same-run evidence checks remain enforced",
+        "migration/no-drift checks remain enforced",
+        "wheel content and isolated-install checks remain enforced",
+        "workflow contract checks remain enforced",
+        "synthetic-tree equivalence checks remain enforced"
+      ]
+    },
+    {
+      "step": 9,
+      "name": "executable_gate",
+      "require": [
+        "verifier syntax/self-check passes",
+        "negative self-check matrix passes without weakening",
+        "a synthetic final tree built from immutable R1 plus exactly the 12 accepted replacement blobs is accepted only under the dedicated R2 topology",
+        "the same verifier rejects at least one representative wrong-parent, third-commit, path-drift, aggregate-drift and preimage-drift synthetic case"
+      ]
+    },
+    {
+      "step": 10,
+      "name": "capture_and_final_assembly_authorization",
+      "require": [
+        "record exact path12 candidate HEAD, TREE, sole parent and verifier blob",
+        "record exact one-path changed inventory and executable evidence",
+        "re-read PR #94 and prove OPEN/DRAFT/UNMERGED at immutable R1",
+        "only after steps 1-9 PASS count path12 prepared and advance formal count from 11/12 to 12/12",
+        "final R2 must then be assembled as one ordinary child of immutable R1 using the 12 accepted replacement blobs; never promote the multi-commit validation chain itself"
+      ]
+    }
+  ],
+  "final_history_invariant": {
+    "r1_to_final_r2_commit_count": 1,
+    "g9_to_final_r2_commit_count": 2,
+    "final_r2_parent": "22f0f173a941de88d6920b6e19821168e9b30cc8",
+    "validation_chain_is_not_final_history": true
+  },
+  "reject_codes": [
+    "REJECT_PATH12_PREREQUISITE_PATH10_OR_PATH11_NOT_ACCEPTED",
+    "REJECT_PATH12_CARRIER_NOT_AT_ACCEPTED_PATH11",
+    "REJECT_PATH12_PARENT_OR_PATHSET_DRIFT",
+    "REJECT_PATH12_NON_MODIFIED_STATUS",
+    "REJECT_PATH12_MODE_OR_TYPE_DRIFT",
+    "REJECT_PATH12_HISTORICAL_HELPER_WEAKENING",
+    "REJECT_PATH12_R2_TOPOLOGY_INCOMPLETE",
+    "REJECT_PATH12_PREIMAGE_OR_AGGREGATE_DRIFT",
+    "REJECT_PATH12_FREEZE_EXCEPTION_LEAKAGE",
+    "REJECT_PATH12_REGISTRY_DRIFT",
+    "REJECT_PATH12_SELF_CHECK_NEGATIVE_GAP",
+    "REJECT_PATH12_PRESERVED_VERIFICATION_GAP",
+    "REJECT_PATH12_SYNTHETIC_FINAL_TREE_FAILURE",
+    "REJECT_PATH12_PR94_MUTATION",
+    "REJECT_FINAL_R2_VALIDATION_CHAIN_PROMOTION"
+  ],
+  "promotion_is_forbidden_before_path10_and_path11_acceptance": true
+}
