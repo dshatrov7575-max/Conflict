@@ -1,0 +1,115 @@
+{
+  "schema": "C2A_R2_PATH11_BROWSER_DELTA_MAP_V1",
+  "control_plane_only": true,
+  "must_not_enter_final_r2": true,
+  "target_path": "software/conflict_analysis/production_studio/browser_tests/lifecycle_publication.mjs",
+  "immutable_r1_head": "22f0f173a941de88d6920b6e19821168e9b30cc8",
+  "r1_path_blob": "fa78a5b1c36d21916abc6d87f80dff1916765fdd",
+  "frozen_cdp_client_blob": "685faeb3906a0f74815549e272748125bb6fbf65",
+  "final_js_candidate_blob": "f9ee82c148e1659c122024dd43a2f876348e6073",
+  "final_template_blob": "a1e7e9f3fac0be61bbce6a2a4f6e8bb221f62101",
+  "scenario_count": 2,
+  "scenario_names": [
+    "test_chromium_draft_preview_atomic_initial_publish_recover_and_reload",
+    "test_chromium_successor_validate_publish_lost_response_recovery_and_predecessor_noncurrent"
+  ],
+  "timeouts": {
+    "studio_cdp_timeout_ms": 60000,
+    "python_wrapper_seconds": 300,
+    "must_not_increase": true
+  },
+  "required_event_registry_change": {
+    "add": "studio:lifecycle-publication-ticket-imported",
+    "do_not_add_scenarios": true
+  },
+  "ticket_acknowledgement": {
+    "obsolete_behavior": "acknowledgeTicket hardcodes FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1",
+    "required_behavior": [
+      "parameterize acknowledgement by operation/ticket contract",
+      "validation ticket remains FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1",
+      "publication ticket uses FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1",
+      "download initiation alone never unlocks execute",
+      "one accepted publication flow proves exact-copy retention",
+      "the other accepted publication flow proves byte-exact saved-file retention"
+    ]
+  },
+  "byte_exact_file_proof": {
+    "selector": "#ticket-file-proof",
+    "action_selector": "#acknowledge-ticket-file",
+    "cdp_sequence": [
+      "DOM.getDocument",
+      "DOM.querySelector",
+      "DOM.setFileInputFiles"
+    ],
+    "temp_file_rule": "write exact ticket bytes including terminal LF to a disposable file and clean it in finally",
+    "forbidden_shortcuts": [
+      "assign input.value",
+      "fabricate FileList/File objects in page JavaScript",
+      "modify frozen cdp_client.mjs"
+    ]
+  },
+  "session_process_loss": {
+    "cookie_value_source": "same pre-issued STUDIO_PUBLISHER_SESSION_COOKIE_VALUE",
+    "fresh_page_rule": "reapply the same pre-issued publisher session cookie on every fresh process-loss page before navigation"
+  },
+  "validation_recovery_oracle": {
+    "retain_existing_process_loss_flow": true,
+    "ticket_contract": "FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1",
+    "replay": "explicit byte-identical FD05 validation replay only",
+    "expected_validation_post_count": 2,
+    "expected_posts_identical": true
+  },
+  "publication_successor_recovery_oracle": {
+    "ticket_contract": "FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1",
+    "save_ticket_before_loss": true,
+    "force_lost_response": true,
+    "request_log_cutoff": "immediately after unknown outcome and before closing the page",
+    "close_page_after_unknown_outcome": true,
+    "open_fresh_page_same_session": true,
+    "import_selector": "#import-publication-ticket",
+    "import_action_selector": "#import-publication-ticket-action",
+    "wait_for": [
+      "studio:lifecycle-publication-ticket-imported",
+      "bounded publication recovery completion or bounded failure state"
+    ],
+    "recovered_operation_id_must_equal_saved_ticket": true,
+    "post_loss_network": {
+      "allowed": "exact publication-operation GET for saved operation_id",
+      "publication_post_count_after_loss": 0
+    },
+    "total_successor_publication_post_count": 1
+  },
+  "cross_kind_negatives": [
+    "validation ticket presented to publication import must fail closed with zero mutation",
+    "publication ticket presented to validation import must fail closed with zero mutation"
+  ],
+  "storage_oracle": {
+    "forbid_persistent_ticket_or_operation_data": true,
+    "forbidden_surfaces": [
+      "localStorage",
+      "sessionStorage",
+      "indexedDB",
+      "CacheStorage/service-worker persistence"
+    ]
+  },
+  "acceptance": [
+    "delta for path11 implementation step is exactly one modified path: lifecycle_publication.mjs",
+    "the two existing C2A Chromium scenario names are unchanged and no third scenario is added",
+    "node syntax check passes",
+    "both existing Chromium scenarios pass with STUDIO_CDP_TIMEOUT_MS=60000 and Python timeout=300 unchanged",
+    "download-only remains blocked; exact-copy and byte-exact-file are both positively exercised",
+    "successor publication proves fresh-page PUBLICATION ticket import, exact operation GET only after loss, and exactly one publication POST total",
+    "validation process-loss replay remains exactly two identical FD05 POSTs",
+    "cross-kind misuse has zero mutation and no ticket/operation persistent storage is introduced"
+  ],
+  "hard_prohibitions": [
+    "no cdp_client.mjs change",
+    "no retry",
+    "no timeout increase",
+    "no sleeps added as correctness mechanism",
+    "no assertion weakening",
+    "no extra Chromium scenario",
+    "no PR #94 or target-branch mutation in executor/preparation step",
+    "no merge/rebase/cherry-pick/amend/squash/history rewrite/force push/release/G10"
+  ]
+}
