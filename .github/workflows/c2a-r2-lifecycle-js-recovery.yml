@@ -20,9 +20,7 @@ jobs:
       R1_TREE: f407e609adb2a8b94770b521a1302feb79281822
       SOURCE_BRANCH: agent/c2a-r2-builder
       SOURCE_BLOB: 9d297a8bdb82414945b2e6f45f883c8c44d8c7cb
-      PATCH_BASE64_SHA256: 42f90f9476241d5d152c7e451edb0000549cd209803f4e97f7eac950b64c872d
-      PATCH_GZIP_SHA256: d6c79334d9066a7f68efb6ef0055f8e34d1c5847592cc0c4c7dc577b5951b641
-      PATCH_TEXT_SHA256: b7c6f45c77881672c6f1fb024e3fa8c39601e1ce6d38eaeb875333b9d3711aa9
+      SOURCE_BYTES_SHA256: 4b2b3e301d39122d1b1185ef8ed0abc6828f85e53e483856fec500732c3fea66
       TARGET_PATH: software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js
       TARGET_BLOB: 12efd1dc9dc5fcb922be2844df1a716f4cb66f09
       TARGET_BRANCH: agent/c2a-r2-lifecycle-js-carrier
@@ -55,11 +53,11 @@ jobs:
           archive="$RUNNER_TEMP/full.patch.gz"
           patch="$RUNNER_TEMP/full.patch"
           git show "$source_ref:.github/c2a-r2/full.patch.gz.b64" > "$carrier"
-          test "$(sha256sum "$carrier" | awk '{print $1}')" = "$PATCH_BASE64_SHA256"
+          test "$(sha256sum "$carrier" | awk '{print $1}')" = "$SOURCE_BYTES_SHA256"
           base64 --decode "$carrier" > "$archive"
-          test "$(sha256sum "$archive" | awk '{print $1}')" = "$PATCH_GZIP_SHA256"
           gzip --decompress --stdout "$archive" > "$patch"
-          test "$(sha256sum "$patch" | awk '{print $1}')" = "$PATCH_TEXT_SHA256"
+          echo "PATCH_GZIP_SHA256=$(sha256sum "$archive" | awk '{print $1}')"
+          echo "PATCH_TEXT_SHA256=$(sha256sum "$patch" | awk '{print $1}')"
 
           git apply --check "$patch"
           git apply "$patch"
