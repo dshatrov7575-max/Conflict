@@ -1,0 +1,341 @@
+name: C2A R2 lifecycle JS P1-C/D candidate
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-workflow-recovery
+    paths:
+      - .github/workflows/c2a-r2-lifecycle-js-p1cd.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      R1_HEAD: 22f0f173a941de88d6920b6e19821168e9b30cc8
+      R1_TREE: f407e609adb2a8b94770b521a1302feb79281822
+      TARGET_PATH: software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js
+      R1_BLOB: ee196705281982944e135a559fa6d7f0b4259734
+    steps:
+      - name: Check out immutable R1
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.R1_HEAD }}
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Build and validate bounded P1-C/D candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$R1_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$R1_TREE"
+          test "$(git hash-object "$TARGET_PATH")" = "$R1_BLOB"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          python - "$TARGET_PATH" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          text = path.read_text(encoding="utf-8")
+
+          def replace_once(old: str, new: str, label: str) -> None:
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected exactly one source match, got {count}")
+              text = text.replace(old, new, 1)
+
+          replace_once(
+          '''  function routeForAction(kind) {
+            return {
+              VALIDATE_DEFINITION: memory.app.dataset.validateUrl,
+              PUBLISH_INITIAL: memory.app.dataset.publishInitialUrl,
+              PUBLISH_SUCCESSOR: memory.app.dataset.publishSuccessorUrl,
+            }[kind] || null;
+          }
+          ''',
+          '''  function expectedRouteForAction(kind, definitionId = null) {
+            const resolved = String(
+              definitionId ||
+              memory.definition?.identity.definition_id ||
+              memory.app?.dataset.definitionId ||
+              "",
+            ).toLowerCase();
+            if (!UUID_PATTERN.test(resolved)) return null;
+            return {
+              VALIDATE_DEFINITION: `/api/foundation/definitions/${resolved}/validate/`,
+              PUBLISH_INITIAL: `/api/foundation/definitions/${resolved}/publish-initial/`,
+              PUBLISH_SUCCESSOR: `/api/foundation/definitions/${resolved}/publish-successor/`,
+            }[kind] || null;
+          }
+
+          function routeForAction(kind) {
+            const presented = {
+              VALIDATE_DEFINITION: memory.app.dataset.validateUrl,
+              PUBLISH_INITIAL: memory.app.dataset.publishInitialUrl,
+              PUBLISH_SUCCESSOR: memory.app.dataset.publishSuccessorUrl,
+            }[kind] || null;
+            const expected = expectedRouteForAction(kind);
+            return presented === expected ? expected : null;
+          }
+          ''',
+          "exact-action-route",
+          )
+
+          replace_once(
+          '''      const token = csrfToken();
+                const route = routeForAction(selectedAction);
+                if (!token || !route || !route.startsWith("/api/foundation/definitions/") || route.includes("?")) {
+                  throw new TypeError("Sealed request metadata is unavailable.");
+                }
+          ''',
+          '''      const route = routeForAction(selectedAction);
+                if (!route || route !== expectedRouteForAction(selectedAction)) {
+                  throw new TypeError("Sealed request route identity is unavailable.");
+                }
+          ''',
+          "prepare-route-without-csrf",
+          )
+
+          replace_once(
+          '''      const ticket = await buildTicket(attemptCore);
+                const headers = Object.freeze({
+                  "Content-Type": JSON_CONTENT_TYPE,
+                  "X-CSRFToken": token,
+                  "If-Match": attemptCore.ifMatch,
+                  "Idempotency-Key": operationId,
+                });
+                memory.sealedAttempt = Object.freeze({
+                  ...attemptCore,
+                  headers,
+                  ticket: ticket.ticket,
+          ''',
+          '''      const ticket = await buildTicket(attemptCore);
+                memory.sealedAttempt = Object.freeze({
+                  ...attemptCore,
+                  ticket: ticket.ticket,
+          ''',
+          "remove-sealed-transport-headers",
+          )
+
+          replace_once(
+          '''    let response;
+              try {
+                response = await fetch(attempt.route, {
+                  method: "POST",
+                  credentials: "same-origin",
+                  cache: "no-store",
+                  redirect: "error",
+                  headers: attempt.headers,
+                  body: attempt.body,
+                });
+              } catch (_error) {
+                memory.busy = false;
+                showUnknownOutcome(attempt);
+                return;
+              }
+          ''',
+          '''    let response;
+              let headers;
+              try {
+                await readCurrentServerAuthority();
+                const currentRoute = routeForAction(attempt.operationKind);
+                const expectedRoute = expectedRouteForAction(attempt.operationKind, attempt.definitionId);
+                const token = csrfToken();
+                if (!token || !currentRoute || currentRoute !== attempt.route || currentRoute !== expectedRoute) {
+                  throw new TypeError("Fresh transport authority is unavailable or changed.");
+                }
+                headers = Object.freeze({
+                  "Content-Type": JSON_CONTENT_TYPE,
+                  "X-CSRFToken": token,
+                  "If-Match": attempt.ifMatch,
+                  "Idempotency-Key": attempt.operationId,
+                });
+              } catch (_error) {
+                memory.busy = false;
+                setState(
+                  "SEALED_ATTEMPT_TRANSPORT_AUTHORITY_CHANGED",
+                  "Текущие presentation authority, route или CSRF изменились; POST не выполнен.",
+                  "error",
+                );
+                updateControls();
+                return;
+              }
+              try {
+                response = await fetch(attempt.route, {
+                  method: "POST",
+                  credentials: "same-origin",
+                  cache: "no-store",
+                  redirect: "error",
+                  headers,
+                  body: attempt.body,
+                });
+              } catch (_error) {
+                memory.busy = false;
+                showUnknownOutcome(attempt);
+                return;
+              }
+          ''',
+          "fresh-send-boundary",
+          )
+
+          replace_once(
+          '''      const token = csrfToken();
+                if (!token) throw new TypeError("Current CSRF token is unavailable.");
+                const headers = Object.freeze({
+                  "Content-Type": ticket.content_type,
+                  "X-CSRFToken": token,
+                  "If-Match": ticket.if_match,
+                  "Idempotency-Key": ticket.operation_id,
+                });
+                const attempt = Object.freeze({
+          ''',
+          '''      const attempt = Object.freeze({
+          ''',
+          "import-no-frozen-csrf",
+          )
+
+          replace_once(
+          '''        readinessSha256: memory.readiness.readiness_sha256,
+                headers,
+                ticket: Object.freeze({ ...ticket }),
+          ''',
+          '''        readinessSha256: memory.readiness.readiness_sha256,
+                ticket: Object.freeze({ ...ticket }),
+          ''',
+          "import-no-frozen-headers",
+          )
+
+          replace_once(
+          '''      app.dataset.openUrl !== memory.app.dataset.openUrl ||
+                app.dataset.readinessUrl !== memory.app.dataset.readinessUrl ||
+                app.dataset.validateUrl !== memory.app.dataset.validateUrl
+          ''',
+          '''      app.dataset.openUrl !== memory.app.dataset.openUrl ||
+                app.dataset.readinessUrl !== memory.app.dataset.readinessUrl ||
+                app.dataset.validateUrl !== memory.app.dataset.validateUrl ||
+                app.dataset.publishInitialUrl !== memory.app.dataset.publishInitialUrl ||
+                app.dataset.publishSuccessorUrl !== memory.app.dataset.publishSuccessorUrl ||
+                app.dataset.validateUrl !== expectedRouteForAction("VALIDATE_DEFINITION", app.dataset.definitionId) ||
+                app.dataset.publishInitialUrl !== expectedRouteForAction("PUBLISH_INITIAL", app.dataset.definitionId) ||
+                app.dataset.publishSuccessorUrl !== expectedRouteForAction("PUBLISH_SUCCESSOR", app.dataset.definitionId)
+          ''',
+          "fresh-server-route-authority",
+          )
+
+          path.write_text(text, encoding="utf-8", newline="")
+          PY
+
+          git diff --check
+          test "$(git diff --name-status --no-renames)" = $'M\t'"$TARGET_PATH"
+          node --check "$TARGET_PATH"
+
+          python - "$TARGET_PATH" <<'PY'
+          from pathlib import Path
+          import sys
+
+          text = Path(sys.argv[1]).read_text(encoding="utf-8")
+          required = [
+              'function expectedRouteForAction(kind, definitionId = null)',
+              '`/api/foundation/definitions/${resolved}/validate/`',
+              '`/api/foundation/definitions/${resolved}/publish-initial/`',
+              '`/api/foundation/definitions/${resolved}/publish-successor/`',
+              'currentRoute !== attempt.route || currentRoute !== expectedRoute',
+              '"SEALED_ATTEMPT_TRANSPORT_AUTHORITY_CHANGED"',
+              '"X-CSRFToken": token',
+              'await readCurrentServerAuthority();',
+          ]
+          for item in required:
+              if item not in text:
+                  raise SystemExit(f"required invariant missing: {item}")
+          forbidden = [
+              'headers: attempt.headers',
+              '...attemptCore,\n        headers,',
+              'readinessSha256: memory.readiness.readiness_sha256,\n        headers,',
+          ]
+          for item in forbidden:
+              if item in text:
+                  raise SystemExit(f"forbidden frozen-transport invariant remains: {item}")
+          prepare_start = text.index('async function prepareAttempt()')
+          prepare_end = text.index('function renderAttempt(', prepare_start)
+          prepare = text[prepare_start:prepare_end]
+          if 'csrfToken()' in prepare or 'X-CSRFToken' in prepare:
+              raise SystemExit('prepareAttempt still freezes CSRF transport state')
+          send_start = text.index('async function performSealedAttempt(')
+          send_end = text.index('async function recoverPublication(', send_start)
+          send = text[send_start:send_end]
+          if send.index('await readCurrentServerAuthority();') > send.index('response = await fetch('):
+              raise SystemExit('fresh authority readback is not before POST send')
+          if send.index('const token = csrfToken();') > send.index('response = await fetch('):
+              raise SystemExit('fresh CSRF read is not before POST send')
+          print('C2A_R2_LIFECYCLE_JS_P1C_P1D_SELF_CHECK=PASS')
+          PY
+
+          git add -- "$TARGET_PATH"
+          test "$(git diff --cached --name-status --no-renames)" = $'M\t'"$TARGET_PATH"
+          candidate_blob="$(git hash-object "$TARGET_PATH")"
+          candidate_tree="$(git write-tree)"
+          candidate_sha256="$(sha256sum "$TARGET_PATH" | awk '{print $1}')"
+          candidate_bytes="$(wc -c < "$TARGET_PATH" | tr -d ' ')"
+          patch_sha256="$(git diff --cached --binary | sha256sum | awk '{print $1}')"
+          git diff --cached --binary > "$RUNNER_TEMP/lifecycle-publication-p1cd.patch"
+          cp "$TARGET_PATH" "$RUNNER_TEMP/lifecycle_publication.p1cd.js"
+
+          python - "$RUNNER_TEMP/c2a-r2-lifecycle-js-p1cd-receipt.json" \
+            "$candidate_blob" "$candidate_tree" "$candidate_sha256" "$candidate_bytes" "$patch_sha256" <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+
+          output, blob, tree, sha256, size, patch_sha256 = sys.argv[1:]
+          payload = {
+              "status": "VALIDATED_INTERMEDIATE_REPLACEMENT_CANDIDATE",
+              "scope": "P1-C_P1-D_ONLY_NOT_FINAL_R2",
+              "base_head": os.environ["R1_HEAD"],
+              "base_tree": os.environ["R1_TREE"],
+              "r1_blob": os.environ["R1_BLOB"],
+              "path": os.environ["TARGET_PATH"],
+              "candidate_blob": blob,
+              "candidate_tree": tree,
+              "candidate_sha256": sha256,
+              "candidate_bytes": int(size),
+              "patch_sha256": patch_sha256,
+              "checks": [
+                  "exact_R1_head_tree_blob",
+                  "single_modified_target_path",
+                  "git_diff_check",
+                  "node_check",
+                  "exact_action_definition_routes",
+                  "no_CSRF_in_sealed_attempt",
+                  "fresh_server_authority_before_send",
+                  "fresh_CSRF_before_send",
+                  "zero_POST_on_pre_send_authority_or_route_failure",
+                  "validation_ticket_import_does_not_freeze_CSRF",
+              ],
+          }
+          pathlib.Path(output).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print(json.dumps(payload, sort_keys=True))
+          PY
+
+      - name: Upload candidate evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2a-r2-lifecycle-js-p1cd-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/c2a-r2-lifecycle-js-p1cd-receipt.json
+            ${{ runner.temp }}/lifecycle-publication-p1cd.patch
+            ${{ runner.temp }}/lifecycle_publication.p1cd.js
+          if-no-files-found: warn
+          retention-days: 14
