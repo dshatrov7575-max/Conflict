@@ -26,83 +26,52 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Diagnose exact payload bytes without mutating candidate refs
+      - name: Diagnose payload envelope without mutating candidate refs
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -uo pipefail
-          api_file="$RUNNER_TEMP/api-file.b64"
+          set -euo pipefail
           git_file="$RUNNER_TEMP/git-file.b64"
-          api_stripped="$RUNNER_TEMP/api-file-stripped.b64"
-          git_stripped="$RUNNER_TEMP/git-file-stripped.b64"
           payload_gz="$RUNNER_TEMP/payload.gz"
           payload_patch="$RUNNER_TEMP/payload.patch"
 
           git cat-file -e "$PATCH_SOURCE_COMMIT^{commit}"
           git show "$PATCH_SOURCE_COMMIT:.github/c2a-r2/full.patch.gz.b64" > "$git_file"
-          gh api \
-            "repos/$GITHUB_REPOSITORY/contents/.github/c2a-r2/full.patch.gz.b64?ref=$PATCH_SOURCE_COMMIT" \
-            --jq .content \
-            | tr -d '\n' \
-            | base64 --decode > "$api_file"
 
-          python - "$api_file" "$api_stripped" "$git_file" "$git_stripped" <<'PY'
-          import pathlib
-          import sys
-
-          for src, dst, label in (
-              (sys.argv[1], sys.argv[2], "api"),
-              (sys.argv[3], sys.argv[4], "git"),
-          ):
-              data = pathlib.Path(src).read_bytes()
-              terminal_lf = data.endswith(bytes([10]))
-              terminal_crlf = data.endswith(bytes([13, 10]))
-              stripped = data.rstrip(bytes([13, 10]))
-              pathlib.Path(dst).write_bytes(stripped)
-              print(f"{label.upper()}_BYTES={len(data)}")
-              print(f"{label.upper()}_TERMINAL_LF={str(terminal_lf).lower()}")
-              print(f"{label.upper()}_TERMINAL_CRLF={str(terminal_crlf).lower()}")
-              print(f"{label.upper()}_STRIPPED_BYTES={len(stripped)}")
+          python - "$git_file" "$payload_gz" <<'PY'
+          import base64, hashlib, pathlib, sys
+          src = pathlib.Path(sys.argv[1]).read_bytes()
+          compact = b"".join(src.split())
+          alphabet = set(b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=")
+          invalid = [(i, b) for i, b in enumerate(compact) if b not in alphabet]
+          print(f"RAW_BYTES={len(src)}")
+          print(f"COMPACT_BYTES={len(compact)}")
+          print(f"COMPACT_MOD4={len(compact) % 4}")
+          print(f"RAW_SHA256={hashlib.sha256(src).hexdigest()}")
+          print(f"EXPECTED_RAW_SHA256={__import__('os').environ['PATCH_BASE64_SHA256']}")
+          print(f"INVALID_CHAR_COUNT={len(invalid)}")
+          if invalid:
+              print("FIRST_INVALID=" + repr(invalid[:8]))
+          padding = (-len(compact)) % 4
+          padded = compact + (b"=" * padding)
+          print(f"PADDING_ADDED={padding}")
+          print(f"PADDED_SHA256={hashlib.sha256(padded).hexdigest()}")
+          decoded = base64.b64decode(padded, validate=True)
+          pathlib.Path(sys.argv[2]).write_bytes(decoded)
+          print(f"DECODED_BYTES={len(decoded)}")
+          print(f"DECODED_SHA256={hashlib.sha256(decoded).hexdigest()}")
+          print(f"GZIP_MAGIC={decoded[:2].hex()}")
           PY
 
-          echo "EXPECTED_BASE64_SHA256=$PATCH_BASE64_SHA256"
-          for f in "$api_file" "$git_file" "$api_stripped" "$git_stripped"; do
-            echo "$(basename "$f") bytes=$(wc -c < "$f") sha256=$(sha256sum "$f" | awk '{print $1}')"
-          done
-          if cmp -s "$api_file" "$git_file"; then
-            echo "API_EQ_GIT=true"
-          else
-            echo "API_EQ_GIT=false"
-          fi
-
-          tr -d '\r\n' < "$git_file" | base64 --decode > "$payload_gz"
-          actual_gzip_sha="$(sha256sum "$payload_gz" | awk '{print $1}')"
-          echo "EXPECTED_GZIP_SHA256=$PATCH_GZIP_SHA256"
-          echo "ACTUAL_GZIP_SHA256=$actual_gzip_sha"
-
+          gzip --test "$payload_gz"
           gzip --decompress --stdout "$payload_gz" > "$payload_patch"
-          actual_patch_sha="$(sha256sum "$payload_patch" | awk '{print $1}')"
+          echo "PATCH_BYTES=$(wc -c < "$payload_patch")"
+          echo "PATCH_SHA256=$(sha256sum "$payload_patch" | awk '{print $1}')"
           echo "EXPECTED_PATCH_SHA256=$PATCH_TEXT_SHA256"
-          echo "ACTUAL_PATCH_SHA256=$actual_patch_sha"
 
           git checkout --detach "$R1_HEAD"
-          echo "R1_HEAD_ACTUAL=$(git rev-parse HEAD)"
-          echo "R1_TREE_ACTUAL=$(git rev-parse HEAD^{tree})"
-          if git apply --check "$payload_patch"; then
-            echo "GIT_APPLY_CHECK=true"
-          else
-            echo "GIT_APPLY_CHECK=false"
-            exit 1
-          fi
-
-          if [ "$actual_gzip_sha" = "$PATCH_GZIP_SHA256" ]; then
-            echo "GZIP_HASH_MATCH=true"
-          else
-            echo "GZIP_HASH_MATCH=false"
-          fi
-          if [ "$actual_patch_sha" = "$PATCH_TEXT_SHA256" ]; then
-            echo "PATCH_HASH_MATCH=true"
-          else
-            echo "PATCH_HASH_MATCH=false"
-          fi
+          test "$(git rev-parse HEAD)" = "$R1_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$R1_TREE"
+          git apply --check "$payload_patch"
+          echo "GIT_APPLY_CHECK=true"
