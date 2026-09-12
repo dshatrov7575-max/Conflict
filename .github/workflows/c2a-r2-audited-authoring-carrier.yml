@@ -18,7 +18,7 @@ jobs:
     env:
       R1_HEAD: 22f0f173a941de88d6920b6e19821168e9b30cc8
       R1_TREE: f407e609adb2a8b94770b521a1302feb79281822
-      CARRIER_BLOB: e7cee14982eaf57d0363a08be112411c1d417611
+      SOURCE_BRANCH: agent/c2a-r2-workflow-recovery
       CARRIER_SHA256: 01a1a2b4758fcb07dc3b2012b434c6cd5bc8c0b24005546ce49b3cb94cddb0d5
       PATCH_GZIP_SHA256: 77de203df165018501748897f4cda6b973bb2d395a896a8ef94816e953304275
       PATCH_SHA256: 112e1ad60b3d3c80cfc7348e5c4c3f3eed3d63489525d0918379ca5b47073e3e
@@ -42,23 +42,45 @@ jobs:
 
       - name: Materialize, validate, and preserve candidate
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
+          set -euxo pipefail
           test "$(git rev-parse HEAD)" = "$R1_HEAD"
           test "$(git rev-parse HEAD^{tree})" = "$R1_TREE"
           test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          source_ref=refs/remotes/origin/c2a-r2-workflow-recovery
+          git fetch --no-tags origin \
+            "+refs/heads/$SOURCE_BRANCH:$source_ref"
+          test "$(git rev-parse "$source_ref:.github/c2a-r2/audited-authoring.part00.b64")" = 3927b52f944c7114db3d900b14797b57d8a389dc
+          test "$(git rev-parse "$source_ref:.github/c2a-r2/audited-authoring.part01.b64")" = 2c0d39411eba471f7f88f6774d714708ccc8f924
+          test "$(git rev-parse "$source_ref:.github/c2a-r2/audited-authoring.part02-0.b64")" = 79c4bceed711b27c00e7204acb4277cedc874c47
+          test "$(git rev-parse "$source_ref:.github/c2a-r2/audited-authoring.part02-1.b64")" = bfa8efa103c7dc4ef4c1c6dbaff8e32f2a144521
+          test "$(git rev-parse "$source_ref:.github/c2a-r2/audited-authoring.part02-2.b64")" = a3cf86ef5a406ccb6b03bd5ed1d134917134e153
+          test "$(git rev-parse "$source_ref:.github/c2a-r2/audited-authoring.part02-3.b64")" = ae856a5644e508c29f0963d6a748bd5babeccb95
+          test "$(git rev-parse "$source_ref:.github/c2a-r2/audited-authoring.part02-4.b64")" = a8bd74d566ffcc85466c398121b985b8f7c44e1c
+          test "$(git rev-parse "$source_ref:.github/c2a-r2/audited-authoring.part02-5.b64")" = 91b1fa410b48788751ae505a6250b8eb0d7c53bd
+          test "$(git rev-parse "$source_ref:.github/c2a-r2/audited-authoring.part03.b64")" = 8fd60957c94d9d3bea8f109c62eabfd245732d71
 
           carrier="$RUNNER_TEMP/audited-authoring.patch.gz.b64"
           archive="$RUNNER_TEMP/audited-authoring.patch.gz"
           patch="$RUNNER_TEMP/audited-authoring.patch"
           report="$RUNNER_TEMP/c2a-r2-audited-authoring-receipt.json"
           selfcheck="$RUNNER_TEMP/audited-authoring-self-check.txt"
-
-          gh api "repos/$GITHUB_REPOSITORY/git/blobs/$CARRIER_BLOB" --jq .content \
-            | tr -d '\n' \
-            | base64 --decode > "$carrier"
+          : > "$carrier"
+          for part in \
+            audited-authoring.part00.b64 \
+            audited-authoring.part01.b64 \
+            audited-authoring.part02-0.b64 \
+            audited-authoring.part02-1.b64 \
+            audited-authoring.part02-2.b64 \
+            audited-authoring.part02-3.b64 \
+            audited-authoring.part02-4.b64 \
+            audited-authoring.part02-5.b64 \
+            audited-authoring.part03.b64
+          do
+            git show "$source_ref:.github/c2a-r2/$part" >> "$carrier"
+          done
+          test "$(wc -c < "$carrier" | tr -d ' ')" = 6612
           test "$(sha256sum "$carrier" | awk '{print $1}')" = "$CARRIER_SHA256"
           base64 --decode "$carrier" > "$archive"
           test "$(sha256sum "$archive" | awk '{print $1}')" = "$PATCH_GZIP_SHA256"
@@ -112,13 +134,14 @@ jobs:
               "candidate_blob": os.environ["TARGET_BLOB"],
               "candidate_sha256": os.environ["TARGET_SHA256"],
               "candidate_bytes": int(os.environ["TARGET_BYTES"]),
-              "carrier_blob": os.environ["CARRIER_BLOB"],
               "patch_sha256": os.environ["PATCH_SHA256"],
               "carrier_branch": os.environ["CARRIER_BRANCH"],
               "carrier_head": head,
               "carrier_tree": tree,
               "carrier_parent": parent,
               "checks": [
+                  "chunk_blob_identity",
+                  "carrier_sha256",
                   "git_apply_check",
                   "single_modified_path",
                   "git_blob_identity",
