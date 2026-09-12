@@ -1,0 +1,161 @@
+name: C2A R2 lifecycle JS durable runner
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-builder
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild-lifecycle-js:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      R1: 22f0f173a941de88d6920b6e19821168e9b30cc8
+      P1CD: 72e45cdd13f48fc2444840925d06335fb7f267ce
+      P1CD_BLOB: 07cd319ffb46f9226590f69f90bac5a83602183d
+      CARRIER_BRANCH: agent/c2a-r2-lifecycle-js-p1be-carrier
+      TARGET_PATH: software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js
+    steps:
+      - name: Check out diagnostic branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Recover transformation program and regenerate candidate
+        id: persist
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse "$R1^{tree}")" = "f407e609adb2a8b94770b521a1302feb79281822"
+          test "$(git rev-parse "$P1CD^")" = "$R1"
+          test "$(git show "$P1CD:$TARGET_PATH" | git hash-object --stdin)" = "$P1CD_BLOB"
+          work="$RUNNER_TEMP/lifecycle_publication.js"
+          transform="$RUNNER_TEMP/rebuild_lifecycle_js.py"
+          git show "$P1CD:$TARGET_PATH" > "$work"
+          export WORK_FILE="$work"
+          export TRANSFORM_FILE="$transform"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          raw = Path('.github/workflows/c2a-r2-lifecycle-js-rebuild.yml').read_text(encoding='utf-8')
+          start_marker = "          python - <<'PY'\n"
+          end_marker = "\n          PY\n\n          candidate_blob="
+          if raw.count(start_marker) != 1 or raw.count(end_marker) != 1:
+              raise SystemExit('transformation carrier markers are not exact')
+          body = raw.split(start_marker, 1)[1].split(end_marker, 1)[0]
+          rebuilt = []
+          inside_triple = False
+          for original in body.splitlines():
+              line = original
+              if not inside_triple:
+                  if not line.startswith('          ') and line.strip():
+                      raise SystemExit(f'carrier Python indentation is invalid outside literal: {line[:80]!r}')
+                  if line.startswith('          '):
+                      line = line[10:]
+              rebuilt.append(line)
+              if line.count("'''") % 2 == 1:
+                  inside_triple = not inside_triple
+          if inside_triple:
+              raise SystemExit('unterminated triple-quoted carrier literal')
+          Path(os.environ['TRANSFORM_FILE']).write_text('\n'.join(rebuilt) + '\n', encoding='utf-8')
+          PY
+          python -m py_compile "$transform"
+          python "$transform"
+
+          candidate_blob="$(git hash-object -w "$work")"
+          candidate_sha256="$(sha256sum "$work" | awk '{print $1}')"
+          candidate_bytes="$(wc -c < "$work" | tr -d ' ')"
+
+          index="$RUNNER_TEMP/c2a-r2-index"
+          rm -f "$index"
+          GIT_INDEX_FILE="$index" git read-tree "$R1^{tree}"
+          GIT_INDEX_FILE="$index" git update-index --cacheinfo "100644,$candidate_blob,$TARGET_PATH"
+          candidate_tree="$(GIT_INDEX_FILE="$index" git write-tree)"
+          export GIT_AUTHOR_NAME="C2A R2 recovery"
+          export GIT_AUTHOR_EMAIL="c2a-r2-recovery@users.noreply.github.com"
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          candidate_commit="$(printf '%s\n' 'C2A R2: persist lifecycle publication JS P1-B/P1-E candidate' | git commit-tree "$candidate_tree" -p "$R1")"
+          test "$(git rev-parse "$candidate_commit^")" = "$R1"
+          mapfile -t delta < <(git diff-tree --no-commit-id --name-status -r "$candidate_commit")
+          test "${#delta[@]}" -eq 1
+          test "${delta[0]}" = $'M\t'"$TARGET_PATH"
+          if git ls-remote --exit-code --heads origin "refs/heads/$CARRIER_BRANCH" >/dev/null 2>&1; then
+            echo "carrier branch already exists; refusing overlap" >&2
+            exit 90
+          fi
+          git push origin "$candidate_commit:refs/heads/$CARRIER_BRANCH"
+          remote="$(git ls-remote --heads origin "refs/heads/$CARRIER_BRANCH" | awk '{print $1}')"
+          test "$remote" = "$candidate_commit"
+          git fetch --no-tags origin "$CARRIER_BRANCH"
+          test "$(git rev-parse "$remote^")" = "$R1"
+          test "$(git rev-parse "$remote^{tree}")" = "$candidate_tree"
+
+          {
+            echo "candidate_blob=$candidate_blob"
+            echo "candidate_sha256=$candidate_sha256"
+            echo "candidate_bytes=$candidate_bytes"
+            echo "candidate_tree=$candidate_tree"
+            echo "candidate_commit=$candidate_commit"
+          } >> "$GITHUB_OUTPUT"
+          printf 'DURABLE_CANDIDATE_BLOB=%s\nSHA256=%s\nBYTES=%s\nTREE=%s\nCOMMIT=%s\nSOLE_PARENT=%s\n' \
+            "$candidate_blob" "$candidate_sha256" "$candidate_bytes" "$candidate_tree" "$candidate_commit" "$R1"
+
+      - name: Set up Node 24 only after durable persistence
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Node 24 syntax and bounded static checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/lifecycle_publication.js"
+          node --version
+          node --check "$work"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          text = (Path(os.environ['RUNNER_TEMP']) / 'lifecycle_publication.js').read_text(encoding='utf-8')
+          required = (
+              'FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1',
+              'recoveryOnly: true',
+              'acknowledgeTicketFile',
+              'PUBLICATION_TICKET_RESTORED_GET_ONLY',
+              'FOUNDATION_OBJECT_NOT_VISIBLE',
+              'SAFE_FAILURE_CODES',
+              'requirePublish: attempt.operationKind !== "VALIDATE_DEFINITION"',
+          )
+          for marker in required:
+              assert marker in text, marker
+          assert 'retainTicket("download")' not in text
+          assert 'code = body.code' not in text
+          print('NODE24_AND_BOUNDED_STATIC_CHECK=PASS')
+          PY
+
+      - name: Write receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/receipt.txt" <<EOF
+          CANDIDATE_BLOB=${{ steps.persist.outputs.candidate_blob }}
+          CANDIDATE_SHA256=${{ steps.persist.outputs.candidate_sha256 }}
+          CANDIDATE_BYTES=${{ steps.persist.outputs.candidate_bytes }}
+          CANDIDATE_TREE=${{ steps.persist.outputs.candidate_tree }}
+          CANDIDATE_COMMIT=${{ steps.persist.outputs.candidate_commit }}
+          SOLE_PARENT=$R1
+          NODE24_CHECK=PASS
+          EOF
+
+      - name: Upload receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2a-r2-lifecycle-js-p1be-receipt
+          path: ${{ runner.temp }}/receipt.txt
+          if-no-files-found: error
+          retention-days: 7
