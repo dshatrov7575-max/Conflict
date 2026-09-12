@@ -1,0 +1,129 @@
+name: C2A R2 lifecycle JS P1-C/D preserve
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-workflow-recovery
+    paths:
+      - .github/workflows/c2a-r2-lifecycle-js-p1cd-preserve.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  preserve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      R1_HEAD: 22f0f173a941de88d6920b6e19821168e9b30cc8
+      R1_TREE: f407e609adb2a8b94770b521a1302feb79281822
+      TARGET_PATH: software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js
+      R1_BLOB: ee196705281982944e135a559fa6d7f0b4259734
+      CANDIDATE_BLOB: 07cd319ffb46f9226590f69f90bac5a83602183d
+      CANDIDATE_SHA256: 842e90ae870d65eff21a62bfe4088d43967fe36250b08c555cffdee21e8d6351
+      CANDIDATE_BYTES: "79603"
+      SOURCE_RUN: "34695507776"
+      SOURCE_ARTIFACT: c2a-r2-lifecycle-js-p1cd-34695507776-1
+      CARRIER_BRANCH: agent/c2a-r2-lifecycle-js-p1cd-carrier
+    steps:
+      - name: Check out immutable R1
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.R1_HEAD }}
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Recover validated artifact and preserve one-path carrier
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$R1_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$R1_TREE"
+          test "$(git hash-object "$TARGET_PATH")" = "$R1_BLOB"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          evidence="$RUNNER_TEMP/evidence"
+          mkdir -p "$evidence"
+          gh run download "$SOURCE_RUN" -R "$GITHUB_REPOSITORY" -n "$SOURCE_ARTIFACT" -D "$evidence"
+          candidate="$evidence/lifecycle_publication.p1cd.js"
+          receipt="$evidence/c2a-r2-lifecycle-js-p1cd-receipt.json"
+          test -f "$candidate"
+          test -f "$receipt"
+          test "$(git hash-object "$candidate")" = "$CANDIDATE_BLOB"
+          test "$(sha256sum "$candidate" | awk '{print $1}')" = "$CANDIDATE_SHA256"
+          test "$(wc -c < "$candidate" | tr -d ' ')" = "$CANDIDATE_BYTES"
+          grep -Fq '"status": "VALIDATED_INTERMEDIATE_REPLACEMENT_CANDIDATE"' "$receipt"
+          grep -Fq '"scope": "P1-C_P1-D_ONLY_NOT_FINAL_R2"' "$receipt"
+          node --check "$candidate"
+
+          cp "$candidate" "$TARGET_PATH"
+          git diff --check
+          test "$(git diff --name-status --no-renames)" = $'M\t'"$TARGET_PATH"
+          test -z "$(git ls-remote --heads origin "refs/heads/$CARRIER_BRANCH")"
+
+          git switch -c "$CARRIER_BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$TARGET_PATH"
+          test "$(git diff --cached --name-status --no-renames)" = $'M\t'"$TARGET_PATH"
+          git commit -m "chore(c2a-r2): preserve lifecycle JS P1-C/D candidate"
+          carrier_head="$(git rev-parse HEAD)"
+          carrier_tree="$(git rev-parse HEAD^{tree})"
+          carrier_parent="$(git rev-parse HEAD^)"
+          test "$carrier_parent" = "$R1_HEAD"
+          test "$(git show -s --format=%P HEAD | awk '{print NF}')" = "1"
+          test "$(git hash-object "$TARGET_PATH")" = "$CANDIDATE_BLOB"
+          test "$(git diff-tree --no-commit-id --name-status --no-renames -r HEAD)" = $'M\t'"$TARGET_PATH"
+          git push origin "HEAD:refs/heads/$CARRIER_BRANCH"
+
+          python - "$RUNNER_TEMP/c2a-r2-lifecycle-js-p1cd-preserve-receipt.json" \
+            "$carrier_head" "$carrier_tree" "$carrier_parent" <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+
+          output, head, tree, parent = sys.argv[1:]
+          payload = {
+              "status": "PRESERVED_VALIDATED_INTERMEDIATE_CANDIDATE",
+              "scope": "P1-C_P1-D_ONLY_NOT_FINAL_R2",
+              "base_head": os.environ["R1_HEAD"],
+              "base_tree": os.environ["R1_TREE"],
+              "path": os.environ["TARGET_PATH"],
+              "candidate_blob": os.environ["CANDIDATE_BLOB"],
+              "candidate_sha256": os.environ["CANDIDATE_SHA256"],
+              "candidate_bytes": int(os.environ["CANDIDATE_BYTES"]),
+              "source_run": int(os.environ["SOURCE_RUN"]),
+              "source_artifact": os.environ["SOURCE_ARTIFACT"],
+              "carrier_branch": os.environ["CARRIER_BRANCH"],
+              "carrier_head": head,
+              "carrier_tree": tree,
+              "carrier_parent": parent,
+              "checks": [
+                  "artifact_identity",
+                  "node_check",
+                  "single_modified_path",
+                  "sole_parent_is_immutable_R1",
+                  "remote_candidate_blob_preserved",
+              ],
+          }
+          pathlib.Path(output).write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print(json.dumps(payload, sort_keys=True))
+          PY
+
+      - name: Upload preserve receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2a-r2-lifecycle-js-p1cd-preserve-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/c2a-r2-lifecycle-js-p1cd-preserve-receipt.json
+          if-no-files-found: warn
+          retention-days: 14
