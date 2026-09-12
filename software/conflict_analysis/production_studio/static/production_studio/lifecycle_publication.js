@@ -867,12 +867,29 @@
     );
   }
 
-  function routeForAction(kind) {
+  function expectedRouteForAction(kind, definitionId = null) {
+    const resolved = String(
+      definitionId ||
+      memory.definition?.identity.definition_id ||
+      memory.app?.dataset.definitionId ||
+      "",
+    ).toLowerCase();
+    if (!UUID_PATTERN.test(resolved)) return null;
     return {
+      VALIDATE_DEFINITION: `/api/foundation/definitions/${resolved}/validate/`,
+      PUBLISH_INITIAL: `/api/foundation/definitions/${resolved}/publish-initial/`,
+      PUBLISH_SUCCESSOR: `/api/foundation/definitions/${resolved}/publish-successor/`,
+    }[kind] || null;
+  }
+
+  function routeForAction(kind) {
+    const presented = {
       VALIDATE_DEFINITION: memory.app.dataset.validateUrl,
       PUBLISH_INITIAL: memory.app.dataset.publishInitialUrl,
       PUBLISH_SUCCESSOR: memory.app.dataset.publishSuccessorUrl,
     }[kind] || null;
+    const expected = expectedRouteForAction(kind);
+    return presented === expected ? expected : null;
   }
 
   async function buildTicket(attemptCore) {
@@ -907,10 +924,9 @@
         setState("LIFECYCLE_ACTION_CHANGED", "Доступное действие изменилось; POST не выполнен.", "attention");
         return;
       }
-      const token = csrfToken();
       const route = routeForAction(selectedAction);
-      if (!token || !route || !route.startsWith("/api/foundation/definitions/") || route.includes("?")) {
-        throw new TypeError("Sealed request metadata is unavailable.");
+      if (!route || route !== expectedRouteForAction(selectedAction)) {
+        throw new TypeError("Sealed request route identity is unavailable.");
       }
       const body = exactAttemptBody(selectedAction);
       const operationId = randomUUIDv4();
@@ -934,15 +950,8 @@
         readinessSha256: memory.readiness.readiness_sha256,
       };
       const ticket = await buildTicket(attemptCore);
-      const headers = Object.freeze({
-        "Content-Type": JSON_CONTENT_TYPE,
-        "X-CSRFToken": token,
-        "If-Match": attemptCore.ifMatch,
-        "Idempotency-Key": operationId,
-      });
       memory.sealedAttempt = Object.freeze({
         ...attemptCore,
-        headers,
         ticket: ticket.ticket,
         ticketText: ticket.text,
         imported: false,
@@ -1529,13 +1538,38 @@
     memory.busy = true;
     updateControls();
     let response;
+    let headers;
+    try {
+      await readCurrentServerAuthority();
+      const currentRoute = routeForAction(attempt.operationKind);
+      const expectedRoute = expectedRouteForAction(attempt.operationKind, attempt.definitionId);
+      const token = csrfToken();
+      if (!token || !currentRoute || currentRoute !== attempt.route || currentRoute !== expectedRoute) {
+        throw new TypeError("Fresh transport authority is unavailable or changed.");
+      }
+      headers = Object.freeze({
+        "Content-Type": JSON_CONTENT_TYPE,
+        "X-CSRFToken": token,
+        "If-Match": attempt.ifMatch,
+        "Idempotency-Key": attempt.operationId,
+      });
+    } catch (_error) {
+      memory.busy = false;
+      setState(
+        "SEALED_ATTEMPT_TRANSPORT_AUTHORITY_CHANGED",
+        "Текущие presentation authority, route или CSRF изменились; POST не выполнен.",
+        "error",
+      );
+      updateControls();
+      return;
+    }
     try {
       response = await fetch(attempt.route, {
         method: "POST",
         credentials: "same-origin",
         cache: "no-store",
         redirect: "error",
-        headers: attempt.headers,
+        headers,
         body: attempt.body,
       });
     } catch (_error) {
@@ -1732,7 +1766,12 @@
       app.dataset.definitionId.toLowerCase() !== memory.app.dataset.definitionId.toLowerCase() ||
       app.dataset.openUrl !== memory.app.dataset.openUrl ||
       app.dataset.readinessUrl !== memory.app.dataset.readinessUrl ||
-      app.dataset.validateUrl !== memory.app.dataset.validateUrl
+      app.dataset.validateUrl !== memory.app.dataset.validateUrl ||
+      app.dataset.publishInitialUrl !== memory.app.dataset.publishInitialUrl ||
+      app.dataset.publishSuccessorUrl !== memory.app.dataset.publishSuccessorUrl ||
+      app.dataset.validateUrl !== expectedRouteForAction("VALIDATE_DEFINITION", app.dataset.definitionId) ||
+      app.dataset.publishInitialUrl !== expectedRouteForAction("PUBLISH_INITIAL", app.dataset.definitionId) ||
+      app.dataset.publishSuccessorUrl !== expectedRouteForAction("PUBLISH_SUCCESSOR", app.dataset.definitionId)
     ) throw new TypeError("Current Studio presentation authority is denied or incoherent.");
     memory.app.dataset.canRead = app.dataset.canRead;
     memory.app.dataset.canPreview = app.dataset.canPreview;
@@ -1754,14 +1793,6 @@
         memory.definition.identity.manifest_hash !== ticket.if_match.slice(1, -1) ||
         memory.definition.identity.supersedes_id === null
       ) throw new TypeError("Current Foundation identity no longer matches the ticket.");
-      const token = csrfToken();
-      if (!token) throw new TypeError("Current CSRF token is unavailable.");
-      const headers = Object.freeze({
-        "Content-Type": ticket.content_type,
-        "X-CSRFToken": token,
-        "If-Match": ticket.if_match,
-        "Idempotency-Key": ticket.operation_id,
-      });
       const attempt = Object.freeze({
         operationKind: ticket.operation_kind,
         operationId: ticket.operation_id,
@@ -1773,7 +1804,6 @@
         bodySha256: ticket.body_sha256,
         bodyByteLength: ticket.body_byte_length,
         readinessSha256: memory.readiness.readiness_sha256,
-        headers,
         ticket: Object.freeze({ ...ticket }),
         ticketText: `${stableJSON(ticket)}\n`,
         imported: true,
