@@ -1,0 +1,128 @@
+name: C2A R2 lifecycle JS portable diagnostic
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-builder
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lifecycle-portable-sqlite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      R1: 22f0f173a941de88d6920b6e19821168e9b30cc8
+      ACCEPTED_8_TREE: 85eb00ed30263b49381c1994cb266754396c0683
+      CANDIDATE_COMMIT: 9097fb3ecb62be88fb313e71256ce0f00af4a071
+      CANDIDATE_BLOB: f9ee9f206ea1fe5d4d041e5e806523f347a6975a
+      USE_SQLITE: "true"
+      DJANGO_SETTINGS_MODULE: conflict_analysis.settings
+    steps:
+      - name: Check out immutable R1
+        uses: actions/checkout@v4
+        with:
+          ref: 22f0f173a941de88d6920b6e19821168e9b30cc8
+          fetch-depth: 1
+
+      - name: Materialize accepted 8/12 state plus durable lifecycle candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$R1"
+          fetch_blob() {
+            local sha="$1"
+            local path="$2"
+            mkdir -p "$(dirname "$path")"
+            curl --fail --location --silent --show-error --retry 0 \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/git/blobs/$sha" \
+              | jq -r '.content' | tr -d '\n' | base64 --decode > "$path"
+            test "$(git hash-object "$path")" = "$sha"
+          }
+          fetch_blob e0da5bcf5f24809f6ca788a1a8f6b0f0144bf1f3 software/conflict_analysis/README.md
+          fetch_blob c0889c969db86b55af2613fe2f633cfa2123866a software/conflict_analysis/docs/adr/0009-production-studio-c-lifecycle-publication.md
+          fetch_blob f50dd1fbc0cf967ad658327f37cd0ea70eba6a8f software/conflict_analysis/docs/production-studio-c-read-only-runtime.md
+          fetch_blob a1e7e9f3fac0be61bbce6a2a4f6e8bb221f62101 software/conflict_analysis/production_studio/templates/production_studio/lifecycle_publication_definition.html
+          fetch_blob 4190bcc1871679a3b1e0a29f6991e3dc6876c912 software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py
+          fetch_blob 955e715cb083f7e4467836ace77281de30ef1d39 software/conflict_analysis/production_studio/views.py
+          fetch_blob 21c4b624d78f25670285f1699b67bd0d6e393f26 .github/workflows/conflict-analysis.yml
+          fetch_blob 6ce3fededdae818d0b13b92ebc04bfff982e5162 software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs
+          fetch_blob "$CANDIDATE_BLOB" software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js
+
+          index="$RUNNER_TEMP/accepted-nine-index"
+          rm -f "$index"
+          GIT_INDEX_FILE="$index" git read-tree "$R1^{tree}"
+          while IFS=' ' read -r mode type sha path; do
+            test "$type" = blob
+            GIT_INDEX_FILE="$index" git update-index --cacheinfo "$mode,$sha,$path"
+          done <<'EOF'
+          100644 blob e0da5bcf5f24809f6ca788a1a8f6b0f0144bf1f3 software/conflict_analysis/README.md
+          100644 blob c0889c969db86b55af2613fe2f633cfa2123866a software/conflict_analysis/docs/adr/0009-production-studio-c-lifecycle-publication.md
+          100644 blob f50dd1fbc0cf967ad658327f37cd0ea70eba6a8f software/conflict_analysis/docs/production-studio-c-read-only-runtime.md
+          100644 blob a1e7e9f3fac0be61bbce6a2a4f6e8bb221f62101 software/conflict_analysis/production_studio/templates/production_studio/lifecycle_publication_definition.html
+          100644 blob 4190bcc1871679a3b1e0a29f6991e3dc6876c912 software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py
+          100644 blob 955e715cb083f7e4467836ace77281de30ef1d39 software/conflict_analysis/production_studio/views.py
+          100644 blob 21c4b624d78f25670285f1699b67bd0d6e393f26 .github/workflows/conflict-analysis.yml
+          100644 blob 6ce3fededdae818d0b13b92ebc04bfff982e5162 software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs
+          100644 blob f9ee9f206ea1fe5d4d041e5e806523f347a6975a software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js
+          EOF
+          candidate_tree="$(GIT_INDEX_FILE="$index" git write-tree)"
+          test "$candidate_tree" != "$ACCEPTED_8_TREE"
+          echo "CANDIDATE_9_TREE=$candidate_tree" | tee -a "$GITHUB_ENV"
+          echo "candidate 9-path tree (diagnostic only): $candidate_tree"
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Verify Node 24 syntax without changing product
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          node --check software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js
+
+      - name: Install frozen project test dependencies
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+
+      - name: Collect exact portable node count
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest --collect-only -q \
+            production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests \
+            | tee "$RUNNER_TEMP/collect.txt"
+          python - <<'PY'
+          from pathlib import Path
+          text = Path(__import__('os').environ['RUNNER_TEMP'], 'collect.txt').read_text(encoding='utf-8')
+          nodes = [line for line in text.splitlines() if '::ProductionStudioLifecyclePublicationTests::test_' in line]
+          if len(nodes) != 13:
+              raise SystemExit(f'portable registry drift: expected 13, got {len(nodes)}')
+          print('PORTABLE_NODE_COUNT=13')
+          PY
+
+      - name: Run unchanged authorized 13-test portable gate
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest -q \
+            production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests
