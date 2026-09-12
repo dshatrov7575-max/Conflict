@@ -1,0 +1,133 @@
+{
+  "schema": "C2A_R2_PATH11_CANDIDATE_ACCEPTANCE_PROCEDURE_V1",
+  "control_plane_only": true,
+  "must_not_enter_final_r2": true,
+  "prerequisite": {
+    "path10_must_be_independently_accepted": true,
+    "formal_prepared_count_before_path11": "10/12",
+    "accepted_path10_head": null,
+    "accepted_path10_tree": null,
+    "path11_carrier": "agent/c2a-r2-lifecycle-browser-carrier",
+    "carrier_promotion_rule": "ordinary non-force fast-forward only from e8af8eb8f137b760553d6dedc7f4b335869be61e to the independently accepted path10 child before path11 implementation"
+  },
+  "target_path": "software/conflict_analysis/production_studio/browser_tests/lifecycle_publication.mjs",
+  "r1_preimage_blob": "fa78a5b1c36d21916abc6d87f80dff1916765fdd",
+  "frozen_cdp_client_blob": "685faeb3906a0f74815549e272748125bb6fbf65",
+  "binding_map_commit": "f03af8ffd646e1aea82d2738755884c8e224317a",
+  "binding_map_blob": "ff43d50527020de509ed53cfc393089c2f5c1643",
+  "binding_prose_oracle_commit": "e11c199109b7510405b739ac91e181f720802d41",
+  "binding_prose_oracle_blob": "12b1281178a905fdd0377a2734d13dfb54bda3bb",
+  "scenario_names": [
+    "test_chromium_draft_preview_atomic_initial_publish_recover_and_reload",
+    "test_chromium_successor_validate_publish_lost_response_recovery_and_predecessor_noncurrent"
+  ],
+  "fixed_timeouts": {
+    "studio_cdp_timeout_ms": 60000,
+    "python_wrapper_seconds": 300
+  },
+  "acceptance_sequence": [
+    {
+      "step": 1,
+      "name": "accepted_path10_ancestry",
+      "require": [
+        "accepted_path10_head and accepted_path10_tree are filled from independently accepted path10 evidence",
+        "path11 carrier is identical to accepted_path10_head before path11 implementation",
+        "accepted_path10_head remains one ordinary child of e8af8eb8f137b760553d6dedc7f4b335869be61e"
+      ]
+    },
+    {
+      "step": 2,
+      "name": "path_delta",
+      "require": [
+        "accepted_path10_head -> path11 candidate changes exactly one path",
+        "the path is target_path",
+        "status is modified",
+        "mode remains 100644 and type remains blob"
+      ]
+    },
+    {
+      "step": 3,
+      "name": "registry_and_timeout_preservation",
+      "require": [
+        "the two scenario names are unchanged",
+        "no third Chromium scenario is added",
+        "STUDIO_CDP_TIMEOUT_MS remains 60000",
+        "Python wrapper timeout remains 300",
+        "frozen cdp_client.mjs blob remains 685faeb3906a0f74815549e272748125bb6fbf65"
+      ]
+    },
+    {
+      "step": 4,
+      "name": "ticket_retention_and_real_file_proof",
+      "require": [
+        "event registry includes studio:lifecycle-publication-ticket-imported",
+        "download initiation alone is proven insufficient to unlock execute",
+        "one publication flow positively proves exact-copy retention",
+        "the other publication flow positively proves byte-exact saved-file retention",
+        "saved-file proof uses DOM.getDocument -> DOM.querySelector -> DOM.setFileInputFiles on #ticket-file-proof",
+        "temporary file contains exact ticket bytes including terminal LF and is cleaned in finally",
+        "no fabricated input.value, FileList or File objects are used"
+      ]
+    },
+    {
+      "step": 5,
+      "name": "process_loss_network_oracles",
+      "require": [
+        "fresh process-loss page reapplies the same pre-issued publisher session cookie before navigation",
+        "validation recovery retains HUMAN ticket semantics and exactly two byte-identical FD05 POSTs",
+        "successor publication saves PUBLICATION ticket before loss and records request-log cutoff immediately after unknown outcome",
+        "successor publication closes the page, opens a fresh same-session page, imports PUBLICATION ticket, and recovers only through the exact publication-operation GET for the saved operation_id",
+        "successor publication performs zero publication POST after loss and exactly one publication POST total"
+      ]
+    },
+    {
+      "step": 6,
+      "name": "negative_and_storage_oracles",
+      "require": [
+        "HUMAN validation ticket presented to publication import fails closed with zero mutation",
+        "PUBLICATION ticket presented to validation import fails closed with zero mutation",
+        "no ticket, operation, receipt or hash data is introduced into localStorage, sessionStorage, indexedDB or CacheStorage/service-worker persistence"
+      ]
+    },
+    {
+      "step": 7,
+      "name": "executable_gate",
+      "require": [
+        "Node 24 syntax check for lifecycle_publication.mjs passes",
+        "Node 24 syntax check for lifecycle_publication.js passes",
+        "portable registry remains exactly 13",
+        "Chromium registry remains exactly 2",
+        "both C2A Chromium scenarios pass with the fixed timeouts"
+      ]
+    },
+    {
+      "step": 8,
+      "name": "capture_and_promotion",
+      "require": [
+        "record exact path11 candidate HEAD, TREE, sole parent and target blob",
+        "record exact one-path changed inventory and executable evidence",
+        "re-read PR #94 and prove OPEN/DRAFT/UNMERGED at immutable R1",
+        "only after steps 1-7 PASS count path11 prepared and advance formal count from 10/12 to 11/12",
+        "verifier carrier may then ordinary non-force fast-forward through accepted path10 then accepted path11 ancestry"
+      ]
+    }
+  ],
+  "reject_codes": [
+    "REJECT_PATH11_PREREQUISITE_PATH10_NOT_ACCEPTED",
+    "REJECT_PATH11_CARRIER_NOT_AT_ACCEPTED_PATH10",
+    "REJECT_PATH11_PARENT_OR_PATHSET_DRIFT",
+    "REJECT_PATH11_NON_MODIFIED_STATUS",
+    "REJECT_PATH11_MODE_OR_TYPE_DRIFT",
+    "REJECT_PATH11_SCENARIO_REGISTRY_DRIFT",
+    "REJECT_PATH11_TIMEOUT_DRIFT",
+    "REJECT_PATH11_CDP_CLIENT_DRIFT",
+    "REJECT_PATH11_FILE_PROOF_SHORTCUT",
+    "REJECT_PATH11_VALIDATION_REPLAY_DRIFT",
+    "REJECT_PATH11_PUBLICATION_POST_AFTER_LOSS",
+    "REJECT_PATH11_CROSS_KIND_MUTATION",
+    "REJECT_PATH11_PERSISTENT_STORAGE_DRIFT",
+    "REJECT_PATH11_NODE24_OR_CHROMIUM_GATE_FAILURE",
+    "REJECT_PATH11_PR94_MUTATION"
+  ],
+  "promotion_is_forbidden_before_path10_acceptance": true
+}
