@@ -35,23 +35,45 @@ definition and publication-readiness snapshots, optionally previews an initial
 DRAFT, validates a successor, and prepares initial or successor publication.
 The Studio view owns no model, lifecycle inference or mutation endpoint;
 Foundation remains the sole object-scope, capability, validation, publication,
-audit and recovery authority.
+audit and recovery authority. Server-rendered presentation facts are derived
+only through `studio_principal_from_user` and `StudioCapability`; an incoherent
+permission set fails closed without Product-side permission reconstruction.
 
 Every action is enabled from a fresh definition plus fresh no-store readiness
 snapshot and both are fetched again before an attempt is prepared. Readiness is
-advice only. Each write attempt is sealed in memory with one visible UUIDv4,
-strong `If-Match` and canonical body. POST stays disabled until the HUMAN has
-downloaded or exactly copied its non-authoritative recovery ticket. Unknown
-validation outcomes permit only an explicit byte-identical replay; unknown
-publication outcomes permit only the Foundation operation-recovery GET and
-never a blind POST retry.
+advice only. Each semantic write attempt is sealed in memory with one visible
+UUIDv4, exact route, strong `If-Match` and canonical body. The current same-origin
+CSRF token is read only immediately before an allowed send; it is never part of
+the sealed request identity or a recovery ticket. Exact action, definition UUID
+and route equality are rechecked before preparation and again before send.
 
-Definitions, hashes, lifecycle/readiness state, operation IDs, tickets,
-receipts, roles and workspace fields are not written to browser persistence.
+Validation and publication recovery are deliberately separate. Validation uses
+`FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1` and may offer only an explicit,
+byte-identical FD05 replay after fresh authority checks. Publication uses
+`FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1` and may perform only the exact
+project/operation Foundation recovery GET; it can never reconstruct or replay a
+publication POST. A ticket grants no authority and contains no cookie, CSRF,
+credential, role or capability.
+
+Starting a ticket download is only an export action and is not retention proof.
+POST remains disabled until the HUMAN either pastes an exact byte-for-byte copy
+of the canonical ticket or re-imports and verifies the exact downloaded bytes.
+Unknown outcomes never trigger automatic mutation retry. Typed failures are
+mapped through a bounded allowlist rather than rendering arbitrary server codes
+or exception prose.
+
+Publication success verification is channel-specific: a fresh FD06 POST,
+reconciled FD06 result and operation-recovery GET have distinct required HTTP,
+replay and cache contracts and are not interchangeable. Definitions, hashes,
+lifecycle/readiness state, operation IDs, tickets, receipts, roles and workspace
+fields are not written to browser persistence.
+
 The checksum-bound public Russian claim contract is served at
-`/studio/claim-boundaries/lifecycle-publication/v1/`. Package workflows,
-Document, Chat, formulas, scalar Power, prediction, risk, ranking and
-recommendations remain unavailable. See
+`/studio/claim-boundaries/lifecycle-publication/v1/`. CI uses the pinned
+Chrome-for-Testing `152.0.7977.64` archive with an exact verifier-enforced
+SHA-256; it is a deterministic regression browser, not a dynamically current
+browser. Package workflows, Document, Chat, formulas, scalar Power, prediction,
+risk, ranking and recommendations remain unavailable. See
 [`docs/adr/0009-production-studio-c-lifecycle-publication.md`](docs/adr/0009-production-studio-c-lifecycle-publication.md)
 and the
 [`Production Studio runtime runbook`](docs/production-studio-c-read-only-runtime.md).

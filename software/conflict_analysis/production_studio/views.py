@@ -9,6 +9,11 @@ from django.middleware.csrf import get_token
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
+from domain.policies import (
+    StudioAuthorizationDenied,
+    StudioCapability,
+    studio_principal_from_user,
+)
 from production_studio.authoring_claim_boundaries import (
     AUTHORING_CLAIM_BOUNDARY_CONTRACT_SHA256,
     AuthoringClaimBoundaryContractError,
@@ -127,46 +132,24 @@ def _verified_lifecycle_contract() -> VerifiedLifecycleClaimBoundaries | None:
 
 
 def _lifecycle_presentation_capabilities(user: object) -> dict[str, bool]:
-    """Expose non-authoritative hints from Django permissions, never domain state."""
+    """Project accepted Foundation capabilities into non-authoritative UI hints."""
 
-    has_perm = getattr(user, "has_perm", None)
-    if not callable(has_perm):
-        has_perm = lambda _permission: False
-    capabilities = frozenset(
-        name
-        for name in (
-            "read",
-            "create",
-            "clone",
-            "save",
-            "validate",
-            "publish",
-        )
-        if has_perm(
-            {
-                "read": "domain.studio_read_definition",
-                "create": "domain.studio_create_definition_draft",
-                "clone": "domain.studio_clone_definition_draft",
-                "save": "domain.studio_save_definition_draft",
-                "validate": "domain.studio_validate_definition",
-                "publish": "domain.studio_publish_definition",
-            }[name]
-        )
-    )
-    publisher = frozenset({"read", "validate", "publish"})
-    editor = frozenset({"read", "create", "clone", "save"})
-    coherent = (
-        (capabilities <= publisher and bool(capabilities & {"validate", "publish"}))
-        or (capabilities <= editor and bool(capabilities & {"create", "clone", "save"}))
-        or capabilities in {frozenset({"read"}), frozenset()}
-    )
-    if not coherent:
-        capabilities = frozenset()
+    unavailable = {
+        "studio_can_read": False,
+        "studio_can_preview": False,
+        "studio_can_validate": False,
+        "studio_can_publish": False,
+    }
+    try:
+        principal = studio_principal_from_user(user)
+    except StudioAuthorizationDenied:
+        return unavailable
+    capabilities = principal.capabilities
     return {
-        "studio_can_read": "read" in capabilities,
-        "studio_can_preview": "save" in capabilities,
-        "studio_can_validate": "validate" in capabilities,
-        "studio_can_publish": "publish" in capabilities,
+        "studio_can_read": StudioCapability.DEFINITION_READ in capabilities,
+        "studio_can_preview": StudioCapability.DRAFT_SAVE in capabilities,
+        "studio_can_validate": StudioCapability.DEFINITION_VALIDATE in capabilities,
+        "studio_can_publish": StudioCapability.DEFINITION_PUBLISH in capabilities,
     }
 
 

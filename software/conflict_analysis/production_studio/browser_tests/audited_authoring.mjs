@@ -459,6 +459,304 @@ const createDestinationAuthoringReadyGuard = (expectation, { timeoutMs, diagnost
   };
 };
 
+const documentNavigationError = (stage, code, details = {}) => {
+  const error = new Error(
+    `document navigation ${stage} ${code}; safe=${JSON.stringify(details)}`,
+  );
+  error.code = code;
+  error.stage = stage;
+  return error;
+};
+
+const remainingDocumentNavigationBudget = (deadline, stage) => {
+  const remaining = deadline - Date.now();
+  if (remaining <= 0) throw documentNavigationError(stage, "TIMEOUT");
+  return remaining;
+};
+
+const withinDocumentNavigationDeadline = async (promise, deadline, stage) => {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(
+          () => reject(documentNavigationError(stage, "TIMEOUT")),
+          remainingDocumentNavigationBudget(deadline, stage),
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const createDocumentNavigator = ({ client, sessionId, timeoutMs }) => {
+  const mainFrameSnapshot = async (deadline, stage) => {
+    const tree = await withinDocumentNavigationDeadline(
+      client.send("Page.getFrameTree", {}, sessionId),
+      deadline,
+      `${stage}-frame-tree`,
+    );
+    const frame = tree.frameTree?.frame;
+    if (!frame?.id || !frame?.loaderId || !frame?.url) {
+      throw documentNavigationError(stage, "MAIN_FRAME_UNAVAILABLE");
+    }
+    return Object.freeze({
+      frameId: frame.id,
+      loaderId: frame.loaderId,
+      url: new URL(frame.url).href,
+    });
+  };
+
+  return async ({
+    stage,
+    url = null,
+    reload = false,
+    expectBeforeUnload = false,
+    deadline = Date.now() + timeoutMs,
+  }) => {
+    const before = await mainFrameSnapshot(deadline, stage);
+    const destinationUrl = new URL(url || before.url).href;
+    let commandResult;
+    let acceptedLoaderId;
+    let bufferedMainFrame;
+    let bufferedMainLoad;
+    let frameAccepted = false;
+    let loadAccepted = false;
+    let dialogAccepted = false;
+    let dialogCommand = Promise.resolve();
+    let settled = false;
+    let resolveBarrier;
+    let rejectBarrier;
+    let deadlineTimer;
+    const removers = [];
+    const barrier = new Promise((resolve, reject) => {
+      resolveBarrier = resolve;
+      rejectBarrier = reject;
+    });
+
+    const cleanup = () => {
+      clearTimeout(deadlineTimer);
+      while (removers.length) removers.pop()();
+    };
+    const fail = (code, details = {}) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      rejectBarrier(documentNavigationError(stage, code, details));
+    };
+    const complete = () => {
+      if (
+        settled ||
+        !frameAccepted ||
+        !loadAccepted ||
+        (expectBeforeUnload && !dialogAccepted)
+      ) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      resolveBarrier(Object.freeze({
+        frameId: before.frameId,
+        loaderId: acceptedLoaderId,
+        url: destinationUrl,
+        beforeLoaderId: before.loaderId,
+        dialogAccepted,
+      }));
+    };
+    const acceptLoad = (params) => {
+      if (params.name !== "load" || params.frameId !== before.frameId) return;
+      if (!params.loaderId) {
+        fail("LIFECYCLE_LOADER_MISSING");
+        return;
+      }
+      if (!acceptedLoaderId) {
+        if (bufferedMainLoad && bufferedMainLoad.loaderId !== params.loaderId) {
+          fail("MULTIPLE_BUFFERED_LOADERS");
+          return;
+        }
+        bufferedMainLoad = params;
+        return;
+      }
+      if (params.loaderId !== acceptedLoaderId) {
+        fail("LIFECYCLE_LOADER_MISMATCH", {
+          expectedLoaderId: acceptedLoaderId,
+          actualLoaderId: params.loaderId,
+        });
+        return;
+      }
+      loadAccepted = true;
+      complete();
+    };
+    const acceptFrame = (frame) => {
+      if (!frame || !isMainFrame(frame)) return;
+      if (frame.id !== before.frameId) {
+        fail("MAIN_FRAME_MISMATCH", { frameId: frame.id || null });
+        return;
+      }
+      let frameUrl;
+      try {
+        frameUrl = new URL(frame.url).href;
+      } catch {
+        fail("MAIN_FRAME_URL_INVALID");
+        return;
+      }
+      if (frameUrl !== destinationUrl || !frame.loaderId) {
+        fail("NAVIGATION_IDENTITY_MISMATCH", {
+          frameUrl,
+          hasLoader: Boolean(frame.loaderId),
+        });
+        return;
+      }
+      if (reload && frame.loaderId === before.loaderId) {
+        fail("OLD_LOADER_REUSED");
+        return;
+      }
+      if (!reload && commandResult?.loaderId && frame.loaderId !== commandResult.loaderId) {
+        fail("COMMAND_LOADER_MISMATCH", {
+          commandLoaderId: commandResult.loaderId,
+          frameLoaderId: frame.loaderId,
+        });
+        return;
+      }
+      if (acceptedLoaderId && acceptedLoaderId !== frame.loaderId) {
+        fail("MULTIPLE_MAIN_LOADERS");
+        return;
+      }
+      acceptedLoaderId = frame.loaderId;
+      frameAccepted = true;
+      if (bufferedMainLoad) {
+        const pendingLoad = bufferedMainLoad;
+        bufferedMainLoad = undefined;
+        acceptLoad(pendingLoad);
+      }
+      complete();
+    };
+
+    removers.push(client.on("Page.frameNavigated", (params, eventSessionId) => {
+      if (!isMainFrame(params.frame)) return;
+      if (eventSessionId !== sessionId) {
+        fail("FOREIGN_SESSION_FRAME");
+        return;
+      }
+      if (!commandResult && !reload) {
+        if (
+          bufferedMainFrame &&
+          bufferedMainFrame.loaderId !== params.frame?.loaderId
+        ) {
+          fail("MULTIPLE_BUFFERED_MAIN_FRAMES");
+          return;
+        }
+        bufferedMainFrame = params.frame;
+        return;
+      }
+      acceptFrame(params.frame);
+    }));
+    removers.push(client.on("Page.lifecycleEvent", (params, eventSessionId) => {
+      if (params.name !== "load" || params.frameId !== before.frameId) return;
+      if (eventSessionId !== sessionId) {
+        fail("FOREIGN_SESSION_LOAD");
+        return;
+      }
+      acceptLoad(params);
+    }));
+    removers.push(client.on("Page.javascriptDialogOpening", (params, eventSessionId) => {
+      if (eventSessionId !== sessionId) {
+        fail("FOREIGN_SESSION_DIALOG");
+        return;
+      }
+      if (!expectBeforeUnload || dialogAccepted || params.type !== "beforeunload") {
+        fail("UNEXPECTED_DIALOG", {
+          type: params.type || null,
+          alreadyAccepted: dialogAccepted,
+        });
+        return;
+      }
+      dialogAccepted = true;
+      dialogCommand = client.send(
+        "Page.handleJavaScriptDialog",
+        { accept: true },
+        sessionId,
+      );
+      dialogCommand.catch(() => {});
+      dialogCommand.catch((error) => {
+        fail("DIALOG_COMMAND_REJECTED", { message: String(error) });
+      });
+      complete();
+    }));
+
+    deadlineTimer = setTimeout(() => {
+      if (expectBeforeUnload && !dialogAccepted) {
+        fail("DIALOG_TIMEOUT");
+      } else if (!frameAccepted) {
+        fail("NAVIGATION_TIMEOUT");
+      } else {
+        fail("LIFECYCLE_LOAD_TIMEOUT");
+      }
+    }, remainingDocumentNavigationBudget(deadline, stage));
+
+    const command = reload
+      ? client.send(
+          "Page.reload",
+          { ignoreCache: true, loaderId: before.loaderId },
+          sessionId,
+        )
+      : client.send("Page.navigate", { url: destinationUrl }, sessionId);
+    command.catch(() => {});
+
+    try {
+      commandResult = await withinDocumentNavigationDeadline(
+        command,
+        deadline,
+        `${stage}-command`,
+      );
+    } catch (error) {
+      fail("COMMAND_REJECTED", { message: String(error) });
+      return barrier;
+    }
+
+    if (!reload) {
+      if (commandResult.errorText) {
+        fail("COMMAND_ERROR_TEXT", { errorText: commandResult.errorText });
+      } else if (
+        commandResult.frameId !== before.frameId ||
+        !commandResult.loaderId
+      ) {
+        fail("COMMAND_IDENTITY_MISMATCH", {
+          frameId: commandResult.frameId || null,
+          hasLoader: Boolean(commandResult.loaderId),
+        });
+      } else {
+        acceptedLoaderId = commandResult.loaderId;
+        if (bufferedMainFrame) {
+          const pendingFrame = bufferedMainFrame;
+          bufferedMainFrame = undefined;
+          acceptFrame(pendingFrame);
+        }
+        if (bufferedMainLoad) acceptLoad(bufferedMainLoad);
+      }
+    }
+
+    try {
+      const result = await withinDocumentNavigationDeadline(
+        barrier,
+        deadline,
+        `${stage}-barrier`,
+      );
+      await withinDocumentNavigationDeadline(
+        dialogCommand,
+        deadline,
+        `${stage}-dialog-command`,
+      );
+      return result;
+    } finally {
+      cleanup();
+    }
+  };
+};
+
+
 const runBootstrapObserverSelfCheck = async () => {
   const expectation = Object.freeze({
     sessionId: "self-check-session",
@@ -692,6 +990,289 @@ const runBootstrapObserverSelfCheck = async () => {
     }),
   );
 
+  const deferred = () => {
+    let resolve;
+    let reject;
+    const promise = new Promise((resolvePromise, rejectPromise) => {
+      resolve = resolvePromise;
+      reject = rejectPromise;
+    });
+    return { promise, resolve, reject };
+  };
+  const createNavigationSelfCheckClient = ({ frame, onCommand }) => {
+    const listeners = new Map();
+    const calls = [];
+    let removals = 0;
+    const selfCheckClient = {
+      calls,
+      emit(method, params, eventSessionId = expectation.sessionId) {
+        for (const listener of [...(listeners.get(method) || [])]) {
+          listener(params, eventSessionId);
+        }
+      },
+      listenerCount() {
+        return [...listeners.values()].reduce((total, items) => total + items.length, 0);
+      },
+      get removals() {
+        return removals;
+      },
+      on(method, listener) {
+        const items = listeners.get(method) || [];
+        items.push(listener);
+        listeners.set(method, items);
+        let removed = false;
+        return () => {
+          if (removed) return;
+          removed = true;
+          removals += 1;
+          listeners.set(
+            method,
+            (listeners.get(method) || []).filter((item) => item !== listener),
+          );
+        };
+      },
+      send(method, params = {}, eventSessionId = undefined) {
+        calls.push({ method, params, sessionId: eventSessionId });
+        if (method === "Page.getFrameTree") {
+          return Promise.resolve({ frameTree: { frame: { ...frame } } });
+        }
+        if (method === "Page.handleJavaScriptDialog") {
+          return Promise.resolve({});
+        }
+        if (method === "Page.navigate" || method === "Page.reload") {
+          const command = deferred();
+          queueMicrotask(() => onCommand({
+            client: selfCheckClient,
+            command,
+            method,
+            params,
+          }));
+          return command.promise;
+        }
+        return Promise.reject(new Error(`unexpected self-check CDP method: ${method}`));
+      },
+    };
+    return selfCheckClient;
+  };
+  const navigationFrame = Object.freeze({
+    id: expectation.frameId,
+    loaderId: "self-check-old-loader",
+    url: "https://example.invalid/start/",
+  });
+  const navigationUrl = "https://example.invalid/target/";
+  const loadedNavigationFrame = Object.freeze({
+    id: expectation.frameId,
+    loaderId: "self-check-new-loader",
+    url: navigationUrl,
+  });
+  const reloadedNavigationFrame = Object.freeze({
+    id: expectation.frameId,
+    loaderId: "self-check-reload-loader",
+    url: navigationFrame.url,
+  });
+
+  const lifecycleBeforeNavigationClient = createNavigationSelfCheckClient({
+    frame: navigationFrame,
+    onCommand({ client: fake, command }) {
+      fake.emit("Page.lifecycleEvent", {
+        name: "load",
+        frameId: expectation.frameId,
+        loaderId: loadedNavigationFrame.loaderId,
+      });
+      fake.emit("Page.frameNavigated", { frame: loadedNavigationFrame });
+      command.resolve({
+        frameId: expectation.frameId,
+        loaderId: loadedNavigationFrame.loaderId,
+      });
+    },
+  });
+  const lifecycleBeforeNavigation = createDocumentNavigator({
+    client: lifecycleBeforeNavigationClient,
+    sessionId: expectation.sessionId,
+    timeoutMs: 50,
+  });
+  assert.deepEqual(
+    await lifecycleBeforeNavigation({
+      stage: "self-check-navigation-buffering",
+      url: navigationUrl,
+    }),
+    {
+      frameId: expectation.frameId,
+      loaderId: loadedNavigationFrame.loaderId,
+      url: navigationUrl,
+      beforeLoaderId: navigationFrame.loaderId,
+      dialogAccepted: false,
+    },
+  );
+  assert.equal(lifecycleBeforeNavigationClient.listenerCount(), 0);
+  assert.equal(lifecycleBeforeNavigationClient.removals, 3);
+
+  const foreignSessionClient = createNavigationSelfCheckClient({
+    frame: navigationFrame,
+    onCommand({ client: fake, command }) {
+      fake.emit(
+        "Page.frameNavigated",
+        { frame: loadedNavigationFrame },
+        "self-check-foreign-session",
+      );
+      command.resolve({
+        frameId: expectation.frameId,
+        loaderId: loadedNavigationFrame.loaderId,
+      });
+    },
+  });
+  await assert.rejects(
+    createDocumentNavigator({
+      client: foreignSessionClient,
+      sessionId: expectation.sessionId,
+      timeoutMs: 50,
+    })({ stage: "self-check-foreign-session", url: navigationUrl }),
+    (error) => error.code === "FOREIGN_SESSION_FRAME",
+  );
+  assert.equal(foreignSessionClient.listenerCount(), 0);
+
+  const wrongLoaderClient = createNavigationSelfCheckClient({
+    frame: navigationFrame,
+    onCommand({ client: fake, command }) {
+      fake.emit("Page.frameNavigated", {
+        frame: { ...loadedNavigationFrame, loaderId: "self-check-wrong-loader" },
+      });
+      command.resolve({
+        frameId: expectation.frameId,
+        loaderId: loadedNavigationFrame.loaderId,
+      });
+    },
+  });
+  await assert.rejects(
+    createDocumentNavigator({
+      client: wrongLoaderClient,
+      sessionId: expectation.sessionId,
+      timeoutMs: 50,
+    })({ stage: "self-check-wrong-loader", url: navigationUrl }),
+    (error) => error.code === "COMMAND_LOADER_MISMATCH",
+  );
+  assert.equal(wrongLoaderClient.listenerCount(), 0);
+
+  const missingLoadClient = createNavigationSelfCheckClient({
+    frame: navigationFrame,
+    onCommand({ client: fake, command }) {
+      fake.emit("Page.frameNavigated", { frame: loadedNavigationFrame });
+      command.resolve({
+        frameId: expectation.frameId,
+        loaderId: loadedNavigationFrame.loaderId,
+      });
+    },
+  });
+  await assert.rejects(
+    createDocumentNavigator({
+      client: missingLoadClient,
+      sessionId: expectation.sessionId,
+      timeoutMs: 15,
+    })({ stage: "self-check-missing-load", url: navigationUrl }),
+    (error) => error.code === "LIFECYCLE_LOAD_TIMEOUT",
+  );
+  assert.equal(missingLoadClient.listenerCount(), 0);
+
+  const beforeUnloadClient = createNavigationSelfCheckClient({
+    frame: navigationFrame,
+    onCommand({ client: fake, command, method, params }) {
+      assert.equal(method, "Page.reload");
+      assert.deepEqual(params, {
+        ignoreCache: true,
+        loaderId: navigationFrame.loaderId,
+      });
+      fake.emit("Page.javascriptDialogOpening", { type: "beforeunload" });
+      fake.emit("Page.frameNavigated", { frame: reloadedNavigationFrame });
+      fake.emit("Page.lifecycleEvent", {
+        name: "load",
+        frameId: expectation.frameId,
+        loaderId: reloadedNavigationFrame.loaderId,
+      });
+      command.resolve({});
+    },
+  });
+  const beforeUnloadResult = await createDocumentNavigator({
+    client: beforeUnloadClient,
+    sessionId: expectation.sessionId,
+    timeoutMs: 50,
+  })({
+    stage: "self-check-beforeunload",
+    reload: true,
+    expectBeforeUnload: true,
+  });
+  assert.equal(beforeUnloadResult.dialogAccepted, true);
+  assert.deepEqual(
+    beforeUnloadClient.calls.filter(
+      (item) => item.method === "Page.handleJavaScriptDialog",
+    ),
+    [{
+      method: "Page.handleJavaScriptDialog",
+      params: { accept: true },
+      sessionId: expectation.sessionId,
+    }],
+  );
+  assert.equal(beforeUnloadClient.listenerCount(), 0);
+  assert.equal(beforeUnloadClient.removals, 3);
+
+  const unexpectedDialogClient = createNavigationSelfCheckClient({
+    frame: navigationFrame,
+    onCommand({ client: fake, command }) {
+      fake.emit("Page.javascriptDialogOpening", { type: "alert" });
+      command.resolve({});
+    },
+  });
+  await assert.rejects(
+    createDocumentNavigator({
+      client: unexpectedDialogClient,
+      sessionId: expectation.sessionId,
+      timeoutMs: 50,
+    })({
+      stage: "self-check-unexpected-dialog",
+      reload: true,
+      expectBeforeUnload: true,
+    }),
+    (error) => error.code === "UNEXPECTED_DIALOG",
+  );
+  assert.equal(unexpectedDialogClient.listenerCount(), 0);
+
+  const reloadFailure = new Error("synthetic reload failure");
+  const rejectedReloadClient = createNavigationSelfCheckClient({
+    frame: navigationFrame,
+    onCommand({ command }) {
+      command.reject(reloadFailure);
+    },
+  });
+  await assert.rejects(
+    createDocumentNavigator({
+      client: rejectedReloadClient,
+      sessionId: expectation.sessionId,
+      timeoutMs: 50,
+    })({ stage: "self-check-reload-command", reload: true }),
+    (error) => (
+      error.code === "COMMAND_REJECTED" &&
+      error.message.includes(reloadFailure.message)
+    ),
+  );
+  assert.equal(rejectedReloadClient.listenerCount(), 0);
+
+  const oldLoaderClient = createNavigationSelfCheckClient({
+    frame: navigationFrame,
+    onCommand({ client: fake, command }) {
+      fake.emit("Page.frameNavigated", { frame: navigationFrame });
+      command.resolve({});
+    },
+  });
+  await assert.rejects(
+    createDocumentNavigator({
+      client: oldLoaderClient,
+      sessionId: expectation.sessionId,
+      timeoutMs: 50,
+    })({ stage: "self-check-old-loader", reload: true }),
+    (error) => error.code === "OLD_LOADER_REUSED",
+  );
+  assert.equal(oldLoaderClient.listenerCount(), 0);
+
+
   const absent = createBootstrapObserver(expectation, { timeoutMs: 10 });
   await assert.rejects(absent.promise, /bootstrap observer failed at timeout/);
   assertSingleBootstrapWrite(1);
@@ -851,19 +1432,25 @@ try {
   );
   assert.equal(cookie.success, true, "pre-issued session cookie was not admitted");
 
+  const navigateDocument = createDocumentNavigator({ client, sessionId, timeoutMs });
   const clearEvents = () => client.evaluate(
     "window.__studioContractEvents.length = 0",
     sessionId,
   );
-  const waitForEvent = async (name) => {
+  const waitForEvent = async (name, deadline = Date.now() + timeoutMs) => {
+    const stage = `event-${name}`;
     await client.waitForExpression(
       `window.__studioContractEvents?.some((item) => item.name === ${JSON.stringify(name)})`,
       sessionId,
-      timeoutMs,
+      remainingDocumentNavigationBudget(deadline, stage),
     );
-    return client.evaluate(
-      `window.__studioContractEvents.filter((item) => item.name === ${JSON.stringify(name)}).at(-1).detail`,
-      sessionId,
+    return withinDocumentNavigationDeadline(
+      client.evaluate(
+        `window.__studioContractEvents.filter((item) => item.name === ${JSON.stringify(name)}).at(-1).detail`,
+        sessionId,
+      ),
+      deadline,
+      `${stage}-readback`,
     );
   };
   const mainExecutionContext = (frameId) => [...executionContexts.values()]
@@ -899,22 +1486,19 @@ try {
       }, timeoutMs);
     });
   };
-  const navigateAndWait = async ({ reload = false } = {}) => {
-    let removeListener;
-    const loaded = new Promise((resolve) => {
-      removeListener = client.on("Page.loadEventFired", (_event, eventSessionId) => {
-        if (eventSessionId !== sessionId) return;
-        removeListener();
-        resolve();
-      });
+  const navigateAndWait = async ({
+    reload = false,
+    expectBeforeUnload = false,
+  } = {}) => {
+    const deadline = Date.now() + timeoutMs;
+    await navigateDocument({
+      stage: reload ? "definition-reload" : "definition-navigation",
+      url: definitionUrl,
+      reload,
+      expectBeforeUnload,
+      deadline,
     });
-    if (reload) {
-      await client.send("Page.reload", { ignoreCache: true }, sessionId);
-    } else {
-      await client.send("Page.navigate", { url: definitionUrl }, sessionId);
-    }
-    await loaded;
-    return waitForEvent("studio:authoring-ready");
+    return waitForEvent("studio:authoring-ready", deadline);
   };
   const inspectPage = () => client.evaluate(`(async () => {
     const app = document.querySelector("#audited-draft-app");
@@ -965,20 +1549,11 @@ try {
   })()`, sessionId);
 
   {
-    let removeListener;
-    const loaded = new Promise((resolve) => {
-      removeListener = client.on("Page.loadEventFired", (_event, eventSessionId) => {
-        if (eventSessionId !== sessionId) return;
-        removeListener();
-        resolve();
-      });
+    await navigateDocument({
+      stage: "claim-navigation",
+      url: `${baseUrl}/studio/claim-boundaries/audited-draft/v1/`,
+      deadline: Date.now() + timeoutMs,
     });
-    await client.send(
-      "Page.navigate",
-      { url: `${baseUrl}/studio/claim-boundaries/audited-draft/v1/` },
-      sessionId,
-    );
-    await loaded;
     const poisonedLayout =
       `{"version":"STUDIO_AUDITED_DRAFT_LAYOUT_V1",` +
       `"left":"${definitionId}","left":300,"right":400,"activeRightTab":"help"}`;
@@ -989,19 +1564,11 @@ try {
     );
   }
 
-  let removeEntryLoadListener;
-  const entryLoaded = new Promise((resolve) => {
-    removeEntryLoadListener = client.on(
-      "Page.loadEventFired",
-      (_event, eventSessionId) => {
-        if (eventSessionId !== sessionId) return;
-        removeEntryLoadListener();
-        resolve();
-      },
-    );
+  await navigateDocument({
+    stage: "entry-navigation",
+    url: entryUrl,
+    deadline: Date.now() + timeoutMs,
   });
-  await client.send("Page.navigate", { url: entryUrl }, sessionId);
-  await entryLoaded;
   await client.waitForExpression(
     `document.querySelector("#entry-state-code")?.textContent === "READY" && !document.querySelector("#bootstrap-draft")?.disabled`,
     sessionId,
@@ -1407,7 +1974,7 @@ try {
     "typed conflict triggered an automatic write retry",
   );
 
-  await navigateAndWait({ reload: true });
+  await navigateAndWait({ reload: true, expectBeforeUnload: true });
   const mutations = await client.evaluate(`(() => {
     const input = (element, value) => {
       element.value = value;
