@@ -1,0 +1,148 @@
+name: C2A R2 audited-authoring carrier
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-workflow-recovery
+    paths:
+      - .github/workflows/c2a-r2-audited-authoring-carrier.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-preserve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      R1_HEAD: 22f0f173a941de88d6920b6e19821168e9b30cc8
+      R1_TREE: f407e609adb2a8b94770b521a1302feb79281822
+      CARRIER_BLOB: e7cee14982eaf57d0363a08be112411c1d417611
+      CARRIER_SHA256: 01a1a2b4758fcb07dc3b2012b434c6cd5bc8c0b24005546ce49b3cb94cddb0d5
+      PATCH_GZIP_SHA256: 77de203df165018501748897f4cda6b973bb2d395a896a8ef94816e953304275
+      PATCH_SHA256: 112e1ad60b3d3c80cfc7348e5c4c3f3eed3d63489525d0918379ca5b47073e3e
+      TARGET_PATH: software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs
+      TARGET_BLOB: 6ce3fededdae818d0b13b92ebc04bfff982e5162
+      TARGET_SHA256: ba6e02071beb825e43c3be065091fba5cc141869037eb92bb4a4ba3a8f8bb575
+      TARGET_BYTES: "85463"
+      CARRIER_BRANCH: agent/c2a-r2-audited-authoring-carrier
+
+    steps:
+      - name: Check out immutable R1
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.R1_HEAD }}
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Materialize, validate, and preserve candidate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$R1_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$R1_TREE"
+          test -z "$(git status --porcelain=v1 --untracked-files=all)"
+
+          carrier="$RUNNER_TEMP/audited-authoring.patch.gz.b64"
+          archive="$RUNNER_TEMP/audited-authoring.patch.gz"
+          patch="$RUNNER_TEMP/audited-authoring.patch"
+          report="$RUNNER_TEMP/c2a-r2-audited-authoring-receipt.json"
+          selfcheck="$RUNNER_TEMP/audited-authoring-self-check.txt"
+
+          gh api "repos/$GITHUB_REPOSITORY/git/blobs/$CARRIER_BLOB" --jq .content \
+            | tr -d '\n' \
+            | base64 --decode > "$carrier"
+          test "$(sha256sum "$carrier" | awk '{print $1}')" = "$CARRIER_SHA256"
+          base64 --decode "$carrier" > "$archive"
+          test "$(sha256sum "$archive" | awk '{print $1}')" = "$PATCH_GZIP_SHA256"
+          gzip --decompress --stdout "$archive" > "$patch"
+          test "$(sha256sum "$patch" | awk '{print $1}')" = "$PATCH_SHA256"
+
+          git apply --check "$patch"
+          git apply "$patch"
+          git diff --check
+          test "$(git diff --name-status --no-renames)" = $'M\t'"$TARGET_PATH"
+          test "$(git hash-object "$TARGET_PATH")" = "$TARGET_BLOB"
+          test "$(sha256sum "$TARGET_PATH" | awk '{print $1}')" = "$TARGET_SHA256"
+          test "$(wc -c < "$TARGET_PATH" | tr -d ' ')" = "$TARGET_BYTES"
+          ! grep -Fq 'Page.loadEventFired' "$TARGET_PATH"
+          grep -Fq 'STUDIO_CDP_TIMEOUT_MS || "60000"' "$TARGET_PATH"
+
+          node --check "$TARGET_PATH"
+          node --unhandled-rejections=strict "$TARGET_PATH" --self-check-observation \
+            | tee "$selfcheck"
+          grep -Fxq 'F1_CHROMIUM_R3_BOOTSTRAP_OBSERVER_SELF_CHECK=PASS' "$selfcheck"
+
+          test -z "$(git ls-remote --heads origin "refs/heads/$CARRIER_BRANCH")"
+          git switch -c "$CARRIER_BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$TARGET_PATH"
+          test "$(git diff --cached --name-status --no-renames)" = $'M\t'"$TARGET_PATH"
+          git commit -m "chore(c2a-r2): preserve validated audited-authoring candidate"
+
+          carrier_head="$(git rev-parse HEAD)"
+          carrier_tree="$(git rev-parse HEAD^{tree})"
+          carrier_parent="$(git rev-parse HEAD^)"
+          test "$carrier_parent" = "$R1_HEAD"
+          test "$(git show -s --format=%P HEAD | awk '{print NF}')" = "1"
+          test "$(git diff-tree --no-commit-id --name-status --no-renames -r HEAD)" = $'M\t'"$TARGET_PATH"
+          git push origin "HEAD:refs/heads/$CARRIER_BRANCH"
+
+          python - "$report" "$carrier_head" "$carrier_tree" "$carrier_parent" <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+
+          output, head, tree, parent = sys.argv[1:]
+          payload = {
+              "status": "VALIDATED_REPLACEMENT_CANDIDATE",
+              "historical_target_blob_recovered": False,
+              "base_head": os.environ["R1_HEAD"],
+              "base_tree": os.environ["R1_TREE"],
+              "path": os.environ["TARGET_PATH"],
+              "candidate_blob": os.environ["TARGET_BLOB"],
+              "candidate_sha256": os.environ["TARGET_SHA256"],
+              "candidate_bytes": int(os.environ["TARGET_BYTES"]),
+              "carrier_blob": os.environ["CARRIER_BLOB"],
+              "patch_sha256": os.environ["PATCH_SHA256"],
+              "carrier_branch": os.environ["CARRIER_BRANCH"],
+              "carrier_head": head,
+              "carrier_tree": tree,
+              "carrier_parent": parent,
+              "checks": [
+                  "git_apply_check",
+                  "single_modified_path",
+                  "git_blob_identity",
+                  "sha256_and_byte_length",
+                  "node_check",
+                  "self_check_observation",
+                  "no_Page.loadEventFired",
+                  "timeout_default_60000",
+              ],
+          }
+          pathlib.Path(output).write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(payload, sort_keys=True))
+          PY
+
+      - name: Upload validation receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2a-r2-audited-authoring-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/c2a-r2-audited-authoring-receipt.json
+            ${{ runner.temp }}/audited-authoring-self-check.txt
+          if-no-files-found: warn
+          retention-days: 14
