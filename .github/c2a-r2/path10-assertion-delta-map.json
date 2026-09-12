@@ -1,5 +1,5 @@
 {
-  "schema": "C2A_R2_PATH10_ASSERTION_DELTA_MAP_V1",
+  "schema": "C2A_R2_PATH10_ASSERTION_DELTA_MAP_V2",
   "control_plane_only": true,
   "must_not_enter_final_r2": true,
   "target_path": "software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py",
@@ -7,6 +7,60 @@
   "r1_test_blob": "6c2bb510f11a36db9b62138f637f09bf5588753a",
   "lifecycle_js_candidate_blob": "f9ee82c148e1659c122024dd43a2f876348e6073",
   "portable_method_count": 13,
+  "portable_method_inventory": [
+    "test_route_auth_and_checksum_bound_claim_contract_are_exact",
+    "test_initial_draft_uses_optional_preview_then_atomic_publication_without_prior_validate",
+    "test_validation_unknown_outcome_allows_only_explicit_same_request_reconciliation",
+    "test_fd07_never_labels_standalone_or_validated_initial_as_publishable_and_is_refetched_before_attempt",
+    "test_successor_draft_validates_then_fd07_allows_only_exact_successor_publication",
+    "test_publication_unknown_outcome_disables_post_and_uses_only_operation_recovery_get",
+    "test_operation_identity_and_receipts_never_enter_browser_persistent_storage",
+    "test_current_noncurrent_retired_and_unknown_lifecycle_states_render_truthfully",
+    "test_typed_auth_scope_capability_csrf_stale_reuse_and_state_conflicts_are_bounded",
+    "test_package_science_chat_document_prediction_and_recommendation_controls_remain_unavailable",
+    "test_dirty_busy_unresolved_navigation_and_unload_are_guarded_without_automatic_mutation",
+    "test_publication_requires_human_retained_recovery_ticket_and_busy_unload_is_guarded",
+    "test_recovery_ticket_and_post_share_one_frozen_attempt_and_edits_require_new_operation"
+  ],
+  "authorized_mutable_methods": [
+    "test_publication_unknown_outcome_disables_post_and_uses_only_operation_recovery_get",
+    "test_publication_requires_human_retained_recovery_ticket_and_busy_unload_is_guarded",
+    "test_recovery_ticket_and_post_share_one_frozen_attempt_and_edits_require_new_operation"
+  ],
+  "preserve_exact_method_inventory": [
+    "test_route_auth_and_checksum_bound_claim_contract_are_exact",
+    "test_initial_draft_uses_optional_preview_then_atomic_publication_without_prior_validate",
+    "test_validation_unknown_outcome_allows_only_explicit_same_request_reconciliation",
+    "test_fd07_never_labels_standalone_or_validated_initial_as_publishable_and_is_refetched_before_attempt",
+    "test_successor_draft_validates_then_fd07_allows_only_exact_successor_publication",
+    "test_operation_identity_and_receipts_never_enter_browser_persistent_storage",
+    "test_current_noncurrent_retired_and_unknown_lifecycle_states_render_truthfully",
+    "test_typed_auth_scope_capability_csrf_stale_reuse_and_state_conflicts_are_bounded",
+    "test_package_science_chat_document_prediction_and_recommendation_controls_remain_unavailable",
+    "test_dirty_busy_unresolved_navigation_and_unload_are_guarded_without_automatic_mutation"
+  ],
+  "browser_method_inventory": [
+    "test_chromium_draft_preview_atomic_initial_publish_recover_and_reload",
+    "test_chromium_successor_validate_publish_lost_response_recovery_and_predecessor_noncurrent"
+  ],
+  "candidate_diff_rule": {
+    "allowed_file": "software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py",
+    "allowed_method_bodies_only": [
+      "test_publication_unknown_outcome_disables_post_and_uses_only_operation_recovery_get",
+      "test_publication_requires_human_retained_recovery_ticket_and_busy_unload_is_guarded",
+      "test_recovery_ticket_and_post_share_one_frozen_attempt_and_edits_require_new_operation"
+    ],
+    "forbid_changes_outside_allowed_method_bodies": true,
+    "forbid_import_helper_fixture_class_and_browser_method_changes": true,
+    "preserve_other_portable_method_bodies_byte_for_byte": true
+  },
+  "executor_status": {
+    "state": "BLOCKED_PATH10_CODEX_CLOUD_ENVIRONMENT_NOT_CONFIGURED",
+    "dispatch_comment": "5647730329",
+    "blocker_comment": "5647731176",
+    "blocker_actor": "chatgpt-codex-connector[bot]",
+    "retry_rule": "Do not repeat @codex until independent evidence a Codex Cloud environment exists or another authorized executor produces a candidate."
+  },
   "observed_gate": {
     "run": 34706180227,
     "job": 103586525631,
@@ -18,19 +72,19 @@
   "existing_methods_to_edit_only": [
     {
       "method": "test_publication_requires_human_retained_recovery_ticket_and_busy_unload_is_guarded",
-      "obsolete_positive_anchor": "retainTicket(\\\"download\\\")",
+      "obsolete_positive_anchor": "retainTicket(\"download\")",
       "required_semantics": [
         "downloadTicket() must not call retainTicket and download initiation alone must leave execute disabled",
         "retainTicket accepts only exact-copy and byte-exact-file",
         "exact-copy mismatch leaves memory.ticketRetained false",
         "ticket-file-proof and acknowledge-ticket-file bindings are present",
-        "acknowledgeTicketFile requires exact byte length and byte-for-byte equality before retainTicket(\\\"byte-exact-file\\\")",
+        "acknowledgeTicketFile requires exact byte length and byte-for-byte equality before retainTicket(\"byte-exact-file\")",
         "performSealedAttempt preserves the !memory.ticketRetained guard before fetch(attempt.route)"
       ],
       "exact_js_anchors": [
-        "new Set([\\\"exact-copy\\\", \\\"byte-exact-file\\\"])",
-        "retainTicket(\\\"exact-copy\\\")",
-        "retainTicket(\\\"byte-exact-file\\\")",
+        "new Set([\"exact-copy\", \"byte-exact-file\"])",
+        "retainTicket(\"exact-copy\")",
+        "retainTicket(\"byte-exact-file\")",
         "ticket-file-proof",
         "acknowledge-ticket-file",
         "(!reconciliation && !memory.ticketRetained)",
@@ -117,6 +171,9 @@
   ],
   "acceptance": [
     "delta from e8af8eb8f137b760553d6dedc7f4b335869be61e is exactly one modified path: test_lifecycle_publication.py",
+    "all diff hunks are inside the three authorized mutable method bodies",
+    "the other ten portable method bodies are byte-for-byte unchanged",
+    "both Chromium method bodies are unchanged",
     "Node 24 node --check lifecycle_publication.js PASS",
     "portable collection exactly 13",
     "ProductionStudioLifecyclePublicationTests => 13 passed"
