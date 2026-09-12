@@ -1,0 +1,109 @@
+name: C2A R2 exact workflow recovery
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-workflow-recovery
+
+permissions:
+  contents: write
+
+jobs:
+  recover-exact-workflow:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out immutable R1
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: 22f0f173a941de88d6920b6e19821168e9b30cc8
+
+      - name: Recover exact workflow from the valid compressed prefix
+        shell: bash
+        env:
+          R1_HEAD: 22f0f173a941de88d6920b6e19821168e9b30cc8
+          R1_TREE: f407e609adb2a8b94770b521a1302feb79281822
+          PAYLOAD_COMMIT: fe54ac184bd654e9830b2cd6f1f35609fe51024e
+          TARGET_BLOB: 21c4b624d78f25670285f1699b67bd0d6e393f26
+          TARGET_SHA256: b8be31af425045f1e9a3a118e302dbeb5adf1aa641baf9aa011194320fa843e4
+          TARGET_BYTES: "368499"
+          CARRIER_BRANCH: agent/c2a-r2-workflow-carrier
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$R1_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$R1_TREE"
+          test -z "$(git status --porcelain=v1)"
+          git fetch --no-tags origin "$PAYLOAD_COMMIT"
+          payload="$RUNNER_TEMP/full.patch.gz.b64"
+          patch="$RUNNER_TEMP/workflow-only.patch"
+          report="$RUNNER_TEMP/c2a-r2-workflow-recovery.json"
+          git show "$PAYLOAD_COMMIT:.github/c2a-r2/full.patch.gz.b64" > "$payload"
+          python - "$payload" "$patch" <<'PY'
+          import base64
+          import sys
+          import zlib
+          from pathlib import Path
+
+          source = Path(sys.argv[1]).read_bytes()
+          marker = b"[... ELLIPSIZATION ...]"
+          marker_offset = source.find(marker)
+          if marker_offset != 10000:
+              raise SystemExit(f"unexpected marker offset: {marker_offset}")
+          prefix = source[:marker_offset]
+          compressed = base64.b64decode(prefix, validate=True)
+          decoder = zlib.decompressobj(31)
+          expanded = decoder.decompress(compressed)
+          expected_start = b"diff --git a/.github/workflows/conflict-analysis.yml b/.github/workflows/conflict-analysis.yml\n"
+          if not expanded.startswith(expected_start):
+              raise SystemExit("workflow diff is not the first complete patch")
+          next_diff = b"\ndiff --git a/software/conflict_analysis/README.md b/software/conflict_analysis/README.md\n"
+          boundary = expanded.find(next_diff)
+          if boundary < 0:
+              raise SystemExit("workflow patch boundary is unavailable")
+          Path(sys.argv[2]).write_bytes(expanded[: boundary + 1])
+          PY
+          git apply --check "$patch"
+          git apply "$patch"
+          path=.github/workflows/conflict-analysis.yml
+          test "$(git hash-object "$path")" = "$TARGET_BLOB"
+          test "$(sha256sum "$path" | awk '{print $1}')" = "$TARGET_SHA256"
+          test "$(wc -c < "$path" | tr -d ' ')" = "$TARGET_BYTES"
+          test "$(git diff --name-status)" = $'M\t.github/workflows/conflict-analysis.yml'
+          test -z "$(git ls-remote --heads origin "refs/heads/$CARRIER_BRANCH")"
+          git switch -c "$CARRIER_BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "$path"
+          test "$(git diff --cached --name-status)" = $'M\t.github/workflows/conflict-analysis.yml'
+          git commit -m "chore(c2a-r2): preserve exact recovered workflow blob"
+          carrier_head="$(git rev-parse HEAD)"
+          carrier_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$R1_HEAD"
+          git push origin "HEAD:refs/heads/$CARRIER_BRANCH"
+          python - "$report" "$carrier_head" "$carrier_tree" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          payload = {
+              "status": "EXACT_WORKFLOW_RECOVERED",
+              "base_head": "22f0f173a941de88d6920b6e19821168e9b30cc8",
+              "base_tree": "f407e609adb2a8b94770b521a1302feb79281822",
+              "path": ".github/workflows/conflict-analysis.yml",
+              "blob": "21c4b624d78f25670285f1699b67bd0d6e393f26",
+              "sha256": "b8be31af425045f1e9a3a118e302dbeb5adf1aa641baf9aa011194320fa843e4",
+              "bytes": 368499,
+              "carrier_branch": "agent/c2a-r2-workflow-carrier",
+              "carrier_head": sys.argv[2],
+              "carrier_tree": sys.argv[3],
+          }
+          Path(sys.argv[1]).write_text(json.dumps(payload, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Upload exact recovery receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2a-r2-exact-workflow-${{ github.run_id }}
+          path: ${{ runner.temp }}/c2a-r2-workflow-recovery.json
+          if-no-files-found: error
+          retention-days: 14
