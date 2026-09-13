@@ -56,11 +56,15 @@ jobs:
           delivery = '            "$delivery_tree" ' + chr(92)
           chrome_version_arg = '            "$C2A_CHROME_VERSION" ' + chr(92)
           chrome_sha_arg = '            "$C2A_CHROME_LINUX64_SHA256" <<\'PY\''
-          positions = [i for i, line in enumerate(lines) if line == delivery]
+          positions = [
+              i for i, line in enumerate(lines)
+              if line == delivery
+              and i + 2 < len(lines)
+              and lines[i + 1] == chrome_version_arg
+              and lines[i + 2] == chrome_sha_arg
+          ]
           assert len(positions) == 1, positions
           i = positions[0]
-          assert lines[i + 1] == chrome_version_arg, lines[i + 1]
-          assert lines[i + 2] == chrome_sha_arg, lines[i + 2]
           lines[i] = '            "$delivery_tree" <<\'PY\''
           del lines[i + 1:i + 3]
 
@@ -131,8 +135,6 @@ jobs:
           path = Path(path_s)
           text = path.read_text(encoding="utf-8")
 
-          # Replace the tested exact-head identity first. The current PR-head
-          # replacement is intentionally performed afterwards so it remains CURRENT.
           replacements = [
               (current, candidate, 2),
               (current_tree, candidate_tree, 1),
