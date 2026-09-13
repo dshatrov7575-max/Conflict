@@ -1,0 +1,289 @@
+name: C2A R2 PATH9 binding repair and PATH11 revalidation
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-path9-binding-repair-ci-20260913
+
+permissions:
+  contents: write
+
+jobs:
+  exact-repair-and-revalidation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: conflict_analysis
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DJANGO_SECRET_KEY: ci-only-secret-key
+      POSTGRES_DB: conflict_analysis
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_CONN_MAX_AGE: "0"
+      USE_SQLITE: "false"
+      DJANGO_SETTINGS_MODULE: conflict_analysis.settings
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+      STUDIO_CDP_TIMEOUT_MS: "60000"
+      ACCEPTED_PATH10_HEAD: f8c5ef4a788ad1eb3461444b8e2cdd369ddc2fd2
+      ACCEPTED_PATH10_TREE: 5396e037f651534e5ae39cdf0b727b66436cb90f
+      ACCEPTED_PATH10_PARENT: e8af8eb8f137b760553d6dedc7f4b335869be61e
+      OLD_PATH9_BLOB: f9ee82c148e1659c122024dd43a2f876348e6073
+      PATH10_BLOB: 680f0a857f371162e2223623d441019269d1fede
+      PATH11_BLOB: e49e21dff75e93452b94f09fc32caa36d6800eee
+      CDP_CLIENT_BLOB: 685faeb3906a0f74815549e272748125bb6fbf65
+      TEMPLATE_BLOB: a1e7e9f3fac0be61bbce6a2a4f6e8bb221f62101
+      REPAIR_BRANCH: agent/c2a-r2-path9-binding-repair
+      PATH11_BRANCH: agent/c2a-r2-path11-binding-repair-carrier
+      C2A_CHROME_VERSION: 152.0.7977.64
+      C2A_CHROME_LINUX64_SHA256: 8b592f066af71f054aab2cc80fc26f73c775c6d44ebb99d16ade924b24756c2e
+
+    steps:
+      - name: Check out exact accepted PATH10
+        uses: actions/checkout@v4
+        with:
+          ref: f8c5ef4a788ad1eb3461444b8e2cdd369ddc2fd2
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify immutable starting identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$ACCEPTED_PATH10_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$ACCEPTED_PATH10_TREE"
+          test "$(git rev-parse HEAD^)" = "$ACCEPTED_PATH10_PARENT"
+          test "$(git hash-object software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js)" = "$OLD_PATH9_BLOB"
+          test "$(git hash-object software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py)" = "$PATH10_BLOB"
+          test "$(git hash-object software/conflict_analysis/production_studio/browser_tests/cdp_client.mjs)" = "$CDP_CLIENT_BLOB"
+          test "$(git hash-object software/conflict_analysis/production_studio/templates/production_studio/lifecycle_publication_definition.html)" = "$TEMPLATE_BLOB"
+          test -z "$(git status --porcelain=v1)"
+          test -z "$(git ls-remote origin "refs/heads/$REPAIR_BRANCH")"
+          test -z "$(git ls-remote origin "refs/heads/$PATH11_BRANCH")"
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install exact project test dependencies
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+          python -m pip check
+
+      - name: Create exact one-line PATH9 repair commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js"
+          python - "$target" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          source = path.read_text(encoding="utf-8")
+          old = '    byId("recover-publication-operation")?.addEventListener("click", recoverPublication);\n'
+          new = '    byId("recover-publication-operation")?.addEventListener("click", () => recoverPublication());\n'
+          if source.count(old) != 1:
+              raise SystemExit(f"expected one obsolete binding, got {source.count(old)}")
+          if source.count(new) != 0:
+              raise SystemExit("replacement binding already present")
+          path.write_text(source.replace(old, new, 1), encoding="utf-8", newline="")
+          PY
+          printf 'M\t%s\n' "$target" > "$RUNNER_TEMP/expected-path9-repair.txt"
+          git diff --name-status --no-renames > "$RUNNER_TEMP/actual-path9-repair.txt"
+          diff -u "$RUNNER_TEMP/expected-path9-repair.txt" "$RUNNER_TEMP/actual-path9-repair.txt"
+          test "$(git diff --numstat -- "$target")" = $'1\t1\tsoftware/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js'
+          git diff --check
+          node --check "$target"
+          git config user.name "C2A R2 repair builder"
+          git config user.email "c2a-r2-repair-builder@users.noreply.github.com"
+          git add -- "$target"
+          git commit -m "fix(c2a-r2): bind publication recovery without click event override"
+          repair_head="$(git rev-parse HEAD)"
+          repair_tree="$(git rev-parse HEAD^{tree})"
+          repair_blob="$(git hash-object "$target")"
+          test "$(git rev-parse HEAD^)" = "$ACCEPTED_PATH10_HEAD"
+          test "$(git diff --name-status --no-renames HEAD^ HEAD)" = $'M\tsoftware/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js'
+          test "$(git diff --numstat HEAD^ HEAD -- "$target")" = $'1\t1\tsoftware/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js'
+          test "$repair_blob" != "$OLD_PATH9_BLOB"
+          printf 'PATH9_REPAIR_HEAD=%s\n' "$repair_head" | tee -a "$GITHUB_ENV"
+          printf 'PATH9_REPAIR_TREE=%s\n' "$repair_tree" | tee -a "$GITHUB_ENV"
+          printf 'REPAIRED_PATH9_BLOB=%s\n' "$repair_blob" | tee -a "$GITHUB_ENV"
+
+      - name: Revalidate repaired coupled PATH9 plus PATH10
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PATH9_REPAIR_HEAD"
+          node --version | grep -E '^v24\.'
+          node --check production_studio/static/production_studio/lifecycle_publication.js
+          python manage.py makemigrations --check --dry-run
+          python manage.py migrate --noinput
+          python manage.py check
+          python -m pytest --collect-only -q \
+            production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests \
+            | tee "$RUNNER_TEMP/path9-repair-portable-collect.txt"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          text = Path(os.environ["RUNNER_TEMP"], "path9-repair-portable-collect.txt").read_text(encoding="utf-8")
+          nodes = [line for line in text.splitlines() if "::ProductionStudioLifecyclePublicationTests::test_" in line]
+          assert len(nodes) == 13, len(nodes)
+          print("REPAIRED_PATH10_PORTABLE_NODE_COUNT=13")
+          PY
+          python -m pytest -q \
+            production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests \
+            -p no:cacheprovider \
+            --junitxml="$RUNNER_TEMP/path9-repair-portable.xml"
+
+      - name: Create clean PATH11 child from exact accepted browser blob
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PATH9_REPAIR_HEAD"
+          target="software/conflict_analysis/production_studio/browser_tests/lifecycle_publication.mjs"
+          gh api "repos/$GITHUB_REPOSITORY/git/blobs/$PATH11_BLOB" --jq .content \
+            | tr -d '\n' \
+            | base64 --decode > "$target"
+          test "$(git hash-object "$target")" = "$PATH11_BLOB"
+          printf 'M\t%s\n' "$target" > "$RUNNER_TEMP/expected-path11.txt"
+          git diff --name-status --no-renames > "$RUNNER_TEMP/actual-path11.txt"
+          diff -u "$RUNNER_TEMP/expected-path11.txt" "$RUNNER_TEMP/actual-path11.txt"
+          git diff --check
+          node --check software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js
+          node --check "$target"
+          git add -- "$target"
+          git commit -m "test(c2a-r2): harden lifecycle Chromium recovery proofs after binding repair"
+          path11_head="$(git rev-parse HEAD)"
+          path11_tree="$(git rev-parse HEAD^{tree})"
+          test "$(git rev-parse HEAD^)" = "$PATH9_REPAIR_HEAD"
+          test "$(git diff --name-status --no-renames HEAD^ HEAD)" = $'M\tsoftware/conflict_analysis/production_studio/browser_tests/lifecycle_publication.mjs'
+          test "$(git hash-object software/conflict_analysis/production_studio/browser_tests/cdp_client.mjs)" = "$CDP_CLIENT_BLOB"
+          printf 'PATH11_REPAIR_HEAD=%s\n' "$path11_head" | tee -a "$GITHUB_ENV"
+          printf 'PATH11_REPAIR_TREE=%s\n' "$path11_tree" | tee -a "$GITHUB_ENV"
+
+      - name: Verify exact registries and frozen timeout contract
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PATH11_REPAIR_HEAD"
+          python -m pytest --collect-only -q \
+            production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests \
+            | tee "$RUNNER_TEMP/path11-repair-portable-collect.txt"
+          python -m pytest --collect-only -q \
+            production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationBrowserTests \
+            | tee "$RUNNER_TEMP/path11-repair-browser-collect.txt"
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          root = Path(os.environ["RUNNER_TEMP"])
+          portable = (root / "path11-repair-portable-collect.txt").read_text(encoding="utf-8")
+          browser_collect = (root / "path11-repair-browser-collect.txt").read_text(encoding="utf-8")
+          browser_source = Path("production_studio/browser_tests/lifecycle_publication.mjs").read_text(encoding="utf-8")
+          tests = Path("production_studio/tests/test_lifecycle_publication.py").read_text(encoding="utf-8")
+          portable_nodes = [line for line in portable.splitlines() if "::ProductionStudioLifecyclePublicationTests::test_" in line]
+          browser_nodes = [line for line in browser_collect.splitlines() if "::ProductionStudioLifecyclePublicationBrowserTests::test_chromium_" in line]
+          expected = {
+              "test_chromium_draft_preview_atomic_initial_publish_recover_and_reload",
+              "test_chromium_successor_validate_publish_lost_response_recovery_and_predecessor_noncurrent",
+          }
+          exported = set(re.findall(r"^export async function (test_chromium_[A-Za-z0-9_]+)\(", browser_source, re.M))
+          collected = {line.rsplit("::", 1)[-1] for line in browser_nodes}
+          assert len(portable_nodes) == 13, len(portable_nodes)
+          assert len(browser_nodes) == 2, len(browser_nodes)
+          assert exported == expected, (exported, expected)
+          assert collected == expected, (collected, expected)
+          assert 'process.env.STUDIO_CDP_TIMEOUT_MS || "60000"' in browser_source
+          assert "timeout=300" in tests
+          print("PATH11_REPAIR_PORTABLE_NODE_COUNT=13")
+          print("PATH11_REPAIR_CHROMIUM_NODE_COUNT=2")
+          PY
+
+      - name: Run exact pinned Chrome 152 PATH11 gate
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/c2a-path11-repair-chrome-linux64.zip"
+          curl --fail --location --silent --show-error --retry 0 \
+            "https://storage.googleapis.com/chrome-for-testing-public/$C2A_CHROME_VERSION/linux64/chrome-linux64.zip" \
+            --output "$archive"
+          printf '%s  %s\n' "$C2A_CHROME_LINUX64_SHA256" "$archive" | sha256sum --check
+          unzip -q "$archive" -d "$RUNNER_TEMP/c2a-path11-repair-chrome"
+          chrome="$RUNNER_TEMP/c2a-path11-repair-chrome/chrome-linux64/chrome"
+          test -x "$chrome"
+          "$chrome" --version | grep -F "$C2A_CHROME_VERSION"
+          HTTP_PROXY=http://127.0.0.1:9 \
+          HTTPS_PROXY=http://127.0.0.1:9 \
+          ALL_PROXY=http://127.0.0.1:9 \
+          NO_PROXY=127.0.0.1,localhost \
+          STUDIO_CHROME_BIN="$chrome" \
+          STUDIO_CDP_TIMEOUT_MS=60000 \
+          python -m pytest -q \
+            production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationBrowserTests \
+            -p no:cacheprovider \
+            --junitxml="$RUNNER_TEMP/path11-repair-chromium.xml"
+          python - <<'PY'
+          import os
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          root = ET.parse(Path(os.environ["RUNNER_TEMP"]) / "path11-repair-chromium.xml").getroot()
+          cases = root.findall(".//testcase")
+          assert len(cases) == 2, len(cases)
+          assert not root.findall(".//failure")
+          assert not root.findall(".//error")
+          assert not root.findall(".//skipped")
+          print("PATH11_REPAIR_PINNED_CHROMIUM_2_OF_2=PASS")
+          PY
+
+      - name: Publish ordinary repair refs only after complete PASS
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PATH11_REPAIR_HEAD"
+          test "$(git rev-parse HEAD^)" = "$PATH9_REPAIR_HEAD"
+          test "$(git rev-parse "$PATH9_REPAIR_HEAD^")" = "$ACCEPTED_PATH10_HEAD"
+          test -z "$(git ls-remote origin "refs/heads/$REPAIR_BRANCH")"
+          test -z "$(git ls-remote origin "refs/heads/$PATH11_BRANCH")"
+          git push --atomic origin \
+            "$PATH9_REPAIR_HEAD:refs/heads/$REPAIR_BRANCH" \
+            "$PATH11_REPAIR_HEAD:refs/heads/$PATH11_BRANCH"
+          test "$(git ls-remote origin "refs/heads/$REPAIR_BRANCH" | awk '{print $1}')" = "$PATH9_REPAIR_HEAD"
+          test "$(git ls-remote origin "refs/heads/$PATH11_BRANCH" | awk '{print $1}')" = "$PATH11_REPAIR_HEAD"
+          printf '%s\n' \
+            "PATH9_REPAIR_HEAD=$PATH9_REPAIR_HEAD" \
+            "PATH9_REPAIR_TREE=$PATH9_REPAIR_TREE" \
+            "REPAIRED_PATH9_BLOB=$REPAIRED_PATH9_BLOB" \
+            "PATH11_REPAIR_HEAD=$PATH11_REPAIR_HEAD" \
+            "PATH11_REPAIR_TREE=$PATH11_REPAIR_TREE" \
+            "PATH11_BLOB=$PATH11_BLOB" \
+            "FORMAL_GATE_CANDIDATE=11/12"
