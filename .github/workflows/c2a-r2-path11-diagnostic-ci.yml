@@ -1,0 +1,211 @@
+name: C2A R2 PATH11 exact Chromium diagnostic
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-path11-diagnostic-ci-20260913
+
+permissions:
+  contents: read
+
+jobs:
+  path11-exact-chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: conflict_analysis
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DJANGO_SECRET_KEY: ci-only-secret-key
+      POSTGRES_DB: conflict_analysis
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_CONN_MAX_AGE: "0"
+      USE_SQLITE: "false"
+      DJANGO_SETTINGS_MODULE: conflict_analysis.settings
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+      STUDIO_CDP_TIMEOUT_MS: "60000"
+      EXACT_HEAD: 1ea9f94e2796e4b11c96cfeef6e3fb3264564a73
+      EXACT_TREE: e856e64a6eeab4382afb02666ebb0cc388ff62d5
+      EXACT_PARENT: f8c5ef4a788ad1eb3461444b8e2cdd369ddc2fd2
+      PATH9_BLOB: f9ee82c148e1659c122024dd43a2f876348e6073
+      PATH10_BLOB: 680f0a857f371162e2223623d441019269d1fede
+      PATH11_BLOB: e49e21dff75e93452b94f09fc32caa36d6800eee
+      CDP_CLIENT_BLOB: 685faeb3906a0f74815549e272748125bb6fbf65
+      TEMPLATE_BLOB: a1e7e9f3fac0be61bbce6a2a4f6e8bb221f62101
+      C2A_CHROME_VERSION: 152.0.7977.64
+      C2A_CHROME_LINUX64_SHA256: 8b592f066af71f054aab2cc80fc26f73c775c6d44ebb99d16ade924b24756c2e
+
+    steps:
+      - name: Check out exact PATH11 candidate
+        uses: actions/checkout@v4
+        with:
+          ref: 1ea9f94e2796e4b11c96cfeef6e3fb3264564a73
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Verify exact identity and one-path topology
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="software/conflict_analysis/production_studio/browser_tests/lifecycle_publication.mjs"
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$EXACT_TREE"
+          test "$(git rev-parse HEAD^)" = "$EXACT_PARENT"
+          test "$(git hash-object software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js)" = "$PATH9_BLOB"
+          test "$(git hash-object software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py)" = "$PATH10_BLOB"
+          test "$(git hash-object "$target")" = "$PATH11_BLOB"
+          test "$(git hash-object software/conflict_analysis/production_studio/browser_tests/cdp_client.mjs)" = "$CDP_CLIENT_BLOB"
+          test "$(git hash-object software/conflict_analysis/production_studio/templates/production_studio/lifecycle_publication_definition.html)" = "$TEMPLATE_BLOB"
+          test -z "$(git status --porcelain=v1)"
+          printf 'M\t%s\n' "$target" > "$RUNNER_TEMP/expected-path11.txt"
+          git diff --name-status --no-renames "$EXACT_PARENT" "$EXACT_HEAD" > "$RUNNER_TEMP/actual-path11.txt"
+          diff -u "$RUNNER_TEMP/expected-path11.txt" "$RUNNER_TEMP/actual-path11.txt"
+          test "$(git ls-tree "$EXACT_HEAD" -- "$target" | awk '{print $1" "$2" "$3}')" = "100644 blob $PATH11_BLOB"
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Verify syntax and frozen source invariants
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version | grep -E '^v24\.'
+          node --check production_studio/static/production_studio/lifecycle_publication.js
+          node --check production_studio/browser_tests/lifecycle_publication.mjs
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          browser = Path("production_studio/browser_tests/lifecycle_publication.mjs").read_text(encoding="utf-8")
+          tests = Path("production_studio/tests/test_lifecycle_publication.py").read_text(encoding="utf-8")
+          expected = {
+              "test_chromium_draft_preview_atomic_initial_publish_recover_and_reload",
+              "test_chromium_successor_validate_publish_lost_response_recovery_and_predecessor_noncurrent",
+          }
+          exported = set(re.findall(r"^export async function (test_chromium_[A-Za-z0-9_]+)\(", browser, re.M))
+          assert exported == expected, (exported, expected)
+          assert 'process.env.STUDIO_CDP_TIMEOUT_MS || "60000"' in browser
+          assert "timeout=300" in tests
+          for token in (
+              '"studio:lifecycle-publication-ticket-imported"',
+              '"DOM.getDocument"',
+              '"DOM.querySelector"',
+              '"DOM.setFileInputFiles"',
+              'retentionMethod: "exact-copy"',
+              'retentionMethod: "byte-exact-file"',
+              'PUBLICATION_TICKET_REJECTED',
+              'VALIDATION_TICKET_REJECTED',
+          ):
+              assert token in browser, token
+          print("PATH11_STATIC_ORACLE=PASS")
+          PY
+
+      - name: Install exact project test dependencies
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+          python -m pip check
+
+      - name: Collect exact portable and Chromium registries
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest --collect-only -q \
+            production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests \
+            | tee "$RUNNER_TEMP/path11-portable-collect.txt"
+          python -m pytest --collect-only -q \
+            production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationBrowserTests \
+            | tee "$RUNNER_TEMP/path11-browser-collect.txt"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ["RUNNER_TEMP"])
+          portable = (root / "path11-portable-collect.txt").read_text(encoding="utf-8")
+          browser = (root / "path11-browser-collect.txt").read_text(encoding="utf-8")
+          portable_nodes = [line for line in portable.splitlines() if "::ProductionStudioLifecyclePublicationTests::test_" in line]
+          browser_nodes = [line for line in browser.splitlines() if "::ProductionStudioLifecyclePublicationBrowserTests::test_chromium_" in line]
+          expected_browser = {
+              "test_chromium_draft_preview_atomic_initial_publish_recover_and_reload",
+              "test_chromium_successor_validate_publish_lost_response_recovery_and_predecessor_noncurrent",
+          }
+          actual_browser = {line.rsplit("::", 1)[-1] for line in browser_nodes}
+          assert len(portable_nodes) == 13, len(portable_nodes)
+          assert len(browser_nodes) == 2, len(browser_nodes)
+          assert actual_browser == expected_browser, (actual_browser, expected_browser)
+          print("PATH11_PORTABLE_NODE_COUNT=13")
+          print("PATH11_CHROMIUM_NODE_COUNT=2")
+          PY
+
+      - name: Prepare exact PostgreSQL test state
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python manage.py makemigrations --check --dry-run
+          python manage.py migrate --noinput
+          python manage.py check
+
+      - name: Run exact pinned PATH11 Chromium gate
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/c2a-path11-chrome-linux64.zip"
+          curl --fail --location --silent --show-error --retry 0 \
+            "https://storage.googleapis.com/chrome-for-testing-public/$C2A_CHROME_VERSION/linux64/chrome-linux64.zip" \
+            --output "$archive"
+          printf '%s  %s\n' "$C2A_CHROME_LINUX64_SHA256" "$archive" | sha256sum --check
+          unzip -q "$archive" -d "$RUNNER_TEMP/c2a-path11-chrome"
+          chrome="$RUNNER_TEMP/c2a-path11-chrome/chrome-linux64/chrome"
+          test -x "$chrome"
+          "$chrome" --version | grep -F "$C2A_CHROME_VERSION"
+          HTTP_PROXY=http://127.0.0.1:9 \
+          HTTPS_PROXY=http://127.0.0.1:9 \
+          ALL_PROXY=http://127.0.0.1:9 \
+          NO_PROXY=127.0.0.1,localhost \
+          STUDIO_CHROME_BIN="$chrome" \
+          STUDIO_CDP_TIMEOUT_MS=60000 \
+          python -m pytest -q \
+            production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationBrowserTests \
+            -p no:cacheprovider \
+            --junitxml="$RUNNER_TEMP/path11-chromium.xml"
+          python - <<'PY'
+          import os
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          root = ET.parse(Path(os.environ["RUNNER_TEMP"]) / "path11-chromium.xml").getroot()
+          cases = root.findall(".//testcase")
+          assert len(cases) == 2, len(cases)
+          assert not root.findall(".//failure")
+          assert not root.findall(".//error")
+          assert not root.findall(".//skipped")
+          print("PATH11_PINNED_CHROMIUM_2_OF_2=PASS")
+          PY
