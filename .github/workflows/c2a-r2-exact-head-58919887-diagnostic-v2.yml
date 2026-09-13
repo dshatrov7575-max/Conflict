@@ -1,0 +1,498 @@
+name: C2A R2 Exact Head Diagnostic 58919887 V2
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-exact-head-58919887-ci-v2-20260913
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: c2a-r2-exact-head-58919887-v2
+  cancel-in-progress: false
+
+jobs:
+  exact-head-acceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: conflict_analysis
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: ci-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    defaults:
+      run:
+        working-directory: software/conflict_analysis
+    env:
+      DJANGO_SECRET_KEY: ci-only-secret-key
+      POSTGRES_DB: conflict_analysis
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: ci-only-password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_CONN_MAX_AGE: "0"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+      USE_SQLITE: "false"
+      ACTIVE_SLICE: C2A
+      SLICE_BASE_HEAD: 561ef5327bf655a558adb21c54d0fdf0559d7024
+      SLICE_BASE_TREE: 5b209c782e1ac1a4783b01391dd59d813559ce57
+      C2A_R1_HEAD: 22f0f173a941de88d6920b6e19821168e9b30cc8
+      C2A_R1_TREE: f407e609adb2a8b94770b521a1302feb79281822
+      FINAL_R2_HEAD: 58919887c846015edd60bd2adc2714ad8f43e0db
+      FINAL_R2_TREE: 6ad7c8463988aab3b02e4f85aba50f370380c478
+      C2A_CHROME_VERSION: 152.0.7977.64
+      C2A_CHROME_LINUX64_SHA256: 8b592f066af71f054aab2cc80fc26f73c775c6d44ebb99d16ade924b24756c2e
+      STUDIO_CDP_TIMEOUT_MS: "60000"
+
+    steps:
+      - name: Check out exact final R2 staging head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: 58919887c846015edd60bd2adc2714ad8f43e0db
+
+      - name: Prove exact final identity topology and accepted blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_WORKSPACE"
+          test "$(git -C "$repo" rev-parse HEAD)" = "$FINAL_R2_HEAD"
+          test "$(git -C "$repo" rev-parse HEAD^{tree})" = "$FINAL_R2_TREE"
+          test "$(git -C "$repo" show -s --format=%P HEAD)" = "$C2A_R1_HEAD"
+          test "$(git -C "$repo" rev-parse "$C2A_R1_HEAD^{tree}")" = "$C2A_R1_TREE"
+          test "$(git -C "$repo" show -s --format=%P "$C2A_R1_HEAD")" = "$SLICE_BASE_HEAD"
+          test "$(git -C "$repo" rev-parse "$SLICE_BASE_HEAD^{tree}")" = "$SLICE_BASE_TREE"
+          test "$(git -C "$repo" rev-list --count "$C2A_R1_HEAD..HEAD")" = 1
+          test "$(git -C "$repo" rev-list --count "$SLICE_BASE_HEAD..HEAD")" = 2
+          test -z "$(git -C "$repo" rev-list --merges "$SLICE_BASE_HEAD..HEAD")"
+          git -C "$repo" diff --check "$C2A_R1_HEAD" HEAD
+          python - <<'PY'
+          import os, subprocess
+          repo = os.environ["GITHUB_WORKSPACE"]
+          expected = {
+              ".github/workflows/conflict-analysis.yml": "21c4b624d78f25670285f1699b67bd0d6e393f26",
+              "software/conflict_analysis/README.md": "e0da5bcf5f24809f6ca788a1a8f6b0f0144bf1f3",
+              "software/conflict_analysis/docs/adr/0009-production-studio-c-lifecycle-publication.md": "c0889c969db86b55af2613fe2f633cfa2123866a",
+              "software/conflict_analysis/docs/production-studio-c-read-only-runtime.md": "f50dd1fbc0cf967ad658327f37cd0ea70eba6a8f",
+              "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs": "6ce3fededdae818d0b13b92ebc04bfff982e5162",
+              "software/conflict_analysis/production_studio/browser_tests/lifecycle_publication.mjs": "e49e21dff75e93452b94f09fc32caa36d6800eee",
+              "software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js": "db98c5f86b907e239708b7a20719241e714afbb2",
+              "software/conflict_analysis/production_studio/templates/production_studio/lifecycle_publication_definition.html": "a1e7e9f3fac0be61bbce6a2a4f6e8bb221f62101",
+              "software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py": "680f0a857f371162e2223623d441019269d1fede",
+              "software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py": "4190bcc1871679a3b1e0a29f6991e3dc6876c912",
+              "software/conflict_analysis/production_studio/views.py": "955e715cb083f7e4467836ace77281de30ef1d39",
+              "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py": "a24654637b3eaeedca4a55b9894abfc2296b90f5",
+          }
+          def g(*args):
+              return subprocess.check_output(["git", "-C", repo, *args], text=True).strip()
+          r1 = g("diff", "--name-status", os.environ["C2A_R1_HEAD"], "HEAD").splitlines()
+          assert len(r1) == 12 and all(x.startswith("M\t") for x in r1), r1
+          assert {x.split("\t", 1)[1] for x in r1} == set(expected), r1
+          aggregate = g("diff", "--name-status", os.environ["SLICE_BASE_HEAD"], "HEAD").splitlines()
+          statuses = [x.split("\t", 1)[0] for x in aggregate]
+          assert len(aggregate) == 19 and statuses.count("A") == 9 and statuses.count("M") == 10, aggregate
+          for path, sha in expected.items():
+              entry = g("ls-tree", "HEAD", "--", path)
+              meta, got = entry.split("\t", 1)
+              mode, kind, blob = meta.split()
+              assert got == path and mode == "100644" and kind == "blob" and blob == sha, entry
+          print("FINAL_R2_EXACT_TOPOLOGY_AND_12_BLOBS=PASS")
+          PY
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: software/conflict_analysis/pyproject.toml
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies and initialize same-run evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python --version
+          node --version
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+          python -m pip check
+          evidence="$RUNNER_TEMP/successor-evidence"
+          mkdir "$evidence"
+          echo "SUCCESSOR_EVIDENCE_DIR=$evidence" >> "$GITHUB_ENV"
+          python - "$evidence/manifest.json" <<'PY'
+          import json, os, pathlib, sys
+          delivery_head = os.popen("git rev-parse HEAD").read().strip()
+          delivery_tree = os.popen("git rev-parse HEAD^{tree}").read().strip()
+          assert delivery_head == os.environ["FINAL_R2_HEAD"]
+          assert delivery_tree == os.environ["FINAL_R2_TREE"]
+          payload = {
+              "schema": "POST_F0L_SUCCESSOR_CI_EVIDENCE_V1",
+              "active_slice": "C2A",
+              "base_head": os.environ["SLICE_BASE_HEAD"],
+              "base_tree": os.environ["SLICE_BASE_TREE"],
+              "delivery_head": delivery_head,
+              "delivery_tree": delivery_tree,
+              "junit_files": [
+                  "c2a-portable-postgresql.xml",
+                  "c2a-portable-sqlite.xml",
+                  "c2a-foundation-postgresql.xml",
+                  "c2a-foundation-sqlite.xml",
+                  "c2a-c0-postgresql.xml",
+                  "c2a-c0-sqlite.xml",
+                  "c2a-c1-postgresql.xml",
+                  "c2a-c1-sqlite.xml",
+                  "c2a-c1-chromium-postgresql.xml",
+                  "c2a-chromium-postgresql.xml",
+                  "c2a-product-full-postgresql.xml",
+                  "c2a-product-full-sqlite.xml",
+                  "c2a-chromium-full-postgresql.xml",
+              ],
+              "migration_evidence": "migration.json",
+              "wheel_file": "conflict_analysis-0.1.0-py3-none-any.whl",
+              "wheel_install_evidence": "wheel-install.json",
+              "synthetic_tree_evidence": "synthetic-tree.json",
+          }
+          pathlib.Path(sys.argv[1]).write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+          )
+          print("C2A_EXACT_HEAD_EVIDENCE_MANIFEST=PASS")
+          PY
+
+      - name: Static verifier migration and syntax gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q conflict_analysis domain production_studio
+          python manage.py makemigrations --check --dry-run
+          python manage.py migrate --noinput
+          python manage.py check
+          node --check production_studio/static/production_studio/lifecycle_publication.js
+          node --check production_studio/browser_tests/lifecycle_publication.mjs
+          node --check production_studio/static/production_studio/audited_draft.js
+          node --unhandled-rejections=strict production_studio/browser_tests/audited_authoring.mjs --self-check-observation
+          python scripts/verify_production_studio_c_allowlist.py --self-check
+          base_migrations="$(git -C "$GITHUB_WORKSPACE" ls-tree -r --name-only "$SLICE_BASE_HEAD" -- software/conflict_analysis/domain/migrations)"
+          final_migrations="$(git -C "$GITHUB_WORKSPACE" ls-tree -r --name-only HEAD -- software/conflict_analysis/domain/migrations)"
+          test "$base_migrations" = "$final_migrations"
+
+      - name: Portable and Foundation PostgreSQL
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-portable-postgresql.xml"
+          python -m pytest domain/tests --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-foundation-postgresql.xml"
+          python - "$SUCCESSOR_EVIDENCE_DIR/c2a-portable-postgresql.xml" "$SUCCESSOR_EVIDENCE_DIR/c2a-foundation-postgresql.xml" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          def read(path):
+              root = ET.parse(path).getroot()
+              assert not root.findall(".//failure"), path
+              assert not root.findall(".//error"), path
+              return root, root.findall(".//testcase")
+          p_root, portable = read(sys.argv[1])
+          f_root, foundation = read(sys.argv[2])
+          assert len(portable) == 13 and not p_root.findall(".//skipped"), len(portable)
+          assert len(foundation) == 350 and not f_root.findall(".//skipped"), len(foundation)
+          print("C2A_POSTGRESQL_13_FOUNDATION_350=PASS")
+          PY
+
+      - name: Portable and Foundation SQLite and migration evidence
+        env:
+          USE_SQLITE: "true"
+          SQLITE_PATH: ${{ runner.temp }}/c2a-foundation.sqlite3
+        shell: bash
+        run: |
+          set -euo pipefail
+          python manage.py migrate --noinput
+          python -m pytest production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-portable-sqlite.xml"
+          python -m pytest domain/tests --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-foundation-sqlite.xml"
+          python - "$SUCCESSOR_EVIDENCE_DIR/c2a-portable-sqlite.xml" "$SUCCESSOR_EVIDENCE_DIR/c2a-foundation-sqlite.xml" "$SUCCESSOR_EVIDENCE_DIR/migration.json" <<'PY'
+          import json, os, pathlib, sys, xml.etree.ElementTree as ET
+          def read(path):
+              root = ET.parse(path).getroot()
+              assert not root.findall(".//failure"), path
+              assert not root.findall(".//error"), path
+              return root, root.findall(".//testcase")
+          p_root, portable = read(sys.argv[1])
+          f_root, foundation = read(sys.argv[2])
+          assert len(portable) == 13 and not p_root.findall(".//skipped"), len(portable)
+          assert len(foundation) == 350
+          assert sum(x.find("skipped") is None for x in foundation) == 322
+          assert sum(x.find("skipped") is not None for x in foundation) == 28
+          evidence = {
+              "schema": "POST_F0L_MIGRATION_EVIDENCE_V1",
+              "active_slice": "C2A",
+              "base_head": os.environ["SLICE_BASE_HEAD"],
+              "base_tree": os.environ["SLICE_BASE_TREE"],
+              "delivery_head": os.environ["FINAL_R2_HEAD"],
+              "delivery_tree": os.environ["FINAL_R2_TREE"],
+              "gates": [
+                  "compileall",
+                  "django_check",
+                  "makemigrations_check",
+                  "postgresql_clean_migrate_0016",
+                  "sqlite_clean_migrate_0016",
+                  "migration_filenames_unchanged",
+              ],
+          }
+          pathlib.Path(sys.argv[3]).write_text(
+              json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+          )
+          print("C2A_SQLITE_13_FOUNDATION_322_28=PASS")
+          PY
+
+      - name: Build exact wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip wheel --no-deps --wheel-dir "$SUCCESSOR_EVIDENCE_DIR" .
+          wheel="$SUCCESSOR_EVIDENCE_DIR/conflict_analysis-0.1.0-py3-none-any.whl"
+          test -f "$wheel"
+          test "$(find "$SUCCESSOR_EVIDENCE_DIR" -maxdepth 1 -type f -name '*.whl' | wc -l)" = 1
+          echo "STUDIO_C0_WHEEL=$wheel" >> "$GITHUB_ENV"
+
+      - name: C0 C1 and Product 68 on PostgreSQL and SQLite
+        shell: bash
+        run: |
+          set -euo pipefail
+          c0="production_studio/tests/test_browser_contract.py production_studio/tests/test_claim_boundaries.py production_studio/tests/test_read_only_http.py production_studio/tests/test_read_only_static_contracts.py"
+          c1="production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringContractTests"
+          c2a="production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests"
+          g7="production_player/tests/test_player_g7.py::ProductionPlayerG7Tests"
+          g8="production_player/tests/test_player_g8.py::ProductionPlayerG8Tests"
+          g9="production_player/tests/test_player_g9_evidence.py::ProductionPlayerG9EvidenceTests"
+          python -m pytest $c0 --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-c0-postgresql.xml"
+          python -m pytest $c1 --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-c1-postgresql.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/c2a-product-subset.sqlite3" python -m pytest $c0 --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-c0-sqlite.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/c2a-product-subset.sqlite3" python -m pytest $c1 --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-c1-sqlite.xml"
+          STUDIO_C0_WHEEL="$STUDIO_C0_WHEEL" python -m pytest $c0 $c1 $g7 $g8 $g9 $c2a -p no:cacheprovider --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-product-full-postgresql.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/c2a-product-full.sqlite3" STUDIO_C0_WHEEL="$STUDIO_C0_WHEEL" python -m pytest $c0 $c1 $g7 $g8 $g9 $c2a -p no:cacheprovider --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-product-full-sqlite.xml"
+          python - "$SUCCESSOR_EVIDENCE_DIR/c2a-c0-postgresql.xml" "$SUCCESSOR_EVIDENCE_DIR/c2a-c1-postgresql.xml" "$SUCCESSOR_EVIDENCE_DIR/c2a-c0-sqlite.xml" "$SUCCESSOR_EVIDENCE_DIR/c2a-c1-sqlite.xml" "$SUCCESSOR_EVIDENCE_DIR/c2a-product-full-postgresql.xml" "$SUCCESSOR_EVIDENCE_DIR/c2a-product-full-sqlite.xml" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          expected = [19, 8, 19, 8, 68, 68]
+          for path, count in zip(sys.argv[1:], expected):
+              root = ET.parse(path).getroot()
+              cases = root.findall(".//testcase")
+              assert len(cases) == count, (path, len(cases), count)
+              assert not root.findall(".//failure"), path
+              assert not root.findall(".//error"), path
+              assert not root.findall(".//skipped"), path
+          print("C2A_C0_C1_PRODUCT_68_BOTH_ENGINES=PASS")
+          PY
+
+      - name: Pinned Chromium 1 2 and full 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/c2a-chrome-for-testing-linux64.zip"
+          curl --fail --location --silent --show-error --retry 0 "https://storage.googleapis.com/chrome-for-testing-public/$C2A_CHROME_VERSION/linux64/chrome-linux64.zip" --output "$archive"
+          printf '%s  %s\n' "$C2A_CHROME_LINUX64_SHA256" "$archive" | sha256sum --check
+          unzip -q "$archive" -d "$RUNNER_TEMP/c2a-chrome"
+          chrome="$RUNNER_TEMP/c2a-chrome/chrome-linux64/chrome"
+          "$chrome" --version | grep -F "$C2A_CHROME_VERSION"
+          STUDIO_CHROME_BIN="$chrome" python -m pytest production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringBrowserTests::test_authenticated_edit_save_reload_is_bounded_foundation_only_and_receipted --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-c1-chromium-postgresql.xml"
+          STUDIO_CHROME_BIN="$chrome" python -m pytest production_studio/tests/test_lifecycle_publication.py -k 'test_chromium_draft_preview_atomic_initial_publish_recover_and_reload or test_chromium_successor_validate_publish_lost_response_recovery_and_predecessor_noncurrent' --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-chromium-postgresql.xml"
+          STUDIO_CHROME_BIN="$chrome" python -m pytest production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringBrowserTests::test_authenticated_edit_save_reload_is_bounded_foundation_only_and_receipted production_player/tests/test_player_g7.py::ProductionPlayerG7ChromiumTests production_player/tests/test_player_g8.py::ProductionPlayerG8ChromiumTests production_player/tests/test_player_g9_evidence.py::ProductionPlayerG9ChromiumTests production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationBrowserTests -p no:cacheprovider --junitxml="$SUCCESSOR_EVIDENCE_DIR/c2a-chromium-full-postgresql.xml"
+          python - "$SUCCESSOR_EVIDENCE_DIR/c2a-c1-chromium-postgresql.xml" "$SUCCESSOR_EVIDENCE_DIR/c2a-chromium-postgresql.xml" "$SUCCESSOR_EVIDENCE_DIR/c2a-chromium-full-postgresql.xml" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          expected = [1, 2, 10]
+          for path, count in zip(sys.argv[1:], expected):
+              root = ET.parse(path).getroot()
+              cases = root.findall(".//testcase")
+              assert len(cases) == count, (path, len(cases), count)
+              assert not root.findall(".//failure"), path
+              assert not root.findall(".//error"), path
+              assert not root.findall(".//skipped"), path
+          print("C2A_CHROMIUM_1_2_FULL_10=PASS")
+          PY
+
+      - name: Isolated wheel evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          isolated="$RUNNER_TEMP/c2a-wheel-venv"
+          python -m venv --system-site-packages "$isolated"
+          "$isolated/bin/python" -m pip install --disable-pip-version-check --force-reinstall --no-deps "$STUDIO_C0_WHEEL"
+          (
+            cd "$RUNNER_TEMP"
+            "$isolated/bin/python" - "$STUDIO_C0_WHEEL" "$SUCCESSOR_EVIDENCE_DIR/wheel-install.json" "$GITHUB_WORKSPACE/software/conflict_analysis" <<'PY'
+          import hashlib, importlib, json, os, pathlib, sys
+          from importlib.resources import files
+          from zipfile import ZipFile
+          wheel = pathlib.Path(sys.argv[1]).resolve(strict=True)
+          evidence = pathlib.Path(sys.argv[2])
+          repo = pathlib.Path(sys.argv[3]).resolve(strict=True)
+          venv = pathlib.Path(sys.prefix).resolve(strict=True)
+          os.environ.setdefault("DJANGO_SETTINGS_MODULE", "conflict_analysis.settings")
+          import django
+          django.setup()
+          def installed(name):
+              module = importlib.import_module(name)
+              path = pathlib.Path(module.__file__).resolve(strict=True)
+              assert path.is_relative_to(venv), (name, path, venv)
+              assert not path.is_relative_to(repo), (name, path, repo)
+              return module
+          with ZipFile(wheel) as archive:
+              members = set(archive.namelist())
+              assert archive.testzip() is None
+          required = {
+              "production_studio/__init__.py",
+              "production_studio/lifecycle_claim_boundaries.py",
+              "production_studio/urls.py",
+              "production_studio/views.py",
+              "production_studio/contracts/lifecycle_publication_claim_boundaries_v1.ru.json",
+              "production_studio/contracts/lifecycle_publication_claim_boundaries_v1.ru.json.sha256",
+              "production_studio/templates/production_studio/lifecycle_publication_definition.html",
+              "production_studio/static/production_studio/lifecycle_publication.css",
+              "production_studio/static/production_studio/lifecycle_publication.js",
+          }
+          assert required <= members, sorted(required - members)
+          installed("production_studio")
+          installed("production_studio.lifecycle_claim_boundaries")
+          installed("production_studio.urls")
+          installed("production_studio.views")
+          root = files("production_studio")
+          contract = root.joinpath("contracts/lifecycle_publication_claim_boundaries_v1.ru.json")
+          digest = root.joinpath("contracts/lifecycle_publication_claim_boundaries_v1.ru.json.sha256")
+          template = root.joinpath("templates/production_studio/lifecycle_publication_definition.html")
+          stylesheet = root.joinpath("static/production_studio/lifecycle_publication.css")
+          javascript = root.joinpath("static/production_studio/lifecycle_publication.js")
+          assert all(x.is_file() for x in (contract, digest, template, stylesheet, javascript))
+          assert hashlib.sha256(contract.read_bytes()).hexdigest() == digest.read_text(encoding="utf-8").split()[0]
+          repository_only = {
+              "README.md",
+              "docs/adr/0009-production-studio-c-lifecycle-publication.md",
+              "docs/production-studio-c-read-only-runtime.md",
+          }
+          assert all((repo / p).is_file() for p in repository_only)
+          assert not {
+              member for member in members
+              if any(member == p or member.endswith(f"/{p}") for p in repository_only)
+          }
+          payload = {
+              "schema": "POST_F0L_WHEEL_INSTALL_EVIDENCE_V1",
+              "active_slice": "C2A",
+              "base_head": os.environ["SLICE_BASE_HEAD"],
+              "base_tree": os.environ["SLICE_BASE_TREE"],
+              "delivery_head": os.environ["FINAL_R2_HEAD"],
+              "delivery_tree": os.environ["FINAL_R2_TREE"],
+              "wheel_sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
+              "source_tree_fallback": False,
+              "checks": [
+                  "wheel_built_exactly_once",
+                  "isolated_install",
+                  "production_studio_imported",
+                  "lifecycle_claim_boundaries_imported",
+                  "contract_payload_present",
+                  "template_payload_present",
+                  "static_payload_present",
+                  "docs_repository_only",
+              ],
+          }
+          evidence.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          print("C2A_ISOLATED_WHEEL_EVIDENCE=PASS")
+          PY
+          )
+
+      - name: Synthetic tree evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_WORKSPACE"
+          delivery_head="$(git -C "$repo" rev-parse HEAD)"
+          delivery_tree="$(git -C "$repo" rev-parse HEAD^{tree})"
+          merge_base="$(git -C "$repo" merge-base "$SLICE_BASE_HEAD" "$delivery_head")"
+          test "$merge_base" = "$SLICE_BASE_HEAD"
+          synthetic="$(git -C "$repo" merge-tree --write-tree "$SLICE_BASE_HEAD" "$delivery_head")"
+          independent="$(git -C "$repo" merge-tree --write-tree "$merge_base" "$delivery_head")"
+          test "$synthetic" = "$delivery_tree"
+          test "$independent" = "$delivery_tree"
+          python - "$SUCCESSOR_EVIDENCE_DIR/synthetic-tree.json" "$delivery_head" "$delivery_tree" "$synthetic" "$independent" <<'PY'
+          import json, os, pathlib, sys
+          payload = {
+              "schema": "C2A_SYNTHETIC_TREE_EVIDENCE_V1",
+              "base_head": os.environ["SLICE_BASE_HEAD"],
+              "delivery_head": sys.argv[2],
+              "parents": [os.environ["SLICE_BASE_HEAD"], sys.argv[2]],
+              "delivery_tree": sys.argv[3],
+              "synthetic_tree": sys.argv[4],
+              "independent_tree": sys.argv[5],
+          }
+          pathlib.Path(sys.argv[1]).write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+          )
+          print("C2A_SYNTHETIC_TREE_EQUALS_DELIVERY_TREE=PASS")
+          PY
+
+      - name: Final exact-head verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$FINAL_R2_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$FINAL_R2_TREE"
+          report="$RUNNER_TEMP/post-f0l-successor-verifier.json"
+          python scripts/verify_production_studio_c_allowlist.py \
+            --slice C2A \
+            --base-head "$SLICE_BASE_HEAD" \
+            --base-tree "$SLICE_BASE_TREE" \
+            --successor-evidence-dir "$SUCCESSOR_EVIDENCE_DIR" \
+            --repo "$GITHUB_WORKSPACE" \
+            | tee "$report"
+          python - "$report" <<'PY'
+          import json, sys
+          report = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert report["allowlist_result"] == "PASS"
+          assert report["active_slice"] == "C2A"
+          assert report["successor_ci_evidence"]["schema"] == "POST_F0L_SUCCESSOR_CI_EVIDENCE_V1"
+          print("C2A_FINAL_EXACT_HEAD_VERIFIER=PASS")
+          PY
+          cp "$report" "$SUCCESSOR_EVIDENCE_DIR/post-f0l-successor-verifier.json"
+
+      - name: PR 94 immutable guard and final clean readback
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$FINAL_R2_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$FINAL_R2_TREE"
+          git diff --quiet
+          git diff --cached --quiet
+          gh api "repos/$GITHUB_REPOSITORY/pulls/94" > "$RUNNER_TEMP/pr94.json"
+          python - "$RUNNER_TEMP/pr94.json" <<'PY'
+          import json, sys
+          pr = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert pr["state"] == "open"
+          assert pr["draft"] is True
+          assert pr["merged_at"] is None
+          assert pr["head"]["sha"] == "22f0f173a941de88d6920b6e19821168e9b30cc8"
+          print("PR94_OPEN_DRAFT_UNMERGED_IMMUTABLE_R1=PASS")
+          PY
+
+      - name: Upload exact-head diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: c2a-r2-exact-head-58919887-v2-evidence
+          path: ${{ runner.temp }}/successor-evidence
+          if-no-files-found: warn
