@@ -2246,7 +2246,7 @@
         performSealedAttempt(memory.unresolvedWrite, { reconciliation: true });
       }
     });
-    byId("recover-publication-operation")?.addEventListener("click", recoverPublication);
+    byId("recover-publication-operation")?.addEventListener("click", () => recoverPublication());
     byId("import-validation-ticket")?.addEventListener("click", importValidationTicket);
     byId("import-publication-ticket-action")?.addEventListener("click", importPublicationTicket);
     document
