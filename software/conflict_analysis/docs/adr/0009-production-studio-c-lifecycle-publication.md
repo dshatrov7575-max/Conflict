@@ -1,8 +1,8 @@
 # ADR 0009: Production Studio C2A composes Foundation lifecycle publication
 
 - Status: accepted for `CA-SUITE-I1-PRODUCTION-STUDIO-C2A-LIFECYCLE-PUBLICATION-001`
-- Start: `710b88f0db9ec2f0e2fae65c7e0c77025115771a`
-- Start tree: `0a15bd4d6993f87199329d0907be372aec9e69ca`
+- Start: `561ef5327bf655a558adb21c54d0fdf0559d7024`
+- Start tree: `5b209c782e1ac1a4783b01391dd59d813559ce57`
 - Scope: lifecycle presentation, sealed HUMAN attempts and recovery UX
 
 ## Decision
@@ -23,9 +23,10 @@ server-rendered capability hints come only from the trusted
 `studio_principal_from_user(request.user)` derivation, fail closed for an
 incoherent permission set, and remain presentation facts. The view imports no
 Product model, reads no lifecycle object, performs no lifecycle inference, and
-creates no `/api/studio` authority. The trusted policy symbols needed for that
-derivation are its sole `domain` import; it imports no model, query, service or
-Foundation DTO implementation.
+creates no `/api/studio` authority. The trusted `StudioCapability` and
+`StudioAuthorizationDenied` policy symbols needed for that derivation are its
+sole `domain` import; it imports no model, query, service or Foundation DTO
+implementation.
 
 The public claim route neither authenticates nor touches session state. It
 returns the exact committed UTF-8 bytes, exact `Content-Length`, quoted SHA-256
@@ -78,12 +79,12 @@ PUBLISHED current/non-current, RETIRED and unknown states
 
 The optional FD01 preview capability belongs to an exact Studio Editor through
 `DRAFT_SAVE`; initial publication belongs to an exact Studio Publisher through
-`DEFINITION_VALIDATE + DEFINITION_PUBLISH`. Those permission sets are not
+`DEFINITION_VALIDATE + DEFINITION_PUBLISH`. Those capability sets are not
 combined. After an Editor preview, the Publisher uses its separately pre-issued
 session and performs fresh FD03 and FD07 reads before preparing the atomic FD06
 initial publication. Presentation facts never upgrade either role.
 
-## Sealed attempts and HUMAN recovery
+## Sealed attempts, tickets and HUMAN retention
 
 Successor validation uses exact UTF-8 `{}` bytes, one canonical UUIDv4
 `Idempotency-Key` and the fresh strong manifest `If-Match`. Initial publication
@@ -92,30 +93,69 @@ uses exactly `{locale,workspace}`, where the HUMAN reviews visible `id`, `code`,
 publication uses exactly `{locale}`. Publication also carries one canonical
 UUIDv4 operation key and the fresh strong manifest `If-Match`.
 
-Each request is prepared as one immutable in-memory attempt. Before POST, C2A
-creates a canonical `FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1` from that same
-attempt and requires a HUMAN download or exact-copy acknowledgement. The ticket
-binds operation kind, project and definition IDs, method, exact route,
-operation ID, `If-Match`, body SHA-256 and body byte length. It contains no
-cookie, CSRF token, credential, role, capability, actor override or receipt and
-grants no authority.
+Each request is prepared as one immutable in-memory semantic attempt. Validation
+uses `FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1` with
+`operation_kind=VALIDATE_DEFINITION`; publication uses the distinct
+`FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1` with `operation_kind=INITIAL` or
+`SUCCESSOR`. A validation ticket can authorize only exact FD05 reconciliation;
+a publication ticket can authorize only exact operation-recovery GET and can
+never reconstruct or replay a publication POST. Cross-kind import fails before
+any mutation request.
 
-Request-affecting controls freeze after preparation. Cancelling an unsent
+Each ticket binds its contract and kind, project and definition IDs, exact
+method and route, operation ID, strong `If-Match`, canonical body SHA-256 and
+body byte length. It contains no cookie, CSRF token, credential, role,
+capability, actor override or receipt and grants no authority.
+
+Starting a download is only an export action and is not HUMAN-retention proof.
+POST remains disabled until the HUMAN returns the exact same canonical ticket
+bytes through either exact-copy paste acknowledgement or byte-exact file
+re-import. Any mismatch leaves the attempt fail-closed. Cancelling an unsent
 attempt invalidates it visibly; any replacement uses a new UUID and ticket.
-Headers and body are emitted only from the sealed attempt, with no late reads,
-hidden defaults, alternate whitespace, regenerated UUID, automatic save,
-retry, redirect or replacement key.
+
+CSRF is fresh transport admission, not sealed semantic identity. Immediately
+before every allowed FD05 or FD06 POST, including exact FD05 reconciliation,
+C2A re-reads the current server-rendered route and capability facts, requires
+the action-specific current capability set, reads the current same-origin CSRF
+token, and constructs ephemeral headers from that fresh token plus the sealed
+`Content-Type`, `If-Match` and `Idempotency-Key`. The route, UUID, body bytes,
+hash and length remain unchanged. Missing or rotated session authority, route
+drift or capability drift performs no replacement attempt and no automatic
+retry.
 
 An unknown validation outcome permits only explicit replay of the same exact
-FD05 request. After tab or process loss, importing the HUMAN-retained ticket
-requires fresh definition, readiness and server-authority checks before that
-same-request reconciliation is offered. A persisted `VALIDATED` state is not
-proof that the missing HUMAN operation produced it.
+FD05 request. After tab or process loss, importing the HUMAN-retained validation
+ticket requires fresh definition, readiness and server-authority checks before
+that same-request reconciliation is offered. A persisted `VALIDATED` state is
+not proof that the missing HUMAN operation produced it.
 
 An unknown publication outcome disables POST and permits only the accepted
 project-scoped operation-recovery GET. Recovery `404` means only that the exact
 operation result is not visible in the checked scope; it never proves that no
 commit occurred.
+
+## Response-channel verification
+
+Publication evidence is channel-specific and is never accepted through a
+weaker substitute:
+
+```text
+fresh FD06 POST
+  -> HTTP 201 + Idempotency-Replayed:false
+
+exact reconciled FD06 result
+  -> HTTP 200 + Idempotency-Replayed:true
+
+operation-recovery GET
+  -> HTTP 200 + Idempotency-Replayed:true
+  -> recovery-only no-store and scoped Vary contract
+```
+
+Every accepted channel verifies the exact canonical response body, receipt,
+definition, operation, request hash, ETag and Location required by Foundation.
+Recovery-only cache/Vary headers are not imposed on a normal accepted POST.
+Truncated, malformed or identity-mismatched success remains unverified and
+cannot be rendered as committed.
 
 ## Browser and navigation boundary
 
@@ -127,7 +167,10 @@ remains layout/preferences only; those values never enter `localStorage`,
 C1-to-C2A navigation is disabled while an authoring request is busy or
 unresolved. Dirty navigation requires explicit save or explicit discard.
 `beforeunload` is advisory for dirty, busy, unresolved-write or unknown-
-transport state and never performs an automatic mutation.
+transport state and never performs an automatic mutation. The inherited real-
+Chromium authoring regression handles the expected stale-dirty reload through a
+bounded, exact-session beforeunload dialog and exact frame/loader-correlated
+lifecycle barrier; it does not increase timeouts or retry.
 
 The checksum-bound claim contract permanently states Foundation authority,
 advisory readiness, exact recovery semantics, persisted-fact limits and the
@@ -135,12 +178,20 @@ absence of scientific validity. C2B package controls, Document, Chat, formulas,
 scalar Power, prediction, probability, risk, ranking and recommendations remain
 unavailable.
 
-## Consequences
+## Verification and consequences
 
 C2A makes initial and successor publication demonstrable without introducing a
-second lifecycle or write authority. The 13 portable contract nodes run on
-PostgreSQL and SQLite; two additional lifecycle scenarios run in real Chromium
-against PostgreSQL. PostgreSQL 18 remains the hosted and concurrency authority.
+second lifecycle or write authority. The existing registry remains exactly 13
+portable contract nodes on PostgreSQL and SQLite plus two lifecycle Chromium
+nodes on PostgreSQL. Required regression totals are Foundation PostgreSQL
+`350/350`, Foundation SQLite `322 passed + exact 28 inherited skips`, Product
+`68/68` on both engines, and PostgreSQL Chromium `10/10`, including C2A `2/2`.
+PostgreSQL 18 remains the hosted and concurrency authority.
+
+Browser evidence uses pinned Chrome-for-Testing `152.0.7977.64` as a deterministic
+regression browser. The Linux archive is accepted only after an exact
+verifier-enforced SHA-256 check; it is not selected as a dynamically current
+browser.
 
 This decision does not authorize C2B, Windows packaging, Player, Evidence,
 Experiments, model or migration changes, a release, or any Foundation contract

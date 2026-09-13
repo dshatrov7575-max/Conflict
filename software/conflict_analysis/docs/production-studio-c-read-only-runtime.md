@@ -79,9 +79,11 @@ GET /studio/claim-boundaries/lifecycle-publication/v1/
 
 The claim route is public, immutable and session-free. The lifecycle view does
 not read a definition or infer a lifecycle state. It passes literal Foundation
-route facts and presentation-only capability hints derived from the trusted
-Django principal; Foundation repeats authentication, exact object scope,
-capability, stale-state and transaction checks for every operation.
+route facts and presentation-only capability hints derived only through
+`studio_principal_from_user`, `StudioCapability` and the fail-closed
+`StudioAuthorizationDenied` policy seam. Foundation repeats authentication,
+exact object scope, capability, stale-state and transaction checks for every
+operation.
 
 ## C1 Foundation authoring boundary
 
@@ -158,24 +160,75 @@ preparation.
 Validation uses exact UTF-8 `{}` bytes. Initial publication sends exactly
 `{locale,workspace}` with visible HUMAN-reviewed `id`, `code`, `version`,
 `name`, `is_default=true` and JSON `metadata`; successor publication sends
-exactly `{locale}`. Every write uses one visible canonical UUIDv4 operation key
-and the fresh strong Foundation manifest ETag.
+exactly `{locale}`. Every semantic write attempt uses one visible canonical
+UUIDv4 operation key, an exact action-specific route and the fresh strong
+Foundation manifest ETag.
 
-Each validation or publication POST is emitted only from one immutable
-in-memory sealed attempt. A canonical
-`FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1` binds the operation kind, route,
-project and definition IDs, operation ID, `If-Match`, exact body SHA-256 and
-byte length. It contains no secret or authorization fact. POST remains disabled
-until the HUMAN downloads the ticket or acknowledges an exact copy. Cancelling
-an unsent attempt invalidates it; replacement requires a new UUID and ticket.
+Validation and publication use different non-authoritative tickets:
 
-An unknown validation outcome permits only explicit byte-identical FD05 replay,
-including restoration from the retained ticket after tab/process loss and
-fresh authority/topology reads. An unknown publication outcome disables POST
-and permits only
-`GET /api/foundation/projects/<project_id>/publication-operations/<operation_id>/`.
-Recovery 404 is not proof that no commit occurred. No write is automatically
-saved, retried, redirected or assigned a replacement key.
+```text
+VALIDATION
+contract = FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1
+operation_kind = VALIDATE_DEFINITION
+unknown outcome = explicit byte-identical FD05 POST reconciliation only
+process-loss recovery = ticket import -> fresh FD03 + FD07 + server authority -> exact same-request replay
+
+PUBLICATION
+contract = FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1
+operation_kind = INITIAL | SUCCESSOR
+unknown outcome = exact project/operation Foundation GET only
+publication POST reconstruction or replay = forbidden
+```
+
+A ticket binds its exact operation kind, project and definition UUIDs, method,
+route, operation UUID, `If-Match`, body SHA-256 and byte length. It contains no
+cookie, CSRF token, credential, role, capability, actor override or receipt and
+grants no authority. A validation ticket cannot expose publication recovery; a
+publication ticket cannot expose FD05 replay.
+
+Starting a file download is only an export action and never proves retention.
+POST remains disabled until the HUMAN either pastes an exact byte-for-byte copy
+of the canonical ticket or re-imports and verifies the exact downloaded file.
+Cancelling an unsent attempt invalidates it; any replacement uses a new UUID and
+ticket.
+
+Immediately before every permitted FD05/FD06 POST or FD05 reconciliation, C2A
+fresh-reads the server-rendered presentation facts, rechecks the exact current
+capability and route, then reads the current same-origin CSRF token. CSRF is an
+ephemeral transport admission fact and is never sealed into the semantic
+attempt or ticket. The operation UUID, route, `If-Match`, body bytes, hash and
+length remain byte-identical. Missing or rotated session/capability/route facts
+fail closed without a replacement UUID or automatic retry.
+
+The only accepted action routes are exact:
+
+```text
+VALIDATE_DEFINITION -> /api/foundation/definitions/{definition_id}/validate/
+PUBLISH_INITIAL -> /api/foundation/definitions/{definition_id}/publish-initial/
+PUBLISH_SUCCESSOR -> /api/foundation/definitions/{definition_id}/publish-successor/
+```
+
+DOM, dataset, action, definition or recovery-template tampering must produce a
+bounded state and zero Foundation mutation requests. Arbitrary server `code`
+values or exception/detail prose are never rendered directly; a finite,
+operation/status-compatible map distinguishes capability, session, inaccessible
+404, envelope/validation 400, stale/state/key conflicts, unknown transport,
+unverified success and ambiguous recovery 404 states.
+
+Publication receipt verification is channel-specific and the channels are not
+substitutes:
+
+```text
+fresh FD06 POST = 201 + Idempotency-Replayed:false
+exact reconciled FD06 result = 200 + Idempotency-Replayed:true
+operation-recovery GET = 200 + Idempotency-Replayed:true + recovery-only no-store/scoped-Vary contract
+```
+
+All channels retain exact canonical body, receipt, definition, operation,
+request hash, ETag and Location verification. A malformed, truncated or
+identity-mismatched success remains unknown/unverified and cannot be promoted to
+committed. Recovery 404 is not proof that no commit occurred. No write is
+automatically saved, retried, redirected or assigned a replacement key.
 
 C1-to-C2A navigation is disabled while busy or unresolved, and dirty
 navigation requires explicit save or discard. `beforeunload` guards dirty,
@@ -241,28 +294,31 @@ risk, ranking and recommendation controls remain unavailable.
 
 ## Platform roles and verification
 
-The supported Windows partner role for C0 is a current Chromium browser only,
-connecting over HTTPS to the hosted Linux service. Windows is not a supported
-Gunicorn or PostgreSQL server authority for this slice. Browser acceptance uses
-real current Chromium against a pre-issued session and checks GET-only traffic,
-bounded DOM/storage, exact downloads, permanent claims and a byte-identical
-database snapshot.
+The supported Windows partner role is a Chromium browser connecting over HTTPS
+to the hosted Linux service. Windows is not a supported Gunicorn or PostgreSQL
+server authority for these slices. CI browser acceptance uses the pinned
+Chrome-for-Testing `152.0.7977.64` Linux archive with one exact SHA-256 enforced
+before extraction by the workflow and verifier. This is a deterministic
+regression browser, not a dynamically current browser. Acceptance checks exact
+same-origin traffic, bounded DOM/storage, permanent claims, response-channel
+contracts and database effects.
 
-SQLite is an explicit local/test convenience only. The accepted FD07 run
-collects 236 Foundation nodes: PostgreSQL passes all 236, while SQLite passes
-221 with exactly fifteen named PostgreSQL-only skips. SQLite
-does not prove row-locking, transaction interleaving or any other PostgreSQL
-concurrency semantics. Delivery still requires the clean PostgreSQL 18 gate:
-236 Foundation passes with no skips, the unchanged 19-node C0 regression on
-both databases, all eight portable C1 contract nodes on both databases, all 13
-portable C2A nodes on both databases, the single real-Chromium C1 node and two
-real-Chromium C2A nodes on PostgreSQL. The Product accounting is 40
-cross-backend nodes, three PostgreSQL-only Chromium additions and 43 total
-PostgreSQL Product executions; the C0 Chromium-backed node remains included in
-the 19 cross-backend C0 nodes.
+SQLite is an explicit local/test convenience only and does not prove row
+locking, transaction interleaving or any PostgreSQL concurrency semantics. The
+complete delivery accounting is:
 
-Before delivery, verify the pinned base/allowlist and unchanged `domain/` tree,
-compile all packages, run Django checks and migration drift detection, execute
-both database suites, validate the claim contract hash, run the Chromium smoke,
-and inspect the wheel for every runtime template/static/contract asset. A failed
-gate is not permission to widen C0 or C1.
+```text
+Foundation PostgreSQL 18 = 350/350 PASS
+Foundation SQLite = 322 PASS + exact 28 inherited PostgreSQL-only skips
+Product PostgreSQL 18 = 68/68 PASS
+Product SQLite = 68/68 PASS
+PostgreSQL real-Chromium registry = 10/10 PASS, including C2A 2/2
+```
+
+Before delivery, verify the exact accepted G9 base, immutable R1, two-commit C2A
+R2 topology, exact 12-path all-`M` correction delta, exact 19-path aggregate,
+accepted preimages and frozen surfaces. Compile all packages, run Django checks
+and migration drift detection, execute both database suites, validate claim
+contract hashes, run the pinned Chromium registries, and inspect the wheel for
+every runtime template/static/contract asset. A failed gate is not permission
+to widen C0, C1 or C2A.
