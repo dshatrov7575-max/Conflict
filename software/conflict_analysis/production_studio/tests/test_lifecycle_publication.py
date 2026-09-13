@@ -717,11 +717,25 @@ class ProductionStudioLifecyclePublicationTests(
         self.assertEqual(database_fingerprint(), read_only_baseline)
         script = LIFECYCLE_SCRIPT.read_text(encoding="utf-8")
         recovery_source = script[
-            script.index("async function recoverPublication()"):
+            script.index("async function recoverPublication(override = null)"):
             script.index("async function verifyImportedValidationTicket")
         ]
         self.assertIn('method: "GET"', recovery_source)
         self.assertNotIn('method: "POST"', recovery_source)
+        self.assertIn('"FOUNDATION_OBJECT_NOT_VISIBLE"', recovery_source)
+        self.assertIn(
+            '"404 не раскрывает существование operation; исход остаётся неизвестным."',
+            recovery_source,
+        )
+        publication_import = script[
+            script.index("async function importPublicationTicket()"):
+            script.index("async function manualRefresh()")
+        ]
+        self.assertIn("recoveryOnly: true", publication_import)
+        self.assertIn("memory.unresolvedWrite = recovery", publication_import)
+        self.assertNotIn("memory.sealedAttempt =", publication_import)
+        self.assertIn("if (recovery) await recoverPublication(recovery)", publication_import)
+        self.assertNotIn('method: "POST"', publication_import)
         publication_receipt = script[
             script.index("async function verifyPublicationReceipt"):
             script.index("function renderVerifiedResult")
@@ -747,7 +761,6 @@ class ProductionStudioLifecyclePublicationTests(
             '["authorization|cookie", "accept|authorization|cookie"].includes(receiptVary)',
             publication_receipt,
         )
-        self.assertIn("404 означает только отсутствие видимого результата", recovery_source)
 
     def test_operation_identity_and_receipts_never_enter_browser_persistent_storage(self):
         lifecycle = LIFECYCLE_SCRIPT.read_text(encoding="utf-8")
@@ -952,9 +965,37 @@ class ProductionStudioLifecyclePublicationTests(
         self.assertRegex(template, r'id="execute-sealed-attempt"[^>]*disabled')
         self.assertIn("FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1", lifecycle)
         self.assertIn("!memory.ticketRetained", lifecycle)
-        self.assertIn("retainTicket(\"download\")", lifecycle)
-        self.assertIn("retainTicket(\"exact-copy\")", lifecycle)
-        self.assertIn("if (byId(\"ticket-copy-proof\")?.value !== memory.sealedAttempt.ticketText)", lifecycle)
+        retain = lifecycle[
+            lifecycle.index("function retainTicket(method)"):
+            lifecycle.index("function downloadTicket()")
+        ]
+        self.assertIn('new Set(["exact-copy", "byte-exact-file"])', retain)
+        download = lifecycle[
+            lifecycle.index("function downloadTicket()"):
+            lifecycle.index("function acknowledgeExactCopy()")
+        ]
+        self.assertIn("link.click()", download)
+        self.assertNotIn("retainTicket(", download)
+        self.assertIn("Скачивание инициировано, но не доказывает сохранение", download)
+        exact_copy = lifecycle[
+            lifecycle.index("function acknowledgeExactCopy()"):
+            lifecycle.index("async function acknowledgeTicketFile()")
+        ]
+        self.assertIn('retainTicket("exact-copy")', exact_copy)
+        self.assertIn('if (byId("ticket-copy-proof")?.value !== memory.sealedAttempt.ticketText)', exact_copy)
+        self.assertIn("POST остаётся заблокирован", exact_copy)
+        file_proof = lifecycle[
+            lifecycle.index("async function acknowledgeTicketFile()"):
+            lifecycle.index("function discardUnsentAttempt")
+        ]
+        self.assertIn('const input = byId("ticket-file-proof")', file_proof)
+        self.assertIn("file.size !== expected.byteLength", file_proof)
+        self.assertIn("actual.byteLength !== expected.byteLength", file_proof)
+        self.assertIn("for (let index = 0; index < expected.byteLength; index += 1)", file_proof)
+        self.assertIn("actual[index] !== expected[index]", file_proof)
+        self.assertIn('retainTicket("byte-exact-file")', file_proof)
+        self.assertIn('id="ticket-file-proof"', template)
+        self.assertIn('id="acknowledge-ticket-file"', template)
         prepare = lifecycle[
             lifecycle.index("async function prepareAttempt()"):
             lifecycle.index("function renderAttempt")
@@ -999,14 +1040,80 @@ class ProductionStudioLifecyclePublicationTests(
             "route",
             "ticket_sha256",
         }
+        publication_expected_keys = {
+            "contract",
+            "contract_version",
+            "definition_id",
+            "expected_manifest_hash",
+            "operation_id",
+            "operation_kind",
+            "project_id",
+            "request_body_sha256",
+        }
+        publication_forbidden_fields = {
+            "route",
+            "method",
+            "if_match",
+            "body_utf8",
+            "body_sha256",
+            "body_byte_length",
+            "content_type",
+            "csrf",
+            "headers",
+            "ticket_sha256",
+        }
         ticket_match = re.search(r"const TICKET_KEYS = Object\.freeze\(\[(.*?)\]\);", lifecycle, re.S)
+        publication_ticket_match = re.search(
+            r"const PUBLICATION_TICKET_KEYS = Object\.freeze\(\[(.*?)\]\);",
+            lifecycle,
+            re.S,
+        )
         self.assertIsNotNone(ticket_match)
+        self.assertIsNotNone(publication_ticket_match)
         self.assertEqual(set(re.findall(r'"([a-z0-9_]+)"', ticket_match.group(1))), expected_keys)
+        publication_keys = set(
+            re.findall(r'"([a-z0-9_]+)"', publication_ticket_match.group(1))
+        )
+        self.assertEqual(publication_keys, publication_expected_keys)
+        self.assertTrue(publication_forbidden_fields.isdisjoint(publication_keys))
         self.assertIn("const ticket = Object.freeze({ ...ticketCore, ticket_sha256: ticketSha256 })", lifecycle)
+        self.assertIn('contract: PUBLICATION_TICKET_CONTRACT', lifecycle)
+        self.assertIn('contract_version: "1.0.0"', lifecycle)
+        verify_validation_ticket = lifecycle[
+            lifecycle.index("async function verifyImportedValidationTicket"):
+            lifecycle.index("async function verifyImportedPublicationTicket")
+        ]
+        self.assertIn("!exactKeys(ticket, TICKET_KEYS)", verify_validation_ticket)
+        self.assertIn("ticket.contract !== HUMAN_TICKET_CONTRACT", verify_validation_ticket)
+        self.assertIn('ticket.operation_kind !== "VALIDATE_DEFINITION"', verify_validation_ticket)
+        verify_publication_ticket = lifecycle[
+            lifecycle.index("async function verifyImportedPublicationTicket"):
+            lifecycle.index("async function readCurrentServerAuthority")
+        ]
+        self.assertIn("!exactKeys(ticket, PUBLICATION_TICKET_KEYS)", verify_publication_ticket)
+        self.assertIn("ticket.contract !== PUBLICATION_TICKET_CONTRACT", verify_publication_ticket)
+        self.assertIn('ticket.contract_version !== "1.0.0"', verify_publication_ticket)
+        self.assertIn('["INITIAL", "SUCCESSOR"].includes(ticket.operation_kind)', verify_publication_ticket)
+        validation_import = lifecycle[
+            lifecycle.index("async function importValidationTicket()"):
+            lifecycle.index("async function importPublicationTicket()")
+        ]
+        self.assertIn("memory.sealedAttempt = attempt", validation_import)
+        self.assertIn("memory.unresolvedWrite = attempt", validation_import)
+        self.assertIn("memory.ticketRetained = true", validation_import)
+        publication_import = lifecycle[
+            lifecycle.index("async function importPublicationTicket()"):
+            lifecycle.index("async function manualRefresh()")
+        ]
+        self.assertIn("recoveryOnly: true", publication_import)
+        self.assertIn("memory.unresolvedWrite = recovery", publication_import)
+        self.assertNotIn("memory.sealedAttempt =", publication_import)
+        self.assertIn("if (recovery) await recoverPublication(recovery)", publication_import)
+        self.assertNotIn('method: "POST"', publication_import)
         self.assertIn("memory.sealedAttempt = Object.freeze", lifecycle)
         self.assertIn("memory.sealedAttempt !== attempt", lifecycle)
         self.assertIn("memory.sealedAttempt.ticketText", lifecycle)
-        self.assertIn("discardUnsentAttempt(\"ATTEMPT_INVALIDATED_BY_EDIT\")", lifecycle)
+        self.assertIn('discardUnsentAttempt("ATTEMPT_INVALIDATED_BY_EDIT")', lifecycle)
         self.assertIn("Любая замена получит новый operation UUID", lifecycle)
         core = {
             "contract": "FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1",
