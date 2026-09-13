@@ -1,0 +1,45 @@
+# Temporary control-plane fixup for the MAIN-authorized builder only.
+name: C2A R2 stabilization builder guard fixup
+'on':
+  push:
+    branches:
+      - agent/c2a-r2-c1-chromium-observer-stabilization-builder-20260914
+permissions:
+  contents: write
+jobs:
+  fix-builder-guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Correct only the builder timeout-preservation assertion
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE=.github/workflows/c2a-r2-c1-chromium-observer-stabilization-builder.yml
+          BAD='assert '\''STUDIO_CDP_TIMEOUT_MS", "60000"'\'' in text'
+          GOOD='assert '\''STUDIO_CDP_TIMEOUT_MS || "60000"'\'' in text'
+          if ! grep -Fq "$BAD" "$FILE"; then
+            echo "BUILDER_GUARD_ALREADY_FIXED=PASS"
+            exit 0
+          fi
+          python - "$FILE" "$BAD" "$GOOD" <<'PY'
+          from pathlib import Path
+          import sys
+          path = Path(sys.argv[1])
+          bad, good = sys.argv[2:]
+          text = path.read_text(encoding="utf-8")
+          assert text.count(bad) == 1
+          text = text.replace(bad, good, 1)
+          path.write_text(text, encoding="utf-8")
+          PY
+          git diff --check
+          test "$(git diff --name-only)" = "$FILE"
+          git config user.name "OpenAI MAIN recovery"
+          git config user.email "openai-main@users.noreply.github.com"
+          git add -- "$FILE"
+          git commit -m "ci: correct stabilization builder guard assertion"
+          git push origin HEAD:refs/heads/agent/c2a-r2-c1-chromium-observer-stabilization-builder-20260914
+          echo "BUILDER_GUARD_FIXUP=PASS"
