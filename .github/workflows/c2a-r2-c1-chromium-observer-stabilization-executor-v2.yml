@@ -1,0 +1,47 @@
+# Temporary MAIN-authorized executor v2; final R2 never contains this workflow.
+name: C2A R2 stabilization builder in-memory executor v2
+'on':
+  push:
+    branches:
+      - agent/c2a-r2-c1-chromium-observer-stabilization-builder-20260914
+permissions:
+  contents: write
+jobs:
+  execute-corrected-builder-v2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Extract complete builder run block and correct only guard assertion in memory
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE=.github/workflows/c2a-r2-c1-chromium-observer-stabilization-builder.yml
+          OUT="$RUNNER_TEMP/stabilization-builder.sh"
+          python - "$SOURCE" "$OUT" <<'PY'
+          from pathlib import Path
+          import sys
+          source, output = map(Path, sys.argv[1:])
+          lines = source.read_text(encoding="utf-8").splitlines()
+          marker = "        run: |"
+          start = lines.index(marker) + 1
+          body = []
+          for line in lines[start:]:
+              if not line:
+                  body.append("")
+              elif line.startswith("          "):
+                  body.append(line[10:])
+              else:
+                  raise AssertionError(f"unexpected line outside terminal run block: {line!r}")
+          text = "\n".join(body) + "\n"
+          bad = '''assert 'STUDIO_CDP_TIMEOUT_MS", "60000"' in text'''
+          good = '''assert 'STUDIO_CDP_TIMEOUT_MS || "60000"' in text'''
+          assert text.count(bad) == 1, text.count(bad)
+          text = text.replace(bad, good, 1)
+          assert text.count(good) == 1
+          output.write_text(text, encoding="utf-8")
+          print("IN_MEMORY_BUILDER_GUARD_FIX_V2=PASS")
+          PY
+          bash "$OUT"
