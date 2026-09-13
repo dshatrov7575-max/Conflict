@@ -19,8 +19,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Build one-commit R2 sibling and isolated diagnostic carrier
+      - name: Build remote Git objects for one-commit R2 sibling and diagnostic carrier
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           R1=22f0f173a941de88d6920b6e19821168e9b30cc8
@@ -67,7 +69,6 @@ jobs:
           i = positions[0]
           lines[i] = '            "$delivery_tree" <<\'PY\''
           del lines[i + 1:i + 3]
-
           remove = (
               "              chromium_archive_version,",
               "              chromium_archive_sha256,",
@@ -90,51 +91,60 @@ jobs:
           test "${#current_delta[@]}" -eq 1
           test "${current_delta[0]}" = $'M\t.github/workflows/conflict-analysis.yml'
           git add "$WORKFLOW"
-          candidate_tree="$(git write-tree)"
-          test "$candidate_tree" != "$CURRENT_TREE"
-          mapfile -t tree_delta < <(git diff --name-status "$CURRENT^{tree}" "$candidate_tree")
+          candidate_tree_local="$(git write-tree)"
+          test "$candidate_tree_local" != "$CURRENT_TREE"
+          mapfile -t tree_delta < <(git diff --name-status "$CURRENT^{tree}" "$candidate_tree_local")
           test "${#tree_delta[@]}" -eq 1
           test "${tree_delta[0]}" = $'M\t.github/workflows/conflict-analysis.yml'
-          candidate="$(printf '%s\n' 'C2A R2: repair canonical evidence manifest schema' | git commit-tree "$candidate_tree" -p "$R1")"
-          test "$(git show -s --format=%P "$candidate")" = "$R1"
-          test "$(git rev-parse "$candidate^{tree}")" = "$candidate_tree"
-
-          mapfile -t r1_delta < <(git diff --name-status "$R1" "$candidate")
+          candidate_local="$(printf '%s\n' 'C2A R2: repair canonical evidence manifest schema' | git commit-tree "$candidate_tree_local" -p "$R1")"
+          test "$(git show -s --format=%P "$candidate_local")" = "$R1"
+          mapfile -t r1_delta < <(git diff --name-status "$R1" "$candidate_local")
           test "${#r1_delta[@]}" -eq 12
           test "$(printf '%s\n' "${r1_delta[@]}" | awk '$1=="M"{n++} END{print n+0}')" -eq 12
-          mapfile -t g9_delta < <(git diff --name-status "$G9" "$candidate")
+          mapfile -t g9_delta < <(git diff --name-status "$G9" "$candidate_local")
           test "${#g9_delta[@]}" -eq 19
           test "$(printf '%s\n' "${g9_delta[@]}" | awk '$1=="A"{n++} END{print n+0}')" -eq 9
           test "$(printf '%s\n' "${g9_delta[@]}" | awk '$1=="M"{n++} END{print n+0}')" -eq 10
-          new_workflow_blob="$(git rev-parse "$candidate:$WORKFLOW")"
-          test "$new_workflow_blob" != "$OLD_WORKFLOW_BLOB"
-          git push origin "$candidate:refs/heads/$CANDIDATE_BRANCH"
+          new_workflow_blob_local="$(git rev-parse "$candidate_local:$WORKFLOW")"
+          test "$new_workflow_blob_local" != "$OLD_WORKFLOW_BLOB"
 
-          git checkout --detach "$candidate"
+          python - "$WORKFLOW" > "$RUNNER_TEMP/blob.json" <<'PY'
+          import json, pathlib, sys
+          print(json.dumps({"content": pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"), "encoding": "utf-8"}))
+          PY
+          new_workflow_blob="$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input "$RUNNER_TEMP/blob.json" --jq .sha)"
+          test "$new_workflow_blob" = "$new_workflow_blob_local"
+          python - "$CURRENT_TREE" "$WORKFLOW" "$new_workflow_blob" > "$RUNNER_TEMP/tree.json" <<'PY'
+          import json, sys
+          base_tree, path, blob = sys.argv[1:]
+          print(json.dumps({"base_tree": base_tree, "tree": [{"path": path, "mode": "100644", "type": "blob", "sha": blob}]}))
+          PY
+          candidate_tree="$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input "$RUNNER_TEMP/tree.json" --jq .sha)"
+          test "$candidate_tree" = "$candidate_tree_local"
+          python - "$candidate_tree" "$R1" > "$RUNNER_TEMP/commit.json" <<'PY'
+          import json, sys
+          tree, parent = sys.argv[1:]
+          print(json.dumps({"message": "C2A R2: repair canonical evidence manifest schema", "tree": tree, "parents": [parent], "author": {"name": "OpenAI MAIN diagnostic", "email": "openai-main@users.noreply.github.com"}, "committer": {"name": "OpenAI MAIN diagnostic", "email": "openai-main@users.noreply.github.com"}}))
+          PY
+          candidate="$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" --input "$RUNNER_TEMP/commit.json" --jq .sha)"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$candidate" --jq .tree.sha)" = "$candidate_tree"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$candidate" --jq '.parents | length')" -eq 1
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$candidate" --jq '.parents[0].sha')" = "$R1"
+
+          git checkout --detach "$candidate_local"
           git checkout refs/remotes/origin/old-c2a-diagnostic -- "$DIAG_PATH"
           python - "$DIAG_PATH" "$candidate" "$candidate_tree" "$new_workflow_blob" \
             "$CURRENT" "$OLD_PR_HEAD" "$OLD_DIAG_BRANCH" "$DIAG_BRANCH" \
             "$OLD_STAGING_BRANCH" "$CANDIDATE_BRANCH" "$CURRENT_TREE" "$OLD_WORKFLOW_BLOB" <<'PY'
           from pathlib import Path
           import sys
-
           (
-              path_s,
-              candidate,
-              candidate_tree,
-              new_workflow_blob,
-              current,
-              old_pr_head,
-              old_diag_branch,
-              diag_branch,
-              old_staging_branch,
-              candidate_branch,
-              current_tree,
-              old_workflow_blob,
+              path_s, candidate, candidate_tree, new_workflow_blob, current,
+              old_pr_head, old_diag_branch, diag_branch, old_staging_branch,
+              candidate_branch, current_tree, old_workflow_blob,
           ) = sys.argv[1:]
           path = Path(path_s)
           text = path.read_text(encoding="utf-8")
-
           replacements = [
               (current, candidate, 2),
               (current_tree, candidate_tree, 1),
@@ -154,17 +164,29 @@ jobs:
           path.write_text(text, encoding="utf-8")
           print("DIAGNOSTIC_EXACT_HEAD_REPIN=PASS")
           PY
-          git add "$DIAG_PATH"
-          mapfile -t diag_delta < <(git diff --cached --name-status "$candidate")
-          test "${#diag_delta[@]}" -eq 1
-          test "${diag_delta[0]}" = $'A\t.github/workflows/c2a-r2-final-exact-head-diagnostic-order-repair.yml'
-          diag_tree="$(git write-tree)"
-          diag_commit="$(printf '%s\n' 'ci: exact-head diagnostic for manifest-schema repair' | git commit-tree "$diag_tree" -p "$candidate")"
-          test "$(git show -s --format=%P "$diag_commit")" = "$candidate"
-          git push origin "$diag_commit:refs/heads/$DIAG_BRANCH"
+
+          python - "$DIAG_PATH" > "$RUNNER_TEMP/diag-blob.json" <<'PY'
+          import json, pathlib, sys
+          print(json.dumps({"content": pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"), "encoding": "utf-8"}))
+          PY
+          diag_blob="$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input "$RUNNER_TEMP/diag-blob.json" --jq .sha)"
+          python - "$candidate_tree" "$DIAG_PATH" "$diag_blob" > "$RUNNER_TEMP/diag-tree.json" <<'PY'
+          import json, sys
+          base_tree, path, blob = sys.argv[1:]
+          print(json.dumps({"base_tree": base_tree, "tree": [{"path": path, "mode": "100644", "type": "blob", "sha": blob}]}))
+          PY
+          diag_tree="$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input "$RUNNER_TEMP/diag-tree.json" --jq .sha)"
+          python - "$diag_tree" "$candidate" > "$RUNNER_TEMP/diag-commit.json" <<'PY'
+          import json, sys
+          tree, parent = sys.argv[1:]
+          print(json.dumps({"message": "ci: exact-head diagnostic for manifest-schema repair", "tree": tree, "parents": [parent], "author": {"name": "OpenAI MAIN diagnostic", "email": "openai-main@users.noreply.github.com"}, "committer": {"name": "OpenAI MAIN diagnostic", "email": "openai-main@users.noreply.github.com"}}))
+          PY
+          diag_commit="$(gh api --method POST "repos/$GITHUB_REPOSITORY/git/commits" --input "$RUNNER_TEMP/diag-commit.json" --jq .sha)"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/commits/$diag_commit" --jq '.parents[0].sha')" = "$candidate"
 
           echo "CANDIDATE_HEAD=$candidate"
           echo "CANDIDATE_TREE=$candidate_tree"
           echo "CANDIDATE_WORKFLOW_BLOB=$new_workflow_blob"
           echo "DIAGNOSTIC_COMMIT=$diag_commit"
-          echo "BUILD_AND_DIAGNOSTIC_CARRIER=PASS"
+          echo "DIAGNOSTIC_TREE=$diag_tree"
+          echo "BUILD_REMOTE_OBJECTS=PASS"
