@@ -1,0 +1,222 @@
+name: C2A R2 canonical JUnit order repair launcher v2
+
+'on':
+  push:
+    branches:
+      - agent/c2a-r2-canonical-order-repair-launcher-v2-20260913
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: c2a-r2-canonical-order-repair-launcher-v2-20260913
+  cancel-in-progress: false
+
+jobs:
+  build-repaired-r2-and-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out launcher carrier
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build repaired R2 sibling and diagnostic carrier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          OLD_R2=58919887c846015edd60bd2adc2714ad8f43e0db
+          OLD_R2_TREE=6ad7c8463988aab3b02e4f85aba50f370380c478
+          OLD_WORKFLOW_BLOB=21c4b624d78f25670285f1699b67bd0d6e393f26
+          R1=22f0f173a941de88d6920b6e19821168e9b30cc8
+          G9=561ef5327bf655a558adb21c54d0fdf0559d7024
+          G9_TREE=5b209c782e1ac1a4783b01391dd59d813559ce57
+          TARGET=codex/ca-suite-i1-production-studio-c2a-lifecycle-publication
+          G9_BRANCH=codex/ca-suite-i1-player-g9-evidence-ui
+          STAGING=agent/c2a-r2-canonical-order-repair-staging-20260913
+          DIAG_BRANCH=agent/c2a-r2-canonical-order-repair-diagnostic-20260913
+          DIAG_SOURCE_BRANCH=codex/c2a-r2-exact-head-diagnostic-58919887
+          DIAG_SOURCE_PATH=.github/workflows/c2a-r2-final-exact-head-diagnostic.yml
+          DIAG_PATH=.github/workflows/c2a-r2-final-exact-head-diagnostic-order-repair.yml
+          WORKFLOW=.github/workflows/conflict-analysis.yml
+
+          git config user.name "OpenAI MAIN diagnostic"
+          git config user.email "openai-main@users.noreply.github.com"
+          git fetch --no-tags origin \
+            "+refs/heads/$TARGET:refs/remotes/origin/c2a-target" \
+            "+refs/heads/$G9_BRANCH:refs/remotes/origin/c2a-g9" \
+            "+refs/heads/$DIAG_SOURCE_BRANCH:refs/remotes/origin/c2a-diag-source"
+          test "$(git rev-parse refs/remotes/origin/c2a-target)" = "$OLD_R2"
+          test "$(git rev-parse refs/remotes/origin/c2a-g9)" = "$G9"
+          test "$(git rev-parse "$OLD_R2^{tree}")" = "$OLD_R2_TREE"
+          test "$(git rev-parse "$OLD_R2^")" = "$R1"
+          test "$(git rev-parse "$R1^")" = "$G9"
+          test "$(git rev-parse "$OLD_R2:$WORKFLOW")" = "$OLD_WORKFLOW_BLOB"
+          test -z "$(git ls-remote origin "refs/heads/$STAGING")"
+          test -z "$(git ls-remote origin "refs/heads/$DIAG_BRANCH")"
+
+          python - <<'PY'
+          import json, subprocess
+          pr = json.loads(subprocess.check_output(
+              ['gh','api','repos/dshatrov7575-max/Conflict/pulls/94'], text=True))
+          assert (pr['state'], pr['draft'], pr['merged']) == ('open', True, False)
+          assert pr['head']['ref'] == 'codex/ca-suite-i1-production-studio-c2a-lifecycle-publication'
+          assert pr['head']['sha'] == '58919887c846015edd60bd2adc2714ad8f43e0db'
+          assert pr['base']['ref'] == 'codex/ca-suite-i1-player-g9-evidence-ui'
+          assert pr['base']['sha'] == '561ef5327bf655a558adb21c54d0fdf0559d7024'
+          print('PR94_PRE_REPAIR_IMMUTABLE=PASS')
+          PY
+
+          git checkout --detach "$OLD_R2"
+          python - "$WORKFLOW" <<'PY'
+          import ast, sys
+          from pathlib import Path
+          path = Path(sys.argv[1])
+          old = (
+              'test_route_auth_and_checksum_bound_claim_contract_are_exact',
+              'test_initial_draft_uses_optional_preview_then_atomic_publication_without_prior_validate',
+              'test_validation_unknown_outcome_allows_only_explicit_same_request_reconciliation',
+              'test_fd07_never_labels_standalone_or_validated_initial_as_publishable_and_is_refetched_before_attempt',
+              'test_successor_draft_validates_then_fd07_allows_only_exact_successor_publication',
+              'test_publication_unknown_outcome_disables_post_and_uses_only_operation_recovery_get',
+              'test_operation_identity_and_receipts_never_enter_browser_persistent_storage',
+              'test_current_noncurrent_retired_and_unknown_lifecycle_states_render_truthfully',
+              'test_typed_auth_scope_capability_csrf_stale_reuse_and_state_conflicts_are_bounded',
+              'test_package_science_chat_document_prediction_and_recommendation_controls_remain_unavailable',
+              'test_dirty_busy_unresolved_navigation_and_unload_are_guarded_without_automatic_mutation',
+              'test_publication_requires_human_retained_recovery_ticket_and_busy_unload_is_guarded',
+              'test_recovery_ticket_and_post_share_one_frozen_attempt_and_edits_require_new_operation',
+          )
+          new = (
+              'test_current_noncurrent_retired_and_unknown_lifecycle_states_render_truthfully',
+              'test_dirty_busy_unresolved_navigation_and_unload_are_guarded_without_automatic_mutation',
+              'test_fd07_never_labels_standalone_or_validated_initial_as_publishable_and_is_refetched_before_attempt',
+              'test_initial_draft_uses_optional_preview_then_atomic_publication_without_prior_validate',
+              'test_operation_identity_and_receipts_never_enter_browser_persistent_storage',
+              'test_package_science_chat_document_prediction_and_recommendation_controls_remain_unavailable',
+              'test_publication_requires_human_retained_recovery_ticket_and_busy_unload_is_guarded',
+              'test_publication_unknown_outcome_disables_post_and_uses_only_operation_recovery_get',
+              'test_recovery_ticket_and_post_share_one_frozen_attempt_and_edits_require_new_operation',
+              'test_route_auth_and_checksum_bound_claim_contract_are_exact',
+              'test_successor_draft_validates_then_fd07_allows_only_exact_successor_publication',
+              'test_typed_auth_scope_capability_csrf_stale_reuse_and_state_conflicts_are_bounded',
+              'test_validation_unknown_outcome_allows_only_explicit_same_request_reconciliation',
+          )
+          lines = path.read_text(encoding='utf-8').splitlines(keepends=True)
+          out=[]; hits=0; i=0
+          while i < len(lines):
+              if lines[i].strip() == 'methods = (':
+                  j=i+1; names=[]; valid=True
+                  while j < len(lines) and lines[j].strip() != ')':
+                      token=lines[j].strip()
+                      if not (token.startswith('"') and token.endswith('",')):
+                          valid=False; break
+                      try: names.append(ast.literal_eval(token[:-1]))
+                      except Exception: valid=False; break
+                      j += 1
+                  if valid and j < len(lines) and tuple(names) == old:
+                      out.append(lines[i])
+                      indent=lines[i+1][:len(lines[i+1])-len(lines[i+1].lstrip())]
+                      nl='\r\n' if lines[i+1].endswith('\r\n') else '\n'
+                      out.extend(f'{indent}"{name}",{nl}' for name in new)
+                      out.append(lines[j]); hits += 1; i=j+1; continue
+              out.append(lines[i]); i += 1
+          assert hits == 2, hits
+          path.write_text(''.join(out), encoding='utf-8')
+          print('CANONICAL_C2A_JUNIT_ORDER_REPLACEMENTS=2')
+          PY
+
+          test "$(git diff --name-only "$OLD_R2" --)" = "$WORKFLOW"
+          git diff --check "$OLD_R2" -- "$WORKFLOW"
+          NEW_WORKFLOW_BLOB="$(git hash-object "$WORKFLOW")"
+          test "$NEW_WORKFLOW_BLOB" != "$OLD_WORKFLOW_BLOB"
+          git add -- "$WORKFLOW"
+          NEW_TREE="$(git write-tree)"
+          NEW_R2="$(printf '%s\n' 'C2A R2: repair canonical JUnit registry order' | git commit-tree "$NEW_TREE" -p "$R1")"
+          test "$(git rev-parse "$NEW_R2^")" = "$R1"
+          test "$(git rev-parse "$NEW_R2^{tree}")" = "$NEW_TREE"
+          test "$NEW_TREE" != "$OLD_R2_TREE"
+
+          git checkout --detach "$NEW_R2"
+          git diff --check "$R1" "$NEW_R2"
+          python software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py --self-check >/tmp/c2a-r2-self-check.json
+          python - "$GITHUB_WORKSPACE" "$G9" "$G9_TREE" <<'PY'
+          import json, runpy, sys
+          from pathlib import Path
+          repo=Path(sys.argv[1]); g9,g9_tree=sys.argv[2:]
+          ns=runpy.run_path(repo/'software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py')
+          report=ns['_require_c2a_r2_repository_topology'](repo, base_head=g9, base_tree=g9_tree)
+          assert report['result']=='PASS' and report['aggregate_path_count']==19
+          print(json.dumps(report, indent=2))
+          print('REPAIRED_R2_EXACT_TOPOLOGY=PASS')
+          PY
+
+          python - "$OLD_R2" "$NEW_R2" "$R1" "$G9" "$WORKFLOW" <<'PY'
+          import subprocess,sys
+          old,new,r1,g9,workflow=sys.argv[1:]
+          def git(*args): return subprocess.check_output(['git',*args],text=True).strip()
+          correction=[x for x in git('diff','--name-status','--no-renames',r1,new).splitlines() if x]
+          aggregate=[x for x in git('diff','--name-status','--no-renames',g9,new).splitlines() if x]
+          assert len(correction)==12 and all(x.startswith('M\t') for x in correction), correction
+          assert len(aggregate)==19 and sum(x.startswith('A\t') for x in aggregate)==9 and sum(x.startswith('M\t') for x in aggregate)==10, aggregate
+          old_paths=[x.split('\t',1)[1] for x in git('diff','--name-status','--no-renames',r1,old).splitlines() if x]
+          new_paths=[x.split('\t',1)[1] for x in correction]
+          assert old_paths==new_paths
+          for path in new_paths:
+              ob=git('rev-parse',f'{old}:{path}'); nb=git('rev-parse',f'{new}:{path}')
+              assert (ob!=nb) if path==workflow else (ob==nb), (path,ob,nb)
+          assert git('rev-list','--count',f'{g9}..{new}')=='2'
+          assert not git('rev-list','--merges',f'{g9}..{new}')
+          print('REPAIRED_R2_12M_19_AGGREGATE_AND_11_BLOB_FREEZE=PASS')
+          PY
+
+          git push origin "$NEW_R2:refs/heads/$STAGING"
+          test "$(git ls-remote origin "refs/heads/$STAGING" | cut -f1)" = "$NEW_R2"
+
+          git show "refs/remotes/origin/c2a-diag-source:$DIAG_SOURCE_PATH" > "$DIAG_PATH"
+          python - "$DIAG_PATH" "$OLD_R2" "$NEW_R2" "$OLD_R2_TREE" "$NEW_TREE" "$OLD_WORKFLOW_BLOB" "$NEW_WORKFLOW_BLOB" "$STAGING" "$DIAG_BRANCH" "$TARGET" <<'PY'
+          from pathlib import Path
+          import sys
+          filename,old_head,new_head,old_tree,new_tree,old_blob,new_blob,staging,diag_branch,target=sys.argv[1:]
+          path=Path(filename); text=path.read_text(encoding='utf-8')
+          old_diag='codex/c2a-r2-exact-head-diagnostic-58919887'
+          text=text.replace(old_diag,diag_branch)
+          text=text.replace(old_head,new_head)
+          text=text.replace(old_tree,new_tree)
+          text=text.replace(old_blob,new_blob)
+          text=text.replace('codex/c2a-r2-final-staging-20260913',staging)
+          text=text.replace(f"'{target}': os.environ['C2A_R1_HEAD']",f"'{target}': '{old_head}'")
+          text=text.replace("'head': os.environ['C2A_R1_HEAD'], 'base': os.environ['SLICE_BASE_HEAD']",f"'head': '{old_head}', 'base': os.environ['SLICE_BASE_HEAD']")
+          text=text.replace('diagnostic 58919887',f'diagnostic {new_head[:8]}')
+          text=text.replace('Exact 58919887 /',f'Exact {new_head[:8]} /')
+          assert f'EXACT_FINAL_HEAD: {new_head}' in text
+          assert f'EXACT_FINAL_TREE: {new_tree}' in text
+          assert f'ref: {new_head}' in text
+          assert new_blob in text and old_blob not in text
+          assert diag_branch in text and old_diag not in text
+          assert staging in text
+          assert f"'{target}': '{old_head}'" in text
+          assert f"'head': '{old_head}', 'base': os.environ['SLICE_BASE_HEAD']" in text
+          path.write_text(text,encoding='utf-8')
+          print('DIAGNOSTIC_WORKFLOW_REPIN=PASS')
+          PY
+
+          git add -- "$DIAG_PATH"
+          DIAG_TREE="$(git write-tree)"
+          DIAG_COMMIT="$(printf '%s\n' 'diagnostic: exact-head acceptance for repaired C2A R2' | git commit-tree "$DIAG_TREE" -p "$NEW_R2")"
+          test "$(git rev-parse "$DIAG_COMMIT^")" = "$NEW_R2"
+          test "$(git diff --name-status --no-renames "$NEW_R2" "$DIAG_COMMIT")" = $'A\t'"$DIAG_PATH"
+          git push origin "$DIAG_COMMIT:refs/heads/$DIAG_BRANCH"
+          test "$(git ls-remote origin "refs/heads/$DIAG_BRANCH" | cut -f1)" = "$DIAG_COMMIT"
+          test "$(git ls-remote origin "refs/heads/$TARGET" | cut -f1)" = "$OLD_R2"
+          test "$(git ls-remote origin "refs/heads/$G9_BRANCH" | cut -f1)" = "$G9"
+
+          printf 'REPAIRED_R2_HEAD=%s\n' "$NEW_R2"
+          printf 'REPAIRED_R2_TREE=%s\n' "$NEW_TREE"
+          printf 'REPAIRED_WORKFLOW_BLOB=%s\n' "$NEW_WORKFLOW_BLOB"
+          printf 'DIAGNOSTIC_COMMIT=%s\n' "$DIAG_COMMIT"
+          echo 'REPAIR_STAGED_AND_DIAGNOSTIC_CARRIER_PUBLISHED=PASS'
