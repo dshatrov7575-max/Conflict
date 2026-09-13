@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { launchChromium } from "./cdp_client.mjs";
@@ -11,6 +14,7 @@ const EVENT_NAMES = Object.freeze([
   "studio:lifecycle-ticket-retained",
   "studio:lifecycle-unknown-outcome",
   "studio:lifecycle-validation-ticket-imported",
+  "studio:lifecycle-publication-ticket-imported",
   "studio:lifecycle-validation-complete",
   "studio:lifecycle-publication-complete",
   "studio:lifecycle-publication-recovery-complete",
@@ -208,6 +212,32 @@ async function createHarness() {
     page.sessionId,
   );
 
+  const waitState = async (page, expected) => {
+    const codes = Array.isArray(expected) ? expected : [expected];
+    await client.waitForExpression(
+      `${JSON.stringify(codes)}.includes(document.querySelector("#lifecycle-state-code")?.textContent || "")`,
+      page.sessionId,
+      env.timeoutMs,
+    );
+    return client.evaluate(`({
+      code: document.querySelector("#lifecycle-state-code")?.textContent,
+      message: document.querySelector("#lifecycle-state-message")?.textContent,
+    })`, page.sessionId);
+  };
+
+  const setFileInputFiles = async (page, selector, files) => {
+    const documentNode = await client.send("DOM.getDocument", { depth: 0, pierce: true }, page.sessionId);
+    const selected = await client.send("DOM.querySelector", {
+      nodeId: documentNode.root.nodeId,
+      selector,
+    }, page.sessionId);
+    assert.ok(selected.nodeId > 0, `file input ${selector} not found`);
+    await client.send("DOM.setFileInputFiles", {
+      nodeId: selected.nodeId,
+      files,
+    }, page.sessionId);
+  };
+
   const inspect = (page) => client.evaluate(`(async () => ({
     state: document.querySelector("#lifecycle-state-code")?.textContent,
     status: document.querySelector("#lifecycle-publication-status")?.textContent,
@@ -280,7 +310,7 @@ async function createHarness() {
   return {
     browser, client, env, requests, responses,
     createPage, navigate, clearEvents, waitEvent, waitPublicationRecovery, waitValidationCompletion,
-    click, setValue, inspect,
+    click, setValue, waitState, setFileInputFiles, inspect,
     failNextResponse, closePage, setSessionCookie,
   };
 }
@@ -299,20 +329,101 @@ async function assertStorageBoundary(harness, page, forbiddenValues) {
   assert.equal(state.unavailableControls, true);
 }
 
-async function acknowledgeTicket(harness, page) {
+const HUMAN_TICKET_KEYS = Object.freeze([
+  "body_byte_length", "body_sha256", "body_utf8", "content_type", "contract",
+  "contract_version", "definition_id", "if_match", "method", "operation_id",
+  "operation_kind", "project_id", "route", "ticket_sha256",
+]);
+const PUBLICATION_TICKET_KEYS = Object.freeze([
+  "contract", "contract_version", "definition_id", "expected_manifest_hash",
+  "operation_id", "operation_kind", "project_id", "request_body_sha256",
+]);
+
+const exactKeys = (value, keys) => (
+  value &&
+  typeof value === "object" &&
+  !Array.isArray(value) &&
+  Object.keys(value).sort().join("|") === [...keys].sort().join("|")
+);
+
+const mutationCount = (harness) => harness.requests.filter(
+  (item) => !["GET", "HEAD"].includes(item.method),
+).length;
+
+async function acknowledgeTicket(
+  harness,
+  page,
+  { operationKind, retentionMethod, proveDownloadBlocked = false },
+) {
   const before = await harness.inspect(page);
   assert.match(before.operationId, UUID_V4_PATTERN);
   assert.ok(before.ticket.endsWith("\n"));
   const ticket = JSON.parse(before.ticket);
-  assert.equal(ticket.contract, "FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1");
   assert.equal(ticket.operation_id, before.operationId);
-  assert.match(ticket.ticket_sha256, SHA256_PATTERN);
+  assert.equal(ticket.contract_version, "1.0.0");
   assert.equal(before.executeDisabled, true);
-  await harness.setValue(page, "#ticket-copy-proof", before.ticket);
-  await harness.click(page, "#acknowledge-ticket-copy");
+
+  if (operationKind === "VALIDATE_DEFINITION") {
+    assert.equal(exactKeys(ticket, HUMAN_TICKET_KEYS), true);
+    assert.equal(ticket.contract, "FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1");
+    assert.equal(ticket.operation_kind, "VALIDATE_DEFINITION");
+    assert.equal(ticket.method, "POST");
+    assert.equal(ticket.body_utf8, "{}");
+    assert.equal(ticket.body_byte_length, 2);
+    assert.match(ticket.body_sha256, SHA256_PATTERN);
+    assert.match(ticket.ticket_sha256, SHA256_PATTERN);
+  } else {
+    const expectedKind = operationKind === "PUBLISH_INITIAL" ? "INITIAL" : "SUCCESSOR";
+    assert.equal(exactKeys(ticket, PUBLICATION_TICKET_KEYS), true);
+    assert.equal(ticket.contract, "FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1");
+    assert.equal(ticket.operation_kind, expectedKind);
+    assert.match(ticket.expected_manifest_hash, SHA256_PATTERN);
+    assert.match(ticket.request_body_sha256, SHA256_PATTERN);
+    for (const forbidden of [
+      "route", "method", "if_match", "body_utf8", "body_sha256", "body_byte_length",
+      "content_type", "csrf", "headers", "ticket_sha256",
+    ]) assert.equal(forbidden in ticket, false, `publication ticket contains ${forbidden}`);
+  }
+
+  if (proveDownloadBlocked) {
+    await harness.clearEvents(page);
+    await harness.click(page, "#download-recovery-ticket");
+    assert.equal((await harness.inspect(page)).executeDisabled, true);
+    const retainedEvents = await harness.client.evaluate(
+      'window.__studioLifecycleEvents.filter((item) => item.name === "studio:lifecycle-ticket-retained").length',
+      page.sessionId,
+    );
+    assert.equal(retainedEvents, 0, "download initiation must not retain the ticket");
+  }
+
+  await harness.clearEvents(page);
+  if (retentionMethod === "exact-copy") {
+    await harness.setValue(page, "#ticket-copy-proof", before.ticket);
+    await harness.click(page, "#acknowledge-ticket-copy");
+  } else if (retentionMethod === "byte-exact-file") {
+    const directory = await mkdtemp(join(tmpdir(), "c2a-r2-path11-ticket-"));
+    const ticketPath = join(directory, "publication-ticket.json");
+    try {
+      await writeFile(ticketPath, before.ticket, { encoding: "utf8" });
+      await harness.setFileInputFiles(page, "#ticket-file-proof", [ticketPath]);
+      await harness.click(page, "#acknowledge-ticket-file");
+      const retained = await harness.waitEvent(page, "studio:lifecycle-ticket-retained");
+      assert.equal(retained.method, "byte-exact-file");
+      assert.equal(retained.operationId, before.operationId);
+      assert.equal(retained.ticketContract, ticket.contract);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+    assert.equal((await harness.inspect(page)).executeDisabled, false);
+    return { text: before.ticket, ticket };
+  } else {
+    throw new Error(`Unsupported retention method: ${retentionMethod}`);
+  }
+
   const retained = await harness.waitEvent(page, "studio:lifecycle-ticket-retained");
   assert.equal(retained.method, "exact-copy");
   assert.equal(retained.operationId, before.operationId);
+  assert.equal(retained.ticketContract, ticket.contract);
   assert.equal((await harness.inspect(page)).executeDisabled, false);
   return { text: before.ticket, ticket };
 }
@@ -349,7 +460,12 @@ export async function test_chromium_draft_preview_atomic_initial_publish_recover
     await harness.click(page, "#prepare-lifecycle-attempt");
     const prepared = await harness.waitEvent(page, "studio:lifecycle-attempt-prepared");
     assert.equal(prepared.operationKind, "PUBLISH_INITIAL");
-    const retained = await acknowledgeTicket(harness, page);
+    assert.equal(prepared.ticketContract, "FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1");
+    const retained = await acknowledgeTicket(harness, page, {
+      operationKind: "PUBLISH_INITIAL",
+      retentionMethod: "exact-copy",
+      proveDownloadBlocked: true,
+    });
     await harness.clearEvents(page);
     const publishPath = `/api/foundation/definitions/${harness.env.definitionId}/publish-initial/`;
     const responseFailure = await harness.failNextResponse(page, publishPath);
@@ -414,7 +530,11 @@ export async function test_chromium_successor_validate_publish_lost_response_rec
     await harness.click(page, "#prepare-lifecycle-attempt");
     const validationPrepared = await harness.waitEvent(page, "studio:lifecycle-attempt-prepared");
     assert.equal(validationPrepared.operationKind, "VALIDATE_DEFINITION");
-    const validationTicket = await acknowledgeTicket(harness, page);
+    assert.equal(validationPrepared.ticketContract, "FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1");
+    const validationTicket = await acknowledgeTicket(harness, page, {
+      operationKind: "VALIDATE_DEFINITION",
+      retentionMethod: "exact-copy",
+    });
     assert.equal(validationTicket.ticket.body_utf8, "{}");
     assert.equal(validationTicket.ticket.body_byte_length, 2);
 
@@ -428,9 +548,27 @@ export async function test_chromium_successor_validate_publish_lost_response_rec
 
     await harness.closePage(page);
     page = await harness.createPage();
+    await harness.setSessionCookie(page, harness.env.publisherSessionCookieValue);
     const afterLoss = await harness.navigate(page);
     assert.equal(afterLoss.publicationStatus, "VALIDATED");
     assert.equal(afterLoss.actionKind, "PUBLISH_SUCCESSOR");
+    const validationCrossKindMutationBaseline = mutationCount(harness);
+    const validationCrossKindPublicationPosts = harness.requests.filter(
+      (item) => item.method === "POST" &&
+        new URL(item.url).pathname.endsWith("/publish-successor/"),
+    ).length;
+    await harness.clearEvents(page);
+    await harness.setValue(page, "#import-publication-ticket", validationTicket.text);
+    await harness.click(page, "#import-publication-ticket-action");
+    const validationCrossKindRejected = await harness.waitState(page, "PUBLICATION_TICKET_REJECTED");
+    assert.equal(validationCrossKindRejected.code, "PUBLICATION_TICKET_REJECTED");
+    assert.equal(mutationCount(harness), validationCrossKindMutationBaseline);
+    assert.equal(harness.requests.filter(
+      (item) => item.method === "POST" &&
+        new URL(item.url).pathname.endsWith("/publish-successor/"),
+    ).length, validationCrossKindPublicationPosts);
+    await harness.setValue(page, "#import-publication-ticket", "");
+
     await harness.clearEvents(page);
     await harness.setValue(page, "#import-recovery-ticket", validationTicket.text);
     await harness.click(page, "#import-validation-ticket");
@@ -449,7 +587,11 @@ export async function test_chromium_successor_validate_publish_lost_response_rec
     await harness.click(page, "#prepare-lifecycle-attempt");
     const publicationPrepared = await harness.waitEvent(page, "studio:lifecycle-attempt-prepared");
     assert.equal(publicationPrepared.operationKind, "PUBLISH_SUCCESSOR");
-    const publicationTicket = await acknowledgeTicket(harness, page);
+    assert.equal(publicationPrepared.ticketContract, "FOUNDATION_PUBLICATION_RECOVERY_TICKET_V1");
+    const publicationTicket = await acknowledgeTicket(harness, page, {
+      operationKind: "PUBLISH_SUCCESSOR",
+      retentionMethod: "byte-exact-file",
+    });
     assert.notEqual(publicationTicket.ticket.operation_id, validationTicket.ticket.operation_id);
 
     await harness.clearEvents(page);
@@ -459,10 +601,53 @@ export async function test_chromium_successor_validate_publish_lost_response_rec
     await publicationResponseFailure.intercepted;
     const publicationUnknown = await harness.waitEvent(page, "studio:lifecycle-unknown-outcome");
     assert.equal(publicationUnknown.operationKind, "PUBLISH_SUCCESSOR");
+    const publicationRecoveryCutoff = harness.requests.length;
+
+    await harness.closePage(page);
+    page = await harness.createPage();
+    await harness.setSessionCookie(page, harness.env.publisherSessionCookieValue);
+    const publishedAfterLoss = await harness.navigate(page);
+    assert.equal(publishedAfterLoss.publicationStatus, "PUBLISHED");
+    assert.equal(publishedAfterLoss.isCurrent, true);
+
+    const publicationCrossKindMutationBaseline = mutationCount(harness);
+    const publicationCrossKindValidationPosts = harness.requests.filter(
+      (item) => item.method === "POST" && new URL(item.url).pathname === validatePath,
+    ).length;
     await harness.clearEvents(page);
-    await harness.click(page, "#recover-publication-operation");
+    await harness.setValue(page, "#import-recovery-ticket", publicationTicket.text);
+    await harness.click(page, "#import-validation-ticket");
+    const publicationCrossKindRejected = await harness.waitState(page, "VALIDATION_TICKET_REJECTED");
+    assert.equal(publicationCrossKindRejected.code, "VALIDATION_TICKET_REJECTED");
+    assert.equal(mutationCount(harness), publicationCrossKindMutationBaseline);
+    assert.equal(harness.requests.filter(
+      (item) => item.method === "POST" && new URL(item.url).pathname === validatePath,
+    ).length, publicationCrossKindValidationPosts);
+    await harness.setValue(page, "#import-recovery-ticket", "");
+
+    await harness.clearEvents(page);
+    await harness.setValue(page, "#import-publication-ticket", publicationTicket.text);
+    await harness.click(page, "#import-publication-ticket-action");
+    const publicationImported = await harness.waitEvent(
+      page,
+      "studio:lifecycle-publication-ticket-imported",
+    );
+    assert.equal(publicationImported.operationId, publicationTicket.ticket.operation_id);
+    assert.equal(publicationImported.operationKind, "PUBLISH_SUCCESSOR");
     const publicationRecovered = await harness.waitPublicationRecovery(page);
     assert.equal(publicationRecovered.operationId, publicationTicket.ticket.operation_id);
+
+    const recoveryPath = `/api/foundation/projects/${ready.projectId}/publication-operations/${publicationTicket.ticket.operation_id}/`;
+    const postLossRequests = harness.requests.slice(publicationRecoveryCutoff);
+    assert.equal(postLossRequests.filter(
+      (item) => item.method === "GET" && new URL(item.url).pathname === recoveryPath,
+    ).length, 1);
+    assert.equal(postLossRequests.filter(
+      (item) => item.method === "POST" && [
+        `/api/foundation/definitions/${harness.env.definitionId}/publish-initial/`,
+        publishPath,
+      ].includes(new URL(item.url).pathname),
+    ).length, 0);
 
     const persisted = await harness.client.evaluate(`Promise.all([
       ${JSON.stringify(`/api/foundation/definitions/${harness.env.predecessorId}/`)},
