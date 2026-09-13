@@ -1,0 +1,86 @@
+name: C2A R2 diagnostic generator 12236069
+
+'on':
+  push:
+    branches:
+      - agent/c2a-r2-diagnostic-generator-12236069-20260913
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generate diagnostic commit object
+        shell: bash
+        run: |
+          set -euo pipefail
+          NEW_R2=122360697634f8690299cad7254022039399a517
+          NEW_TREE=9238eaf427280373c70b530d6885e3297aa36ece
+          OLD_R2=58919887c846015edd60bd2adc2714ad8f43e0db
+          OLD_TREE=6ad7c8463988aab3b02e4f85aba50f370380c478
+          OLD_WORKFLOW_BLOB=21c4b624d78f25670285f1699b67bd0d6e393f26
+          STAGING=agent/c2a-r2-canonical-order-repair-staging-20260913
+          TARGET=codex/ca-suite-i1-production-studio-c2a-lifecycle-publication
+          DIAG_BRANCH=agent/c2a-r2-canonical-order-repair-diagnostic-20260913
+          SOURCE_BRANCH=codex/c2a-r2-exact-head-diagnostic-58919887
+          SOURCE_PATH=.github/workflows/c2a-r2-final-exact-head-diagnostic.yml
+          DIAG_PATH=.github/workflows/c2a-r2-final-exact-head-diagnostic-order-repair.yml
+          git config user.name "OpenAI MAIN diagnostic"
+          git config user.email "openai-main@users.noreply.github.com"
+          git fetch --no-tags origin \
+            "+refs/heads/$SOURCE_BRANCH:refs/remotes/origin/c2a-diag-source" \
+            "+refs/heads/$STAGING:refs/remotes/origin/repaired-staging" \
+            "+refs/heads/$TARGET:refs/remotes/origin/c2a-target"
+          test "$(git rev-parse refs/remotes/origin/repaired-staging)" = "$NEW_R2"
+          test "$(git rev-parse refs/remotes/origin/c2a-target)" = "$OLD_R2"
+          test "$(git rev-parse "$NEW_R2^{tree}")" = "$NEW_TREE"
+          NEW_WORKFLOW_BLOB="$(git rev-parse "$NEW_R2:.github/workflows/conflict-analysis.yml")"
+          test "$NEW_WORKFLOW_BLOB" != "$OLD_WORKFLOW_BLOB"
+          git checkout --detach "$NEW_R2"
+          git show "refs/remotes/origin/c2a-diag-source:$SOURCE_PATH" > "$DIAG_PATH"
+          python - "$DIAG_PATH" "$OLD_R2" "$NEW_R2" "$OLD_TREE" "$NEW_TREE" "$OLD_WORKFLOW_BLOB" "$NEW_WORKFLOW_BLOB" "$STAGING" "$DIAG_BRANCH" "$TARGET" <<'PY'
+          from pathlib import Path
+          import sys
+          filename,old_head,new_head,old_tree,new_tree,old_blob,new_blob,staging,diag_branch,target=sys.argv[1:]
+          p=Path(filename); text=p.read_text(encoding='utf-8')
+          old_diag='codex/c2a-r2-exact-head-diagnostic-58919887'
+          text=text.replace(old_diag,diag_branch)
+          text=text.replace(old_head,new_head)
+          text=text.replace(old_tree,new_tree)
+          text=text.replace(old_blob,new_blob)
+          text=text.replace('codex/c2a-r2-final-staging-20260913',staging)
+          text=text.replace(f"'{target}': os.environ['C2A_R1_HEAD']",f"'{target}': '{old_head}'")
+          text=text.replace("'head': os.environ['C2A_R1_HEAD'], 'base': os.environ['SLICE_BASE_HEAD']",f"'head': '{old_head}', 'base': os.environ['SLICE_BASE_HEAD']")
+          text=text.replace('diagnostic 58919887',f'diagnostic {new_head[:8]}')
+          text=text.replace('Exact 58919887 /',f'Exact {new_head[:8]} /')
+          assert f'EXACT_FINAL_HEAD: {new_head}' in text
+          assert f'EXACT_FINAL_TREE: {new_tree}' in text
+          assert f'ref: {new_head}' in text
+          assert new_blob in text and old_blob not in text
+          assert diag_branch in text and old_diag not in text
+          assert staging in text
+          assert f"'{target}': '{old_head}'" in text
+          assert f"'head': '{old_head}', 'base': os.environ['SLICE_BASE_HEAD']" in text
+          p.write_text(text,encoding='utf-8')
+          PY
+          git add -- "$DIAG_PATH"
+          DIAG_TREE="$(git write-tree)"
+          DIAG_COMMIT="$(printf '%s\n' 'diagnostic: exact-head acceptance for repaired C2A R2' | git commit-tree "$DIAG_TREE" -p "$NEW_R2")"
+          test "$(git rev-parse "$DIAG_COMMIT^")" = "$NEW_R2"
+          test "$(git diff --name-status --no-renames "$NEW_R2" "$DIAG_COMMIT")" = $'A\t'"$DIAG_PATH"
+          echo "DIAG_COMMIT=$DIAG_COMMIT"
+          echo "DIAG_TREE=$DIAG_TREE"
+          echo "NEW_WORKFLOW_BLOB=$NEW_WORKFLOW_BLOB"
+          if git push origin "$DIAG_COMMIT:refs/heads/$DIAG_BRANCH"; then
+            echo "DIAG_PUSH_UNEXPECTEDLY_SUCCEEDED=1"
+          else
+            echo "DIAG_PUSH_REJECTED_AS_EXPECTED=1"
+          fi
+          echo "DIAGNOSTIC_COMMIT_OBJECT_READY=PASS"
