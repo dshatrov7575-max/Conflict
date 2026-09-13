@@ -11,24 +11,26 @@
     "tree": "f407e609adb2a8b94770b521a1302feb79281822",
     "sole_parent": "561ef5327bf655a558adb21c54d0fdf0559d7024"
   },
-  "current_partial": {
-    "formal_prepared_count": "8/12",
-    "nine_path_candidate_head": "e8af8eb8f137b760553d6dedc7f4b335869be61e",
-    "nine_path_candidate_tree": "5fa4d96d3577fe585507309bec4a5a34b8160904",
-    "path9_js_blob": "f9ee82c148e1659c122024dd43a2f876348e6073"
-  },
   "path10": {
     "target": "software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py",
     "acceptance_procedure_commit": "032ce6bdf67a2ead6f20f0c1b55e7c3809e6dcbd",
     "acceptance_procedure_blob": "176101805a7b235df41103034735c403593af592",
     "execution_map_commit": "962a2273ac5163defb6079a7545d4fb13c92dc40",
     "execution_map_blob": "7c9268797cebbdf68165e6fd92db9ced31f780d9",
-    "executor_state": "BLOCKED_PATH10_CODEX_CLOUD_ENVIRONMENT_NOT_CONFIGURED",
-    "dispatch_comment": "5647730329",
-    "blocker_comment": "5647731176",
+    "executor_state": "ACCEPTED",
     "input_prepared_count": "8/12",
     "output_prepared_count_after_acceptance": "10/12",
-    "coupled_promotion": ["path9", "path10"]
+    "coupled_promotion": [
+      "path9",
+      "path10"
+    ],
+    "state": "PREPARED_ACCEPTED",
+    "accepted_checkpoint": {
+      "head": "f8c5ef4a788ad1eb3461444b8e2cdd369ddc2fd2",
+      "tree": "5396e037f651534e5ae39cdf0b727b66436cb90f",
+      "sole_parent": "e8af8eb8f137b760553d6dedc7f4b335869be61e"
+    },
+    "accepted_blob": "680f0a857f371162e2223623d441019269d1fede"
   },
   "path11": {
     "target": "software/conflict_analysis/production_studio/browser_tests/lifecycle_publication.mjs",
@@ -39,8 +41,20 @@
     "prerequisite_prepared_count": "10/12",
     "prerequisite": "path10 independently accepted",
     "carrier": "agent/c2a-r2-lifecycle-browser-carrier",
-    "carrier_rule": "ordinary non-force fast-forward to accepted path10 child before path11 implementation",
-    "output_prepared_count_after_acceptance": "11/12"
+    "carrier_rule": "Accepted PATH10 -> accepted remote PATH9 binding repair -> accepted PATH11; ordinary validation ancestry only, never final R2 history.",
+    "output_prepared_count_after_acceptance": "11/12",
+    "state": "PREPARED_ACCEPTED",
+    "accepted_checkpoint": {
+      "head": "396b62e29ea34ed8aa6f9f10f5295439c547479f",
+      "tree": "e5cf28324f255389edfb7ee1d5146ca40299f64b",
+      "sole_parent": "86a652accfc36c32b4d5a53524640411da9a7f06"
+    },
+    "accepted_blob": "e49e21dff75e93452b94f09fc32caa36d6800eee",
+    "accepted_predecessor": {
+      "head": "86a652accfc36c32b4d5a53524640411da9a7f06",
+      "tree": "fbd53de7a8b96a7b877c183213a4b8dee2001695",
+      "sole_parent": "f8c5ef4a788ad1eb3461444b8e2cdd369ddc2fd2"
+    }
   },
   "path12": {
     "target": "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
@@ -52,13 +66,19 @@
     "prerequisite": "path10 and path11 independently accepted",
     "carrier": "agent/c2a-r2-verifier-carrier",
     "carrier_rule": "ordinary non-force fast-forward through accepted path10 then accepted path11 validation ancestry before verifier implementation",
-    "output_prepared_count_after_acceptance": "12/12"
+    "output_prepared_count_after_acceptance": "12/12",
+    "state": "PREPARED_ACCEPTED",
+    "accepted_checkpoint": {
+      "head": "d1342cb28b74025275f78b04492f81a60075e0c8",
+      "tree": "6ad7c8463988aab3b02e4f85aba50f370380c478",
+      "sole_parent": "396b62e29ea34ed8aa6f9f10f5295439c547479f"
+    },
+    "accepted_blob": "a24654637b3eaeedca4a55b9894abfc2296b90f5"
   },
   "final_assembly": {
     "recipe_branch": "agent/c2a-r2-workflow-recovery",
-    "recipe_commit": "95393fe324c76faaeb5474dd07ade635d91c9e6d",
-    "recipe_blob": "b6bd8e3221e9b21618d632847ff3838651dcd602",
-    "pending_green_blobs": ["PATH10_GREEN_BLOB", "PATH11_GREEN_BLOB", "PATH12_GREEN_BLOB"],
+    "recipe_blob": "33dde15c7774b4f28d0fa3d2de5a3548dce410ed",
+    "pending_green_blobs": [],
     "r1_to_final_r2_commit_count": 1,
     "g9_to_final_r2_commit_count": 2,
     "r1_to_r2_changed_paths": 12,
@@ -67,7 +87,12 @@
     "g9_to_r2_added": 9,
     "g9_to_r2_modified": 10,
     "final_parent": "22f0f173a941de88d6920b6e19821168e9b30cc8",
-    "validation_chain_is_not_final_history": true
+    "validation_chain_is_not_final_history": true,
+    "recipe_revision": "same control-plane commit as this consistency file",
+    "state": "UNLOCKED_FOR_ISOLATED_STAGING",
+    "expected_final_tree": "6ad7c8463988aab3b02e4f85aba50f370380c478",
+    "publication_scope": "new isolated final-staging branch only; PR #94, target branch and G9 stay unchanged",
+    "dynamic_identity_authority": "This accepted 12/12 ledger supersedes stale replacement identities, pending fields and executor state in historical preparation maps/oracles/procedures. Those frozen documents remain historical acceptance requirements; their exact path sets, R1 preimages and G9/R1 pins remain binding."
   },
   "cross_stage_consistency_assertions": [
     "path10 acceptance output 10/12 exactly equals path11 prerequisite 10/12",
@@ -89,5 +114,21 @@
     "R1->R2 is not exactly one commit with 12 modified paths",
     "G9->R2 is not exactly two commits with 19 paths = 9 added + 10 modified",
     "PR #94 identity or state drifts before acceptance"
-  ]
+  ],
+  "current_accepted": {
+    "formal_prepared_count": "12/12",
+    "final_assembly_unlocked": true,
+    "acceptance_authority": "MAIN independent PATH12 acceptance and explicit final-staging authorization",
+    "path12_checkpoint": {
+      "head": "d1342cb28b74025275f78b04492f81a60075e0c8",
+      "tree": "6ad7c8463988aab3b02e4f85aba50f370380c478",
+      "sole_parent": "396b62e29ea34ed8aa6f9f10f5295439c547479f"
+    },
+    "path9_repair_checkpoint": {
+      "head": "86a652accfc36c32b4d5a53524640411da9a7f06",
+      "tree": "fbd53de7a8b96a7b877c183213a4b8dee2001695",
+      "sole_parent": "f8c5ef4a788ad1eb3461444b8e2cdd369ddc2fd2"
+    },
+    "path9_js_blob": "db98c5f86b907e239708b7a20719241e714afbb2"
+  }
 }
