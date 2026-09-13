@@ -1,5 +1,5 @@
 # Temporary MAIN-authorized carrier builder. Must never enter canonical R2.
-name: C2A R2 evidence-manifest repair payload carrier
+name: C2A R2 manifest-repair diagnostic payload carrier
 'on':
   push:
     branches:
@@ -7,78 +7,72 @@ name: C2A R2 evidence-manifest repair payload carrier
 permissions:
   contents: write
 concurrency:
-  group: c2a-r2-manifest-repair-payload-${{ github.ref }}
+  group: c2a-r2-manifest-repair-diagnostic-payload-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  publish-payload-blob:
+  publish-diagnostic-payload:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Publish modified workflow bytes at a non-workflow carrier path
+      - name: Publish exact-head diagnostic bytes at non-workflow carrier path
         shell: bash
         run: |
           set -euo pipefail
-          CURRENT=122360697634f8690299cad7254022039399a517
-          CURRENT_TREE=9238eaf427280373c70b530d6885e3297aa36ece
-          OLD_BLOB=1c7e5ae8d2603a9c51feedc5ab1d48177abc7f16
-          WORKFLOW=.github/workflows/conflict-analysis.yml
-          PAYLOAD=c2a-r2-manifest-repair-workflow-payload.txt
+          OLD_DIAG_BRANCH=agent/c2a-r2-canonical-order-repair-diagnostic-20260913
+          OLD_DIAG_PATH=.github/workflows/c2a-r2-final-exact-head-diagnostic-order-repair.yml
+          PAYLOAD=c2a-r2-manifest-repair-diagnostic-payload.txt
+          NEW_HEAD=244562c24cef21aa38b30d0b394c5706632876c8
+          NEW_TREE=fb9660304decfb51a100befb73688466f861fa5c
+          NEW_WORKFLOW_BLOB=773515daf483050fa936fcaa1709fadf73c5b0df
+          CURRENT_PR_HEAD=122360697634f8690299cad7254022039399a517
+          NEW_DIAG_BRANCH=agent/c2a-r2-canonical-manifest-repair-diagnostic-20260914
+          NEW_STAGING_BRANCH=agent/c2a-r2-canonical-manifest-repair-staging-20260914
 
           git config user.name "OpenAI MAIN diagnostic"
           git config user.email "openai-main@users.noreply.github.com"
-          test "$(git rev-parse "$CURRENT^{tree}")" = "$CURRENT_TREE"
-          test "$(git rev-parse "$CURRENT:$WORKFLOW")" = "$OLD_BLOB"
+          git fetch --no-tags origin \
+            "refs/heads/$OLD_DIAG_BRANCH:refs/remotes/origin/old-c2a-diagnostic"
 
           if [[ -f "$PAYLOAD" ]]; then
-            test -z "$(git status --porcelain=v1 --untracked-files=all)"
-            echo "PAYLOAD_ALREADY_PUBLISHED_SHA=$(git hash-object "$PAYLOAD")"
+            echo "DIAGNOSTIC_PAYLOAD_ALREADY_PUBLISHED_SHA=$(git hash-object "$PAYLOAD")"
             exit 0
           fi
-
-          git show "$CURRENT:$WORKFLOW" > "$PAYLOAD"
-          python - "$PAYLOAD" <<'PY'
+          git show "refs/remotes/origin/old-c2a-diagnostic:$OLD_DIAG_PATH" > "$PAYLOAD"
+          python - "$PAYLOAD" "$NEW_HEAD" "$NEW_TREE" "$NEW_WORKFLOW_BLOB" \
+            "$CURRENT_PR_HEAD" "$NEW_DIAG_BRANCH" "$NEW_STAGING_BRANCH" <<'PY'
           from pathlib import Path
           import sys
 
           path = Path(sys.argv[1])
-          lines = path.read_text(encoding="utf-8").splitlines()
-          delivery = '            "$delivery_tree" ' + chr(92)
-          chrome_version_arg = '            "$C2A_CHROME_VERSION" ' + chr(92)
-          chrome_sha_arg = '            "$C2A_CHROME_LINUX64_SHA256" <<\'PY\''
-          positions = [
-              i for i, line in enumerate(lines)
-              if line == delivery
-              and i + 2 < len(lines)
-              and lines[i + 1] == chrome_version_arg
-              and lines[i + 2] == chrome_sha_arg
-          ]
-          assert len(positions) == 1, positions
-          i = positions[0]
-          lines[i] = '            "$delivery_tree" <<\'PY\''
-          del lines[i + 1:i + 3]
-          remove = (
-              "              chromium_archive_version,",
-              "              chromium_archive_sha256,",
-              '              "chromium_archive_version": chromium_archive_version,',
-              '              "chromium_archive_sha256": chromium_archive_sha256,',
+          new_head, new_tree, new_blob, current_pr_head, new_diag, new_staging = sys.argv[2:]
+          text = path.read_text(encoding="utf-8")
+          replacements = (
+              ("122360697634f8690299cad7254022039399a517", new_head, 2),
+              ("9238eaf427280373c70b530d6885e3297aa36ece", new_tree, 1),
+              ("1c7e5ae8d2603a9c51feedc5ab1d48177abc7f16", new_blob, 1),
+              ("agent/c2a-r2-canonical-order-repair-diagnostic-20260913", new_diag, 1),
+              ("agent/c2a-r2-canonical-order-repair-staging-20260913", new_staging, 1),
           )
-          for needle in remove:
-              assert lines.count(needle) == 1, (needle, lines.count(needle))
-              lines.remove(needle)
-          updated = "\n".join(lines) + "\n"
-          assert '"chromium_archive_version": chromium_archive_version' not in updated
-          assert '"chromium_archive_sha256": chromium_archive_sha256' not in updated
-          path.write_text(updated, encoding="utf-8")
-          print("CANONICAL_MANIFEST_SCHEMA_TWO_FIELD_REMOVAL=PASS")
+          for old, new, minimum in replacements:
+              count = text.count(old)
+              assert count >= minimum, (old, count, minimum)
+              text = text.replace(old, new)
+          old_pr = "58919887c846015edd60bd2adc2714ad8f43e0db"
+          count = text.count(old_pr)
+          assert count >= 2, (old_pr, count)
+          text = text.replace(old_pr, current_pr_head)
+          assert new_head in text and new_tree in text and new_blob in text
+          assert new_diag in text and new_staging in text and current_pr_head in text
+          assert "58919887c846015edd60bd2adc2714ad8f43e0db" not in text
+          path.write_text(text, encoding="utf-8")
+          print("DIAGNOSTIC_PAYLOAD_REPIN=PASS")
           PY
-
-          new_blob="$(git hash-object "$PAYLOAD")"
-          test "$new_blob" != "$OLD_BLOB"
+          diag_blob="$(git hash-object "$PAYLOAD")"
           git add -- "$PAYLOAD"
-          test "$(git diff --cached --name-status)" = $'A\tc2a-r2-manifest-repair-workflow-payload.txt'
-          git commit -m "ci: carry exact C2A manifest-repair workflow bytes"
+          test "$(git diff --cached --name-status)" = $'A\tc2a-r2-manifest-repair-diagnostic-payload.txt'
+          git commit -m "ci: carry exact C2A manifest-repair diagnostic bytes"
           git push origin HEAD:refs/heads/agent/c2a-r2-manifest-repair-builder-20260914
-          echo "PAYLOAD_BLOB_SHA=$new_blob"
+          echo "DIAGNOSTIC_PAYLOAD_BLOB_SHA=$diag_blob"
