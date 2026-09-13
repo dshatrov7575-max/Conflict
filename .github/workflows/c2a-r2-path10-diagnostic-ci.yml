@@ -1,0 +1,91 @@
+name: C2A R2 PATH10 exact diagnostic
+
+on:
+  push:
+    branches:
+      - agent/c2a-r2-path10-diagnostic-ci-20260913
+
+permissions:
+  contents: read
+
+jobs:
+  path10-exact-portable:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      USE_SQLITE: "true"
+      DJANGO_SETTINGS_MODULE: conflict_analysis.settings
+      EXACT_HEAD: f8c5ef4a788ad1eb3461444b8e2cdd369ddc2fd2
+      EXACT_TREE: 5396e037f651534e5ae39cdf0b727b66436cb90f
+      EXACT_PARENT: e8af8eb8f137b760553d6dedc7f4b335869be61e
+      PATH9_BLOB: f9ee82c148e1659c122024dd43a2f876348e6073
+      PATH10_BLOB: 680f0a857f371162e2223623d441019269d1fede
+    steps:
+      - name: Check out exact PATH10 candidate
+        uses: actions/checkout@v4
+        with:
+          ref: f8c5ef4a788ad1eb3461444b8e2cdd369ddc2fd2
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Verify exact candidate identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXACT_HEAD"
+          test "$(git rev-parse HEAD^{tree})" = "$EXACT_TREE"
+          test "$(git rev-parse HEAD^)" = "$EXACT_PARENT"
+          test "$(git hash-object software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js)" = "$PATH9_BLOB"
+          test "$(git hash-object software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py)" = "$PATH10_BLOB"
+          test -z "$(git status --porcelain=v1)"
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Verify Node 24 syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          node --check software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js
+
+      - name: Install exact project test dependencies
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e '.[dev]'
+          python -m pip check
+
+      - name: Collect exact portable registry
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest --collect-only -q \
+            production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests \
+            | tee "$RUNNER_TEMP/path10-collect.txt"
+          python - <<'PY'
+          from pathlib import Path
+          import os
+          text = Path(os.environ['RUNNER_TEMP'], 'path10-collect.txt').read_text(encoding='utf-8')
+          nodes = [line for line in text.splitlines() if '::ProductionStudioLifecyclePublicationTests::test_' in line]
+          if len(nodes) != 13:
+              raise SystemExit(f'portable registry drift: expected 13, got {len(nodes)}')
+          print('PATH10_PORTABLE_NODE_COUNT=13')
+          PY
+
+      - name: Run exact PATH10 portable gate
+        working-directory: software/conflict_analysis
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pytest -q \
+            production_studio/tests/test_lifecycle_publication.py::ProductionStudioLifecyclePublicationTests
