@@ -1,0 +1,168 @@
+# Temporary MAIN-authorized builder. Must never enter canonical R2.
+name: C2A R2 canonical evidence-manifest repair builder
+'on':
+  push:
+    branches:
+      - agent/c2a-r2-manifest-repair-builder-20260914
+permissions:
+  contents: write
+  pull-requests: read
+concurrency:
+  group: c2a-r2-manifest-repair-builder-${{ github.run_id }}
+  cancel-in-progress: false
+jobs:
+  build-candidate-and-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out builder carrier
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Build one-commit R2 sibling and isolated diagnostic carrier
+        shell: bash
+        run: |
+          set -euo pipefail
+          R1=22f0f173a941de88d6920b6e19821168e9b30cc8
+          G9=561ef5327bf655a558adb21c54d0fdf0559d7024
+          CURRENT=122360697634f8690299cad7254022039399a517
+          CURRENT_TREE=9238eaf427280373c70b530d6885e3297aa36ece
+          OLD_PR_HEAD=58919887c846015edd60bd2adc2714ad8f43e0db
+          OLD_WORKFLOW_BLOB=1c7e5ae8d2603a9c51feedc5ab1d48177abc7f16
+          OLD_DIAG_BRANCH=agent/c2a-r2-canonical-order-repair-diagnostic-20260913
+          OLD_STAGING_BRANCH=agent/c2a-r2-canonical-order-repair-staging-20260913
+          CANDIDATE_BRANCH=agent/c2a-r2-canonical-manifest-repair-staging-20260914
+          DIAG_BRANCH=agent/c2a-r2-canonical-manifest-repair-diagnostic-20260914
+          DIAG_PATH=.github/workflows/c2a-r2-final-exact-head-diagnostic-order-repair.yml
+          WORKFLOW=.github/workflows/conflict-analysis.yml
+
+          git config user.name "OpenAI MAIN diagnostic"
+          git config user.email "openai-main@users.noreply.github.com"
+          git cat-file -e "$R1^{commit}"
+          git cat-file -e "$G9^{commit}"
+          git cat-file -e "$CURRENT^{commit}"
+          test "$(git rev-parse "$CURRENT^{tree}")" = "$CURRENT_TREE"
+          test "$(git show -s --format=%P "$CURRENT")" = "$R1"
+          git fetch --no-tags origin \
+            "refs/heads/$OLD_DIAG_BRANCH:refs/remotes/origin/old-c2a-diagnostic"
+
+          git checkout --detach "$CURRENT"
+          python - "$WORKFLOW" <<'PY'
+          from pathlib import Path
+          import sys
+
+          path = Path(sys.argv[1])
+          lines = path.read_text(encoding="utf-8").splitlines()
+          delivery = '            "$delivery_tree" ' + chr(92)
+          chrome_version_arg = '            "$C2A_CHROME_VERSION" ' + chr(92)
+          chrome_sha_arg = '            "$C2A_CHROME_LINUX64_SHA256" <<\'PY\''
+          positions = [i for i, line in enumerate(lines) if line == delivery]
+          assert len(positions) == 1, positions
+          i = positions[0]
+          assert lines[i + 1] == chrome_version_arg, lines[i + 1]
+          assert lines[i + 2] == chrome_sha_arg, lines[i + 2]
+          lines[i] = '            "$delivery_tree" <<\'PY\''
+          del lines[i + 1:i + 3]
+
+          remove = (
+              "              chromium_archive_version,",
+              "              chromium_archive_sha256,",
+              '              "chromium_archive_version": chromium_archive_version,',
+              '              "chromium_archive_sha256": chromium_archive_sha256,',
+          )
+          for needle in remove:
+              count = lines.count(needle)
+              assert count == 1, (needle, count)
+              lines.remove(needle)
+          updated = "\n".join(lines) + "\n"
+          assert '"chromium_archive_version": chromium_archive_version' not in updated
+          assert '"chromium_archive_sha256": chromium_archive_sha256' not in updated
+          path.write_text(updated, encoding="utf-8")
+          print("CANONICAL_MANIFEST_SCHEMA_TWO_FIELD_REMOVAL=PASS")
+          PY
+
+          git diff --check
+          mapfile -t current_delta < <(git diff --name-status "$CURRENT" --)
+          test "${#current_delta[@]}" -eq 1
+          test "${current_delta[0]}" = $'M\t.github/workflows/conflict-analysis.yml'
+          git add "$WORKFLOW"
+          candidate_tree="$(git write-tree)"
+          test "$candidate_tree" != "$CURRENT_TREE"
+          mapfile -t tree_delta < <(git diff --name-status "$CURRENT^{tree}" "$candidate_tree")
+          test "${#tree_delta[@]}" -eq 1
+          test "${tree_delta[0]}" = $'M\t.github/workflows/conflict-analysis.yml'
+          candidate="$(printf '%s\n' 'C2A R2: repair canonical evidence manifest schema' | git commit-tree "$candidate_tree" -p "$R1")"
+          test "$(git show -s --format=%P "$candidate")" = "$R1"
+          test "$(git rev-parse "$candidate^{tree}")" = "$candidate_tree"
+
+          mapfile -t r1_delta < <(git diff --name-status "$R1" "$candidate")
+          test "${#r1_delta[@]}" -eq 12
+          test "$(printf '%s\n' "${r1_delta[@]}" | awk '$1=="M"{n++} END{print n+0}')" -eq 12
+          mapfile -t g9_delta < <(git diff --name-status "$G9" "$candidate")
+          test "${#g9_delta[@]}" -eq 19
+          test "$(printf '%s\n' "${g9_delta[@]}" | awk '$1=="A"{n++} END{print n+0}')" -eq 9
+          test "$(printf '%s\n' "${g9_delta[@]}" | awk '$1=="M"{n++} END{print n+0}')" -eq 10
+          new_workflow_blob="$(git rev-parse "$candidate:$WORKFLOW")"
+          test "$new_workflow_blob" != "$OLD_WORKFLOW_BLOB"
+          git push origin "$candidate:refs/heads/$CANDIDATE_BRANCH"
+
+          git checkout --detach "$candidate"
+          git checkout refs/remotes/origin/old-c2a-diagnostic -- "$DIAG_PATH"
+          python - "$DIAG_PATH" "$candidate" "$candidate_tree" "$new_workflow_blob" \
+            "$CURRENT" "$OLD_PR_HEAD" "$OLD_DIAG_BRANCH" "$DIAG_BRANCH" \
+            "$OLD_STAGING_BRANCH" "$CANDIDATE_BRANCH" "$CURRENT_TREE" "$OLD_WORKFLOW_BLOB" <<'PY'
+          from pathlib import Path
+          import sys
+
+          (
+              path_s,
+              candidate,
+              candidate_tree,
+              new_workflow_blob,
+              current,
+              old_pr_head,
+              old_diag_branch,
+              diag_branch,
+              old_staging_branch,
+              candidate_branch,
+              current_tree,
+              old_workflow_blob,
+          ) = sys.argv[1:]
+          path = Path(path_s)
+          text = path.read_text(encoding="utf-8")
+
+          # Replace the tested exact-head identity first. The current PR-head
+          # replacement is intentionally performed afterwards so it remains CURRENT.
+          replacements = [
+              (current, candidate, 2),
+              (current_tree, candidate_tree, 1),
+              (old_workflow_blob, new_workflow_blob, 1),
+              (old_diag_branch, diag_branch, 1),
+              (old_staging_branch, candidate_branch, 1),
+          ]
+          for old, new, minimum in replacements:
+              count = text.count(old)
+              assert count >= minimum, (old, count, minimum)
+              text = text.replace(old, new)
+          count = text.count(old_pr_head)
+          assert count >= 2, (old_pr_head, count)
+          text = text.replace(old_pr_head, current)
+          assert candidate in text and candidate_tree in text and new_workflow_blob in text
+          assert diag_branch in text and candidate_branch in text
+          path.write_text(text, encoding="utf-8")
+          print("DIAGNOSTIC_EXACT_HEAD_REPIN=PASS")
+          PY
+          git add "$DIAG_PATH"
+          mapfile -t diag_delta < <(git diff --cached --name-status "$candidate")
+          test "${#diag_delta[@]}" -eq 1
+          test "${diag_delta[0]}" = $'A\t.github/workflows/c2a-r2-final-exact-head-diagnostic-order-repair.yml'
+          diag_tree="$(git write-tree)"
+          diag_commit="$(printf '%s\n' 'ci: exact-head diagnostic for manifest-schema repair' | git commit-tree "$diag_tree" -p "$candidate")"
+          test "$(git show -s --format=%P "$diag_commit")" = "$candidate"
+          git push origin "$diag_commit:refs/heads/$DIAG_BRANCH"
+
+          echo "CANDIDATE_HEAD=$candidate"
+          echo "CANDIDATE_TREE=$candidate_tree"
+          echo "CANDIDATE_WORKFLOW_BLOB=$new_workflow_blob"
+          echo "DIAGNOSTIC_COMMIT=$diag_commit"
+          echo "BUILD_AND_DIAGNOSTIC_CARRIER=PASS"
