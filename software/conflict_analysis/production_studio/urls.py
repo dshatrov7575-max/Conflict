@@ -1,4 +1,4 @@
-"""GET-only browser composition routes for Production Studio C0 and C1."""
+"""GET-only browser composition routes for Production Studio C0, C1 and C2A."""
 
 from django.urls import path
 
@@ -33,5 +33,15 @@ urlpatterns = [
         "claim-boundaries/audited-draft/v1/",
         views.claim_boundaries_audited_draft_v1,
         name="claim_boundaries_audited_draft_v1",
+    ),
+    path(
+        "lifecycle/definitions/<uuid:definition_id>/",
+        views.lifecycle_publication_definition,
+        name="lifecycle_publication_definition",
+    ),
+    path(
+        "claim-boundaries/lifecycle-publication/v1/",
+        views.claim_boundaries_lifecycle_publication_v1,
+        name="claim_boundaries_lifecycle_publication_v1",
     ),
 ]

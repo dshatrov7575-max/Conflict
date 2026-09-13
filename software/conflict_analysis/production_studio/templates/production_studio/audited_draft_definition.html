@@ -46,6 +46,12 @@
         <button id="preview-validation" type="button" disabled>Проверить без записи</button>
         <button id="save-draft" type="button" disabled>Сохранить DRAFT</button>
         <button id="manual-reconcile" type="button" hidden disabled>Ручная сверка тем же запросом</button>
+        <button
+          id="open-lifecycle-publication"
+          type="button"
+          data-target-url="{% url 'production_studio:lifecycle_publication_definition' definition_id %}"
+          disabled
+        >Жизненный цикл и публикация C2A</button>
         <span>Ключ: <code id="authoring-operation-key">—</code></span>
         <span>Квитанция: <code id="last-receipt-sha">—</code></span>
       </section>
@@ -53,6 +59,14 @@
       <section id="authoring-state" class="authoring-state" role="status" aria-live="polite">
         <strong id="authoring-state-code">LOADING</strong>
         <span id="authoring-state-message">Проверяется контракт и загружается точное определение Foundation.</span>
+      </section>
+
+      <section id="lifecycle-navigation-guard" class="authoring-state authoring-state--attention" hidden aria-live="polite">
+        <strong>DIRTY_NAVIGATION_REQUIRES_HUMAN_DECISION</strong>
+        <span>Сначала явно сохраните DRAFT либо явно отбросьте изменения этой вкладки.</span>
+        <button id="lifecycle-save-before-navigation" type="button">Явно сохранить DRAFT</button>
+        <button id="lifecycle-discard-and-open" type="button">Явно отбросить и открыть C2A</button>
+        <button id="lifecycle-cancel-navigation" type="button">Остаться в редакторе</button>
       </section>
 
       <div class="authoring-panels">

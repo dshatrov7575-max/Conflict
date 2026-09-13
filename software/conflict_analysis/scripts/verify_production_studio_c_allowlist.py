@@ -115,6 +115,9 @@ F1_TARGET_BRANCH = "codex/ca-suite-i1-evidence-multilingual-f1"
 C2A_TARGET_BRANCH = (
     "codex/ca-suite-i1-production-studio-c2a-lifecycle-publication"
 )
+C2A_BASE_BRANCH = "codex/ca-suite-i1-player-g9-evidence-ui"
+PINNED_C2A_BASE_HEAD = "561ef5327bf655a558adb21c54d0fdf0559d7024"
+PINNED_C2A_BASE_TREE = "5b209c782e1ac1a4783b01391dd59d813559ce57"
 F0L_EXACT_PATH_COUNT = 26
 F0L_NEW_PATH_COUNT = 4
 F0L_PORTABLE_TEST_COUNT = 16
@@ -237,9 +240,13 @@ C2A_FROZEN_PATHS = (
 )
 C2A_PORTABLE_TOTAL = 13
 C2A_CHROMIUM_TOTAL = 2
-C2A_FOUNDATION_POSTGRESQL_TOTAL = 254
-C2A_FOUNDATION_SQLITE_PASSED = 237
-C2A_FOUNDATION_SQLITE_SKIPPED = 17
+C2A_FOUNDATION_POSTGRESQL_TOTAL = 350
+C2A_FOUNDATION_SQLITE_PASSED = 322
+C2A_FOUNDATION_SQLITE_SKIPPED = 28
+C2A_INHERITED_PRODUCT_TOTAL = 55
+C2A_PRODUCT_FULL_TOTAL = 68
+C2A_INHERITED_CHROMIUM_TOTAL = 8
+C2A_CHROMIUM_FULL_TOTAL = 10
 SUCCESSOR_C0_TOTAL = 19
 SUCCESSOR_C1_PORTABLE_TOTAL = 8
 SUCCESSOR_C1_CHROMIUM_TOTAL = 1
@@ -272,6 +279,9 @@ SUCCESSOR_JUNIT_FILES = {
         "c2a-c1-sqlite.xml",
         "c2a-c1-chromium-postgresql.xml",
         "c2a-chromium-postgresql.xml",
+        "c2a-product-full-postgresql.xml",
+        "c2a-product-full-sqlite.xml",
+        "c2a-chromium-full-postgresql.xml",
     ),
 }
 SUCCESSOR_MIGRATION_GATES = {
@@ -653,6 +663,50 @@ C2A_POST_F0L_ALLOWLIST = frozenset(
         "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py",
     }
 )
+C2A_EXISTING_BASE_BLOBS = {
+    ".github/workflows/conflict-analysis.yml": "2c33a42ffb7d125238b438a335c65361ac652d61",
+    "software/conflict_analysis/README.md": "3db58e373702a70ffa248445395e4adbaba668d9",
+    "software/conflict_analysis/docs/production-studio-c-read-only-runtime.md": "68756c004e203092187dab794efb212908441977",
+    "software/conflict_analysis/production_studio/templates/production_studio/audited_draft_definition.html": "7cd363045aefd836f8ffe160c2f87dd4325547d9",
+    "software/conflict_analysis/production_studio/static/production_studio/audited_draft.js": "f0793b06fb879e00f91f658bba70dace51e22474",
+    "software/conflict_analysis/production_studio/urls.py": "ae436ed997c0b9a446449986abc49481ed0cee8e",
+    "software/conflict_analysis/production_studio/views.py": "954cbc5bc543dc3ae9da65872e15fdc714542338",
+    "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py": "65063b2aeed8a8fab7b0adc3a385dc1d812184e3",
+}
+
+# Frozen PATH12 map 44521ccd8f72784a8bd7f801772d823753f90c25.
+# These declarations supplement, rather than replace, the historical R1 contract.
+C2A_R2_R1_HEAD = "22f0f173a941de88d6920b6e19821168e9b30cc8"
+C2A_R2_R1_TREE = "f407e609adb2a8b94770b521a1302feb79281822"
+C2A_R2_R1_PREIMAGES = {
+    ".github/workflows/conflict-analysis.yml": "1aff0000c91366028f68c1e8ce381282fa3f4ed9",
+    "software/conflict_analysis/README.md": "a3d587b988034b31acfc8e1c4e30db279520a46a",
+    "software/conflict_analysis/docs/adr/0009-production-studio-c-lifecycle-publication.md": "520dd4357052613b36fbf1f494b2650dc2bf5e95",
+    "software/conflict_analysis/docs/production-studio-c-read-only-runtime.md": "7e8009fc584091ef793ea6e7b6a95f7284036d4c",
+    "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs": "f6ad2ff633d9c49ae4e5c69d5fff931b677e8af3",
+    "software/conflict_analysis/production_studio/browser_tests/lifecycle_publication.mjs": "fa78a5b1c36d21916abc6d87f80dff1916765fdd",
+    "software/conflict_analysis/production_studio/static/production_studio/lifecycle_publication.js": "ee196705281982944e135a559fa6d7f0b4259734",
+    "software/conflict_analysis/production_studio/templates/production_studio/lifecycle_publication_definition.html": "7ef388ac952fb48104a0aa5a18b338e21cb432d0",
+    "software/conflict_analysis/production_studio/tests/test_lifecycle_publication.py": "6c2bb510f11a36db9b62138f637f09bf5588753a",
+    "software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py": "f74bd52abb55535411d0a6ed91acf35f15fe813b",
+    "software/conflict_analysis/production_studio/views.py": "8d28a9ec84e0b981152542bc0589537d56f17679",
+    "software/conflict_analysis/scripts/verify_production_studio_c_allowlist.py": "2ee1c9efac4c314ca0144767e6893b3a9aae18c2",
+}
+C2A_R2_CORRECTION_PATHS = frozenset(C2A_R2_R1_PREIMAGES)
+C2A_R2_ADDITIONAL_BASE_BLOBS = {
+    "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs": "f6ad2ff633d9c49ae4e5c69d5fff931b677e8af3",
+    "software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py": "f74bd52abb55535411d0a6ed91acf35f15fe813b",
+}
+C2A_R2_FINAL_AGGREGATE_ALLOWLIST = C2A_POST_F0L_ALLOWLIST | frozenset(
+    C2A_R2_ADDITIONAL_BASE_BLOBS
+)
+C2A_R2_EXISTING_BASE_BLOBS = {
+    **C2A_EXISTING_BASE_BLOBS,
+    **C2A_R2_ADDITIONAL_BASE_BLOBS,
+}
+C2A_R2_FROZEN_EXEMPTION = (
+    "software/conflict_analysis/production_studio/browser_tests/audited_authoring.mjs"
+)
 
 F0L_EXISTING_BASE_BLOBS = {
     ".github/workflows/conflict-analysis.yml": "d8187433716431bc2e6c93468f826cd21d08792d",
@@ -829,6 +883,54 @@ F0L_SQLITE_SKIPPED_TEST_NODES = (
     (
         "domain.tests.test_postgresql_migrations.ProjectPrimaryLanguageMigrationGateTests",
         "test_0016_reverse_reapply_and_clean_database_seed_are_exact",
+    ),
+)
+
+C2A_SQLITE_SKIPPED_TEST_NODES = (
+    *F0L_SQLITE_SKIPPED_TEST_NODES,
+    (
+        "domain.tests.test_multilingual_evidence_lineage.MultilingualEvidenceLineageMigrationTests",
+        "test_0016_to_0017_preserves_project_language_and_all_legacy_evidence_identities",
+    ),
+    (
+        "domain.tests.test_multilingual_evidence_lineage.MultilingualEvidenceLineageMigrationTests",
+        "test_0017_reverse_reapply_and_empty_database_are_deterministic",
+    ),
+    (
+        "domain.tests.test_player_experiments.PlayerExperimentsPostgreSQLTests",
+        "test_competing_import_keys_into_one_empty_experiment_have_one_commit_and_one_typed_loser",
+    ),
+    (
+        "domain.tests.test_player_experiments.PlayerExperimentsPostgreSQLTests",
+        "test_concurrent_experiment_same_key_creates_one_aggregate_and_one_exact_replay",
+    ),
+    (
+        "domain.tests.test_player_experiments.PlayerExperimentsPostgreSQLTests",
+        "test_concurrent_import_same_key_creates_one_graph_and_one_exact_replay",
+    ),
+    (
+        "domain.tests.test_player_experiments.PlayerExperimentsPostgreSQLTests",
+        "test_concurrent_manual_corrections_have_one_successor_and_one_stale_loser",
+    ),
+    (
+        "domain.tests.test_player_foundation.FoundationPlayerConcurrencyTests",
+        "test_concurrent_time_slice_same_key_and_competing_date_have_one_slice_and_typed_loser",
+    ),
+    (
+        "domain.tests.test_player_foundation.FoundationPlayerConcurrencyTests",
+        "test_concurrent_workspace_same_key_and_competing_identity_have_one_graph_and_typed_loser",
+    ),
+    (
+        "domain.tests.test_player_projection.FoundationWorkspaceAssessmentProjectionPostgreSQLTests",
+        "test_competing_projection_identity_or_snapshot_has_one_commit_and_one_typed_loser",
+    ),
+    (
+        "domain.tests.test_player_projection.FoundationWorkspaceAssessmentProjectionPostgreSQLTests",
+        "test_concurrent_same_workspace_projection_has_one_commit_and_one_exact_replay",
+    ),
+    (
+        "domain.tests.test_zhanaozen_typed_manifest_repair.ZhanaozenRepairConcurrentTests",
+        "test_postgresql_concurrent_bootstrap",
     ),
 )
 
@@ -1425,6 +1527,199 @@ def _require_single_fast_forward_commit(
             f"whose sole parent is the exact base; count={commit_count}, "
             f"parent={delivery_parent}, base={base_head}"
         )
+
+
+def _c2a_r2_static_contract_payload() -> dict[str, object]:
+    return {
+        "base": [PINNED_C2A_BASE_HEAD, PINNED_C2A_BASE_TREE],
+        "r1": [C2A_R2_R1_HEAD, C2A_R2_R1_TREE],
+        "preimages": C2A_R2_R1_PREIMAGES,
+        "correction_paths": sorted(C2A_R2_CORRECTION_PATHS),
+        "additional_base_blobs": C2A_R2_ADDITIONAL_BASE_BLOBS,
+        "aggregate": sorted(C2A_R2_FINAL_AGGREGATE_ALLOWLIST),
+        "existing_base_blobs": C2A_R2_EXISTING_BASE_BLOBS,
+        "frozen_exemption": C2A_R2_FROZEN_EXEMPTION,
+    }
+
+
+def _require_c2a_r2_static_contract() -> None:
+    # Independent pin: the historical successor payload/digest remains unchanged.
+    digest = hashlib.sha256(json.dumps(
+        _c2a_r2_static_contract_payload(), ensure_ascii=False,
+        separators=(",", ":"), sort_keys=True,
+    ).encode("utf-8")).hexdigest()
+    if digest != "58ffb5e718a28571424c5416866b0cb3a63e19660295e5bbd927bd002ed14936":
+        raise VerificationError("C2A R2 frozen PATH12 declarations drifted")
+    if (
+        len(C2A_POST_F0L_ALLOWLIST) != 17
+        or len(C2A_NEW_PATHS) != 9
+        or len(C2A_R2_CORRECTION_PATHS) != 12
+        or len(C2A_R2_FINAL_AGGREGATE_ALLOWLIST) != 19
+        or len(C2A_R2_EXISTING_BASE_BLOBS) != 10
+        or C2A_R2_FINAL_AGGREGATE_ALLOWLIST - C2A_NEW_PATHS
+        != frozenset(C2A_R2_EXISTING_BASE_BLOBS)
+        or frozenset(C2A_FROZEN_PATHS) & C2A_R2_CORRECTION_PATHS
+        != {C2A_R2_FROZEN_EXEMPTION}
+    ):
+        raise VerificationError("C2A R2 path partition or frozen exemption drifted")
+
+
+def _require_c2a_r2_topology(
+    *,
+    base_head: str,
+    base_tree: str,
+    r1_tree: str,
+    delivery_head: str,
+    commit_count: int,
+    ordered_commits: tuple[str, ...],
+    commit_parents: tuple[tuple[str, ...], ...],
+    historical_statuses: dict[str, str],
+    correction_statuses: dict[str, str],
+    aggregate_statuses: dict[str, str],
+) -> None:
+    """Require final R2 history; a preparation/validation chain is never delivery."""
+    _require_c2a_r2_static_contract()
+    _require_c2a_accepted_pin(base_head=base_head, base_tree=base_tree)
+    _require_exact_object_id("C2A R2 delivery HEAD", delivery_head)
+    if (
+        commit_count != 2
+        or delivery_head in {base_head, C2A_R2_R1_HEAD}
+        or ordered_commits != (C2A_R2_R1_HEAD, delivery_head)
+        or commit_parents != ((base_head,), (C2A_R2_R1_HEAD,))
+        or r1_tree != C2A_R2_R1_TREE
+    ):
+        raise VerificationError(
+            "C2A R2 requires exact G9 -> immutable R1 -> one ordinary R2 child; "
+            "R1 identity/tree, ordered commits and sole parents must match"
+        )
+    expected_historical = {
+        path: "A" if path in C2A_NEW_PATHS else "M"
+        for path in C2A_POST_F0L_ALLOWLIST
+    }
+    expected_correction = {path: "M" for path in C2A_R2_CORRECTION_PATHS}
+    expected_aggregate = {
+        path: "A" if path in C2A_NEW_PATHS else "M"
+        for path in C2A_R2_FINAL_AGGREGATE_ALLOWLIST
+    }
+    for label, actual, expected in (
+        ("G9->R1 exact 17 paths (9 A + 8 M)", historical_statuses, expected_historical),
+        ("R1->R2 exact 12 M paths", correction_statuses, expected_correction),
+        ("G9->R2 exact 19 paths (9 A + 10 M)", aggregate_statuses, expected_aggregate),
+    ):
+        if actual != expected:
+            raise VerificationError(f"C2A R2 {label} status/path contract drifted")
+
+
+def _require_c2a_r2_entries(
+    *,
+    base_entries: dict[str, str],
+    r1_entries: dict[str, str],
+    delivery_entries: dict[str, str],
+) -> None:
+    """Check exact preimages, regular file modes and unchanged R1-only surfaces."""
+    _require_c2a_r2_static_contract()
+    if (
+        set(base_entries) != set(C2A_R2_EXISTING_BASE_BLOBS)
+        or set(r1_entries) != C2A_R2_FINAL_AGGREGATE_ALLOWLIST
+        or set(delivery_entries) != C2A_R2_FINAL_AGGREGATE_ALLOWLIST
+    ):
+        raise VerificationError("C2A R2 tree-entry inventory drifted")
+    for path, expected_blob in C2A_R2_EXISTING_BASE_BLOBS.items():
+        _require_regular_blob_tree_entry(
+            path=path, revision="G9", entry=base_entries[path],
+            expected_blob=expected_blob,
+        )
+    for path in sorted(C2A_R2_FINAL_AGGREGATE_ALLOWLIST):
+        r1_blob = _require_regular_blob_tree_entry(
+            path=path, revision="R1", entry=r1_entries[path],
+            expected_blob=C2A_R2_R1_PREIMAGES.get(path),
+        )
+        r2_blob = _require_regular_blob_tree_entry(
+            path=path, revision="R2", entry=delivery_entries[path],
+        )
+        if path in C2A_R2_CORRECTION_PATHS:
+            if r2_blob == r1_blob:
+                raise VerificationError(f"C2A R2 correction blob is unchanged: {path}")
+        elif delivery_entries[path] != r1_entries[path]:
+            raise VerificationError(f"C2A R2 changed an R1-only surface: {path}")
+
+
+def _c2a_r2_diff_statuses(repo: Path, before: str, after: str) -> dict[str, str]:
+    fields = _git_bytes(
+        repo, "diff", "--no-ext-diff", "--no-renames", "--name-status", "-z",
+        before, after, "--",
+    ).decode("utf-8").split("\0")
+    if fields.pop() != "" or len(fields) % 2:
+        raise VerificationError("C2A R2 malformed NUL-delimited Git diff")
+    statuses: dict[str, str] = {}
+    for status, path in zip(fields[::2], fields[1::2]):
+        if path in statuses:
+            raise VerificationError("C2A R2 duplicate Git diff path")
+        statuses[path] = status
+    return statuses
+
+
+def _c2a_r2_tree_entries(
+    repo: Path, revision: str, paths: frozenset[str],
+) -> dict[str, str]:
+    entries: dict[str, str] = {}
+    for entry in _git_bytes(
+        repo, "ls-tree", "-r", "-z", revision, "--", *sorted(paths),
+    ).decode("utf-8").split("\0"):
+        if entry:
+            _, separator, path = entry.partition("\t")
+            if not separator or path in entries:
+                raise VerificationError("C2A R2 malformed Git tree entry")
+            entries[path] = entry
+    return entries
+
+
+def _require_c2a_r2_repository_topology(
+    repo: Path, *, base_head: str, base_tree: str, delivery_revision: str = "HEAD",
+) -> dict[str, object]:
+    """Read Git objects directly, also usable with an isolated synthetic final R2."""
+    _require_successor_static_contract()
+    _require_c2a_accepted_pin(base_head=base_head, base_tree=base_tree)
+    delivery_head = _git(repo, "rev-parse", f"{delivery_revision}^{{commit}}")
+    if _git(repo, "rev-parse", f"{base_head}^{{tree}}") != base_tree:
+        raise VerificationError("C2A R2 actual G9 TREE differs from its exact pin")
+    if _git(repo, "merge-base", base_head, delivery_head) != base_head:
+        raise VerificationError("C2A R2 does not descend from exact G9")
+    commits = tuple(_git(
+        repo, "rev-list", "--reverse", f"{base_head}..{delivery_head}",
+    ).splitlines())
+    _require_merge_free("C2A R2", tuple(_git(
+        repo, "rev-list", "--merges", f"{base_head}..{delivery_head}",
+    ).splitlines()))
+    _require_c2a_r2_topology(
+        base_head=base_head, base_tree=base_tree,
+        r1_tree=_git(repo, "rev-parse", f"{C2A_R2_R1_HEAD}^{{tree}}"),
+        delivery_head=delivery_head, commit_count=len(commits),
+        ordered_commits=commits,
+        commit_parents=tuple(tuple(_git(
+            repo, "show", "-s", "--format=%P", commit,
+        ).split()) for commit in commits),
+        historical_statuses=_c2a_r2_diff_statuses(repo, base_head, C2A_R2_R1_HEAD),
+        correction_statuses=_c2a_r2_diff_statuses(repo, C2A_R2_R1_HEAD, delivery_head),
+        aggregate_statuses=_c2a_r2_diff_statuses(repo, base_head, delivery_head),
+    )
+    entries = [
+        _c2a_r2_tree_entries(repo, revision, C2A_R2_FINAL_AGGREGATE_ALLOWLIST)
+        for revision in (base_head, C2A_R2_R1_HEAD, delivery_head)
+    ]
+    _require_c2a_r2_entries(
+        base_entries=entries[0], r1_entries=entries[1], delivery_entries=entries[2],
+    )
+    # Exact global diffs freeze every other path, including modes, migrations,
+    # schemas, domain authority and cdp_client; no directory/prefix exemption.
+    return {
+        "result": "PASS", "r1_head": C2A_R2_R1_HEAD,
+        "r1_tree": C2A_R2_R1_TREE, "delivery_head": delivery_head,
+        "delivery_tree": _git(repo, "rev-parse", f"{delivery_head}^{{tree}}"),
+        "correction_paths": sorted(C2A_R2_CORRECTION_PATHS),
+        "aggregate_path_count": 19, "new_path_count": 9, "existing_path_count": 10,
+        "frozen_exemption": C2A_R2_FROZEN_EXEMPTION,
+    }
 
 
 def _require_f1_recovery_topology(
@@ -2349,16 +2644,18 @@ def _resolve_post_f0l_route(
     if target is None:
         raise VerificationError("post-F0L routing supports only F1 or C2A")
     if event_name == "push" and event_ref == f"refs/heads/{target}":
-        return "PINNED_ACCEPTED_F0L"
+        return "PINNED_ACCEPTED_F0L" if active_slice == "F1" else "PINNED_ACCEPTED_G9"
     if (
         event_name == "pull_request"
         and head_ref == target
-        and base_ref == F0L_TARGET_BRANCH
+        and base_ref
+        == (F0L_TARGET_BRANCH if active_slice == "F1" else C2A_BASE_BRANCH)
     ):
-        return "EVENT_ACCEPTED_F0L"
+        return "EVENT_ACCEPTED_F0L" if active_slice == "F1" else "EVENT_ACCEPTED_G9"
+    base_label = "F0L" if active_slice == "F1" else "G9"
     raise VerificationError(
         f"{active_slice} routing accepts only its exact push ref or exact "
-        "F0L-targeted pull-request ref pair"
+        f"{base_label}-targeted pull-request ref pair"
     )
 
 
@@ -2473,6 +2770,15 @@ def _require_f0l_accepted_pin(
     if base_head != accepted_head or base_tree != accepted_tree:
         raise VerificationError(
             "post-F0L base HEAD/TREE does not match external accepted-F0L pins"
+        )
+
+
+def _require_c2a_accepted_pin(*, base_head: str, base_tree: str) -> None:
+    base_head = _require_exact_object_id("C2A accepted G9 HEAD", base_head)
+    base_tree = _require_exact_object_id("C2A accepted G9 TREE", base_tree)
+    if (base_head, base_tree) != (PINNED_C2A_BASE_HEAD, PINNED_C2A_BASE_TREE):
+        raise VerificationError(
+            "C2A base HEAD/TREE does not match the exact accepted G9 pins"
         )
 
 
@@ -2670,6 +2976,10 @@ def _successor_static_contract_payload() -> dict[str, object]:
             F1_FOUNDATION_SQLITE_SKIPPED,
         ),
         "c2a_allowlist": sorted(C2A_POST_F0L_ALLOWLIST),
+        "c2a_base_branch": C2A_BASE_BRANCH,
+        "c2a_base_head": PINNED_C2A_BASE_HEAD,
+        "c2a_base_tree": PINNED_C2A_BASE_TREE,
+        "c2a_existing_base_blobs": dict(sorted(C2A_EXISTING_BASE_BLOBS.items())),
         "c2a_new_paths": sorted(C2A_NEW_PATHS),
         "c2a_frozen_paths": C2A_FROZEN_PATHS,
         "c2a_portable_class": C2A_PORTABLE_TEST_CLASS,
@@ -2684,8 +2994,13 @@ def _successor_static_contract_payload() -> dict[str, object]:
             SUCCESSOR_C0_TOTAL,
             SUCCESSOR_C1_PORTABLE_TOTAL,
             SUCCESSOR_C1_CHROMIUM_TOTAL,
+            C2A_INHERITED_PRODUCT_TOTAL,
+            C2A_PRODUCT_FULL_TOTAL,
+            C2A_INHERITED_CHROMIUM_TOTAL,
+            C2A_CHROMIUM_FULL_TOTAL,
         ),
         "f0l_sqlite_skipped_nodes": F0L_SQLITE_SKIPPED_TEST_NODES,
+        "c2a_sqlite_skipped_nodes": C2A_SQLITE_SKIPPED_TEST_NODES,
         "successor_junit_files": SUCCESSOR_JUNIT_FILES,
         "successor_migration_gates": SUCCESSOR_MIGRATION_GATES,
         "successor_wheel_checks": SUCCESSOR_WHEEL_CHECKS,
@@ -2701,6 +3016,7 @@ def _successor_static_contract_payload() -> dict[str, object]:
 
 
 def _require_successor_static_contract() -> None:
+    _require_c2a_r2_static_contract()
     _require_f1_recovery_static_contract()
     _require_f1_chromium_r3_static_contract()
     _require_f1_chromium_r4_static_contract()
@@ -2711,7 +3027,7 @@ def _require_successor_static_contract() -> None:
         sort_keys=True,
     ).encode("utf-8")
     digest = hashlib.sha256(encoded).hexdigest()
-    expected = "d456b88e5cc85b8851c9d26fccce548f9ecd868b7e614091e7a4d59b00eb9013"
+    expected = "30d7c01ba49a0fdcb69a525a89064042d687fca1a8fb5f60f168462e4fde7b03"
     if digest != expected:
         raise VerificationError(
             "post-F0L successor static contract drifted: "
@@ -2747,6 +3063,12 @@ def _successor_workflow_required_tokens() -> tuple[str, ...]:
         "if: env.ACTIVE_SLICE == 'F1' || env.ACTIVE_SLICE == 'C2A'",
         terminal_cli,
         "POST_F0L_F1_C2A_EXECUTABLE_CI=PASS",
+        "C2A_EXACT_G9_PIN_SELF_CHECK=PASS",
+        "name: Run exact inherited Product 55 and C2A Product 68 on both engines",
+        "C2A_INHERITED_PRODUCT_55_PLUS_PORTABLE_13_EQUALS_68=PASS",
+        C2A_BASE_BRANCH,
+        PINNED_C2A_BASE_HEAD,
+        PINNED_C2A_BASE_TREE,
         "-k",
         *C2A_CHROMIUM_TEST_METHODS,
         SUCCESSOR_EVIDENCE_SCHEMA,
@@ -2764,6 +3086,17 @@ def _successor_workflow_required_tokens() -> tuple[str, ...]:
 
 
 def _require_successor_workflow_contract(source: str) -> None:
+    job_start = "\n  project-language-bootstrap:\n"
+    job_end = "\n  fd08-assessment-projection:\n"
+    boundary_counts = (source.count(job_start), source.count(job_end))
+    if boundary_counts == (0, 0):
+        job_source = source
+    elif boundary_counts == (1, 1):
+        job_source = source[
+            source.index(job_start) : source.index(job_end, source.index(job_start))
+        ]
+    else:
+        raise VerificationError("successor workflow job boundaries drifted")
     terminal_cli = '--successor-evidence-dir "$RUNNER_TEMP/successor-evidence"'
     runtime_evidence_binding = (
         '"$RUNNER_TEMP/successor-evidence" >> "$GITHUB_ENV"'
@@ -2787,7 +3120,7 @@ def _require_successor_workflow_contract(source: str) -> None:
         )
     )
     successor_wheel_order = all(
-        token in source
+        token in job_source
         for token in (
             successor_wheel_build,
             c0_wheel_binding,
@@ -2796,19 +3129,19 @@ def _require_successor_workflow_contract(source: str) -> None:
             wheel_reuse,
         )
     ) and (
-        source.index(successor_wheel_build)
-        < source.index(c0_wheel_binding)
-        < source.index(c0_postgresql_step)
-        < source.index(wheel_inspection_step)
-        < source.index(wheel_reuse)
+        job_source.index(successor_wheel_build)
+        < job_source.index(c0_wheel_binding)
+        < job_source.index(c0_postgresql_step)
+        < job_source.index(wheel_inspection_step)
+        < job_source.index(wheel_reuse)
     )
     if (
         missing
-        or source.count(terminal_cli) != 1
-        or source.count(runtime_evidence_binding) != 1
-        or source.count(successor_wheel_build) != 1
-        or source.count(c0_wheel_binding) != 1
-        or source.count(wheel_reuse) != 1
+        or job_source.count(terminal_cli) != 1
+        or job_source.count(runtime_evidence_binding) != 1
+        or job_source.count(successor_wheel_build) != 1
+        or job_source.count(c0_wheel_binding) != 1
+        or job_source.count(wheel_reuse) != 1
         or not successor_wheel_order
         or invalid_job_level_runner_temp
     ):
@@ -2817,15 +3150,15 @@ def _require_successor_workflow_contract(source: str) -> None:
             + json.dumps(
                 {
                     "missing": missing,
-                    "terminal_invocation_count": source.count(terminal_cli),
-                    "runtime_evidence_binding_count": source.count(
+                    "terminal_invocation_count": job_source.count(terminal_cli),
+                    "runtime_evidence_binding_count": job_source.count(
                         runtime_evidence_binding
                     ),
-                    "successor_wheel_build_count": source.count(
+                    "successor_wheel_build_count": job_source.count(
                         successor_wheel_build
                     ),
-                    "c0_wheel_binding_count": source.count(c0_wheel_binding),
-                    "wheel_reuse_count": source.count(wheel_reuse),
+                    "c0_wheel_binding_count": job_source.count(c0_wheel_binding),
+                    "wheel_reuse_count": job_source.count(wheel_reuse),
                     "successor_wheel_order": successor_wheel_order,
                     "invalid_job_level_runner_temp": invalid_job_level_runner_temp,
                 }
@@ -3022,7 +3355,16 @@ def _require_successor_repository_contract(
     base_head: str,
     f1_chromium_r3: bool = False,
     f1_chromium_r4: bool = False,
+    c2a_r2: bool = False,
 ) -> dict[str, object]:
+    c2a_r2_topology = None
+    if c2a_r2:
+        if active_slice != "C2A" or f1_chromium_r3 or f1_chromium_r4:
+            raise VerificationError("C2A R2 repository exemption is exclusive to C2A R2")
+        # Grant the single frozen-path exemption only after the complete proof.
+        c2a_r2_topology = _require_c2a_r2_repository_topology(
+            repo, base_head=base_head, base_tree=PINNED_C2A_BASE_TREE,
+        )
     if f1_chromium_r3 and f1_chromium_r4:
         raise VerificationError("F1 Chromium R3 and R4 repository modes are exclusive")
     if f1_chromium_r3:
@@ -3043,6 +3385,8 @@ def _require_successor_repository_contract(
             )
         )
     )
+    if c2a_r2:
+        allowlist = C2A_R2_FINAL_AGGREGATE_ALLOWLIST
     new_paths = F1_NEW_PATHS if active_slice == "F1" else C2A_NEW_PATHS
     frozen_paths = (
         tuple(
@@ -3053,6 +3397,10 @@ def _require_successor_repository_contract(
         if active_slice == "F1" and f1_chromium_recovery
         else (F1_FROZEN_PATHS if active_slice == "F1" else C2A_FROZEN_PATHS)
     )
+    if c2a_r2:
+        frozen_paths = tuple(
+            path for path in C2A_FROZEN_PATHS if path != C2A_R2_FROZEN_EXEMPTION
+        )
     base_blobs: dict[str, str] = {}
     for path in sorted(allowlist):
         base_entry = _git(repo, "ls-tree", base_head, "--", path)
@@ -3060,7 +3408,7 @@ def _require_successor_repository_contract(
         if path in new_paths:
             if base_entry:
                 raise VerificationError(
-                    f"{active_slice} required-new path already exists at accepted F0L: {path}"
+                    f"{active_slice} required-new path already exists at accepted base: {path}"
                 )
             _require_regular_blob_tree_entry(
                 path=path,
@@ -3079,6 +3427,21 @@ def _require_successor_repository_contract(
             entry=head_entry,
         )
 
+    c2a_expected_blobs = (
+        C2A_R2_EXISTING_BASE_BLOBS if c2a_r2 else C2A_EXISTING_BASE_BLOBS
+    )
+    if active_slice == "C2A" and base_blobs != c2a_expected_blobs:
+        raise VerificationError(
+            "C2A exact accepted-G9 existing-path preimages drifted: "
+            + json.dumps(
+                {
+                    "expected": c2a_expected_blobs,
+                    "actual": base_blobs,
+                },
+                sort_keys=True,
+            )
+        )
+
     if active_slice == "F1":
         expected_path_proof = (12, 6, 6) if f1_chromium_recovery else (11, 6, 5)
         if (len(allowlist), len(new_paths), len(base_blobs)) != expected_path_proof:
@@ -3092,7 +3455,7 @@ def _require_successor_repository_contract(
         head_object = _git(repo, "rev-parse", f"HEAD:{path}")
         if base_object != head_object:
             raise VerificationError(
-                f"{active_slice} accepted-F0L frozen input drifted at {path}"
+                f"{active_slice} accepted-base frozen input drifted at {path}"
             )
         frozen_objects[path] = base_object
 
@@ -3110,7 +3473,23 @@ def _require_successor_repository_contract(
         ).splitlines()
         if line
     )
-    expected_migrations = F1_MIGRATIONS if active_slice == "F1" else F0L_MIGRATIONS
+    expected_migrations = (
+        F1_MIGRATIONS
+        if active_slice == "F1"
+        else tuple(
+            line
+            for line in _git(
+                repo,
+                "ls-tree",
+                "-r",
+                "--name-only",
+                base_head,
+                "--",
+                "software/conflict_analysis/domain/migrations",
+            ).splitlines()
+            if line
+        )
+    )
     if migrations != expected_migrations:
         raise VerificationError(
             f"{active_slice} migration filename set drifted: "
@@ -3138,6 +3517,7 @@ def _require_successor_repository_contract(
         "frozen_objects": dict(sorted(frozen_objects.items())),
         "f1_chromium_r3_studio_freeze": f1_chromium_r3,
         "f1_chromium_r4_studio_freeze": f1_chromium_r4,
+        "c2a_r2_topology": c2a_r2_topology,
         "migration_filenames": list(migrations),
     }
 
@@ -3837,7 +4217,7 @@ def _successor_junit_contracts(
             "expected_total": C2A_FOUNDATION_POSTGRESQL_TOTAL,
             "expected_skipped": C2A_FOUNDATION_SQLITE_SKIPPED,
             "required_nodes": f0l_nodes,
-            "exact_skipped_nodes": F0L_SQLITE_SKIPPED_TEST_NODES,
+            "exact_skipped_nodes": C2A_SQLITE_SKIPPED_TEST_NODES,
         },
         "c2a-c0-postgresql.xml": {
             "expected_total": SUCCESSOR_C0_TOTAL,
@@ -3864,6 +4244,20 @@ def _successor_junit_contracts(
             "expected_total": C2A_CHROMIUM_TOTAL,
             "expected_skipped": 0,
             "exact_method_names": C2A_CHROMIUM_TEST_METHODS,
+        },
+        "c2a-product-full-postgresql.xml": {
+            "expected_total": C2A_PRODUCT_FULL_TOTAL,
+            "expected_skipped": 0,
+            "required_nodes": C2A_PORTABLE_TEST_NODES,
+        },
+        "c2a-product-full-sqlite.xml": {
+            "expected_total": C2A_PRODUCT_FULL_TOTAL,
+            "expected_skipped": 0,
+            "required_nodes": C2A_PORTABLE_TEST_NODES,
+        },
+        "c2a-chromium-full-postgresql.xml": {
+            "expected_total": C2A_CHROMIUM_FULL_TOTAL,
+            "expected_skipped": 0,
         },
     }
 
@@ -5565,8 +5959,32 @@ def f0l_self_check() -> dict[str, object]:
         active_slice="C2A",
         event_name="push",
         event_ref=f"refs/heads/{C2A_TARGET_BRANCH}",
-    ) != "PINNED_ACCEPTED_F0L":
+    ) != "PINNED_ACCEPTED_G9":
         raise VerificationError("C2A route self-check resolved the wrong base source")
+    if _resolve_post_f0l_route(
+        active_slice="C2A",
+        event_name="pull_request",
+        head_ref=C2A_TARGET_BRANCH,
+        base_ref=C2A_BASE_BRANCH,
+    ) != "EVENT_ACCEPTED_G9":
+        raise VerificationError("C2A PR route self-check resolved the wrong base source")
+
+    _require_c2a_accepted_pin(
+        base_head=PINNED_C2A_BASE_HEAD,
+        base_tree=PINNED_C2A_BASE_TREE,
+    )
+    c2a_pin_negative_cases = 0
+    for base_head, base_tree in (
+        ("a" * 40, PINNED_C2A_BASE_TREE),
+        (PINNED_C2A_BASE_HEAD, "b" * 40),
+        ("", PINNED_C2A_BASE_TREE),
+    ):
+        try:
+            _require_c2a_accepted_pin(base_head=base_head, base_tree=base_tree)
+        except VerificationError:
+            c2a_pin_negative_cases += 1
+        else:
+            raise VerificationError("C2A pin self-check accepted a negative case")
 
     negative_cases = 0
     for call in (
@@ -5583,8 +6001,9 @@ def f0l_self_check() -> dict[str, object]:
         ),
         lambda: _resolve_post_f0l_route(
             active_slice="C2A",
-            event_name="push",
-            event_ref=f"refs/heads/{C2A_TARGET_BRANCH}-unexpected",
+            event_name="pull_request",
+            head_ref=C2A_TARGET_BRANCH,
+            base_ref=F0L_TARGET_BRANCH,
         ),
     ):
         try:
@@ -7018,7 +7437,157 @@ class ProjectQuerySet:
         "caller_repository_access": False,
         "temporary_repository_access": True,
         "positive_slices": ["F0L", "F1", "C2A"],
-        "negative_cases": negative_cases,
+        "negative_cases": negative_cases + c2a_pin_negative_cases,
+    }
+
+
+def c2a_r2_self_check() -> dict[str, object]:
+    """Exercise frozen R2 object snapshots without modifying the caller's repo."""
+    _require_successor_static_contract()
+    delivery = "a" * 40
+    other = "b" * 40
+    topology = {
+        "base_head": PINNED_C2A_BASE_HEAD, "base_tree": PINNED_C2A_BASE_TREE,
+        "r1_tree": C2A_R2_R1_TREE, "delivery_head": delivery,
+        "commit_count": 2, "ordered_commits": (C2A_R2_R1_HEAD, delivery),
+        "commit_parents": ((PINNED_C2A_BASE_HEAD,), (C2A_R2_R1_HEAD,)),
+        "historical_statuses": {
+            path: "A" if path in C2A_NEW_PATHS else "M"
+            for path in C2A_POST_F0L_ALLOWLIST
+        },
+        "correction_statuses": {path: "M" for path in C2A_R2_CORRECTION_PATHS},
+        "aggregate_statuses": {
+            path: "A" if path in C2A_NEW_PATHS else "M"
+            for path in C2A_R2_FINAL_AGGREGATE_ALLOWLIST
+        },
+    }
+    base_entries = {
+        path: f"100644 blob {blob}\t{path}"
+        for path, blob in C2A_R2_EXISTING_BASE_BLOBS.items()
+    }
+    r1_entries = {
+        path: f"100644 blob {C2A_R2_R1_PREIMAGES.get(path, other)}\t{path}"
+        for path in C2A_R2_FINAL_AGGREGATE_ALLOWLIST
+    }
+    delivery_entries = {
+        path: f"100644 blob {delivery}\t{path}"
+        if path in C2A_R2_CORRECTION_PATHS else r1_entries[path]
+        for path in C2A_R2_FINAL_AGGREGATE_ALLOWLIST
+    }
+    entries = {
+        "base_entries": base_entries, "r1_entries": r1_entries,
+        "delivery_entries": delivery_entries,
+    }
+    _require_c2a_r2_topology(**topology)
+    _require_c2a_r2_entries(**entries)
+    rejected: list[str] = []
+
+    def reject(label, check):
+        try:
+            check()
+        except VerificationError:
+            rejected.append(label)
+        else:
+            raise VerificationError(f"C2A R2 self-check accepted {label}")
+
+    for label, changes in (
+        ("r1_only", {"commit_count": 1, "delivery_head": C2A_R2_R1_HEAD,
+                     "ordered_commits": (C2A_R2_R1_HEAD,)}),
+        ("third_commit", {"commit_count": 3,
+                          "ordered_commits": (C2A_R2_R1_HEAD, other, delivery)}),
+        ("wrong_g9_head", {"base_head": other}),
+        ("wrong_g9_tree", {"base_tree": other}),
+        ("wrong_r1_identity", {"ordered_commits": (other, delivery)}),
+        ("wrong_r1_tree", {"r1_tree": other}),
+        ("wrong_r1_parent", {"commit_parents": ((other,), (C2A_R2_R1_HEAD,))}),
+        ("wrong_r2_parent", {"commit_parents": ((PINNED_C2A_BASE_HEAD,), (other,))}),
+        ("merge_r1_parent", {"commit_parents": ((PINNED_C2A_BASE_HEAD, other),
+                                               (C2A_R2_R1_HEAD,))}),
+        ("merge_r2_parent", {"commit_parents": ((PINNED_C2A_BASE_HEAD,),
+                                               (C2A_R2_R1_HEAD, other))}),
+        ("missing_parent", {"commit_parents": ((PINNED_C2A_BASE_HEAD,), ())}),
+        ("wrong_order", {"ordered_commits": (delivery, C2A_R2_R1_HEAD)}),
+        ("fixed_predecessor", {"delivery_head": PINNED_C2A_BASE_HEAD}),
+    ):
+        reject(label, lambda: _require_c2a_r2_topology(**(topology | changes)))
+
+    correction_path = sorted(C2A_R2_CORRECTION_PATHS)[0]
+    for path in sorted(C2A_R2_CORRECTION_PATHS):
+        changed = dict(topology["correction_statuses"])
+        del changed[path]
+        reject(f"missing_correction:{path}", lambda: _require_c2a_r2_topology(
+            **(topology | {"correction_statuses": changed})))
+    for status in ("A", "D", "R100", "C100", "T", "U", "X", "M100", ""):
+        changed = topology["correction_statuses"] | {correction_path: status}
+        reject(f"non_M_correction:{status}", lambda: _require_c2a_r2_topology(
+            **(topology | {"correction_statuses": changed})))
+    for key in ("historical_statuses", "aggregate_statuses"):
+        for label, changed in (
+            ("missing", {p: s for p, s in topology[key].items() if p != correction_path}),
+            ("extra", topology[key] | {"outside.txt": "M"}),
+            ("wrong_partition", topology[key] | {correction_path: "A"}),
+        ):
+            reject(f"{key}:{label}", lambda: _require_c2a_r2_topology(
+                **(topology | {key: changed})))
+    # Preserve cardinality while exchanging added/existing identities.
+    added = sorted(C2A_NEW_PATHS)[0]
+    changed = topology["aggregate_statuses"] | {correction_path: "A", added: "M"}
+    reject("aggregate_partition_identity_swap", lambda: _require_c2a_r2_topology(
+        **(topology | {"aggregate_statuses": changed})))
+
+    for path in (
+        C2A_R2_FROZEN_EXEMPTION + ".extra",
+        "software/conflict_analysis/production_studio/tests/test_read_only_static_contracts.py.extra",
+        "software/conflict_analysis/production_studio/browser_tests/cdp_client.mjs",
+        "software/conflict_analysis/domain/models.py",
+    ):
+        changed = topology["correction_statuses"] | {path: "M"}
+        reject(f"exemption_leakage:{path}", lambda: _require_c2a_r2_topology(
+            **(topology | {"correction_statuses": changed,
+                           "aggregate_statuses": topology["aggregate_statuses"] | {path: "M"}})))
+    for key in entries:
+        for path in sorted(entries[key]):
+            for label, entry in (
+                ("mode_executable", entries[key][path].replace("100644", "100755", 1)),
+                ("mode_symlink", entries[key][path].replace("100644", "120000", 1)),
+                ("type_commit", entries[key][path].replace("blob", "commit", 1)),
+            ):
+                changed = entries[key] | {path: entry}
+                reject(f"{key}:{label}:{path}", lambda: _require_c2a_r2_entries(
+                    **(entries | {key: changed})))
+    for key, paths in (
+        ("base_entries", C2A_R2_EXISTING_BASE_BLOBS),
+        ("r1_entries", C2A_R2_R1_PREIMAGES),
+    ):
+        for path in sorted(paths):
+            changed = entries[key] | {path: f"100644 blob {delivery}\t{path}"}
+            reject(f"{key}:preimage_drift:{path}", lambda: _require_c2a_r2_entries(
+                **(entries | {key: changed})))
+    for path in sorted(C2A_R2_CORRECTION_PATHS):
+        changed = delivery_entries | {path: r1_entries[path]}
+        reject(f"unchanged_correction:{path}", lambda: _require_c2a_r2_entries(
+            **(entries | {"delivery_entries": changed})))
+    unchanged = sorted(C2A_R2_FINAL_AGGREGATE_ALLOWLIST - C2A_R2_CORRECTION_PATHS)[0]
+    changed = delivery_entries | {unchanged: f"100644 blob {delivery}\t{unchanged}"}
+    reject("r1_only_surface_drift", lambda: _require_c2a_r2_entries(
+        **(entries | {"delivery_entries": changed})))
+    reject("exemption_in_f1", lambda: _require_successor_repository_contract(
+        Path("."), active_slice="F1", base_head=PINNED_C2A_BASE_HEAD, c2a_r2=True))
+    reject("exemption_in_historical_r1", lambda: _require_changed_path_contract(
+        active_slice="C2A", changed=C2A_R2_FINAL_AGGREGATE_ALLOWLIST,
+        allowlist=C2A_POST_F0L_ALLOWLIST, exact_changed_paths=True))
+    # An expanded declaration must fail even if its path count looks plausible.
+    original_exemption = C2A_R2_FROZEN_EXEMPTION
+    try:
+        globals()["C2A_R2_FROZEN_EXEMPTION"] = "software/conflict_analysis/production_studio"
+        reject("expanded_exemption_declaration", _require_c2a_r2_static_contract)
+    finally:
+        globals()["C2A_R2_FROZEN_EXEMPTION"] = original_exemption
+    _require_successor_static_contract()
+    return {
+        "marker": "C2A_R2_VERIFIER_SELF_CHECK=PASS",
+        "positive_topology_and_entries": "PASS", "negative_cases": len(rejected),
+        "rejected_cases": rejected, "caller_repository_access": False,
     }
 
 
@@ -7849,7 +8418,7 @@ def verify_post_f0l(
     accepted_tree: str | None,
     evidence_dir: Path | None,
 ) -> dict[str, object]:
-    """Fail closed around externally accepted F0L pins for future F1/C2A."""
+    """Fail closed around the exact accepted base for each successor slice."""
 
     if active_slice not in {"F1", "C2A"}:
         raise VerificationError("post-F0L verifier supports only F1 or C2A")
@@ -7857,16 +8426,23 @@ def verify_post_f0l(
     _require_successor_static_contract()
     base_head = _require_exact_object_id("post-F0L base HEAD", base_head)
     base_tree = _require_exact_object_id("post-F0L base TREE", base_tree)
-    _require_f0l_accepted_pin(
-        accepted_head=accepted_head,
-        accepted_tree=accepted_tree,
-        base_head=base_head,
-        base_tree=base_tree,
-    )
+    if active_slice == "F1":
+        _require_f0l_accepted_pin(
+            accepted_head=accepted_head,
+            accepted_tree=accepted_tree,
+            base_head=base_head,
+            base_tree=base_tree,
+        )
+    else:
+        if accepted_head is not None or accepted_tree is not None:
+            raise VerificationError(
+                "C2A uses the internal exact G9 pin and rejects external F0L pins"
+            )
+        _require_c2a_accepted_pin(base_head=base_head, base_tree=base_tree)
     if _git(repo, "rev-parse", f"{base_head}^{{tree}}") != base_tree:
-        raise VerificationError("accepted-F0L commit TREE does not match its pin")
+        raise VerificationError("accepted-base commit TREE does not match its pin")
     if _git(repo, "merge-base", base_head, "HEAD") != base_head:
-        raise VerificationError(f"{active_slice} is not based on accepted F0L")
+        raise VerificationError(f"{active_slice} is not based on its accepted base")
     commit_count = int(_git(repo, "rev-list", "--count", f"{base_head}..HEAD"))
     f1_chromium_r3 = active_slice == "F1" and commit_count == 4
     f1_chromium_r4 = active_slice == "F1" and commit_count == 5
@@ -7876,6 +8452,8 @@ def verify_post_f0l(
         f"{active_slice} delivery HEAD",
         _git(repo, "rev-parse", "HEAD"),
     )
+    # Only the immutable historical R1 uses the original single-commit route.
+    c2a_r2 = active_slice == "C2A" and delivery_head != C2A_R2_R1_HEAD
     ordered_commits = tuple(
         line
         for line in _git(repo, "rev-list", "--reverse", f"{base_head}..HEAD").splitlines()
@@ -7889,7 +8467,7 @@ def verify_post_f0l(
             if line
         ),
     )
-    if active_slice == "C2A":
+    if active_slice == "C2A" and not c2a_r2:
         _require_single_fast_forward_commit(
             active_slice=active_slice,
             commit_count=commit_count,
@@ -7912,6 +8490,8 @@ def verify_post_f0l(
             )
         )
     )
+    if c2a_r2:
+        allowlist = C2A_R2_FINAL_AGGREGATE_ALLOWLIST
     changed = _changed_paths(repo, base_head)
     _require_changed_path_contract(
         active_slice=active_slice,
@@ -7991,6 +8571,7 @@ def verify_post_f0l(
         base_head=base_head,
         f1_chromium_r3=f1_chromium_r3,
         f1_chromium_r4=f1_chromium_r4,
+        c2a_r2=c2a_r2,
     )
     _require_successor_test_topology(repo, active_slice=active_slice)
     workflow_source = (
@@ -8030,6 +8611,7 @@ def verify_post_f0l(
         "delivery_commits": list(ordered_commits),
         "delivery_parent": delivery_parent,
         "f1_chromium_recovery_version": f1_chromium_recovery_version,
+        "c2a_r2_topology": repository_contract["c2a_r2_topology"],
         "new_paths": repository_contract["new_paths"],
         "existing_base_blobs": repository_contract["existing_base_blobs"],
         "frozen_objects": repository_contract["frozen_objects"],
@@ -8130,15 +8712,19 @@ def main(argv: list[str] | None = None) -> int:
         if args.self_check:
             result = self_check()
             f0l_result = f0l_self_check()
+            c2a_r2_result = c2a_r2_self_check()
+            result["c2a_r2"] = c2a_r2_result
             result["f0l_marker"] = f0l_result["marker"]
             result["f0l_correction_4_marker"] = f0l_result["correction_4_marker"]
             result["post_f0l_marker"] = f0l_result["downstream_marker"]
             result["positive_slices"] = [
                 *result["positive_slices"],
                 *f0l_result["positive_slices"],
+                "C2A_R2",
             ]
             result["negative_cases"] = (
                 int(result["negative_cases"]) + int(f0l_result["negative_cases"])
+                + int(c2a_r2_result["negative_cases"])
             )
         elif args.slice == "F0L":
             result = verify_f0l(
@@ -8178,6 +8764,7 @@ def main(argv: list[str] | None = None) -> int:
         print(result["f0l_marker"])
         print(result["f0l_correction_4_marker"])
         print(result["post_f0l_marker"])
+        print(result["c2a_r2"]["marker"])
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
