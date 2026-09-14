@@ -37,8 +37,6 @@ install -d -o owneralpha -g owneralpha -m 0700 /var/lib/owner-alpha
 install -d -m 0755 /opt/owner-alpha/static
 cp /inputs/{wheel,pins,source}.json /opt/owner-alpha/
 cp /opt/owner-alpha/wsl.conf /etc/wsl.conf
-printf '127.0.0.1 localhost\n::1 localhost\n' > /etc/hosts
-: > /etc/resolv.conf
 /opt/owner-alpha/venv/bin/python - <<'PY'
 import hashlib, importlib.metadata as m, json, pathlib, subprocess, sys
 root=pathlib.Path("/opt/owner-alpha")
