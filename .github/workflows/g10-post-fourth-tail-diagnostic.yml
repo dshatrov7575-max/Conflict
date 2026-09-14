@@ -1,0 +1,494 @@
+name: G10 post-fourth full-tail diagnostic
+
+on:
+  push:
+    branches: [codex/g10-post-fourth-tail-diagnostic-20260914]
+
+permissions:
+  contents: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  DJANGO_SETTINGS_MODULE: conflict_analysis.settings
+  DJANGO_DEBUG: "false"
+
+jobs:
+  full-tail-diagnostic:
+    if: github.repository == 'dshatrov7575-max/Conflict'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: docker.io/library/postgres@sha256:4cc13dede823cab4e05290c7fb3350fb4e599ecabd9b07e6706b5d5e8f5bc929
+        env:
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: g10-synthetic-ci
+          POSTGRES_DB: conflict_analysis
+        ports:
+          - 127.0.0.1:5432:5432
+        options: --health-cmd "pg_isready -U conflict_analysis" --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: g10-synthetic-ci
+      POSTGRES_DB: conflict_analysis
+      DJANGO_SECRET_KEY: g10-public-synthetic-ci-key-never-part-of-owner-package
+    steps:
+      - name: Checkout frozen target
+        id: target
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 4a0f0cb42aaea8d9d5f368cdc3d3de15db2f6d03
+          fetch-depth: 0
+          persist-credentials: false
+          set-safe-directory: false
+      - name: Prepare diagnostic harness outside the checkout
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/g10-post-fourth-harness.py" <<'PY'
+          #!/usr/bin/env python3
+          """Bounded evidence collector; product execution always uses the frozen target."""
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import shutil
+          import subprocess
+          import sys
+          import traceback
+          import xml.etree.ElementTree as ET
+          
+          TARGET = {
+              "head": "4a0f0cb42aaea8d9d5f368cdc3d3de15db2f6d03",
+              "tree": "5c32368e80b645f16af8a064fb0ec79a40fef5f3",
+              "parent": "63c5394c02261bd35e51054f223ae545aaaf4f0d",
+          }
+          REPOSITORY = "dshatrov7575-max/Conflict"
+          BRANCH = "codex/g10-post-fourth-tail-diagnostic-20260914"
+          TARGET_BRANCH = "codex/ca-suite-i1-integration"
+          WORKFLOW_PATH = ".github/workflows/g10-post-fourth-tail-diagnostic.yml"
+          PATCH = "builder.safe_member = verifier.safe_member"
+          EXPECTED = {
+              "foundation-postgresql": (350, 0),
+              "product-postgresql": (68, 0),
+              "foundation-sqlite": (322, 28),
+              "product-sqlite": (68, 0),
+              "chromium": (10, 0),
+              "g10-portable": (10, 0),
+          }
+          ZIP_NAME = "conflict-analysis-functional-alpha-0.1.0-alpha.1-windows11-wsl2-x64.zip"
+          ROOTFS_NAME = "conflict-analysis-functional-alpha-rootfs.tar"
+          WHEEL_NAME = "conflict_analysis-0.1.0-py3-none-any.whl"
+          REPORT_NAME = "g10-post-fourth-full-tail-diagnostic.json"
+          MAX_XML_BYTES = 8 * 1024 * 1024
+          MAX_JSON_BYTES = 2 * 1024 * 1024
+          SAME_WHEEL_CHECK = """import pathlib, conflict_analysis, domain, production_studio, production_player
+          import importlib.metadata
+          assert importlib.metadata.version("conflict-analysis") == "0.1.0"
+          for module in (conflict_analysis, domain, production_studio, production_player):
+              assert "site-packages" in str(pathlib.Path(module.__file__))
+          assert (pathlib.Path(domain.__file__).parent/"migrations/0018_workspace_assessment_projection.py").is_file()
+          """
+          
+          def canonical(value):
+              return (json.dumps(value, sort_keys=True, ensure_ascii=True, allow_nan=False,
+                                 separators=(",", ":")) + "\n").encode("utf-8")
+          
+          def require(condition, detail):
+              if not condition:
+                  raise RuntimeError(detail)
+          
+          def identity(path):
+              require(path.is_file() and not path.is_symlink(), "regular evidence file required: " + path.name)
+              with path.open("rb") as stream:
+                  digest = hashlib.file_digest(stream, "sha256").hexdigest()
+              return {"filename": path.name, "bytes": path.stat().st_size, "sha256": digest}
+          
+          def git(repository, *args):
+              result = subprocess.run(["git", "--no-optional-locks", "-C", str(repository), *args],
+                                      capture_output=True, text=True, check=True)
+              return result.stdout.strip()
+          
+          def revision(repository, ref):
+              return {
+                  "head": git(repository, "rev-parse", ref),
+                  "tree": git(repository, "rev-parse", ref + "^{tree}"),
+                  "parent": git(repository, "show", "-s", "--format=%P", ref),
+              }
+          
+          def target_remote(repository):
+              rows = git(repository, "ls-remote", "--heads", "origin", "refs/heads/" + TARGET_BRANCH).splitlines()
+              require(len(rows) == 1, "target remote ref missing or ambiguous")
+              sha, ref = rows[0].split()
+              require(ref == "refs/heads/" + TARGET_BRANCH, "wrong target remote ref")
+              return sha
+          
+          def tracked_snapshot(repository):
+              raw = subprocess.check_output(["git", "--no-optional-locks", "-C", str(repository), "ls-files", "-z"])
+              inventory = []
+              for relative in sorted(x.decode("utf-8") for x in raw.split(b"\0") if x):
+                  path = repository / relative
+                  if path.is_symlink():
+                      data = os.readlink(path).encode("utf-8")
+                      inventory.append([relative, "symlink", len(data), hashlib.sha256(data).hexdigest()])
+                  else:
+                      meta = identity(path)
+                      inventory.append([relative, "file", meta["bytes"], meta["sha256"]])
+              return {"tracked_paths": len(inventory), "inventory_sha256": hashlib.sha256(canonical(inventory)).hexdigest()}
+          
+          def locations():
+              repository = Path(os.environ["GITHUB_WORKSPACE"]).resolve()
+              temporary = Path(os.environ["RUNNER_TEMP"]).resolve()
+              require(not temporary.is_relative_to(repository), "RUNNER_TEMP must be outside checkout")
+              return repository, temporary, temporary / "g10-artifacts", temporary / "g10-tail-state.json"
+          
+          def save_state(path, state):
+              path.write_bytes(canonical(state))
+          
+          def execute():
+              repository, temporary, output, checkpoint = locations()
+              state = {
+                  "schema": "G10_POST_FOURTH_FULL_TAIL_DIAGNOSTIC_V1",
+                  "diagnostic_branch": BRANCH,
+                  "expected_target": TARGET,
+                  "in_memory_monkeypatch": PATCH,
+                  "build_calls": 0, "regressions_calls": 0,
+                  "build_completed": False, "regressions_completed": False,
+                  "same_wheel_isolation": "NOT_EXECUTED",
+                  "exception": None, "observation_errors": [],
+                  "phase": "precondition",
+              }
+              save_state(checkpoint, state)
+              try:
+                  require(os.environ.get("GITHUB_REPOSITORY") == REPOSITORY, "wrong repository")
+                  require(os.environ.get("GITHUB_REF_NAME") == BRANCH, "wrong diagnostic branch")
+                  require(os.environ.get("CHECKOUT_OUTCOME") == "success", "exact target checkout did not succeed")
+                  state["diagnostic_commit"] = revision(repository, os.environ["GITHUB_SHA"])
+                  require(state["diagnostic_commit"]["parent"] == TARGET["head"], "diagnostic sole parent drift")
+                  delta = git(repository, "diff", "--no-renames", "--name-status",
+                              TARGET["head"], state["diagnostic_commit"]["head"])
+                  require(delta == "A\t" + WORKFLOW_PATH, "diagnostic one-path scope drift")
+                  state["checked_out_target_before"] = revision(repository, "HEAD")
+                  require(state["checked_out_target_before"] == TARGET, "checked-out target identity drift")
+                  state["target_branch_sha_before"] = target_remote(repository)
+                  require(state["target_branch_sha_before"] == TARGET["head"], "target branch before-run drift")
+                  state["git_status_before"] = git(repository, "status", "--porcelain=v1", "--untracked-files=all")
+                  require(not state["git_status_before"], "target checkout was dirty before execution")
+                  state["tracked_snapshot_before"] = tracked_snapshot(repository)
+                  require(os.environ.get("TOOLING_OUTCOME") == "success", "frozen CI-tooling preparation failed")
+                  sys.path.insert(0, str(repository / "software/conflict_analysis/scripts"))
+                  import verify_owner_alpha_package as verifier
+                  import build_owner_alpha_package as builder
+                  state["module_identities"] = {}
+                  for module in (verifier, builder):
+                      path = Path(module.__file__).resolve()
+                      require(path.parent == repository / "software/conflict_analysis/scripts", "module origin drift")
+                      state["module_identities"][module.__name__] = {
+                          **identity(path), "git_blob": git(repository, "rev-parse",
+                              TARGET["head"] + ":" + path.relative_to(repository).as_posix()),
+                      }
+                  state["source_identity"] = verifier.source_identity(repository)
+                  require(not hasattr(builder, "safe_member"), "frozen missing binding unexpectedly changed")
+                  require(builder.safe_rootfs_member is verifier.safe_rootfs_member, "rootfs predicate drift")
+                  # The only in-memory monkeypatch authorized for this run.
+                  builder.safe_member = verifier.safe_member
+                  state["phase"] = "build"
+                  state["build_calls"] += 1
+                  save_state(checkpoint, state)
+                  state["build_zip"] = builder.build(repository, output)
+                  state["build_completed"] = True
+                  state["phase"] = "same-wheel-isolation"
+                  save_state(checkpoint, state)
+                  subprocess.run([sys.executable, "-m", "pip", "install", "--no-index", "--no-deps",
+                                  str(output / WHEEL_NAME)], check=True)
+                  subprocess.run([sys.executable, "-c", SAME_WHEEL_CHECK], cwd=temporary, check=True)
+                  state["same_wheel_isolation"] = "PASS"
+                  state["phase"] = "regressions"
+                  state["regressions_calls"] += 1
+                  save_state(checkpoint, state)
+                  print("G10_FULL_TAIL_REGRESSIONS_BEGIN", flush=True)
+                  builder.regressions(repository, output)
+                  state["regressions_completed"] = True
+                  state["phase"] = "completed"
+              except Exception as exc:
+                  state["exception"] = {
+                      "type": type(exc).__name__, "message": str(exc),
+                      "traceback": traceback.format_exc(), "phase": state["phase"],
+                  }
+                  print(state["exception"]["traceback"], file=sys.stderr, flush=True)
+              finally:
+                  observations = {
+                      "checked_out_target_after": lambda: revision(repository, "HEAD"),
+                      "target_branch_sha_after": lambda: target_remote(repository),
+                      "git_status_after": lambda: git(repository, "status", "--porcelain=v1", "--untracked-files=all"),
+                      "tracked_snapshot_after": lambda: tracked_snapshot(repository),
+                  }
+                  for key, observe in observations.items():
+                      try:
+                          state[key] = observe()
+                      except Exception as exc:
+                          state["observation_errors"].append({
+                              "observation": key, "type": type(exc).__name__,
+                              "message": str(exc), "traceback": traceback.format_exc(),
+                          })
+                  state["no_tracked_source_changed"] = (
+                      state.get("tracked_snapshot_before") is not None
+                      and state["tracked_snapshot_before"] == state.get("tracked_snapshot_after")
+                      and state.get("git_status_before") == "" and state.get("git_status_after") == ""
+                  )
+                  save_state(checkpoint, state)
+          
+          def collect_matrix(output, evidence, label, expected):
+              path = output / (label + ".xml")
+              row = {
+                  "name": label, "expected_pass": expected[0], "expected_skip": expected[1],
+                  "collected": None, "passed": None, "skipped": None, "failed": None, "errors": None,
+                  "outcome": "NOT_EXECUTED", "skipped_cases": [], "failed_cases": [], "error_cases": [],
+              }
+              if not path.exists():
+                  return row
+              require(path.stat().st_size <= MAX_XML_BYTES, "JUnit exceeds bounded size: " + label)
+              root = ET.fromstring(path.read_bytes())
+              cases = root.findall(".//testcase")
+              row.update(collected=len(cases), passed=0, skipped=0, failed=0, errors=0)
+              for case in cases:
+                  name = case.attrib.get("classname", "") + "::" + case.attrib.get("name", "")
+                  skip, failure, error = case.find("skipped"), case.find("failure"), case.find("error")
+                  if skip is not None:
+                      row["skipped"] += 1
+                      row["skipped_cases"].append({"name": name, "message": skip.get("message", "")})
+                  elif error is not None:
+                      row["errors"] += 1
+                      row["error_cases"].append({"name": name, "message": error.get("message", "")})
+                  elif failure is not None:
+                      row["failed"] += 1
+                      row["failed_cases"].append({"name": name, "message": failure.get("message", "")})
+                  else:
+                      row["passed"] += 1
+              row["junit"] = identity(path)
+              row["exact_totals"] = (
+                  row["collected"] == sum(expected) and row["passed"] == expected[0]
+                  and row["skipped"] == expected[1] and row["failed"] == 0 and row["errors"] == 0
+              )
+              if label == "foundation-sqlite":
+                  row["postgresql_only_skips"] = all("postgresql" in item["message"].casefold()
+                                                     for item in row["skipped_cases"])
+                  row["exact_totals"] = row["exact_totals"] and row["postgresql_only_skips"]
+              row["outcome"] = "PASS" if row["exact_totals"] else "FAIL"
+              shutil.copyfile(path, evidence / path.name)
+              return row
+          
+          def write_report(report, temporary, evidence):
+              payload = canonical(report)
+              report["report_integrity"] = {
+                  "payload_definition": "canonical JSON with report_integrity omitted",
+                  "payload_bytes": len(payload),
+                  "payload_sha256": hashlib.sha256(payload).hexdigest(),
+                  "file_bytes": 0,
+                  "full_file_sha256_location": "GitHub job summary; calculated after final serialization",
+              }
+              for _ in range(10):
+                  raw = canonical(report)
+                  if report["report_integrity"]["file_bytes"] == len(raw):
+                      break
+                  report["report_integrity"]["file_bytes"] = len(raw)
+              else:
+                  raise RuntimeError("report size did not converge")
+              require(len(raw) <= MAX_JSON_BYTES, "diagnostic JSON exceeds bounded size")
+              path = temporary / REPORT_NAME
+              path.write_bytes(raw)
+              shutil.copyfile(path, evidence / REPORT_NAME)
+              return identity(path)
+          
+          def finalize():
+              repository, temporary, output, checkpoint = locations()
+              if checkpoint.is_file():
+                  report = json.loads(checkpoint.read_bytes())
+              else:
+                  report = {"schema": "G10_POST_FOURTH_FULL_TAIL_DIAGNOSTIC_V1",
+                            "expected_target": TARGET, "diagnostic_branch": BRANCH,
+                            "exception": {"type": "HarnessDidNotExecute",
+                                          "message": "execution checkpoint missing", "traceback": None}}
+              report["step_outcomes"] = {key: os.environ.get(key, "UNKNOWN") for key in
+                                        ("CHECKOUT_OUTCOME", "TOOLING_OUTCOME", "EXECUTE_OUTCOME")}
+              report["collection_errors"] = []
+              evidence = temporary / "g10-post-fourth-evidence"
+              evidence.mkdir()
+              matrices = {}
+              for label, expected in EXPECTED.items():
+                  try:
+                      matrices[label] = collect_matrix(output, evidence, label, expected)
+                  except Exception as exc:
+                      matrices[label] = {"name": label, "outcome": "FAIL", "collected": None,
+                                         "passed": None, "skipped": None, "failed": None, "errors": None}
+                      report["collection_errors"].append({"artifact": label, "type": type(exc).__name__,
+                                                         "message": str(exc), "traceback": traceback.format_exc()})
+              report["matrices"] = matrices
+              report["build_output_identities"] = {}
+              for name in (ZIP_NAME, WHEEL_NAME, ROOTFS_NAME):
+                  path = output / name
+                  if path.exists():
+                      try:
+                          report["build_output_identities"][name] = identity(path)
+                      except Exception as exc:
+                          report["collection_errors"].append({"artifact": name, "message": str(exc)})
+              regression_path = output / "regression-evidence.json"
+              regression_valid = False
+              if regression_path.exists():
+                  try:
+                      require(regression_path.stat().st_size <= MAX_JSON_BYTES, "regression JSON exceeds bound")
+                      regression = json.loads(regression_path.read_bytes())
+                      report["regression_evidence"] = identity(regression_path)
+                      shutil.copyfile(regression_path, evidence / regression_path.name)
+                      require(regression["source"] == report["source_identity"], "regression source mismatch")
+                      require(regression["zip"] == report["build_zip"], "regression ZIP mismatch")
+                      require(regression["wheel"] == report["build_output_identities"][WHEEL_NAME], "regression wheel mismatch")
+                      require(set(regression["matrices"]) == set(EXPECTED), "regression families mismatch")
+                      for label, expected in EXPECTED.items():
+                          actual = regression["matrices"][label]
+                          require(actual["passed"] == expected[0] and len(actual["skipped"]) == expected[1],
+                                  "regression totals mismatch: " + label)
+                          require(actual["junit"] == matrices[label]["junit"], "regression JUnit identity mismatch")
+                      regression_valid = True
+                  except Exception as exc:
+                      report["collection_errors"].append({"artifact": "regression-evidence.json",
+                                                         "message": str(exc), "traceback": traceback.format_exc()})
+              report["regression_evidence_matches"] = regression_valid
+              log = temporary / "g10-full-tail-console.log"
+              log_text = log.read_text(encoding="utf-8", errors="replace") if log.exists() else ""
+              tail = log_text.partition("G10_FULL_TAIL_REGRESSIONS_BEGIN")[2]
+              migration_lines = [line for line in tail.splitlines()
+                                 if re.search(r"Applying domain\.0018_workspace_assessment_projection\.\.\. OK", line)]
+              dry_run_lines = [line for line in tail.splitlines() if line.strip() == "No changes detected"]
+              report["migration_gates"] = {
+                  "through_0018": "PASS" if len(migration_lines) >= 2 else "NOT_EVIDENCED",
+                  "makemigrations_check_dry_run": "PASS" if len(dry_run_lines) >= 2 else "NOT_EVIDENCED",
+                  "migration_log_lines": migration_lines,
+                  "dry_run_log_lines": dry_run_lines,
+                  "execution_contract": "unchanged builder.regressions runs both commands once for PostgreSQL and SQLite",
+              }
+              predicates = {
+                  "steps_succeeded": all(v == "success" for v in report["step_outcomes"].values()),
+                  "build_called_once": report.get("build_calls") == 1,
+                  "regressions_called_once": report.get("regressions_calls") == 1,
+                  "build_completed": report.get("build_completed") is True,
+                  "regressions_completed": report.get("regressions_completed") is True,
+                  "same_wheel_isolation": report.get("same_wheel_isolation") == "PASS",
+                  "no_exception": report.get("exception") is None,
+                  "observations_complete": not report.get("observation_errors", []),
+                  "collection_complete": not report["collection_errors"],
+                  "target_checkout_before": report.get("checked_out_target_before") == TARGET,
+                  "target_checkout_after": report.get("checked_out_target_after") == TARGET,
+                  "target_branch_before": report.get("target_branch_sha_before") == TARGET["head"],
+                  "target_branch_after": report.get("target_branch_sha_after") == TARGET["head"],
+                  "no_tracked_source_changed": report.get("no_tracked_source_changed") is True,
+                  "all_six_matrices": all(row["outcome"] == "PASS" for row in matrices.values()),
+                  "regression_evidence_matches": regression_valid,
+                  "migration_gates": all(report["migration_gates"][name] == "PASS"
+                                         for name in ("through_0018", "makemigrations_check_dry_run")),
+                  "deterministic_zip_identity": report.get("build_zip") is not None
+                      and report.get("build_zip") == report["build_output_identities"].get(ZIP_NAME),
+              }
+              report["pass_predicates"] = predicates
+              report["verdict"] = "PASS" if all(predicates.values()) else "FAIL"
+              report["real_windows_e2e"] = "NOT_EXECUTED"
+              report["ready_for_main_review"] = False
+              report["artifact_allowlist"] = [REPORT_NAME, "regression-evidence.json",
+                                            *(label + ".xml" for label in EXPECTED)]
+              require(set(p.name for p in evidence.iterdir()).issubset(set(report["artifact_allowlist"])),
+                      "evidence staging contains an unapproved path")
+              meta = write_report(report, temporary, evidence)
+              summary = [
+                  "G10 POST-FOURTH FULL-TAIL DIAGNOSTIC",
+                  "Diagnostic commit: " + report.get("diagnostic_commit", {}).get("head", os.environ.get("GITHUB_SHA", "UNKNOWN")),
+                  "Checked-out target: " + report.get("checked_out_target_before", {}).get("head", "UNKNOWN"),
+                  "| Matrix | Collected | PASS | SKIP | FAIL | ERROR | Outcome |",
+                  "|---|---:|---:|---:|---:|---:|---|",
+              ]
+              for label, row in matrices.items():
+                  summary.append("| " + " | ".join(str(x) for x in [label, row["collected"], row["passed"],
+                                 row["skipped"], row["failed"], row["errors"], row["outcome"]]) + " |")
+              summary.extend(["Verdict: " + report["verdict"], "Report bytes: " + str(meta["bytes"]),
+                              "Report SHA-256: " + meta["sha256"],
+                              "Only diagnostic JSON, regression JSON and bounded JUnit are uploaded."])
+              with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as stream:
+                  stream.write("\n\n".join(summary[:3]) + "\n\n" + "\n".join(summary[3:]) + "\n")
+              print(json.dumps({"verdict": report["verdict"], "report": meta}, sort_keys=True))
+          
+          def gate():
+              _, temporary, _, _ = locations()
+              path = temporary / REPORT_NAME
+              raw = path.read_bytes()
+              report = json.loads(raw)
+              integrity = report.pop("report_integrity")
+              payload = canonical(report)
+              require(len(raw) == integrity["file_bytes"], "report file length mismatch")
+              require(len(payload) == integrity["payload_bytes"]
+                      and hashlib.sha256(payload).hexdigest() == integrity["payload_sha256"],
+                      "report payload identity mismatch")
+              require(os.environ.get("UPLOAD_OUTCOME") == "success", "diagnostic artifact upload failed")
+              require(report["verdict"] == "PASS", "G10_POST_FOURTH_FULL_TAIL_DIAGNOSTIC_FAIL")
+          
+          if __name__ == "__main__":
+              {"execute": execute, "finalize": finalize, "gate": gate}[sys.argv[1]]()
+          PY
+      - name: Prepare hash-bound CI tooling outside the checkout
+        id: tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3.12 -m venv "$RUNNER_TEMP/g10-tooling"
+          "$RUNNER_TEMP/g10-tooling/bin/python" - <<'PY'
+          import os, pathlib, sys
+          sys.path.insert(0, str(pathlib.Path("software/conflict_analysis/scripts").resolve()))
+          import build_owner_alpha_package as b
+          root = pathlib.Path(os.environ["RUNNER_TEMP"]) / "g10-ci-inputs"
+          for pin in b.PINS["wheels"]:
+              b.download(pin, root / "wheels")
+          (root / "ci.lock").write_text(b.lock_text(b.PINS["wheels"]), encoding="utf-8")
+          PY
+          "$RUNNER_TEMP/g10-tooling/bin/python" -m pip install --no-index --no-deps --require-hashes --find-links="$RUNNER_TEMP/g10-ci-inputs/wheels" -r "$RUNNER_TEMP/g10-ci-inputs/ci.lock"
+      - name: Complete frozen build and all regression families
+        id: execute
+        if: always()
+        timeout-minutes: 52
+        env:
+          CHECKOUT_OUTCOME: ${{ steps.target.outcome }}
+          TOOLING_OUTCOME: ${{ steps.tooling.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python="$RUNNER_TEMP/g10-tooling/bin/python"
+          if [ "$TOOLING_OUTCOME" != success ]; then python=python3.12; fi
+          timeout --kill-after=30s 50m "$python" -B "$RUNNER_TEMP/g10-post-fourth-harness.py" execute 2>&1 | tee "$RUNNER_TEMP/g10-full-tail-console.log"
+      - name: Collect bounded full-tail diagnostic evidence
+        if: always()
+        env:
+          CHECKOUT_OUTCOME: ${{ steps.target.outcome }}
+          TOOLING_OUTCOME: ${{ steps.tooling.outcome }}
+          EXECUTE_OUTCOME: ${{ steps.execute.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3.12 -B "$RUNNER_TEMP/g10-post-fourth-harness.py" finalize
+      - name: Upload bounded diagnostic evidence
+        id: upload
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: g10-post-fourth-full-tail-diagnostic
+          if-no-files-found: error
+          overwrite: false
+          path: ${{ runner.temp }}/g10-post-fourth-evidence/
+      - name: Enforce full-tail verdict after evidence upload
+        if: always()
+        env:
+          UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3.12 -B "$RUNNER_TEMP/g10-post-fourth-harness.py" gate
