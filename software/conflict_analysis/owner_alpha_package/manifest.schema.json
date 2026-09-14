@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:conflict-analysis:owner-alpha:manifest:v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "package_version",
+    "source",
+    "migration",
+    "wheel",
+    "runtime",
+    "profiles",
+    "test_registry",
+    "payload",
+    "artifact_order",
+    "nonclaims"
+  ],
+  "properties": {
+    "schema": {
+      "const": "OWNER_ALPHA_PACKAGE_MANIFEST_V2"
+    },
+    "package_version": {
+      "const": "0.1.0-alpha.1"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "head",
+        "tree",
+        "parent",
+        "base_head",
+        "base_tree",
+        "predecessors",
+        "ordinary_commits",
+        "source_date_epoch"
+      ],
+      "properties": {
+        "head": {
+          "$ref": "#/$defs/git"
+        },
+        "tree": {
+          "$ref": "#/$defs/git"
+        },
+        "parent": {
+          "$ref": "#/$defs/git"
+        },
+        "base_head": {
+          "$ref": "#/$defs/git"
+        },
+        "base_tree": {
+          "$ref": "#/$defs/git"
+        },
+        "predecessors": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "head",
+              "tree",
+              "acceptance"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "head": {
+                "$ref": "#/$defs/git"
+              },
+              "tree": {
+                "$ref": "#/$defs/git"
+              },
+              "acceptance": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "ordinary_commits": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/git"
+          }
+        },
+        "source_date_epoch": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "blob"
+      ],
+      "properties": {
+        "path": {
+          "const": "domain/migrations/0018_workspace_assessment_projection.py"
+        },
+        "blob": {
+          "const": "292a8eb4abafeef80d6efc7d3c2d4cda5f771fd9"
+        }
+      }
+    },
+    "wheel": {
+      "$ref": "#/$defs/artifact"
+    },
+    "runtime": {
+      "type": "object"
+    },
+    "profiles": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "STUDIO_EDITOR",
+          "STUDIO_PUBLISHER",
+          "PLAYER_ASSESSOR"
+        ]
+      }
+    },
+    "test_registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "portable",
+        "pester",
+        "windows"
+      ],
+      "properties": {
+        "portable": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "pester": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "windows": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/bytes"
+      }
+    },
+    "artifact_order": {
+      "const": [
+        "P",
+        "M",
+        "S",
+        "Z",
+        "E",
+        "acceptance_index"
+      ]
+    },
+    "nonclaims": {
+      "type": "object",
+      "additionalProperties": {
+        "const": false
+      }
+    }
+  },
+  "$defs": {
+    "git": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "bytes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bytes",
+        "sha256"
+      ],
+      "properties": {
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "filename",
+        "bytes",
+        "sha256"
+      ],
+      "properties": {
+        "filename": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.+-]+$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

@@ -301,3 +301,28 @@ G7 позволяет создать непустое по имени рабоч
 [Production Player G7 runtime](docs/production-player-g7-runtime.md).
 Эти документы поставляются в исходном дереве; runtime wheel содержит приложение
 Player, шаблоны, статические ресурсы и контракт заявлений с SHA-256 sidecar.
+
+## G10 — кандидат Windows owner alpha
+
+G10 добавляет отдельный пакет Windows 11 x64 с существующими WSL2,
+PowerShell 7 и Edge. PostgreSQL 18, Gunicorn и Nginx работают внутри
+собственного дистрибутива; приложение доступно только на loopback.
+Пакет сохраняет принятые Foundation, Studio и Player без изменений.
+
+Архитектура, неизменяемые зависимости, приватный полный backup/restore
+и ограничения приёмки описаны в
+[ADR-0017](docs/adr/0017-owner-alpha-windows-wsl-package.md).
+Порядок действий владельца находится в
+[START_HERE_RU](owner_alpha_package/START_HERE_RU.txt).
+
+Сборка выполняется скриптом `scripts/build_owner_alpha_package.py` только
+из чистого окончательного G10 HEAD/TREE. Все артефакты создаются вне checkout.
+Проверяются один точный wheel, две независимые сборки rootfs и ZIP, родительские
+регрессии и неизменяемый реестр 10 portable + 10 Pester + 2 Windows E2E.
+Проверяющие скрипты не признают отсутствие доказательств успешным результатом.
+
+Прекодовая квалификация LM-STUDIO — отдельный PASS. По Issue #28 comment
+5662429304 канал Windows E2E пока не привязан. До фактических Windows 2/2
+и offline L05 скачанного окончательного ZIP нет READY_FOR_MAIN_REVIEW,
+разрешения owner test, production-ready заявления или релиза. Пакет не меняет
+Windows policy/trust/zone, не повышает права и не устанавливает runner.
