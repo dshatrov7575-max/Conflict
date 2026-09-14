@@ -1,0 +1,148 @@
+name: Conflict Analysis G10 owner alpha package
+
+on:
+  push:
+    branches: [codex/ca-suite-i1-integration]
+  pull_request:
+    branches: [codex/ca-suite-i1-production-studio-c2a-lifecycle-publication]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: g10-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.event_name }}
+  cancel-in-progress: false
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  DJANGO_SETTINGS_MODULE: conflict_analysis.settings
+  DJANGO_DEBUG: "false"
+
+jobs:
+  immutable-linux-package:
+    if: github.repository == 'dshatrov7575-max/Conflict'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    services:
+      postgres:
+        image: docker.io/library/postgres@sha256:4cc13dede823cab4e05290c7fb3350fb4e599ecabd9b07e6706b5d5e8f5bc929
+        env:
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: g10-synthetic-ci
+          POSTGRES_DB: conflict_analysis
+        ports:
+          - 127.0.0.1:5432:5432
+        options: --health-cmd "pg_isready -U conflict_analysis" --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: g10-synthetic-ci
+      POSTGRES_DB: conflict_analysis
+      DJANGO_SECRET_KEY: g10-public-synthetic-ci-key-never-part-of-owner-package
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          set-safe-directory: false
+      - name: Prepare hash-bound CI tooling outside the checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3.12 -m venv "$RUNNER_TEMP/g10-tooling"
+          "$RUNNER_TEMP/g10-tooling/bin/python" - <<'PY'
+          import os, pathlib, sys
+          sys.path.insert(0, str(pathlib.Path("software/conflict_analysis/scripts").resolve()))
+          import build_owner_alpha_package as b
+          root = pathlib.Path(os.environ["RUNNER_TEMP"]) / "g10-ci-inputs"
+          for pin in b.PINS["wheels"]:
+              b.download(pin, root / "wheels")
+          (root / "ci.lock").write_text(b.lock_text(b.PINS["wheels"]), encoding="utf-8")
+          PY
+          "$RUNNER_TEMP/g10-tooling/bin/python" -m pip install --no-index --no-deps --require-hashes --find-links="$RUNNER_TEMP/g10-ci-inputs/wheels" -r "$RUNNER_TEMP/g10-ci-inputs/ci.lock"
+      - name: Exact source and two independent rootfs/ZIP builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/g10-tooling/bin/python" -B software/conflict_analysis/scripts/build_owner_alpha_package.py \
+            --repository "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/g10-artifacts"
+      - name: Same-wheel isolated runtime check and complete accepted matrices
+        shell: bash
+        run: |
+          set -euo pipefail
+          wheel="$RUNNER_TEMP/g10-artifacts/conflict_analysis-0.1.0-py3-none-any.whl"
+          "$RUNNER_TEMP/g10-tooling/bin/python" -m pip install --no-index --no-deps "$wheel"
+          (
+            cd "$RUNNER_TEMP"
+            "$RUNNER_TEMP/g10-tooling/bin/python" - <<'PY'
+          import pathlib, conflict_analysis, domain, production_studio, production_player
+          import importlib.metadata
+          assert importlib.metadata.version("conflict-analysis") == "0.1.0"
+          for module in (conflict_analysis, domain, production_studio, production_player):
+              assert "site-packages" in str(pathlib.Path(module.__file__))
+          assert (pathlib.Path(domain.__file__).parent/"migrations/0018_workspace_assessment_projection.py").is_file()
+          PY
+          )
+          "$RUNNER_TEMP/g10-tooling/bin/python" -B software/conflict_analysis/scripts/build_owner_alpha_package.py \
+            --repository "$GITHUB_WORKSPACE" --output "$RUNNER_TEMP/g10-artifacts" --regressions
+      - name: Upload immutable package and public synthetic evidence only
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: g10-immutable-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          compression-level: 0
+          if-no-files-found: error
+          overwrite: false
+          path: |
+            ${{ runner.temp }}/g10-artifacts/conflict-analysis-functional-alpha-0.1.0-alpha.1-windows11-wsl2-x64.zip
+            ${{ runner.temp }}/g10-artifacts/conflict-analysis-functional-alpha-rootfs.tar
+            ${{ runner.temp }}/g10-artifacts/conflict_analysis-0.1.0-py3-none-any.whl
+            ${{ runner.temp }}/g10-artifacts/OWNER_ALPHA_PACKAGE_MANIFEST_V2.json
+            ${{ runner.temp }}/g10-artifacts/SHA256SUMS
+            ${{ runner.temp }}/g10-artifacts/SBOM.cdx.json
+            ${{ runner.temp }}/g10-artifacts/THIRD_PARTY_NOTICES.txt
+            ${{ runner.temp }}/g10-artifacts/artifact-identities.json
+            ${{ runner.temp }}/g10-artifacts/regression-evidence.json
+            ${{ runner.temp }}/g10-artifacts/*.xml
+      - name: Record unresolved real Windows gate without inventing a runner
+        if: always()
+        shell: bash
+        run: |
+          printf '%s\n' 'WINDOWS_E2E_CHANNEL_ID=NOT_YET_BOUND' 'REAL_WINDOWS_2_OF_2=NOT_EXECUTED' 'FINAL_ZIP_L05=NOT_EXECUTED' 'READY_FOR_MAIN_REVIEW=false' >> "$GITHUB_STEP_SUMMARY"
+
+  windows-contract:
+    # Hosted Windows Server is only a contract-test environment.
+    # It is never Windows 11 E2E, L05 or capacity evidence.
+    if: github.repository == 'dshatrov7575-max/Conflict'
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          set-safe-directory: false
+      - name: Exactly ten Pester contract nodes with existing Pester
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $pester=Get-Module -ListAvailable Pester | Where-Object Version -EQ '3.4.0' | Select-Object -First 1
+          if (-not $pester) { throw 'BLOCKED_G10_CI_EVIDENCE_GAP: existing Pester 3.4.0 unavailable; no installation attempted' }
+          Import-Module $pester.Path
+          $report=Join-Path $env:RUNNER_TEMP 'g10-windows-contract.xml'
+          $result=Invoke-Pester -Script 'software/conflict_analysis/owner_alpha_package/tests/OwnerAlpha.Windows.Contract.Tests.ps1' -PassThru -OutputFile $report -OutputFormat NUnitXml
+          if ($result.TotalCount -ne 10 -or $result.PassedCount -ne 10 -or $result.FailedCount -ne 0 -or $result.SkippedCount -ne 0) { throw 'BLOCKED_G10_CI_EVIDENCE_GAP: exact Pester 10/10 required' }
+          $result | Select-Object TotalCount,PassedCount,FailedCount,SkippedCount,TestResult | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'g10-windows-contract.json') -Encoding utf8
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: success()
+        with:
+          name: g10-pester-${{ github.event.pull_request.head.sha || github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          overwrite: false
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/g10-windows-contract.xml
+            ${{ runner.temp }}/g10-windows-contract.json
+

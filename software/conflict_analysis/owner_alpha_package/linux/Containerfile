@@ -1,0 +1,31 @@
+FROM docker.io/library/python@sha256:2fe5997d249a808b8eeea52c58a1dbffbba28754dc11699ef5c029f2d818ce79 AS wheel
+ARG SOURCE_DATE_EPOCH
+ENV PYTHONDONTWRITEBYTECODE=1 PIP_DISABLE_PIP_VERSION_CHECK=1 SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}
+COPY wheels/ /inputs/wheels/
+COPY build.lock /inputs/build.lock
+RUN python -m pip install --no-index --no-deps --require-hashes --find-links=/inputs/wheels -r /inputs/build.lock
+COPY application.tar /inputs/application.tar
+RUN mkdir /source /wheel && tar -xf /inputs/application.tar -C /source
+WORKDIR /source
+RUN python -m build --wheel --no-isolation --outdir /wheel
+CMD ["python","--version"]
+
+FROM docker.io/library/python@sha256:2fe5997d249a808b8eeea52c58a1dbffbba28754dc11699ef5c029f2d818ce79 AS python-runtime
+# Preserve the immutable CPython shared-library closure, separately from PG's.
+RUN mkdir -p /python-libs && find /usr/local -type f \( -name '*.so' -o -name '*.so.*' -o -name 'python3.12' \) -exec ldd {} \; 2>/dev/null | awk '/=> \// {print $3}' | sort -u | xargs -r -I '{}' cp -L '{}' /python-libs/
+
+FROM docker.io/library/postgres@sha256:4cc13dede823cab4e05290c7fb3350fb4e599ecabd9b07e6706b5d5e8f5bc929 AS runtime
+ARG SOURCE_DATE_EPOCH
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONHASHSEED=0 PIP_DISABLE_PIP_VERSION_CHECK=1 LANG=C.UTF-8 TZ=UTC
+COPY --from=python-runtime /usr/local/ /usr/local/
+COPY --from=python-runtime /python-libs/ /opt/python-libs/
+COPY wheels/ /inputs/wheels/
+COPY debs/ /inputs/debs/
+COPY runtime.lock application.lock wheel.json pins.json source.json /inputs/
+COPY conflict_analysis-0.1.0-py3-none-any.whl /inputs/
+COPY studio_help_ru_v1.json /opt/owner-alpha/studio_help_ru_v1.json
+COPY linux/ /opt/owner-alpha/
+RUN /bin/bash /opt/owner-alpha/build-rootfs.sh
+ENTRYPOINT ["/opt/owner-alpha/owner-alpha-supervisor.sh"]
+CMD ["identity"]
+
