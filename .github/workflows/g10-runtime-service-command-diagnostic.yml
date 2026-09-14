@@ -1,0 +1,758 @@
+name: G10 runtime service-command diagnostic
+
+on:
+  push:
+    branches: [codex/g10-runtime-service-command-diagnostic-20260914]
+
+permissions:
+  contents: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  DJANGO_SETTINGS_MODULE: conflict_analysis.settings
+  DJANGO_DEBUG: "false"
+
+jobs:
+  runtime-service-command:
+    if: github.repository == 'dshatrov7575-max/Conflict'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout frozen target
+        id: target
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 4a0f0cb42aaea8d9d5f368cdc3d3de15db2f6d03
+          fetch-depth: 0
+          persist-credentials: false
+          set-safe-directory: false
+      - name: Prepare external bounded diagnostic harness
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/g10-service-bounded.py" <<'PY'
+          import hashlib
+          import subprocess
+          import threading
+          
+          def bounded(label, args, *, data=None, timeout=60, env=None):
+              """Drain both streams, hash every byte, retain at most 8192 bytes combined."""
+              process = subprocess.Popen(args, stdin=subprocess.PIPE if data is not None else subprocess.DEVNULL,
+                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+              budget = [8192]
+              lock = threading.Lock()
+              streams = {}
+              private = {}
+              def drain(name, stream):
+                  digest, size, kept = hashlib.sha256(), 0, bytearray()
+                  while True:
+                      chunk = stream.read(4096)
+                      if not chunk:
+                          break
+                      digest.update(chunk)
+                      size += len(chunk)
+                      with lock:
+                          count = min(len(chunk), budget[0])
+                          budget[0] -= count
+                      kept.extend(chunk[:count])
+                  streams[name] = {"bytes": size, "sha256": digest.hexdigest(),
+                                   "captured_bytes": len(kept), "text_recorded": False}
+                  private[name] = bytes(kept)
+              threads = [threading.Thread(target=drain, args=(name, stream), daemon=True)
+                         for name, stream in (("stdout", process.stdout), ("stderr", process.stderr))]
+              for thread in threads:
+                  thread.start()
+              if data is not None:
+                  try:
+                      process.stdin.write(data)
+                      process.stdin.close()
+                  except BrokenPipeError:
+                      pass
+              timed_out = False
+              try:
+                  code = process.wait(timeout=timeout)
+              except subprocess.TimeoutExpired:
+                  timed_out = True
+                  process.kill()
+                  code = process.wait()
+              for thread in threads:
+                  thread.join()
+              return {"label": label, "exit_code": code, "timed_out": timed_out,
+                      "capture_limit_combined": 8192, "stdout": streams["stdout"], "stderr": streams["stderr"]}, private
+          
+          PY
+          cat > "$RUNNER_TEMP/g10-service-container-probe.py" <<'PY'
+          import ast
+          import contextlib
+          import hashlib
+          import ipaddress
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import stat
+          import sys
+          
+          PORT = 8765
+          RUN = Path("/run/owner-alpha")
+          SUPERVISOR = Path("/opt/owner-alpha/owner-alpha-supervisor.sh")
+          FILES = [RUN, RUN/"nginx.conf", RUN/"gunicorn.pid", RUN/"nginx.pid", RUN/"gunicorn.sock",
+                   Path("/run/owner-alpha-pg"), Path("/run/owner-alpha-pg/.s.PGSQL.5432")]
+          PHASES = {"EMPTY", "READY", "STOPPED", "RESTORED"}
+          ENVIRONMENT = {
+              "LD_LIBRARY_PATH": "/opt/python-libs",
+              "PATH": "/opt/owner-alpha/venv/bin:/usr/lib/postgresql/18/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+              "PYTHONDONTWRITEBYTECODE": "1", "PYTHONHASHSEED": "0",
+          }
+          
+          def failure(exc):
+              return {"outcome": "FAIL", "exception_type": type(exc).__name__}
+          
+          def metadata(path):
+              row = {"path": str(path), "exists": False}
+              try:
+                  info = path.lstat()
+              except FileNotFoundError:
+                  return row
+              kind = ("directory" if stat.S_ISDIR(info.st_mode) else "regular" if stat.S_ISREG(info.st_mode)
+                      else "socket" if stat.S_ISSOCK(info.st_mode) else "symlink" if stat.S_ISLNK(info.st_mode) else "other")
+              row.update(exists=True, uid=info.st_uid, gid=info.st_gid, mode=oct(stat.S_IMODE(info.st_mode)),
+                         type=kind, bytes=info.st_size)
+              return row
+          
+          def process_identity(pid):
+              row = {"pid": pid, "exists": False, "comm": None}
+              try:
+                  raw = Path("/proc") / str(pid) / "comm"
+                  comm = raw.read_bytes()[:64].decode("ascii", errors="strict").strip()
+                  row["exists"] = True
+                  row["comm"] = comm if re.fullmatch(r"[A-Za-z0-9_. ():-]{1,63}", comm) else "UNSAFE_COMM_SUPPRESSED"
+              except FileNotFoundError:
+                  pass
+              return row
+          
+          def pidfile(path):
+              row = {"pidfile": str(path), "pid": None, "exists": False, "comm": None}
+              if not path.exists():
+                  return row
+              with path.open("rb") as stream:
+                  line = stream.readline(32).strip()
+              if not re.fullmatch(rb"[1-9][0-9]{0,9}", line):
+                  row["invalid_pidfile"] = True
+                  return row
+              row.update(process_identity(int(line)))
+              return row
+          
+          def listeners():
+              rows = {}
+              for filename in ("tcp", "tcp6"):
+                  path = Path("/proc/net") / filename
+                  result = []
+                  with path.open() as stream:
+                      next(stream)
+                      for line in stream:
+                          columns = line.split()
+                          if columns[3] != "0A":
+                              continue
+                          address, port = columns[1].split(":")
+                          raw = bytes.fromhex(address)
+                          decoded = ipaddress.ip_address(raw[::-1] if filename == "tcp" else
+                                                         b"".join(raw[i:i+4][::-1] for i in range(0, 16, 4)))
+                          result.append({"address": str(decoded), "port": int(port, 16),
+                                         "loopback": decoded.is_loopback, "state": "LISTEN"})
+                          if len(result) > 64:
+                              raise RuntimeError("listener bound")
+                  rows[str(path)] = result
+              return rows
+          
+          def snapshot():
+              phase = json.loads(Path("/var/lib/owner-alpha/state.json").read_bytes()).get("phase")
+              if phase not in PHASES:
+                  raise RuntimeError("phase not allowlisted")
+              pg_processes = []
+              for path in Path("/proc").iterdir():
+                  if path.name.isdigit():
+                      item = process_identity(int(path.name))
+                      if item["comm"] == "postgres":
+                          pg_processes.append(item)
+              if len(pg_processes) > 64:
+                  raise RuntimeError("process bound")
+              return {"state_phase": phase, "paths": {str(p): metadata(p) for p in FILES},
+                      "pidfiles": {name: pidfile(path) for name, path in {
+                          "postgres": Path("/var/lib/owner-alpha/postgres/postmaster.pid"),
+                          "gunicorn": RUN/"gunicorn.pid", "nginx": RUN/"nginx.pid"}.items()},
+                      "postgres_processes": sorted(pg_processes, key=lambda p: p["pid"]),
+                      "listeners": listeners()}
+          
+          def load_definitions(expected_sha):
+              raw = SUPERVISOR.read_bytes()
+              if hashlib.sha256(raw).hexdigest() != expected_sha:
+                  raise RuntimeError("supervisor source identity")
+              code = raw.decode().split("<<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
+              module = ast.parse(code)
+              if not isinstance(module.body[-1], ast.Try):
+                  raise RuntimeError("supervisor dispatch structure")
+              # Evaluate unchanged declarations only. Never execute its final main() dispatch.
+              declarations = ast.Module(body=module.body[:-1], type_ignores=[])
+              namespace = {"__name__": "frozen_supervisor_diagnostic"}
+              exec(compile(declarations, str(SUPERVISOR), "exec"), namespace)
+              return namespace
+          
+          import time
+          
+          GUNICORN_COMMAND = ["/opt/owner-alpha/venv/bin/gunicorn", "--config",
+                              "/opt/owner-alpha/gunicorn.conf.py", "conflict_analysis.wsgi:application"]
+          NGINX_CONFIG_COMMAND = ["nginx", "-t", "-c", "/run/owner-alpha/nginx.conf"]
+          NGINX_START_COMMAND = ["nginx", "-c", "/run/owner-alpha/nginx.conf"]
+          KNOWN_PATHS = (
+              "/run/owner-alpha/gunicorn.pid", "/run/owner-alpha/gunicorn.sock",
+              "/run/owner-alpha/nginx.conf", "/run/owner-alpha/nginx.pid",
+              "/run/owner-alpha/client", "/run/owner-alpha/proxy", "/run/owner-alpha-pg/.s.PGSQL.5432",
+              "/var/log/nginx/error.log", "/var/log/nginx/access.log", "/var/lib/nginx/body",
+              "/var/lib/nginx/fastcgi", "/var/lib/nginx/proxy", "/var/lib/nginx/scgi",
+              "/var/lib/nginx/uwsgi", "/var/lib/nginx", "/tmp", "/dev/null",
+              "/opt/owner-alpha/venv/bin/gunicorn", "/opt/owner-alpha/gunicorn.conf.py",
+          )
+          ERROR_RULES = (
+              ("PERMISSION_DENIED", 13, rb"(?:PermissionError|Permission denied|\[Errno 13\]|\(13:)"),
+              ("NOT_FOUND", 2, rb"(?:FileNotFoundError|No such file or directory|\[Errno 2\]|\(2:)"),
+              ("ADDRESS_IN_USE", 98, rb"(?:Address already in use|\[Errno 98\]|\(98:)"),
+              ("CONNECTION_REFUSED", 111, rb"(?:Connection refused|\[Errno 111\]|\(111:)"),
+              ("NO_SPACE", 28, rb"(?:No space left on device|\[Errno 28\]|\(28:)"),
+              ("INVALID_ARGUMENT", 22, rb"(?:Invalid argument|\[Errno 22\]|\(22:)"),
+              ("ALREADY_RUNNING", None, rb"(?:Already running|already running)"),
+              ("IMPORT_ERROR", None, rb"(?:ImportError|ModuleNotFoundError)"),
+              ("WORKER_BOOT_ERROR", None, rb"(?:Worker failed to boot|worker failed to boot)"),
+          )
+          
+          def safe_error_facts(meta, private):
+              # Only fixed enum values, errno numbers and fixed known paths can escape.
+              raw = private.get("stdout", b"") + b"\n" + private.get("stderr", b"")
+              classes, numbers = [], []
+              for label, number, pattern in ERROR_RULES:
+                  if re.search(pattern, raw):
+                      classes.append(label)
+                      if number is not None:
+                          numbers.append(number)
+              paths = [path for path in KNOWN_PATHS if path.encode() in raw]
+              return {"error_class": "TIMEOUT" if meta["timed_out"] else
+                      ("MULTIPLE" if len(classes)>1 else classes[0] if classes else
+                       "NONE" if meta["exit_code"]==0 else "NONZERO_OUTPUT_SUPPRESSED"),
+                      "allowlisted_error_classes":classes, "safe_errno":sorted(set(numbers)),
+                      "known_paths":paths,
+                      "known_path_metadata":[metadata(Path(path)) for path in paths]}
+          
+          def service_state(name):
+              state = {"pid":pidfile(RUN/(name+".pid")), "pidfile":metadata(RUN/(name+".pid"))}
+              if name=="gunicorn":
+                  state["socket"] = metadata(RUN/"gunicorn.sock")
+                  state["live_and_endpoint_present"] = state["pid"]["exists"] and state["socket"].get("type")=="socket"
+              else:
+                  state["listeners"] = listeners()
+                  present = any(row["address"]=="127.0.0.1" and row["port"]==PORT
+                                for rows in state["listeners"].values() for row in rows)
+                  state["live_and_endpoint_present"] = state["pid"]["exists"] and present
+              return state
+          
+          def settle(name):
+              # Read-only observations; never retry a command or create a replacement process.
+              start = time.monotonic()
+              stable_since = None
+              while True:
+                  row = service_state(name)
+                  now = time.monotonic()
+                  if row["live_and_endpoint_present"]:
+                      if stable_since is None:
+                          stable_since = now
+                      if now-stable_since >= 1.0:
+                          row["stable_for_one_second"] = True
+                          break
+                  else:
+                      stable_since = None
+                  if now-start >= 5.0:
+                      row["stable_for_one_second"] = False
+                      break
+                  time.sleep(0.25)
+              row["observation_seconds"] = round(time.monotonic()-start,3)
+              return row
+          
+          def prepare_environment(expected_sha):
+              os.environ.update(ENVIRONMENT)
+              with open(os.devnull,"w") as sink, contextlib.redirect_stdout(sink), contextlib.redirect_stderr(sink):
+                  namespace = load_definitions(expected_sha)
+                  namespace["configure_env"]()
+              if os.getcwd()!="/":
+                  raise RuntimeError("frozen runtime cwd differs")
+              return {"outcome":"PASS","method":"unchanged configure_env; values never recorded",
+                      "cwd":"/","service_user":"owneralpha","supervisor_source_sha256":expected_sha}
+          
+          def run_service(label, command, timeout=60):
+              meta, private = bounded(label,["runuser","-u","owneralpha","--",*command],timeout=timeout)
+              return {**meta,"exact_command":command,"service_user":"owneralpha",**safe_error_facts(meta,private)}
+          
+          def gunicorn_start(expected_sha):
+              result = {"environment":prepare_environment(expected_sha),"attempts":1}
+              result["before"] = service_state("gunicorn")
+              result["command"] = run_service("exact_gunicorn_start_as_owneralpha", GUNICORN_COMMAND)
+              result["after"] = settle("gunicorn")
+              result["actually_started"] = (result["command"]["exit_code"]==0
+                                            and not result["command"]["timed_out"]
+                                            and result["after"]["stable_for_one_second"])
+              return result
+          
+          def nginx_sequence(expected_sha):
+              result = {"environment":prepare_environment(expected_sha),"config_attempts":0,"start_attempts":0}
+              result["gunicorn_before"] = service_state("gunicorn")
+              if not result["gunicorn_before"]["live_and_endpoint_present"]:
+                  result.update(outcome="NOT_EXECUTED",reason="GUNICORN_NO_LONGER_LIVE")
+                  return result
+              result["before"] = service_state("nginx")
+              result["config_attempts"] = 1
+              result["config_command"] = run_service("exact_nginx_test_as_owneralpha",NGINX_CONFIG_COMMAND,30)
+              # The exact start is attempted even when -t fails, so a config-only result
+              # cannot be substituted for a failing service command.
+              result["start_attempts"] = 1
+              result["command"] = run_service("exact_nginx_start_as_owneralpha",NGINX_START_COMMAND,30)
+              result["after"] = settle("nginx")
+              result["actually_started"] = (result["command"]["exit_code"]==0
+                                            and not result["command"]["timed_out"]
+                                            and result["after"]["stable_for_one_second"])
+              return result
+          
+          try:
+              operation = sys.argv[1]
+              if operation=="snapshot":
+                  answer=snapshot()
+              elif operation=="gunicorn-start":
+                  answer=gunicorn_start(sys.argv[2])
+              elif operation=="nginx-sequence":
+                  answer=nginx_sequence(sys.argv[2])
+              else:
+                  raise RuntimeError("probe not allowlisted")
+              print(json.dumps(answer,sort_keys=True,separators=(",",":")))
+          except Exception as exc:
+              print(json.dumps({"probe_error":{"exception_type":type(exc).__name__}}))
+              sys.exit(1)
+          
+          PY
+          cat > "$RUNNER_TEMP/g10-service-driver.py" <<'PY'
+          import hashlib
+          import subprocess
+          import threading
+          
+          def bounded(label, args, *, data=None, timeout=60, env=None):
+              """Drain both streams, hash every byte, retain at most 8192 bytes combined."""
+              process = subprocess.Popen(args, stdin=subprocess.PIPE if data is not None else subprocess.DEVNULL,
+                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+              budget = [8192]
+              lock = threading.Lock()
+              streams = {}
+              private = {}
+              def drain(name, stream):
+                  digest, size, kept = hashlib.sha256(), 0, bytearray()
+                  while True:
+                      chunk = stream.read(4096)
+                      if not chunk:
+                          break
+                      digest.update(chunk)
+                      size += len(chunk)
+                      with lock:
+                          count = min(len(chunk), budget[0])
+                          budget[0] -= count
+                      kept.extend(chunk[:count])
+                  streams[name] = {"bytes": size, "sha256": digest.hexdigest(),
+                                   "captured_bytes": len(kept), "text_recorded": False}
+                  private[name] = bytes(kept)
+              threads = [threading.Thread(target=drain, args=(name, stream), daemon=True)
+                         for name, stream in (("stdout", process.stdout), ("stderr", process.stderr))]
+              for thread in threads:
+                  thread.start()
+              if data is not None:
+                  try:
+                      process.stdin.write(data)
+                      process.stdin.close()
+                  except BrokenPipeError:
+                      pass
+              timed_out = False
+              try:
+                  code = process.wait(timeout=timeout)
+              except subprocess.TimeoutExpired:
+                  timed_out = True
+                  process.kill()
+                  code = process.wait()
+              for thread in threads:
+                  thread.join()
+              return {"label": label, "exit_code": code, "timed_out": timed_out,
+                      "capture_limit_combined": 8192, "stdout": streams["stdout"], "stderr": streams["stderr"]}, private
+          
+          
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          import sys
+          
+          TARGET = {"head":"4a0f0cb42aaea8d9d5f368cdc3d3de15db2f6d03",
+                    "tree":"5c32368e80b645f16af8a064fb0ec79a40fef5f3",
+                    "parent":"63c5394c02261bd35e51054f223ae545aaaf4f0d"}
+          BRANCH = "codex/g10-runtime-service-command-diagnostic-20260914"
+          TARGET_BRANCH = "codex/ca-suite-i1-integration"
+          REL = ".github/workflows/g10-runtime-service-command-diagnostic.yml"
+          REPORT = "g10-runtime-service-command-diagnostic.json"
+          PACKAGE = "software/conflict_analysis/owner_alpha_package"
+          SUPERVISOR = "/opt/owner-alpha/owner-alpha-supervisor.sh"
+          PORT = 8765
+          EXPECTED_ROOTFS = {"filename":"conflict-analysis-functional-alpha-rootfs.tar", "bytes":577648640,
+                            "sha256":"6edbf7a86bf9790282d6fd78d6f506adcba692f5466e8c9f589209dd91495e26"}
+          EXPECTED_ZIP = {"filename":"conflict-analysis-functional-alpha-0.1.0-alpha.1-windows11-wsl2-x64.zip",
+                         "bytes":583644300,"sha256":"cbbc2fd4b3c5e1a71402969b0942efb070d2b6a031c448b2cda3ea5e5dccb335"}
+          BLOCKERS = {"BLOCKED_G10_RUNTIME_OPERATION_FAILED","BLOCKED_G10_RUNTIME_IDENTITY_DRIFT",
+                      "BLOCKED_G10_BACKUP_RESTORE_GAP","BLOCKED_G10_NETWORK_EXPOSURE",
+                      "BLOCKED_G10_PROFILE_ISOLATION_GAP","BLOCKED_G10_ACCESS_PROVISIONING_GAP",
+                      "BLOCKED_G10_UNAUTHORIZED_MIGRATION","BLOCKED_G10_OPERATION_BUSY","BLOCKED_G10_OPERATION_UNKNOWN"}
+          
+          def require(value, label):
+              if not value:
+                  raise RuntimeError(label)
+          
+          def canonical(value):
+              return (json.dumps(value, sort_keys=True, separators=(",",":"), ensure_ascii=True)+"\n").encode()
+          
+          def identity(path):
+              require(path.is_file() and not path.is_symlink(), "regular file identity")
+              with path.open("rb") as stream:
+                  sha = hashlib.file_digest(stream,"sha256").hexdigest()
+              return {"filename":path.name,"bytes":path.stat().st_size,"sha256":sha}
+          
+          def git(repo, *args):
+              return subprocess.check_output(["git","--no-optional-locks","-C",str(repo),*args],text=True,timeout=90).strip()
+          
+          def revision(repo, ref):
+              return {"head":git(repo,"rev-parse",ref),"tree":git(repo,"rev-parse",ref+"^{tree}"),
+                      "parent":git(repo,"show","-s","--format=%P",ref)}
+          
+          def remote(repo):
+              lines = git(repo,"ls-remote","--heads","origin","refs/heads/"+TARGET_BRANCH).splitlines()
+              require(len(lines)==1 and lines[0].split()[1]=="refs/heads/"+TARGET_BRANCH, "target remote ref")
+              return lines[0].split()[0]
+          
+          def snapshot(repo):
+              paths = subprocess.check_output(["git","--no-optional-locks","-C",str(repo),"ls-files","-z"])
+              rows = []
+              for name in sorted(x.decode() for x in paths.split(b"\0") if x):
+                  path = repo / name
+                  if path.is_symlink():
+                      raw = os.readlink(path).encode()
+                      rows.append([name,"symlink",len(raw),hashlib.sha256(raw).hexdigest()])
+                  else:
+                      meta = identity(path)
+                      rows.append([name,"file",meta["bytes"],meta["sha256"]])
+              return {"tracked_paths":len(rows),"inventory_sha256":hashlib.sha256(canonical(rows)).hexdigest()}
+          
+          def locations():
+              repo, temporary = Path(os.environ["GITHUB_WORKSPACE"]).resolve(), Path(os.environ["RUNNER_TEMP"]).resolve()
+              require(not temporary.is_relative_to(repo), "external harness required")
+              return repo, temporary, temporary/"g10-artifacts", temporary/"g10-service-state.json"
+          
+          def result_fields(private):
+              # Parse only fixed public phase/result classes; never retain user IDs or other values.
+              result = {}
+              for name in ("stdout","stderr"):
+                  try:
+                      data = json.loads(private[name])
+                  except (ValueError,KeyError):
+                      continue
+                  if isinstance(data,dict):
+                      if data.get("phase") in {"EMPTY","STOPPED","READY","RESTORED"}:
+                          result["phase"] = data["phase"]
+                      if data.get("result") in BLOCKERS:
+                          result["result"] = data["result"]
+              return result
+          
+          def classify(state):
+              if state.get("initialize",{}).get("outcome")!="PASS" or state.get("start",{}).get("exit_code") in (None,0):
+                  return "UNRESOLVED"
+              gunicorn=state.get("gunicorn_service",{})
+              command=gunicorn.get("command",{})
+              if command.get("timed_out") or command.get("exit_code") is None:
+                  return "UNRESOLVED"
+              if command["exit_code"]!=0:
+                  return "UNRESOLVED" if gunicorn.get("before",{}).get("live_and_endpoint_present") else "GUNICORN_START_COMMAND"
+              if gunicorn.get("actually_started") is not True:
+                  return "UNRESOLVED"
+              nginx=state.get("nginx_service",{})
+              command=nginx.get("command",{})
+              if command.get("timed_out") or command.get("exit_code") is None:
+                  return "UNRESOLVED"
+              if command["exit_code"]!=0:
+                  return "UNRESOLVED" if nginx.get("before",{}).get("live_and_endpoint_present") else "NGINX_START_COMMAND"
+              return "UNRESOLVED"
+          
+          def execute():
+              repo, temporary, output, checkpoint = locations()
+              state = {"schema":"G10_RUNTIME_SERVICE_COMMAND_DIAGNOSTIC_V1","expected_target":TARGET,
+                       "controlling_comment":5669222662,
+                       "diagnostic_branch":BRANCH,"port":PORT,"initialize_attempts":0,"start_attempts":0,
+                       "build_calls":0,"build_completed":False,"observations":{},"cleanup":[],
+                       "earliest_failure":"UNRESOLVED","phase":"precondition","exception":None}
+              container, image = None, None
+              def save():
+                  checkpoint.write_bytes(canonical(state))
+              def command(label, args, **kwargs):
+                  meta, private = bounded(label,args,**kwargs)
+                  state["observations"][label] = meta
+                  return meta,private
+              save()
+              try:
+                  require(os.environ.get("GITHUB_REPOSITORY")=="dshatrov7575-max/Conflict","repository identity")
+                  require(os.environ.get("GITHUB_REF_NAME")==BRANCH,"diagnostic branch identity")
+                  require(os.environ.get("CHECKOUT_OUTCOME")=="success","checkout outcome")
+                  state["diagnostic_commit"] = revision(repo,os.environ["GITHUB_SHA"])
+                  require(state["diagnostic_commit"]["parent"]==TARGET["head"],"diagnostic parent")
+                  require(git(repo,"diff","--no-renames","--name-status",TARGET["head"],os.environ["GITHUB_SHA"])=="A\t"+REL,"diagnostic scope")
+                  state["checked_out_target_before"] = revision(repo,"HEAD")
+                  state["target_branch_sha_before"] = remote(repo)
+                  state["git_status_before"] = git(repo,"status","--porcelain=v1","--untracked-files=all")
+                  state["tracked_snapshot_before"] = snapshot(repo)
+                  require(state["checked_out_target_before"]==TARGET and state["target_branch_sha_before"]==TARGET["head"]
+                          and state["git_status_before"]=="","target before identity")
+                  require(os.environ.get("TOOLING_OUTCOME")=="success","frozen tooling outcome")
+                  sys.path.insert(0,str(repo/"software/conflict_analysis/scripts"))
+                  import build_owner_alpha_package as builder
+                  import verify_owner_alpha_package as verifier
+                  state["source_identity"] = verifier.source_identity(repo)
+                  source = subprocess.check_output(["git","-C",str(repo),"show",TARGET["head"]+":"+PACKAGE+"/linux/owner-alpha-supervisor.sh"])
+                  expected_supervisor = hashlib.sha256(source).hexdigest()
+                  state["supervisor_source_sha256"] = expected_supervisor
+                  state["phase"] = "build"
+                  state["build_calls"] += 1
+                  save()
+                  state["zip"] = builder.build(repo,output)
+                  state["rootfs"] = identity(output / builder.ROOTFS_NAME)
+                  state["wheel"] = identity(output/"conflict_analysis-0.1.0-py3-none-any.whl")
+                  require(state["zip"]==EXPECTED_ZIP and state["rootfs"]==EXPECTED_ROOTFS,"accepted Phase-A byte identity")
+                  state["build_completed"] = True
+                  state["phase"] = "runtime"
+                  save()
+                  image = "g10-service:"+os.environ["GITHUB_RUN_ID"]
+                  imported,_ = command("docker_import_exact_rootfs",["docker","import",str(output/builder.ROOTFS_NAME),image],timeout=90)
+                  require(imported["exit_code"]==0,"docker import")
+                  container = "g10-service-"+os.environ["GITHUB_RUN_ID"]
+                  created,_ = command("docker_run_network_none",["docker","run","--name",container,"--network=none","-d",
+                                     "--entrypoint","/bin/sleep",image,"infinity"],timeout=45)
+                  require(created["exit_code"]==0,"docker run")
+                  network,raw = command("docker_network_mode",["docker","inspect","--format","{{.HostConfig.NetworkMode}}",container])
+                  require(network["exit_code"]==0 and raw["stdout"].strip()==b"none","network none verification")
+                  state["docker_network_mode"] = "none"
+                  body = (temporary/"g10-service-bounded.py").read_bytes() + b"\n" + (temporary/"g10-service-container-probe.py").read_bytes()
+                  state["external_probe_sha256"] = hashlib.sha256(body).hexdigest()
+                  def probe(label, operation):
+                      args = ["docker","exec","-i","-e","LD_LIBRARY_PATH=/opt/python-libs",container,
+                              "/opt/owner-alpha/venv/bin/python","-B","-",operation,expected_supervisor]
+                      meta,raw = command(label,args,data=body,timeout=180)
+                      require(meta["exit_code"]==0 and not meta["timed_out"],label+" execution")
+                      require(meta["stdout"]["bytes"]==len(raw["stdout"]),label+" bounded JSON")
+                      data = json.loads(raw["stdout"])
+                      require(isinstance(data,dict) and "probe_error" not in data,label+" observations")
+                      return data
+                  state["initialize_attempts"] += 1
+                  save()
+                  init,raw = command("initialize",["docker","exec","-i",container,SUPERVISOR,"initialize",str(PORT)],timeout=180)
+                  state["initialize"] = {**init,**result_fields(raw)}
+                  state["initialize"]["outcome"] = "PASS" if init["exit_code"]==0 and state["initialize"].get("phase")=="STOPPED" else "FAIL"
+                  save()
+                  require(state["initialize"]["outcome"]=="PASS","initialize must pass")
+                  state["before_start"] = probe("state_before_start","snapshot")
+                  state["start_attempts"] += 1
+                  save()
+                  started,raw = command("start",["docker","exec","-i",container,SUPERVISOR,"start"],timeout=180)
+                  state["start"] = {**started,**result_fields(raw)}
+                  save()
+                  state["after_start"] = probe("state_after_start","snapshot")
+                  require(started["exit_code"]!=0 and not started["timed_out"],"original start must fail")
+                  state["phase"] = "exact_gunicorn_start"
+                  save()
+                  state["gunicorn_service"] = probe("exact_gunicorn_start","gunicorn-start")
+                  save()
+                  if state["gunicorn_service"].get("actually_started") is True:
+                      state["phase"] = "exact_nginx_commands"
+                      save()
+                      state["nginx_service"] = probe("exact_nginx_commands","nginx-sequence")
+                  else:
+                      state["nginx_service"] = {"outcome":"NOT_EXECUTED","reason":"GUNICORN_DID_NOT_START",
+                                                "config_attempts":0,"start_attempts":0}
+                  state["after_service_commands"] = probe("state_after_service_commands","snapshot")
+                  state["earliest_failure"] = classify(state)
+                  key = {"GUNICORN_START_COMMAND":"gunicorn_service","NGINX_START_COMMAND":"nginx_service"}.get(state["earliest_failure"])
+                  state["first_failing_service_command"] = state[key]["command"]["exact_command"] if key else None
+                  state["phase"] = "completed"
+              except Exception as exc:
+                  # Exception values and tracebacks can carry private argv/output; omit them.
+                  state["exception"] = {"type":type(exc).__name__,"phase":state["phase"],"details_suppressed":True}
+              finally:
+                  for label, action in {
+                      "checked_out_target_after":lambda:revision(repo,"HEAD"),
+                      "target_branch_sha_after":lambda:remote(repo),
+                      "git_status_after":lambda:git(repo,"status","--porcelain=v1","--untracked-files=all"),
+                      "tracked_snapshot_after":lambda:snapshot(repo),
+                  }.items():
+                      try:
+                          state[label] = action()
+                      except Exception as exc:
+                          state[label] = {"error_type":type(exc).__name__}
+                  for label,args in (
+                      ("remove_owned_diagnostic_container",["docker","rm","-f",container] if container else None),
+                      ("remove_owned_diagnostic_image",["docker","image","rm",image] if image else None),
+                  ):
+                      if args:
+                          try:
+                              meta,_ = bounded(label,args,timeout=60)
+                              state["cleanup"].append(meta)
+                          except Exception as exc:
+                              state["cleanup"].append({"label":label,"error_type":type(exc).__name__})
+                  state["no_tracked_source_changed"] = (
+                      state.get("tracked_snapshot_before") is not None
+                      and state.get("tracked_snapshot_after")==state["tracked_snapshot_before"]
+                      and state.get("git_status_before")=="" and state.get("git_status_after")=="")
+                  save()
+          
+          def finalize():
+              repo, temporary, output, checkpoint = locations()
+              state = json.loads(checkpoint.read_bytes()) if checkpoint.is_file() else {
+                  "expected_target":TARGET,"diagnostic_branch":BRANCH,"earliest_failure":"UNRESOLVED",
+                  "exception":{"type":"HarnessNotExecuted","details_suppressed":True}}
+              state["step_outcomes"] = {key:os.environ.get(key,"UNKNOWN") for key in
+                                       ("CHECKOUT_OUTCOME","TOOLING_OUTCOME","EXECUTE_OUTCOME")}
+              state["output_safety"] = {
+                  "max_captured_stdout_stderr_combined_per_probe":8192,
+                  "raw_probe_text_published":False,"environment_values_published":False,
+                  "secret_session_principal_database_backup_values_published":False,
+                  "process_identity":"numeric PID plus /proc/<pid>/comm only",
+                  "allowed_artifact_files":[REPORT],
+                  "derived_output":"fixed error enums, finite errno set and fixed known paths only",
+              }
+              predicates = {
+                  "steps":all(v=="success" for v in state["step_outcomes"].values()),
+                  "one_build":state.get("build_calls")==1 and state.get("build_completed") is True,
+                  "one_initialize":state.get("initialize_attempts")==1 and state.get("initialize",{}).get("outcome")=="PASS",
+                  "one_failed_start":state.get("start_attempts")==1 and state.get("start",{}).get("exit_code") not in (None,0),
+                  "network_none":state.get("docker_network_mode")=="none",
+                  "observations_completed":state.get("phase")=="completed" and state.get("exception") is None,
+                  "service_sequence_complete":state.get("gunicorn_service",{}).get("attempts")==1
+                      and ((state["gunicorn_service"].get("actually_started") is True
+                            and state.get("nginx_service",{}).get("config_attempts")==1
+                            and state.get("nginx_service",{}).get("start_attempts")==1)
+                           or (state["gunicorn_service"].get("actually_started") is not True
+                               and state.get("nginx_service",{}).get("config_attempts")==0
+                               and state.get("nginx_service",{}).get("start_attempts")==0)),
+                  "source_unchanged":state.get("no_tracked_source_changed") is True,
+                  "target_checkout_before":state.get("checked_out_target_before")==TARGET,
+                  "target_checkout_after":state.get("checked_out_target_after")==TARGET,
+                  "target_branch_before":state.get("target_branch_sha_before")==TARGET["head"],
+                  "target_branch_after":state.get("target_branch_sha_after")==TARGET["head"],
+              }
+              state["completion_predicates"] = predicates
+              state["diagnostic_completed"] = all(predicates.values())
+              state["runtime_start_pass"] = state.get("start",{}).get("exit_code")==0
+              payload = canonical(state)
+              state["report_integrity"] = {"payload_definition":"canonical JSON with report_integrity omitted",
+                  "payload_bytes":len(payload),"payload_sha256":hashlib.sha256(payload).hexdigest(),
+                  "file_bytes":0,"full_file_sha256_location":"GitHub job summary, computed after serialization"}
+              for _ in range(10):
+                  raw = canonical(state)
+                  if len(raw)==state["report_integrity"]["file_bytes"]:
+                      break
+                  state["report_integrity"]["file_bytes"] = len(raw)
+              else:
+                  raise RuntimeError("report byte length convergence")
+              require(len(raw)<=256*1024,"bounded JSON size")
+              path = temporary/REPORT
+              path.write_bytes(raw)
+              meta = identity(path)
+              summary = [
+                  "G10 RUNTIME-START SERVICE-COMMAND DIAGNOSTIC",
+                  "Diagnostic HEAD: "+state.get("diagnostic_commit",{}).get("head",os.environ.get("GITHUB_SHA","UNKNOWN")),
+                  "Target HEAD: "+state.get("checked_out_target_before",{}).get("head","UNKNOWN"),
+                  "Earliest failure: "+state["earliest_failure"],
+                  "Diagnostic completed: "+str(state["diagnostic_completed"]),
+                  "Initialize result: "+state.get("initialize",{}).get("outcome","NOT_EXECUTED"),
+                  "Start exit: "+str(state.get("start",{}).get("exit_code")),
+                  "Report bytes: "+str(meta["bytes"]),
+                  "Report SHA-256: "+meta["sha256"],
+              ]
+              with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a",encoding="utf-8") as stream:
+                  stream.write("\n\n".join(summary)+"\n")
+              print(json.dumps({"earliest_failure":state["earliest_failure"],"diagnostic_completed":state["diagnostic_completed"],"report":meta}))
+          
+          def gate():
+              _, temporary, _, _ = locations()
+              raw = (temporary/REPORT).read_bytes()
+              data = json.loads(raw)
+              integrity = data.pop("report_integrity")
+              payload = canonical(data)
+              require(integrity["file_bytes"]==len(raw) and integrity["payload_bytes"]==len(payload)
+                      and integrity["payload_sha256"]==hashlib.sha256(payload).hexdigest(),"report integrity")
+              require(os.environ.get("UPLOAD_OUTCOME")=="success","artifact upload")
+              require(data["diagnostic_completed"],"G10_RUNTIME_SERVICE_COMMAND_DIAGNOSTIC_INCOMPLETE")
+          
+          if __name__=="__main__":
+              {"execute":execute,"finalize":finalize,"gate":gate}[sys.argv[1]]()
+          PY
+      - name: Prepare hash-bound CI tooling outside the checkout
+        id: tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3.12 -m venv "$RUNNER_TEMP/g10-tooling"
+          "$RUNNER_TEMP/g10-tooling/bin/python" - <<'PY'
+          import os, pathlib, sys
+          sys.path.insert(0, str(pathlib.Path("software/conflict_analysis/scripts").resolve()))
+          import build_owner_alpha_package as b
+          root = pathlib.Path(os.environ["RUNNER_TEMP"]) / "g10-ci-inputs"
+          for pin in b.PINS["wheels"]:
+              b.download(pin, root / "wheels")
+          (root / "ci.lock").write_text(b.lock_text(b.PINS["wheels"]), encoding="utf-8")
+          PY
+          "$RUNNER_TEMP/g10-tooling/bin/python" -m pip install --no-index --no-deps --require-hashes --find-links="$RUNNER_TEMP/g10-ci-inputs/wheels" -r "$RUNNER_TEMP/g10-ci-inputs/ci.lock"
+      - name: Exact build, original start and bounded service commands
+        id: execute
+        if: always()
+        timeout-minutes: 25
+        env:
+          CHECKOUT_OUTCOME: ${{ steps.target.outcome }}
+          TOOLING_OUTCOME: ${{ steps.tooling.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python="$RUNNER_TEMP/g10-tooling/bin/python"
+          if [ "$TOOLING_OUTCOME" != success ]; then python=python3.12; fi
+          timeout --kill-after=30s 23m "$python" -B "$RUNNER_TEMP/g10-service-driver.py" execute
+      - name: Collect private-safe bounded JSON
+        if: always()
+        env:
+          CHECKOUT_OUTCOME: ${{ steps.target.outcome }}
+          TOOLING_OUTCOME: ${{ steps.tooling.outcome }}
+          EXECUTE_OUTCOME: ${{ steps.execute.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3.12 -B "$RUNNER_TEMP/g10-service-driver.py" finalize
+      - name: Upload only the diagnostic JSON
+        id: upload
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: g10-runtime-service-command-diagnostic
+          if-no-files-found: error
+          overwrite: false
+          path: ${{ runner.temp }}/g10-runtime-service-command-diagnostic.json
+      - name: Enforce diagnostic completion after upload
+        if: always()
+        env:
+          UPLOAD_OUTCOME: ${{ steps.upload.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3.12 -B "$RUNNER_TEMP/g10-service-driver.py" gate
