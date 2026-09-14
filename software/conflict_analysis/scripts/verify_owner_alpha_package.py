@@ -112,12 +112,13 @@ def source_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
     commits = git(repo, "rev-list", "--reverse", CONTROL["base_head"] + ".." + head).splitlines()
     require(not git(repo, "rev-list", "--merges", CONTROL["base_head"] + ".." + head),
             "BLOCKED_G10_FORBIDDEN_GIT_OPERATION", "merge in delivery ancestry")
-    require(len(commits) in ((3,) if final else (0, 1, 2, 3)),
+    require(len(commits) in ((4,) if final else (0, 1, 2, 3, 4)),
             "BLOCKED_G10_FORBIDDEN_GIT_OPERATION", "ordinary commit budget")
     expected_prefix = ["b589aae93123c9a01cea43a4986c2a3a8250c8cc",
-                       "4bb2d8aebec9a57ee8e821dde4e230be2a9dabfd"]
-    require(commits[:2] == expected_prefix[:min(len(commits), 2)],
-            "BLOCKED_G10_FORBIDDEN_GIT_OPERATION", "frozen first two ordinary commits")
+                       "4bb2d8aebec9a57ee8e821dde4e230be2a9dabfd",
+                       "63c5394c02261bd35e51054f223ae545aaaf4f0d"]
+    require(commits[:3] == expected_prefix[:min(len(commits), 3)],
+            "BLOCKED_G10_FORBIDDEN_GIT_OPERATION", "frozen first three ordinary commits")
     for commit, parent in zip(commits, [CONTROL["base_head"], *commits[:-1]]):
         require(git(repo, "show", "-s", "--format=%P", commit) == parent,
                 "BLOCKED_G10_FORBIDDEN_GIT_OPERATION", "sole ordinary parent required")

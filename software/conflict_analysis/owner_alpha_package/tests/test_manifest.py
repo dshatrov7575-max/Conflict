@@ -22,6 +22,67 @@ def artifacts():
     return root,path,verify.verify_zip(path)["manifest"]
 
 def test_manifest_schema_exact_chain_refs_versions_hashes_artifacts_and_nonclaims():
+    from jsonschema import Draft202012Validator, ValidationError
+    from unittest.mock import patch
+
+    prefix = ["b589aae93123c9a01cea43a4986c2a3a8250c8cc",
+              "4bb2d8aebec9a57ee8e821dde4e230be2a9dabfd",
+              "63c5394c02261bd35e51054f223ae545aaaf4f0d"]
+    commits = [*prefix, "4" * 40]
+    # Synthetic Git responses exercise the real source_identity gate without
+    # creating commits or representing these probes as final delivery evidence.
+    def source_probe(history, *, parent_overrides=None, merges=""):
+        base = verify.CONTROL["base_head"]
+        parents = dict(zip(history, [base, *history[:-1]]))
+        parents.update(parent_overrides or {})
+        def git(_repo, *args):
+            if args == ("rev-parse", "HEAD"): return history[-1]
+            if args == ("rev-parse", "HEAD^{tree}"): return "a" * 40
+            if args == ("rev-parse", base + "^{tree}"): return verify.CONTROL["base_tree"]
+            if args[0] == "merge-base": return ""
+            if args[0] == "rev-parse":
+                for entry in verify.CONTROL["predecessors"]:
+                    if args[1] == entry["head"] + "^{tree}": return entry["tree"]
+                for name, value in verify.CONTROL["sentinels"].items():
+                    if args[1] in (base + ":" + name, history[-1] + ":" + name): return value
+            if args[0] == "status": return ""
+            if args[:2] == ("rev-list", "--reverse"): return "\n".join(history)
+            if args[:2] == ("rev-list", "--merges"): return merges
+            if args[0] == "diff":
+                return "\n".join(("M" if i == 0 else "A") + "\t" + name
+                                 for i, name in enumerate(verify.CONTROL["allowlist"]))
+            if args[:3] == ("show", "-s", "--format=%P"): return parents[args[3]]
+            if args[:3] == ("show", "-s", "--format=%ct"): return "1"
+            raise AssertionError(args)
+        with patch.object(verify, "git", side_effect=git):
+            return verify.source_identity(APP.parents[1], final=True)
+
+    source = source_probe(commits)
+    assert source["ordinary_commits"] == commits
+    assert source["head"] == commits[-1] and source["parent"] == prefix[-1]
+    schema = verify.strict_json((APP/"owner_alpha_package/manifest.schema.json").read_bytes())
+    validator = Draft202012Validator({"$defs": schema["$defs"], **schema["properties"]["source"]})
+    validator.validate(source)
+    for history in (commits[:3], [*commits, "5" * 40], [*prefix, prefix[-1]]):
+        broken = copy.deepcopy(source)
+        broken["ordinary_commits"] = history
+        with pytest.raises(ValidationError): validator.validate(broken)
+    for history in (commits[:3], [*commits, "5" * 40]):
+        with pytest.raises(verify.GateError, match="ordinary commit budget"):
+            source_probe(history)
+    for index in range(3):
+        broken = commits.copy()
+        broken[index] = "f" * 40
+        with pytest.raises(verify.GateError, match="frozen first three ordinary commits"):
+            source_probe(broken)
+    for parent in (prefix[0], prefix[-1] + " " + prefix[0]):
+        with pytest.raises(verify.GateError, match="sole ordinary parent required"):
+            source_probe(commits, parent_overrides={commits[-1]: parent})
+    with pytest.raises(verify.GateError, match="merge in delivery ancestry"):
+        source_probe(commits, merges=commits[-1])
+    assert {family: len(nodes) for family, nodes in verify.CONTROL["tests"].items()} == {
+        "portable": 10, "pester": 10, "windows": 2,
+    }
     root,path,manifest=artifacts()
     verify.verify_manifest(manifest)
     assert len(manifest["test_registry"]["portable"])==10
