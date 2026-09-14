@@ -1,10 +1,12 @@
 """Four frozen portable nodes. Artifact checks require a real final build."""
 import copy
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
 import sys
+import tarfile
 import zipfile
 
 import pytest
@@ -36,6 +38,42 @@ def test_manifest_schema_exact_chain_refs_versions_hashes_artifacts_and_nonclaim
         with pytest.raises(verify.GateError): verify.strict_json(raw)
 
 def test_archive_is_deterministic_case_safe_traversal_free_and_cmd_wrappers_are_exact(tmp_path):
+    colon_paths = (
+        "var/lib/dpkg/info/gcc-14-base:amd64.list",
+        "var/lib/ucf/cache/:etc:postgresql-common:createcluster.conf",
+    )
+    for name in colon_paths:
+        assert verify.safe_rootfs_member(name)
+        assert not verify.safe_member(name)
+    assert not verify.safe_member("a:stream")
+    for invalid in ("../outside", "a/../outside", "/absolute", "windows\\module",
+                    "a./file", "a /file", "a.", "a ", "a//file", "./file", "",
+                    "cafe\u0301"):
+        assert not verify.safe_rootfs_member(invalid)
+    for code in range(32):
+        assert not verify.safe_rootfs_member("a" + chr(code) + "b")
+    rootfs = tmp_path/"colon-rootfs.tar"
+    payload = b"Linux package metadata\n"
+    with tarfile.open(rootfs, "w", format=tarfile.GNU_FORMAT) as out:
+        for name in colon_paths:
+            member = tarfile.TarInfo(name)
+            member.mode, member.size = 0o644, len(payload)
+            out.addfile(member, io.BytesIO(payload))
+    inventory = verify.rootfs_inventory(rootfs)
+    assert [entry["path"] for entry in inventory["files"]] == list(colon_paths)
+    assert all(entry["sha256"] == hashlib.sha256(payload).hexdigest()
+               for entry in inventory["files"])
+    normalized = build.normalize_rootfs(rootfs, tmp_path/"normalized-rootfs.tar")
+    assert [entry for entry in normalized["files"] if entry["path"] in colon_paths] == inventory["files"]
+    duplicate = tmp_path/"duplicate-rootfs.tar"
+    with tarfile.open(duplicate, "w", format=tarfile.GNU_FORMAT) as out:
+        for name in (colon_paths[0], "./" + colon_paths[0]):
+            member = tarfile.TarInfo(name)
+            out.addfile(member, io.BytesIO(b""))
+    with pytest.raises(verify.GateError, match="rootfs path collision/traversal"):
+        verify.rootfs_inventory(duplicate)
+    with pytest.raises(verify.GateError, match="export path"):
+        build.normalize_rootfs(duplicate, tmp_path/"duplicate-normalized-rootfs.tar")
     root,path,manifest=artifacts()
     assert verify.sha256_file(path)==verify.sha256_file(root/("repeat-"+build.ZIP_NAME))
     with zipfile.ZipFile(path) as archive:

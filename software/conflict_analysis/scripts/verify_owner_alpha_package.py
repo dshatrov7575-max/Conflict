@@ -112,8 +112,15 @@ def source_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
     commits = git(repo, "rev-list", "--reverse", CONTROL["base_head"] + ".." + head).splitlines()
     require(not git(repo, "rev-list", "--merges", CONTROL["base_head"] + ".." + head),
             "BLOCKED_G10_FORBIDDEN_GIT_OPERATION", "merge in delivery ancestry")
-    require(len(commits) in ((1, 2) if final else (0, 1, 2)),
+    require(len(commits) in ((3,) if final else (0, 1, 2, 3)),
             "BLOCKED_G10_FORBIDDEN_GIT_OPERATION", "ordinary commit budget")
+    expected_prefix = ["b589aae93123c9a01cea43a4986c2a3a8250c8cc",
+                       "4bb2d8aebec9a57ee8e821dde4e230be2a9dabfd"]
+    require(commits[:2] == expected_prefix[:min(len(commits), 2)],
+            "BLOCKED_G10_FORBIDDEN_GIT_OPERATION", "frozen first two ordinary commits")
+    for commit, parent in zip(commits, [CONTROL["base_head"], *commits[:-1]]):
+        require(git(repo, "show", "-s", "--format=%P", commit) == parent,
+                "BLOCKED_G10_FORBIDDEN_GIT_OPERATION", "sole ordinary parent required")
     if final:
         changes = dict(line.split("\t", 1)[::-1] for line in
                        git(repo, "diff", "--no-renames", "--name-status",
@@ -133,6 +140,15 @@ def safe_member(name: str) -> bool:
     p = PurePosixPath(name)
     return (not p.is_absolute() and all(part not in ("", ".", "..") for part in name.split("/"))
             and ":" not in name and all(ord(c) >= 32 for c in name)
+            and not any(part.endswith((".", " ")) for part in p.parts))
+
+
+def safe_rootfs_member(name: str) -> bool:
+    if not name or name != unicodedata.normalize("NFC", name) or "\\" in name:
+        return False
+    p = PurePosixPath(name)
+    return (not p.is_absolute() and all(part not in ("", ".", "..") for part in name.split("/"))
+            and all(ord(c) >= 32 for c in name)
             and not any(part.endswith((".", " ")) for part in p.parts))
 
 
@@ -230,7 +246,7 @@ def rootfs_inventory(path: Path) -> dict[str, Any]:
             name = member.name.removeprefix("./").rstrip("/")
             if not name:
                 continue
-            require(safe_member(name) and name not in seen,
+            require(safe_rootfs_member(name) and name not in seen,
                     "BLOCKED_G10_PACKAGE_MEMBER_DRIFT", "rootfs path collision/traversal")
             seen.add(name)
             require(not member.isdev() and not member.isfifo(),
