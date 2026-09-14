@@ -1,0 +1,340 @@
+name: G10 export-member diagnostic
+
+on:
+  push:
+    branches: [codex/g10-export-member-diagnostic-20260914]
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-first-export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      DJANGO_SETTINGS_MODULE: conflict_analysis.settings
+      DJANGO_DEBUG: "false"
+      G10_DIAGNOSTIC_COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: 4bb2d8aebec9a57ee8e821dde4e230be2a9dabfd
+          fetch-depth: 0
+          persist-credentials: false
+          set-safe-directory: false
+      - name: Diagnose the first export without changing target source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3.12 -B - <<'PY'
+          import collections
+          import datetime
+          import hashlib
+          import io
+          import json
+          import os
+          from pathlib import Path, PurePosixPath
+          import platform
+          import subprocess
+          import sys
+          import tarfile
+          import traceback
+          import unicodedata
+
+          TARGET_HEAD = "4bb2d8aebec9a57ee8e821dde4e230be2a9dabfd"
+          TARGET_TREE = "58c8c35a903c752e2a773422e05b511fe5e32cb4"
+          TARGET_PARENT = "b589aae93123c9a01cea43a4986c2a3a8250c8cc"
+          IGNORED = {"etc/hostname", "etc/hosts", "etc/resolv.conf", ".dockerenv"}
+
+
+          class DiagnosticComplete(Exception):
+              """Intentional first-export stop; never continue package production."""
+
+
+          def member_kind(member):
+              if member.isfile():
+                  return "file"
+              if member.isdir():
+                  return "directory"
+              if member.issym():
+                  return "symlink"
+              if member.islnk():
+                  return "hardlink"
+              if member.ischr():
+                  return "character-device"
+              if member.isblk():
+                  return "block-device"
+              if member.isfifo():
+                  return "FIFO"
+              return "other"
+
+
+          def failed_conditions(name):
+              # Explain the exact current predicate; acceptance always uses the imported
+              # safe_member itself. No condition is relaxed by this diagnostic.
+              failures = []
+              if not name:
+                  failures.append("not name")
+              if name != unicodedata.normalize("NFC", name):
+                  failures.append("name != unicodedata.normalize('NFC', name)")
+              if "\\" in name:
+                  failures.append("'\\\\' in name")
+              path = PurePosixPath(name)
+              if path.is_absolute():
+                  failures.append("PurePosixPath(name).is_absolute()")
+              if any(part in ("", ".", "..") for part in name.split("/")):
+                  failures.append("part in ('', '.', '..') for part in name.split('/')")
+              if ":" in name:
+                  failures.append("':' in name")
+              if any(ord(char) < 32 for char in name):
+                  failures.append("ord(char) < 32")
+              if any(part.endswith((".", " ")) for part in path.parts):
+                  failures.append("part.endswith(('.', ' '))")
+              return failures
+
+
+          def scan_export(raw, safe_member):
+              counts = {
+                  "total_raw_members": 0, "considered_members": 0, "ignored_members": 0,
+                  "empty_normalized_names": 0, "device_fifo_members": 0,
+                  "unsafe_count": 0, "duplicate_count": 0,
+              }
+              first_ordinals = {}
+              rejected = []
+              unsafe_names = set()
+              duplicate_names = set()
+              ignored_names = collections.Counter()
+              skipped_kinds = collections.Counter()
+              # TarInfo iteration only: no extract(), extractall(), extractfile(), or
+              # resolution/opening of any member's symlink/hardlink destination.
+              with tarfile.open(raw) as archive:
+                  for ordinal, member in enumerate(archive, start=1):
+                      counts["total_raw_members"] += 1
+                      normalized_name = member.name.removeprefix("./").rstrip("/")
+                      if not normalized_name:
+                          counts["empty_normalized_names"] += 1
+                          continue
+                      if normalized_name in IGNORED:
+                          counts["ignored_members"] += 1
+                          ignored_names[normalized_name] += 1
+                          continue
+                      if member.isdev() or member.isfifo():
+                          counts["device_fifo_members"] += 1
+                          skipped_kinds[member_kind(member)] += 1
+                          continue
+                      counts["considered_members"] += 1
+                      safe_result = safe_member(normalized_name)
+                      duplicate = normalized_name in first_ordinals
+                      first_ordinal = first_ordinals.get(normalized_name)
+                      first_ordinals.setdefault(normalized_name, ordinal)
+                      if not safe_result:
+                          counts["unsafe_count"] += 1
+                          unsafe_names.add(normalized_name)
+                      if duplicate:
+                          counts["duplicate_count"] += 1
+                          duplicate_names.add(normalized_name)
+                      if not safe_result or duplicate:
+                          conditions = failed_conditions(normalized_name)
+                          rejected.append({
+                              "ordinal": ordinal,
+                              "raw_name": member.name,
+                              "normalized_name": normalized_name,
+                              "safe_member_result": safe_result,
+                              "duplicate_normalized_name": duplicate,
+                              "first_ordinal_for_same_normalized_name": first_ordinal if duplicate else None,
+                              "member_type": member_kind(member),
+                              "raw_tar_typeflag": member.type.decode("latin-1"),
+                              "raw_tar_typeflag_hex": member.type.hex(),
+                              "linkname": member.linkname,
+                              "mode": member.mode, "mode_octal": oct(member.mode),
+                              "uid": member.uid, "gid": member.gid, "size": member.size,
+                              "normalized_name_contains_colon": ":" in normalized_name,
+                              "failed_safe_member_conditions": conditions,
+                              "condition_analysis_matches_predicate": safe_result == (not conditions),
+                          })
+              assert counts["total_raw_members"] == (
+                  counts["considered_members"] + counts["ignored_members"]
+                  + counts["empty_normalized_names"] + counts["device_fifo_members"]
+              )
+              with Path(raw).open("rb") as stream:
+                  export_sha256 = hashlib.file_digest(stream, "sha256").hexdigest()
+              return {
+                  **counts,
+                  "ordinal_basis": "one-based TarInfo iteration order",
+                  "duplicate_tracking": "all considered names, including unsafe names; skipped names are not tracked",
+                  "raw_export_byte_length": Path(raw).stat().st_size,
+                  "raw_export_sha256": export_sha256,
+                  "rejected_entries": rejected,
+                  "duplicate_entries": [entry for entry in rejected if entry["duplicate_normalized_name"]],
+                  "distinct_unsafe_normalized_names": sorted(unsafe_names),
+                  "duplicate_normalized_names": sorted(duplicate_names),
+                  "ignored_name_counts": dict(sorted(ignored_names.items())),
+                  "skipped_device_fifo_kind_counts": dict(sorted(skipped_kinds.items())),
+                  "extraction_performed": False,
+                  "symlink_or_hardlink_followed": False,
+              }
+
+
+          def main():
+              repository = Path(os.environ["GITHUB_WORKSPACE"]).resolve()
+              runner_temp = Path(os.environ["RUNNER_TEMP"]).resolve()
+              report_path = runner_temp / "g10-export-member-diagnostic.json"
+              assert not report_path.is_relative_to(repository)
+              assert not report_path.exists(), "Do not overwrite a previous diagnostic report"
+              report = {
+                  "schema": "G10_EXPORT_MEMBER_DIAGNOSTIC_V1",
+                  "diagnostic_branch": "codex/g10-export-member-diagnostic-20260914",
+                  "diagnostic_branch_commit": os.environ["G10_DIAGNOSTIC_COMMIT"],
+                  "expected_target": {"head": TARGET_HEAD, "tree": TARGET_TREE, "parent": TARGET_PARENT},
+                  "checked_out_target": None,
+                  "runner": {
+                      "os": os.environ.get("RUNNER_OS"), "arch": os.environ.get("RUNNER_ARCH"),
+                      "image_os": os.environ.get("ImageOS"), "image_version": os.environ.get("ImageVersion"),
+                      "platform": platform.platform(), "python": sys.version,
+                      "os_release": Path("/etc/os-release").read_text() if Path("/etc/os-release").is_file() else None,
+                  },
+                  "docker": None,
+                  "git_status_porcelain_before": None, "git_status_porcelain_after": None,
+                  "export_callback_invocations": 0, "export": None,
+                  "exception": None, "phase": "checkout_identity",
+                  "result": None, "package_acceptance": False,
+              }
+
+              def git(*args):
+                  return subprocess.run(
+                      ["git", "-C", str(repository), *args], check=True, capture_output=True,
+                      text=True, env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
+                  ).stdout
+
+              def write_report():
+                  report["finished_utc"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+                  try:
+                      report["git_status_porcelain_after"] = git("status", "--porcelain=v1", "--untracked-files=all")
+                      report["checked_out_head_after"] = git("rev-parse", "HEAD").strip()
+                  except Exception as exc:
+                      report["final_git_observation_error"] = {
+                          "class": type(exc).__module__ + "." + type(exc).__qualname__,
+                          "message": str(exc), "traceback": traceback.format_exc(),
+                      }
+                  data = (json.dumps(report, ensure_ascii=True, indent=2) + "\n").encode("utf-8")
+                  with report_path.open("xb") as output:
+                      output.write(data)
+                  export = report["export"] or {}
+                  lines = [
+                      "G10 export-member diagnostic",
+                      "",
+                      "Diagnostic branch commit: " + report["diagnostic_branch_commit"],
+                      "Exact checked-out target HEAD: " + str((report["checked_out_target"] or {}).get("head")),
+                      "Unsafe count: " + str(export.get("unsafe_count", "NOT_OBSERVED")),
+                      "Duplicate count: " + str(export.get("duplicate_count", "NOT_OBSERVED")),
+                      "Report byte length: " + str(len(data)),
+                      "Report SHA-256: " + hashlib.sha256(data).hexdigest(),
+                      "Result: " + str(report["result"]),
+                      "Package acceptance: false",
+                  ]
+                  with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as summary:
+                      summary.write("\n".join(lines) + "\n")
+                  print("\n".join(lines), flush=True)
+
+              def inspect_first_export(raw, unused_target):
+                  report["export_callback_invocations"] += 1
+                  assert report["export_callback_invocations"] == 1, "Second export is forbidden"
+                  report["phase"] = "first_export_inspection"
+                  report["export"] = scan_export(raw, builder.safe_member)
+                  report["result"] = (
+                      "EXACT_REJECTED_EXPORT_MEMBERS"
+                      if report["export"]["rejected_entries"] else "NO_REJECTED_EXPORT_MEMBERS"
+                  )
+                  write_report()
+                  raise DiagnosticComplete()
+
+              try:
+                  report["checked_out_target"] = {
+                      "head": git("rev-parse", "HEAD").strip(),
+                      "tree": git("rev-parse", "HEAD^{tree}").strip(),
+                      "parent": git("show", "-s", "--format=%P", "HEAD").strip(),
+                  }
+                  assert report["checked_out_target"] == report["expected_target"], "Exact target identity required"
+                  report["git_status_porcelain_before"] = git("status", "--porcelain=v1", "--untracked-files=all")
+                  assert report["git_status_porcelain_before"] == "", "Checkout must remain clean"
+                  report["phase"] = "docker_versions"
+                  docker = subprocess.run(
+                      ["docker", "version", "--format", "{{json .}}"],
+                      capture_output=True, text=True, timeout=30,
+                  )
+                  report["docker"] = {
+                      "exit_code": docker.returncode, "stdout": docker.stdout, "stderr": docker.stderr,
+                      "versions": json.loads(docker.stdout) if docker.stdout.strip() else None,
+                  }
+                  docker.check_returncode()
+                  report["phase"] = "import_exact_builder"
+                  scripts = repository / "software/conflict_analysis/scripts"
+                  sys.path.insert(0, str(scripts))
+                  import build_owner_alpha_package as builder
+                  assert Path(builder.__file__).resolve() == scripts / "build_owner_alpha_package.py"
+                  report["builder_blob"] = git(
+                      "rev-parse", "HEAD:software/conflict_analysis/scripts/build_owner_alpha_package.py"
+                  ).strip()
+                  report["safe_member_blob"] = git(
+                      "rev-parse", "HEAD:software/conflict_analysis/scripts/verify_owner_alpha_package.py"
+                  ).strip()
+                  # The pre-export host-side builder only needs packaging. Load its exact
+                  # pinned pure-Python wheel through zipimport; install/modify nothing.
+                  report["phase"] = "frozen_packaging_tooling"
+                  packaging_pin = next(pin for pin in builder.PINS["wheels"] if pin["name"].lower() == "packaging")
+                  packaging_wheel = builder.download(packaging_pin, runner_temp / "g10-diagnostic-tooling")
+                  sys.path.insert(0, str(packaging_wheel))
+                  import packaging
+                  assert packaging.__version__ == packaging_pin["version"]
+                  report["packaging_tooling"] = builder.identity(packaging_wheel)
+                  # This is the sole monkeypatch to any imported builder/verifier symbol.
+                  builder.normalize_rootfs = inspect_first_export
+                  report["phase"] = "ordinary_frozen_build_before_first_export_callback"
+                  builder.build(repository, runner_temp / "g10-diagnostic-build-output")
+                  raise AssertionError("Builder unexpectedly returned without the first-export stop")
+              except DiagnosticComplete:
+                  pass
+              except Exception as exc:
+                  report["exception"] = {
+                      "class": type(exc).__module__ + "." + type(exc).__qualname__,
+                      "message": str(exc), "traceback": traceback.format_exc(),
+                      "phase": report["phase"],
+                      "before_first_export_callback": report["export_callback_invocations"] == 0,
+                  }
+                  report["result"] = (
+                      "BLOCKED_BEFORE_EXPORT_DIAGNOSTIC"
+                      if report["export_callback_invocations"] == 0 else "EXPORT_INSPECTION_FAILED"
+                  )
+                  if not report_path.exists():
+                      write_report()
+                  else:
+                      raise
+
+              recorded = json.loads(report_path.read_bytes())
+              clean = (
+                  recorded["git_status_porcelain_before"] == ""
+                  and recorded["git_status_porcelain_after"] == ""
+                  and recorded["checked_out_target"] == recorded["expected_target"]
+                  and recorded.get("checked_out_head_after") == TARGET_HEAD
+              )
+              rejected = bool((recorded["export"] or {}).get("rejected_entries"))
+              explicit_pre_export_blocker = bool(
+                  recorded["exception"]
+                  and recorded["exception"]["before_first_export_callback"]
+                  and recorded["export_callback_invocations"] == 0
+              )
+              return 0 if clean and (rejected or explicit_pre_export_blocker) else 1
+
+
+          if __name__ == "__main__":
+              raise SystemExit(main())
+          PY
+      - name: Upload only the diagnostic JSON
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: g10-export-member-diagnostic
+          path: ${{ runner.temp }}/g10-export-member-diagnostic.json
+          if-no-files-found: error
+          overwrite: false
