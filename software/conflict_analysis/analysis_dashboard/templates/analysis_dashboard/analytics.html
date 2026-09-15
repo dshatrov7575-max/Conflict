@@ -1,0 +1,108 @@
+{% extends 'analysis_dashboard/base.html' %}
+{% block title %}Conflict Analysis — Аналитика{% endblock %}
+{% block body %}
+<div id="analysis-app"
+     data-authenticated="{{ analysis_authenticated|yesno:'true,false' }}"
+     data-project-id="{{ project_id }}"
+     data-workspace-id="{{ workspace_id }}"
+     data-state="loading">
+  <header class="topbar">
+    <a class="brand" href="{% url 'analysis_dashboard:entry' %}"><span>C</span> Conflict <em>/ Analysis</em></a>
+    <div class="context-title"><strong id="project-name">Проект не выбран</strong><span>/</span><span id="workspace-name">Рабочее пространство</span></div>
+    <button id="layout-settings" type="button">Макет и размеры</button>
+  </header>
+
+  <section id="entry-panel" class="entry-card" hidden>
+    <p class="eyebrow">METHOD-SAFE ANALYSIS V1</p>
+    <h1>Открыть аналитику</h1>
+    <p>Укажите точные UUID проекта и рабочего пространства. Доступ независимо проверит Foundation.</p>
+    <form id="entry-form">
+      <label>Project UUID <input id="entry-project" required autocomplete="off" spellcheck="false"></label>
+      <label>Workspace UUID <input id="entry-workspace" required autocomplete="off" spellcheck="false"></label>
+      <button type="submit" class="primary">Открыть</button>
+      <p id="entry-error" role="alert" hidden>Укажите два корректных UUID.</p>
+    </form>
+  </section>
+
+  <div id="workspace-shell" class="shell" hidden>
+    <nav class="sidebar" aria-label="Разделы аналитики">
+      <button type="button" class="nav-button active" data-view="timeline">Динамика</button>
+      <button type="button" class="nav-button" data-view="matrix">Матрица</button>
+      <button type="button" class="nav-button" data-view="evidence">Доказательства</button>
+      <button type="button" class="nav-button" data-view="technical">Технические сведения</button>
+      <div class="method-lock"><strong>Общий показатель</strong><span>METHOD_NOT_APPROVED</span></div>
+    </nav>
+
+    <main class="workspace">
+      <div id="analysis-state" class="state" role="status" aria-live="polite">Проверяем доступ и проекцию…</div>
+
+      <section id="view-timeline" class="view active" data-view-panel="timeline">
+        <div class="filters">
+          <label>Режим
+            <select id="mode-select"><option value="single">Один эксперимент</option><option value="comparison">HUMAN / AI</option></select>
+          </label>
+          <label>Эксперимент 1<select id="experiment-one"></select></label>
+          <label id="experiment-two-label" hidden>Эксперимент 2<select id="experiment-two"></select></label>
+          <label>Актор<select id="actor-select"></select></label>
+          <label>Элемент<select id="element-select"></select></label>
+          <label>Параметр<select id="parameter-select"></select></label>
+          <button id="apply-selection" type="button" class="primary">Показать</button>
+        </div>
+
+        <div class="timeline-grid" id="timeline-grid">
+          <article class="panel chart-panel">
+            <div class="panel-heading"><h1 id="chart-title">Динамика POS</h1><span id="chart-note">UNKNOWN отображается разрывом</span></div>
+            <div id="chart" class="chart" role="img" aria-label="Временной график"></div>
+            <div id="legend" class="legend"></div>
+          </article>
+          <div id="horizontal-splitter" class="horizontal-splitter" role="separator" tabindex="0" aria-orientation="horizontal" aria-label="Изменить высоту графика"></div>
+          <article class="panel table-panel">
+            <div class="panel-heading"><h2>Точки временного ряда</h2><span id="row-summary"></span></div>
+            <div class="table-scroll">
+              <table id="timeline-table">
+                <thead><tr><th>Дата</th><th>Эксперимент</th><th>Значение</th><th>Статус</th><th>Уверенность</th><th>Доказательства</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-matrix" class="view" data-view-panel="matrix" hidden>
+        <div class="filters compact">
+          <label>Эксперимент<select id="matrix-experiment"></select></label>
+          <label>Срез<select id="matrix-slice"></select></label>
+          <label>Параметр<select id="matrix-parameter"></select></label>
+          <button id="load-matrix" type="button" class="primary">Построить</button>
+        </div>
+        <article class="panel matrix-panel"><div id="matrix-table" class="matrix-scroll"></div></article>
+      </section>
+
+      <section id="view-evidence" class="view" data-view-panel="evidence" hidden>
+        <article class="panel evidence-panel">
+          <div class="panel-heading"><h2>Доказательства выбранного значения</h2></div>
+          <p id="evidence-state">Выберите строку временного ряда или ячейку матрицы.</p>
+          <div class="evidence-columns"><ol id="fact-list"></ol><pre id="evidence-detail"></pre></div>
+        </article>
+      </section>
+
+      <section id="view-technical" class="view" data-view-panel="technical" hidden>
+        <article class="panel technical-panel"><div class="panel-heading"><h2>Технические сведения</h2></div><dl id="technical-details"></dl></article>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="layout-dialog">
+    <form method="dialog">
+      <h2>Макет и размеры</h2>
+      <label>Высота графика <output id="chart-height-output"></output><input id="chart-height" type="range" min="180" max="720" step="10"></label>
+      <label>Высота списка <output id="list-height-output"></output><input id="list-height" type="range" min="130" max="600" step="10"></label>
+      <label>Ширина навигации <output id="sidebar-width-output"></output><input id="sidebar-width" type="range" min="150" max="300" step="10"></label>
+      <label>Масштаб текста <output id="font-scale-output"></output><input id="font-scale" type="range" min="85" max="140" step="5"></label>
+      <label class="checkbox"><input id="fit-viewport" type="checkbox"> Автоматически помещать график и список в окно</label>
+      <div class="dialog-actions"><button id="layout-reset" type="button">Сбросить</button><button value="cancel">Закрыть</button></div>
+    </form>
+  </dialog>
+</div>
+<noscript><p>Для проверяемого отображения Analysis V1 требуется JavaScript.</p></noscript>
+{% endblock %}

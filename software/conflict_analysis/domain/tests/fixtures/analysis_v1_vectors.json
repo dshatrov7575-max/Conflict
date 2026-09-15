@@ -1,0 +1,332 @@
+{
+  "contexts": {
+    "definition_id": "08042667-fae6-5f3a-a248-514b9001e088",
+    "project_id": "3de70d1d-f4cf-535a-95b9-94c0a65e60e3",
+    "workspace_id": "c6e16836-d003-5e6d-9294-932d25e06e3a"
+  },
+  "method_state": {
+    "allowed_parameters": [
+      "POS",
+      "SAL"
+    ],
+    "project_total_score": "METHOD_NOT_APPROVED",
+    "regional_aggregate": "METHOD_NOT_APPROVED"
+  },
+  "oracles": [
+    {
+      "expected": {
+        "render": "NUMERIC_POINT",
+        "status": "PROVISIONAL",
+        "value": 0
+      },
+      "id": "ORACLE-01",
+      "input": {
+        "status": "PROVISIONAL",
+        "value": 0
+      },
+      "title": "zero_is_not_unknown"
+    },
+    {
+      "expected": {
+        "render": "GAP_WITH_UNKNOWN_MARKER",
+        "status": "UNKNOWN",
+        "value": null
+      },
+      "id": "ORACLE-02",
+      "input": {
+        "status": "UNKNOWN",
+        "value": null
+      },
+      "title": "unknown_is_not_zero"
+    },
+    {
+      "expected": {
+        "selected_ids": [
+          "V2"
+        ]
+      },
+      "id": "ORACLE-03",
+      "input": {
+        "rows": [
+          {
+            "id": "V1",
+            "successor_id": "V2",
+            "value": 2
+          },
+          {
+            "id": "V2",
+            "successor_id": null,
+            "value": 5
+          }
+        ]
+      },
+      "title": "superseded_value_excluded"
+    },
+    {
+      "expected": {
+        "selected_ids": [
+          "P1",
+          "S1"
+        ]
+      },
+      "id": "ORACLE-04",
+      "input": {
+        "assessment_lineage": [
+          {
+            "id": "A1",
+            "successor_id": "A2"
+          },
+          {
+            "id": "A2",
+            "successor_id": null
+          }
+        ],
+        "values": [
+          {
+            "assessment_id": "A1",
+            "id": "P1",
+            "parameter": "POS",
+            "successor_id": null
+          },
+          {
+            "assessment_id": "A2",
+            "id": "S1",
+            "parameter": "SAL",
+            "successor_id": null
+          }
+        ]
+      },
+      "title": "terminal_value_on_older_assessment_retained"
+    },
+    {
+      "expected": {
+        "code": "ANALYSIS_INTEGRITY_CONFLICT",
+        "http_status": 409
+      },
+      "id": "ORACLE-05",
+      "input": {
+        "rows": [
+          {
+            "context": "C1",
+            "id": "V1",
+            "successor_id": null
+          },
+          {
+            "context": "C1",
+            "id": "V2",
+            "successor_id": null
+          }
+        ]
+      },
+      "title": "duplicate_terminal_context_fails_closed"
+    },
+    {
+      "expected": {
+        "code": "ANALYSIS_NOT_FOUND",
+        "http_status": 404
+      },
+      "id": "ORACLE-06",
+      "input": {
+        "foreign_experiment": true
+      },
+      "title": "foreign_experiment_hidden"
+    },
+    {
+      "expected": {
+        "code": "ANALYSIS_NOT_FOUND",
+        "http_status": 404
+      },
+      "id": "ORACLE-07",
+      "input": {
+        "analysis_reader": false,
+        "project_member": true
+      },
+      "title": "project_member_without_capability_denied"
+    },
+    {
+      "expected": {
+        "django_permission_set_changed": false
+      },
+      "id": "ORACLE-08",
+      "input": {
+        "add_zero_permission_group": "analysis-reader:<project_uuid>"
+      },
+      "title": "g8_permissions_unchanged"
+    },
+    {
+      "expected": {
+        "code": "ANALYSIS_INTEGRITY_CONFLICT",
+        "http_status": 409
+      },
+      "id": "ORACLE-09",
+      "input": {
+        "workspace_manifest_hash_matches_definition": false
+      },
+      "title": "manifest_pin_conflict"
+    },
+    {
+      "expected": {
+        "code": "ANALYSIS_PROJECTION_NOT_PROVEN",
+        "http_status": 409
+      },
+      "id": "ORACLE-10",
+      "input": {
+        "assessment_projection_status": "NOT_PROVEN"
+      },
+      "title": "projection_not_complete"
+    },
+    {
+      "expected": {
+        "code": "ANALYSIS_INTEGRITY_CONFLICT",
+        "http_status": 409
+      },
+      "id": "ORACLE-11",
+      "input": {
+        "parameter": "POS",
+        "status": "PROVISIONAL",
+        "value": 11
+      },
+      "title": "pos_scale_violation"
+    },
+    {
+      "expected": {
+        "code": "ANALYSIS_INTEGRITY_CONFLICT",
+        "http_status": 409
+      },
+      "id": "ORACLE-12",
+      "input": {
+        "parameter": "SAL",
+        "status": "PROVISIONAL",
+        "value": -1
+      },
+      "title": "sal_scale_violation"
+    },
+    {
+      "expected": {
+        "chart_date": "2022-01-31"
+      },
+      "id": "ORACLE-13",
+      "input": {
+        "time_slice_cutoff_date": "2022-01-31",
+        "value_created_at": "2026-09-15T12:00:00Z"
+      },
+      "title": "date_from_timeslice"
+    },
+    {
+      "expected": {
+        "aggregation": null,
+        "returns_raw_history": true
+      },
+      "id": "ORACLE-14",
+      "input": {
+        "endpoint": "FOUNDATION_PLAYER_EXPERIMENT_COMPARISON_V1"
+      },
+      "title": "raw_comparison_contract_unchanged"
+    },
+    {
+      "expected": {
+        "code": "NO_ACCESSIBLE_FACT_EVIDENCE",
+        "same_public_shape": true
+      },
+      "id": "ORACLE-15",
+      "input": {
+        "case_a": "NO_LINKS",
+        "case_b": "ALL_LINKS_HIDDEN"
+      },
+      "title": "evidence_zero_link_neutrality"
+    },
+    {
+      "expected": {
+        "code": "ANALYSIS_METHOD_NOT_APPROVED",
+        "http_status": 409
+      },
+      "id": "ORACLE-16",
+      "input": {
+        "parameter_code": "TOTAL_TENSION"
+      },
+      "title": "total_score_blocked"
+    },
+    {
+      "expected": {
+        "code": "ANALYSIS_REQUEST_INVALID",
+        "http_status": 400
+      },
+      "id": "ORACLE-17",
+      "input": {
+        "experiment_ids": [
+          "E1",
+          "E2",
+          "E3"
+        ]
+      },
+      "title": "comparison_series_limit"
+    },
+    {
+      "expected": {
+        "etag_stable": true,
+        "response_bytes_stable": true
+      },
+      "id": "ORACLE-18",
+      "input": {
+        "database_row_order_changes": true
+      },
+      "title": "canonical_bytes_stable"
+    },
+    {
+      "expected": {
+        "session_modified": false,
+        "set_cookie": false
+      },
+      "id": "ORACLE-19",
+      "input": {
+        "method": "GET"
+      },
+      "title": "read_get_has_no_cookie_writes"
+    },
+    {
+      "expected": {
+        "player_layout_key_changed": false
+      },
+      "id": "ORACLE-20",
+      "input": {
+        "analysis_layout_change": true
+      },
+      "title": "layout_storage_isolated"
+    },
+    {
+      "expected": {
+        "1024x768": {
+          "graph_visible": true,
+          "horizontal_scroll": false,
+          "minimum_visible_rows": 4
+        },
+        "1366x768": {
+          "graph_visible": true,
+          "horizontal_scroll": false,
+          "minimum_visible_rows": 7
+        }
+      },
+      "id": "ORACLE-21",
+      "input": {
+        "viewports": [
+          "1024x768",
+          "1366x768"
+        ]
+      },
+      "title": "viewport_acceptance"
+    },
+    {
+      "expected": {
+        "external_requests": 0
+      },
+      "id": "ORACLE-22",
+      "input": {
+        "browser_network_watch": true
+      },
+      "title": "no_external_network"
+    }
+  ],
+  "schema": "CONFLICT_ANALYSIS_V1_TEST_VECTORS",
+  "vectors_sha256": "adbfb1f5215122fa0f6f74ff5f661b300e91a6dca85b3ed3394fea85ad2f434b",
+  "version": "1.0.0"
+}

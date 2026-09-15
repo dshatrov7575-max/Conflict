@@ -9,4 +9,5 @@ urlpatterns = [
     path("api/foundation/", include("domain.urls")),
     path("studio/", include("production_studio.urls")),
     path("player/", include("production_player.urls")),
+    path("analysis/", include("analysis_dashboard.urls")),
 ]

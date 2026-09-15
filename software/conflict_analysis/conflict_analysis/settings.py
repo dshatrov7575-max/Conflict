@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "domain.apps.DomainConfig",
     "production_studio.apps.ProductionStudioConfig",
     "production_player.apps.ProductionPlayerConfig",
+    "analysis_dashboard.apps.AnalysisDashboardConfig",
 ]
 
 MIDDLEWARE = [
