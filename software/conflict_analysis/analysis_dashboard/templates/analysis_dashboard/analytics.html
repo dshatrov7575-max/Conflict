@@ -12,6 +12,12 @@
     <button id="layout-settings" type="button">Макет и размеры</button>
   </header>
 
+  <section id="auth-panel" class="entry-card" role="alert" hidden>
+    <p class="eyebrow">METHOD-SAFE ANALYSIS V1</p>
+    <h1>Доступ к аналитике не предоставлен</h1>
+    <p>Требуется действующая пользовательская сессия и отдельное разрешение Analysis для выбранного проекта.</p>
+  </section>
+
   <section id="entry-panel" class="entry-card" hidden>
     <p class="eyebrow">METHOD-SAFE ANALYSIS V1</p>
     <h1>Открыть аналитику</h1>
@@ -51,7 +57,7 @@
 
         <div class="timeline-grid" id="timeline-grid">
           <article class="panel chart-panel">
-            <div class="panel-heading"><h1 id="chart-title">Динамика POS</h1><span id="chart-note">UNKNOWN отображается разрывом</span></div>
+            <div class="panel-heading"><h1 id="chart-title">Динамика POS</h1><span id="chart-note">NO_RECORD и отсутствующие статусы разрывают линию</span></div>
             <div id="chart" class="chart" role="img" aria-label="Временной график"></div>
             <div id="legend" class="legend"></div>
           </article>
@@ -81,7 +87,7 @@
       <section id="view-evidence" class="view" data-view-panel="evidence" hidden>
         <article class="panel evidence-panel">
           <div class="panel-heading"><h2>Доказательства выбранного значения</h2></div>
-          <p id="evidence-state">Выберите строку временного ряда или ячейку матрицы.</p>
+          <p id="evidence-state">Выберите сохранённую точку временного ряда или ячейку матрицы.</p>
           <div class="evidence-columns"><ol id="fact-list"></ol><pre id="evidence-detail"></pre></div>
         </article>
       </section>

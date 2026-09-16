@@ -38,6 +38,7 @@ on:
       - codex/ca-suite-i1-player-g7-professional-shell
       - codex/ca-suite-i1-player-g8-experiments-xlsx
       - codex/ca-suite-i1-player-g9-evidence-ui
+      - codex/ux-v2-r0-method-safe-analysis-20260915
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -71,6 +72,7 @@ jobs:
        github.ref != 'refs/heads/codex/ca-suite-i1-foundation-fd08-assessment-projection' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-player-g7-professional-shell' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-player-g8-experiments-xlsx' &&
+       github.ref != 'refs/heads/codex/ux-v2-r0-method-safe-analysis-20260915' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-player-g9-evidence-ui')
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -6825,3 +6827,449 @@ jobs:
           name: g9-evidence-ui-${{ github.event_name }}-${{ env.G9_EVENT_DELIVERY_SHA }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/g9-evidence-ui-evidence
           if-no-files-found: error
+
+  analysis-v1-r0:
+    name: UX V2 R0 / PostgreSQL / SQLite / Product / Chromium
+    if: github.event_name == 'push' && github.ref == 'refs/heads/codex/ux-v2-r0-method-safe-analysis-20260915'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: conflict_analysis
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: analysis-r0-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DJANGO_SECRET_KEY: analysis-r0-ci-only-secret
+      POSTGRES_DB: conflict_analysis
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: analysis-r0-ci-only
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_CONN_MAX_AGE: "0"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+      UX_R0_BASE: 4a0f0cb42aaea8d9d5f368cdc3d3de15db2f6d03
+      UX_R0_FIRST: 3e85953caf90a6ad5f24d589ac6a43b6a2a70e73
+    defaults:
+      run:
+        working-directory: software/conflict_analysis
+    steps:
+      - name: Check out exact correction head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Prove exact two-commit history and bounded correction
+        shell: bash
+        working-directory: .
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "$UX_R0_FIRST"
+          test "$(git rev-parse "$UX_R0_FIRST^")" = "$UX_R0_BASE"
+          test "$(git rev-list --count "$UX_R0_BASE..HEAD")" = "2"
+          test -z "$(git rev-list --merges "$UX_R0_BASE..HEAD")"
+          test "$(git show -s --format=%s HEAD)" = "fix(analysis): close R0 post-commit gates"
+
+          mapfile -t correction_paths < <(git diff --name-only "$UX_R0_FIRST...HEAD")
+          test "${#correction_paths[@]}" -eq 10
+          for path in "${correction_paths[@]}"; do
+            case "$path" in
+              .github/workflows/conflict-analysis.yml|\
+              software/conflict_analysis/pytest.ini|\
+              software/conflict_analysis/domain/services/analysis_read_model.py|\
+              software/conflict_analysis/domain/tests/fixtures/analysis_v1_vectors.json|\
+              software/conflict_analysis/domain/tests/test_analysis_read_model.py|\
+              software/conflict_analysis/analysis_dashboard/browser_tests/analysis_v2.mjs|\
+              software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/charts.js|\
+              software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/dashboard.js|\
+              software/conflict_analysis/analysis_dashboard/templates/analysis_dashboard/analytics.html|\
+              software/conflict_analysis/analysis_dashboard/tests/test_http.py) ;;
+              *) echo "outside corrective allowlist: $path" >&2; exit 1 ;;
+            esac
+          done
+          test -z "$(git diff --diff-filter=D --name-only "$UX_R0_FIRST...HEAD")"
+
+          mapfile -t aggregate_paths < <(git diff --name-only "$UX_R0_BASE...HEAD")
+          test "${#aggregate_paths[@]}" -eq 25
+          for path in "${aggregate_paths[@]}"; do
+            case "$path" in
+              .github/workflows/conflict-analysis.yml|\
+              software/conflict_analysis/pytest.ini|\
+              software/conflict_analysis/docs/adr/0018-analysis-dashboard-v2-boundary.md|\
+              software/conflict_analysis/conflict_analysis/settings.py|\
+              software/conflict_analysis/conflict_analysis/urls.py|\
+              software/conflict_analysis/pyproject.toml|\
+              software/conflict_analysis/domain/urls.py|\
+              software/conflict_analysis/domain/api/analysis_v1.py|\
+              software/conflict_analysis/domain/services/analysis_admission.py|\
+              software/conflict_analysis/domain/services/analysis_contracts.py|\
+              software/conflict_analysis/domain/services/analysis_read_model.py|\
+              software/conflict_analysis/domain/tests/fixtures/analysis_v1_vectors.json|\
+              software/conflict_analysis/domain/tests/test_analysis_read_model.py|\
+              software/conflict_analysis/analysis_dashboard/__init__.py|\
+              software/conflict_analysis/analysis_dashboard/apps.py|\
+              software/conflict_analysis/analysis_dashboard/urls.py|\
+              software/conflict_analysis/analysis_dashboard/views.py|\
+              software/conflict_analysis/analysis_dashboard/templates/analysis_dashboard/base.html|\
+              software/conflict_analysis/analysis_dashboard/templates/analysis_dashboard/analytics.html|\
+              software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/dashboard.css|\
+              software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/dashboard.js|\
+              software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/charts.js|\
+              software/conflict_analysis/analysis_dashboard/tests/__init__.py|\
+              software/conflict_analysis/analysis_dashboard/tests/test_http.py|\
+              software/conflict_analysis/analysis_dashboard/browser_tests/analysis_v2.mjs) ;;
+              *) echo "outside aggregate UX R0 allowlist: $path" >&2; exit 1 ;;
+            esac
+          done
+          test -z "$(git diff --name-only "$UX_R0_BASE...HEAD" -- \
+            software/conflict_analysis/domain/models.py \
+            software/conflict_analysis/domain/migrations \
+            software/conflict_analysis/production_player \
+            software/conflict_analysis/production_studio \
+            software/conflict_analysis/owner_alpha_package \
+            software/conflict_analysis/scripts/build_owner_alpha_package.py \
+            software/conflict_analysis/scripts/verify_owner_alpha_package.py)"
+          git diff --check "$UX_R0_FIRST...HEAD"
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: software/conflict_analysis/pyproject.toml
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install application and validate static sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check -e ".[dev]"
+          python -m pip check
+          python -m compileall -q conflict_analysis domain analysis_dashboard
+          node --check analysis_dashboard/static/analysis_dashboard/dashboard.js
+          node --check analysis_dashboard/static/analysis_dashboard/charts.js
+          node --check analysis_dashboard/browser_tests/analysis_v2.mjs
+          chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$chrome"
+          "$chrome" --version
+          echo "STUDIO_CHROME_BIN=$chrome" >> "$GITHUB_ENV"
+
+      - name: Check Django and migration drift
+        shell: bash
+        run: |
+          set -euo pipefail
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+
+      - name: Run PostgreSQL Foundation and Analysis suites
+        shell: bash
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+        run: |
+          set -euo pipefail
+          python -m pytest domain/tests analysis_dashboard/tests \
+            --junitxml="$RUNNER_TEMP/analysis-r0-postgresql.xml"
+
+      - name: Run SQLite Foundation and Analysis parity suites
+        shell: bash
+        env:
+          USE_SQLITE: "true"
+          SQLITE_PATH: ${{ runner.temp }}/analysis-r0-foundation.sqlite3
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          ALL_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost"
+        run: |
+          set -euo pipefail
+          python -m pytest domain/tests analysis_dashboard/tests \
+            --junitxml="$RUNNER_TEMP/analysis-r0-sqlite.xml"
+
+      - name: Build and inspect one exact wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          wheel_dir="$RUNNER_TEMP/analysis-r0-wheel"
+          python -m pip wheel --no-deps --wheel-dir "$wheel_dir" .
+          mapfile -t wheels < <(find "$wheel_dir" -maxdepth 1 -type f -name '*.whl' -print)
+          test "${#wheels[@]}" -eq 1
+          wheel="${wheels[0]}"
+          echo "ANALYSIS_R0_WHEEL=$wheel" >> "$GITHUB_ENV"
+          echo "STUDIO_C0_WHEEL=$wheel" >> "$GITHUB_ENV"
+          python - "$wheel" <<'PY'
+          import sys
+          from zipfile import ZipFile
+          wheel = sys.argv[1]
+          required = {
+              "analysis_dashboard/__init__.py",
+              "analysis_dashboard/apps.py",
+              "analysis_dashboard/urls.py",
+              "analysis_dashboard/views.py",
+              "analysis_dashboard/templates/analysis_dashboard/base.html",
+              "analysis_dashboard/templates/analysis_dashboard/analytics.html",
+              "analysis_dashboard/static/analysis_dashboard/dashboard.css",
+              "analysis_dashboard/static/analysis_dashboard/dashboard.js",
+              "analysis_dashboard/static/analysis_dashboard/charts.js",
+              "domain/api/analysis_v1.py",
+              "domain/services/analysis_admission.py",
+              "domain/services/analysis_contracts.py",
+              "domain/services/analysis_read_model.py",
+          }
+          with ZipFile(wheel) as archive:
+              names = set(archive.namelist())
+              assert archive.testzip() is None
+              assert required <= names, sorted(required - names)
+          print("ANALYSIS_R0_WHEEL_RUNTIME_ASSETS=PASS")
+          PY
+
+      - name: Run inherited Product portable regressions on PostgreSQL and SQLite
+        shell: bash
+        run: |
+          set -euo pipefail
+          c0=(
+            production_studio/tests/test_browser_contract.py
+            production_studio/tests/test_claim_boundaries.py
+            production_studio/tests/test_read_only_http.py
+            production_studio/tests/test_read_only_static_contracts.py
+          )
+          c1="production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringContractTests"
+          g7="production_player/tests/test_player_g7.py::ProductionPlayerG7Tests"
+          g8="production_player/tests/test_player_g8.py::ProductionPlayerG8Tests"
+          g9="production_player/tests/test_player_g9_evidence.py::ProductionPlayerG9EvidenceTests"
+          STUDIO_C0_WHEEL="$ANALYSIS_R0_WHEEL" python -m pytest \
+            "${c0[@]}" "$c1" "$g7" "$g8" "$g9" -p no:cacheprovider \
+            --junitxml="$RUNNER_TEMP/analysis-r0-product-postgresql.xml"
+          USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/analysis-r0-product.sqlite3" \
+            STUDIO_C0_WHEEL="$ANALYSIS_R0_WHEEL" python -m pytest \
+            "${c0[@]}" "$c1" "$g7" "$g8" "$g9" -p no:cacheprovider \
+            --junitxml="$RUNNER_TEMP/analysis-r0-product-sqlite.xml"
+
+      - name: Run inherited Chromium regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          c1="production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringBrowserTests::test_authenticated_edit_save_reload_is_bounded_foundation_only_and_receipted"
+          g7="production_player/tests/test_player_g7.py::ProductionPlayerG7ChromiumTests"
+          g8="production_player/tests/test_player_g8.py::ProductionPlayerG8ChromiumTests"
+          g9="production_player/tests/test_player_g9_evidence.py::ProductionPlayerG9ChromiumTests"
+          STUDIO_CHROME_BIN="$STUDIO_CHROME_BIN" STUDIO_C0_WHEEL="$ANALYSIS_R0_WHEEL" \
+            python -m pytest "$c1" "$g7" "$g8" "$g9" -p no:cacheprovider \
+            --junitxml="$RUNNER_TEMP/analysis-r0-product-chromium.xml"
+
+      - name: Seed Analysis browser fixture and session
+        shell: bash
+        run: |
+          set -euo pipefail
+          python manage.py migrate --noinput
+          python - <<'PY'
+          import os
+          from datetime import date
+          from pathlib import Path
+          from uuid import uuid4
+
+          os.environ.setdefault("DJANGO_SETTINGS_MODULE", "conflict_analysis.settings")
+          import django
+          django.setup()
+
+          from django.conf import settings
+          from django.contrib.auth import get_user_model
+          from django.contrib.auth.models import Group, Permission
+          from django.contrib.sessions.backends.db import SessionStore
+          from domain.models import ProjectWorkspace, TimeSlice
+          from domain.services import zhanaozen_typed_manifest as typed
+          from domain.services.analysis_admission import analysis_reader_group_name
+          from domain.services.player_experiments import (
+              G8_REQUIRED_PERMISSIONS,
+              create_experiment,
+              create_manual_value,
+              list_values,
+          )
+          from domain.services.project_definitions import project_access_group_name
+          from domain.services.seed import seed_zhanaozen_demo
+
+          project = seed_zhanaozen_demo()
+          workspace = ProjectWorkspace.objects.get(pk=typed.WORKSPACE_ID)
+          user = get_user_model().objects.create_user(username="analysis-r0-browser")
+          codenames = [item.removeprefix("domain.") for item in G8_REQUIRED_PERMISSIONS]
+          permissions = list(
+              Permission.objects.filter(
+                  content_type__app_label="domain",
+                  codename__in=codenames,
+              )
+          )
+          assert len(permissions) == len(codenames)
+          user.user_permissions.add(*permissions)
+          for name in (
+              project_access_group_name(project.pk),
+              analysis_reader_group_name(project.pk),
+          ):
+              group, _ = Group.objects.get_or_create(name=name)
+              assert not group.permissions.exists()
+              user.groups.add(group)
+
+          slices = list(
+              TimeSlice.objects.filter(workspace=workspace).order_by(
+                  "cutoff_date", "order", "pk"
+              )
+          )
+          while len(slices) < 8:
+              index = len(slices) + 1
+              TimeSlice.objects.create(
+                  id=uuid4(),
+                  project=project,
+                  workspace=workspace,
+                  code=f"UX-R0-CI-{index:02d}",
+                  version="1.0.0",
+                  name=f"UX R0 CI {index:02d}",
+                  cutoff_date=date(2023 + index, 1, 31),
+                  order=100 + index,
+              )
+              slices = list(
+                  TimeSlice.objects.filter(workspace=workspace).order_by(
+                      "cutoff_date", "order", "pk"
+                  )
+              )
+
+          suffix = uuid4().hex[:10]
+          experiment_id, set_id, profile_id = uuid4(), uuid4(), uuid4()
+          create_experiment(
+              user=user,
+              workspace_id=workspace.pk,
+              operation_id=str(uuid4()),
+              if_match=f'"{typed.MANIFEST_SHA256}"',
+              body={
+                  "experiment": {
+                      "id": str(experiment_id),
+                      "code": f"UX-R0-EXP-{suffix}",
+                      "version": "1.0.0",
+                      "name": "AI R0 browser",
+                      "color": "url(javascript:alert(1))",
+                      "order": 0,
+                      "method_version": "A5-v0.1",
+                  },
+                  "assessment_set": {
+                      "id": str(set_id),
+                      "code": f"UX-R0-SET-{suffix}",
+                      "version": "1.0.0",
+                      "kind": "AI",
+                      "name": "AI R0 set",
+                      "description": "browser lane",
+                  },
+                  "expert_profile": {
+                      "id": str(profile_id),
+                      "code": f"UX-R0-PROFILE-{suffix}",
+                      "version": "1.0.0",
+                      "kind": "AI",
+                      "display_name": "AI R0",
+                      "identity_key": f"ux-r0:{suffix}",
+                      "provider": "test",
+                      "model_name": "test-model",
+                      "metadata": {"contract": "FOUNDATION_PLAYER_EXPERT_PROFILE_V1"},
+                  },
+              },
+          )
+          experiment_etag = list_values(
+              user=user,
+              experiment_id=experiment_id,
+          )["experiment"]["etag"]
+          fractions = (0.000001, 0.0000001, -0.000001, 1.25)
+          for index, (time_slice, number) in enumerate(
+              zip(slices[:4], fractions, strict=True)
+          ):
+              create_manual_value(
+                  user=user,
+                  experiment_id=experiment_id,
+                  operation_id=str(uuid4()),
+                  if_match=f'"{experiment_etag}"',
+                  body={
+                      "id": str(uuid4()),
+                      "code": f"UX-R0-VALUE-{index}-{suffix}",
+                      "version": "1.0.0",
+                      "assessment_id": str(uuid4()),
+                      "assessment_code": f"UX-R0-ASSESS-{index}-{suffix}",
+                      "time_slice_id": str(time_slice.pk),
+                      "actor_code": "GU-01",
+                      "element_code": "PTN-01",
+                      "parameter_code": "POS",
+                      "status": "PROVISIONAL",
+                      "value": number,
+                      "temporal_status": "UNKNOWN",
+                      "confidence_category": "MEDIUM",
+                      "rationale": "Fractional browser fixture",
+                      "note": "",
+                      "supersedes_id": None,
+                  },
+              )
+          create_manual_value(
+              user=user,
+              experiment_id=experiment_id,
+              operation_id=str(uuid4()),
+              if_match=f'"{experiment_etag}"',
+              body={
+                  "id": str(uuid4()),
+                  "code": f"UX-R0-UNKNOWN-{suffix}",
+                  "version": "1.0.0",
+                  "assessment_id": str(uuid4()),
+                  "assessment_code": f"UX-R0-ASSESS-U-{suffix}",
+                  "time_slice_id": str(slices[4].pk),
+                  "actor_code": "GU-01",
+                  "element_code": "PTN-01",
+                  "parameter_code": "POS",
+                  "status": "UNKNOWN",
+                  "value": None,
+                  "temporal_status": "UNKNOWN",
+                  "confidence_category": "MEDIUM",
+                  "rationale": "Explicit unknown browser fixture",
+                  "note": "",
+                  "supersedes_id": None,
+              },
+          )
+
+          session = SessionStore()
+          session["_auth_user_id"] = str(user.pk)
+          session["_auth_user_backend"] = "django.contrib.auth.backends.ModelBackend"
+          session["_auth_user_hash"] = user.get_session_auth_hash()
+          session.save()
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as stream:
+              stream.write(f"ANALYSIS_PROJECT_ID={project.pk}\n")
+              stream.write(f"ANALYSIS_WORKSPACE_ID={workspace.pk}\n")
+              stream.write(f"ANALYSIS_SESSION_COOKIE_NAME={settings.SESSION_COOKIE_NAME}\n")
+              stream.write(f"ANALYSIS_SESSION_COOKIE_VALUE={session.session_key}\n")
+              stream.write("ANALYSIS_BASE_URL=http://127.0.0.1:8765\n")
+          PY
+
+      - name: Run Analysis Chromium responsive, canonical and race tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python manage.py runserver 127.0.0.1:8765 --noreload --insecure \
+            >"$RUNNER_TEMP/analysis-r0-server.log" 2>&1 &
+          server_pid=$!
+          trap 'status=$?; kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true; if [ "$status" -ne 0 ]; then cat "$RUNNER_TEMP/analysis-r0-server.log"; fi; exit "$status"' EXIT
+          ready=false
+          for _ in $(seq 1 60); do
+            status="$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/analysis/ || true)"
+            if [[ "$status" = "200" || "$status" = "401" ]]; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = true
+          STUDIO_CHROME_BIN="$STUDIO_CHROME_BIN" node analysis_dashboard/browser_tests/analysis_v2.mjs

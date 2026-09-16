@@ -324,9 +324,144 @@
         "browser_network_watch": true
       },
       "title": "no_external_network"
+    },
+    {
+      "expected": {
+        "line_break_at": [
+          "T2"
+        ],
+        "points": [
+          {
+            "record_state": "PERSISTED",
+            "time_slice_id": "T1"
+          },
+          {
+            "record_state": "NO_RECORD",
+            "status": null,
+            "time_slice_id": "T2",
+            "value": null
+          },
+          {
+            "record_state": "PERSISTED",
+            "time_slice_id": "T3"
+          }
+        ]
+      },
+      "id": "ORACLE-23",
+      "input": {
+        "canonical_time_slices": [
+          "T1",
+          "T2",
+          "T3"
+        ],
+        "persisted_values": [
+          {
+            "time_slice_id": "T1",
+            "value": 2
+          },
+          {
+            "time_slice_id": "T3",
+            "value": 5
+          }
+        ]
+      },
+      "title": "no_record_time_slice_is_explicit_gap"
+    },
+    {
+      "expected": {
+        "browser_accepts_server_canonical_bytes": true,
+        "numeric_semantics_preserved": true
+      },
+      "id": "ORACLE-24",
+      "input": {
+        "values": [
+          1e-06,
+          1e-07,
+          -1e-06,
+          1.25
+        ]
+      },
+      "title": "fractional_canonical_number_tokens"
+    },
+    {
+      "expected": {
+        "discard_old_response": true,
+        "stale_evidence_cleared_immediately": true,
+        "visible_identity": "NEW_CONTEXT"
+      },
+      "id": "ORACLE-25",
+      "input": {
+        "first_finishes_last": true,
+        "first_identity": "OLD_CONTEXT",
+        "lanes": [
+          "timeline",
+          "matrix",
+          "evidence",
+          "detail"
+        ],
+        "second_identity": "NEW_CONTEXT"
+      },
+      "title": "late_response_identity_guard_all_async_lanes"
+    },
+    {
+      "expected": {
+        "exact_key_set_required": true,
+        "font_scale_range": [
+          0.85,
+          1.4
+        ],
+        "graph_height_range": [
+          180,
+          720
+        ],
+        "invalid_profile_resets": true,
+        "list_height_range": [
+          130,
+          600
+        ],
+        "presentation_remains_usable": true,
+        "sidebar_width_range": [
+          150,
+          300
+        ]
+      },
+      "id": "ORACLE-26",
+      "input": {
+        "extra_key": true,
+        "font_scale": 99,
+        "graph_height": 99999,
+        "list_height": -5,
+        "sidebar_width": "bad",
+        "storage_write_throws": true
+      },
+      "title": "layout_preferences_exact_clamped_and_storage_tolerant"
+    },
+    {
+      "expected": {
+        "color": "#d05a35"
+      },
+      "id": "ORACLE-27",
+      "input": {
+        "color": "url(javascript:alert(1))",
+        "kind": "AI"
+      },
+      "title": "unsafe_experiment_color_falls_back"
+    },
+    {
+      "expected": {
+        "code": "ANALYSIS_REQUEST_INVALID",
+        "http_status": 400
+      },
+      "id": "ORACLE-28",
+      "input": {
+        "actors": 21,
+        "elements": 20,
+        "maximum_cells": 400
+      },
+      "title": "matrix_is_bounded_and_set_based"
     }
   ],
   "schema": "CONFLICT_ANALYSIS_V1_TEST_VECTORS",
-  "vectors_sha256": "adbfb1f5215122fa0f6f74ff5f661b300e91a6dca85b3ed3394fea85ad2f434b",
+  "vectors_sha256": "2f6b9afb18d1911cfbd672f6a0df13291ac8b30d18d468e063f4de3fb62e2b21",
   "version": "1.0.0"
 }
