@@ -7322,15 +7322,90 @@ jobs:
       R1_BASE_TREE: 5a4a40431e72fb6b942b895225ce11bba2898052
       R1_COMMIT_A: ba09340fecc446f677f8b4cf0c4ba3e565ebcee5
       R1_COMMIT_B: 2731ecd26dde5f321507ca237c4d18167d8bd631
+      TRIGGER_COMMIT_D: ${{ github.sha }}
+      TESTED_SOURCE_COMMIT_C: 85a253126bf270664c4786d159994e7359b5d2c5
+      TESTED_SOURCE_TREE_C: 5567183dbe16fc6c7c8caac051b7694f37b92457
     defaults:
       run:
         working-directory: software/conflict_analysis
     steps:
-    - name: Check out exact Geography head
+    - name: Check out trigger commit D
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
         ref: ${{ github.sha }}
+    - name: Prove trigger commit D and exact four-commit history
+      shell: bash
+      working-directory: .
+      run: |
+        set -euo pipefail
+        python - <<'PY'
+        import json,os,subprocess
+        from pathlib import Path
+        def git(*args):return subprocess.check_output(['git',*args],text=True).strip()
+        base=os.environ['R1_BASE'];a=os.environ['R1_COMMIT_A'];b=os.environ['R1_COMMIT_B']
+        c=os.environ['TESTED_SOURCE_COMMIT_C'];d=os.environ['TRIGGER_COMMIT_D']
+        assert os.environ['GITHUB_EVENT_NAME']=='push'
+        assert os.environ['GITHUB_REF']=='refs/heads/codex/ux-v2-r1-geography-20260916'
+        assert d==os.environ['GITHUB_SHA']==git('rev-parse','HEAD')
+        assert git('rev-parse','HEAD^')==c
+        assert git('rev-parse',c+'^')==b
+        assert git('rev-parse',b+'^')==a
+        assert git('rev-parse',a+'^')==base
+        assert git('rev-parse',base+'^{tree}')==os.environ['R1_BASE_TREE']
+        assert git('rev-parse',c+'^{tree}')==os.environ['TESTED_SOURCE_TREE_C']
+        assert git('rev-list','--count',base+'..HEAD')=='4'
+        messages=((a,'feat(geography): add append-only project location foundation'),
+                  (b,'feat(analysis): add offline project location map'),
+                  (c,'fix(geography): replace ODbL map data with Natural Earth'),
+                  (d,'ci(geography): run exact commit C gate'))
+        for commit,message in messages:
+            assert git('show','-s','--format=%B',commit)==message
+            assert len(git('show','-s','--format=%P',commit).split())==1
+        assert git('diff','--name-status',c,d)=='M\t.github/workflows/conflict-analysis.yml'
+        assert not git('status','--porcelain=v1')
+        receipt={'TRIGGER_COMMIT_D':d,'TRIGGER_TREE_D':git('rev-parse','HEAD^{tree}'),
+                 'TRIGGER_PARENT_D':c,'TESTED_SOURCE_COMMIT_C':c,
+                 'TESTED_SOURCE_TREE_C':os.environ['TESTED_SOURCE_TREE_C'],
+                 'TESTED_SOURCE_PARENT_C':b,'EVENT':os.environ['GITHUB_EVENT_NAME'],
+                 'REF':os.environ['GITHUB_REF'],'RUN_ID':os.environ['GITHUB_RUN_ID'],
+                 'TRIGGER_GUARD':'PASS','SOURCE_GUARD':'NOT_RUN'}
+        path=Path(os.environ['RUNNER_TEMP'])/'geography-source-identity.json'
+        path.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n',encoding='utf8')
+        print(json.dumps(receipt,sort_keys=True))
+        PY
+        git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check "$TESTED_SOURCE_COMMIT_C" HEAD
+    - name: Check out exact tested source commit C
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: 85a253126bf270664c4786d159994e7359b5d2c5
+    - name: Prove tested source C HEAD TREE PARENT
+      shell: bash
+      working-directory: .
+      run: |
+        set -euo pipefail
+        python - <<'PY'
+        import json,os,subprocess
+        from pathlib import Path
+        def git(*args):return subprocess.check_output(['git',*args],text=True).strip()
+        c=os.environ['TESTED_SOURCE_COMMIT_C'];d=os.environ['TRIGGER_COMMIT_D']
+        assert git('rev-parse','HEAD')==c and c!=d
+        assert git('rev-parse','HEAD^{tree}')==os.environ['TESTED_SOURCE_TREE_C']
+        assert git('rev-parse','HEAD^')==os.environ['R1_COMMIT_B']
+        assert not git('status','--porcelain=v1')
+        root=Path(os.environ['RUNNER_TEMP']);path=root/'geography-source-identity.json'
+        receipt=json.loads(path.read_text(encoding='utf8'))
+        assert receipt['TRIGGER_COMMIT_D']==d==os.environ['GITHUB_SHA']
+        assert receipt['TESTED_SOURCE_COMMIT_C']==c and receipt['TRIGGER_GUARD']=='PASS'
+        receipt['SOURCE_GUARD']='PASS'
+        path.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n',encoding='utf8')
+        identity=f'TRIGGER_COMMIT_D={d}\nTESTED_SOURCE_COMMIT_C={c}\n'
+        (root/'geography-source-identity.env').write_text(identity,encoding='utf8')
+        with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a',encoding='utf8') as out:
+            out.write('## Geography CI source identity\n\n```text\n'+identity+'```\n')
+        print(identity,end='')
+        PY
     - name: Prove exact three-commit history and corrective allowlist
       shell: bash
       working-directory: .
@@ -7785,6 +7860,30 @@ jobs:
         USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/analysis-r0-studio-lifecycle.sqlite3" \
           python -m pytest production_studio/tests/test_lifecycle_publication.py -p no:cacheprovider \
           --junitxml="$RUNNER_TEMP/analysis-r0-studio-lifecycle-sqlite.xml"
+    - name: Record trigger source and full gate outcome
+      if: always()
+      shell: bash
+      working-directory: .
+      env:
+        GATE_STEPS_STATUS: ${{ job.status }}
+      run: |
+        set -euo pipefail
+        python - <<'PY'
+        import json,os,subprocess
+        from pathlib import Path
+        root=Path(os.environ['RUNNER_TEMP']);identity=root/'geography-source-identity.json'
+        receipt=json.loads(identity.read_text(encoding='utf8')) if identity.is_file() else {}
+        current=subprocess.run(['git','rev-parse','HEAD'],capture_output=True,text=True)
+        receipt.update(TRIGGER_COMMIT_D=os.environ['TRIGGER_COMMIT_D'],
+                       TESTED_SOURCE_COMMIT_C=os.environ['TESTED_SOURCE_COMMIT_C'],
+                       EVENT=os.environ['GITHUB_EVENT_NAME'],RUN_ID=os.environ['GITHUB_RUN_ID'],
+                       GATE_STEPS_STATUS=os.environ['GATE_STEPS_STATUS'],
+                       FINAL_CHECKOUT_HEAD=current.stdout.strip() if current.returncode==0 else None)
+        (root/'geography-gate-summary.json').write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n',encoding='utf8')
+        with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a',encoding='utf8') as out:
+            out.write('\n## Geography gate steps\n\n'+os.environ['GATE_STEPS_STATUS']+'\n')
+        print(json.dumps(receipt,sort_keys=True))
+        PY
     - name: Upload Geography evidence
       if: always()
       uses: actions/upload-artifact@v4
@@ -7793,6 +7892,7 @@ jobs:
         path: |-
           ${{ runner.temp }}/analysis-r0-*.xml
           ${{ runner.temp }}/geography-*.json
+          ${{ runner.temp }}/geography-source-identity.env
           ${{ runner.temp }}/geography-browser/
           ${{ runner.temp }}/ne-*.json
           ${{ runner.temp }}/ne-*.log
