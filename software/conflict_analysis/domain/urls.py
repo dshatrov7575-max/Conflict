@@ -2,10 +2,13 @@
 
 from django.urls import path
 
-from domain.api import analysis_v1, evidence, player, player_experiments, studio_definitions
+from domain.api import analysis_v1, evidence, geography_v1, player, player_experiments, studio_definitions
 
 
 urlpatterns = [
+    path("geography/v1/projects/<uuid:project_id>/location/", geography_v1.location, name="foundation-geography-location"),
+    path("geography/v1/projects/<uuid:project_id>/location-history/", geography_v1.history, name="foundation-geography-history"),
+    path("geography/v1/projects/<uuid:project_id>/location-revisions/", geography_v1.revisions, name="foundation-geography-revisions"),
     path("player/workspaces/<uuid:workspace_id>/expert-profiles/", player_experiments.expert_profiles, name="foundation-player-g8-expert-profiles"),
     path("player/workspaces/<uuid:workspace_id>/experiments/", player_experiments.experiments, name="foundation-player-experiments"),
     path("player/experiments/<uuid:experiment_id>/", player_experiments.experiment, name="foundation-player-g8-experiment"),

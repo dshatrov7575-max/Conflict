@@ -7400,3 +7400,139 @@ class AuditEvent(ImmutableCapturedModel):
 
     def __str__(self) -> str:
         return f"{self.occurred_at.isoformat()} {self.action} {self.entity_type}"
+
+
+# R1 geography has a distinct write authority; existing analytical lanes are
+# deliberately unaffected. Database triggers also protect immutable history.
+_GEOGRAPHY_WRITE: ContextVar[bool] = ContextVar("geography_write", default=False)
+
+
+@contextmanager
+def _canonical_geography_write():
+    token = _GEOGRAPHY_WRITE.set(True)
+    try:
+        yield
+    finally:
+        _GEOGRAPHY_WRITE.reset(token)
+
+
+class GeographyQuerySet(ImmutableQuerySet):
+    def bulk_create(self, *args, **kwargs):
+        raise ValidationError("Geography inserts require the canonical service.")
+
+
+class GeographyManager(models.Manager.from_queryset(GeographyQuerySet)):
+    pass
+
+
+class GeographyImmutableModel(StableVersionedModel):
+    objects = GeographyManager()
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        if not _GEOGRAPHY_WRITE.get() or not self._state.adding:
+            raise ValidationError("Geography history is immutable; use the canonical service.")
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Geography history cannot be deleted.")
+
+
+class GeographicArea(GeographyImmutableModel):
+    dataset_code = models.CharField(max_length=80)
+    dataset_version = models.CharField(max_length=64)
+    feature_id = models.CharField(max_length=128)
+    area_level = models.CharField(max_length=16, choices=(("ADM0", "ADM0"), ("ADM1", "ADM1")))
+    name_ru = models.CharField(max_length=255)
+    name_local = models.CharField(max_length=255, blank=True)
+    iso_alpha2 = models.CharField(max_length=2)
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.RESTRICT)
+    boundary_policy_version = models.CharField(max_length=64)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        base_manager_name = "objects"
+        constraints = [
+            models.UniqueConstraint(fields=("dataset_code", "dataset_version", "feature_id"), name="geo_area_dataset_feature_uniq"),
+            models.CheckConstraint(condition=~Q(name_ru=""), name="geo_area_ru_required"),
+            models.CheckConstraint(condition=~Q(parent=models.F("id")), name="geo_area_not_self_parent"),
+        ]
+
+    def clean(self):
+        if self.parent_id:
+            parent = type(self).objects.get(pk=self.parent_id)
+            if parent.pk == self.pk or (parent.dataset_code, parent.dataset_version) != (self.dataset_code, self.dataset_version):
+                raise ValidationError("Geographic parent must be in the same dataset version.")
+            visited = {self.pk}
+            while parent:
+                if parent.pk in visited:
+                    raise ValidationError("Geographic parent cycle.")
+                visited.add(parent.pk)
+                parent = parent.parent
+
+
+class ProjectLocationRevision(GeographyImmutableModel):
+    from .enums import LocationKind, LocationSourceKind
+
+    project = models.ForeignKey(Project, on_delete=models.RESTRICT, related_name="location_revisions")
+    supersedes = models.OneToOneField("self", null=True, blank=True, on_delete=models.RESTRICT, related_name="successor")
+    area = models.ForeignKey(GeographicArea, null=True, blank=True, on_delete=models.RESTRICT)
+    latitude = models.DecimalField(max_digits=10, decimal_places=7)
+    longitude = models.DecimalField(max_digits=10, decimal_places=7)
+    location_kind = models.CharField(max_length=16, choices=LocationKind.choices)
+    uncertainty_radius_m = models.PositiveIntegerField(null=True, blank=True)
+    label = models.CharField(max_length=255, blank=True)
+    source_kind = models.CharField(max_length=24, choices=LocationSourceKind.choices)
+    source_reference = models.CharField(max_length=1024, blank=True)
+    rationale = models.TextField()
+    actor_identifier = models.CharField(max_length=255)
+    operation_id = models.UUIDField(unique=True)
+    request_sha256 = models.CharField(max_length=64, validators=[SHA256_VALIDATOR])
+    boundary_dataset_code = models.CharField(max_length=80)
+    boundary_dataset_version = models.CharField(max_length=64)
+    boundary_policy_version = models.CharField(max_length=64)
+
+    class Meta:
+        base_manager_name = "objects"
+        ordering = ("-created_at", "-id")
+        constraints = [
+            models.UniqueConstraint(fields=("project",), condition=Q(supersedes__isnull=True), name="geo_revision_one_root"),
+            models.CheckConstraint(condition=Q(latitude__gte=-90, latitude__lte=90), name="geo_latitude_range"),
+            models.CheckConstraint(condition=Q(longitude__gte=-180, longitude__lte=180), name="geo_longitude_range"),
+            models.CheckConstraint(condition=Q(uncertainty_radius_m__isnull=True) | Q(uncertainty_radius_m__gte=0, uncertainty_radius_m__lte=20000000), name="geo_radius_range"),
+            models.CheckConstraint(condition=Q(location_kind="POINT") | Q(location_kind__in=("AREA", "REGION", "COUNTRY", "TRANSBOUNDARY"), uncertainty_radius_m__gt=0, uncertainty_radius_m__isnull=False), name="geo_extent_requires_radius"),
+            models.CheckConstraint(condition=~Q(rationale="") & ~Q(actor_identifier=""), name="geo_attribution_required"),
+        ]
+
+    def clean(self):
+        if self.supersedes_id and self.supersedes.project_id != self.project_id:
+            raise ValidationError("Location predecessor belongs to another project.")
+        if self.area_id and (self.area.dataset_code, self.area.dataset_version, self.area.boundary_policy_version) != (self.boundary_dataset_code, self.boundary_dataset_version, self.boundary_policy_version):
+            raise ValidationError("Location area does not match the pinned dataset.")
+        if not self.rationale.strip() or not self.actor_identifier.strip():
+            raise ValidationError("Location attribution must not be blank.")
+
+
+class ProjectLocationHead(models.Model):
+    objects = GeographyManager()
+    project = models.OneToOneField(Project, primary_key=True, on_delete=models.RESTRICT, related_name="location_head")
+    revision = models.OneToOneField(ProjectLocationRevision, on_delete=models.RESTRICT)
+    etag_sha256 = models.CharField(max_length=64, validators=[SHA256_VALIDATOR])
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        base_manager_name = "objects"
+
+    def save(self, *args, **kwargs):
+        if not _GEOGRAPHY_WRITE.get():
+            raise ValidationError("Location head requires canonical geography authority.")
+        if self.revision.project_id != self.project_id:
+            raise ValidationError("Location head belongs to another project.")
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Location head cannot delete history.")

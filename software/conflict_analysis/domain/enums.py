@@ -1,6 +1,22 @@
 from django.db import models
 
 
+class LocationKind(models.TextChoices):
+    POINT = "POINT", "Примерная точка"
+    AREA = "AREA", "Территория"
+    REGION = "REGION", "Регион"
+    COUNTRY = "COUNTRY", "Государство"
+    TRANSBOUNDARY = "TRANSBOUNDARY", "Трансграничная"
+
+
+class LocationSourceKind(models.TextChoices):
+    USER_MAP = "USER_MAP", "Указано на карте"
+    MANUAL_COORDINATES = "MANUAL_COORDINATES", "Введено вручную"
+    DOCUMENT = "DOCUMENT", "Документ"
+    IMPORT = "IMPORT", "Импорт"
+    SYSTEM = "SYSTEM", "Система"
+
+
 class AssessmentKind(models.TextChoices):
     """Independent provenance lanes for assessments."""
 

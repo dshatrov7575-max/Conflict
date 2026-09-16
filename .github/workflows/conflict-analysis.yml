@@ -39,6 +39,7 @@ on:
       - codex/ca-suite-i1-player-g8-experiments-xlsx
       - codex/ca-suite-i1-player-g9-evidence-ui
       - codex/ux-v2-r0-method-safe-analysis-20260915
+      - codex/ux-v2-r1-geography-20260916
     paths:
       - "software/conflict_analysis/**"
       - ".github/workflows/conflict-analysis.yml"
@@ -72,6 +73,7 @@ jobs:
        github.ref != 'refs/heads/codex/ca-suite-i1-foundation-fd08-assessment-projection' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-player-g7-professional-shell' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-player-g8-experiments-xlsx' &&
+       github.ref != 'refs/heads/codex/ux-v2-r1-geography-20260916' &&
        github.ref != 'refs/heads/codex/ux-v2-r0-method-safe-analysis-20260915' &&
        github.ref != 'refs/heads/codex/ca-suite-i1-player-g9-evidence-ui')
     runs-on: ubuntu-latest
@@ -7289,3 +7291,485 @@ jobs:
           done
           test "$ready" = true
           STUDIO_CHROME_BIN="$STUDIO_CHROME_BIN" node analysis_dashboard/browser_tests/analysis_v2.mjs
+
+  geography-r1:
+    name: MVP7 R1 / Geography / PostgreSQL / SQLite / Offline Chromium
+    if: github.event_name == 'push' && github.ref == 'refs/heads/codex/ux-v2-r1-geography-20260916'
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: conflict_analysis
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: analysis-r0-ci-only
+        ports:
+        - 5432:5432
+        options: --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis" --health-interval 5s --health-timeout 5s
+          --health-retries 12
+    env:
+      DJANGO_SECRET_KEY: analysis-r0-ci-only-secret
+      POSTGRES_DB: conflict_analysis
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: analysis-r0-ci-only
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+      POSTGRES_CONN_MAX_AGE: '0'
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUNBUFFERED: '1'
+      R1_BASE: c6c7118080ab1a1dcb86216f4092dabcf8125be7
+      R1_BASE_TREE: 5a4a40431e72fb6b942b895225ce11bba2898052
+      R1_COMMIT_A: BOUND_IN_COMMIT_B
+    defaults:
+      run:
+        working-directory: software/conflict_analysis
+    steps:
+    - name: Check out exact Geography head
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: ${{ github.sha }}
+    - name: Prove exact two-commit history and geography allowlists
+      shell: bash
+      working-directory: .
+      run: |
+        set -euo pipefail
+        python - <<'PY'
+        import os,subprocess
+        def git(*args):return subprocess.check_output(['git',*args],text=True).strip()
+        base=os.environ['R1_BASE']; first=os.environ['R1_COMMIT_A']
+        assert git('rev-parse',base+'^{tree}')==os.environ['R1_BASE_TREE']
+        assert git('rev-parse','HEAD^')==first
+        assert git('rev-parse',first+'^')==base
+        assert git('rev-list','--count',base+'..HEAD')=='2'
+        assert git('show','-s','--format=%s',first)=='feat(geography): add append-only project location foundation'
+        assert git('show','-s','--format=%s','HEAD')=='feat(analysis): add offline project location map'
+        assert len(git('show','-s','--format=%P','HEAD').split())==1
+        assert len(git('show','-s','--format=%P',first).split())==1
+        first_paths=['.github/workflows/conflict-analysis.yml', 'software/conflict_analysis/docs/adr/0019-project-geography-r1.md', 'software/conflict_analysis/domain/api/geography_v1.py', 'software/conflict_analysis/domain/enums.py', 'software/conflict_analysis/domain/migrations/0019_analysis_geography.py', 'software/conflict_analysis/domain/models.py', 'software/conflict_analysis/domain/services/geography.py', 'software/conflict_analysis/domain/tests/fixtures/geography_v1_vectors.json', 'software/conflict_analysis/domain/tests/test_geography.py', 'software/conflict_analysis/domain/urls.py']
+        second_paths=['.github/workflows/conflict-analysis.yml', 'software/conflict_analysis/analysis_dashboard/browser_tests/analysis_geography_r1.mjs', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/dashboard.css', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/dashboard.js', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/BOUNDARY_POLICY_RU.md', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/DATASET_LICENSES_RU.md', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_CC_BY_4_0.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_CITATION.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_METADATA.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/NATURAL_EARTH_TERMS.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/ODBL_1_0.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/map.js', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/MAP_DATASET_MANIFEST.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/MAP_DATASET_MANIFEST.json.sha256', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/RAW_SOURCES_LOCK.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/build_dataset.py', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_admin0.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_admin0_lines.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_disputed_lines.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_places.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_water.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/kazakhstan_admin1.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/kazakhstan_admin1_lines.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/labels_ru.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/map_style.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/MAPLIBRE_LICENSE.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/maplibre-gl-csp-worker.js', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/maplibre-gl-csp.js', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/maplibre-gl.css', 'software/conflict_analysis/analysis_dashboard/templates/analysis_dashboard/analytics.html', 'software/conflict_analysis/analysis_dashboard/tests/test_http.py', 'software/conflict_analysis/analysis_dashboard/views.py', 'software/conflict_analysis/pyproject.toml']
+        assert sorted(git('diff','--name-only',base,first).splitlines())==sorted(first_paths)
+        assert sorted(git('diff','--name-only',first,'HEAD').splitlines())==sorted(second_paths)
+        assert not git('diff','--diff-filter=D','--name-only',base,'HEAD')
+        assert not git('diff','--name-only',base,'HEAD','--','software/conflict_analysis/production_studio','software/conflict_analysis/production_player','software/conflict_analysis/owner_alpha_package','software/conflict_analysis/scripts/build_owner_alpha_package.py','software/conflict_analysis/scripts/verify_owner_alpha_package.py','software/conflict_analysis/domain/services/player_experiments.py','software/conflict_analysis/domain/services/analysis_read_model.py','software/conflict_analysis/domain/api/analysis_v1.py','README.md')
+        print('GEO-39 exact source delta and protected trees PASS')
+        PY
+        git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check "$R1_BASE" HEAD -- . ':!software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/*' ':!software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/*.txt'
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: pip
+        cache-dependency-path: software/conflict_analysis/pyproject.toml
+    - name: Set up Node.js 24
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+    - name: Install application and validate static sources
+      shell: bash
+      run: |
+        set -euo pipefail
+        python -m pip install --disable-pip-version-check -e ".[dev]"
+        python -m pip check
+        python -m compileall -q conflict_analysis domain analysis_dashboard
+        node --check analysis_dashboard/static/analysis_dashboard/dashboard.js
+        node --check analysis_dashboard/static/analysis_dashboard/charts.js
+        node --check analysis_dashboard/browser_tests/analysis_v2.mjs
+        chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+        test -n "$chrome"
+        "$chrome" --version
+        echo "STUDIO_CHROME_BIN=$chrome" >> "$GITHUB_ENV"
+
+        node --check analysis_dashboard/static/analysis_dashboard/map.js
+        node --check analysis_dashboard/browser_tests/analysis_geography_r1.mjs
+    - name: Migration forward, two-connection races and exact cross-backend bytes
+      shell: bash
+      run: |
+        set -euo pipefail
+        python manage.py migrate domain 0018 --noinput
+        python manage.py migrate domain 0019 --noinput
+        python manage.py migrate --noinput
+        python -m domain.tests.test_geography --race
+        python -m domain.tests.test_geography --parity "$RUNNER_TEMP/geography-pg.json"
+        export USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/geography-forward.sqlite3"
+        python manage.py migrate domain 0018 --noinput
+        python manage.py migrate domain 0019 --noinput
+        python manage.py migrate --noinput
+        python manage.py makemigrations --check --dry-run
+        python -m domain.tests.test_geography --race
+        python -m domain.tests.test_geography --parity "$RUNNER_TEMP/geography-sqlite.json"
+        cmp "$RUNNER_TEMP/geography-pg.json" "$RUNNER_TEMP/geography-sqlite.json"
+    - name: Check Django and migration drift
+      shell: bash
+      run: |
+        set -euo pipefail
+        python manage.py check
+        python manage.py makemigrations --check --dry-run
+    - name: Run PostgreSQL Foundation and Analysis suites
+      shell: bash
+      env:
+        HTTP_PROXY: http://127.0.0.1:9
+        HTTPS_PROXY: http://127.0.0.1:9
+        ALL_PROXY: http://127.0.0.1:9
+        NO_PROXY: 127.0.0.1,localhost
+      run: |
+        set -euo pipefail
+        python -m pytest domain/tests analysis_dashboard/tests \
+          --junitxml="$RUNNER_TEMP/analysis-r0-postgresql.xml"
+    - name: Run SQLite Foundation and Analysis parity suites
+      shell: bash
+      env:
+        USE_SQLITE: 'true'
+        SQLITE_PATH: ${{ runner.temp }}/analysis-r0-foundation.sqlite3
+        HTTP_PROXY: http://127.0.0.1:9
+        HTTPS_PROXY: http://127.0.0.1:9
+        ALL_PROXY: http://127.0.0.1:9
+        NO_PROXY: 127.0.0.1,localhost
+      run: |
+        set -euo pipefail
+        python -m pytest domain/tests analysis_dashboard/tests \
+          --junitxml="$RUNNER_TEMP/analysis-r0-sqlite.xml"
+    - name: Build and inspect one exact wheel
+      shell: bash
+      run: |
+        set -euo pipefail
+        wheel_dir="$RUNNER_TEMP/analysis-r0-wheel"
+        python -m pip wheel --no-deps --wheel-dir "$wheel_dir" .
+        mapfile -t wheels < <(find "$wheel_dir" -maxdepth 1 -type f -name '*.whl' -print)
+        test "${#wheels[@]}" -eq 1
+        wheel="${wheels[0]}"
+        echo "ANALYSIS_R0_WHEEL=$wheel" >> "$GITHUB_ENV"
+        echo "STUDIO_C0_WHEEL=$wheel" >> "$GITHUB_ENV"
+        python - "$wheel" <<'PY'
+        import sys
+        from zipfile import ZipFile
+        wheel = sys.argv[1]
+        required = {
+            "analysis_dashboard/__init__.py",
+            "analysis_dashboard/apps.py",
+            "analysis_dashboard/urls.py",
+            "analysis_dashboard/views.py",
+            "analysis_dashboard/templates/analysis_dashboard/base.html",
+            "analysis_dashboard/templates/analysis_dashboard/analytics.html",
+            "analysis_dashboard/static/analysis_dashboard/dashboard.css",
+            "analysis_dashboard/static/analysis_dashboard/dashboard.js",
+            "analysis_dashboard/static/analysis_dashboard/charts.js",
+            "domain/api/analysis_v1.py",
+            "domain/services/analysis_admission.py",
+            "domain/services/analysis_contracts.py",
+            "domain/services/analysis_read_model.py",
+        }
+        with ZipFile(wheel) as archive:
+            names = set(archive.namelist())
+            assert archive.testzip() is None
+            assert required <= names, sorted(required - names)
+        print("ANALYSIS_R0_WHEEL_RUNTIME_ASSETS=PASS")
+        PY
+
+        python -m domain.tests.test_geography --wheel "$wheel"
+    - name: Run inherited Product portable regressions on PostgreSQL and SQLite
+      shell: bash
+      run: |
+        set -euo pipefail
+        c0=(
+          production_studio/tests/test_browser_contract.py
+          production_studio/tests/test_claim_boundaries.py
+          production_studio/tests/test_read_only_http.py
+          production_studio/tests/test_read_only_static_contracts.py
+        )
+        c1="production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringContractTests"
+        g7="production_player/tests/test_player_g7.py::ProductionPlayerG7Tests"
+        g8="production_player/tests/test_player_g8.py::ProductionPlayerG8Tests"
+        g9="production_player/tests/test_player_g9_evidence.py::ProductionPlayerG9EvidenceTests"
+        STUDIO_C0_WHEEL="$ANALYSIS_R0_WHEEL" python -m pytest \
+          "${c0[@]}" "$c1" "$g7" "$g8" "$g9" -p no:cacheprovider \
+          --junitxml="$RUNNER_TEMP/analysis-r0-product-postgresql.xml"
+        USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/analysis-r0-product.sqlite3" \
+          STUDIO_C0_WHEEL="$ANALYSIS_R0_WHEEL" python -m pytest \
+          "${c0[@]}" "$c1" "$g7" "$g8" "$g9" -p no:cacheprovider \
+          --junitxml="$RUNNER_TEMP/analysis-r0-product-sqlite.xml"
+    - name: Run inherited Chromium regressions
+      shell: bash
+      run: |
+        set -euo pipefail
+        c1="production_studio/tests/test_audited_authoring.py::ProductionStudioAuditedAuthoringBrowserTests::test_authenticated_edit_save_reload_is_bounded_foundation_only_and_receipted"
+        g7="production_player/tests/test_player_g7.py::ProductionPlayerG7ChromiumTests"
+        g8="production_player/tests/test_player_g8.py::ProductionPlayerG8ChromiumTests"
+        g9="production_player/tests/test_player_g9_evidence.py::ProductionPlayerG9ChromiumTests"
+        STUDIO_CHROME_BIN="$STUDIO_CHROME_BIN" STUDIO_C0_WHEEL="$ANALYSIS_R0_WHEEL" \
+          python -m pytest "$c1" "$g7" "$g8" "$g9" -p no:cacheprovider \
+          --junitxml="$RUNNER_TEMP/analysis-r0-product-chromium.xml"
+    - name: Seed Analysis browser fixture and session
+      shell: bash
+      run: |
+        set -euo pipefail
+        python manage.py migrate --noinput
+        python - <<'PY'
+        import os
+        from datetime import date
+        from pathlib import Path
+        from uuid import uuid4
+
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "conflict_analysis.settings")
+        import django
+        django.setup()
+
+        from django.conf import settings
+        from django.contrib.auth import get_user_model
+        from django.contrib.auth.models import Group, Permission
+        from django.contrib.sessions.backends.db import SessionStore
+        from domain.models import ProjectWorkspace, TimeSlice
+        from domain.services import zhanaozen_typed_manifest as typed
+        from domain.services.analysis_admission import analysis_reader_group_name
+        from domain.services.player_experiments import (
+            G8_REQUIRED_PERMISSIONS,
+            create_experiment,
+            create_manual_value,
+            list_values,
+        )
+        from domain.services.project_definitions import project_access_group_name
+        from domain.services.seed import seed_zhanaozen_demo
+
+        project = seed_zhanaozen_demo()
+        workspace = ProjectWorkspace.objects.get(pk=typed.WORKSPACE_ID)
+        user = get_user_model().objects.create_user(username="analysis-r0-browser")
+        codenames = [item.removeprefix("domain.") for item in G8_REQUIRED_PERMISSIONS]
+        permissions = list(
+            Permission.objects.filter(
+                content_type__app_label="domain",
+                codename__in=codenames,
+            )
+        )
+        assert len(permissions) == len(codenames)
+        user.user_permissions.add(*permissions)
+        for name in (
+            project_access_group_name(project.pk),
+            analysis_reader_group_name(project.pk),
+        ):
+            group, _ = Group.objects.get_or_create(name=name)
+            assert not group.permissions.exists()
+            user.groups.add(group)
+
+        slices = list(
+            TimeSlice.objects.filter(workspace=workspace).order_by(
+                "cutoff_date", "order", "pk"
+            )
+        )
+        while len(slices) < 8:
+            index = len(slices) + 1
+            TimeSlice.objects.create(
+                id=uuid4(),
+                project=project,
+                workspace=workspace,
+                code=f"UX-R0-CI-{index:02d}",
+                version="1.0.0",
+                name=f"UX R0 CI {index:02d}",
+                cutoff_date=date(2023 + index, 1, 31),
+                order=100 + index,
+            )
+            slices = list(
+                TimeSlice.objects.filter(workspace=workspace).order_by(
+                    "cutoff_date", "order", "pk"
+                )
+            )
+
+        suffix = uuid4().hex[:10]
+        experiment_id, set_id, profile_id = uuid4(), uuid4(), uuid4()
+        create_experiment(
+            user=user,
+            workspace_id=workspace.pk,
+            operation_id=str(uuid4()),
+            if_match=f'"{typed.MANIFEST_SHA256}"',
+            body={
+                "experiment": {
+                    "id": str(experiment_id),
+                    "code": f"UX-R0-EXP-{suffix}",
+                    "version": "1.0.0",
+                    "name": "AI R0 browser",
+                    "color": "url(javascript:alert(1))",
+                    "order": 0,
+                    "method_version": "A5-v0.1",
+                },
+                "assessment_set": {
+                    "id": str(set_id),
+                    "code": f"UX-R0-SET-{suffix}",
+                    "version": "1.0.0",
+                    "kind": "AI",
+                    "name": "AI R0 set",
+                    "description": "browser lane",
+                },
+                "expert_profile": {
+                    "id": str(profile_id),
+                    "code": f"UX-R0-PROFILE-{suffix}",
+                    "version": "1.0.0",
+                    "kind": "AI",
+                    "display_name": "AI R0",
+                    "identity_key": f"ux-r0:{suffix}",
+                    "provider": "test",
+                    "model_name": "test-model",
+                    "metadata": {"contract": "FOUNDATION_PLAYER_EXPERT_PROFILE_V1"},
+                },
+            },
+        )
+        experiment_etag = list_values(
+            user=user,
+            experiment_id=experiment_id,
+        )["experiment"]["etag"]
+        fractions = (0.000001, 0.0000001, -0.000001, 1.25)
+        for index, (time_slice, number) in enumerate(
+            zip(slices[:4], fractions, strict=True)
+        ):
+            create_manual_value(
+                user=user,
+                experiment_id=experiment_id,
+                operation_id=str(uuid4()),
+                if_match=f'"{experiment_etag}"',
+                body={
+                    "id": str(uuid4()),
+                    "code": f"UX-R0-VALUE-{index}-{suffix}",
+                    "version": "1.0.0",
+                    "assessment_id": str(uuid4()),
+                    "assessment_code": f"UX-R0-ASSESS-{index}-{suffix}",
+                    "time_slice_id": str(time_slice.pk),
+                    "actor_code": "GU-01",
+                    "element_code": "PTN-01",
+                    "parameter_code": "POS",
+                    "status": "PROVISIONAL",
+                    "value": number,
+                    "temporal_status": "UNKNOWN",
+                    "confidence_category": "MEDIUM",
+                    "rationale": "Fractional browser fixture",
+                    "note": "",
+                    "supersedes_id": None,
+                },
+            )
+        create_manual_value(
+            user=user,
+            experiment_id=experiment_id,
+            operation_id=str(uuid4()),
+            if_match=f'"{experiment_etag}"',
+            body={
+                "id": str(uuid4()),
+                "code": f"UX-R0-UNKNOWN-{suffix}",
+                "version": "1.0.0",
+                "assessment_id": str(uuid4()),
+                "assessment_code": f"UX-R0-ASSESS-U-{suffix}",
+                "time_slice_id": str(slices[4].pk),
+                "actor_code": "GU-01",
+                "element_code": "PTN-01",
+                "parameter_code": "POS",
+                "status": "UNKNOWN",
+                "value": None,
+                "temporal_status": "UNKNOWN",
+                "confidence_category": "MEDIUM",
+                "rationale": "Explicit unknown browser fixture",
+                "note": "",
+                "supersedes_id": None,
+            },
+        )
+
+        session = SessionStore()
+        session["_auth_user_id"] = str(user.pk)
+        session["_auth_user_backend"] = "django.contrib.auth.backends.ModelBackend"
+        session["_auth_user_hash"] = user.get_session_auth_hash()
+        session.save()
+        with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as stream:
+            stream.write(f"ANALYSIS_PROJECT_ID={project.pk}\n")
+            stream.write(f"ANALYSIS_WORKSPACE_ID={workspace.pk}\n")
+            stream.write(f"ANALYSIS_SESSION_COOKIE_NAME={settings.SESSION_COOKIE_NAME}\n")
+            stream.write(f"ANALYSIS_SESSION_COOKIE_VALUE={session.session_key}\n")
+            stream.write("ANALYSIS_BASE_URL=http://127.0.0.1:8765\n")
+        from domain.services.geography import install_pinned_geographic_areas
+        from domain.services.analysis_admission import analysis_location_editor_group_name
+        install_pinned_geographic_areas()
+        group,_=Group.objects.get_or_create(name=analysis_location_editor_group_name(project.pk))
+        assert not group.permissions.exists()
+        user.groups.add(group)
+        reader=get_user_model().objects.create_user(username="geography-r1-reader")
+        for name in (project_access_group_name(project.pk),analysis_reader_group_name(project.pk)):
+            reader.groups.add(Group.objects.get(name=name))
+        reader_session=SessionStore()
+        reader_session["_auth_user_id"]=str(reader.pk)
+        reader_session["_auth_user_backend"]="django.contrib.auth.backends.ModelBackend"
+        reader_session["_auth_user_hash"]=reader.get_session_auth_hash()
+        reader_session.save()
+        with Path(os.environ["GITHUB_ENV"]).open("a",encoding="utf8") as stream:
+            stream.write("GEOGRAPHY_READER_COOKIE_VALUE="+reader_session.session_key+"\n")
+        PY
+    - name: Run Analysis Chromium responsive, canonical and race tests
+      shell: bash
+      run: |
+        set -euo pipefail
+        python manage.py runserver 127.0.0.1:8765 --noreload --insecure \
+          >"$RUNNER_TEMP/analysis-r0-server.log" 2>&1 &
+        server_pid=$!
+        trap 'status=$?; kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true; if [ "$status" -ne 0 ]; then cat "$RUNNER_TEMP/analysis-r0-server.log"; fi; exit "$status"' EXIT
+        ready=false
+        for _ in $(seq 1 60); do
+          status="$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8765/analysis/ || true)"
+          if [[ "$status" = "200" || "$status" = "401" ]]; then
+            ready=true
+            break
+          fi
+          sleep 1
+        done
+        test "$ready" = true
+        STUDIO_CHROME_BIN="$STUDIO_CHROME_BIN" node analysis_dashboard/browser_tests/analysis_v2.mjs
+
+        GEOGRAPHY_EVIDENCE_DIR="$RUNNER_TEMP/geography-browser" node analysis_dashboard/browser_tests/analysis_geography_r1.mjs
+    - name: Isolated wheel Geography service and static runtime
+      shell: bash
+      run: |
+        set -euo pipefail
+        runtime="$RUNNER_TEMP/geography-wheel-runtime"
+        python -m pip install --no-deps --no-compile --target "$runtime" "$ANALYSIS_R0_WHEEL"
+        cd "$RUNNER_TEMP"
+        PYTHONPATH="$runtime" USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/geography-wheel.sqlite3" DJANGO_SETTINGS_MODULE=conflict_analysis.settings python - <<'PY'
+        import os
+        from pathlib import Path
+        import django
+        django.setup()
+        from django.core.management import call_command
+        from django.test import Client
+        from django.contrib.staticfiles import finders
+        from domain.tests.test_geography import fixture,body
+        from domain.services import geography
+        import analysis_dashboard.views
+        root=Path(os.environ['PYTHONPATH']).resolve()
+        assert Path(geography.__file__).is_relative_to(root)
+        assert Path(analysis_dashboard.views.__file__).is_relative_to(root)
+        call_command('migrate',interactive=False,verbosity=0)
+        project,user,_=fixture('isolated-wheel')
+        client=Client(enforce_csrf_checks=True);client.force_login(user)
+        url=f'/api/foundation/geography/v1/projects/{project.pk}/'
+        current=client.get(url+'location/')
+        assert current.status_code==200
+        from uuid import uuid4
+        response=client.post(url+'location-revisions/',body(),content_type='application/json',HTTP_IF_MATCH=current['ETag'],HTTP_X_OPERATION_ID=str(uuid4()),HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value)
+        assert response.status_code==201,response.content
+        assert len(client.get(url+'location-history/').json()['revisions'])==1
+        for name in ('map.js','vendor/maplibre/maplibre-gl-csp.js','vendor/maplibre/maplibre-gl-csp-worker.js','maps/map_style.json','maps/kazakhstan_admin1.geojson','licenses/ODBL_1_0.txt'):
+            asset=Path(finders.find('analysis_dashboard/'+name))
+            assert asset.is_file() and asset.is_relative_to(root),name
+        print('ISOLATED_WHEEL_GEOGRAPHY_RUNTIME=PASS')
+        PY
+    - name: Run remaining Studio lifecycle and publication regressions on both databases
+      shell: bash
+      run: |
+        set -euo pipefail
+        python -m pytest production_studio/tests/test_lifecycle_publication.py -p no:cacheprovider \
+          --junitxml="$RUNNER_TEMP/analysis-r0-studio-lifecycle-postgresql.xml"
+        USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/analysis-r0-studio-lifecycle.sqlite3" \
+          python -m pytest production_studio/tests/test_lifecycle_publication.py -p no:cacheprovider \
+          --junitxml="$RUNNER_TEMP/analysis-r0-studio-lifecycle-sqlite.xml"
+    - name: Upload Geography evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: geography-r1-evidence
+        path: |-
+          ${{ runner.temp }}/analysis-r0-*.xml
+          ${{ runner.temp }}/geography-*.json
+          ${{ runner.temp }}/geography-browser/
+        if-no-files-found: error

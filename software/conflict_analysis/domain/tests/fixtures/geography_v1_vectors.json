@@ -1,0 +1,447 @@
+{
+  "base_head": "c6c7118080ab1a1dcb86216f4092dabcf8125be7",
+  "branch": "codex/ux-v2-r1-geography-20260916",
+  "method_state": {
+    "project_total_score": "METHOD_NOT_APPROVED",
+    "regional_aggregate": "METHOD_NOT_APPROVED"
+  },
+  "oracles": [
+    {
+      "expected": {
+        "accepted": true
+      },
+      "id": "GEO-01",
+      "input": {
+        "latitude": -90,
+        "longitude": 0
+      },
+      "title": "latitude_lower_bound"
+    },
+    {
+      "expected": {
+        "accepted": true
+      },
+      "id": "GEO-02",
+      "input": {
+        "latitude": 90,
+        "longitude": 0
+      },
+      "title": "latitude_upper_bound"
+    },
+    {
+      "expected": {
+        "code": "GEOGRAPHY_REQUEST_INVALID",
+        "http": 400
+      },
+      "id": "GEO-03",
+      "input": {
+        "latitude": 90.000001,
+        "longitude": 0
+      },
+      "title": "latitude_out_of_range"
+    },
+    {
+      "expected": {
+        "code": "GEOGRAPHY_REQUEST_INVALID",
+        "http": 400
+      },
+      "id": "GEO-04",
+      "input": {
+        "latitude": 0,
+        "longitude": 180.000001
+      },
+      "title": "longitude_out_of_range"
+    },
+    {
+      "expected": {
+        "code": "GEOGRAPHY_REQUEST_INVALID",
+        "http": 400
+      },
+      "id": "GEO-05",
+      "input": {
+        "latitude": "NaN",
+        "longitude": 52.8619
+      },
+      "title": "non_finite_coordinate"
+    },
+    {
+      "expected": {
+        "code": "GEOGRAPHY_REQUEST_INVALID",
+        "http": 400
+      },
+      "id": "GEO-06",
+      "input": {
+        "uncertainty_radius_m": -1
+      },
+      "title": "negative_radius"
+    },
+    {
+      "expected": {
+        "code": "GEOGRAPHY_REQUEST_INVALID",
+        "http": 400
+      },
+      "id": "GEO-07",
+      "input": {
+        "location_kind": "REGION",
+        "uncertainty_radius_m": 0
+      },
+      "title": "region_requires_radius"
+    },
+    {
+      "expected": {
+        "accepted": true
+      },
+      "id": "GEO-08",
+      "input": {
+        "location_kind": "POINT",
+        "uncertainty_radius_m": 0
+      },
+      "title": "point_zero_radius_allowed"
+    },
+    {
+      "expected": {
+        "accepted": true
+      },
+      "id": "GEO-09",
+      "input": {
+        "new_project": "P1",
+        "supersedes_project": "P1"
+      },
+      "title": "same_project_successor"
+    },
+    {
+      "expected": {
+        "code": "GEOGRAPHY_INTEGRITY_CONFLICT",
+        "http": 409
+      },
+      "id": "GEO-10",
+      "input": {
+        "new_project": "P2",
+        "supersedes_project": "P1"
+      },
+      "title": "cross_project_successor_denied"
+    },
+    {
+      "expected": {
+        "denied": true
+      },
+      "id": "GEO-11",
+      "input": {
+        "operation": "UPDATE_REVISION"
+      },
+      "title": "revision_update_denied"
+    },
+    {
+      "expected": {
+        "denied": true
+      },
+      "id": "GEO-12",
+      "input": {
+        "operation": "DELETE_REVISION"
+      },
+      "title": "revision_delete_denied"
+    },
+    {
+      "expected": {
+        "terminal_heads": 1
+      },
+      "id": "GEO-13",
+      "input": {
+        "concurrent_writers": 2
+      },
+      "title": "single_head"
+    },
+    {
+      "expected": {
+        "code": "GEOGRAPHY_ETAG_CONFLICT",
+        "http": 409
+      },
+      "id": "GEO-14",
+      "input": {
+        "if_match": "old"
+      },
+      "title": "stale_etag"
+    },
+    {
+      "expected": {
+        "same_revision": true
+      },
+      "id": "GEO-15",
+      "input": {
+        "same_body": true,
+        "same_operation_id": true
+      },
+      "title": "idempotent_replay"
+    },
+    {
+      "expected": {
+        "code": "GEOGRAPHY_OPERATION_CONFLICT",
+        "http": 409
+      },
+      "id": "GEO-16",
+      "input": {
+        "same_body": false,
+        "same_operation_id": true
+      },
+      "title": "operation_collision"
+    },
+    {
+      "expected": {
+        "code": "GEOGRAPHY_NOT_FOUND",
+        "http": 404
+      },
+      "id": "GEO-17",
+      "input": {
+        "analysis_reader": false,
+        "project_member": true
+      },
+      "title": "project_member_without_reader"
+    },
+    {
+      "expected": {
+        "can_edit": false,
+        "get": 200
+      },
+      "id": "GEO-18",
+      "input": {
+        "analysis_reader": true,
+        "location_editor": false
+      },
+      "title": "reader_can_view"
+    },
+    {
+      "expected": {
+        "post_denied": true
+      },
+      "id": "GEO-19",
+      "input": {
+        "analysis_reader": true,
+        "location_editor": false
+      },
+      "title": "reader_cannot_edit"
+    },
+    {
+      "expected": {
+        "django_permissions": []
+      },
+      "id": "GEO-20",
+      "input": {
+        "group": "analysis-location-editor:P1"
+      },
+      "title": "editor_group_has_no_permissions"
+    },
+    {
+      "expected": {
+        "code": "GEOGRAPHY_REQUEST_INVALID",
+        "http": 400
+      },
+      "id": "GEO-21",
+      "input": {
+        "unknown_dataset_version": true
+      },
+      "title": "area_dataset_pin"
+    },
+    {
+      "expected": {
+        "integrity_error": true
+      },
+      "id": "GEO-22",
+      "input": {
+        "child_dataset": "D2",
+        "parent_dataset": "D1"
+      },
+      "title": "area_parent_same_dataset"
+    },
+    {
+      "expected": {
+        "kazakhstan_label": "Казахстан"
+      },
+      "id": "GEO-23",
+      "input": {
+        "map_loaded": true
+      },
+      "title": "russian_labels_present"
+    },
+    {
+      "expected": {
+        "admin0_layer_visible": true
+      },
+      "id": "GEO-24",
+      "input": {
+        "map_loaded": true
+      },
+      "title": "state_boundaries_visible"
+    },
+    {
+      "expected": {
+        "fields_updated": true
+      },
+      "id": "GEO-25",
+      "input": {
+        "click": true
+      },
+      "title": "map_click_to_coordinates"
+    },
+    {
+      "expected": {
+        "marker_updated": true
+      },
+      "id": "GEO-26",
+      "input": {
+        "field_change": true
+      },
+      "title": "coordinates_to_marker"
+    },
+    {
+      "expected": {
+        "circle_updated": true
+      },
+      "id": "GEO-27",
+      "input": {
+        "radius_change": true
+      },
+      "title": "radius_to_circle"
+    },
+    {
+      "expected": {
+        "new_revision": true,
+        "old_revision_preserved": true
+      },
+      "id": "GEO-28",
+      "input": {
+        "save": true
+      },
+      "title": "save_creates_revision"
+    },
+    {
+      "expected": {
+        "order": "newest_first"
+      },
+      "id": "GEO-29",
+      "input": {
+        "history_count": 3
+      },
+      "title": "history_order"
+    },
+    {
+      "expected": {
+        "off_origin_requests": 0
+      },
+      "id": "GEO-30",
+      "input": {
+        "browser_network_watch": true
+      },
+      "title": "no_external_network"
+    },
+    {
+      "expected": {
+        "blob_allowed": false,
+        "worker_origin": "self"
+      },
+      "id": "GEO-31",
+      "input": {
+        "map_worker": true
+      },
+      "title": "csp_worker_same_origin"
+    },
+    {
+      "expected": {
+        "player_layout_key_changed": false
+      },
+      "id": "GEO-32",
+      "input": {
+        "resize_map": true
+      },
+      "title": "map_layout_isolated"
+    },
+    {
+      "expected": {
+        "body_horizontal_scroll": false,
+        "editor_visible": true,
+        "map_visible": true
+      },
+      "id": "GEO-33",
+      "input": {
+        "viewport": "1024x768"
+      },
+      "title": "viewport_1024"
+    },
+    {
+      "expected": {
+        "body_horizontal_scroll": false,
+        "history_visible": true,
+        "map_visible": true
+      },
+      "id": "GEO-34",
+      "input": {
+        "viewport": "1366x768"
+      },
+      "title": "viewport_1366"
+    },
+    {
+      "expected": {
+        "all_map_assets_hashed": true
+      },
+      "id": "GEO-35",
+      "input": {
+        "wheel_built": true
+      },
+      "title": "asset_hash_inventory"
+    },
+    {
+      "expected": {
+        "dataset_license": true,
+        "maplibre_license": true
+      },
+      "id": "GEO-36",
+      "input": {
+        "wheel_built": true
+      },
+      "title": "license_inventory"
+    },
+    {
+      "expected": {
+        "canonical_response_bytes_equal": true
+      },
+      "id": "GEO-37",
+      "input": {
+        "same_fixture": true
+      },
+      "title": "postgresql_sqlite_parity"
+    },
+    {
+      "expected": {
+        "project_total_score": "METHOD_NOT_APPROVED"
+      },
+      "id": "GEO-38",
+      "input": {
+        "r1_enabled": true
+      },
+      "title": "no_total_score_change"
+    },
+    {
+      "expected": {
+        "production_player_changed": false,
+        "production_studio_changed": false
+      },
+      "id": "GEO-39",
+      "input": {
+        "r1_delta": true
+      },
+      "title": "studio_player_unchanged"
+    },
+    {
+      "expected": {
+        "mvp6_repacked": false
+      },
+      "id": "GEO-40",
+      "input": {
+        "r1_development": true
+      },
+      "title": "mvp6_bytes_unchanged"
+    }
+  ],
+  "oracles_sha256": "c08c104816f7fc520db50b07b5820e4720ba6ef530099959cb77970c6dc6ed5e",
+  "schema": "CONFLICT_MVP7_R1_GEOGRAPHY_ORACLES_V1",
+  "version": "1.0.0"
+}
