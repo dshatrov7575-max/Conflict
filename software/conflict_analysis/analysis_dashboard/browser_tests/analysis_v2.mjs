@@ -169,8 +169,21 @@ try {
   assert.ok(race.title.includes(race.actor));
   assert.equal(race.state, "ready");
 
+  // The race leaves GU-02 selected; persisted evidence fixtures belong to GU-01.
+  await client.evaluate(`(() => {
+    const actor = document.querySelector('#actor-select');
+    actor.value = 'GU-01';
+    actor.dispatchEvent(new Event('change', {bubbles:true}));
+    document.querySelector('#apply-selection').click();
+  })()`, sessionId);
+  await client.waitForExpression(
+    "document.querySelector('#chart-title')?.textContent.includes('GU-01') && document.querySelectorAll('#timeline-table tbody tr[data-value-id]').length >= 3",
+    sessionId,
+    timeout,
+  );
+
   // Evidence list and evidence-detail lanes must also reject stale responses.
-  const evidenceRace = await client.evaluate(`(async () => {
+  const evidenceRace = await client.evaluate(String.raw`(async () => {
     const original = window.fetch.bind(window);
     let listCall = 0;
     let detailCall = 0;

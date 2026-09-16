@@ -6859,6 +6859,7 @@ jobs:
       PYTHONUNBUFFERED: "1"
       UX_R0_BASE: 4a0f0cb42aaea8d9d5f368cdc3d3de15db2f6d03
       UX_R0_FIRST: 3e85953caf90a6ad5f24d589ac6a43b6a2a70e73
+      UX_R0_SECOND: 72a283eca4f33b9c5f82d0e22f70dcbcc47c6841
     defaults:
       run:
         working-directory: software/conflict_analysis
@@ -6869,18 +6870,33 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.sha }}
 
-      - name: Prove exact two-commit history and bounded correction
+      - name: Prove exact three-commit history and bounded corrections
         shell: bash
         working-directory: .
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "$UX_R0_FIRST"
+          test "$(git rev-parse HEAD^)" = "$UX_R0_SECOND"
+          test "$(git rev-parse "$UX_R0_SECOND^")" = "$UX_R0_FIRST"
           test "$(git rev-parse "$UX_R0_FIRST^")" = "$UX_R0_BASE"
-          test "$(git rev-list --count "$UX_R0_BASE..HEAD")" = "2"
+          test "$(git rev-list --count "$UX_R0_BASE..HEAD")" = "3"
           test -z "$(git rev-list --merges "$UX_R0_BASE..HEAD")"
-          test "$(git show -s --format=%s HEAD)" = "fix(analysis): close R0 post-commit gates"
+          test "$(git show -s --format=%B HEAD)" = "fix(analysis): repair R0 fixtures and readiness"
 
-          mapfile -t correction_paths < <(git diff --name-only "$UX_R0_FIRST...HEAD")
+          mapfile -t repair_paths < <(git diff --name-only "$UX_R0_SECOND...HEAD")
+          test "${#repair_paths[@]}" -eq 5
+          for path in "${repair_paths[@]}"; do
+            case "$path" in
+              .github/workflows/conflict-analysis.yml|\
+              software/conflict_analysis/analysis_dashboard/browser_tests/analysis_v2.mjs|\
+              software/conflict_analysis/domain/tests/test_analysis_read_model.py|\
+              software/conflict_analysis/analysis_dashboard/tests/test_http.py|\
+              software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/dashboard.js) ;;
+              *) echo "outside repair allowlist: $path" >&2; exit 1 ;;
+            esac
+          done
+          test -z "$(git diff --diff-filter=ACDRTUXB --name-only "$UX_R0_SECOND...HEAD")"
+
+          mapfile -t correction_paths < <(git diff --name-only "$UX_R0_FIRST...$UX_R0_SECOND")
           test "${#correction_paths[@]}" -eq 10
           for path in "${correction_paths[@]}"; do
             case "$path" in
@@ -6897,7 +6913,7 @@ jobs:
               *) echo "outside corrective allowlist: $path" >&2; exit 1 ;;
             esac
           done
-          test -z "$(git diff --diff-filter=D --name-only "$UX_R0_FIRST...HEAD")"
+          test -z "$(git diff --diff-filter=D --name-only "$UX_R0_FIRST...$UX_R0_SECOND")"
 
           mapfile -t aggregate_paths < <(git diff --name-only "$UX_R0_BASE...HEAD")
           test "${#aggregate_paths[@]}" -eq 25
@@ -6939,7 +6955,7 @@ jobs:
             software/conflict_analysis/owner_alpha_package \
             software/conflict_analysis/scripts/build_owner_alpha_package.py \
             software/conflict_analysis/scripts/verify_owner_alpha_package.py)"
-          git diff --check "$UX_R0_FIRST...HEAD"
+          git diff --check "$UX_R0_SECOND...HEAD"
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5

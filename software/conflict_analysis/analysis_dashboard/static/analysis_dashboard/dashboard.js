@@ -456,12 +456,12 @@
     if (context.experiments.length > 1) $("experiment-two").selectedIndex = 1;
     technical();
     $("analysis-state").hidden = true;
-    app.dataset.state = "ready";
     if (!context.experiments.length) {
       text("row-summary", "Нет доступных HUMAN/AI экспериментов");
+      app.dataset.state = "ready";
       return;
     }
-    await loadTimeline();
+    if (await loadTimeline()) app.dataset.state = "ready";
   }
   function query(entries) {
     const result = new URLSearchParams();
@@ -504,7 +504,7 @@
     }
     if (!current(token) || identity !== JSON.stringify([state.project, state.workspace, timelineSelection()])) return;
     state.series = selection.mode === "comparison" ? body.series : [body.series];
-    renderTimeline();
+    return renderTimeline();
   }
   function renderTimeline() {
     const first = state.series[0];
@@ -561,6 +561,7 @@
       tbody.append(tr);
     }
     text("row-summary", `${persisted} сохранённых точек · ${rows.length-persisted} без записи`);
+    return true;
   }
   function selectValue(row, point) {
     if (!point.parameter_value_id) return;

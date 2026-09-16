@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import date
 from uuid import uuid4
 
 from django.contrib.auth.models import Group
@@ -57,6 +58,16 @@ class AnalysisHTTPTests(PlayerExperimentsFixture, TestCase):
 
     def test_fractional_timeline_response_preserves_server_canonical_bytes(self):
         _, experiment, _ = self.aggregate(kind="AI")
+        TimeSlice.objects.create(
+            id=uuid4(),
+            project=self.project,
+            workspace=self.workspace,
+            code="ANALYSIS-HTTP-FRACTION-FOURTH",
+            version="1.0.0",
+            name="Fourth fractional HTTP test slice",
+            cutoff_date=date(2027, 1, 1),
+            order=4,
+        )
         slices = list(
             TimeSlice.objects.filter(workspace=self.workspace).order_by(
                 "cutoff_date", "order", "pk"
