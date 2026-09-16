@@ -1,6 +1,10 @@
 {% extends 'analysis_dashboard/base.html' %}
+{% load static %}
 {% block title %}Conflict Analysis — Аналитика{% endblock %}
 {% block body %}
+<link rel="stylesheet" href="{% static 'analysis_dashboard/vendor/maplibre/maplibre-gl.css' %}">
+<script src="{% static 'analysis_dashboard/vendor/maplibre/maplibre-gl-csp.js' %}" defer></script>
+<script src="{% static 'analysis_dashboard/map.js' %}" defer></script>
 <div id="analysis-app"
      data-authenticated="{{ analysis_authenticated|yesno:'true,false' }}"
      data-project-id="{{ project_id }}"
@@ -34,6 +38,7 @@
     <nav class="sidebar" aria-label="Разделы аналитики">
       <button type="button" class="nav-button active" data-view="timeline">Динамика</button>
       <button type="button" class="nav-button" data-view="matrix">Матрица</button>
+      <button type="button" class="nav-button" data-view="map">Карта</button>
       <button type="button" class="nav-button" data-view="evidence">Доказательства</button>
       <button type="button" class="nav-button" data-view="technical">Технические сведения</button>
       <div class="method-lock"><strong>Общий показатель</strong><span>METHOD_NOT_APPROVED</span></div>
@@ -41,6 +46,30 @@
 
     <main class="workspace">
       <div id="analysis-state" class="state" role="status" aria-live="polite">Проверяем доступ и проекцию…</div>
+
+      <section id="view-map" class="view" data-view-panel="map" hidden>
+        <div class="panel-heading"><h1>Примерная локализация</h1><button id="geo-refresh" type="button">Обновить</button></div>
+        <p id="geo-status" role="status" aria-live="polite">Откройте карту для загрузки локализации.</p>
+        <div class="geo-layout">
+          <article class="panel geo-map-panel"><div id="geo-map" class="geo-map" role="region" aria-label="Карта примерной локализации"></div>
+            <p class="geo-attribution">Natural Earth · <a href="{% static 'analysis_dashboard/licenses/DATASET_LICENSES_RU.md' %}">geoBoundaries, CC BY 4.0; © OpenStreetMap contributors / Wambacher, ODbL 1.0</a>. ADM1: 2017.</p>
+          </article>
+          <aside class="panel geo-side">
+            <h2>Текущая точка</h2><div id="geo-current">Локализация не задана.</div>
+            <button id="geo-edit" type="button" class="primary" hidden>Указать точку</button>
+            <h2>История версий</h2><ol id="geo-history" aria-label="История локализации"></ol><p id="geo-history-more" hidden>Показаны последние 50 версий.</p>
+          </aside>
+        </div>
+        <details class="geo-details"><summary>Основа карты, ограничения и размеры</summary>
+          <p id="geo-dataset"></p><p>Картографическая версия не является юридическим заключением о статусе спорных территорий. Спорные линии — фиолетовый пунктир. Области Казахстана отражают 2017 год; возможны несовпадения с современными границами.</p>
+          <p>Центр и радиус показывают примерную локализацию. Геометрия границ конфликта не определена.</p>
+          <a href="{% static 'analysis_dashboard/licenses/BOUNDARY_POLICY_RU.md' %}">Политика границ</a> ·
+          <a href="{% static 'analysis_dashboard/maps/MAP_DATASET_MANIFEST.json' %}">Manifest и SHA-256</a> ·
+          <a href="{% static 'analysis_dashboard/maps/kazakhstan_admin1.geojson' %}" download>Производная база ADM1 (ODbL)</a>
+          <label>Высота карты <input id="geo-height" type="range" min="280" max="620" step="10" value="410"></label>
+          <label>Ширина карточки <input id="geo-width" type="range" min="240" max="360" step="10" value="280"></label>
+        </details>
+      </section>
 
       <section id="view-timeline" class="view active" data-view-panel="timeline">
         <div class="filters">
@@ -107,6 +136,27 @@
       <label>Масштаб текста <output id="font-scale-output"></output><input id="font-scale" type="range" min="85" max="140" step="5"></label>
       <label class="checkbox"><input id="fit-viewport" type="checkbox"> Автоматически помещать график и список в окно</label>
       <div class="dialog-actions"><button id="layout-reset" type="button">Сбросить</button><button value="cancel">Закрыть</button></div>
+    </form>
+  </dialog>
+  <dialog id="geo-dialog" aria-labelledby="geo-dialog-title">
+    <form id="geo-form">
+      <h2 id="geo-dialog-title">Указать примерную локализацию</h2>
+      <div class="geo-editor-grid">
+        <div><div id="geo-editor-map" class="geo-map" role="region" aria-label="Установка и перетаскивание точки"></div><p>Щёлкните по карте или перетащите маркер. С клавиатуры используйте числовые поля.</p></div>
+        <div class="geo-fields">
+          <div class="geo-pair"><label>Широта <input id="geo-lat" type="number" min="-90" max="90" step="0.0000001" required></label><label>Долгота <input id="geo-lon" type="number" min="-180" max="180" step="0.0000001" required></label></div>
+          <label>Тип локализации <select id="geo-kind"><option value="POINT">POINT — примерная точка</option><option value="AREA">AREA — территория</option><option value="REGION">REGION — регион</option><option value="COUNTRY">COUNTRY — государство</option><option value="TRANSBOUNDARY">TRANSBOUNDARY — трансграничная</option></select></label>
+          <label>Радиус неопределённости, м <input id="geo-radius" type="number" min="0" max="20000000" step="1"></label>
+          <label>Территория <select id="geo-area"><option value="">Не выбрана</option></select></label>
+          <label>Подпись <input id="geo-label" maxlength="255"></label>
+          <label>Источник <select id="geo-source"><option value="USER_MAP">Указано на карте</option><option value="MANUAL_COORDINATES">Введено вручную</option><option value="DOCUMENT">Документ</option><option value="IMPORT">Импорт</option><option value="SYSTEM">Система</option></select></label>
+          <label>Ссылка или идентификатор источника <input id="geo-reference" maxlength="1024"></label>
+          <label>Обоснование <textarea id="geo-rationale" required maxlength="4000" rows="2"></textarea></label>
+        </div>
+      </div>
+      <p id="geo-before-after" aria-live="polite"></p>
+      <p id="geo-error" role="alert"></p>
+      <div class="dialog-actions"><button id="geo-clear" type="button">Очистить выбор</button><button id="geo-cancel" type="button">Отмена</button><button id="geo-save" type="submit" class="primary">Сохранить новую версию</button></div>
     </form>
   </dialog>
 </div>

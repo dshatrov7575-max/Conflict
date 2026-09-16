@@ -18,7 +18,7 @@ def _secure(response: HttpResponse) -> HttpResponse:
     response["Content-Security-Policy"] = (
         "default-src 'self'; script-src 'self'; style-src 'self'; "
         "img-src 'self' data:; connect-src 'self'; object-src 'none'; "
-        "base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+        "base-uri 'none'; form-action 'self'; frame-ancestors 'none'; worker-src 'self'"
     )
     return response
 

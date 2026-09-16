@@ -1,0 +1,164 @@
+[
+  {
+    "name": "cc-by.txt",
+    "url": "https://raw.githubusercontent.com/creativecommons/legalcode/4d2de083a6dcc5095ed1a30885bc48f868b9bb55/by_4.0.txt",
+    "bytes": 18524,
+    "sha256": "8ae9438818c26e4873b91d8c6ad620526c011e27e125677f13031eda903f007c"
+  },
+  {
+    "name": "gb-citation.txt",
+    "url": "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/9469f09592ced973a3448cf66b6100b741b64c0d/releaseData/gbOpen/KAZ/ADM1/CITATION-AND-USE-geoBoundaries.txt",
+    "bytes": 4316,
+    "sha256": "f6ea7572bea6036c4cdcacf8c0ca7bf09098d4e600d19546d7432533e9a290d5"
+  },
+  {
+    "name": "gb-kaz.geojson",
+    "url": "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/9469f09592ced973a3448cf66b6100b741b64c0d/releaseData/gbOpen/KAZ/ADM1/geoBoundaries-KAZ-ADM1.geojson",
+    "bytes": 1904587,
+    "sha256": "576783ee4b3739196ca0a52453704ec8d15c75385b24b594d0d9e03454f89221"
+  },
+  {
+    "name": "gb-metadata.json",
+    "url": "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/9469f09592ced973a3448cf66b6100b741b64c0d/releaseData/gbOpen/KAZ/ADM1/geoBoundaries-KAZ-ADM1-metaData.json",
+    "bytes": 852,
+    "sha256": "84a67cf7fb1911952e4d6968a65fc7f2a1be65bd338f4dc30d356f147975dda3"
+  },
+  {
+    "name": "maplibre-gl-5.6.2.tgz",
+    "url": "https://registry.npmjs.org/maplibre-gl/-/maplibre-gl-5.6.2.tgz",
+    "sha256": "86ed7f726a7df7b7539d535fc3fa276c1ff845caab962f1e67e4c5dc6152d7f6",
+    "bytes": 7856525
+  },
+  {
+    "name": "ne-terms.txt",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/LICENSE.md",
+    "bytes": 4636,
+    "sha256": "2631b5b39b6d1acc56de75235109b5af2dbb4b0ac5a127b6f06185977247fd4b"
+  },
+  {
+    "name": "ne_10m_admin_0_boundary_lines_disputed_areas.VERSION.txt",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_admin_0_boundary_lines_disputed_areas.VERSION.txt",
+    "sha256": "c0eacacd7e27bbf341d21e7e0e2997a363840a210d8e358d4babaebd765b5bfd",
+    "bytes": 6
+  },
+  {
+    "name": "ne_10m_admin_0_boundary_lines_disputed_areas.dbf",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_admin_0_boundary_lines_disputed_areas.dbf",
+    "sha256": "6d1e7dcfc13474dba5f304427a97190630cd04af9ea2911d2d5711735a761e34",
+    "bytes": 170619
+  },
+  {
+    "name": "ne_10m_admin_0_boundary_lines_disputed_areas.prj",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_admin_0_boundary_lines_disputed_areas.prj",
+    "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4",
+    "bytes": 145
+  },
+  {
+    "name": "ne_10m_admin_0_boundary_lines_disputed_areas.shp",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_admin_0_boundary_lines_disputed_areas.shp",
+    "sha256": "b3294d9e15bc093091c3d1524ec120eeafcfc16a188177bc4cbe3d1489f25626",
+    "bytes": 65480
+  },
+  {
+    "name": "ne_10m_admin_0_boundary_lines_disputed_areas.shx",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_admin_0_boundary_lines_disputed_areas.shx",
+    "sha256": "d35a682117ba7f526e51d2c437edf820d8ce7afcec01effc6d0fc4493464c1fd",
+    "bytes": 700
+  },
+  {
+    "name": "ne_10m_admin_0_countries.VERSION.txt",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_admin_0_countries.VERSION.txt",
+    "sha256": "f9893302cd3158f3b5aea394dcd2a91574869e9e6ff69e9235b10a3bf8c983fb",
+    "bytes": 6
+  },
+  {
+    "name": "ne_10m_admin_0_countries.dbf",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_admin_0_countries.dbf",
+    "sha256": "c5dbd3dd5fd7e2ef49051fc88562c03819e8ea63a382642df6eadd1243bf4b49",
+    "bytes": 878482
+  },
+  {
+    "name": "ne_10m_admin_0_countries.prj",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_admin_0_countries.prj",
+    "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4",
+    "bytes": 145
+  },
+  {
+    "name": "ne_10m_admin_0_countries.shp",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_admin_0_countries.shp",
+    "sha256": "7ce119ef6342e43cff7c0c3004e0911ab7ec1988a14734372031d2012180e7bc",
+    "bytes": 8806224
+  },
+  {
+    "name": "ne_10m_admin_0_countries.shx",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_admin_0_countries.shx",
+    "sha256": "ca19ec112d054c77bc8f7ac00e3b110d5dff32cc9bcf4cd1b8b66bdd0f611d32",
+    "bytes": 2164
+  },
+  {
+    "name": "ne_10m_geography_marine_polys.VERSION.txt",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_physical/ne_10m_geography_marine_polys.VERSION.txt",
+    "bytes": 6,
+    "sha256": "c0eacacd7e27bbf341d21e7e0e2997a363840a210d8e358d4babaebd765b5bfd"
+  },
+  {
+    "name": "ne_10m_geography_marine_polys.dbf",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_physical/ne_10m_geography_marine_polys.dbf",
+    "bytes": 2098542,
+    "sha256": "7bc656599a3ca0410479dc620e3a4202c13961efcafb797ee52145ca1c21f8f4"
+  },
+  {
+    "name": "ne_10m_geography_marine_polys.prj",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_physical/ne_10m_geography_marine_polys.prj",
+    "bytes": 145,
+    "sha256": "a02a27b1d1982c8516d83398e85a3c8b1aef1713c13ef4d84d7bde17430c07c4"
+  },
+  {
+    "name": "ne_10m_geography_marine_polys.shp",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_physical/ne_10m_geography_marine_polys.shp",
+    "bytes": 957976,
+    "sha256": "222bf1611ddb9d8afa0660843e37fbd8cd6a54fbf9110db5b99fd74198389af4"
+  },
+  {
+    "name": "ne_10m_geography_marine_polys.shx",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_physical/ne_10m_geography_marine_polys.shx",
+    "bytes": 2548,
+    "sha256": "69001b6557c01a1386049420cd59714cd57b4b3d586e3cb1e9f5e7adae92d568"
+  },
+  {
+    "name": "ne_10m_populated_places.VERSION.txt",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_populated_places.VERSION.txt",
+    "sha256": "0c9a9d43610d66f4cc3f42da08cae044483de25894a9daf9dc6a76ff75ca9327",
+    "bytes": 6
+  },
+  {
+    "name": "ne_10m_populated_places.dbf",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_populated_places.dbf",
+    "sha256": "eff834a8727e06f28fc52b04393c462d074aecf9a7acd1b870e766240a995b6c",
+    "bytes": 48278068
+  },
+  {
+    "name": "ne_10m_populated_places.prj",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_populated_places.prj",
+    "sha256": "98aaf3d1c0ecadf1a424a4536de261c3daf4e373697cb86c40c43b989daf52eb",
+    "bytes": 143
+  },
+  {
+    "name": "ne_10m_populated_places.shp",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_populated_places.shp",
+    "sha256": "f4073365d248dfe35a44cca6715bf5b4812fa723294ed6a37043d7a3e09cc998",
+    "bytes": 205676
+  },
+  {
+    "name": "ne_10m_populated_places.shx",
+    "url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/10m_cultural/ne_10m_populated_places.shx",
+    "sha256": "cdbad984f9e40948f2b77c87f73319477775d7bc95d47112455abea30ad39757",
+    "bytes": 58836
+  },
+  {
+    "name": "odbl.txt",
+    "url": "https://raw.githubusercontent.com/okfn/opendatacommons.org/c9902b1df7595e1d765da24c320ac84b8ad2f3dd/content/licenses/odbl/odbl-10.txt",
+    "bytes": 25278,
+    "sha256": "607680718977f6f6c9607972afd98f208573f19251315ed1362a8589b51beaf5"
+  }
+]

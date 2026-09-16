@@ -50,4 +50,7 @@ include = ["conflict_analysis*", "domain*", "production_studio*", "production_pl
     "templates/analysis_dashboard/*.html",
     "static/analysis_dashboard/*.css",
     "static/analysis_dashboard/*.js",
+    "static/analysis_dashboard/vendor/maplibre/*",
+    "static/analysis_dashboard/maps/*",
+    "static/analysis_dashboard/licenses/*",
 ]

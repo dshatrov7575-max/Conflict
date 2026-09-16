@@ -56,6 +56,22 @@ class AnalysisHTTPTests(PlayerExperimentsFixture, TestCase):
         ).encode("utf-8")
         self.assertEqual(digest, hashlib.sha256(canonical).hexdigest())
 
+    def test_geography_shell_loads_only_local_CSP_assets_without_ORM_reads(self):
+        from pathlib import Path
+        from analysis_dashboard import views
+        client = Client(); client.force_login(self.user)
+        shell = client.get(f"/analysis/projects/{self.project.pk}/workspaces/{self.workspace.pk}/")
+        self.assertEqual(shell.status_code, 200)
+        self.assertIn("worker-src 'self'", shell["Content-Security-Policy"])
+        self.assertNotIn("blob:", shell["Content-Security-Policy"])
+        for asset in ("map.js", "vendor/maplibre/maplibre-gl-csp.js", "vendor/maplibre/maplibre-gl.css"):
+            self.assertContains(shell, "/static/analysis_dashboard/" + asset)
+        self.assertContains(shell, 'id="geo-edit" type="button" class="primary" hidden')
+        self.assertContains(shell, 'id="geo-dialog" aria-labelledby="geo-dialog-title"')
+        source=Path(views.__file__).read_text(encoding="utf8")
+        self.assertNotIn("domain.models", source)
+        self.assertNotIn(".objects.", source)
+
     def test_fractional_timeline_response_preserves_server_canonical_bytes(self):
         _, experiment, _ = self.aggregate(kind="AI")
         TimeSlice.objects.create(

@@ -395,6 +395,7 @@
     document.querySelectorAll("[data-view]").forEach((node) => {
       node.classList.toggle("active", node.dataset.view === name);
     });
+    app.dispatchEvent(new CustomEvent("analysis:view", {detail: {name}}));
   }
   document.querySelectorAll("[data-view]").forEach((node) => {
     node.addEventListener("click", () => setView(node.dataset.view));

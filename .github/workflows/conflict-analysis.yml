@@ -7320,7 +7320,7 @@ jobs:
       PYTHONUNBUFFERED: '1'
       R1_BASE: c6c7118080ab1a1dcb86216f4092dabcf8125be7
       R1_BASE_TREE: 5a4a40431e72fb6b942b895225ce11bba2898052
-      R1_COMMIT_A: BOUND_IN_COMMIT_B
+      R1_COMMIT_A: ba09340fecc446f677f8b4cf0c4ba3e565ebcee5
     defaults:
       run:
         working-directory: software/conflict_analysis
