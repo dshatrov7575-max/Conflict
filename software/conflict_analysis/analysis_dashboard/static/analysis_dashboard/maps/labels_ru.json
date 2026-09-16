@@ -1,1 +1,3261 @@
-{"labels":[{"canonical_name":"Caspian Sea","coordinates":[50.50646321387682,41.86506765397213],"dataset":"Natural Earth","feature_id":"1159115461","kind":"water","name_ru":"Каспийское море"},{"canonical_name":"Zhangaozen","coordinates":[52.800022,43.300392],"dataset":"Natural Earth","feature_id":"1159142671","kind":"place","name_ru":"Жанаозен"},{"canonical_name":"Aqtau","coordinates":[51.2365,43.623189],"dataset":"Natural Earth","feature_id":"1159148679","kind":"place","name_ru":"Актау"},{"canonical_name":"Atyrau","coordinates":[51.920024,47.112692],"dataset":"Natural Earth","feature_id":"1159150111","kind":"place","name_ru":"Атырау"},{"canonical_name":"Nur-Sultan","coordinates":[71.427774,51.181125],"dataset":"Natural Earth","feature_id":"1159150965","kind":"place","name_ru":"Астана"},{"canonical_name":"Almaty","coordinates":[76.91309,43.326936],"dataset":"Natural Earth","feature_id":"1159150969","kind":"place","name_ru":"Алматы"},{"canonical_name":"Mangystau Region","coordinates":[55.7,44.3],"dataset":"geoBoundaries","feature_id":"16772668B64618180863447","kind":"region","name_ru":"Мангистауская область"},{"canonical_name":"Azerbaijan","coordinates":[47.6,40.6],"dataset":"Natural Earth","feature_id":"AZE","kind":"country","name_ru":"Азербайджан"},{"canonical_name":"China","coordinates":[90,40],"dataset":"Natural Earth","feature_id":"CHN","kind":"country","name_ru":"Китай"},{"canonical_name":"Iran","coordinates":[54.931495,32.166225],"dataset":"Natural Earth","feature_id":"IRN","kind":"country","name_ru":"Иран"},{"canonical_name":"Kazakhstan","coordinates":[68.685548,49.054149],"dataset":"Natural Earth","feature_id":"KAZ","kind":"country","name_ru":"Казахстан"},{"canonical_name":"Kyrgyzstan","coordinates":[74.532637,41.66854],"dataset":"Natural Earth","feature_id":"KGZ","kind":"country","name_ru":"Кыргызстан"},{"canonical_name":"Mongolia","coordinates":[95,48],"dataset":"Natural Earth","feature_id":"MNG","kind":"country","name_ru":"Монголия"},{"canonical_name":"Russia","coordinates":[66,59],"dataset":"Natural Earth","feature_id":"RUS","kind":"country","name_ru":"Россия"},{"canonical_name":"Turkmenistan","coordinates":[58.676647,39.855246],"dataset":"Natural Earth","feature_id":"TKM","kind":"country","name_ru":"Туркменистан"},{"canonical_name":"Uzbekistan","coordinates":[64.005429,41.693603],"dataset":"Natural Earth","feature_id":"UZB","kind":"country","name_ru":"Узбекистан"}],"schema":"CONFLICT_MAP_LABELS_RU_V1","version":"1.0.0"}
+{
+  "labels": [
+    {
+      "dataset": "admin0",
+      "feature_id": "AZE",
+      "label_lat": 40.402387,
+      "label_lon": 47.210994,
+      "name_ru": "Азербайджан"
+    },
+    {
+      "dataset": "admin0",
+      "feature_id": "CHN",
+      "label_lat": 32.498178,
+      "label_lon": 106.337289,
+      "name_ru": "Китайская Народная Республика"
+    },
+    {
+      "dataset": "admin0",
+      "feature_id": "IRN",
+      "label_lat": 32.166225,
+      "label_lon": 54.931495,
+      "name_ru": "Иран"
+    },
+    {
+      "dataset": "admin0",
+      "feature_id": "KAZ",
+      "label_lat": 49.054149,
+      "label_lon": 68.685548,
+      "name_ru": "Казахстан"
+    },
+    {
+      "dataset": "admin0",
+      "feature_id": "KGZ",
+      "label_lat": 41.66854,
+      "label_lon": 74.532637,
+      "name_ru": "Киргизия"
+    },
+    {
+      "dataset": "admin0",
+      "feature_id": "MNG",
+      "label_lat": 45.997488,
+      "label_lon": 104.150405,
+      "name_ru": "Монголия"
+    },
+    {
+      "dataset": "admin0",
+      "feature_id": "RUS",
+      "label_lat": 58.249357,
+      "label_lon": 44.686469,
+      "name_ru": "Россия"
+    },
+    {
+      "dataset": "admin0",
+      "feature_id": "TKM",
+      "label_lat": 39.855246,
+      "label_lon": 58.676647,
+      "name_ru": "Туркмения"
+    },
+    {
+      "dataset": "admin0",
+      "feature_id": "UZB",
+      "label_lat": 41.693603,
+      "label_lon": 64.005429,
+      "name_ru": "Узбекистан"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314605",
+      "label_lat": 44.0351,
+      "label_lon": 53.8538,
+      "name_ru": "Мангистауская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314713",
+      "label_lat": 48.0288,
+      "label_lon": 58.9373,
+      "name_ru": "Актюбинская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314715",
+      "label_lat": 51.2854,
+      "label_lon": 64.1291,
+      "name_ru": "Костанайская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314717",
+      "label_lat": 44.6012,
+      "label_lon": 63.6151,
+      "name_ru": "Кызылординская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314719",
+      "label_lat": 47.7744,
+      "label_lon": 51.7585,
+      "name_ru": "Атырауская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314721",
+      "label_lat": 49.8909,
+      "label_lon": 50.5145,
+      "name_ru": "Западно-Казахстанская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314725",
+      "label_lat": 51.928,
+      "label_lon": 69.8519,
+      "name_ru": "Акмолинская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314727",
+      "label_lat": 48.0823,
+      "label_lon": 70.1925,
+      "name_ru": "Карагандинская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314729",
+      "label_lat": 54.4528,
+      "label_lon": 69.0682,
+      "name_ru": "Северо-Казахстанская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314731",
+      "label_lat": 52.2076,
+      "label_lon": 76.3751,
+      "name_ru": "Павлодарская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314733",
+      "label_lat": 48.3405,
+      "label_lon": 81.9768,
+      "name_ru": "Восточно-Казахстанская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314735",
+      "label_lat": 45.0707,
+      "label_lon": 78.2246,
+      "name_ru": "Алматинская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314737",
+      "label_lat": 42.7187,
+      "label_lon": 68.7533,
+      "name_ru": "Туркестанская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159314739",
+      "label_lat": 44.3152,
+      "label_lon": 72.4888,
+      "name_ru": "Жамбылская область"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159315881",
+      "label_lat": 43.2709,
+      "label_lon": 76.9424,
+      "name_ru": "Алма-Ата"
+    },
+    {
+      "dataset": "admin1",
+      "feature_id": "1159315883",
+      "label_lat": 51.1503,
+      "label_lon": 71.4538,
+      "name_ru": "Нур-Султан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159122651",
+      "label_lat": 43.690455,
+      "label_lon": 51.141736,
+      "name_ru": "Актау"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134151",
+      "label_lat": 45.368508,
+      "label_lon": 36.488098,
+      "name_ru": "Керчь"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134289",
+      "label_lat": 39.51238,
+      "label_lon": 54.36494,
+      "name_ru": "Балканабад"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134295",
+      "label_lat": 37.350342,
+      "label_lon": 59.600021,
+      "name_ru": "Кака"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134299",
+      "label_lat": 39.721075,
+      "label_lon": 64.545765,
+      "name_ru": "Каган"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134303",
+      "label_lat": 41.391129,
+      "label_lon": 60.355737,
+      "name_ru": "Хива"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134307",
+      "label_lat": 42.931138,
+      "label_lon": 59.77076,
+      "name_ru": "Чимбай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134313",
+      "label_lat": 43.070406,
+      "label_lon": 58.900012,
+      "name_ru": "Кунград"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134317",
+      "label_lat": 41.582228,
+      "label_lon": 64.201807,
+      "name_ru": "Зарафшан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134321",
+      "label_lat": 40.110406,
+      "label_lon": 65.354967,
+      "name_ru": "Навои"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134325",
+      "label_lat": 37.824809,
+      "label_lon": 65.199731,
+      "name_ru": "Керки"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134331",
+      "label_lat": 39.061788,
+      "label_lon": 66.831466,
+      "name_ru": "Шахрисабз"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134335",
+      "label_lat": 38.87043,
+      "label_lon": 65.800004,
+      "name_ru": "Карши"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134339",
+      "label_lat": 40.540405,
+      "label_lon": 70.94,
+      "name_ru": "Коканд"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134357",
+      "label_lat": 40.10038,
+      "label_lon": 67.830009,
+      "name_ru": "Джизак"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134359",
+      "label_lat": 41.030375,
+      "label_lon": 70.154932,
+      "name_ru": "Ангрен"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159134365",
+      "label_lat": 40.850438,
+      "label_lon": 69.595018,
+      "name_ru": "Алмалык"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159136449",
+      "label_lat": 42.456025,
+      "label_lon": 76.185365,
+      "name_ru": "Балыкчи"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159136455",
+      "label_lat": 41.172486,
+      "label_lon": 75.79681,
+      "name_ru": "Ат-Баши"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159136459",
+      "label_lat": 40.942887,
+      "label_lon": 73.00251,
+      "name_ru": "Джалал-Абад"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159136463",
+      "label_lat": 41.882571,
+      "label_lon": 72.937191,
+      "name_ru": "Токтогул"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159136467",
+      "label_lat": 41.341855,
+      "label_lon": 72.231446,
+      "name_ru": "Таш-Кумыр"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159136473",
+      "label_lat": 42.518372,
+      "label_lon": 72.242918,
+      "name_ru": "Талас"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159136477",
+      "label_lat": 40.540405,
+      "label_lon": 72.790017,
+      "name_ru": "Ош"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137047",
+      "label_lat": 56.49261,
+      "label_lon": 84.903593,
+      "name_ru": "Тимирязевское"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137051",
+      "label_lat": 56.993122,
+      "label_lon": 86.162689,
+      "name_ru": "Асино"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137055",
+      "label_lat": 60.733152,
+      "label_lon": 77.577683,
+      "name_ru": "Стрежевой"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137059",
+      "label_lat": 44.290409,
+      "label_lon": 42.060006,
+      "name_ru": "Черкесск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137065",
+      "label_lat": 43.050381,
+      "label_lon": 44.669976,
+      "name_ru": "Владикавказ"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137069",
+      "label_lat": 45.104726,
+      "label_lon": 43.434393,
+      "name_ru": "Благодарный"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137071",
+      "label_lat": 44.40911,
+      "label_lon": 43.878706,
+      "name_ru": "Зеленокумск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137185",
+      "label_lat": 57.219129,
+      "label_lon": 41.928748,
+      "name_ru": "Вичуга"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137187",
+      "label_lat": 58.379756,
+      "label_lon": 45.509356,
+      "name_ru": "Шарья"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137195",
+      "label_lat": 58.484685,
+      "label_lon": 41.52438,
+      "name_ru": "Буй"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137199",
+      "label_lat": 56.250377,
+      "label_lon": 43.460024,
+      "name_ru": "Дзержинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137203",
+      "label_lat": 55.324723,
+      "label_lon": 42.164392,
+      "name_ru": "Выкса"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137209",
+      "label_lat": 56.869124,
+      "label_lon": 37.344377,
+      "name_ru": "Кимры"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137213",
+      "label_lat": 57.764729,
+      "label_lon": 36.689998,
+      "name_ru": "Бежецк"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137233",
+      "label_lat": 59.46478,
+      "label_lon": 40.114388,
+      "name_ru": "Сокол"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137235",
+      "label_lat": 59.140433,
+      "label_lon": 37.909975,
+      "name_ru": "Череповец"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137239",
+      "label_lat": 58.050344,
+      "label_lon": 38.819997,
+      "name_ru": "Рыбинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137245",
+      "label_lat": 57.189157,
+      "label_lon": 39.404303,
+      "name_ru": "Ростов"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137249",
+      "label_lat": 54.520379,
+      "label_lon": 36.270024,
+      "name_ru": "Калуга"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137257",
+      "label_lat": 55.080448,
+      "label_lon": 36.620028,
+      "name_ru": "Обнинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137263",
+      "label_lat": 51.694763,
+      "label_lon": 35.274374,
+      "name_ru": "Льгов"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137265",
+      "label_lat": 52.354775,
+      "label_lon": 35.404392,
+      "name_ru": "Железногорск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137269",
+      "label_lat": 52.494766,
+      "label_lon": 39.934348,
+      "name_ru": "Грязи"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137273",
+      "label_lat": 55.384796,
+      "label_lon": 39.02939,
+      "name_ru": "Егорьевск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137277",
+      "label_lat": 55.38043,
+      "label_lon": 37.529947,
+      "name_ru": "Подольск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137283",
+      "label_lat": 56.180691,
+      "label_lon": 36.980885,
+      "name_ru": "Солнечногорск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137287",
+      "label_lat": 55.870426,
+      "label_lon": 38.480018,
+      "name_ru": "Ногинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137291",
+      "label_lat": 54.93038,
+      "label_lon": 37.430004,
+      "name_ru": "Серпухов"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137295",
+      "label_lat": 52.424796,
+      "label_lon": 37.604361,
+      "name_ru": "Ливны"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137301",
+      "label_lat": 53.264745,
+      "label_lon": 36.547164,
+      "name_ru": "Мценск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137305",
+      "label_lat": 46.477511,
+      "label_lon": 41.542001,
+      "name_ru": "Сальск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137309",
+      "label_lat": 48.186502,
+      "label_lon": 40.78613,
+      "name_ru": "Белая Калитва"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137313",
+      "label_lat": 47.72038,
+      "label_lon": 40.270038,
+      "name_ru": "Шахты"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137319",
+      "label_lat": 48.937851,
+      "label_lon": 40.39742,
+      "name_ru": "Миллерово"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137323",
+      "label_lat": 53.149119,
+      "label_lon": 38.121538,
+      "name_ru": "Ефремов"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137327",
+      "label_lat": 53.774688,
+      "label_lon": 38.114355,
+      "name_ru": "Богородицк"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137331",
+      "label_lat": 50.080391,
+      "label_lon": 45.400009,
+      "name_ru": "Камышин"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137337",
+      "label_lat": 50.047732,
+      "label_lon": 46.877335,
+      "name_ru": "Палласовка"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137341",
+      "label_lat": 49.772193,
+      "label_lon": 43.651795,
+      "name_ru": "Фролово"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137345",
+      "label_lat": 48.794811,
+      "label_lon": 44.774362,
+      "name_ru": "Волжский"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137353",
+      "label_lat": 50.06786,
+      "label_lon": 43.217455,
+      "name_ru": "Михайловка"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137357",
+      "label_lat": 50.77345,
+      "label_lon": 42.003059,
+      "name_ru": "Урюпинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137361",
+      "label_lat": 51.30042,
+      "label_lon": 37.839954,
+      "name_ru": "Старый Оскол"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137365",
+      "label_lat": 50.653483,
+      "label_lon": 38.69308,
+      "name_ru": "Алексеевка"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137371",
+      "label_lat": 50.209092,
+      "label_lon": 38.098698,
+      "name_ru": "Валуйки"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137375",
+      "label_lat": 44.114761,
+      "label_lon": 39.064375,
+      "name_ru": "Туапсе"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137379",
+      "label_lat": 44.574759,
+      "label_lon": 38.064384,
+      "name_ru": "Геленджик"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137383",
+      "label_lat": 44.634781,
+      "label_lon": 40.744272,
+      "name_ru": "Лабинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137389",
+      "label_lat": 45.000391,
+      "label_lon": 41.130037,
+      "name_ru": "Армавир"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137391",
+      "label_lat": 45.624746,
+      "label_lon": 38.944382,
+      "name_ru": "Тимашёвск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137395",
+      "label_lat": 45.853104,
+      "label_lon": 40.137746,
+      "name_ru": "Тихорецк"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137399",
+      "label_lat": 46.698789,
+      "label_lon": 38.26339,
+      "name_ru": "Ейск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137403",
+      "label_lat": 54.170374,
+      "label_lon": 45.180022,
+      "name_ru": "Саранск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137409",
+      "label_lat": 53.194723,
+      "label_lon": 44.044381,
+      "name_ru": "Каменка"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137413",
+      "label_lat": 53.120413,
+      "label_lon": 46.599987,
+      "name_ru": "Кузнецк"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137417",
+      "label_lat": 52.462184,
+      "label_lon": 44.221786,
+      "name_ru": "Сердобск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137421",
+      "label_lat": 54.943454,
+      "label_lon": 41.39307,
+      "name_ru": "Касимов"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137429",
+      "label_lat": 54.349149,
+      "label_lon": 41.908698,
+      "name_ru": "Сасово"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137433",
+      "label_lat": 52.594734,
+      "label_lon": 41.504381,
+      "name_ru": "Котовск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137437",
+      "label_lat": 53.454733,
+      "label_lon": 41.804363,
+      "name_ru": "Моршанск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137443",
+      "label_lat": 56.36037,
+      "label_lon": 41.330025,
+      "name_ru": "Ковров"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137447",
+      "label_lat": 55.570418,
+      "label_lon": 42.040007,
+      "name_ru": "Муром"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137451",
+      "label_lat": 54.067383,
+      "label_lon": 54.926921,
+      "name_ru": "Раевский"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137455",
+      "label_lat": 52.70912,
+      "label_lon": 58.638736,
+      "name_ru": "Сибай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137461",
+      "label_lat": 52.774775,
+      "label_lon": 55.784336,
+      "name_ru": "Кумертау"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137465",
+      "label_lat": 53.370346,
+      "label_lon": 55.92996,
+      "name_ru": "Салават"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137469",
+      "label_lat": 54.129137,
+      "label_lon": 54.118702,
+      "name_ru": "Белебей"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137473",
+      "label_lat": 54.604792,
+      "label_lon": 53.694335,
+      "name_ru": "Туймазы"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137479",
+      "label_lat": 56.083513,
+      "label_lon": 54.263086,
+      "name_ru": "Нефтекамск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137483",
+      "label_lat": 54.10565,
+      "label_lon": 61.570236,
+      "name_ru": "Троицк"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137487",
+      "label_lat": 54.748866,
+      "label_lon": 61.293509,
+      "name_ru": "Еманжелинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137491",
+      "label_lat": 53.047394,
+      "label_lon": 60.681919,
+      "name_ru": "Карталы"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137497",
+      "label_lat": 54.997998,
+      "label_lon": 57.272618,
+      "name_ru": "Аша"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137501",
+      "label_lat": 54.995414,
+      "label_lon": 60.094926,
+      "name_ru": "Миасс"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137505",
+      "label_lat": 55.699997,
+      "label_lon": 60.559549,
+      "name_ru": "Кыштым"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137509",
+      "label_lat": 54.908676,
+      "label_lon": 64.433266,
+      "name_ru": "Куртамыш"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137515",
+      "label_lat": 56.083668,
+      "label_lon": 63.633263,
+      "name_ru": "Шадринск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137541",
+      "label_lat": 57.578461,
+      "label_lon": 48.958086,
+      "name_ru": "Советск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137545",
+      "label_lat": 58.718495,
+      "label_lon": 50.188037,
+      "name_ru": "Слободской"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137551",
+      "label_lat": 59.313833,
+      "label_lon": 52.245173,
+      "name_ru": "Кирс"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137555",
+      "label_lat": 58.658938,
+      "label_lon": 52.159183,
+      "name_ru": "Омутнинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137559",
+      "label_lat": 58.304127,
+      "label_lon": 48.313733,
+      "name_ru": "Котельнич"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137563",
+      "label_lat": 56.635392,
+      "label_lon": 47.874948,
+      "name_ru": "Йошкар-Ола"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137569",
+      "label_lat": 56.42047,
+      "label_lon": 61.93502,
+      "name_ru": "Каменск-Уральский"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137573",
+      "label_lat": 56.443414,
+      "label_lon": 60.188047,
+      "name_ru": "Полевской"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137577",
+      "label_lat": 58.053652,
+      "label_lon": 65.25828,
+      "name_ru": "Тавда"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137581",
+      "label_lat": 57.365192,
+      "label_lon": 61.869753,
+      "name_ru": "Артёмовский"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137587",
+      "label_lat": 57.490249,
+      "label_lon": 60.214763,
+      "name_ru": "Невьянск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137591",
+      "label_lat": 58.050189,
+      "label_lon": 60.549782,
+      "name_ru": "Верхняя Салда"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137595",
+      "label_lat": 58.643641,
+      "label_lon": 59.798251,
+      "name_ru": "Нижняя Тура"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137599",
+      "label_lat": 59.760162,
+      "label_lon": 60.009815,
+      "name_ru": "Карпинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137605",
+      "label_lat": 60.693645,
+      "label_lon": 60.413253,
+      "name_ru": "Ивдель"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137609",
+      "label_lat": 56.599115,
+      "label_lon": 57.758634,
+      "name_ru": "Красноуфимск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137613",
+      "label_lat": 56.479148,
+      "label_lon": 53.798721,
+      "name_ru": "Сарапул"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137617",
+      "label_lat": 56.454757,
+      "label_lon": 52.184349,
+      "name_ru": "Можга"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137623",
+      "label_lat": 57.030406,
+      "label_lon": 53.990027,
+      "name_ru": "Воткинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137627",
+      "label_lat": 58.123208,
+      "label_lon": 52.628767,
+      "name_ru": "Глазов"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137631",
+      "label_lat": 55.50913,
+      "label_lon": 47.468668,
+      "name_ru": "Канаш"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137637",
+      "label_lat": 55.484816,
+      "label_lon": 46.424391,
+      "name_ru": "Шумерля"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137643",
+      "label_lat": 54.850359,
+      "label_lon": 46.599987,
+      "name_ru": "Алатырь"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137647",
+      "label_lat": 51.1603,
+      "label_lon": 54.999888,
+      "name_ru": "Соль-Илецк"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137651",
+      "label_lat": 50.754588,
+      "label_lon": 59.540024,
+      "name_ru": "Домбаровский район"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137655",
+      "label_lat": 51.419121,
+      "label_lon": 57.578749,
+      "name_ru": "Медногорск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137661",
+      "label_lat": 51.474725,
+      "label_lon": 58.454302,
+      "name_ru": "Гай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137665",
+      "label_lat": 52.782113,
+      "label_lon": 52.261761,
+      "name_ru": "Бузулук"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137671",
+      "label_lat": 53.377813,
+      "label_lon": 51.347398,
+      "name_ru": "Отрадный"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137677",
+      "label_lat": 53.508094,
+      "label_lon": 49.420063,
+      "name_ru": "Тольятти"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137681",
+      "label_lat": 51.500408,
+      "label_lon": 46.120017,
+      "name_ru": "Энгельс"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137685",
+      "label_lat": 52.014769,
+      "label_lon": 48.794375,
+      "name_ru": "Пугачёв"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137691",
+      "label_lat": 52.034717,
+      "label_lon": 47.374307,
+      "name_ru": "Вольск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137697",
+      "label_lat": 51.876458,
+      "label_lon": 44.996106,
+      "name_ru": "Аткарск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137701",
+      "label_lat": 51.553506,
+      "label_lon": 43.163091,
+      "name_ru": "Балашов"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137705",
+      "label_lat": 54.900407,
+      "label_lon": 52.319948,
+      "name_ru": "Альметьевск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137709",
+      "label_lat": 55.364772,
+      "label_lon": 50.640671,
+      "name_ru": "Чистополь"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137715",
+      "label_lat": 55.64044,
+      "label_lon": 51.820031,
+      "name_ru": "Нижнекамск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137719",
+      "label_lat": 54.250421,
+      "label_lon": 49.560013,
+      "name_ru": "Димитровград"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137735",
+      "label_lat": 60.140139,
+      "label_lon": 64.754796,
+      "name_ru": "Урай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137753",
+      "label_lat": 54.160478,
+      "label_lon": 74.820022,
+      "name_ru": "Черлак"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137757",
+      "label_lat": 55.048667,
+      "label_lon": 74.568254,
+      "name_ru": "Калачинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137761",
+      "label_lat": 55.566956,
+      "label_lon": 71.350001,
+      "name_ru": "Называевск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137767",
+      "label_lat": 54.9287,
+      "label_lon": 71.268249,
+      "name_ru": "Исилькуль"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137771",
+      "label_lat": 56.150228,
+      "label_lon": 69.449807,
+      "name_ru": "Ишим"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137775",
+      "label_lat": 56.381945,
+      "label_lon": 68.371475,
+      "name_ru": "Голышманово"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137779",
+      "label_lat": 56.673632,
+      "label_lon": 66.298268,
+      "name_ru": "Ялуторовск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137781",
+      "label_lat": 52.534066,
+      "label_lon": 85.18001,
+      "name_ru": "Бийск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137787",
+      "label_lat": 51.157096,
+      "label_lon": 82.195024,
+      "name_ru": "Змеиногорск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137791",
+      "label_lat": 52.491769,
+      "label_lon": 82.777676,
+      "name_ru": "Алейск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137795",
+      "label_lat": 53.399259,
+      "label_lon": 83.958844,
+      "name_ru": "Новоалтайск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137799",
+      "label_lat": 53.793602,
+      "label_lon": 81.338797,
+      "name_ru": "Камень-на-Оби"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137805",
+      "label_lat": 50.988088,
+      "label_lon": 81.487677,
+      "name_ru": "Горняк"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137809",
+      "label_lat": 52.582668,
+      "label_lon": 78.947264,
+      "name_ru": "Кулунда"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137813",
+      "label_lat": 53.004942,
+      "label_lon": 78.669554,
+      "name_ru": "Славгород"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137817",
+      "label_lat": 52.79175,
+      "label_lon": 87.867701,
+      "name_ru": "Таштагол"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137823",
+      "label_lat": 54.298144,
+      "label_lon": 85.93769,
+      "name_ru": "Гурьевск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137827",
+      "label_lat": 55.725758,
+      "label_lon": 84.885402,
+      "name_ru": "Юрга"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137831",
+      "label_lat": 55.280177,
+      "label_lon": 85.610836,
+      "name_ru": "Топки"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137835",
+      "label_lat": 56.210767,
+      "label_lon": 87.760369,
+      "name_ru": "Мариинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137841",
+      "label_lat": 54.49144,
+      "label_lon": 89.953052,
+      "name_ru": "Шира"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137845",
+      "label_lat": 54.233626,
+      "label_lon": 83.368802,
+      "name_ru": "Черепаново"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137849",
+      "label_lat": 55.195945,
+      "label_lon": 80.281136,
+      "name_ru": "Каргат"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137853",
+      "label_lat": 54.99805,
+      "label_lon": 82.707654,
+      "name_ru": "Обь"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137859",
+      "label_lat": 53.727301,
+      "label_lon": 78.021894,
+      "name_ru": "Карасук"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137863",
+      "label_lat": 55.357279,
+      "label_lon": 78.351899,
+      "name_ru": "Барабинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137867",
+      "label_lat": 55.221938,
+      "label_lon": 75.966515,
+      "name_ru": "Татарск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137903",
+      "label_lat": 42.874733,
+      "label_lon": 47.624369,
+      "name_ru": "Каспийск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137907",
+      "label_lat": 42.057806,
+      "label_lon": 48.277404,
+      "name_ru": "Дербент"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159137913",
+      "label_lat": 42.833495,
+      "label_lon": 47.113031,
+      "name_ru": "Колумбия"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159138029",
+      "label_lat": 55.960653,
+      "label_lon": 97.814432,
+      "name_ru": "Бирюсинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159138033",
+      "label_lat": 58.694558,
+      "label_lon": 99.099619,
+      "name_ru": "Кодинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159138049",
+      "label_lat": 54.348736,
+      "label_lon": 93.435526,
+      "name_ru": "Артёмовск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159138055",
+      "label_lat": 55.810378,
+      "label_lon": 94.315318,
+      "name_ru": "Уяр"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159138059",
+      "label_lat": 55.329167,
+      "label_lon": 89.820708,
+      "name_ru": "Ужур"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159138063",
+      "label_lat": 53.089433,
+      "label_lon": 91.400405,
+      "name_ru": "Саяногорск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159139105",
+      "label_lat": 59.016177,
+      "label_lon": 54.633037,
+      "name_ru": "Кудымкар"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159139111",
+      "label_lat": 57.434775,
+      "label_lon": 56.954342,
+      "name_ru": "Кунгур"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159139117",
+      "label_lat": 58.074736,
+      "label_lon": 55.744287,
+      "name_ru": "Краснокамск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159139121",
+      "label_lat": 58.29343,
+      "label_lon": 57.81305,
+      "name_ru": "Чусовой"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159139125",
+      "label_lat": 58.869132,
+      "label_lon": 57.588722,
+      "name_ru": "Губаха"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159139129",
+      "label_lat": 48.933691,
+      "label_lon": 89.950003,
+      "name_ru": "Улгий"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159139211",
+      "label_lat": 48.966428,
+      "label_lon": 96.783281,
+      "name_ru": "Ходрого"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159139621",
+      "label_lat": 40.500434,
+      "label_lon": 95.799982,
+      "name_ru": "Аньси"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159140703",
+      "label_lat": 32.200398,
+      "label_lon": 79.983324,
+      "name_ru": "Гар"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159140707",
+      "label_lat": 42.935375,
+      "label_lon": 89.165038,
+      "name_ru": "Турфан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159140711",
+      "label_lat": 38.133756,
+      "label_lon": 85.533321,
+      "name_ru": "Черчен"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159140715",
+      "label_lat": 46.991123,
+      "label_lon": 89.530218,
+      "name_ru": "Кёктокай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142401",
+      "label_lat": 49.473064,
+      "label_lon": 57.444907,
+      "name_ru": "Кандыагаш"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142405",
+      "label_lat": 49.903167,
+      "label_lon": 57.334991,
+      "name_ru": "Алга"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142411",
+      "label_lat": 48.691691,
+      "label_lon": 55.873995,
+      "name_ru": "Байганинский район"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142415",
+      "label_lat": 48.826773,
+      "label_lon": 58.144192,
+      "name_ru": "Эмба"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142419",
+      "label_lat": 52.192976,
+      "label_lon": 61.239921,
+      "name_ru": "Житикара"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142423",
+      "label_lat": 53.750555,
+      "label_lon": 62.050207,
+      "name_ru": "Карабалык"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142429",
+      "label_lat": 52.698009,
+      "label_lon": 62.57493,
+      "name_ru": "Тобол"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142433",
+      "label_lat": 52.457998,
+      "label_lon": 64.599974,
+      "name_ru": "Кусмурын"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142437",
+      "label_lat": 44.167006,
+      "label_lon": 66.750024,
+      "name_ru": "Шиели"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142441",
+      "label_lat": 47.671365,
+      "label_lon": 51.579787,
+      "name_ru": "Махамбет"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142447",
+      "label_lat": 50.191496,
+      "label_lon": 51.14493,
+      "name_ru": "Чапаев"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142451",
+      "label_lat": 49.427641,
+      "label_lon": 46.877231,
+      "name_ru": "Жанибек"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142455",
+      "label_lat": 51.171436,
+      "label_lon": 53.034892,
+      "name_ru": "Аксай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142459",
+      "label_lat": 51.956969,
+      "label_lon": 66.377488,
+      "name_ru": "Есиль"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142465",
+      "label_lat": 51.10206,
+      "label_lon": 66.307467,
+      "name_ru": "Державинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142469",
+      "label_lat": 51.632416,
+      "label_lon": 69.832781,
+      "name_ru": "Жалтыр"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142473",
+      "label_lat": 52.640364,
+      "label_lon": 70.409955,
+      "name_ru": "Макинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142477",
+      "label_lat": 52.450195,
+      "label_lon": 71.959731,
+      "name_ru": "Аксу"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142483",
+      "label_lat": 51.750238,
+      "label_lon": 71.709876,
+      "name_ru": "Жолымбет"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142487",
+      "label_lat": 51.630323,
+      "label_lon": 73.104933,
+      "name_ru": "Ерейментау"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142491",
+      "label_lat": 46.119548,
+      "label_lon": 73.619113,
+      "name_ru": "Сарышаган"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142495",
+      "label_lat": 48.025271,
+      "label_lon": 70.799906,
+      "name_ru": "Каражал"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142501",
+      "label_lat": 48.690321,
+      "label_lon": 71.649931,
+      "name_ru": "Атасу"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142505",
+      "label_lat": 53.636764,
+      "label_lon": 72.341414,
+      "name_ru": "Кишкенеколь"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142509",
+      "label_lat": 53.84812,
+      "label_lon": 69.763793,
+      "name_ru": "Тайынша"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142513",
+      "label_lat": 54.905317,
+      "label_lon": 70.439979,
+      "name_ru": "Булаево"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142519",
+      "label_lat": 53.345309,
+      "label_lon": 75.449906,
+      "name_ru": "Иртышск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142523",
+      "label_lat": 53.080363,
+      "label_lon": 76.08997,
+      "name_ru": "Теренкольский район"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142527",
+      "label_lat": 47.475228,
+      "label_lon": 84.859823,
+      "name_ru": "Зайсан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142531",
+      "label_lat": 49.74527,
+      "label_lon": 84.254847,
+      "name_ru": "Алтай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142537",
+      "label_lat": 50.355388,
+      "label_lon": 83.514943,
+      "name_ru": "Риддер"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142541",
+      "label_lat": 49.600317,
+      "label_lon": 81.054939,
+      "name_ru": "Чарск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142545",
+      "label_lat": 47.100186,
+      "label_lon": 81.604827,
+      "name_ru": "Урджар"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142549",
+      "label_lat": 45.42034,
+      "label_lon": 79.914905,
+      "name_ru": "Сарканд"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142555",
+      "label_lat": 45.265336,
+      "label_lon": 77.969959,
+      "name_ru": "Уштобе"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142559",
+      "label_lat": 43.542082,
+      "label_lon": 79.470281,
+      "name_ru": "Чунджа"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142563",
+      "label_lat": 43.884387,
+      "label_lon": 77.068722,
+      "name_ru": "Капчагай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142567",
+      "label_lat": 43.53459,
+      "label_lon": 75.2139,
+      "name_ru": "Отар"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142573",
+      "label_lat": 32.011494,
+      "label_lon": 51.859718,
+      "name_ru": "Шехреза"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142579",
+      "label_lat": 33.980418,
+      "label_lon": 51.579993,
+      "name_ru": "Кашан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142583",
+      "label_lat": 32.700419,
+      "label_lon": 51.469974,
+      "name_ru": "Хомейнишехр"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142593",
+      "label_lat": 37.251821,
+      "label_lon": 55.171454,
+      "name_ru": "Гомбеде-Кавус"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142599",
+      "label_lat": 36.830348,
+      "label_lon": 54.480023,
+      "name_ru": "Горган"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142603",
+      "label_lat": 36.471325,
+      "label_lon": 52.363305,
+      "name_ru": "Амоль"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142609",
+      "label_lat": 36.55039,
+      "label_lon": 53.100004,
+      "name_ru": "Сари"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142613",
+      "label_lat": 35.554792,
+      "label_lon": 53.374302,
+      "name_ru": "Семнан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142617",
+      "label_lat": 35.802305,
+      "label_lon": 50.968059,
+      "name_ru": "Кередж"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142621",
+      "label_lat": 30.581814,
+      "label_lon": 50.261469,
+      "name_ru": "Бехбехан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142627",
+      "label_lat": 32.380387,
+      "label_lon": 48.470002,
+      "name_ru": "Дизфуль"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142631",
+      "label_lat": 33.480423,
+      "label_lon": 48.35001,
+      "name_ru": "Хорремабад"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142635",
+      "label_lat": 33.630414,
+      "label_lon": 46.430024,
+      "name_ru": "Илам"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142657",
+      "label_lat": 35.021827,
+      "label_lon": 50.331439,
+      "name_ru": "Саве"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142663",
+      "label_lat": 34.080412,
+      "label_lon": 49.700005,
+      "name_ru": "Эрак"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142667",
+      "label_lat": 44.517062,
+      "label_lon": 50.266637,
+      "name_ru": "Форт-Шевченко"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142671",
+      "label_lat": 43.300392,
+      "label_lon": 52.800022,
+      "name_ru": "Жанаозен"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142675",
+      "label_lat": 36.770377,
+      "label_lon": 45.720041,
+      "name_ru": "Мехабад"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142681",
+      "label_lat": 38.530399,
+      "label_lon": 44.970009,
+      "name_ru": "Хой"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142685",
+      "label_lat": 37.420389,
+      "label_lon": 46.220011,
+      "name_ru": "Мероге"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142689",
+      "label_lat": 34.512375,
+      "label_lon": 45.577207,
+      "name_ru": "Касре-Ширин"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142693",
+      "label_lat": 35.874075,
+      "label_lon": 47.593674,
+      "name_ru": "Биджар"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142707",
+      "label_lat": 33.506493,
+      "label_lon": 60.893792,
+      "name_ru": "Йездан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142711",
+      "label_lat": 35.22334,
+      "label_lon": 60.612879,
+      "name_ru": "Торбете-Джам"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142717",
+      "label_lat": 37.111829,
+      "label_lon": 58.501483,
+      "name_ru": "Кучан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142765",
+      "label_lat": 42.436879,
+      "label_lon": 68.804834,
+      "name_ru": "Арыс"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142771",
+      "label_lat": 44.938741,
+      "label_lon": 74.030251,
+      "name_ru": "Бурубайтал"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142775",
+      "label_lat": 43.595258,
+      "label_lon": 73.744842,
+      "name_ru": "Шу"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142779",
+      "label_lat": 42.920363,
+      "label_lon": 72.704957,
+      "name_ru": "Кулан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142785",
+      "label_lat": 42.915299,
+      "label_lon": 73.254898,
+      "name_ru": "Ойтал"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159142789",
+      "label_lat": 43.185386,
+      "label_lon": 70.459978,
+      "name_ru": "Каратау"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159144565",
+      "label_lat": 39.932303,
+      "label_lon": 48.920259,
+      "name_ru": "Ширван"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159144577",
+      "label_lat": 40.653422,
+      "label_lon": 47.74059,
+      "name_ru": "Гёйчай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159144581",
+      "label_lat": 38.754003,
+      "label_lon": 48.851064,
+      "name_ru": "Ленкорань"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159144585",
+      "label_lat": 41.192329,
+      "label_lon": 47.170547,
+      "name_ru": "Шеки"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159144591",
+      "label_lat": 39.815643,
+      "label_lon": 46.751968,
+      "name_ru": "Степанакерт"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159144595",
+      "label_lat": 39.201521,
+      "label_lon": 46.414986,
+      "name_ru": "Капан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159145147",
+      "label_lat": 39.20922,
+      "label_lon": 45.412205,
+      "name_ru": "Нахичевань"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146317",
+      "label_lat": 43.768322,
+      "label_lon": 59.0214,
+      "name_ru": "Муйнак"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146319",
+      "label_lat": 37.232933,
+      "label_lon": 67.272937,
+      "name_ru": "Термез"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146321",
+      "label_lat": 40.389975,
+      "label_lon": 71.780001,
+      "name_ru": "Фергана"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146323",
+      "label_lat": 41.000016,
+      "label_lon": 71.669982,
+      "name_ru": "Наманган"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146473",
+      "label_lat": 42.492043,
+      "label_lon": 78.38182,
+      "name_ru": "Каракол"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146491",
+      "label_lat": 58.311021,
+      "label_lon": 82.907051,
+      "name_ru": "Колпашево"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146519",
+      "label_lat": 51.73998,
+      "label_lon": 36.190028,
+      "name_ru": "Курск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146521",
+      "label_lat": 54.199959,
+      "label_lon": 37.629941,
+      "name_ru": "Тула"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146523",
+      "label_lat": 52.730023,
+      "label_lon": 41.430019,
+      "name_ru": "Тамбов"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146525",
+      "label_lat": 53.629994,
+      "label_lon": 55.960036,
+      "name_ru": "Стерлитамак"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146527",
+      "label_lat": 55.45996,
+      "label_lon": 65.344993,
+      "name_ru": "Курган"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146555",
+      "label_lat": 59.614977,
+      "label_lon": 60.584973,
+      "name_ru": "Серов"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146557",
+      "label_lat": 56.12997,
+      "label_lon": 47.250025,
+      "name_ru": "Чебоксары"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146559",
+      "label_lat": 51.210012,
+      "label_lon": 58.627315,
+      "name_ru": "Орск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146561",
+      "label_lat": 52.029988,
+      "label_lon": 47.800018,
+      "name_ru": "Балаково"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146571",
+      "label_lat": 60.934974,
+      "label_lon": 76.580018,
+      "name_ru": "Нижневартовск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146575",
+      "label_lat": 56.898244,
+      "label_lon": 74.37824,
+      "name_ru": "Тара"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146577",
+      "label_lat": 58.199793,
+      "label_lon": 68.264815,
+      "name_ru": "Тобольск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146579",
+      "label_lat": 51.520019,
+      "label_lon": 81.21002,
+      "name_ru": "Рубцовск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146581",
+      "label_lat": 51.961336,
+      "label_lon": 85.957688,
+      "name_ru": "Горно-Алтайск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146583",
+      "label_lat": 53.899977,
+      "label_lon": 86.709994,
+      "name_ru": "Прокопьевск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146589",
+      "label_lat": 42.980024,
+      "label_lon": 47.499984,
+      "name_ru": "Махачкала"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146615",
+      "label_lat": 55.927709,
+      "label_lon": 97.987703,
+      "name_ru": "Тайшет"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146629",
+      "label_lat": 54.897669,
+      "label_lon": 99.027692,
+      "name_ru": "Нижнеудинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146637",
+      "label_lat": 56.190019,
+      "label_lon": 95.710013,
+      "name_ru": "Канск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146641",
+      "label_lat": 56.269988,
+      "label_lon": 90.499995,
+      "name_ru": "Ачинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146643",
+      "label_lat": 58.451508,
+      "label_lon": 92.156535,
+      "name_ru": "Енисейск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146645",
+      "label_lat": 58.243252,
+      "label_lon": 92.483285,
+      "name_ru": "Лесосибирск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146659",
+      "label_lat": 51.033305,
+      "label_lon": 90.233293,
+      "name_ru": "Тээли"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146839",
+      "label_lat": 47.750017,
+      "label_lon": 96.816716,
+      "name_ru": "Улясутай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146841",
+      "label_lat": 46.361858,
+      "label_lon": 96.25585,
+      "name_ru": "Алтай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146845",
+      "label_lat": 49.983317,
+      "label_lon": 92.066618,
+      "name_ru": "Улангом"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146877",
+      "label_lat": 32.997718,
+      "label_lon": 97.00674,
+      "name_ru": "Гьегу"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146955",
+      "label_lat": 31.480002,
+      "label_lon": 92.05003,
+      "name_ru": "Нагчу"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146959",
+      "label_lat": 31.140938,
+      "label_lon": 97.180939,
+      "name_ru": "Чамдо"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146961",
+      "label_lat": 41.729997,
+      "label_lon": 86.150028,
+      "name_ru": "Корла"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146965",
+      "label_lat": 41.727749,
+      "label_lon": 82.936374,
+      "name_ru": "Куча"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146967",
+      "label_lat": 46.750026,
+      "label_lon": 82.950017,
+      "name_ru": "Чугучак"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146969",
+      "label_lat": 44.299969,
+      "label_lon": 86.029932,
+      "name_ru": "Шихэцзы"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146971",
+      "label_lat": 45.589942,
+      "label_lon": 84.859926,
+      "name_ru": "Карамай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159146973",
+      "label_lat": 41.150006,
+      "label_lon": 80.250026,
+      "name_ru": "Аксу"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147281",
+      "label_lat": 50.269941,
+      "label_lon": 58.449962,
+      "name_ru": "Хромтау"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147283",
+      "label_lat": 50.241803,
+      "label_lon": 66.897611,
+      "name_ru": "Аркалык"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147285",
+      "label_lat": 53.220897,
+      "label_lon": 63.628302,
+      "name_ru": "Костанай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147289",
+      "label_lat": 45.691357,
+      "label_lon": 63.241349,
+      "name_ru": "Байконур"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147291",
+      "label_lat": 47.066596,
+      "label_lon": 51.866591,
+      "name_ru": "Балыкши"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147293",
+      "label_lat": 51.821887,
+      "label_lon": 68.347704,
+      "name_ru": "Атбасар"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147295",
+      "label_lat": 53.299988,
+      "label_lon": 69.41999,
+      "name_ru": "Кокшетау"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147297",
+      "label_lat": 50.065018,
+      "label_lon": 72.964993,
+      "name_ru": "Темиртау"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147299",
+      "label_lat": 47.779989,
+      "label_lon": 67.770013,
+      "name_ru": "Жезказган"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147301",
+      "label_lat": 49.424902,
+      "label_lon": 75.464892,
+      "name_ru": "Каркаралинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147303",
+      "label_lat": 46.853224,
+      "label_lon": 74.950247,
+      "name_ru": "Балхаш"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147307",
+      "label_lat": 54.879995,
+      "label_lon": 69.220002,
+      "name_ru": "Петропавловск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147309",
+      "label_lat": 47.964732,
+      "label_lon": 80.429705,
+      "name_ru": "Аягуз"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147311",
+      "label_lat": 45.000004,
+      "label_lon": 78.40001,
+      "name_ru": "Талдыкорган"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147313",
+      "label_lat": 35.18143,
+      "label_lon": 58.45146,
+      "name_ru": "Кашмер"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147317",
+      "label_lat": 30.299997,
+      "label_lon": 57.080019,
+      "name_ru": "Керман"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147321",
+      "label_lat": 43.301555,
+      "label_lon": 68.254893,
+      "name_ru": "Туркестан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147533",
+      "label_lat": 41.83999,
+      "label_lon": 59.96496,
+      "name_ru": "Дашогуз"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159147535",
+      "label_lat": 41.559981,
+      "label_lon": 60.640009,
+      "name_ru": "Ургенч"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148103",
+      "label_lat": 57.01002,
+      "label_lon": 41.009993,
+      "name_ru": "Иваново"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148105",
+      "label_lat": 57.770026,
+      "label_lon": 40.940023,
+      "name_ru": "Кострома"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148107",
+      "label_lat": 60.768706,
+      "label_lon": 46.298662,
+      "name_ru": "Великий Устюг"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148109",
+      "label_lat": 52.620004,
+      "label_lon": 39.639999,
+      "name_ru": "Липецк"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148111",
+      "label_lat": 52.969957,
+      "label_lon": 36.069984,
+      "name_ru": "Орёл"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148113",
+      "label_lat": 47.50998,
+      "label_lon": 42.159948,
+      "name_ru": "Волгодонск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148117",
+      "label_lat": 50.629996,
+      "label_lon": 36.599926,
+      "name_ru": "Белгород"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148119",
+      "label_lat": 44.729969,
+      "label_lon": 37.769932,
+      "name_ru": "Новороссийск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148121",
+      "label_lat": 56.12997,
+      "label_lon": 40.409926,
+      "name_ru": "Владимир"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148123",
+      "label_lat": 55.42438,
+      "label_lon": 55.544351,
+      "name_ru": "Бирск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148125",
+      "label_lat": 55.17499,
+      "label_lon": 59.649992,
+      "name_ru": "Златоуст"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148139",
+      "label_lat": 56.910026,
+      "label_lon": 59.955038,
+      "name_ru": "Первоуральск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148141",
+      "label_lat": 56.85003,
+      "label_lon": 53.230022,
+      "name_ru": "Ижевск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148143",
+      "label_lat": 48.278718,
+      "label_lon": 46.168696,
+      "name_ru": "Ахтубинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148145",
+      "label_lat": 46.328657,
+      "label_lon": 44.208712,
+      "name_ru": "Элиста"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148147",
+      "label_lat": 51.017389,
+      "label_lon": 45.697407,
+      "name_ru": "Красноармейск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148227",
+      "label_lat": 59.420002,
+      "label_lon": 56.759987,
+      "name_ru": "Березники"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148653",
+      "label_lat": 47.836291,
+      "label_lon": 59.614077,
+      "name_ru": "Шалкар"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148657",
+      "label_lat": 45.7628,
+      "label_lon": 62.107516,
+      "name_ru": "Казалинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148659",
+      "label_lat": 46.799971,
+      "label_lon": 61.666613,
+      "name_ru": "Аральск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148661",
+      "label_lat": 46.983268,
+      "label_lon": 54.016537,
+      "name_ru": "Кульсары"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148663",
+      "label_lat": 51.27112,
+      "label_lon": 51.334995,
+      "name_ru": "Уральск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148667",
+      "label_lat": 30.330744,
+      "label_lon": 48.279678,
+      "name_ru": "Абадан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148669",
+      "label_lat": 38.250003,
+      "label_lon": 48.300039,
+      "name_ru": "Ардебиль"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148671",
+      "label_lat": 34.651961,
+      "label_lon": 50.94806,
+      "name_ru": "Кум"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148675",
+      "label_lat": 36.27002,
+      "label_lon": 49.999986,
+      "name_ru": "Казвин"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148677",
+      "label_lat": 45.183352,
+      "label_lon": 55.100037,
+      "name_ru": "Бейнеу"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148679",
+      "label_lat": 43.623189,
+      "label_lon": 51.2365,
+      "name_ru": "Актау"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148681",
+      "label_lat": 34.381952,
+      "label_lon": 47.058065,
+      "name_ru": "Керманшах"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148683",
+      "label_lat": 37.299983,
+      "label_lon": 49.629983,
+      "name_ru": "Решт"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148685",
+      "label_lat": 32.88002,
+      "label_lon": 59.219941,
+      "name_ru": "Бирдженд"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148687",
+      "label_lat": 36.220023,
+      "label_lon": 57.630012,
+      "name_ru": "Себзевар"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159148689",
+      "label_lat": 31.021451,
+      "label_lon": 61.481456,
+      "name_ru": "Заболь"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149335",
+      "label_lat": 40.023047,
+      "label_lon": 52.969676,
+      "name_ru": "Туркменбашы"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149337",
+      "label_lat": 39.780012,
+      "label_lon": 64.43001,
+      "name_ru": "Бухара"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149341",
+      "label_lat": 42.470003,
+      "label_lon": 59.615007,
+      "name_ru": "Нукус"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149343",
+      "label_lat": 39.110002,
+      "label_lon": 63.580036,
+      "name_ru": "Туркменабад"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149345",
+      "label_lat": 37.600016,
+      "label_lon": 61.833321,
+      "name_ru": "Мары"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149347",
+      "label_lat": 40.790002,
+      "label_lon": 72.339967,
+      "name_ru": "Андижан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149521",
+      "label_lat": 43.498106,
+      "label_lon": 43.617947,
+      "name_ru": "Нальчик"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149523",
+      "label_lat": 45.050001,
+      "label_lon": 41.980011,
+      "name_ru": "Ставрополь"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149539",
+      "label_lat": 56.859978,
+      "label_lon": 35.889995,
+      "name_ru": "Тверь"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149541",
+      "label_lat": 59.209989,
+      "label_lon": 39.919982,
+      "name_ru": "Вологда"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149543",
+      "label_lat": 57.619983,
+      "label_lon": 39.87001,
+      "name_ru": "Ярославль"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149545",
+      "label_lat": 47.236594,
+      "label_lon": 39.71071,
+      "name_ru": "Ростов-на-Дону"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149547",
+      "label_lat": 43.590012,
+      "label_lon": 39.729967,
+      "name_ru": "Сочи"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149549",
+      "label_lat": 45.019977,
+      "label_lon": 39.000038,
+      "name_ru": "Краснодар"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149551",
+      "label_lat": 53.180021,
+      "label_lon": 44.999982,
+      "name_ru": "Пенза"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149553",
+      "label_lat": 54.619959,
+      "label_lon": 39.719994,
+      "name_ru": "Рязань"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149557",
+      "label_lat": 51.66539,
+      "label_lon": 39.186843,
+      "name_ru": "Воронеж"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149559",
+      "label_lat": 53.422694,
+      "label_lon": 58.980007,
+      "name_ru": "Магнитогорск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149561",
+      "label_lat": 55.156937,
+      "label_lon": 61.436722,
+      "name_ru": "Челябинск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149565",
+      "label_lat": 58.590053,
+      "label_lon": 49.669981,
+      "name_ru": "Киров"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149567",
+      "label_lat": 57.920016,
+      "label_lon": 59.974985,
+      "name_ru": "Нижний Тагил"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149569",
+      "label_lat": 46.348655,
+      "label_lon": 48.054989,
+      "name_ru": "Астрахань"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149571",
+      "label_lat": 51.779978,
+      "label_lon": 55.110011,
+      "name_ru": "Оренбург"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149575",
+      "label_lat": 51.581936,
+      "label_lon": 46.02805,
+      "name_ru": "Саратов"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149577",
+      "label_lat": 54.329977,
+      "label_lon": 48.410006,
+      "name_ru": "Ульяновск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149579",
+      "label_lat": 54.991934,
+      "label_lon": 73.398008,
+      "name_ru": "Омск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149581",
+      "label_lat": 57.140012,
+      "label_lon": 65.529995,
+      "name_ru": "Тюмень"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149583",
+      "label_lat": 53.750012,
+      "label_lon": 87.114982,
+      "name_ru": "Новокузнецк"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149585",
+      "label_lat": 55.339967,
+      "label_lon": 86.08998,
+      "name_ru": "Кемерово"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149587",
+      "label_lat": 43.318685,
+      "label_lon": 45.698699,
+      "name_ru": "Грозный"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149615",
+      "label_lat": 53.703685,
+      "label_lon": 91.445002,
+      "name_ru": "Абакан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149621",
+      "label_lat": 51.7067,
+      "label_lon": 94.383066,
+      "name_ru": "Кызыл"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149719",
+      "label_lat": 48.016641,
+      "label_lon": 91.633259,
+      "name_ru": "Ховд"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149773",
+      "label_lat": 40.142678,
+      "label_lon": 94.662015,
+      "name_ru": "Дуньхуан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149777",
+      "label_lat": 36.16659,
+      "label_lon": 98.266601,
+      "name_ru": "Дулан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149779",
+      "label_lat": 36.416626,
+      "label_lon": 94.883345,
+      "name_ru": "Голмуд"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149875",
+      "label_lat": 38.426142,
+      "label_lon": 77.250003,
+      "name_ru": "Яркенд"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149877",
+      "label_lat": 43.900019,
+      "label_lon": 81.350011,
+      "name_ru": "Кульджа"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159149881",
+      "label_lat": 47.866599,
+      "label_lon": 88.116626,
+      "name_ru": "Алтай"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150105",
+      "label_lat": 50.280017,
+      "label_lon": 57.169988,
+      "name_ru": "Актобе"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150107",
+      "label_lat": 52.952697,
+      "label_lon": 63.130038,
+      "name_ru": "Рудный"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150109",
+      "label_lat": 44.800016,
+      "label_lon": 65.464986,
+      "name_ru": "Кызылорда"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150111",
+      "label_lat": 47.112691,
+      "label_lon": 51.920024,
+      "name_ru": "Атырау"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150115",
+      "label_lat": 51.729981,
+      "label_lon": 75.31994,
+      "name_ru": "Экибастуз"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150117",
+      "label_lat": 52.299998,
+      "label_lon": 76.950021,
+      "name_ru": "Павлодар"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150119",
+      "label_lat": 50.434995,
+      "label_lon": 80.275038,
+      "name_ru": "Семей"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150121",
+      "label_lat": 49.990035,
+      "label_lon": 82.614947,
+      "name_ru": "Усть-Каменогорск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150123",
+      "label_lat": 31.920053,
+      "label_lon": 54.370004,
+      "name_ru": "Йезд"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150125",
+      "label_lat": 31.281934,
+      "label_lon": 48.718067,
+      "name_ru": "Ахваз"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150133",
+      "label_lat": 34.796027,
+      "label_lon": 48.515013,
+      "name_ru": "Хамадан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150135",
+      "label_lat": 38.088237,
+      "label_lon": 46.2993,
+      "name_ru": "Тебриз"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150143",
+      "label_lat": 42.320012,
+      "label_lon": 69.595018,
+      "name_ru": "Шымкент"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150145",
+      "label_lat": 42.899977,
+      "label_lon": 71.364987,
+      "name_ru": "Тараз"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150567",
+      "label_lat": 37.949995,
+      "label_lon": 58.383299,
+      "name_ru": "Ашхабад"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150569",
+      "label_lat": 39.670019,
+      "label_lon": 66.944999,
+      "name_ru": "Самарканд"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150685",
+      "label_lat": 56.494987,
+      "label_lon": 84.975009,
+      "name_ru": "Томск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150695",
+      "label_lat": 56.334953,
+      "label_lon": 43.998148,
+      "name_ru": "Нижний Новгород"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150697",
+      "label_lat": 48.711956,
+      "label_lon": 44.498015,
+      "name_ru": "Волгоград"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150699",
+      "label_lat": 54.791921,
+      "label_lon": 56.038085,
+      "name_ru": "Уфа"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150701",
+      "label_lat": 56.851976,
+      "label_lon": 60.598014,
+      "name_ru": "Екатеринбург"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150703",
+      "label_lat": 53.196953,
+      "label_lon": 50.149349,
+      "name_ru": "Самара"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150705",
+      "label_lat": 55.751888,
+      "label_lon": 49.124399,
+      "name_ru": "Казань"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150711",
+      "label_lat": 53.354998,
+      "label_lon": 83.745007,
+      "name_ru": "Барнаул"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150713",
+      "label_lat": 55.031906,
+      "label_lon": 82.958096,
+      "name_ru": "Новосибирск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150733",
+      "label_lat": 56.015929,
+      "label_lon": 92.864055,
+      "name_ru": "Красноярск"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150775",
+      "label_lat": 58.001906,
+      "label_lon": 56.248047,
+      "name_ru": "Пермь"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150813",
+      "label_lat": 42.875025,
+      "label_lon": 74.583258,
+      "name_ru": "Бишкек"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150817",
+      "label_lat": 39.82001,
+      "label_lon": 98.299984,
+      "name_ru": "Цзяюйгуань"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150881",
+      "label_lat": 42.826984,
+      "label_lon": 93.515005,
+      "name_ru": "Ичжоу"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150883",
+      "label_lat": 37.099711,
+      "label_lon": 79.926945,
+      "name_ru": "Хотан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150885",
+      "label_lat": 39.476336,
+      "label_lon": 75.969926,
+      "name_ru": "Кашгар"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150965",
+      "label_lat": 51.181125,
+      "label_lon": 71.427774,
+      "name_ru": "Нур-Султан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150967",
+      "label_lat": 49.884977,
+      "label_lon": 73.11501,
+      "name_ru": "Караганда"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150969",
+      "label_lat": 43.326936,
+      "label_lon": 76.91309,
+      "name_ru": "Алма-Ата"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159150971",
+      "label_lat": 32.701951,
+      "label_lon": 51.698092,
+      "name_ru": "Исфахан"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159151123",
+      "label_lat": 40.397218,
+      "label_lon": 49.860271,
+      "name_ru": "Баку"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159151421",
+      "label_lat": 36.271966,
+      "label_lon": 59.568051,
+      "name_ru": "Мешхед"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159151501",
+      "label_lat": 41.303828,
+      "label_lon": 69.268823,
+      "name_ru": "Ташкент"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159151531",
+      "label_lat": 43.806958,
+      "label_lon": 87.57306,
+      "name_ru": "Урумчи"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159151551",
+      "label_lat": 35.673889,
+      "label_lon": 51.422398,
+      "name_ru": "Тегеран"
+    },
+    {
+      "dataset": "places",
+      "feature_id": "1159151585",
+      "label_lat": 55.75411,
+      "label_lon": 37.613577,
+      "name_ru": "Москва"
+    }
+  ],
+  "project_labels": [
+    {
+      "name_ru": "Жанаозен",
+      "note": "Подпись Project marker; не является изменением Natural Earth geometry.",
+      "project_code": "KZ-ZHANAOZEN-DEMO"
+    }
+  ],
+  "schema": "CONFLICT_MAP_LABELS_RU_V1",
+  "version": "1.0.0"
+}

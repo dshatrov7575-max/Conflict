@@ -50,9 +50,14 @@ try {
     await click('[data-view="map"]');
     await ready("document.querySelector('#view-map').dataset.state==='ready'");
     await ready("window.__geoMaps[0].loaded()");
-    const state=await evaluate(`(()=>{const m=__geoMaps[0],r=document.querySelector('#geo-map').getBoundingClientRect();return {label:[...document.querySelectorAll('#geo-map .geo-label')].some(n=>n.textContent==='Казахстан'),borders:m.queryRenderedFeatures({layers:['admin0-boundaries']}).length,disputed:m.getPaintProperty('disputed-boundaries','line-dasharray'),width:r.width,height:r.height,visible:r.top>=0&&r.bottom<=innerHeight,history:document.querySelector('#geo-history').getBoundingClientRect().top<innerHeight,scroll:document.documentElement.scrollWidth>innerWidth};})()`);
-    assert.equal(state.label,true);oracles.add("GEO-23");assert.ok(state.borders>0);assert.deepEqual(state.disputed,[2,2]);oracles.add("GEO-24");
+    const state=await evaluate(`(()=>{const m=__geoMaps[0],r=document.querySelector('#geo-map').getBoundingClientRect();return {label:[...document.querySelectorAll('#geo-map .geo-label')].some(n=>n.textContent==='Казахстан'),borders:m.queryRenderedFeatures({layers:['countries-boundary']}).length,admin1:m.queryRenderedFeatures({layers:['kazakhstan-admin1-boundary']}).length,disputedCount:m.queryRenderedFeatures({layers:['disputed-lines']}).length,disputed:m.getPaintProperty('disputed-lines','line-dasharray'),width:r.width,height:r.height,visible:r.top>=0&&r.bottom<=innerHeight,history:document.querySelector('#geo-history').getBoundingClientRect().top<innerHeight,scroll:document.documentElement.scrollWidth>innerWidth};})()`);
+    assert.equal(state.label,true);oracles.add("GEO-23");assert.ok(state.borders>0);assert.ok(state.admin1>0);assert.ok(state.disputedCount>0);assert.deepEqual(state.disputed,[3,2]);oracles.add("GEO-24");
     assert.equal(state.scroll,false);assert.ok(state.width>250&&state.height>=280&&state.visible);assert.equal(state.history,true);
+    const manifest=await evaluate("fetch('/static/analysis_dashboard/maps/MAP_DATASET_MANIFEST.json').then(r=>r.json())");
+    assert.equal(manifest.source_commit,'f1890d9f152c896d250a77557a5751a93d494776');
+    assert.equal(manifest.source_tag,'v5.1.2');assert.equal(manifest.dataset_version,'1.0.1');
+    for(const flag of ['geoboundaries_used','odbl_data_used','osm_derived_data_used','pmtiles_used'])assert.equal(manifest[flag],false);
+    assert.ok(!await evaluate("['geoBoundaries','ODbL','CC BY 4.0'].some(s=>document.querySelector('#view-map').textContent.includes(s))"));
     oracles.add(width===1024?"GEO-33":"GEO-34");await screen(`map-${width}`);
     await click('#geo-edit');await ready("document.querySelector('#geo-dialog').open && window.__geoMaps.length===2 && window.__geoMaps[1].loaded()");
     const mapBox=await evaluate("(()=>{const r=document.querySelector('#geo-editor-map').getBoundingClientRect();return {x:r.x+r.width*.45,y:r.y+r.height*.55};})()");

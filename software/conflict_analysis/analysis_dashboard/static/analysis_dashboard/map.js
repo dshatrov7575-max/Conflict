@@ -71,7 +71,10 @@
     map.addLayer({id:"uncertainty-fill",type:"fill",source:"location-uncertainty",paint:{"fill-color":"#a43c1f","fill-opacity":0.16}});
     map.addLayer({id:"uncertainty-line",type:"line",source:"location-uncertainty",paint:{"line-color":"#a43c1f","line-width":2,"line-dasharray":[3,2]}});
     labelsPromise ||= fetch(assets+"maps/labels_ru.json", {credentials:"same-origin"}).then(r => {if (!r.ok) throw new Error("Подписи карты недоступны."); return r.json();});
-    const labels = (await labelsPromise).labels;
+    const labels = (await labelsPromise).labels.map(item => ({...item,
+      kind:({admin0:"country",admin1:"region",places:"place"})[item.dataset],
+      coordinates:[item.label_lon,item.label_lat]
+    })).filter(item => item.kind && item.coordinates.every(value => typeof value === "number" && Number.isFinite(value)));
     const markers = labels.map(item => {
       const node = document.createElement("span"); node.className = `geo-label ${item.kind}`;
       node.textContent = item.name_ru || item.canonical_name || item.feature_id;
@@ -86,6 +89,9 @@
       const priority=item => item.name_ru==="Жанаозен" ? 0 : item.kind==="region" ? 1 : item.kind==="country" ? 2 : 3;
       markers.sort((a,b) => priority(a.item)-priority(b.item) || a.item.feature_id.localeCompare(b.item.feature_id));
       for (const {node,item} of markers) {
+        if ((item.kind==="region" && map.getZoom()<4) || (item.kind==="place" && item.name_ru!=="Жанаозен" && map.getZoom()<4.5)) {
+          node.style.visibility="hidden"; continue;
+        }
         node.style.visibility = "visible";
         const p = map.project(item.coordinates), width = node.offsetWidth, height = node.offsetHeight;
         const rect = [p.x-width/2-4,p.y-height/2-4,p.x+width/2+4,p.y+height/2+4];

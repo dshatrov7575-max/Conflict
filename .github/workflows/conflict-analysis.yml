@@ -7306,8 +7306,8 @@ jobs:
           POSTGRES_PASSWORD: analysis-r0-ci-only
         ports:
         - 5432:5432
-        options: --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis" --health-interval 5s --health-timeout 5s
-          --health-retries 12
+        options: --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis" --health-interval 5s --health-timeout
+          5s --health-retries 12
     env:
       DJANGO_SECRET_KEY: analysis-r0-ci-only-secret
       POSTGRES_DB: conflict_analysis
@@ -7321,6 +7321,7 @@ jobs:
       R1_BASE: c6c7118080ab1a1dcb86216f4092dabcf8125be7
       R1_BASE_TREE: 5a4a40431e72fb6b942b895225ce11bba2898052
       R1_COMMIT_A: ba09340fecc446f677f8b4cf0c4ba3e565ebcee5
+      R1_COMMIT_B: 2731ecd26dde5f321507ca237c4d18167d8bd631
     defaults:
       run:
         working-directory: software/conflict_analysis
@@ -7330,7 +7331,7 @@ jobs:
       with:
         fetch-depth: 0
         ref: ${{ github.sha }}
-    - name: Prove exact two-commit history and geography allowlists
+    - name: Prove exact three-commit history and corrective allowlist
       shell: bash
       working-directory: .
       run: |
@@ -7338,24 +7339,24 @@ jobs:
         python - <<'PY'
         import os,subprocess
         def git(*args):return subprocess.check_output(['git',*args],text=True).strip()
-        base=os.environ['R1_BASE']; first=os.environ['R1_COMMIT_A']
+        base=os.environ['R1_BASE'];first=os.environ['R1_COMMIT_A'];second=os.environ['R1_COMMIT_B']
         assert git('rev-parse',base+'^{tree}')==os.environ['R1_BASE_TREE']
-        assert git('rev-parse','HEAD^')==first
+        assert git('rev-parse','HEAD^')==second
+        assert git('rev-parse',second+'^')==first
         assert git('rev-parse',first+'^')==base
-        assert git('rev-list','--count',base+'..HEAD')=='2'
-        assert git('show','-s','--format=%s',first)=='feat(geography): add append-only project location foundation'
-        assert git('show','-s','--format=%s','HEAD')=='feat(analysis): add offline project location map'
-        assert len(git('show','-s','--format=%P','HEAD').split())==1
-        assert len(git('show','-s','--format=%P',first).split())==1
-        first_paths=['.github/workflows/conflict-analysis.yml', 'software/conflict_analysis/docs/adr/0019-project-geography-r1.md', 'software/conflict_analysis/domain/api/geography_v1.py', 'software/conflict_analysis/domain/enums.py', 'software/conflict_analysis/domain/migrations/0019_analysis_geography.py', 'software/conflict_analysis/domain/models.py', 'software/conflict_analysis/domain/services/geography.py', 'software/conflict_analysis/domain/tests/fixtures/geography_v1_vectors.json', 'software/conflict_analysis/domain/tests/test_geography.py', 'software/conflict_analysis/domain/urls.py']
-        second_paths=['.github/workflows/conflict-analysis.yml', 'software/conflict_analysis/analysis_dashboard/browser_tests/analysis_geography_r1.mjs', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/dashboard.css', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/dashboard.js', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/BOUNDARY_POLICY_RU.md', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/DATASET_LICENSES_RU.md', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_CC_BY_4_0.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_CITATION.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_METADATA.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/NATURAL_EARTH_TERMS.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/ODBL_1_0.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/map.js', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/MAP_DATASET_MANIFEST.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/MAP_DATASET_MANIFEST.json.sha256', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/RAW_SOURCES_LOCK.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/build_dataset.py', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_admin0.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_admin0_lines.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_disputed_lines.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_places.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_water.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/kazakhstan_admin1.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/kazakhstan_admin1_lines.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/labels_ru.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/map_style.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/MAPLIBRE_LICENSE.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/maplibre-gl-csp-worker.js', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/maplibre-gl-csp.js', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/maplibre-gl.css', 'software/conflict_analysis/analysis_dashboard/templates/analysis_dashboard/analytics.html', 'software/conflict_analysis/analysis_dashboard/tests/test_http.py', 'software/conflict_analysis/analysis_dashboard/views.py', 'software/conflict_analysis/pyproject.toml']
-        assert sorted(git('diff','--name-only',base,first).splitlines())==sorted(first_paths)
-        assert sorted(git('diff','--name-only',first,'HEAD').splitlines())==sorted(second_paths)
-        assert not git('diff','--diff-filter=D','--name-only',base,'HEAD')
-        assert not git('diff','--name-only',base,'HEAD','--','software/conflict_analysis/production_studio','software/conflict_analysis/production_player','software/conflict_analysis/owner_alpha_package','software/conflict_analysis/scripts/build_owner_alpha_package.py','software/conflict_analysis/scripts/verify_owner_alpha_package.py','software/conflict_analysis/domain/services/player_experiments.py','software/conflict_analysis/domain/services/analysis_read_model.py','software/conflict_analysis/domain/api/analysis_v1.py','README.md')
-        print('GEO-39 exact source delta and protected trees PASS')
+        assert git('rev-list','--count',base+'..HEAD')=='3'
+        for commit,message in ((first,'feat(geography): add append-only project location foundation'),(second,'feat(analysis): add offline project location map'),('HEAD','fix(geography): replace ODbL map data with Natural Earth')):
+            assert git('show','-s','--format=%B',commit)==message
+            assert len(git('show','-s','--format=%P',commit).split())==1
+        paths={'A': ['.github/workflows/conflict-analysis.yml', 'software/conflict_analysis/docs/adr/0019-project-geography-r1.md', 'software/conflict_analysis/domain/api/geography_v1.py', 'software/conflict_analysis/domain/enums.py', 'software/conflict_analysis/domain/migrations/0019_analysis_geography.py', 'software/conflict_analysis/domain/models.py', 'software/conflict_analysis/domain/services/geography.py', 'software/conflict_analysis/domain/tests/fixtures/geography_v1_vectors.json', 'software/conflict_analysis/domain/tests/test_geography.py', 'software/conflict_analysis/domain/urls.py'], 'B': ['.github/workflows/conflict-analysis.yml', 'software/conflict_analysis/analysis_dashboard/browser_tests/analysis_geography_r1.mjs', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/dashboard.css', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/dashboard.js', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/BOUNDARY_POLICY_RU.md', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/DATASET_LICENSES_RU.md', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_CC_BY_4_0.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_CITATION.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_METADATA.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/NATURAL_EARTH_TERMS.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/ODBL_1_0.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/map.js', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/MAP_DATASET_MANIFEST.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/MAP_DATASET_MANIFEST.json.sha256', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/RAW_SOURCES_LOCK.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/build_dataset.py', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_admin0.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_admin0_lines.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_disputed_lines.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_places.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_water.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/kazakhstan_admin1.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/kazakhstan_admin1_lines.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/labels_ru.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/map_style.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/MAPLIBRE_LICENSE.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/maplibre-gl-csp-worker.js', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/maplibre-gl-csp.js', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/maplibre-gl.css', 'software/conflict_analysis/analysis_dashboard/templates/analysis_dashboard/analytics.html', 'software/conflict_analysis/analysis_dashboard/tests/test_http.py', 'software/conflict_analysis/analysis_dashboard/views.py', 'software/conflict_analysis/pyproject.toml'], 'C': ['.github/workflows/conflict-analysis.yml', 'software/conflict_analysis/analysis_dashboard/browser_tests/analysis_geography_r1.mjs', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/BOUNDARY_POLICY_RU.md', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/DATASET_LICENSES_RU.md', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_CC_BY_4_0.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_CITATION.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_METADATA.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/ODBL_1_0.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/map.js', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/BUILDER_PATCHES_RU.md', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/BUILD_NATURAL_EARTH_R1.py', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/LABEL_OVERRIDES_RU.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/MAP_DATASET_MANIFEST.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/MAP_DATASET_MANIFEST.json.sha256', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/NATURAL_EARTH_BUILD_MANIFEST.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/NATURAL_EARTH_SOURCE_LOCK.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/RAW_SOURCES_LOCK.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/VERIFY_NATURAL_EARTH_R1_OUTPUT.py', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/build_dataset.py', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_admin0.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_admin0_lines.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_disputed_lines.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_places.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_water.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/kazakhstan_admin1.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/kazakhstan_admin1_lines.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/labels_ru.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/map_style.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/test_build_dataset.py', 'software/conflict_analysis/analysis_dashboard/templates/analysis_dashboard/analytics.html', 'software/conflict_analysis/analysis_dashboard/tests/test_http.py', 'software/conflict_analysis/docs/adr/0019-project-geography-r1.md', 'software/conflict_analysis/domain/services/geography.py', 'software/conflict_analysis/domain/tests/fixtures/geography_v1_vectors.json', 'software/conflict_analysis/domain/tests/test_geography.py']}
+        for before,after,key in ((base,first,'A'),(first,second,'B'),(second,'HEAD','C')):
+            assert sorted(git('diff','--name-only',before,after).splitlines())==sorted(paths[key])
+        assert sorted(git('diff','--diff-filter=D','--name-only',second,'HEAD').splitlines())==['software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_CC_BY_4_0.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_CITATION.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/GEOBOUNDARIES_METADATA.json', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/ODBL_1_0.txt', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_admin0_lines.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/central_asia_water.geojson', 'software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/maps/kazakhstan_admin1_lines.geojson']
+        assert not git('diff','--name-only',second,'HEAD','--','software/conflict_analysis/domain/models.py','software/conflict_analysis/domain/enums.py','software/conflict_analysis/domain/migrations','software/conflict_analysis/domain/api','software/conflict_analysis/production_studio','software/conflict_analysis/production_player','software/conflict_analysis/pyproject.toml')
+        assert not git('diff','--name-only',base,'HEAD','--','software/conflict_analysis/production_studio','software/conflict_analysis/production_player','software/conflict_analysis/owner_alpha_package','software/conflict_analysis/scripts/build_owner_alpha_package.py','software/conflict_analysis/scripts/verify_owner_alpha_package.py','software/conflict_analysis/domain/services/player_experiments.py','software/conflict_analysis/domain/services/analysis_read_model.py','software/conflict_analysis/domain/services/analysis_admission.py','software/conflict_analysis/domain/api/analysis_v1.py','README.md')
+        print('EXACT_THREE_R1_COMMITS_AND_CORRECTIVE_ALLOWLIST=PASS')
         PY
-        git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check "$R1_BASE" HEAD -- . ':!software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/vendor/maplibre/*' ':!software/conflict_analysis/analysis_dashboard/static/analysis_dashboard/licenses/*.txt'
+        git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check "$R1_COMMIT_B" HEAD
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
       with:
@@ -7383,6 +7384,27 @@ jobs:
 
         node --check analysis_dashboard/static/analysis_dashboard/map.js
         node --check analysis_dashboard/browser_tests/analysis_geography_r1.mjs
+    - name: Natural Earth builder self-test, source hashes, two builds and supplied verifier
+      shell: bash
+      run: |
+        set -euo pipefail
+        maps=analysis_dashboard/static/analysis_dashboard/maps
+        python "$maps/BUILD_NATURAL_EARTH_R1.py" --self-test > "$RUNNER_TEMP/ne-builder-selftest.json"
+        python "$maps/test_build_dataset.py" 2>&1 | tee "$RUNNER_TEMP/ne-builder-regressions.log"
+        python "$maps/build_dataset.py" --raw-cache "$RUNNER_TEMP/ne-raw" --output-static "$RUNNER_TEMP/ne-runtime-a" --verify-reproducible | tee "$RUNNER_TEMP/ne-build-a.log"
+        python "$maps/build_dataset.py" --raw-cache "$RUNNER_TEMP/ne-raw" --output-static "$RUNNER_TEMP/ne-runtime-b" --offline --verify-reproducible | tee "$RUNNER_TEMP/ne-build-b.log"
+        python - <<'PY'
+        import os,hashlib,json
+        from pathlib import Path
+        root=Path(os.environ['RUNNER_TEMP'])
+        a=root/'ne-runtime-a';b=root/'ne-runtime-b';source=Path('analysis_dashboard/static/analysis_dashboard')
+        files=sorted(p.relative_to(a) for p in a.rglob('*') if p.is_file())
+        assert files==sorted(p.relative_to(b) for p in b.rglob('*') if p.is_file())
+        for name in files:assert (a/name).read_bytes()==(b/name).read_bytes()==(source/name).read_bytes(),name
+        result={'result':'PASS','files':len(files),'source_commit':'f1890d9f152c896d250a77557a5751a93d494776','byte_identical':True}
+        (root/'ne-reproducibility.json').write_text(json.dumps(result),encoding='utf8')
+        print(result)
+        PY
     - name: Migration forward, two-connection races and exact cross-backend bytes
       shell: bash
       run: |
@@ -7749,7 +7771,7 @@ jobs:
         response=client.post(url+'location-revisions/',body(),content_type='application/json',HTTP_IF_MATCH=current['ETag'],HTTP_X_OPERATION_ID=str(uuid4()),HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value)
         assert response.status_code==201,response.content
         assert len(client.get(url+'location-history/').json()['revisions'])==1
-        for name in ('map.js','vendor/maplibre/maplibre-gl-csp.js','vendor/maplibre/maplibre-gl-csp-worker.js','maps/map_style.json','maps/kazakhstan_admin1.geojson','licenses/ODBL_1_0.txt'):
+        for name in ('map.js','vendor/maplibre/maplibre-gl-csp.js','vendor/maplibre/maplibre-gl-csp-worker.js','maps/map_style.json','maps/kazakhstan_admin1.geojson','licenses/NATURAL_EARTH_TERMS.txt'):
             asset=Path(finders.find('analysis_dashboard/'+name))
             assert asset.is_file() and asset.is_relative_to(root),name
         print('ISOLATED_WHEEL_GEOGRAPHY_RUNTIME=PASS')
@@ -7772,4 +7794,6 @@ jobs:
           ${{ runner.temp }}/analysis-r0-*.xml
           ${{ runner.temp }}/geography-*.json
           ${{ runner.temp }}/geography-browser/
+          ${{ runner.temp }}/ne-*.json
+          ${{ runner.temp }}/ne-*.log
         if-no-files-found: error

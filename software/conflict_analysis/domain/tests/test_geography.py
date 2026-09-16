@@ -149,6 +149,35 @@ class GeographyTests(TestCase):
         result, _ = self.write(body(area_id=str(geo.area_id(geo.CATALOG[1][0]))))
         self.assertEqual(result["head"]["area"]["name_ru"], "Мангистауская область")
 
+    def test_catalog_matches_derived_Natural_Earth_identity_and_preserves_old_versions(self):
+        from importlib.resources import files
+        from uuid import uuid5, NAMESPACE_URL
+        maps=files("analysis_dashboard").joinpath("static/analysis_dashboard/maps")
+        adm1=json.loads(maps.joinpath("kazakhstan_admin1.geojson").read_text(encoding="utf8"))
+        mangystau=[f for f in adm1["features"] if f["properties"]["iso_3166_2"]=="KZ-MAN"]
+        self.assertEqual(len(mangystau),1)
+        feature=mangystau[0]
+        self.assertEqual(feature["id"],feature["properties"]["ne_id"])
+        self.assertEqual(feature["id"],geo.CATALOG[1][0])
+        self.assertEqual(feature["properties"]["adm1_code"],"KAZ-3236")
+        area=GeographicArea.objects.get(feature_id=feature["id"])
+        self.assertEqual(area.metadata["source"],"Natural Earth")
+        self.assertEqual(area.metadata["source_commit"],"f1890d9f152c896d250a77557a5751a93d494776")
+        self.assertEqual(area.metadata["license"],"Public Domain")
+        self.assertEqual(area.dataset_version,"1.0.1")
+        with _canonical_geography_write():
+            legacy=GeographicArea.objects.create(id=uuid5(NAMESPACE_URL,f"{geo.DATASET}:1.0.0:KAZ"),
+                code="GEO-KAZ",version="1.0.0",dataset_code=geo.DATASET,dataset_version="1.0.0",
+                feature_id="KAZ",area_level="ADM0",name_ru="Казахстан",name_local="Kazakhstan",
+                iso_alpha2="KZ",boundary_policy_version=geo.POLICY,metadata={"source":"retired fixture"})
+        before=legacy.metadata.copy()
+        geo.install_pinned_geographic_areas()
+        legacy.refresh_from_db()
+        self.assertEqual(legacy.metadata,before)
+        self.assertEqual(GeographicArea.objects.count(),3)
+        with self.assertRaises(geo.GeographyError):
+            self.write(body(area_id=str(legacy.pk)))
+
     def test_strict_HTTP_CSRF_headers_bytes_history_and_no_mutation_routes(self):
         client = Client(enforce_csrf_checks=True); client.force_login(self.user)
         url = f"/api/foundation/geography/v1/projects/{self.project.pk}/"
@@ -279,10 +308,21 @@ def inventory_gate(wheel):
         listed={prefix+row["path"] for row in manifest["files"]}
         actual={n for n in archive.namelist() if n.startswith(tuple(prefix+p for p in ("maps/","vendor/maplibre/","licenses/"))) and not n.endswith('/')}
         assert actual-listed=={prefix+"maps/MAP_DATASET_MANIFEST.json",prefix+"maps/MAP_DATASET_MANIFEST.json.sha256"}, actual-listed
-        required={"MAPLIBRE_LICENSE.txt","NATURAL_EARTH_TERMS.txt","GEOBOUNDARIES_CC_BY_4_0.txt","GEOBOUNDARIES_CITATION.txt","ODBL_1_0.txt","DATASET_LICENSES_RU.md"}
+        required={"MAPLIBRE_LICENSE.txt","NATURAL_EARTH_TERMS.txt","DATASET_LICENSES_RU.md","BOUNDARY_POLICY_RU.md"}
         assert required<={Path(n).name for n in listed}
-        assert len(manifest["raw_sources"])>=20
+        forbidden={"GEOBOUNDARIES_CC_BY_4_0.txt","GEOBOUNDARIES_CITATION.txt","GEOBOUNDARIES_METADATA.json","ODBL_1_0.txt"}
+        assert not forbidden & {Path(n).name for n in archive.namelist()}
+        assert manifest["source_commit"]=="f1890d9f152c896d250a77557a5751a93d494776"
+        assert manifest["source_tag"]=="v5.1.2" and manifest["dataset_version"]==geo.VERSION
+        assert all(manifest[flag] is False for flag in ("geoboundaries_used","odbl_data_used","osm_derived_data_used","pmtiles_used"))
+        assert len(manifest["raw_sources"])==5
         assert all(len(row["sha256"])==64 and row["bytes"]>0 for row in manifest["raw_sources"])
+        assert all(row["license"]=="Public Domain" and f'/{manifest["source_commit"]}/' in row["url"] for row in manifest["raw_sources"])
+        actual_geojson={Path(n).name for n in actual if n.endswith('.geojson')}
+        assert actual_geojson=={"central_asia_admin0.geojson","central_asia_disputed_lines.geojson","kazakhstan_admin1.geojson","central_asia_places.geojson"}
+        adm1=json.loads(archive.read(prefix+'maps/kazakhstan_admin1.geojson'))
+        match=[f for f in adm1['features'] if f['properties']['iso_3166_2']=='KZ-MAN']
+        assert len(match)==1 and match[0]['id']==geo.CATALOG[1][0]==match[0]['properties']['ne_id']
         print(json.dumps({"oracles":["GEO-35","GEO-36"],"result":"PASS","assets":len(listed)}))
 
 

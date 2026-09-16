@@ -52,7 +52,7 @@
         <p id="geo-status" role="status" aria-live="polite">Откройте карту для загрузки локализации.</p>
         <div class="geo-layout">
           <article class="panel geo-map-panel"><div id="geo-map" class="geo-map" role="region" aria-label="Карта примерной локализации"></div>
-            <p class="geo-attribution">Natural Earth · <a href="{% static 'analysis_dashboard/licenses/DATASET_LICENSES_RU.md' %}">geoBoundaries, CC BY 4.0; © OpenStreetMap contributors / Wambacher, ODbL 1.0</a>. ADM1: 2017.</p>
+            <p class="geo-attribution">Картографическая основа: <a href="{% static 'analysis_dashboard/licenses/DATASET_LICENSES_RU.md' %}">Natural Earth — Public Domain</a>. Repository release: v5.1.2.</p>
           </article>
           <aside class="panel geo-side">
             <h2>Текущая точка</h2><div id="geo-current">Локализация не задана.</div>
@@ -61,11 +61,11 @@
           </aside>
         </div>
         <details class="geo-details"><summary>Основа карты, ограничения и размеры</summary>
-          <p id="geo-dataset"></p><p>Картографическая версия не является юридическим заключением о статусе спорных территорий. Спорные линии — фиолетовый пунктир. Области Казахстана отражают 2017 год; возможны несовпадения с современными границами.</p>
+          <p id="geo-dataset"></p><p>Картографический слой отражает выбранную версию набора данных и не является юридическим заключением о статусе спорных территорий. Спорные линии — коричневый пунктир. Источник всех границ: Natural Earth v5.1.2, commit от 13 мая 2022 года; это историческая версия, а не подтверждение современных границ и названий.</p>
           <p>Центр и радиус показывают примерную локализацию. Геометрия границ конфликта не определена.</p>
           <a href="{% static 'analysis_dashboard/licenses/BOUNDARY_POLICY_RU.md' %}">Политика границ</a> ·
           <a href="{% static 'analysis_dashboard/maps/MAP_DATASET_MANIFEST.json' %}">Manifest и SHA-256</a> ·
-          <a href="{% static 'analysis_dashboard/maps/kazakhstan_admin1.geojson' %}" download>Производная база ADM1 (ODbL)</a>
+          <a href="{% static 'analysis_dashboard/maps/kazakhstan_admin1.geojson' %}" download>Области Казахстана — Natural Earth (Public Domain)</a>
           <label>Высота карты <input id="geo-height" type="range" min="280" max="620" step="10" value="410"></label>
           <label>Ширина карточки <input id="geo-width" type="range" min="240" max="360" step="10" value="280"></label>
         </details>

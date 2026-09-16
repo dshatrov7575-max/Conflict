@@ -1,0 +1,37 @@
+{
+  "countries_by_iso_a3": {
+    "AZE": "Азербайджан",
+    "CHN": "Китай",
+    "IRN": "Иран",
+    "KAZ": "Казахстан",
+    "KGZ": "Кыргызстан",
+    "MNG": "Монголия",
+    "RUS": "Россия",
+    "TKM": "Туркменистан",
+    "UZB": "Узбекистан"
+  },
+  "places_by_normalized_name": {
+    "aktau": "Актау",
+    "almaty": "Алматы",
+    "aqtau": "Актау",
+    "ashgabat": "Ашхабад",
+    "astana": "Астана",
+    "atyrau": "Атырау",
+    "baku": "Баку",
+    "bishkek": "Бишкек",
+    "nur sultan": "Астана",
+    "tashkent": "Ташкент",
+    "tehran": "Тегеран",
+    "ulaanbaatar": "Улан-Батор",
+    "ulan bator": "Улан-Батор"
+  },
+  "project_labels": [
+    {
+      "name_ru": "Жанаозен",
+      "note": "Подпись Project marker; не является изменением Natural Earth geometry.",
+      "project_code": "KZ-ZHANAOZEN-DEMO"
+    }
+  ],
+  "schema": "CONFLICT_MVP7_R1_LABEL_OVERRIDES_RU_V1",
+  "version": "1.0.0"
+}

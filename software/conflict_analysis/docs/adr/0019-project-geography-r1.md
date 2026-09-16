@@ -2,7 +2,7 @@
 
 Base: c6c7118080ab1a1dcb86216f4092dabcf8125be7; tree
 5a4a40431e72fb6b942b895225ce11bba2898052. Owner authorized a new branch
-and exactly two ordinary commits. This supersedes the review packs' former
+and two ordinary commits, followed by one explicitly authorized correction. This supersedes the review packs' former
 READ_ONLY marker; it does not mark external MVP6 clean-PC smoke as passed.
 
 ## Scope and authority
@@ -56,28 +56,52 @@ the encoded byte count; response JSON is canonical, hashed and no-store.
 
 ## Territory installation
 
-`install_pinned_geographic_areas()` is an explicit idempotent deployment step;
-GETs never seed rows. R1 admits two canonical identities: KAZ and geoBoundaries
-Mangystau shapeID 16772668B64618180863447. Their common composite dataset/version
-permits a same-version parent relation even though the underlying sources
-differ. Geometry is entirely static. A new dataset requires new identities.
+`install_pinned_geographic_areas()` remains an explicit idempotent deployment
+operation. Reads never create or repair rows. The current catalog is extracted
+from Natural Earth v5.1.2 commit f1890d9f152c896d250a77557a5751a93d494776:
+KAZ (Admin 0), and Mangystau NE_ID **1159314605**, ADM1_CODE KAZ-3236,
+ISO KZ-MAN. Its source name is Mangghystau, Russian NAME_RU is
+Мангистауская область. A test binds the service catalog to the generated asset.
+Metadata records Natural Earth, exact commit/tag/theme and Public Domain.
 
-## Map data and licenses
+Dataset version **1.0.1** produces new immutable area UUIDs and versioned rows.
+Existing 1.0.0 areas/revisions are retained without retagging or deletion; new
+writes admit only the new catalog. This is a data/catalog correction, so the
+model structure, migration 0019 and API schema are unchanged. Apply the explicit
+catalog installer during deployment before editing locations. A new revision
+can supersede an older version while preserving its original provenance.
+
+## Natural Earth-only map data and licenses
 
 LOCAL_GEOJSON, MapLibre GL JS 5.6.2 CSP build and same-origin worker. No blob
-worker, CDN, tiles, PMTiles, OSM basemap, Yandex or runtime external request.
-Natural Earth release 5.1.2 is pinned to Git f1890d9f152c896d250a77557a5751a93d494776.
-Raw source metadata revealed geoBoundaries Kazakhstan ADM1 is **2017**, from
-OSM/Wambacher under ODbL 1.0, with geoBoundaries product attribution CC BY 4.0.
-The owner explicitly approved retaining this source with correct licensing
-and date on 2026-09-16. OSM_DERIVED_ADM1_USED=true; OSM_BASEMAP_USED=false.
+worker, CDN, public tiles, PMTiles, OSM basemap, Yandex or external runtime request.
+All geographic data are exclusively from nvkelso/natural-earth-vector tag v5.1.2,
+commit f1890d9f152c896d250a77557a5751a93d494776, tree
+ed868934eff4da3bd5579e025bb8ff1212757937, dated 2022-05-13. Countries and Admin 1
+use theme 5.1.1, disputed lines 5.1.0, populated places 5.1.2. Natural Earth
+terms are retained verbatim; geography is Public Domain. MapLibre retains its
+unchanged BSD-3-Clause license. Source run 35139143356 is superseded.
 
-The openly distributed derived ADM1 GeoJSON, ODbL and CC BY snapshots, full
-source citation, raw SHA lock, deterministic build script, asset hashes and
-boundary policy ship in the wheel. All raw downloads occur during data build.
-Russian labels use stable source feature IDs and local system fonts; no glyph
-server. Boundary claims use distinct dashed lines. The UI discloses the
-historical scope and policy, and provides the derived ADM1 download.
+The correction excludes all previous non-Natural-Earth map data and their four
+license/metadata files. Old V1 license approval has been explicitly superseded.
+No license claim from that superseded map is used by the current catalog or UI.
+
+Five exact raw files (four GeoJSON plus LICENSE.md) are SHA-256 checked before
+parsing. Filtering uses the approved nine countries, CRS84 and [35,30,100,61];
+Admin 1 requires ADM0_A3=KAZ. Geometry is retained exactly, tolerance=0. The
+builder verifies emitted geometries and available NAME_RU against the raw pin.
+NE_ID is used for Admin 1 because Natural Earth reuses ISO KZ-ALA for Almaty
+region and city. All FCLASS_* disputed attributes are retained. NAME_RU wins
+over the versioned label fallback; local DOM labels require no glyph server.
+
+The supplied builder needed real-data corrections (duplicate ISO identity,
+NAME_RU priority, strict CRS, classification retention and cross-platform LF).
+Its original hashes and integration details are recorded in
+maps/BUILDER_PATCHES_RU.md. The supplied verifier is unchanged and validates
+actual runtime bytes through a flattened temporary view. The builder receipt
+uses canonical JSON with LF; the outer runtime inventory preserves the existing
+Foundation canonical hash without LF. Both are shipped and cross-checked.
+Two full builds must be byte-identical. Raw caches never enter Git or wheel.
 
 ## UI and accessibility
 
@@ -104,7 +128,8 @@ remain trusted; SQL ownership is not an application role boundary.
 
 ## Verification and remaining limits
 
-The supplied 40-oracle file is preserved byte-for-byte. Service/HTTP tests,
+The 40-oracle file retains every oracle ID and assertion; authorized source
+and license expectations now require Natural Earth and zero excluded assets. Service/HTTP tests,
 dedicated two-connection races on both databases, deterministic cross-backend
 HTTP byte fixtures, exact wheel inventory, real Chromium at 1024×768 and
 1366×768, same-origin worker/network capture and inherited Product/Analysis
@@ -112,7 +137,19 @@ gates provide the evidence. Test/browser JSON and JUnit artifacts are uploaded
 by `geography-r1`. Source acceptance does not perform the separate Windows
 installer/clean-PC packaging increment.
 
-Known limits: ADM1 is historical (16 units in 2017); independent country and
-province sources can differ; 0.01-degree simplified geometry is cartographic,
-not a survey. Coordinates express an approximate center and the entered radius,
-not a proven conflict footprint. No source network refresh occurs at runtime.
+Known limits: this is a historical May 2022 release with 16 Kazakhstan Admin 1
+units. Names such as Нур-Султан and Алма-Ата are retained where NAME_RU supplies
+them. It does not certify contemporary boundaries/names. Disputed boundaries
+remain a versioned cartographic policy, not a legal conclusion. Approximate
+coordinates and radius do not establish a surveyed conflict footprint. Source
+acceptance does not repackage MVP6 or pass its external clean-PC smoke.
+
+## Corrective history
+
+The owner authorized exactly one third ordinary commit after B
+2731ecd26dde5f321507ca237c4d18167d8bd631 (parent A
+ba09340fecc446f677f8b4cf0c4ba3e565ebcee5):
+`fix(geography): replace ODbL map data with Natural Earth`.
+The workflow checks all three exact deltas, parents and messages, and prohibits
+changes to models, migration 0019, Geography API schema, protected analytical
+services, Studio/Player and package builders. No amend or history rewrite.

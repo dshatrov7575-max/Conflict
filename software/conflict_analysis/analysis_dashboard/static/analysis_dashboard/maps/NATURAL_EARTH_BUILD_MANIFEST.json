@@ -1,0 +1,171 @@
+{
+  "approved_iso_a3": [
+    "AZE",
+    "CHN",
+    "IRN",
+    "KAZ",
+    "KGZ",
+    "MNG",
+    "RUS",
+    "TKM",
+    "UZB"
+  ],
+  "boundary_policy_version": "CA_BOUNDARY_POLICY_V1",
+  "builder_version": "1.0.1",
+  "dataset_code": "CA_CENTRAL_ASIA_POLITICAL_V1",
+  "dataset_version": "1.0.1",
+  "extent": [
+    35.0,
+    30.0,
+    100.0,
+    61.0
+  ],
+  "files": [
+    {
+      "bytes": 1198,
+      "license": "Project asset",
+      "path": "BOUNDARY_POLICY_RU.md",
+      "sha256": "16a530115871b98cd9a6d39ce3bd4543e15910e8197ad9f7a4369281f74f999d",
+      "source": "Conflict project deterministic asset",
+      "transformations": [
+        "copied or generated deterministically"
+      ]
+    },
+    {
+      "bytes": 627,
+      "license": "Project asset",
+      "path": "DATASET_LICENSES_RU.md",
+      "sha256": "5ead44a6b35053067e160cb6134b3122ac0e53c3769b94157cef76be925c21f8",
+      "source": "Conflict project deterministic asset",
+      "transformations": [
+        "copied or generated deterministically"
+      ]
+    },
+    {
+      "bytes": 4636,
+      "license": "Public Domain",
+      "path": "NATURAL_EARTH_TERMS.txt",
+      "sha256": "2631b5b39b6d1acc56de75235109b5af2dbb4b0ac5a127b6f06185977247fd4b",
+      "source": "Natural Earth exact license snapshot",
+      "transformations": [
+        "copied or generated deterministically"
+      ]
+    },
+    {
+      "bytes": 1446751,
+      "license": "Public Domain",
+      "path": "central_asia_admin0.geojson",
+      "raw_source_bytes": 13287234,
+      "raw_source_sha256": "239eec57ac17f100a11e2536cffc56752c318b50ae765b0918ff7aab4ce8f255",
+      "sha256": "9deba7a1c4e8151640f6ca3dd13814272b03b7775aa9f9434f8122d4952005a4",
+      "source": "Natural Earth",
+      "source_commit": "f1890d9f152c896d250a77557a5751a93d494776",
+      "source_path": "geojson/ne_10m_admin_0_countries.geojson",
+      "source_repository": "nvkelso/natural-earth-vector",
+      "source_theme_version": "5.1.1",
+      "source_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_10m_admin_0_countries.geojson",
+      "transformations": [
+        "filter approved ISO-A3 set",
+        "retain stable Natural Earth IDs",
+        "retain NAME_RU and label coordinates",
+        "canonical JSON serialization"
+      ]
+    },
+    {
+      "bytes": 106280,
+      "license": "Public Domain",
+      "path": "central_asia_disputed_lines.geojson",
+      "raw_source_bytes": 183831,
+      "raw_source_sha256": "69f19da764e6982b43aebae4b1a356ffe74c33f2a3cdb462637c0ba8e969c30b",
+      "sha256": "878a535af299e3e19cc7c29f192454936e737f1161b2892dbd347f1adc307bbe",
+      "source": "Natural Earth",
+      "source_commit": "f1890d9f152c896d250a77557a5751a93d494776",
+      "source_path": "geojson/ne_10m_admin_0_boundary_lines_disputed_areas.geojson",
+      "source_repository": "nvkelso/natural-earth-vector",
+      "source_theme_version": "5.1.0",
+      "source_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_10m_admin_0_boundary_lines_disputed_areas.geojson",
+      "transformations": [
+        "filter by approved Central Asia extent",
+        "retain dispute classification and Natural Earth IDs",
+        "canonical JSON serialization"
+      ]
+    },
+    {
+      "bytes": 166130,
+      "license": "Public Domain",
+      "path": "central_asia_places.geojson",
+      "raw_source_bytes": 19359003,
+      "raw_source_sha256": "9b8e3de09048ef00dfc70357dbb9fa324493f214b5e0ae4daf1aa79a8d10116b",
+      "sha256": "450f7e74454b6153289703556d26ca734a97a33737aae96ca1f2400142638ac3",
+      "source": "Natural Earth",
+      "source_commit": "f1890d9f152c896d250a77557a5751a93d494776",
+      "source_path": "geojson/ne_10m_populated_places.geojson",
+      "source_repository": "nvkelso/natural-earth-vector",
+      "source_theme_version": "5.1.2",
+      "source_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_10m_populated_places.geojson",
+      "transformations": [
+        "filter approved Central Asia extent and countries",
+        "retain scalerank<=7 or important/override places",
+        "retain Natural Earth IDs and NAME_RU",
+        "canonical JSON serialization"
+      ]
+    },
+    {
+      "bytes": 145833,
+      "license": "Public Domain",
+      "path": "kazakhstan_admin1.geojson",
+      "raw_source_bytes": 40726851,
+      "raw_source_sha256": "22d0e3ad85eb3e27f17cabf8ba2d50e554fbc27a87796ff891d958185da62fb5",
+      "sha256": "cf1506e4b6956d2d326b2bcc5660b6b75ed58ffe00b82f830587987dcf08572d",
+      "source": "Natural Earth",
+      "source_commit": "f1890d9f152c896d250a77557a5751a93d494776",
+      "source_path": "geojson/ne_10m_admin_1_states_provinces.geojson",
+      "source_repository": "nvkelso/natural-earth-vector",
+      "source_theme_version": "5.1.1",
+      "source_url": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_10m_admin_1_states_provinces.geojson",
+      "transformations": [
+        "filter Kazakhstan ADM0_A3=KAZ",
+        "retain stable ADM1/Natural Earth IDs",
+        "retain NAME_RU and label coordinates",
+        "canonical JSON serialization"
+      ]
+    },
+    {
+      "bytes": 78793,
+      "license": "Project asset",
+      "path": "labels_ru.json",
+      "sha256": "061a0014decb6bc1de71338de9156c4987f13b60bfce4e22685b0d0362e6ea1b",
+      "source": "Conflict project deterministic asset",
+      "transformations": [
+        "prefer Natural Earth NAME_RU",
+        "apply versioned project overrides",
+        "do not change geometry"
+      ]
+    },
+    {
+      "bytes": 2205,
+      "license": "Project asset",
+      "path": "map_style.json",
+      "sha256": "3d87d0fdb7d10f8063c9b319999e3ba617d70ca197455f1b63c64e46b3dc485e",
+      "source": "Conflict project deterministic asset",
+      "transformations": [
+        "same-origin GeoJSON sources only",
+        "no glyphs, sprites, tiles, CDN or external URL",
+        "labels rendered by local DOM overlay"
+      ]
+    }
+  ],
+  "generated_at": "2022-05-13T23:22:31Z",
+  "geoboundaries_used": false,
+  "manifest_sha256": "764a66af50a5f3919ca8afc51a93081330f72aaf9e86688da8b881565bb90dd2",
+  "odbl_data_used": false,
+  "osm_derived_data_used": false,
+  "pmtiles_used": false,
+  "runtime_network": "OFFLINE_ONLY",
+  "schema": "CONFLICT_MAP_DATASET_MANIFEST_V1",
+  "source_commit": "f1890d9f152c896d250a77557a5751a93d494776",
+  "source_commit_date": "2022-05-13T23:22:31Z",
+  "source_repository": "nvkelso/natural-earth-vector",
+  "source_tag": "v5.1.2",
+  "source_tree": "ed868934eff4da3bd5579e025bb8ff1212757937"
+}

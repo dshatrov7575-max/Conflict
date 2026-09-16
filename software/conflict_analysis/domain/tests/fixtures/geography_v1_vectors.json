@@ -1,6 +1,14 @@
 {
   "base_head": "c6c7118080ab1a1dcb86216f4092dabcf8125be7",
   "branch": "codex/ux-v2-r1-geography-20260916",
+  "map_source": {
+    "commit": "f1890d9f152c896d250a77557a5751a93d494776",
+    "dataset_version": "1.0.1",
+    "license": "Public Domain",
+    "mangystau_ne_id": "1159314605",
+    "repository": "nvkelso/natural-earth-vector",
+    "tag": "v5.1.2"
+  },
   "method_state": {
     "project_total_score": "METHOD_NOT_APPROVED",
     "regional_aggregate": "METHOD_NOT_APPROVED"
@@ -233,7 +241,9 @@
     {
       "expected": {
         "code": "GEOGRAPHY_REQUEST_INVALID",
-        "http": 400
+        "http": 400,
+        "mangystau_feature_id": "1159314605",
+        "source": "Natural Earth"
       },
       "id": "GEO-21",
       "input": {
@@ -264,7 +274,9 @@
     },
     {
       "expected": {
-        "admin0_layer_visible": true
+        "admin0_layer_visible": true,
+        "admin1_layer_visible": true,
+        "disputed_layer_visible": true
       },
       "id": "GEO-24",
       "input": {
@@ -391,7 +403,12 @@
     {
       "expected": {
         "dataset_license": true,
-        "maplibre_license": true
+        "dataset_license_name": "Public Domain",
+        "dataset_source": "Natural Earth",
+        "geoboundaries_runtime_assets": 0,
+        "maplibre_license": true,
+        "odbl_runtime_assets": 0,
+        "osm_derived_runtime_assets": 0
       },
       "id": "GEO-36",
       "input": {
@@ -441,7 +458,7 @@
       "title": "mvp6_bytes_unchanged"
     }
   ],
-  "oracles_sha256": "c08c104816f7fc520db50b07b5820e4720ba6ef530099959cb77970c6dc6ed5e",
+  "oracles_sha256": "d4f099ad731bc5a1bd7bb353d240e547dffd525867e24c30df5cd01ca2e151d8",
   "schema": "CONFLICT_MVP7_R1_GEOGRAPHY_ORACLES_V1",
-  "version": "1.0.0"
+  "version": "1.0.1"
 }

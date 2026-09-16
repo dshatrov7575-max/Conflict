@@ -22,12 +22,13 @@ from domain.services.analysis_admission import analysis_principal, analysis_loca
 from domain.services.analysis_contracts import AnalysisError, METHOD_STATE, canonical_bytes, sha256
 
 DATASET = "CA_CENTRAL_ASIA_POLITICAL_V1"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 POLICY = "CA_BOUNDARY_POLICY_V1"
 CONTRACT = "FOUNDATION_PROJECT_LOCATION_V1"
 CATALOG = (
     ("KAZ", "Казахстан", "Kazakhstan", "ADM0", None),
-    ("16772668B64618180863447", "Мангистауская область", "Mangystau Region", "ADM1", "KAZ"),
+    # NE_ID from the pinned Admin 1 source; ISO KZ-MAN / ADM1_CODE KAZ-3236.
+    ("1159314605", "Мангистауская область", "Mangghystau", "ADM1", "KAZ"),
 )
 MESSAGES = {
     "GEOGRAPHY_AUTHENTICATION_REQUIRED": "Требуется действующая сессия.",
@@ -77,7 +78,11 @@ def install_pinned_geographic_areas():
                           name_ru=name_ru, name_local=name_local, iso_alpha2="KZ",
                           parent_id=area_id(parent) if parent else None,
                           boundary_policy_version=POLICY,
-                          metadata={"source": "Natural Earth 5.1.2" if level == "ADM0" else "geoBoundaries KAZ-ADM1-16772668", "geometry_in_database": False})
+                          metadata={"source": "Natural Earth", "source_tag": "v5.1.2",
+                                    "source_commit": "f1890d9f152c896d250a77557a5751a93d494776",
+                                    "source_theme_version": "5.1.1", "license": "Public Domain",
+                                    "source_path": "geojson/ne_10m_admin_0_countries.geojson" if level == "ADM0" else "geojson/ne_10m_admin_1_states_provinces.geojson",
+                                    "geometry_in_database": False})
             existing = GeographicArea.objects.filter(pk=area_id(feature)).first()
             if existing:
                 if any(getattr(existing, key) != value for key, value in values.items()):

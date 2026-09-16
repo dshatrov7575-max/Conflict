@@ -1,0 +1,65 @@
+{
+  "approved_iso_a3": [
+    "AZE",
+    "CHN",
+    "IRN",
+    "KAZ",
+    "KGZ",
+    "MNG",
+    "RUS",
+    "TKM",
+    "UZB"
+  ],
+  "commit": "f1890d9f152c896d250a77557a5751a93d494776",
+  "commit_date": "2022-05-13T23:22:31Z",
+  "extent": [
+    35.0,
+    30.0,
+    100.0,
+    61.0
+  ],
+  "geoboundaries_used": false,
+  "license": "Public Domain",
+  "odbl_data_used": false,
+  "osm_derived_data_used": false,
+  "raw_host_allowlist": [
+    "raw.githubusercontent.com"
+  ],
+  "repository": "nvkelso/natural-earth-vector",
+  "schema": "CONFLICT_MVP7_R1_NATURAL_EARTH_SOURCE_LOCK_V1",
+  "source_lock_sha256": "f7148af00e42de29a751aa56f254bb8e6835e57a1cb3b2691cf54fcf9d41fc82",
+  "sources": [
+    {
+      "key": "admin0",
+      "output": "central_asia_admin0.geojson",
+      "path": "geojson/ne_10m_admin_0_countries.geojson",
+      "theme_version": "5.1.1"
+    },
+    {
+      "key": "disputed",
+      "output": "central_asia_disputed_lines.geojson",
+      "path": "geojson/ne_10m_admin_0_boundary_lines_disputed_areas.geojson",
+      "theme_version": "5.1.0"
+    },
+    {
+      "key": "admin1",
+      "output": "kazakhstan_admin1.geojson",
+      "path": "geojson/ne_10m_admin_1_states_provinces.geojson",
+      "theme_version": "5.1.1"
+    },
+    {
+      "key": "places",
+      "output": "central_asia_places.geojson",
+      "path": "geojson/ne_10m_populated_places.geojson",
+      "theme_version": "5.1.2"
+    },
+    {
+      "key": "license",
+      "output": "NATURAL_EARTH_TERMS.txt",
+      "path": "LICENSE.md",
+      "theme_version": "5.1.2"
+    }
+  ],
+  "tag": "v5.1.2",
+  "tree": "ed868934eff4da3bd5579e025bb8ff1212757937"
+}

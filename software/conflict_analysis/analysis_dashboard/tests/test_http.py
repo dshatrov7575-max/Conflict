@@ -72,6 +72,31 @@ class AnalysisHTTPTests(PlayerExperimentsFixture, TestCase):
         self.assertNotIn("domain.models", source)
         self.assertNotIn(".objects.", source)
 
+    def test_Natural_Earth_runtime_manifest_labels_and_license_boundary(self):
+        from importlib.resources import files
+        static=files("analysis_dashboard").joinpath("static/analysis_dashboard")
+        manifest=json.loads(static.joinpath("maps/MAP_DATASET_MANIFEST.json").read_text(encoding="utf8"))
+        self.assertEqual(manifest["source_commit"],"f1890d9f152c896d250a77557a5751a93d494776")
+        self.assertEqual(manifest["source_tag"],"v5.1.2")
+        self.assertEqual(manifest["dataset_version"],"1.0.1")
+        for flag in ("geoboundaries_used","odbl_data_used","osm_derived_data_used","pmtiles_used"):
+            self.assertIs(manifest[flag],False)
+        for name in ("GEOBOUNDARIES_CC_BY_4_0.txt","GEOBOUNDARIES_CITATION.txt","GEOBOUNDARIES_METADATA.json","ODBL_1_0.txt"):
+            self.assertFalse(static.joinpath("licenses",name).is_file())
+        for row in manifest["files"]:
+            value=static.joinpath(row["path"]).read_bytes()
+            self.assertEqual(hashlib.sha256(value).hexdigest(),row["sha256"])
+        for name in ("central_asia_admin0.geojson","kazakhstan_admin1.geojson","central_asia_places.geojson"):
+            fc=json.loads(static.joinpath("maps",name).read_text(encoding="utf8"))
+            for feature in fc["features"]:
+                p=feature["properties"]
+                if p["source_name_ru"]:self.assertEqual(p["name_ru"],p["source_name_ru"])
+        client=Client();client.force_login(self.user)
+        shell=client.get(f"/analysis/projects/{self.project.pk}/workspaces/{self.workspace.pk}/")
+        self.assertContains(shell,"Natural Earth — Public Domain")
+        for text in ("geoBoundaries","ODbL","CC BY 4.0"):
+            self.assertNotContains(shell,text)
+
     def test_fractional_timeline_response_preserves_server_canonical_bytes(self):
         _, experiment, _ = self.aggregate(kind="AI")
         TimeSlice.objects.create(
