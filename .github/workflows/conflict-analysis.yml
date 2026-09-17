@@ -7324,19 +7324,23 @@ jobs:
       R1_COMMIT_B: 2731ecd26dde5f321507ca237c4d18167d8bd631
       R1_COMMIT_D: f90fb0d08fcdb897b392690e539b9032beeba205
       R1_COMMIT_D_TREE: c263f85f48aa4ecb9b60eba2afdd635d67925f28
-      TRIGGER_COMMIT_E: ${{ github.sha }}
+      R1_COMMIT_E: c904577a9e046afeb9c169dd907a9b37ea26737e
+      R1_COMMIT_E_TREE: f11b6e4343c56dec33f7e834b7f918a1639384dd
+      TRIGGER_COMMIT_F: ${{ github.sha }}
+      R1_CHROME_VERSION: '152.0.7977.64'
+      R1_CHROME_LINUX64_SHA256: 8b592f066af71f054aab2cc80fc26f73c775c6d44ebb99d16ade924b24756c2e
       TESTED_SOURCE_COMMIT_C: 85a253126bf270664c4786d159994e7359b5d2c5
       TESTED_SOURCE_TREE_C: 5567183dbe16fc6c7c8caac051b7694f37b92457
     defaults:
       run:
         working-directory: software/conflict_analysis
     steps:
-    - name: Check out trigger commit E
+    - name: Check out trigger commit F
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
         ref: ${{ github.sha }}
-    - name: Prove trigger commit E and exact five-commit history
+    - name: Prove trigger commit F and exact six-commit history
       shell: bash
       working-directory: .
       run: |
@@ -7346,12 +7350,14 @@ jobs:
         from pathlib import Path
         def git(*args):return subprocess.check_output(['git',*args],text=True).strip()
         base=os.environ['R1_BASE'];a=os.environ['R1_COMMIT_A'];b=os.environ['R1_COMMIT_B']
-        c=os.environ['TESTED_SOURCE_COMMIT_C'];e=os.environ['TRIGGER_COMMIT_E']
+        c=os.environ['TESTED_SOURCE_COMMIT_C'];f=os.environ['TRIGGER_COMMIT_F']
         assert os.environ['GITHUB_EVENT_NAME']=='push'
         assert os.environ['GITHUB_REF']=='refs/heads/codex/ux-v2-r1-geography-20260916'
-        d=os.environ['R1_COMMIT_D']
-        assert e==os.environ['GITHUB_SHA']==git('rev-parse','HEAD')
-        assert git('rev-parse','HEAD^')==d
+        d=os.environ['R1_COMMIT_D'];e=os.environ['R1_COMMIT_E']
+        assert f==os.environ['GITHUB_SHA']==git('rev-parse','HEAD')
+        assert git('rev-parse','HEAD^')==e
+        assert git('rev-parse',e+'^')==d
+        assert git('rev-parse',e+'^{tree}')==os.environ['R1_COMMIT_E_TREE']
         assert git('rev-parse',d+'^')==c
         assert git('rev-parse',d+'^{tree}')==os.environ['R1_COMMIT_D_TREE']
         assert git('rev-parse',c+'^')==b
@@ -7359,20 +7365,22 @@ jobs:
         assert git('rev-parse',a+'^')==base
         assert git('rev-parse',base+'^{tree}')==os.environ['R1_BASE_TREE']
         assert git('rev-parse',c+'^{tree}')==os.environ['TESTED_SOURCE_TREE_C']
-        assert git('rev-list','--count',base+'..HEAD')=='5'
+        assert git('rev-list','--count',base+'..HEAD')=='6'
         messages=((a,'feat(geography): add append-only project location foundation'),
                   (b,'feat(analysis): add offline project location map'),
                   (c,'fix(geography): replace ODbL map data with Natural Earth'),
                   (d,'ci(geography): run exact commit C gate'),
-                  (e,'ci(studio): use file-backed SQLite live-server test database'))
+                  (e,'ci(studio): use file-backed SQLite live-server test database'),
+                  (f,'ci(studio): pin accepted Chrome for R1 gate'))
         for commit,message in messages:
             assert git('show','-s','--format=%B',commit)==message
             assert len(git('show','-s','--format=%P',commit).split())==1
         assert git('diff','--name-status',c,d)=='M\t.github/workflows/conflict-analysis.yml'
         assert git('diff','--name-status',d,e)=='M\t.github/workflows/conflict-analysis.yml'
+        assert git('diff','--name-status',e,f)=='M\t.github/workflows/conflict-analysis.yml'
         assert not git('status','--porcelain=v1')
-        receipt={'TRIGGER_COMMIT_E':e,'TRIGGER_TREE_E':git('rev-parse','HEAD^{tree}'),
-                 'TRIGGER_PARENT_E':d,'TESTED_SOURCE_COMMIT_C':c,
+        receipt={'TRIGGER_COMMIT_F':f,'TRIGGER_TREE_F':git('rev-parse','HEAD^{tree}'),
+                 'TRIGGER_PARENT_F':e,'R1_COMMIT_E':e,'TESTED_SOURCE_COMMIT_C':c,
                  'TESTED_SOURCE_TREE_C':os.environ['TESTED_SOURCE_TREE_C'],
                  'TESTED_SOURCE_PARENT_C':b,'EVENT':os.environ['GITHUB_EVENT_NAME'],
                  'REF':os.environ['GITHUB_REF'],'RUN_ID':os.environ['GITHUB_RUN_ID'],
@@ -7381,7 +7389,7 @@ jobs:
         path.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n',encoding='utf8')
         print(json.dumps(receipt,sort_keys=True))
         PY
-        git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check "$R1_COMMIT_D" HEAD
+        git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check "$R1_COMMIT_E" HEAD
     - name: Check out exact tested source commit C
       uses: actions/checkout@v4
       with:
@@ -7396,18 +7404,18 @@ jobs:
         import json,os,subprocess
         from pathlib import Path
         def git(*args):return subprocess.check_output(['git',*args],text=True).strip()
-        c=os.environ['TESTED_SOURCE_COMMIT_C'];e=os.environ['TRIGGER_COMMIT_E']
-        assert git('rev-parse','HEAD')==c and c!=e
+        c=os.environ['TESTED_SOURCE_COMMIT_C'];f=os.environ['TRIGGER_COMMIT_F']
+        assert git('rev-parse','HEAD')==c and c!=f
         assert git('rev-parse','HEAD^{tree}')==os.environ['TESTED_SOURCE_TREE_C']
         assert git('rev-parse','HEAD^')==os.environ['R1_COMMIT_B']
         assert not git('status','--porcelain=v1')
         root=Path(os.environ['RUNNER_TEMP']);path=root/'geography-source-identity.json'
         receipt=json.loads(path.read_text(encoding='utf8'))
-        assert receipt['TRIGGER_COMMIT_E']==e==os.environ['GITHUB_SHA']
+        assert receipt['TRIGGER_COMMIT_F']==f==os.environ['GITHUB_SHA']
         assert receipt['TESTED_SOURCE_COMMIT_C']==c and receipt['TRIGGER_GUARD']=='PASS'
         receipt['SOURCE_GUARD']='PASS'
         path.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n',encoding='utf8')
-        identity=f'TRIGGER_COMMIT_E={e}\nTESTED_SOURCE_COMMIT_C={c}\n'
+        identity=f'TRIGGER_COMMIT_F={f}\nTESTED_SOURCE_COMMIT_C={c}\n'
         (root/'geography-source-identity.env').write_text(identity,encoding='utf8')
         with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a',encoding='utf8') as out:
             out.write('## Geography CI source identity\n\n```text\n'+identity+'```\n')
@@ -7449,6 +7457,34 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '24'
+    - name: Install and verify pinned Chrome for Testing
+      shell: bash
+      run: |
+        set -euo pipefail
+        archive="$RUNNER_TEMP/geography-chrome-linux64.zip"
+        url="https://storage.googleapis.com/chrome-for-testing-public/$R1_CHROME_VERSION/linux64/chrome-linux64.zip"
+        curl --proto '=https' --proto-redir '=https' --tlsv1.2 --fail --location --silent --show-error "$url" --output "$archive"
+        printf '%s  %s\n' "$R1_CHROME_LINUX64_SHA256" "$archive" | sha256sum --check --strict -
+        distribution="$(mktemp -d "$RUNNER_TEMP/geography-chrome-XXXXXX")"
+        unzip -q "$archive" -d "$distribution"
+        chrome="$distribution/chrome-linux64/chrome"
+        test -x "$chrome"
+        version="$("$chrome" --version)"
+        STUDIO_CHROME_BIN="$chrome" CHROME_VERSION_OUTPUT="$version" python - <<'PY'
+        import json,os,re
+        from pathlib import Path
+        version=os.environ['R1_CHROME_VERSION'];actual=os.environ['CHROME_VERSION_OUTPUT']
+        assert re.search(r'(?<![\d.])'+re.escape(version)+r'(?![\d.])',actual),actual
+        proof={'version':version,'version_output':actual,
+               'archive_url':f'https://storage.googleapis.com/chrome-for-testing-public/{version}/linux64/chrome-linux64.zip',
+               'archive_sha256':os.environ['R1_CHROME_LINUX64_SHA256'],
+               'sha256_verified_before_extract':True,'STUDIO_CHROME_BIN':os.environ['STUDIO_CHROME_BIN'],
+               'TRIGGER_COMMIT_F':os.environ['TRIGGER_COMMIT_F'],
+               'TESTED_SOURCE_COMMIT_C':os.environ['TESTED_SOURCE_COMMIT_C']}
+        (Path(os.environ['RUNNER_TEMP'])/'geography-chrome-identity.json').write_text(json.dumps(proof,sort_keys=True,indent=2)+'\n',encoding='utf8')
+        print(json.dumps(proof,sort_keys=True))
+        PY
+        echo "STUDIO_CHROME_BIN=$chrome" >> "$GITHUB_ENV"
     - name: Install application and validate static sources
       shell: bash
       run: |
@@ -7459,11 +7495,6 @@ jobs:
         node --check analysis_dashboard/static/analysis_dashboard/dashboard.js
         node --check analysis_dashboard/static/analysis_dashboard/charts.js
         node --check analysis_dashboard/browser_tests/analysis_v2.mjs
-        chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
-        test -n "$chrome"
-        "$chrome" --version
-        echo "STUDIO_CHROME_BIN=$chrome" >> "$GITHUB_ENV"
-
         node --check analysis_dashboard/static/analysis_dashboard/map.js
         node --check analysis_dashboard/browser_tests/analysis_geography_r1.mjs
     - name: Natural Earth builder self-test, source hashes, two builds and supplied verifier
@@ -7930,7 +7961,7 @@ jobs:
         assert root.parent==Path(os.environ['RUNNER_TEMP']).resolve()
         assert not expected.exists(), 'The uniquely allocated test database must not pre-exist'
         proof={'TESTED_SOURCE_COMMIT_C':os.environ['TESTED_SOURCE_COMMIT_C'],
-               'TRIGGER_COMMIT_E':os.environ['TRIGGER_COMMIT_E'],
+               'TRIGGER_COMMIT_F':os.environ['TRIGGER_COMMIT_F'],
                'configured_NAME':str(configured),'effective_TEST_NAME':name,
                'derived_test_database_NAME':connection.creation._get_test_db_name(),
                'settings_module':str(Path(effective_settings.__file__).resolve()),
@@ -7969,7 +8000,7 @@ jobs:
         root=Path(os.environ['RUNNER_TEMP']);identity=root/'geography-source-identity.json'
         receipt=json.loads(identity.read_text(encoding='utf8')) if identity.is_file() else {}
         current=subprocess.run(['git','rev-parse','HEAD'],capture_output=True,text=True)
-        receipt.update(TRIGGER_COMMIT_E=os.environ['TRIGGER_COMMIT_E'],
+        receipt.update(TRIGGER_COMMIT_F=os.environ['TRIGGER_COMMIT_F'],
                        TESTED_SOURCE_COMMIT_C=os.environ['TESTED_SOURCE_COMMIT_C'],
                        EVENT=os.environ['GITHUB_EVENT_NAME'],RUN_ID=os.environ['GITHUB_RUN_ID'],
                        GATE_STEPS_STATUS=os.environ['GATE_STEPS_STATUS'],
