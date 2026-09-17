@@ -117,11 +117,14 @@ CORRECTIVE_PATHS = frozenset({
 
 READINESS_PATHS = CORRECTIVE_PATHS - {"software/conflict_analysis/owner_alpha_package/linux/nginx.conf"}
 
+RESTORE_PATHS = READINESS_PATHS
+
 def delivery_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
     head=git(repo,"rev-parse","HEAD")
     base=LOCK["installer_parent"]  # Accepted R1 run still belongs to F, never A.
     first=LOCK["installer_commit_a"]
     second=LOCK["installer_commit_b"]
+    third=LOCK["installer_commit_c"]
     require(git(repo,"branch","--show-current") in ("",LOCK["installer_branch"]),"BLOCKED_MVP7_HISTORY","branch")
     require(git(repo,"show","-s","--format=%P",first)==base,"BLOCKED_MVP7_HISTORY","A ordinary parent F")
     require(git(repo,"show","-s","--format=%B",first)==LOCK["installer_message"],"BLOCKED_MVP7_HISTORY","A message")
@@ -129,17 +132,21 @@ def delivery_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
     require(git(repo,"show","-s","--format=%B",second)==LOCK["correction_message"],"BLOCKED_MVP7_HISTORY","B message")
     delta_b=git(repo,"diff","--name-status","--no-renames",first,second).splitlines()
     require(set(delta_b)=={"M\t"+p for p in CORRECTIVE_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact B modified paths")
+    require(git(repo,"show","-s","--format=%P",third)==second,"BLOCKED_MVP7_HISTORY","C ordinary parent B")
+    require(git(repo,"show","-s","--format=%B",third)==LOCK["readiness_correction_message"],"BLOCKED_MVP7_HISTORY","C message")
+    delta_c=git(repo,"diff","--name-status","--no-renames",second,third).splitlines()
+    require(set(delta_c)=={"M\t"+p for p in READINESS_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact C modified paths")
     if final:
         require(not git(repo,"status","--porcelain=v1","--untracked-files=all"),"BLOCKED_MVP7_HISTORY","clean committed checkout required")
-        require(git(repo,"show","-s","--format=%P",head)==second,"BLOCKED_MVP7_HISTORY","C ordinary parent B")
-        require(git(repo,"rev-list","--count",base+".."+head)=="3","BLOCKED_MVP7_HISTORY","three installer commits")
-        require(git(repo,"show","-s","--format=%B",head)==LOCK["readiness_correction_message"],"BLOCKED_MVP7_HISTORY","C message")
-        delta=git(repo,"diff","--name-status","--no-renames",second,head).splitlines()
-        require(set(delta)=={"M\t"+p for p in READINESS_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact C modified paths")
-        parent=second
+        require(git(repo,"show","-s","--format=%P",head)==third,"BLOCKED_MVP7_HISTORY","D ordinary parent C")
+        require(git(repo,"rev-list","--count",base+".."+head)=="4","BLOCKED_MVP7_HISTORY","four installer commits")
+        require(git(repo,"show","-s","--format=%B",head)==LOCK["restore_correction_message"],"BLOCKED_MVP7_HISTORY","D message")
+        delta=git(repo,"diff","--name-status","--no-renames",third,head).splitlines()
+        require(set(delta)=={"M\t"+p for p in RESTORE_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact D modified paths")
+        parent=third
     else:
-        require(head==second,"BLOCKED_MVP7_HISTORY","precommit parent B")
-        parent=first
+        require(head==third,"BLOCKED_MVP7_HISTORY","precommit parent C")
+        parent=second
     paths=git(repo,"diff","--name-only",base,head).splitlines()
     require(all(allowed_installer_path(p) for p in paths),"BLOCKED_MVP7_SOURCE_MUTATION","installer allowlist")
     return {"head":head,"tree":git(repo,"rev-parse","HEAD^{tree}"),"parent":parent}
@@ -185,7 +192,7 @@ def verify_manifest(manifest: dict[str, Any]) -> None:
     require(source == LOCK["source"], "BLOCKED_MVP7_SOURCE_MUTATION", "application wheel must be exact C")
     delivery=manifest["delivery"]
     require(set(delivery)=={"head","tree","parent"} and all(GIT_SHA.fullmatch(v) for v in delivery.values())
-            and delivery["parent"]==LOCK["installer_commit_b"],"BLOCKED_MVP7_HISTORY","delivery identity")
+            and delivery["parent"]==LOCK["installer_commit_c"],"BLOCKED_MVP7_HISTORY","delivery identity")
     require(manifest["acceptance"] == {"acceptance_run":35216652773,"WINDOWS11_WSL2_E2E":"BLOCKED_NO_RUNNER",
             "CLEAN_PC_SMOKE":"NOT_EXECUTED","PARTNER_RELEASE_READY":False},"BLOCKED_MVP7_NONCLAIM","acceptance boundary")
     require(manifest["migration"] == {"path": CONTROL["migration"], "blob": CONTROL["migration_blob"]},

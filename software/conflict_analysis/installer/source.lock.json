@@ -4,6 +4,7 @@
   "installer_branch": "codex/mvp7-r1-windows-setup-20260917",
   "installer_commit_a": "21c4812a8eaf8d503454699c191d99abaf538036",
   "installer_commit_b": "7011f31c8b4a8a21986b85da18d5337e64c7aa28",
+  "installer_commit_c": "ce522813cfbfd26c3a06fd53fbde54939559e4d9",
   "installer_message": "build(installer): add MVP7 R1 Windows setup candidate",
   "installer_parent": "c8263b81adb8fcb90ec92b65342f9620884c929b",
   "migration": {
@@ -30,6 +31,7 @@
     "studio_lifecycle_sqlite": 15
   },
   "readiness_correction_message": "fix(installer): harden private daemon readiness",
+  "restore_correction_message": "fix(installer): canonicalize restore graph verification",
   "source": {
     "base_head": "c6c7118080ab1a1dcb86216f4092dabcf8125be7",
     "base_tree": "5a4a40431e72fb6b942b895225ce11bba2898052",

@@ -39,6 +39,10 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
     assert v.LOCK['readiness_correction_message']=='fix(installer): harden private daemon readiness'
     assert v.READINESS_PATHS==v.CORRECTIVE_PATHS-{'software/conflict_analysis/owner_alpha_package/linux/nginx.conf'}
     assert len(v.READINESS_PATHS)==6
+    third='ce522813cfbfd26c3a06fd53fbde54939559e4d9'
+    assert v.LOCK['installer_commit_c']==third
+    assert v.LOCK['restore_correction_message']=='fix(installer): canonicalize restore graph verification'
+    assert v.RESTORE_PATHS==v.READINESS_PATHS
     head='d'*40;tree='e'*40
     answers={
         ('rev-parse','HEAD'):head, ('rev-parse','HEAD^{tree}'):tree,
@@ -49,31 +53,38 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         ('show','-s','--format=%P',second):first,
         ('show','-s','--format=%B',second):v.LOCK['correction_message'],
         ('diff','--name-status','--no-renames',first,second):'\n'.join('M\t'+p for p in sorted(v.CORRECTIVE_PATHS)),
-        ('show','-s','--format=%P',head):second,
-        ('rev-list','--count',base+'..'+head):'3',
-        ('show','-s','--format=%B',head):v.LOCK['readiness_correction_message'],
-        ('diff','--name-status','--no-renames',second,head):'\n'.join('M\t'+p for p in sorted(v.READINESS_PATHS)),
+        ('show','-s','--format=%P',third):second,
+        ('show','-s','--format=%B',third):v.LOCK['readiness_correction_message'],
+        ('diff','--name-status','--no-renames',second,third):'\n'.join('M\t'+p for p in sorted(v.READINESS_PATHS)),
+        ('show','-s','--format=%P',head):third,
+        ('rev-list','--count',base+'..'+head):'4',
+        ('show','-s','--format=%B',head):v.LOCK['restore_correction_message'],
+        ('diff','--name-status','--no-renames',third,head):'\n'.join('M\t'+p for p in sorted(v.RESTORE_PATHS)),
         ('diff','--name-only',base,head):'\n'.join(sorted(v.CORRECTIVE_PATHS)),
     }
     monkeypatch.setattr(v,'git',lambda repo,*args:answers[args])
-    assert v.delivery_identity(APP)=={'head':head,'tree':tree,'parent':second}
-    for key,bad in [
+    assert v.delivery_identity(APP)=={'head':head,'tree':tree,'parent':third}
+    invalid=[
         (('show','-s','--format=%P',first),'0'*40),
-        (('show','-s','--format=%P',head),base),
-        (('show','-s','--format=%P',head),first+' '+base),
-        (('show','-s','--format=%B',first),'changed A'),
         (('show','-s','--format=%P',second),base),
+        (('show','-s','--format=%P',third),first),
+        (('show','-s','--format=%P',head),base),
+        (('show','-s','--format=%P',head),second),
+        (('show','-s','--format=%P',head),third+' '+base),
+        (('show','-s','--format=%B',first),'changed A'),
         (('show','-s','--format=%B',second),'changed B'),
-        (('show','-s','--format=%B',head),'changed C'),
-        (('rev-list','--count',base+'..'+head),'1'),
-        (('rev-list','--count',base+'..'+head),'2'),
-        (('rev-list','--count',base+'..'+head),'4'),
+        (('show','-s','--format=%B',third),'changed C'),
+        (('show','-s','--format=%B',head),'changed D'),
         (('status','--porcelain=v1','--untracked-files=all'),' M extra'),
-        (('diff','--name-status','--no-renames',second,head),'M\tsoftware/conflict_analysis/domain/models.py'),
-        (('diff','--name-status','--no-renames',second,head),answers[('diff','--name-status','--no-renames',second,head)].replace('M\t','A\t',1)),
-        (('diff','--name-status','--no-renames',first,second),'M\tsoftware/conflict_analysis/domain/models.py'),
         (('diff','--name-only',base,head),'software/conflict_analysis/domain/models.py'),
-    ]:
+    ]
+    invalid += [(('rev-list','--count',base+'..'+head),str(n)) for n in (0,1,2,3,5)]
+    for parent,child in ((first,second),(second,third),(third,head)):
+        key=('diff','--name-status','--no-renames',parent,child)
+        invalid.extend([(key,'M\tsoftware/conflict_analysis/domain/models.py'),
+                        (key,answers[key].replace('M\t','A\t',1)),
+                        (key,'\n'.join(answers[key].splitlines()[:-1]))])
+    for key,bad in invalid:
         original=answers[key];answers[key]=bad
         with pytest.raises(v.GateError):v.delivery_identity(APP)
         answers[key]=original
@@ -126,6 +137,16 @@ def test_runtime_and_installer_have_no_external_download_or_policy_mutation(tmp_
     assert start.index('execute([PACKAGE/"venv/bin/gunicorn"')<start.index('wait_daemon("gunicorn")')
     assert start.index('execute(["nginx","-c"')<start.index('wait_daemon("nginx")')
     _assert_private_daemon_helpers(module,tmp_path)
+    harness=ast.parse((APP/'owner_alpha_package/tests/test_linux_contract.py').read_text())
+    probes=0
+    for node in ast.walk(harness):
+        if isinstance(node,ast.List):
+            for i,item in enumerate(node.elts):
+                if isinstance(item,ast.Constant) and item.value=='/opt/owner-alpha/venv/bin/python':
+                    assert [ast.literal_eval(x) for x in node.elts[i-2:i]]==['env','LD_LIBRARY_PATH=/opt/python-libs']
+                    probes+=1
+    assert probes==8
+
     assert 'network_check()["tcp_listeners"]==[["127.0.0.1",s["port"]]]' in start
 
 def test_first_install_marker_follows_success_and_uninstall_preserves_state():

@@ -108,7 +108,7 @@ for service in ('nginx','gunicorn'):
 assert (root/'gunicorn.sock').is_socket()
 print('PRIVATE_SERVICE_PATHS=PASS')
 """
-    command(["docker","exec",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",proof])
+    command(["docker","exec",runtime.name,"env","LD_LIBRARY_PATH=/opt/python-libs","/opt/owner-alpha/venv/bin/python","-c",proof])
     denied=command(["docker","exec",runtime.name,"runuser","-u","owneralpha","--",
                     "test","-w","/var/lib/nginx"],success=False)
     assert denied.returncode==1
@@ -116,7 +116,7 @@ print('PRIVATE_SERVICE_PATHS=PASS')
     assert runtime.sql("SHOW unix_socket_directories;").decode().strip()=="/run/owner-alpha-pg"
     for socket in ("/run/owner-alpha-pg/.s.PGSQL.5432","/run/owner-alpha/gunicorn.sock"):
         command(["docker","exec",runtime.name,"test","-S",socket])
-    result=command(["docker","exec",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",
+    result=command(["docker","exec",runtime.name,"env","LD_LIBRARY_PATH=/opt/python-libs","/opt/owner-alpha/venv/bin/python","-c",
         "import urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8765/static/production_player/player.css'); assert r.status==200"])
     assert result.returncode==0
 
@@ -173,10 +173,20 @@ INSERT INTO g10_parent VALUES ('11111111-1111-4111-8111-111111111111',decode('00
 INSERT INTO g10_child(parent_id,receipt) VALUES ('11111111-1111-4111-8111-111111111111','synthetic immutable receipt');
 ALTER TABLE g10_parent OWNER TO owneralpha;
 ALTER TABLE g10_child OWNER TO owneralpha;
+ALTER TABLE g10_parent ADD CONSTRAINT g10_zero_check CHECK (zero_value >= 0);
+CREATE FUNCTION public.g10_restore_trigger() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;
+ALTER FUNCTION public.g10_restore_trigger() OWNER TO owneralpha;
+CREATE TRIGGER g10_user_trigger BEFORE INSERT ON g10_child
+FOR EACH ROW WHEN (NEW.receipt IS NOT NULL) EXECUTE FUNCTION public.g10_restore_trigger('original');
 """)
     before=runtime.invoke("graph")
     archive=runtime.raw("backup").stdout
     assert archive
+    with tarfile.open(fileobj=io.BytesIO(archive)) as backup:
+        full=json.load(backup.extractfile('logical.json'))
+        without_sessions=json.load(backup.extractfile('logical-without-sessions.json'))
+    assert full['django_session']['rows']>0
+    assert {k:value for k,value in full.items() if k!='django_session'}==without_sessions==before
     candidate=Runtime(image,8766,empty=True)
     try:
         result=candidate.raw("restore",input=archive)
@@ -188,6 +198,7 @@ ALTER TABLE g10_child OWNER TO owneralpha;
         assert candidate.sql("SELECT unknown_value IS NULL,zero_value,encode(original,'hex') FROM g10_parent;").strip()==b"t|0|00ff00deadbeef"
         original_pks=runtime.sql("SELECT id FROM auth_user WHERE username LIKE 'owner-alpha:%' ORDER BY username;")
         assert candidate.sql("SELECT id FROM auth_user WHERE username LIKE 'owner-alpha:%' ORDER BY username;")==original_pks
+        _assert_restore_graph_sensitivity(candidate,before)
         assert candidate.invoke("start")["phase"]=="READY"
     finally: candidate.close()
     # Truncation and same-shape receipt corruption both fail in fresh candidates.
@@ -202,6 +213,37 @@ ALTER TABLE g10_child OWNER TO owneralpha;
     assert runtime.invoke("stop")["phase"]=="STOPPED"
     runtime.invoke("start")
     assert runtime.invoke("graph")==before
+
+def _assert_restore_graph_sensitivity(candidate,before):
+    """Actual catalog mutations in the disposable restored candidate, never product data."""
+    internal_sql="SELECT tgname FROM pg_trigger WHERE tgrelid='g10_child'::regclass AND tgisinternal ORDER BY tgname;"
+    internal_before=candidate.sql(internal_sql)
+    assert internal_before
+    candidate.sql("ALTER TABLE g10_child DROP CONSTRAINT g10_child_parent_id_fkey;")
+    assert candidate.invoke("graph")["$constraints"]!=before["$constraints"]
+    candidate.sql("ALTER TABLE g10_child ADD CONSTRAINT g10_child_parent_id_fkey FOREIGN KEY(parent_id) REFERENCES g10_parent(id);")
+    # Newly generated RI names/OIDs must not defeat an unchanged FK graph.
+    assert candidate.sql(internal_sql)!=internal_before
+    assert candidate.invoke("graph")==before
+    candidate.sql("ALTER TABLE g10_child ALTER CONSTRAINT g10_child_parent_id_fkey DEFERRABLE INITIALLY DEFERRED;")
+    assert candidate.invoke("graph")["$constraints"]!=before["$constraints"]
+    candidate.sql("ALTER TABLE g10_child ALTER CONSTRAINT g10_child_parent_id_fkey NOT DEFERRABLE;")
+    assert candidate.invoke("graph")==before
+    candidate.sql("ALTER TABLE g10_parent DROP CONSTRAINT g10_zero_check; ALTER TABLE g10_parent ADD CONSTRAINT g10_zero_check CHECK (zero_value >= -1);")
+    assert candidate.invoke("graph")["$constraints"]!=before["$constraints"]
+    candidate.sql("ALTER TABLE g10_parent DROP CONSTRAINT g10_zero_check; ALTER TABLE g10_parent ADD CONSTRAINT g10_zero_check CHECK (zero_value >= 0);")
+    assert candidate.invoke("graph")==before
+    candidate.sql("ALTER TABLE g10_child DISABLE TRIGGER g10_user_trigger;")
+    assert candidate.invoke("graph")["$triggers"]!=before["$triggers"]
+    candidate.sql("ALTER TABLE g10_child ENABLE TRIGGER g10_user_trigger;")
+    assert candidate.invoke("graph")==before
+    # WHEN and argument changes, with all other identities unchanged, are detected.
+    for condition,argument in (("NEW.receipt IS NULL","original"),("NEW.receipt IS NOT NULL","changed")):
+        candidate.sql("DROP TRIGGER g10_user_trigger ON g10_child; CREATE TRIGGER g10_user_trigger BEFORE INSERT ON g10_child FOR EACH ROW WHEN ("+condition+") EXECUTE FUNCTION public.g10_restore_trigger('"+argument+"');")
+        assert candidate.invoke("graph")["$triggers"]!=before["$triggers"]
+    candidate.sql("DROP TRIGGER g10_user_trigger ON g10_child; CREATE TRIGGER g10_user_trigger BEFORE INSERT ON g10_child FOR EACH ROW WHEN (NEW.receipt IS NOT NULL) EXECUTE FUNCTION public.g10_restore_trigger('original');")
+    assert candidate.invoke("graph")==before
+
 
 def test_preexisting_empty_private_pid_files_start_and_restart_without_traceback(built):
     """Fresh rootfs, both empty PID files; use the unchanged public start command."""
@@ -219,7 +261,7 @@ for name in ('gunicorn','nginx'):
     os.chown(path,18001,18001);os.chmod(path,0o600)
     assert path.stat().st_size==0 and not path.is_symlink()
 """
-        command(["docker","exec",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",prepare])
+        command(["docker","exec",runtime.name,"env","LD_LIBRARY_PATH=/opt/python-libs","/opt/owner-alpha/venv/bin/python","-c",prepare])
         for attempt in range(2):
             result=runtime.raw("start")
             assert b"Traceback" not in result.stderr and b"IndexError" not in result.stderr
@@ -259,7 +301,7 @@ finally:
     folder.rmdir()
 print('BOUNDED_DAEMON_READINESS=PASS')
 """
-    command(["docker","exec",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",proof])
+    command(["docker","exec",runtime.name,"env","LD_LIBRARY_PATH=/opt/python-libs","/opt/owner-alpha/venv/bin/python","-c",proof])
 
 
 def test_mvp7_zero_permission_profile_matrix_geography_write_and_restart_persistence(built):
@@ -276,7 +318,7 @@ def test_mvp7_zero_permission_profile_matrix_geography_write_and_restart_persist
         workspace=runtime.sql("SELECT id FROM domain_projectworkspace WHERE project_id='"+project+"' AND definition_version_id IS NOT NULL ORDER BY id;").decode().splitlines()
         assert workspace
         # Typed demo workspace is the Analysis-ready one.
-        from_source = command(["docker","exec",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",
+        from_source = command(["docker","exec",runtime.name,"env","LD_LIBRARY_PATH=/opt/python-libs","/opt/owner-alpha/venv/bin/python","-c",
             "from domain.services.zhanaozen_typed_manifest import WORKSPACE_ID;print(WORKSPACE_ID)"]).stdout.decode().strip()
         assert from_source in workspace
         context=f"/api/foundation/analysis/v1/projects/{project}/workspaces/{from_source}/context/"
@@ -313,7 +355,7 @@ print(json.dumps({"status":r.status,"etag":r.headers.get("ETag"),
 """
         def http(role,path,**extra):
             material={"cookie":profiles[role],"path":path,**extra}
-            return json.loads(command(["docker","exec","-i",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",script],
+            return json.loads(command(["docker","exec","-i",runtime.name,"env","LD_LIBRARY_PATH=/opt/python-libs","/opt/owner-alpha/venv/bin/python","-c",script],
                 input=json.dumps(material).encode()).stdout)
         for role in profiles:
             route="/player/" if role=="PLAYER_ASSESSOR" else "/studio/drafts/"
@@ -332,7 +374,7 @@ print(json.dumps({"status":r.status,"etag":r.headers.get("ETag"),
         assert http("STUDIO_EDITOR",geo+"location-revisions/",body={})["status"]==404
         current=http("STUDIO_PUBLISHER",geo+"location/")
         # Use the exact accepted service constants; no copied authorization/model code.
-        source = command(["docker","exec",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",
+        source = command(["docker","exec",runtime.name,"env","LD_LIBRARY_PATH=/opt/python-libs","/opt/owner-alpha/venv/bin/python","-c",
             "import ast,json;from pathlib import Path;t=ast.parse(Path('/opt/owner-alpha/venv/lib/python3.12/site-packages/domain/services/geography.py').read_text());print(json.dumps({x.targets[0].id:ast.literal_eval(x.value) for x in t.body if isinstance(x,ast.Assign) and isinstance(x.targets[0],ast.Name) and x.targets[0].id in ['DATASET','VERSION','POLICY']}))"]).stdout
         constants=json.loads(source)
         body={"latitude":"43.337","longitude":"52.8619","location_kind":"POINT","uncertainty_radius_m":0,
@@ -363,7 +405,7 @@ assert executor.loader.graph.leaf_nodes("domain")==[("domain","0019_analysis_geo
 assert executor.migration_plan(executor.loader.graph.leaf_nodes())==[]
 print("MIGRATION_0019_EMPTY_PLAN=PASS")
 """
-        command(["docker","exec",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",check_migrations])
+        command(["docker","exec",runtime.name,"env","LD_LIBRARY_PATH=/opt/python-libs","/opt/owner-alpha/venv/bin/python","-c",check_migrations])
         # A recognized prefix with the wrong profile combination is also refused.
         editor=profiles["STUDIO_EDITOR"]["user_pk"]
         group=runtime.sql("SELECT id FROM auth_group WHERE name='analysis-reader:"+project+"';").decode().strip()

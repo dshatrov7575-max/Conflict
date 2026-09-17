@@ -434,6 +434,15 @@ def graph(include_sessions=True):
     from psycopg import sql as q
     data={}
     with psycopg.connect(host=str(PGSOCK),dbname="conflict_analysis",user="owneralpha") as conn:
+        # The package pins PostgreSQL; canonical expressions use its own planner,
+        # without ANALYZE or table reads. Dump/restore can relocate implicit casts
+        # in CHECK trees even under the same deterministic deparser search_path.
+        conn.execute("SET TRANSACTION READ ONLY")
+        conn.execute("SET LOCAL search_path = pg_catalog, public")
+        conn.execute("SET LOCAL enable_indexscan = off")
+        conn.execute("SET LOCAL enable_indexonlyscan = off")
+        conn.execute("SET LOCAL enable_bitmapscan = off")
+        conn.execute("SET LOCAL max_parallel_workers_per_gather = 0")
         tables=conn.execute("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename").fetchall()
         for (table,) in tables:
             if not include_sessions and table=="django_session": continue
@@ -446,12 +455,50 @@ def graph(include_sessions=True):
         data["$permissions"]=[list(row) for row in conn.execute(
           "SELECT grantor,grantee,table_schema,table_name,privilege_type,is_grantable,with_hierarchy "
           "FROM information_schema.table_privileges WHERE table_schema='public' ORDER BY 1,2,3,4,5")]
-        data["$constraints"]=[list(row) for row in conn.execute(
-          "SELECT conrelid::regclass::text,conname,pg_get_constraintdef(oid) FROM pg_constraint "
-          "WHERE connamespace='public'::regnamespace ORDER BY 1,2")]
+        checks={}
+        for schema,table,name,expression in conn.execute(
+            "SELECT n.nspname,r.relname,c.conname,pg_get_expr(c.conbin,c.conrelid,false) "
+            "FROM pg_constraint c JOIN pg_class r ON r.oid=c.conrelid "
+            "JOIN pg_namespace n ON n.oid=r.relnamespace "
+            "WHERE n.nspname='public' AND c.contype='c' ORDER BY 1,2,3").fetchall():
+            statement=q.SQL("EXPLAIN (FORMAT JSON, VERBOSE, COSTS OFF) SELECT ({}) FROM ONLY {}.{}").format(
+                q.SQL(expression),q.Identifier(schema),q.Identifier(table))
+            output=conn.execute(statement).fetchone()[0][0]["Plan"]["Output"]
+            need(isinstance(output,list) and len(output)==1 and isinstance(output[0],str))
+            checks[(schema,table,name)]={"planned_check":output[0]}
+        # Explicit names/ordered columns and flags, never catalog OIDs. Domain
+        # constraints retain their definition as well; none are silently omitted.
+        constraints=[list(row) for row in conn.execute(
+            """SELECT n.nspname::text, rn.nspname::text, r.relname::text, c.conname::text,
+ c.contype::text, dn.nspname::text, dt.typname::text,
+ ARRAY(SELECT a.attname::text FROM unnest(c.conkey) WITH ORDINALITY k(num,ord) LEFT JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=k.num ORDER BY k.ord),
+ fn.nspname::text,f.relname::text,
+ ARRAY(SELECT a.attname::text FROM unnest(c.confkey) WITH ORDINALITY k(num,ord) LEFT JOIN pg_attribute a ON a.attrelid=c.confrelid AND a.attnum=k.num ORDER BY k.ord),
+ c.condeferrable,c.condeferred,c.conenforced,c.convalidated,c.confupdtype::text,c.confdeltype::text,c.confmatchtype::text,
+ c.conislocal,c.coninhcount,c.connoinherit,c.conperiod,pg_get_constraintdef(c.oid,false)
+ FROM pg_constraint c JOIN pg_namespace n ON n.oid=c.connamespace
+ LEFT JOIN pg_class r ON r.oid=c.conrelid LEFT JOIN pg_namespace rn ON rn.oid=r.relnamespace
+ LEFT JOIN pg_type dt ON dt.oid=c.contypid LEFT JOIN pg_namespace dn ON dn.oid=dt.typnamespace
+ LEFT JOIN pg_class f ON f.oid=c.confrelid LEFT JOIN pg_namespace fn ON fn.oid=f.relnamespace
+ WHERE n.nspname='public'  ORDER BY 1,2,3,4,5,6,7""")]
+        for row in constraints:
+            if row[4]=="c" and row[2] is not None:
+                key=(row[1],row[2],row[3]);need(key in checks)
+                row[-1]=checks[key]
+        data["$constraints"]=constraints
+        # Internal RI triggers have regenerated OID-derived names; their FK
+        # semantics are covered above. Every non-internal trigger remains covered,
+        # including identity, enablement, events, function, args and WHEN clause.
         data["$triggers"]=[list(row) for row in conn.execute(
-          "SELECT tgrelid::regclass::text,tgname,pg_get_triggerdef(oid),tgenabled FROM pg_trigger "
-          "WHERE tgrelid IN (SELECT oid FROM pg_class WHERE relnamespace='public'::regnamespace) ORDER BY 1,2")]
+            """SELECT n.nspname::text,r.relname::text,t.tgname::text,t.tgisinternal,t.tgenabled::text,t.tgtype,
+ pn.nspname::text,p.proname::text,pg_get_function_identity_arguments(p.oid),encode(t.tgargs,'hex'),t.tgnargs,
+ ARRAY(SELECT a.attname::text FROM unnest(t.tgattr::smallint[]) WITH ORDINALITY k(num,ord) LEFT JOIN pg_attribute a ON a.attrelid=t.tgrelid AND a.attnum=k.num ORDER BY k.ord),
+ t.tgdeferrable,t.tginitdeferred,cn.nspname::text,cr.relname::text,c.conname::text,c.contype::text,
+ t.tgoldtable::text,t.tgnewtable::text,pg_get_triggerdef(t.oid,false)
+ FROM pg_trigger t JOIN pg_class r ON r.oid=t.tgrelid JOIN pg_namespace n ON n.oid=r.relnamespace
+ JOIN pg_proc p ON p.oid=t.tgfoid JOIN pg_namespace pn ON pn.oid=p.pronamespace
+ LEFT JOIN pg_class cr ON cr.oid=t.tgconstrrelid LEFT JOIN pg_namespace cn ON cn.oid=cr.relnamespace
+ LEFT JOIN pg_constraint c ON c.oid=t.tgconstraint WHERE n.nspname='public'  AND NOT t.tgisinternal ORDER BY 1,2,3""")]
         data["$extensions"]=[list(row) for row in conn.execute(
           "SELECT extname,extversion FROM pg_extension ORDER BY extname")]
         data["$roles"]=[list(row) for row in conn.execute(
