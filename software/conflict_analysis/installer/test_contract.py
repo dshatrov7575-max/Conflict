@@ -1,6 +1,7 @@
 """Packaging-only checks; none are Windows 11 E2E."""
 from pathlib import Path
-import ast,copy,hashlib,json,re,subprocess,sys,zipfile
+import ast,copy,hashlib,json,os,re,stat,subprocess,sys,zipfile
+from types import SimpleNamespace
 import pytest
 ROOT=Path(__file__).resolve().parent
 APP=ROOT.parent
@@ -33,32 +34,44 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
     assert v.LOCK['installer_message']=='build(installer): add MVP7 R1 Windows setup candidate'
     assert v.LOCK['correction_message']=='fix(installer): repair private runtime service paths'
     assert len(v.CORRECTIVE_PATHS)==7 and all(v.allowed_installer_path(p) for p in v.CORRECTIVE_PATHS)
-    head='b'*40;tree='c'*40
+    second='7011f31c8b4a8a21986b85da18d5337e64c7aa28'
+    assert v.LOCK['installer_commit_b']==second
+    assert v.LOCK['readiness_correction_message']=='fix(installer): harden private daemon readiness'
+    assert v.READINESS_PATHS==v.CORRECTIVE_PATHS-{'software/conflict_analysis/owner_alpha_package/linux/nginx.conf'}
+    assert len(v.READINESS_PATHS)==6
+    head='d'*40;tree='e'*40
     answers={
         ('rev-parse','HEAD'):head, ('rev-parse','HEAD^{tree}'):tree,
         ('branch','--show-current'):v.LOCK['installer_branch'],
         ('show','-s','--format=%P',first):base,
         ('show','-s','--format=%B',first):v.LOCK['installer_message'],
         ('status','--porcelain=v1','--untracked-files=all'):'',
-        ('show','-s','--format=%P',head):first,
-        ('rev-list','--count',base+'..'+head):'2',
-        ('show','-s','--format=%B',head):v.LOCK['correction_message'],
-        ('diff','--name-status','--no-renames',first,head):'\n'.join('M\t'+p for p in sorted(v.CORRECTIVE_PATHS)),
+        ('show','-s','--format=%P',second):first,
+        ('show','-s','--format=%B',second):v.LOCK['correction_message'],
+        ('diff','--name-status','--no-renames',first,second):'\n'.join('M\t'+p for p in sorted(v.CORRECTIVE_PATHS)),
+        ('show','-s','--format=%P',head):second,
+        ('rev-list','--count',base+'..'+head):'3',
+        ('show','-s','--format=%B',head):v.LOCK['readiness_correction_message'],
+        ('diff','--name-status','--no-renames',second,head):'\n'.join('M\t'+p for p in sorted(v.READINESS_PATHS)),
         ('diff','--name-only',base,head):'\n'.join(sorted(v.CORRECTIVE_PATHS)),
     }
     monkeypatch.setattr(v,'git',lambda repo,*args:answers[args])
-    assert v.delivery_identity(APP)=={'head':head,'tree':tree,'parent':first}
+    assert v.delivery_identity(APP)=={'head':head,'tree':tree,'parent':second}
     for key,bad in [
         (('show','-s','--format=%P',first),'0'*40),
         (('show','-s','--format=%P',head),base),
         (('show','-s','--format=%P',head),first+' '+base),
         (('show','-s','--format=%B',first),'changed A'),
-        (('show','-s','--format=%B',head),'changed B'),
+        (('show','-s','--format=%P',second),base),
+        (('show','-s','--format=%B',second),'changed B'),
+        (('show','-s','--format=%B',head),'changed C'),
         (('rev-list','--count',base+'..'+head),'1'),
-        (('rev-list','--count',base+'..'+head),'3'),
+        (('rev-list','--count',base+'..'+head),'2'),
+        (('rev-list','--count',base+'..'+head),'4'),
         (('status','--porcelain=v1','--untracked-files=all'),' M extra'),
-        (('diff','--name-status','--no-renames',first,head),'M\tsoftware/conflict_analysis/domain/models.py'),
-        (('diff','--name-status','--no-renames',first,head),answers[('diff','--name-status','--no-renames',first,head)].replace('M\t','A\t',1)),
+        (('diff','--name-status','--no-renames',second,head),'M\tsoftware/conflict_analysis/domain/models.py'),
+        (('diff','--name-status','--no-renames',second,head),answers[('diff','--name-status','--no-renames',second,head)].replace('M\t','A\t',1)),
+        (('diff','--name-status','--no-renames',first,second),'M\tsoftware/conflict_analysis/domain/models.py'),
         (('diff','--name-only',base,head),'software/conflict_analysis/domain/models.py'),
     ]:
         original=answers[key];answers[key]=bad
@@ -86,7 +99,7 @@ def test_nsis_payload_only_mode_cannot_install_or_bypass_gate():
     assert code.index('Assert-Mvp7Archive')<code.index('if ($VerifyOnly)')<code.index('Assert-Mvp7Host')<code.index('Expand-Mvp7Archive')
     assert code.index('Install-OwnerAlpha.ps1')<code.index("'mvp7-installation.json.pending'")
 
-def test_runtime_and_installer_have_no_external_download_or_policy_mutation():
+def test_runtime_and_installer_have_no_external_download_or_policy_mutation(tmp_path):
     texts=[p.read_text() for p in (APP/'owner_alpha_package/windows').glob('*') if p.suffix in {'.ps1','.psm1'}]
     texts += [p.read_text() for p in ROOT.glob('*.ps*')]
     runtime='\n'.join(texts)
@@ -110,7 +123,9 @@ def test_runtime_and_installer_have_no_external_download_or_policy_mutation():
     start=ast.get_source_segment(code,functions['start_services'])
     assert start.index('directory.mkdir')<start.index('os.chmod(directory,0o700)')<start.index('os.chown(directory,18001,18001)')<start.index('["nginx","-t"')<start.index('["nginx","-c"')
     assert 'user="owneralpha"' in start and '/var/lib/nginx' not in linux
-    assert '(RUN/"gunicorn.sock").is_socket()' in start
+    assert start.index('execute([PACKAGE/"venv/bin/gunicorn"')<start.index('wait_daemon("gunicorn")')
+    assert start.index('execute(["nginx","-c"')<start.index('wait_daemon("nginx")')
+    _assert_private_daemon_helpers(module,tmp_path)
     assert 'network_check()["tcp_listeners"]==[["127.0.0.1",s["port"]]]' in start
 
 def test_first_install_marker_follows_success_and_uninstall_preserves_state():
@@ -127,3 +142,43 @@ def test_nonclaims_are_literal_and_schema_requires_provenance():
     assert {'source','delivery','acceptance','migration','payload'}<=set(schema['required'])
     assert schema['properties']['source']['properties']['ordinary_commits']['maxItems']==3
     assert schema['properties']['migration']['properties']['path']['const'].endswith('0019_analysis_geography.py')
+
+
+def _assert_private_daemon_helpers(module,tmp_path):
+    """Run the actual embedded helpers; mock kill(0), never signal a Windows process."""
+    selected={'Halt','need','read_pid','pid_alive','proc_alive','wait_daemon'}
+    nodes=[n for n in module.body if isinstance(n,(ast.FunctionDef,ast.ClassDef)) and n.name in selected]
+    kills=[]
+    def probe(pid,signal):
+        kills.append((pid,signal))
+        assert signal==0
+        if pid!=42:raise ProcessLookupError()
+    safe_os=SimpleNamespace(**{name:getattr(os,name) for name in dir(os)})
+    safe_os.kill=probe
+    scope={'Path':Path,'os':safe_os,'stat':stat,'re':re}
+    exec(compile(ast.Module(body=nodes,type_ignores=[]),'exact-supervisor-helpers','exec'),scope)
+    path=tmp_path/'daemon.pid'
+    assert scope['proc_alive'](path) is False
+    for raw in (b'',b'42',b'not-a-pid\n',b'-42\n',b'0\n',b'1\n',b'42x\n',b'42 \n',b'99999999999999999999\n',b'2147483648\n',b'\xff\n'):
+        path.write_bytes(raw)
+        assert scope['proc_alive'](path) is False
+    assert kills==[]
+    path.write_bytes(b'43\n');assert scope['proc_alive'](path) is False
+    path.write_bytes(b'42\n');assert scope['proc_alive'](path) is True
+    path.write_bytes(b'42\n/pg/data\n');assert scope['proc_alive'](path) is True
+    assert scope['proc_alive'](tmp_path) is False
+    # Partial -> ready and permanently false both use a monotonic bounded deadline.
+    class Clock:
+        now=0
+        def monotonic(self):return self.now
+        def sleep(self,value):
+            assert 0<value<=.1
+            self.now+=value
+    clock=Clock();scope['time']=clock
+    scope['daemon_ready']=lambda name:clock.now>=.3
+    scope['wait_daemon']('gunicorn');assert .3<=clock.now<.5
+    clock.now=0;scope['daemon_ready']=lambda name:False
+    with pytest.raises(scope['Halt']) as caught:scope['wait_daemon']('nginx')
+    assert caught.value.code=='BLOCKED_G10_RUNTIME_OPERATION_FAILED' and clock.now==15
+    for timeout in (0,-1,16,60):
+        with pytest.raises(scope['Halt']):scope['wait_daemon']('nginx',timeout)

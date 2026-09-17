@@ -20,6 +20,7 @@ import re
 import secrets
 import signal
 import socket
+import stat
 import subprocess
 import sys
 import tarfile
@@ -71,11 +72,65 @@ def state():
     need(s["runtime_id"]==runtime_id(),"BLOCKED_G10_RUNTIME_IDENTITY_DRIFT")
     need(type(s["port"]) is int and 1024<=s["port"]<=65535,"BLOCKED_G10_NETWORK_EXPOSURE")
     return s
-def proc_alive(path):
-    if not path.exists(): return False
-    pid=int(path.read_text().splitlines()[0])
+def read_pid(path):
+    # An incomplete daemon write, link or special file is never process evidence.
+    try:
+        before=path.lstat()
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink!=1: return None
+        if path.resolve()!=path.absolute(): return None
+        fd=os.open(path,os.O_RDONLY|getattr(os,"O_NOFOLLOW",0)|getattr(os,"O_NONBLOCK",0))
+        try:
+            opened=os.fstat(fd)
+            if (opened.st_dev,opened.st_ino)!=(before.st_dev,before.st_ino): return None
+            if not stat.S_ISREG(opened.st_mode) or opened.st_nlink!=1: return None
+            data=os.read(fd,4096)
+        finally: os.close(fd)
+        first,separator,_=data.partition(b"\n")  # postmaster.pid has additional lines.
+        if not separator or not re.fullmatch(rb"[1-9][0-9]{0,9}",first): return None
+        pid=int(first)
+        return pid if 1<pid<=2147483647 else None
+    except (OSError,ValueError,OverflowError): return None
+
+def pid_alive(pid):
+    if pid is None: return False
     try: os.kill(pid,0); return True
-    except ProcessLookupError: return False
+    except (OSError,ValueError,OverflowError): return False
+
+def proc_alive(path):
+    return pid_alive(read_pid(path))
+
+def daemon_pid(name):
+    need(name in ("gunicorn","nginx"),"BLOCKED_G10_RUNTIME_OPERATION_FAILED")
+    path=RUN/(name+".pid")
+    pid=read_pid(path)
+    if not pid_alive(pid): return None
+    try:
+        info=path.lstat()
+        process=Path("/proc")/str(pid)
+        command=(process/"cmdline").read_bytes()
+        if (info.st_uid,info.st_gid)!=(18001,18001) or process.stat().st_uid!=18001: return None
+        if name.encode() not in command or read_pid(path)!=pid: return None
+        return pid
+    except OSError: return None
+
+def daemon_ready(name):
+    if daemon_pid(name) is None: return False
+    if name=="nginx": return True
+    try:
+        sock=RUN/"gunicorn.sock"
+        info=sock.lstat()
+        return stat.S_ISSOCK(info.st_mode) and (info.st_uid,info.st_gid)==(18001,18001)
+    except OSError: return False
+
+def wait_daemon(name,timeout=15):
+    need(0<timeout<=15,"BLOCKED_G10_RUNTIME_OPERATION_FAILED")
+    deadline=time.monotonic()+timeout
+    while True:
+        if daemon_ready(name): return
+        remaining=deadline-time.monotonic()
+        need(remaining>0,"BLOCKED_G10_RUNTIME_OPERATION_FAILED")
+        time.sleep(min(.1,remaining))
+
 def configure_env():
     s=state()
     os.environ.update(DJANGO_SETTINGS_MODULE="conflict_analysis.settings",
@@ -299,10 +354,10 @@ def start_services():
     if not proc_alive(RUN/"gunicorn.pid"):
         execute([PACKAGE/"venv/bin/gunicorn","--config",PACKAGE/"gunicorn.conf.py",
                  "conflict_analysis.wsgi:application"],user="owneralpha")
+    wait_daemon("gunicorn")
     if not proc_alive(RUN/"nginx.pid"):
         execute(["nginx","-c",RUN/"nginx.conf"],user="owneralpha")
-    need(proc_alive(RUN/"nginx.pid") and proc_alive(RUN/"gunicorn.pid")
-         and (RUN/"gunicorn.sock").is_socket(),"BLOCKED_G10_RUNTIME_OPERATION_FAILED")
+    wait_daemon("nginx")
     need(network_check()["tcp_listeners"]==[["127.0.0.1",s["port"]]],
          "BLOCKED_G10_NETWORK_EXPOSURE")
     s["phase"]="READY"; write(STATE/"state.json",s)
@@ -327,8 +382,8 @@ def health():
     if s["phase"]!="READY":
         return {"phase":s["phase"],"instance":s["instance"],"runtime_id":runtime_id()}
     configure_env(); users()
-    need(proc_alive(PG/"postmaster.pid") and proc_alive(RUN/"gunicorn.pid")
-         and proc_alive(RUN/"nginx.pid"),"BLOCKED_G10_RUNTIME_OPERATION_FAILED")
+    need(proc_alive(PG/"postmaster.pid") and daemon_ready("gunicorn")
+         and daemon_ready("nginx"),"BLOCKED_G10_RUNTIME_OPERATION_FAILED")
     from django.db import connection
     with connection.cursor() as cursor:
         cursor.execute("SELECT version(), current_database(), inet_server_addr()")
@@ -349,9 +404,8 @@ def stop_web():
     for name,expected in (("nginx","nginx"),("gunicorn","gunicorn")):
         pidfile=RUN/(name+".pid")
         if not proc_alive(pidfile): continue
-        pid=int(pidfile.read_text().strip())
-        command=Path("/proc/"+str(pid)+"/cmdline").read_bytes()
-        need(expected.encode() in command,"BLOCKED_G10_OPERATION_UNKNOWN")
+        pid=daemon_pid(expected)
+        need(pid is not None and read_pid(pidfile)==pid,"BLOCKED_G10_OPERATION_UNKNOWN")
         os.kill(pid,signal.SIGQUIT if name=="nginx" else signal.SIGTERM)
         deadline=time.monotonic()+140
         while proc_alive(pidfile) and time.monotonic()<deadline: time.sleep(.2)

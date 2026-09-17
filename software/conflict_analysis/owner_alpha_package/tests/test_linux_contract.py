@@ -67,11 +67,25 @@ def test_rootfs_has_exact_runtime_versions_users_permissions_and_no_secrets_buil
     assert actual["source"]==report["source"]
     passwd=command(["docker","exec",runtime.name,"cat","/etc/passwd"]).stdout.decode()
     assert "owneralpha:x:18001:18001:" in passwd and "postgres:x:999:" in passwd
+    # Inventory assertions retain the former standalone forbidden-artifact coverage.
+    text=(APP/"owner_alpha_package/linux/owner-alpha-supervisor.sh").read_text()
+    for forbidden in ("runserver","curl ","wget ","pip install","apt-get"):
+        assert forbidden not in text
+    assert "seed_demo()" in text and "install_pinned_geographic_areas()" in text
+    assert 'USE_SQLITE="false"' in text and 'DJANGO_DEBUG="false"' in text
+    with tarfile.open(rootfs) as archive:
+        names=archive.getnames()
+        assert not any(name.endswith((".sqlite3",".git/config")) for name in names)
+        wsl=archive.extractfile("etc/wsl.conf").read().decode()
+        assert "enabled=false" in wsl and "appendWindowsPath=false" in wsl
+    identity=runtime.invoke("identity")
+    assert identity["source"]["base_head"]==verify.CONTROL["base_head"]
 
 def test_postgresql_socket_nginx_static_gunicorn_loopback_and_no_lan_configuration_are_exact(built):
     _,_,_,runtime=built
     health=runtime.invoke("start")
     assert health["phase"]=="READY" and health["tcp_listeners"]==[["127.0.0.1",runtime.port]]
+    _assert_actual_daemon_readiness(runtime)
     # The actual package runtime, under umask(0077), must expose only its loopback socket.
     command(["docker","exec",runtime.name,"runuser","-u","owneralpha","--",
              "nginx","-t","-c","/run/owner-alpha/nginx.conf"])
@@ -189,21 +203,63 @@ ALTER TABLE g10_child OWNER TO owneralpha;
     runtime.invoke("start")
     assert runtime.invoke("graph")==before
 
-def test_showcase_sqlite_runserver_mutable_download_and_unaccepted_artifacts_are_absent(built):
-    _,rootfs,_,runtime=built
-    text=(APP/"owner_alpha_package/linux/owner-alpha-supervisor.sh").read_text()
-    for forbidden in ("runserver","curl ","wget ","pip install","apt-get"):
-        assert forbidden not in text
-    assert "seed_demo()" in text and "install_pinned_geographic_areas()" in text
-    assert 'USE_SQLITE="false"' in text and 'DJANGO_DEBUG="false"' in text
-    with tarfile.open(rootfs) as archive:
-        names=archive.getnames()
-        assert not any(name.endswith((".sqlite3",".git/config")) for name in names)
-        wsl=archive.extractfile("etc/wsl.conf").read().decode()
-        assert "enabled=false" in wsl and "appendWindowsPath=false" in wsl
-    identity=runtime.invoke("identity")
-    assert identity["source"]["base_head"]==verify.CONTROL["base_head"]
+def test_preexisting_empty_private_pid_files_start_and_restart_without_traceback(built):
+    """Fresh rootfs, both empty PID files; use the unchanged public start command."""
+    _,_,image,_=built
+    runtime=Runtime(image)
+    try:
+        prepare=r"""
+import os
+from pathlib import Path
+root=Path('/run/owner-alpha');root.mkdir(mode=0o700,exist_ok=True)
+os.chown(root,18001,18001);os.chmod(root,0o700)
+for name in ('gunicorn','nginx'):
+    path=root/(name+'.pid')
+    with path.open('xb'):pass
+    os.chown(path,18001,18001);os.chmod(path,0o600)
+    assert path.stat().st_size==0 and not path.is_symlink()
+"""
+        command(["docker","exec",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",prepare])
+        for attempt in range(2):
+            result=runtime.raw("start")
+            assert b"Traceback" not in result.stderr and b"IndexError" not in result.stderr
+            health=json.loads(result.stdout)
+            assert health["phase"]=="READY" and health["tcp_listeners"]==[["127.0.0.1",runtime.port]]
+            _assert_actual_daemon_readiness(runtime)
+            assert runtime.invoke("health")["phase"]=="READY"  # Includes /player/ HTTP predicate.
+            assert runtime.invoke("stop")["phase"]=="STOPPED"
+    finally: runtime.close()
 
+
+def _assert_actual_daemon_readiness(runtime):
+    proof=r"""
+import ast,os,re,stat,time
+from pathlib import Path
+RUN=Path('/run/owner-alpha')
+code=Path('/opt/owner-alpha/owner-alpha-supervisor.sh').read_text().split("<<'PY'\n",1)[1].rsplit('\nPY',1)[0]
+names={'Halt','need','read_pid','pid_alive','proc_alive','daemon_pid','daemon_ready','wait_daemon'}
+nodes=[n for n in ast.parse(code).body if isinstance(n,(ast.FunctionDef,ast.ClassDef)) and n.name in names]
+exec(compile(ast.Module(body=nodes,type_ignores=[]),'exact-runtime-helpers','exec'))
+for name in ('gunicorn','nginx'):
+    before=time.monotonic();wait_daemon(name)
+    assert time.monotonic()-before<=15 and daemon_ready(name)
+    assert daemon_pid(name) is not None
+assert (RUN/'gunicorn.sock').is_socket()
+# A link, directory and FIFO cannot certify a live PID; reads must not block.
+folder=RUN/'pid-contract';folder.mkdir(mode=0o700)
+try:
+    live=folder/'live';live.write_text(str(os.getpid())+'\n')
+    assert proc_alive(live)
+    linked=folder/'linked';linked.symlink_to(live)
+    assert not proc_alive(linked) and not proc_alive(folder)
+    fifo=folder/'fifo';os.mkfifo(fifo);assert not proc_alive(fifo)
+    hard=folder/'hard';os.link(live,hard);assert not proc_alive(live)
+finally:
+    for child in folder.iterdir():child.unlink()
+    folder.rmdir()
+print('BOUNDED_DAEMON_READINESS=PASS')
+"""
+    command(["docker","exec",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",proof])
 
 
 def test_mvp7_zero_permission_profile_matrix_geography_write_and_restart_persistence(built):
