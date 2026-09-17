@@ -1,0 +1,490 @@
+name: MVP7 exact B runtime and GEO-27 diagnostics
+'on':
+  push:
+    branches:
+    - codex/mvp7-b-runtime-start-diagnostic-20260917
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: mvp7-b-diagnostic-${{ github.sha }}
+  cancel-in-progress: false
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  PYTHONUNBUFFERED: '1'
+  HEAD_B: 7011f31c8b4a8a21986b85da18d5337e64c7aa28
+  TREE_B: 0c9f3fe042d6bcde0cf37bd8d2b15c53d5f7c5a6
+  PARENT_B: 21c4812a8eaf8d503454699c191d99abaf538036
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - name: Prove one diagnostic commit and detached exact B and C
+      run: |
+        set -euo pipefail
+        test "$(git show -s --format=%P HEAD)" = "$HEAD_B"
+        test "$(git show -s --format=%B HEAD)" = 'test(installer): isolate MVP7 runtime start failure'
+        test "$(git rev-list --count "$HEAD_B..HEAD")" = 1
+        test "$(git diff --name-status --no-renames "$HEAD_B" HEAD)" = $'A\t.github/workflows/mvp7-b-runtime-start-diagnostic.yml'
+        test -z "$(git status --porcelain=v1 --untracked-files=all)"
+        git worktree add --detach "$RUNNER_TEMP/exact-b" "$HEAD_B"
+        git worktree add --detach "$RUNNER_TEMP/exact-c" 85a253126bf270664c4786d159994e7359b5d2c5
+        test "$(git -C "$RUNNER_TEMP/exact-b" rev-parse HEAD)" = "$HEAD_B"
+        test "$(git -C "$RUNNER_TEMP/exact-b" rev-parse HEAD^{tree})" = "$TREE_B"
+        test "$(git -C "$RUNNER_TEMP/exact-b" show -s --format=%P HEAD)" = "$PARENT_B"
+        test -z "$(git -C "$RUNNER_TEMP/exact-b" branch --show-current)"
+        test "$(git -C "$RUNNER_TEMP/exact-c" rev-parse HEAD^{tree})" = 5567183dbe16fc6c7c8caac051b7694f37b92457
+        test "$(git -C "$RUNNER_TEMP/exact-c" rev-parse HEAD)" = 85a253126bf270664c4786d159994e7359b5d2c5
+    - name: Fetch exact B frozen Linux build closure
+      run: |
+        set -euo pipefail
+        cd "$RUNNER_TEMP/exact-b"
+        python3.12 software/conflict_analysis/installer/fetch_inputs.py --output "$RUNNER_TEMP/mvp7-inputs"
+        docker pull --platform linux/amd64 docker.io/library/python@sha256:2fe5997d249a808b8eeea52c58a1dbffbba28754dc11699ef5c029f2d818ce79
+        docker pull --platform linux/amd64 docker.io/library/postgres@sha256:4cc13dede823cab4e05290c7fb3350fb4e599ecabd9b07e6706b5d5e8f5bc929
+        python3.12 -m venv "$RUNNER_TEMP/mvp7-tooling"
+        "$RUNNER_TEMP/mvp7-tooling/bin/python" -m pip install --no-index --no-deps --require-hashes --find-links="$RUNNER_TEMP/mvp7-inputs" -r "$RUNNER_TEMP/mvp7-inputs/ci.lock"
+    - name: Rebuild exact B inner ZIP twice with original frozen pipeline
+      env:
+        MVP7_INPUT_CACHE: ${{ runner.temp }}/mvp7-inputs
+      run: |
+        set -euo pipefail
+        cd "$RUNNER_TEMP/exact-b"
+        "$RUNNER_TEMP/mvp7-tooling/bin/python" -B software/conflict_analysis/scripts/build_owner_alpha_package.py --repository "$RUNNER_TEMP/exact-b" --output "$RUNNER_TEMP/mvp7-inner"
+    - name: Create external observers only in RUNNER_TEMP
+      run: |
+        set -euo pipefail
+        mkdir -p "$RUNNER_TEMP/diagnostic-harness" "$RUNNER_TEMP/safe-evidence"
+        cat > "$RUNNER_TEMP/diagnostic-harness/sitecustomize.py" <<'DIAGNOSTIC_FILE'
+        import atexit, hashlib, ipaddress, json, os, sys
+        from pathlib import Path
+        SOURCE=Path('/opt/owner-alpha/owner-alpha-supervisor.sh')
+        OUT=Path('/diagnostic-output/runtime-observation.json')
+        PATHS=['/run/owner-alpha','/run/owner-alpha/client','/run/owner-alpha/proxy','/run/owner-alpha/fastcgi','/run/owner-alpha/uwsgi','/run/owner-alpha/scgi','/run/owner-alpha-pg','/run/owner-alpha/nginx.conf','/run/owner-alpha/nginx.pid','/run/owner-alpha/gunicorn.pid','/run/owner-alpha/gunicorn.sock']
+        def meta(data):
+            assert isinstance(data,bytes)
+            return {'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+        def phase():
+            try:
+                value=json.loads(Path('/var/lib/owner-alpha/state.json').read_bytes()).get('phase')
+                return value if value in ('EMPTY','READY','STOPPED','RESTORED') else 'UNKNOWN'
+            except Exception:return 'UNAVAILABLE'
+        def command_phase(args):
+            name=Path(str(args[0])).name if args else ''
+            if name=='nginx':return 'NGINX_CONFIG_TEST' if '-t' in args else 'NGINX_START'
+            if name=='gunicorn':return 'GUNICORN_START'
+            if name=='pg_ctl' and 'start' in args:return 'POSTGRES_START'
+            return None
+        def label(frame):
+            cursor=frame
+            while cursor:
+                if cursor.f_code.co_filename=='<stdin>':
+                    name=cursor.f_code.co_name
+                    if name=='execute':return command_phase(cursor.f_locals.get('args',[]))
+                    simple={'start_pg':'POSTGRES_START','configure_env':'DJANGO_CONFIGURE','users':'USER_SCOPE_VERIFY','network_check':'NETWORK_CHECK','proc_alive':'PROCESS_LIVENESS'}
+                    if name in simple:return simple[name]
+                    if name=='start_services':
+                        n=cursor.f_lineno
+                        if n<anchors['temp_paths']:return 'MIGRATION_VERIFY'
+                        if n<anchors['gunicorn_start']:return 'NGINX_CONFIG_TEST'
+                        if n<anchors['nginx_start']:return 'GUNICORN_START'
+                        if n<anchors['liveness']:return 'NGINX_START'
+                        return 'PROCESS_LIVENESS'
+                    if name=='health':
+                        if cursor.f_lineno<anchors['database_health']:return 'PROCESS_LIVENESS'
+                        if cursor.f_lineno<anchors['player_readiness']:return 'DATABASE_HEALTH'
+                        return 'PLAYER_READINESS'
+                cursor=cursor.f_back
+            return None
+        def parent_execute(frame):
+            while frame:
+                if frame.f_code.co_filename=='<stdin>' and frame.f_code.co_name=='execute':return frame
+                frame=frame.f_back
+            return None
+        def trace(frame,event,arg):
+            global fatal,failed_command,trace_fault,http_calls,http_status,pg_predicates
+            try:
+                filename=frame.f_code.co_filename.replace('\\','/');name=frame.f_code.co_name
+                # Capture raw pipe bytes before subprocess text-mode newline conversion.
+                if name=='_translate_newlines' and filename.endswith('/subprocess.py') and event=='call':
+                    owner=parent_execute(frame)
+                    if owner is not None:
+                        raw=frame.f_locals.get('data');parent=frame.f_back
+                        if isinstance(raw,bytes):
+                            record=streams.setdefault(id(owner),{})
+                            for stream in ('stdout','stderr'):
+                                if parent.f_locals.get(stream) is raw:record[stream]=meta(raw)
+                if name=='urlopen' and filename.endswith('/urllib/request.py') and frame.f_locals.get('url')=='http://127.0.0.1:8765/player/':
+                    if event=='call':http_calls+=1
+                    if event=='return' and arg is not None:http_status=getattr(arg,'status',None)
+                    if event=='exception' and hasattr(arg[1],'code'):http_status=arg[1].code
+                if filename!='<stdin>':return trace if name=='urlopen' and filename.replace('\\','/').endswith('/urllib/request.py') else None
+                if name=='execute' and event=='call':streams[id(frame)]={}
+                if name=='execute' and event=='line' and 'result' in frame.f_locals:
+                    result=frame.f_locals['result']
+                    if result.returncode!=0 and failed_command is None:
+                        record=streams.get(id(frame),{})
+                        failed_command={'phase':command_phase(frame.f_locals['args']),'exit_code':result.returncode,
+                            'stdout':record.get('stdout'),'stderr':record.get('stderr'),'raw_pipe_hashes_complete':set(record)=={'stdout','stderr'}}
+                if name=='health' and event=='line' and 'row' in frame.f_locals:
+                    row=frame.f_locals['row']
+                    pg_predicates={'version_prefix_expected':row[0].startswith('PostgreSQL 18.4 '),'database_expected':row[1]=='conflict_analysis','inet_server_addr_is_null':row[2] is None}
+                if event=='exception' and isinstance(arg[1],Exception):
+                    exc=arg[1];entry={'function':name,'line':frame.f_lineno+offset,'phase':label(frame),'exception_type':type(exc).__name__}
+                    bucket=exceptions.setdefault(id(exc),[]);bucket.append(entry)
+                    if name=='<module>' and fatal is None:
+                        origin=bucket[0];site=next((x for x in bucket if x['function'] not in ('need','<module>')),origin)
+                        fatal={**site,'origin_function':origin['function'],'origin_line':origin['line'],'assertion':origin['function']=='need'}
+            except Exception:trace_fault=True
+            return trace
+        def files():
+            result={}
+            for name in PATHS:
+                p=Path(name)
+                try:
+                    s=p.lstat();result[name]={'exists':True,'uid':s.st_uid,'gid':s.st_gid,'mode':format(s.st_mode & 0o7777,'04o')}
+                except FileNotFoundError:result[name]={'exists':False,'uid':None,'gid':None,'mode':None}
+            return result
+        def processes():
+            result={}
+            for name,file in [('postgres','/var/lib/owner-alpha/postgres/postmaster.pid'),('gunicorn','/run/owner-alpha/gunicorn.pid'),('nginx','/run/owner-alpha/nginx.pid')]:
+                p=Path(file);exists=False;kind=None
+                try:
+                    pid=int(p.read_text().splitlines()[0]);os.kill(pid,0);exists=True
+                    raw=Path('/proc/'+str(pid)+'/cmdline').read_bytes()
+                    if name.encode() in raw:kind=name
+                except (OSError,ValueError,IndexError):pass
+                result[name]={'pid_file_exists':p.exists(),'pid_exists':exists,'process_class':kind}
+            return result
+        def listeners():
+            result=[]
+            for filename,ipv6 in [('/proc/net/tcp',False),('/proc/net/tcp6',True)]:
+                for row in Path(filename).read_text().splitlines()[1:]:
+                    columns=row.split()
+                    if columns[3]!='0A':continue
+                    address,port=columns[1].split(':');raw=bytes.fromhex(address)
+                    raw=b''.join(raw[i:i+4][::-1] for i in range(0,len(raw),4)) if ipv6 else raw[::-1]
+                    result.append({'address':str(ipaddress.ip_address(raw)),'port':int(port,16)})
+            return sorted(result,key=lambda x:(x['address'],x['port']))
+        def finish():
+            global http_calls,http_status,pg_predicates
+            sys.settrace(None)
+            try:
+                if pg_predicates is None:
+                    pg_predicates={'version_prefix_expected':None,'database_expected':None,'inet_server_addr_is_null':None}
+                    try:
+                        import psycopg
+                        with psycopg.connect(host='/run/owner-alpha-pg',dbname='conflict_analysis',user='owneralpha',connect_timeout=3,options='-c default_transaction_read_only=on') as connection:
+                            row=connection.execute("SELECT version() LIKE 'PostgreSQL 18.4 %', current_database()='conflict_analysis', inet_server_addr() IS NULL").fetchone()
+                            pg_predicates=dict(zip(pg_predicates,row,strict=True))
+                    except Exception:pass
+                if http_calls==0:
+                    import urllib.request,urllib.error
+                    http_calls=1
+                    try:
+                        with urllib.request.urlopen('http://127.0.0.1:8765/player/',timeout=5) as response:http_status=response.status
+                    except urllib.error.HTTPError as error:http_status=error.code;error.close()
+                    except Exception:pass
+                classification='ROOT_CAUSE_NOT_YET_PROVEN'
+                if fatal and fatal['phase'] and not trace_fault:
+                    classification='ASSERTION_PHASE_PROVEN' if fatal['assertion'] and failed_command is None else 'FIRST_FAILING_PHASE_PROVEN'
+                report={'classification':classification,'FIRST_FAILING_PHASE':fatal['phase'] if fatal else None,
+                    'failure':fatal,'failed_command':failed_command,'state_phase_before':before,'state_phase_after':phase(),
+                    'files':files(),'processes':processes(),'listen_sockets':listeners(),'postgresql':pg_predicates,
+                    'player_readiness':{'path':'/player/','method':'GET','call_count':http_calls,'status':http_status},
+                    'trace_fault':trace_fault,'supervisor_sha256':hashlib.sha256(SOURCE.read_bytes()).hexdigest()}
+                OUT.write_text(json.dumps(report,sort_keys=True,indent=2)+'\n')
+            except Exception:
+                OUT.write_text(json.dumps({'classification':'ROOT_CAUSE_NOT_YET_PROVEN','FIRST_FAILING_PHASE':None,'harness_fault':True})+'\n')
+        if sys.argv==['-','start'] and os.environ.get('MVP7_DIAGNOSTIC')=='1' and os.geteuid()==0:
+            shell=SOURCE.read_text();prefix,code=shell.split("<<'PY'\n",1);offset=prefix.count('\n')+1
+            lines=code.rsplit('\nPY',1)[0].splitlines()
+            def line(needle):return next(i+1 for i,text in enumerate(lines) if needle in text)
+            anchors={'temp_paths':line('temp_paths={'),'gunicorn_start':line('if not proc_alive(RUN/"gunicorn.pid")'),
+                'nginx_start':line('if not proc_alive(RUN/"nginx.pid")'),'liveness':line('need(proc_alive(RUN/"nginx.pid")'),
+                'database_health':line('cursor.execute("SELECT version()'),'player_readiness':line('import urllib.request')}
+            before=phase();streams={};exceptions={};fatal=None;failed_command=None;trace_fault=False
+            http_calls=0;http_status=None;pg_predicates=None
+            atexit.register(finish);sys.settrace(trace)
+        DIAGNOSTIC_FILE
+        cat > "$RUNNER_TEMP/diagnostic-harness/runtime_driver.py" <<'DIAGNOSTIC_FILE'
+        import hashlib,json,os,subprocess,sys,uuid
+        from pathlib import Path
+        root=Path(os.environ['RUNNER_TEMP']);source=root/'exact-b';app=source/'software/conflict_analysis'
+        sys.path.insert(0,str(app/'scripts'))
+        import verify_owner_alpha_package as verify
+        output=root/'mvp7-inner';zipfile=output/'conflict-analysis-partner-demo-win-x64-mvp7.zip'
+        verified=verify.verify_zip(zipfile,expected_bytes=590858751,expected_sha256='3ede0ca63c958b581a0b4fa9e2d57213b036477a724f1cfa0c1b202b7e9b5d8d')
+        assert verify.delivery_identity(source)['head']=='7011f31c8b4a8a21986b85da18d5337e64c7aa28'
+        rootfs=output/'conflict-analysis-functional-alpha-rootfs.tar'
+        source_script=app/'owner_alpha_package/linux/owner-alpha-supervisor.sh'
+        expected=hashlib.sha256(source_script.read_bytes()).hexdigest()
+        def run(args,ok=True):
+            result=subprocess.run([str(x) for x in args],capture_output=True)
+            if ok and result.returncode:raise RuntimeError('DIAGNOSTIC_COMMAND_FAILED')
+            return result
+        def meta(result):
+            return {'exit_code':result.returncode,**{name:{'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()} for name,data in [('stdout',result.stdout),('stderr',result.stderr)]}}
+        image='mvp7-b-diagnostic:'+uuid.uuid4().hex;container='mvp7-b-diagnostic-'+uuid.uuid4().hex
+        harness=root/'diagnostic-harness';scratch=root/'runtime-observation';scratch.mkdir(mode=0o700)
+        (scratch/'runtime-observation.json').write_text('{}');(scratch/'runtime-observation.json').chmod(0o600)
+        evidence=root/'safe-evidence';evidence.mkdir(exist_ok=True)
+        report={'source':verify.delivery_identity(source),'inner_zip':verify.identity(zipfile),'initialize_count':0,'start_count':0,
+                'classification':'ROOT_CAUSE_NOT_YET_PROVEN','FIRST_FAILING_PHASE':None}
+        try:
+            run(['docker','import',rootfs,image])
+            run(['docker','run','--name',container,'--network=none','--mount','type=bind,src='+str(harness)+',dst=/diagnostic-harness,readonly',
+                 '--mount','type=bind,src='+str(scratch)+',dst=/diagnostic-output','-d','--entrypoint','/bin/sleep',image,'infinity'])
+            assert json.loads(run(['docker','inspect','--format','{{json .HostConfig.NetworkMode}}',container]).stdout)=='none'
+            check=lambda:run(['docker','exec',container,'sha256sum','/opt/owner-alpha/owner-alpha-supervisor.sh']).stdout.decode().split()[0]
+            assert check()==expected
+            report['initialize_count']=1
+            init=run(['docker','exec','-i',container,'/opt/owner-alpha/owner-alpha-supervisor.sh','initialize','8765'],ok=False)
+            report['initialize']=meta(init)
+            assert init.returncode==0,'INITIALIZE_FAILED'
+            report['start_count']=1
+            start=run(['docker','exec','-i','-e','PYTHONPATH=/diagnostic-harness','-e','MVP7_DIAGNOSTIC=1',container,
+                       '/opt/owner-alpha/owner-alpha-supervisor.sh','start'],ok=False)
+            report['start']=meta(start)
+            observed=json.loads((scratch/'runtime-observation.json').read_bytes())
+            report.update(observed)
+            report['supervisor_unchanged']=check()==expected==observed.get('supervisor_sha256')
+            assert report['supervisor_unchanged']
+            assert report['player_readiness']['call_count']==1
+            if start.returncode==0:report['classification']='ROOT_CAUSE_NOT_YET_PROVEN';report['FIRST_FAILING_PHASE']=None
+            if report.get('failed_command') and not report['failed_command']['raw_pipe_hashes_complete']:
+                report['classification']='ROOT_CAUSE_NOT_YET_PROVEN'
+        except Exception:
+            report['harness_gate_complete']=False
+            report['classification']='ROOT_CAUSE_NOT_YET_PROVEN'
+        else:report['harness_gate_complete']=True
+        finally:
+            run(['docker','rm','-f',container],ok=False);run(['docker','image','rm',image],ok=False)
+            (evidence/'mvp7-b-runtime-start-diagnostic.json').write_text(json.dumps(report,sort_keys=True,indent=2)+'\n')
+        assert report['harness_gate_complete'],'RUNTIME_DIAGNOSTIC_INCOMPLETE'
+        print('RUNTIME_DIAGNOSTIC_CAPTURED')
+        DIAGNOSTIC_FILE
+        cat > "$RUNNER_TEMP/diagnostic-harness/geo27.mjs" <<'DIAGNOSTIC_FILE'
+        import {spawn} from 'node:child_process';
+        import {mkdtempSync,rmSync,readFileSync} from 'node:fs';
+        import net from 'node:net';import path from 'node:path';import {pathToFileURL} from 'node:url';
+        const material=JSON.parse(readFileSync(0,'utf8'));
+        const {CDPClient}=await import(pathToFileURL(path.join(material.app,'production_studio/browser_tests/cdp_client.mjs')));
+        const wait=ms=>new Promise(r=>setTimeout(r,ms));const ports=new Set();const probes=[];
+        const snapshot=`(()=>{const s=window.__probeMaps?.[1]?.getSource('location-uncertainty');const f=s?.serialize()?.data?.features;return {dom_radius:document.querySelector('#geo-radius')?.value??null,dom_kind:document.querySelector('#geo-kind')?.value??null,source_feature_count:Array.isArray(f)?f.length:null,first_feature_radius_m:f?.[0]?.properties?.radius_m??null,timestamp_ms:Date.now(),elapsed_ms:performance.now()-window.__probeStart};})()`;
+        for(let attempt=1;attempt<=3;attempt++){
+          let port;do{port=await new Promise(resolve=>{const server=net.createServer();server.listen(0,'127.0.0.1',()=>{const n=server.address().port;server.close(()=>resolve(n));});});}while(ports.has(port));ports.add(port);
+          const profile=mkdtempSync(path.join(material.temp,'geo27-profile-'));
+          const proc=spawn(material.chrome,[`--remote-debugging-port=${port}`,`--user-data-dir=${profile}`,'--headless=new','--no-sandbox','--no-first-run','--no-default-browser-check','--disable-background-networking','--disable-component-update','--disable-sync','--use-angle=swiftshader','--enable-unsafe-swiftshader','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
+          const record={attempt,viewport:[1024,768],fresh_profile:true,fresh_cdp_port:true,readings:[],completed:false,bounded_condition_met:false,dom_matches_requested_state:false};let client,sid;
+          try{
+            let endpoint;for(let n=0;n<200;n++){try{endpoint=await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();break;}catch{await wait(50);}}
+            if(!endpoint)throw new Error('CHROME_START');client=await CDPClient.connect(endpoint.webSocketDebuggerUrl,15000);
+            const target=await client.send('Target.createTarget',{url:'about:blank'});sid=(await client.send('Target.attachToTarget',{targetId:target.targetId,flatten:true})).sessionId;
+            for(const method of ['Page.enable','Runtime.enable','Network.enable'])await client.send(method,{},sid);
+            await client.send('Emulation.setDeviceMetricsOverride',{width:1024,height:768,deviceScaleFactor:1,mobile:false},sid);
+            if(!(await client.send('Network.setCookie',{name:material.cookie_name,value:material.cookie_value,url:material.base+'/',httpOnly:true,sameSite:'Lax'},sid)).success)throw new Error('COOKIE_INSTALL');
+            const evaluate=e=>client.evaluate(e,sid),ready=e=>client.waitForExpression(e,sid,30000);
+            const click=async selector=>{const box=await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);for(const type of ['mousePressed','mouseReleased'])await client.send('Input.dispatchMouseEvent',{type,button:'left',clickCount:1,...box},sid);};
+            await client.send('Page.navigate',{url:material.base+`/analysis/projects/${material.project}/workspaces/${material.workspace}/`},sid);
+            await ready("document.querySelector('#analysis-app')?.dataset.state==='ready'");
+            await evaluate("(()=>{const Original=maplibregl.Map;window.__probeMaps=[];window.__probeStart=performance.now();maplibregl.Map=class extends Original{constructor(options){super(options);window.__probeMaps.push(this);}};return true;})()");
+            await click('[data-view="map"]');await ready("document.querySelector('#view-map').dataset.state==='ready' && __probeMaps[0].loaded()");
+            await click('#geo-edit');await ready("document.querySelector('#geo-dialog').open && __probeMaps.length===2 && __probeMaps[1].loaded()");
+            record.readings.push({action:'open_editor',...await evaluate(snapshot)});
+            for(const [id,value,action] of [['geo-lat','43.337','set_lat'],['geo-lon','52.8619','set_lon'],['geo-kind','REGION','set_kind'],['geo-radius','45000','set_radius_immediate']]){
+              // Same normal input event as exact C; observe synchronously immediately after it.
+              const expression=`(()=>{const node=document.getElementById(${JSON.stringify(id)});node.value=${JSON.stringify(value)};node.dispatchEvent(new Event('input',{bubbles:true}));return ${snapshot};})()`;
+              record.readings.push({action,...await evaluate(expression)});
+            }
+            record.dom_matches_requested_state=await evaluate("document.querySelector('#geo-lat').value==='43.337' && document.querySelector('#geo-lon').value==='52.8619' && document.querySelector('#geo-kind').value==='REGION' && document.querySelector('#geo-radius').value==='45000'");
+            try{await client.waitForExpression("__probeMaps[1].getSource('location-uncertainty').serialize().data.features.length === 1",sid,5000);record.bounded_condition_met=true;}catch{}
+            record.readings.push({action:'bounded_observable_read',...await evaluate(snapshot)});record.completed=true;
+          }catch{record.observer_incomplete=true;}
+          finally{
+            if(client){await client.send('Browser.close').catch(()=>{});client.close();}
+            if(proc.exitCode===null)await Promise.race([new Promise(resolve=>proc.once('exit',resolve)),wait(2500)]);
+            if(proc.exitCode===null){proc.kill();await Promise.race([new Promise(resolve=>proc.once('exit',resolve)),wait(2500)]);}
+            if(path.dirname(profile)!==path.resolve(material.temp)||!path.basename(profile).startsWith('geo27-profile-'))throw new Error('PROFILE_BOUNDARY');
+            rmSync(profile,{recursive:true,force:true});probes.push(record);
+          }
+        }
+        const immediate=p=>p.readings.find(x=>x.action==='set_radius_immediate');const bounded=p=>p.readings.find(x=>x.action==='bounded_observable_read');
+        const allCorrect=probes.every(p=>p.completed&&p.dom_matches_requested_state);
+        const stable=allCorrect&&probes.every(p=>p.bounded_condition_met&&bounded(p).source_feature_count===1&&bounded(p).first_feature_radius_m===45000);
+        const absent=allCorrect&&probes.every(p=>!p.bounded_condition_met&&bounded(p).source_feature_count===0);
+        let classification='INSUFFICIENT_EVIDENCE';
+        if(stable&&probes.some(p=>immediate(p).source_feature_count===0))classification='OBSERVER_TIMING_RACE_PROVEN';
+        // Complete absence is a product-defect candidate, not proof of its cause.
+        else if(probes.some(p=>!p.completed))classification='TRANSIENT_OR_INFRA_SUSPECTED';
+        process.stdout.write(JSON.stringify({classification,probe_count:3,bounded_timeout_ms:5000,stable_bounded_radius:stable,product_defect_candidate:absent,probes}));
+        DIAGNOSTIC_FILE
+        cat > "$RUNNER_TEMP/diagnostic-harness/geo_driver.py" <<'DIAGNOSTIC_FILE'
+        import hashlib,json,os,secrets,socket,subprocess,sys,time,urllib.request,urllib.error
+        from pathlib import Path
+        root=Path(os.environ['RUNNER_TEMP']);app=root/'exact-c/software/conflict_analysis';evidence=root/'safe-evidence';evidence.mkdir(exist_ok=True)
+        def run(args,**kwargs):return subprocess.run([str(x) for x in args],capture_output=True,**kwargs)
+        job=json.loads(run(['gh','api','repos/dshatrov7575-max/Conflict/actions/jobs/105301073378']).stdout)
+        step=next(x for x in job['steps'] if x['name']=='Run Analysis Chromium responsive, canonical and race tests')
+        log=run(['gh','api','--allow-escape-sequences','repos/dshatrov7575-max/Conflict/actions/jobs/105301073378/logs'])
+        assert log.returncode==0 and step['conclusion']=='failure'
+        selected=b'\n'.join(line for line in log.stdout.splitlines() if step['started_at'][:19].encode()<=line[:19]<=step['completed_at'][:19].encode())
+        assert b"TypeError: Cannot read properties of undefined (reading 'properties')" in selected
+        assert b'analysis_geography_r1.mjs:79:25' in selected and b'"browser_result":"PASS"' in selected
+        old={'run':35250409107,'job':105301073378,'step':step['name'],'script':'analysis_dashboard/browser_tests/analysis_geography_r1.mjs','line':79,'column':25,'oracle':'GEO-27','expression':'assert.equal(circle.properties.radius_m,45000)','error':"TypeError: Cannot read properties of undefined (reading 'properties')",'failure_before_assertion_completed':True,'analysis_v2_pass':True,'step_log_bytes':len(selected),'step_log_sha256':hashlib.sha256(selected).hexdigest(),'classification_from_old_log_only':'INSUFFICIENT_EVIDENCE'}
+        os.environ.pop('GH_TOKEN',None)
+        chrome=root/'accepted-chrome/chrome-linux64/chrome';version=run([chrome,'--version']);assert version.returncode==0 and b'152.0.7977.64' in version.stdout
+        report={'product_source':'85a253126bf270664c4786d159994e7359b5d2c5','product_tree':'5567183dbe16fc6c7c8caac051b7694f37b92457','chrome_version':'152.0.7977.64','chrome_archive_sha256':'8b592f066af71f054aab2cc80fc26f73c775c6d44ebb99d16ade924b24756c2e','old_failure':old,'fixture_database':'isolated SQLite in RUNNER_TEMP','classification':'INSUFFICIENT_EVIDENCE','probes':[]}
+        server=None
+        try:
+            os.environ.update(DJANGO_SETTINGS_MODULE='conflict_analysis.settings',USE_SQLITE='true',SQLITE_PATH=str(root/'geo27.sqlite3'),DJANGO_SECRET_KEY=secrets.token_urlsafe(48),DJANGO_DEBUG='false',DJANGO_ALLOWED_HOSTS='127.0.0.1')
+            sys.path.insert(0,str(app));os.chdir(app)
+            import django;django.setup()
+            from django.core.management import call_command
+            import io
+            call_command('migrate',interactive=False,verbosity=0,stdout=io.StringIO(),stderr=io.StringIO())
+            from django.contrib.auth import get_user_model
+            from django.contrib.auth.models import Group
+            from django.contrib.sessions.backends.db import SessionStore
+            from django.conf import settings
+            from domain.services.seed import seed_zhanaozen_demo
+            from domain.services.geography import install_pinned_geographic_areas
+            from domain.services.zhanaozen_typed_manifest import WORKSPACE_ID
+            project=seed_zhanaozen_demo();install_pinned_geographic_areas()
+            user=get_user_model().objects.create_user(username='geo27-diagnostic')
+            for prefix in ('studio-project:','analysis-reader:','analysis-location-editor:'):
+                group,_=Group.objects.get_or_create(name=prefix+str(project.pk));assert not group.permissions.exists();user.groups.add(group)
+            session=SessionStore();session['_auth_user_id']=str(user.pk);session['_auth_user_backend']='django.contrib.auth.backends.ModelBackend';session['_auth_user_hash']=user.get_session_auth_hash();session.save()
+            with socket.socket() as sock:sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
+            base='http://127.0.0.1:'+str(port)
+            server=subprocess.Popen([sys.executable,'manage.py','runserver','127.0.0.1:'+str(port),'--noreload','--insecure'],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            ready=False
+            for _ in range(120):
+                try:
+                    with urllib.request.urlopen(base+'/analysis/',timeout=1) as response:ready=response.status==200
+                except urllib.error.HTTPError as error:ready=error.code==401;error.close()
+                except Exception:pass
+                if ready:break
+                time.sleep(.25)
+            assert ready,'SERVER_NOT_READY'
+            material={'app':str(app),'temp':str(root),'chrome':str(chrome),'base':base,'project':str(project.pk),'workspace':str(WORKSPACE_ID),'cookie_name':settings.SESSION_COOKIE_NAME,'cookie_value':session.session_key}
+            child=run(['node',root/'diagnostic-harness/geo27.mjs'],input=json.dumps(material).encode(),env={k:v for k,v in os.environ.items() if k not in ('DJANGO_SECRET_KEY','GH_TOKEN')})
+            assert child.returncode==0,'OBSERVER_PROCESS_FAILED'
+            report.update(json.loads(child.stdout));assert report['probe_count']==3
+            report['source_unchanged']=run(['git','status','--porcelain=v1','--untracked-files=all'],cwd=app).stdout==b''
+            assert report['source_unchanged']
+        except Exception:report['harness_incomplete']=True;report['classification']='INSUFFICIENT_EVIDENCE'
+        finally:
+            if server:
+                server.terminate()
+                try:server.wait(timeout=10)
+                except subprocess.TimeoutExpired:server.kill();server.wait()
+            (evidence/'geography-observer-diagnostic.json').write_text(json.dumps(report,sort_keys=True,indent=2)+'\n')
+        assert len(report['probes'])==3,'GEOGRAPHY_DIAGNOSTIC_INCOMPLETE'
+        print('THREE_GEO27_PROBES_CAPTURED')
+        DIAGNOSTIC_FILE
+    - name: Self-test raw pipe observation on Linux without starting runtime
+      run: |
+        set -euo pipefail
+        "$RUNNER_TEMP/mvp7-tooling/bin/python" -B - <<'PY'
+        import ast,hashlib,importlib.util,os,subprocess,sys
+        from pathlib import Path
+        root=Path(os.environ['RUNNER_TEMP'])
+        spec=importlib.util.spec_from_file_location('observer_self_test',root/'diagnostic-harness/sitecustomize.py');observer=importlib.util.module_from_spec(spec);spec.loader.exec_module(observer)
+        script=(root/'exact-b/software/conflict_analysis/owner_alpha_package/linux/owner-alpha-supervisor.sh').read_text();prefix,body=script.split("<<'PY'\n",1)
+        nodes=[n for n in ast.parse(body.rsplit('\nPY',1)[0]).body if isinstance(n,(ast.ClassDef,ast.FunctionDef)) and n.name in ('Halt','need','execute')]
+        namespace={'subprocess':subprocess};exec(compile(ast.Module(body=nodes,type_ignores=[]),'<stdin>','exec'),namespace)
+        observer.offset=prefix.count('\n')+1;observer.streams={};observer.exceptions={};observer.fatal=None;observer.failed_command=None;observer.trace_fault=False
+        observer.command_phase=lambda args:'GUNICORN_START'
+        namespace['args']=[sys.executable,'-c',"import os;os.write(1,b'PIPE_OUT\\r\\n');os.write(2,b'PIPE_ERR\\r\\n');raise SystemExit(7)"]
+        sys.settrace(observer.trace)
+        try:exec(compile('try:\n    execute(args)\nexcept Halt:\n    pass\n','<stdin>','exec'),namespace)
+        finally:sys.settrace(None)
+        assert not observer.trace_fault and observer.failed_command['exit_code']==7
+        for name,data in [('stdout',b'PIPE_OUT\r\n'),('stderr',b'PIPE_ERR\r\n')]:
+            assert observer.failed_command[name]=={'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()}
+        assert observer.fatal['line']==next(i+1 for i,line in enumerate(script.splitlines()) if 'need(result.returncode==0' in line)
+        print('REAL_POSIX_RAW_PIPE_HASHES_AND_EXACT_SOURCE_LINE=PASS')
+        PY
+    - name: Observe one original initialize and one original start
+      run: |
+        set -euo pipefail
+        "$RUNNER_TEMP/mvp7-tooling/bin/python" -B "$RUNNER_TEMP/diagnostic-harness/runtime_driver.py"
+    - uses: actions/setup-node@v4
+      if: ${{ !cancelled() }}
+      with:
+        node-version: '24'
+    - name: Verify accepted Chrome archive before extraction
+      if: ${{ !cancelled() }}
+      run: |
+        set -euo pipefail
+        archive="$RUNNER_TEMP/chrome-linux64.zip"
+        curl --proto '=https' --proto-redir '=https' --tlsv1.2 --fail --location --silent --show-error 'https://storage.googleapis.com/chrome-for-testing-public/152.0.7977.64/linux64/chrome-linux64.zip' --output "$archive"
+        printf '%s  %s\n' '8b592f066af71f054aab2cc80fc26f73c775c6d44ebb99d16ade924b24756c2e' "$archive" | sha256sum --check --strict -
+        unzip -q "$archive" -d "$RUNNER_TEMP/accepted-chrome"
+        "$RUNNER_TEMP/accepted-chrome/chrome-linux64/chrome" --version | grep -E '(^|[^0-9.])152\.0\.7977\.64([^0-9.]|$)'
+    - name: Read old exact failure and run only three fresh GEO-27 probes
+      if: ${{ !cancelled() }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        "$RUNNER_TEMP/mvp7-tooling/bin/python" -B "$RUNNER_TEMP/diagnostic-harness/geo_driver.py"
+    - name: Prove frozen checkouts stayed clean
+      if: always()
+      run: |
+        set -euo pipefail
+        for directory in "$RUNNER_TEMP/exact-b" "$RUNNER_TEMP/exact-c"; do
+          test -z "$(git -C "$directory" status --porcelain=v1 --untracked-files=all)"
+          test -z "$(git -C "$directory" diff --stat)"
+        done
+        test "$(git -C "$RUNNER_TEMP/exact-b" rev-parse HEAD)" = "$HEAD_B"
+        test "$(gh api repos/dshatrov7575-max/Conflict/git/ref/heads/codex/mvp7-r1-windows-setup-20260917 --jq '.object.sha')" = "$HEAD_B"
+      env:
+        GH_TOKEN: ${{ github.token }}
+    - name: Validate exact two safe evidence schemas
+      if: always()
+      run: |
+        set -euo pipefail
+        python3.12 - <<'PY'
+        import json,os,re
+        from pathlib import Path
+        root=Path(os.environ['RUNNER_TEMP'])/'safe-evidence'
+        expected={'mvp7-b-runtime-start-diagnostic.json','geography-observer-diagnostic.json'}
+        assert {p.name for p in root.iterdir()}==expected
+        reports={p.name:json.loads(p.read_bytes()) for p in root.iterdir()}
+        runtime=reports['mvp7-b-runtime-start-diagnostic.json'];geo=reports['geography-observer-diagnostic.json']
+        assert runtime['initialize_count']==runtime['start_count']==1
+        assert runtime['supervisor_unchanged'] and runtime['player_readiness']['call_count']==1
+        assert geo['probe_count']==len(geo['probes'])==3 and geo['source_unchanged']
+        assert runtime['classification'] in {'FIRST_FAILING_PHASE_PROVEN','ASSERTION_PHASE_PROVEN','ROOT_CAUSE_NOT_YET_PROVEN'}
+        assert geo['classification'] in {'PRODUCT_REGRESSION_PROVEN','OBSERVER_TIMING_RACE_PROVEN','TRANSIENT_OR_INFRA_SUSPECTED','INSUFFICIENT_EVIDENCE'}
+        forbidden={'cookies','cookie','session_key','session_keys','django_secret','environment','env','headers','body','argv','sql','traceback','stdout_text','stderr_text'}
+        def check(value):
+            if isinstance(value,dict):
+                assert not forbidden.intersection(k.lower() for k in value)
+                for key,child in value.items():
+                    if key in ('stdout','stderr') and child is not None:
+                        assert set(child)=={'bytes','sha256'} and type(child['bytes']) is int and child['bytes']>=0 and re.fullmatch('[0-9a-f]{64}',child['sha256'])
+                    check(child)
+            elif isinstance(value,list):
+                for child in value:check(child)
+        for report in reports.values():check(report)
+        print('EXACT_TWO_SAFE_JSON_ARTIFACTS=PASS')
+        PY
+      id: safe_evidence
+    - name: Upload only the two safe diagnostic JSON files
+      if: ${{ always() && steps.safe_evidence.outcome == 'success' }}
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: mvp7-b-diagnostic-${{ github.sha }}
+        if-no-files-found: error
+        path: |-
+          ${{ runner.temp }}/safe-evidence/mvp7-b-runtime-start-diagnostic.json
+          ${{ runner.temp }}/safe-evidence/geography-observer-diagnostic.json
+        retention-days: 14
