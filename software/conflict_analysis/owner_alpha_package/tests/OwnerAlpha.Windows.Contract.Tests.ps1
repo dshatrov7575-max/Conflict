@@ -12,7 +12,7 @@ function New-ContractContext {
     $root=Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
     $package=Join-Path $TestDrive ('package-'+[guid]::NewGuid().ToString('N'))
     $null=New-Item -ItemType Directory -Path $package
-    [IO.File]::WriteAllText((Join-Path $package 'OWNER_ALPHA_PACKAGE_MANIFEST_V2.json'),'{}')
+    [IO.File]::WriteAllText((Join-Path $package 'MVP7_PACKAGE_MANIFEST_V1.json'),'{}')
     return @{root=$root;package=$package;port=18765;stateFile=(Join-Path $root 'installation.json');record=$null;
         capacity=@{edgePath='C:\Program Files\Microsoft\Edge\Application\msedge.exe'};
         manifest=@{source=@{head=('1'*40);tree=('2'*40)};wheel=@{sha256=('3'*64)}}}
@@ -37,6 +37,9 @@ Describe 'G10 Windows package contract (not real Windows E2E)' {
     }
     It 'test_install_verifies_all_bytes_imports_one_exact_wsl2_distribution_and_reconciles_exact_replay' {
         $ctx=New-ContractContext
+        $ctx.root=Join-Path $TestDrive 'clean-localappdata/ConflictPartnerDemoState/mvp7'
+        $ctx.stateFile=Join-Path $ctx.root 'installation.json'
+        Assert-Contract (-not (Test-Path -LiteralPath (Split-Path $ctx.root)))
         Mock Invoke-OwnerProcess -ModuleName OwnerAlpha.Common { return ,[byte[]]@() }
         Mock Invoke-OwnerWsl -ModuleName OwnerAlpha.Common {
             if ($Command[0] -eq 'identity') { return @{source=@{head=('1'*40);tree=('2'*40)};wheel=@{sha256=('3'*64)}} }
@@ -48,6 +51,16 @@ Describe 'G10 Windows package contract (not real Windows E2E)' {
         Assert-OwnerInstalled $ctx
         Assert-ContractReject { New-OwnerInstall $ctx } 'BLOCKED_G10_RUNTIME_IDENTITY_DRIFT'
         Assert-MockCalled Invoke-OwnerProcess -ModuleName OwnerAlpha.Common -Times 1 -Exactly
+        Assert-Contract (Test-Path -LiteralPath $ctx.stateFile)
+        Assert-Contract (-not (Test-Path -LiteralPath (Join-Path $ctx.root 'installation.pending.json')))
+        $failed=New-ContractContext
+        Mock Invoke-OwnerWsl -ModuleName OwnerAlpha.Common {
+            if ($Command[0] -eq 'identity') { return @{source=@{head=('1'*40);tree=('2'*40)};wheel=@{sha256=('3'*64)}} }
+            throw 'BLOCKED_G10_RUNTIME_OPERATION_FAILED'
+        }
+        Assert-ContractReject { New-OwnerInstall $failed } 'BLOCKED_G10_RUNTIME_OPERATION_FAILED'
+        Assert-Contract (-not (Test-Path -LiteralPath $failed.stateFile))
+        Assert-Contract (Test-Path -LiteralPath (Join-Path $failed.root 'installation.pending.json'))
         $policyRoot=Join-Path $TestDrive 'policy'
         Mock Get-ExecutionPolicy -ModuleName OwnerAlpha.Common { 'Restricted' }
         Assert-ContractReject { Get-OwnerLaunchAdmission $policyRoot } 'BLOCKED_G10_LAUNCH_ADMISSION'
@@ -56,6 +69,9 @@ Describe 'G10 Windows package contract (not real Windows E2E)' {
         $module=Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot '../windows/OwnerAlpha.Cdp.psm1')
         Assert-Contract ($module.Contains("'http://127.0.0.1:'") -and $module.Contains('Network.setCookie'))
         Assert-Contract (-not $module.Contains('0.0.0.0') -and -not $module.Contains('Write-Host $Cookie'))
+        Assert-Contract ($module.Contains("if("+[char]36+"Cookie.profile -eq 'STUDIO_PUBLISHER')"))
+        Assert-Contract ($module.Contains("'/analysis/'") -and $module.Contains([char]36+'base+@(''--new-window'')+'+[char]36+'pages'))
+        Assert-Contract ($module.Contains([char]36+'Context.record.profiles['+[char]36+'Cookie.profile].pids=@('+[char]36+'visible.Id)'))
         $ctx=New-ContractContext
         $ctx.record=@{distribution='Conflict-Alpha-222222222222-12345678'}
         Mock Invoke-OwnerWsl -ModuleName OwnerAlpha.Common {

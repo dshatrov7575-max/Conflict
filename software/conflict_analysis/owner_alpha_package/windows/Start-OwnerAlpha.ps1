@@ -16,12 +16,7 @@ try {
     $context.record.phase='READY'
     Write-OwnerJson $context.stateFile $context.record
     @{phase='READY';instance=$context.record.instance;profiles=$public} | ConvertTo-Json -Depth 10
-    if (-not $NoPrompt) {
-        $project=Read-Host 'После создания проекта в Studio Editor введите UUID для предоставления доступа Publisher и Player; Enter — завершить'
-        if ($project) {
-            & (Join-Path $PSScriptRoot 'Grant-Publisher.ps1') -PackageRoot $PackageRoot -StateRoot $context.root -Port $context.record.port -ProjectId $project
-        }
-    }
+
 } catch {
     $null=Invoke-OwnerWsl $context.record.distribution @('revoke')
     throw

@@ -1,4 +1,4 @@
-"""Six frozen portable nodes; Linux operations run on the actual exported rootfs."""
+"""Seven portable packaging nodes; Linux operations run on the actual exported rootfs."""
 import hashlib
 import io
 import json
@@ -85,7 +85,7 @@ def test_clean_rootfs_runs_migrations_collectstatic_help_and_readiness_without_s
     result=runtime.invoke("start")
     assert result["phase"]=="READY"
     migrations=runtime.sql("SELECT name FROM django_migrations WHERE app='domain' ORDER BY name;").decode().splitlines()
-    assert migrations[-1]=="0018_workspace_assessment_projection" and len(migrations)==18
+    assert migrations[-1]=="0019_analysis_geography" and len(migrations)==19
     assert int(runtime.sql("SELECT count(*) FROM domain_helptopic;"))>0
     before=runtime.invoke("graph")
     runtime.invoke("stop")
@@ -166,8 +166,9 @@ ALTER TABLE g10_child OWNER TO owneralpha;
 def test_showcase_sqlite_runserver_mutable_download_and_unaccepted_artifacts_are_absent(built):
     _,rootfs,_,runtime=built
     text=(APP/"owner_alpha_package/linux/owner-alpha-supervisor.sh").read_text()
-    for forbidden in ("runserver","seed_zhanaozen_demo","curl ","wget ","pip install","apt-get"):
+    for forbidden in ("runserver","curl ","wget ","pip install","apt-get"):
         assert forbidden not in text
+    assert "seed_demo()" in text and "install_pinned_geographic_areas()" in text
     assert 'USE_SQLITE="false"' in text and 'DJANGO_DEBUG="false"' in text
     with tarfile.open(rootfs) as archive:
         names=archive.getnames()
@@ -177,3 +178,116 @@ def test_showcase_sqlite_runserver_mutable_download_and_unaccepted_artifacts_are
     identity=runtime.invoke("identity")
     assert identity["source"]["base_head"]==verify.CONTROL["base_head"]
 
+
+
+def test_mvp7_zero_permission_profile_matrix_geography_write_and_restart_persistence(built):
+    """Real loopback HTTP in the exported rootfs with --network=none."""
+    _,_,image,_=built
+    runtime=Runtime(image)
+    try:
+        runtime.invoke("start")
+        project=runtime.sql("SELECT id FROM domain_project;").decode().strip()
+        assert str(uuid.UUID(project))==project
+        granted=runtime.invoke("grant",project)
+        assert granted["project_id"]==project and granted["granted"]==["STUDIO_PUBLISHER","PLAYER_ASSESSOR"]
+        assert int(runtime.sql("SELECT count(*) FROM auth_user;"))==3
+        workspace=runtime.sql("SELECT id FROM domain_projectworkspace WHERE project_id='"+project+"' AND definition_version_id IS NOT NULL ORDER BY id;").decode().splitlines()
+        assert workspace
+        # Typed demo workspace is the Analysis-ready one.
+        from_source = command(["docker","exec",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",
+            "from domain.services.zhanaozen_typed_manifest import WORKSPACE_ID;print(WORKSPACE_ID)"]).stdout.decode().strip()
+        assert from_source in workspace
+        context=f"/api/foundation/analysis/v1/projects/{project}/workspaces/{from_source}/context/"
+        geo=f"/api/foundation/geography/v1/projects/{project}/"
+        profiles={p["profile"]:p for p in runtime.invoke("access")["profiles"]}
+        expected={
+            "STUDIO_EDITOR": {"studio-project:"+project},
+            "STUDIO_PUBLISHER": {"studio-project:"+project,"analysis-reader:"+project,"analysis-location-editor:"+project},
+            "PLAYER_ASSESSOR": {"studio-project:"+project,"analysis-reader:"+project},
+        }
+        for role,profile in profiles.items():
+            names=set(runtime.sql("SELECT g.name FROM auth_group g JOIN auth_user_groups u ON u.group_id=g.id WHERE u.user_id="+str(profile["user_pk"])+";").decode().splitlines())
+            assert names==expected[role]
+        assert int(runtime.sql("SELECT count(*) FROM auth_group_permissions;"))==0
+        script=r"""
+import http.cookies,json,sys,urllib.request,urllib.error
+data=json.load(sys.stdin)
+origin="http://127.0.0.1:8765"
+headers={"Cookie":data["cookie"]["name"]+"="+data["cookie"]["value"]}
+if data.get("csrf"):
+    headers["Cookie"]+="; csrftoken="+data["csrf"]
+    headers["X-CSRFToken"]=data["csrf"]
+headers.update(data.get("headers",{}))
+raw=json.dumps(data["body"]).encode() if "body" in data else None
+if raw is not None: headers.update({"Content-Type":"application/json","Origin":origin})
+req=urllib.request.Request(origin+data["path"],data=raw,headers=headers)
+try:r=urllib.request.urlopen(req,timeout=20)
+except urllib.error.HTTPError as error:r=error
+payload=r.read()
+cookie=http.cookies.SimpleCookie();cookie.load(r.headers.get("Set-Cookie",""))
+print(json.dumps({"status":r.status,"etag":r.headers.get("ETag"),
+ "csrf":cookie["csrftoken"].value if "csrftoken" in cookie else None,
+ "body":json.loads(payload) if "application/json" in r.headers.get("Content-Type","") else None}))
+"""
+        def http(role,path,**extra):
+            material={"cookie":profiles[role],"path":path,**extra}
+            return json.loads(command(["docker","exec","-i",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",script],
+                input=json.dumps(material).encode()).stdout)
+        for role in profiles:
+            route="/player/" if role=="PLAYER_ASSESSOR" else "/studio/drafts/"
+            assert http(role,route)["status"]==200
+        for role in ("STUDIO_PUBLISHER","PLAYER_ASSESSOR"):
+            assert http(role,"/analysis/")["status"]==200
+            assert http(role,context)["status"]==200
+            result=http(role,geo+"location/")
+            assert result["status"]==200
+            assert result["body"]["can_edit"] is (role=="STUDIO_PUBLISHER")
+        # The authenticated shell itself is public in exact C; protected Analysis data is denied.
+        assert http("STUDIO_EDITOR",context)["status"]==404
+        assert http("STUDIO_EDITOR",geo+"location/")["status"]==404
+        reader=http("PLAYER_ASSESSOR",geo+"location/")
+        assert http("PLAYER_ASSESSOR",geo+"location-revisions/",body={},csrf=reader["csrf"])["status"]==403
+        assert http("STUDIO_EDITOR",geo+"location-revisions/",body={})["status"]==404
+        current=http("STUDIO_PUBLISHER",geo+"location/")
+        # Use the exact accepted service constants; no copied authorization/model code.
+        source = command(["docker","exec",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",
+            "import ast,json;from pathlib import Path;t=ast.parse(Path('/opt/owner-alpha/venv/lib/python3.12/site-packages/domain/services/geography.py').read_text());print(json.dumps({x.targets[0].id:ast.literal_eval(x.value) for x in t.body if isinstance(x,ast.Assign) and isinstance(x.targets[0],ast.Name) and x.targets[0].id in ['DATASET','VERSION','POLICY']}))"]).stdout
+        constants=json.loads(source)
+        body={"latitude":"43.337","longitude":"52.8619","location_kind":"POINT","uncertainty_radius_m":0,
+              "area_id":None,"label":"Жанаозен","source_kind":"MANUAL_COORDINATES","source_reference":"MVP7 package contract",
+              "rationale":"Синтетическая проверка установки","supersedes_id":None,
+              "boundary_dataset_code":constants["DATASET"],"boundary_dataset_version":constants["VERSION"],
+              "boundary_policy_version":constants["POLICY"]}
+        created=http("STUDIO_PUBLISHER",geo+"location-revisions/",body=body,csrf=current["csrf"],
+                     headers={"If-Match":current["etag"],"X-Operation-ID":str(uuid.uuid4())})
+        assert created["status"]==201
+        revision=created["body"]["head"]
+        assert revision["latitude"]=="43.337" and revision["longitude"]=="52.8619"
+        runtime.invoke("stop");runtime.invoke("start")
+        profiles={p["profile"]:p for p in runtime.invoke("access")["profiles"]}
+        assert http("STUDIO_PUBLISHER",geo+"location/")["body"]["head"]==revision
+        assert len(http("STUDIO_PUBLISHER",geo+"location-history/")["body"]["revisions"])==1
+        check_migrations=r"""
+import os
+from pathlib import Path
+os.environ.update(DJANGO_SETTINGS_MODULE="conflict_analysis.settings",USE_SQLITE="false",
+ DJANGO_SECRET_KEY=Path("/var/lib/owner-alpha/django-secret").read_text(),
+ POSTGRES_HOST="/run/owner-alpha-pg",POSTGRES_USER="owneralpha",POSTGRES_DB="conflict_analysis",POSTGRES_PASSWORD="")
+import django;django.setup()
+from django.db import connection
+from django.db.migrations.executor import MigrationExecutor
+executor=MigrationExecutor(connection)
+assert executor.loader.graph.leaf_nodes("domain")==[("domain","0019_analysis_geography")]
+assert executor.migration_plan(executor.loader.graph.leaf_nodes())==[]
+print("MIGRATION_0019_EMPTY_PLAN=PASS")
+"""
+        command(["docker","exec",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",check_migrations])
+        # A recognized prefix with the wrong profile combination is also refused.
+        editor=profiles["STUDIO_EDITOR"]["user_pk"]
+        group=runtime.sql("SELECT id FROM auth_group WHERE name='analysis-reader:"+project+"';").decode().strip()
+        runtime.sql(f"INSERT INTO auth_user_groups(user_id,group_id) VALUES ({editor},{group});")
+        denied=runtime.raw("access",success=False)
+        assert denied.returncode!=0 and b"BLOCKED_G10_ACCESS_PROVISIONING_GAP" in denied.stderr
+        runtime.sql(f"DELETE FROM auth_user_groups WHERE user_id={editor} AND group_id={group};")
+        assert runtime.invoke("stop")["phase"]=="STOPPED"
+    finally: runtime.close()

@@ -1,9 +1,9 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $script:Profiles = @('STUDIO_EDITOR','STUDIO_PUBLISHER','PLAYER_ASSESSOR')
-$script:ManifestName = 'OWNER_ALPHA_PACKAGE_MANIFEST_V2.json'
-$script:BaseHead = '123f2b081ce2a09d7d193f9e4b20644f5802d7fe'
-$script:BaseTree = 'd67e39cbb965483f3c9cabcc91f724d8bf986fb4'
+$script:ManifestName = 'MVP7_PACKAGE_MANIFEST_V1.json'
+$script:BaseHead = 'c6c7118080ab1a1dcb86216f4092dabcf8125be7'
+$script:BaseTree = '5a4a40431e72fb6b942b895225ce11bba2898052'
 
 function Stop-OwnerGate([string]$Code) { throw [InvalidOperationException]::new($Code) }
 function Assert-OwnerGate([bool]$Condition,[string]$Code) {
@@ -38,7 +38,7 @@ function New-OwnerPrivateDirectory([string]$Path) {
         Assert-OwnerPrivateDirectory $full
         return $full
     }
-    $null = New-Item -ItemType Directory -Path $full
+    $null = New-Item -ItemType Directory -Path $full -Force
     $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User
     $acl = [Security.AccessControl.DirectorySecurity]::new()
     $acl.SetOwner($sid)
@@ -96,7 +96,11 @@ function Invoke-OwnerProcess {
         $process.WaitForExit()
         $null = $copy.GetAwaiter().GetResult()
         $null = $errorTask.GetAwaiter().GetResult()
-        Assert-OwnerGate ($process.ExitCode -eq 0) 'BLOCKED_G10_RUNTIME_OPERATION_FAILED'
+        if ($process.ExitCode -ne 0) {
+            $failure=[InvalidOperationException]::new('BLOCKED_G10_RUNTIME_OPERATION_FAILED')
+            $failure.Data['ExitCode']=$process.ExitCode
+            throw $failure
+        }
         if (-not $OutputPath) { return ,$output.ToArray() }
     } finally { $output.Dispose(); $process.Dispose() }
 }
@@ -135,8 +139,8 @@ function Get-OwnerLaunchAdmission([string]$PackageRoot) {
 function Assert-OwnerManifest([string]$PackageRoot) {
     $root = Assert-OwnerPath $PackageRoot
     $manifest = Read-OwnerJson (Join-Path $root $script:ManifestName)
-    Assert-OwnerGate ($manifest.schema -eq 'OWNER_ALPHA_PACKAGE_MANIFEST_V2' -and $manifest.package_version -eq '0.1.0-alpha.1') 'BLOCKED_G10_RUNTIME_IDENTITY_DRIFT'
-    Assert-OwnerGate ($manifest.source.base_head -eq $script:BaseHead -and $manifest.source.base_tree -eq $script:BaseTree -and $manifest.source.head -match '^[0-9a-f]{40}$' -and $manifest.source.head -ne $script:BaseHead) 'BLOCKED_G10_PARENT_IDENTITY_DRIFT'
+    Assert-OwnerGate ($manifest.schema -eq 'MVP7_PACKAGE_MANIFEST_V1' -and $manifest.package_version -eq '0.7.0-r1-candidate') 'BLOCKED_G10_RUNTIME_IDENTITY_DRIFT'
+    Assert-OwnerGate ($manifest.source.base_head -eq $script:BaseHead -and $manifest.source.base_tree -eq $script:BaseTree -and $manifest.source.head -ceq '85a253126bf270664c4786d159994e7359b5d2c5' -and $manifest.source.tree -ceq '5567183dbe16fc6c7c8caac051b7694f37b92457') 'BLOCKED_G10_PARENT_IDENTITY_DRIFT'
     $expected = @($manifest.payload.Keys) + $script:ManifestName + 'SHA256SUMS'
     $fixed = @('START_HERE_RU.txt','manifest.schema.json','SBOM.cdx.json','THIRD_PARTY_NOTICES.txt','evidence/package-build-evidence.json','rootfs/conflict-analysis-functional-alpha-rootfs.tar',
         'INSTALL_CONFLICT_ANALYSIS.cmd','START_CONFLICT_ANALYSIS.cmd','STOP_CONFLICT_ANALYSIS.cmd','DIAGNOSTICS.cmd','BACKUP_CONFLICT_ANALYSIS.cmd','RESTORE_CONFLICT_ANALYSIS.cmd','RESET_CONFLICT_ANALYSIS.cmd','UNINSTALL_CONFLICT_ANALYSIS.cmd',
@@ -159,22 +163,7 @@ function Assert-OwnerManifest([string]$PackageRoot) {
     Assert-OwnerGate ($sumText -ceq (($sums -join [string][char]10)+[char]10)) 'BLOCKED_G10_PACKAGE_MEMBER_DRIFT'
     return $manifest
 }
-function Assert-OwnerCapacity([int]$Port) {
-    Assert-OwnerGate ($IsWindows -and [Environment]::Is64BitOperatingSystem -and [Environment]::Is64BitProcess -and $PSVersionTable.PSEdition -eq 'Core' -and $PSVersionTable.PSVersion.Major -ge 7) 'BLOCKED_G10_WINDOWS_CAPACITY'
-    $os = Get-CimInstance Win32_OperatingSystem
-    $computer = Get-CimInstance Win32_ComputerSystem
-    $processors = @(Get-CimInstance Win32_Processor)
-    Assert-OwnerGate ($os.ProductType -eq 1 -and [int]$os.BuildNumber -ge 22000 -and $os.Caption -match 'Windows 11' -and $computer.SystemType -match 'x64') 'BLOCKED_G10_WINDOWS_CAPACITY'
-    Assert-OwnerGate ($computer.HypervisorPresent -or ($processors.VirtualizationFirmwareEnabled -contains $true -and $processors.SecondLevelAddressTranslationExtensions -contains $true)) 'BLOCKED_G10_WINDOWS_CAPACITY'
-    $wsl = "$env:WINDIR\System32\wsl.exe"
-    $version = Invoke-OwnerProcess $wsl @('--version')
-    $listing = Invoke-OwnerProcess $wsl @('--list','--verbose')
-    $help = Invoke-OwnerProcess $wsl @('--help')
-    $decode = {
-        param([byte[]]$Data)
-        if ($Data -contains 0) { [Text.Encoding]::Unicode.GetString($Data) } else { [Text.Encoding]::UTF8.GetString($Data) }
-    }
-    Assert-OwnerGate ((& $decode $listing) -match '(?m)\s2\s*$' -and (& $decode $help) -match '--import') 'BLOCKED_G10_WINDOWS_CAPACITY'
+function Get-OwnerEdgeCapacity {
     $edge = @('C:\Program Files\Microsoft\Edge\Application\msedge.exe','C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe') | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
     Assert-OwnerGate ([bool]$edge) 'BLOCKED_G10_WINDOWS_CAPACITY'
     $info = (Get-Item -LiteralPath $edge).VersionInfo
@@ -185,10 +174,31 @@ function Assert-OwnerCapacity([int]$Port) {
         $offset=$reader.ReadInt32(); $stream.Position=$offset+4
         Assert-OwnerGate ($reader.ReadUInt16() -eq 0x8664) 'BLOCKED_G10_WINDOWS_CAPACITY'
     } finally { $stream.Dispose() }
+    return @{path=$edge;version=$info.ProductVersion}
+}
+function Assert-OwnerCapacity([int]$Port) {
+    Assert-OwnerGate ($IsWindows -and [Environment]::Is64BitOperatingSystem -and [Environment]::Is64BitProcess -and $PSVersionTable.PSEdition -eq 'Core' -and $PSVersionTable.PSVersion.Major -ge 7) 'BLOCKED_G10_WINDOWS_CAPACITY'
+    $os = Get-CimInstance Win32_OperatingSystem
+    $computer = Get-CimInstance Win32_ComputerSystem
+    $processors = @(Get-CimInstance Win32_Processor)
+    Assert-OwnerGate ($os.ProductType -eq 1 -and [int]$os.BuildNumber -ge 22000 -and $os.Caption -match 'Windows 11' -and $computer.SystemType -match 'x64') 'BLOCKED_G10_WINDOWS_CAPACITY'
+    Assert-OwnerGate ($computer.HypervisorPresent -or ($processors.VirtualizationFirmwareEnabled -contains $true -and $processors.SecondLevelAddressTranslationExtensions -contains $true)) 'BLOCKED_G10_WINDOWS_CAPACITY'
+    $wsl = "$env:WINDIR\System32\wsl.exe"
+    Assert-OwnerGate (Test-Path -LiteralPath $wsl) 'BLOCKED_MVP7_WSL_CAPABILITY'
+    try {
+        $version = Invoke-OwnerProcess $wsl @('--version')
+        $help = Invoke-OwnerProcess $wsl @('--help')
+    } catch { Stop-OwnerGate 'BLOCKED_MVP7_WSL_CAPABILITY' }
+    $decode = {
+        param([byte[]]$Data)
+        if ($Data -contains 0) { [Text.Encoding]::Unicode.GetString($Data) } else { [Text.Encoding]::UTF8.GetString($Data) }
+    }
+    Assert-OwnerGate (-not [string]::IsNullOrWhiteSpace((& $decode $version)) -and (& $decode $help) -match '--import') 'BLOCKED_MVP7_WSL_CAPABILITY'
+    $edgeCapacity=Get-OwnerEdgeCapacity
     Assert-OwnerGate ($Port -ge 1024 -and $Port -le 65535) 'BLOCKED_G10_NETWORK_EXPOSURE'
     return @{caption=$os.Caption;build=$os.BuildNumber;architecture=$computer.SystemType;
-             hypervisor=$computer.HypervisorPresent;wslVersion=(& $decode $version);wslList=(& $decode $listing);
-             edgePath=$edge;edgeVersion=$info.ProductVersion}
+             hypervisor=$computer.HypervisorPresent;wslVersion=(& $decode $version);registeredDistroRequired=$false;
+             packageImportVerified=$false;edgePath=$edgeCapacity.path;edgeVersion=$edgeCapacity.version}
 }
 function Assert-OwnerPortFree([int]$Port) {
     $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback,$Port)
@@ -200,9 +210,10 @@ function Get-OwnerContext([string]$PackageRoot,[string]$StateRoot='',[int]$Port=
     $manifest=Assert-OwnerManifest $PackageRoot
     $admission=Get-OwnerLaunchAdmission $PackageRoot
     $capacity=Assert-OwnerCapacity $Port
-    if (-not $StateRoot) { $StateRoot=Join-Path $env:LOCALAPPDATA ('ConflictAnalysis\OwnerAlpha\'+$manifest.source.tree.Substring(0,12)) }
+    if (-not $StateRoot) { $StateRoot=Join-Path $env:LOCALAPPDATA 'ConflictPartnerDemoState\mvp7' }
     $StateRoot=Assert-OwnerPath $StateRoot
     $stateFile=Join-Path $StateRoot 'installation.json'
+    Assert-OwnerGate (-not (Test-Path -LiteralPath (Join-Path $StateRoot 'installation.pending.json'))) 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
     $record=$null
     if (Test-Path -LiteralPath $stateFile) {
         Assert-OwnerPrivateDirectory $StateRoot
@@ -233,15 +244,24 @@ function New-OwnerInstall {
     $record=@{schema='G10_INSTALLATION_V1';instance=$instance;distribution=$distro;phase='IMPORT_PENDING';port=$Context.port;
               manifest=(Get-OwnerFileIdentity (Join-Path $Context.package $script:ManifestName));
               source=$Context.manifest.source;profiles=@{};backupReceipts=@()}
-    Write-OwnerJson $Context.stateFile $record
+    $pending=Join-Path $root 'installation.pending.json'
+    Assert-OwnerGate (-not (Test-Path -LiteralPath $pending)) 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
+    Write-OwnerJson $pending $record
     $rootfs=Join-Path $Context.package 'rootfs/conflict-analysis-functional-alpha-rootfs.tar'
-    $null=Invoke-OwnerProcess "$env:WINDIR\System32\wsl.exe" @('--import',$distro,$vhd,$rootfs,'--version','2')
+    try {
+        $null=Invoke-OwnerProcess "$env:WINDIR\System32\wsl.exe" @('--import',$distro,$vhd,$rootfs,'--version','2')
+    } catch {
+        $code='BLOCKED_MVP7_WSL2_PACKAGE_IMPORT_FAILED'
+        if ($_.Exception.Data.Contains('ExitCode')) { $code+='_EXIT_'+[string]$_.Exception.Data['ExitCode'] }
+        Stop-OwnerGate $code
+    }
     $id=Invoke-OwnerWsl $distro @('identity')
     Assert-OwnerGate ($id.source.head -ceq $Context.manifest.source.head -and $id.source.tree -ceq $Context.manifest.source.tree -and $id.wheel.sha256 -ceq $Context.manifest.wheel.sha256) 'BLOCKED_G10_RUNTIME_IDENTITY_DRIFT'
     $command=if($RestoreEmpty){'restore-empty'}else{'initialize'}
     $result=Invoke-OwnerWsl $distro @($command,[string]$Context.port)
     $record.phase=$result.phase
     Write-OwnerJson $Context.stateFile $record
+    Remove-Item -LiteralPath $pending
     $Context.record=$record
     return $record
 }

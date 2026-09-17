@@ -63,10 +63,17 @@ import shutil
 shutil.copytree(settings.STATIC_ROOT,root/"static",dirs_exist_ok=True)
 shutil.rmtree(settings.STATIC_ROOT)
 site=pathlib.Path(domain.__file__).parent.parent
-for component in ("domain","production_studio","production_player"):
+for component in ("domain","production_studio","production_player","analysis_dashboard"):
     assert (site/component).is_dir()
-assert (site/"domain/migrations/0018_workspace_assessment_projection.py").is_file()
+assert (site/"domain/migrations/0019_analysis_geography.py").is_file()
+maps=site/"analysis_dashboard/static/analysis_dashboard"
+for member in ("maps/MAP_DATASET_MANIFEST.json","maps/central_asia_admin0.geojson","maps/kazakhstan_admin1.geojson","maps/labels_ru.json","vendor/maplibre/maplibre-gl-csp.js","licenses/NATURAL_EARTH_TERMS.txt"):
+    assert (maps/member).is_file(), member
+assert (site/"domain/api/geography_v1.py").is_file()
 notices=[]
+for path in sorted((maps/"licenses").glob("*")):
+    if path.is_file(): notices.append(str(path.name)+"\n"+path.read_text())
+
 for path in sorted(pathlib.Path("/usr/share/doc").glob("*/copyright")):
     notices.append(str(path)+"\n"+path.read_text(errors="replace"))
 for dist in m.distributions():

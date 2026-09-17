@@ -16,9 +16,10 @@ import zipfile
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-CONTROL = json.loads(r'''{"base_head":"123f2b081ce2a09d7d193f9e4b20644f5802d7fe","base_tree":"d67e39cbb965483f3c9cabcc91f724d8bf986fb4","base_parent":"22f0f173a941de88d6920b6e19821168e9b30cc8","readme_blob":"e0da5bcf5f24809f6ca788a1a8f6b0f0144bf1f3","migration":"domain/migrations/0018_workspace_assessment_projection.py","migration_blob":"292a8eb4abafeef80d6efc7d3c2d4cda5f771fd9","allowlist":["software/conflict_analysis/README.md",".github/workflows/conflict-analysis-owner-alpha-package.yml","software/conflict_analysis/docs/adr/0017-owner-alpha-windows-wsl-package.md","software/conflict_analysis/owner_alpha_package/START_HERE_RU.txt","software/conflict_analysis/owner_alpha_package/manifest.schema.json","software/conflict_analysis/owner_alpha_package/linux/Containerfile","software/conflict_analysis/owner_alpha_package/linux/build-rootfs.sh","software/conflict_analysis/owner_alpha_package/linux/owner-alpha-supervisor.sh","software/conflict_analysis/owner_alpha_package/linux/owner-alpha-health.sh","software/conflict_analysis/owner_alpha_package/linux/nginx.conf","software/conflict_analysis/owner_alpha_package/linux/gunicorn.conf.py","software/conflict_analysis/owner_alpha_package/linux/wsl.conf","software/conflict_analysis/owner_alpha_package/windows/OwnerAlpha.Common.psm1","software/conflict_analysis/owner_alpha_package/windows/OwnerAlpha.Cdp.psm1","software/conflict_analysis/owner_alpha_package/windows/Install-OwnerAlpha.ps1","software/conflict_analysis/owner_alpha_package/windows/Start-OwnerAlpha.ps1","software/conflict_analysis/owner_alpha_package/windows/Grant-Publisher.ps1","software/conflict_analysis/owner_alpha_package/windows/Status-OwnerAlpha.ps1","software/conflict_analysis/owner_alpha_package/windows/Stop-OwnerAlpha.ps1","software/conflict_analysis/owner_alpha_package/windows/Reset-OwnerAlpha.ps1","software/conflict_analysis/owner_alpha_package/windows/Uninstall-OwnerAlpha.ps1","software/conflict_analysis/owner_alpha_package/tests/test_manifest.py","software/conflict_analysis/owner_alpha_package/tests/test_linux_contract.py","software/conflict_analysis/owner_alpha_package/tests/OwnerAlpha.Windows.Contract.Tests.ps1","software/conflict_analysis/owner_alpha_package/tests/OwnerAlpha.Windows.WslE2E.Tests.ps1","software/conflict_analysis/scripts/build_owner_alpha_package.py","software/conflict_analysis/scripts/verify_owner_alpha_package.py","software/conflict_analysis/scripts/verify_owner_alpha_windows_evidence.py"],"tests":{"portable":["test_manifest_schema_exact_chain_refs_versions_hashes_artifacts_and_nonclaims","test_archive_is_deterministic_case_safe_traversal_free_and_cmd_wrappers_are_exact","test_rootfs_has_exact_runtime_versions_users_permissions_and_no_secrets_build_tools_or_source_tree","test_postgresql_socket_nginx_static_gunicorn_loopback_and_no_lan_configuration_are_exact","test_clean_rootfs_runs_migrations_collectstatic_help_and_readiness_without_schema_drift","test_access_secret_transport_public_receipt_and_three_profile_material_never_leak","test_build_binds_exact_accepted_chain_g10_tree_wheel_sbom_notices_and_normalized_rootfs","test_package_scripts_verify_integrity_before_install_and_never_bypass_execution_policy","test_backup_restore_stop_reset_and_uninstall_have_exact_nondestructive_or_destructive_boundaries","test_showcase_sqlite_runserver_mutable_download_and_unaccepted_artifacts_are_absent"],"pester":["test_preflight_rejects_unsupported_windows_wsl_edge_path_port_acl_and_stale_identity_before_import","test_install_verifies_all_bytes_imports_one_exact_wsl2_distribution_and_reconciles_exact_replay","test_start_generates_no_public_secret_and_binds_only_the_frozen_loopback_origin","test_access_prepare_stream_is_memory_only_and_exact_three_profile_permissions_are_preserved","test_cdp_sets_exact_cookie_in_three_acl_profiles_then_closes_every_debug_endpoint","test_studio_editor_publisher_and_player_assessor_sessions_and_project_scope_are_separate","test_status_restart_and_stop_are_replay_safe_and_database_and_receipt_state_persists","test_stop_requires_no_busy_unknown_confirmation_and_revokes_before_profile_deletion","test_backup_restore_reset_and_uninstall_require_exact_confirmation_and_leave_the_declared_state","test_no_lan_postgres_gunicorn_debug_port_normal_edge_profile_or_secret_exposure"],"windows":["test_windows_owner_alpha_complete_three_profile_studio_player_xlsx_evidence_package_backup_and_restart","test_windows_owner_alpha_loss_scope_negative_recovery_restore_and_destructive_cleanup"]},"predecessors":[{"name":"F0L","head":"bfbd6b94c98ad27378c1452e38a69bf8b1fb169f","tree":"4806308745d46726c71eec38b3acac71f31b1542","acceptance":"#85/5530604165"},{"name":"F1","head":"d2f5a881e10dbb688371e8c5add6bf9375404738","tree":"7f5fd4f321282a48a799698861ce6f2bd3940cd1","acceptance":"#84/5561033107"},{"name":"FD08","head":"68b14882a06b2e90710ebd06e584dc5300fdfe7e","tree":"5969ee705ae935bf305a1b2531bc3bc77ade03cb","acceptance":"#23/5585330480"},{"name":"G7","head":"319450a64cb381df2e392027c64de157e2ed830c","tree":"95a8a2a5a7248dd3ec030963c3b25709d49364b0","acceptance":"#25/5591235510"},{"name":"G8","head":"df537ee138088a1fc691cc89a257259817db4644","tree":"67739a84d7bcc9406cbb830d9a58656b05eee06a","acceptance":"#29/5624279071"},{"name":"G9","head":"561ef5327bf655a558adb21c54d0fdf0559d7024","tree":"5b209c782e1ac1a4783b01391dd59d813559ce57","acceptance":"#26/5632713857"}],"sentinels":{"software/conflict_analysis/README.md":"e0da5bcf5f24809f6ca788a1a8f6b0f0144bf1f3","software/conflict_analysis/pyproject.toml":"61befae98fa81af0ffd2e40f3943c5b9c77a796a","software/conflict_analysis/conflict_analysis/settings.py":"c384d860388b328b897d8b808867d330d029f1fd","software/conflict_analysis/conflict_analysis/urls.py":"aa290e9b4b28720864001dfe44e113f16aedfdf6","software/conflict_analysis/domain/models.py":"f2352f54d938ce377f5a2cfd9d6b90e67c039193","software/conflict_analysis/domain/enums.py":"dd50f597199711bfa66d37fc40e8908f9ea9879b","software/conflict_analysis/domain/urls.py":"a834024cd4dfb666812147b0e9c830168bd489cf","software/conflict_analysis/domain/migrations/0018_workspace_assessment_projection.py":"292a8eb4abafeef80d6efc7d3c2d4cda5f771fd9",".github/workflows/conflict-analysis.yml":"773515daf483050fa936fcaa1709fadf73c5b0df","software/conflict_analysis/domain":"78e3f0aa20f4e8b9bdb0853eee5678c82efc244c","software/conflict_analysis/production_player":"b1dc6c79704f9fcafa8272e2c22489dbd06a209e","software/conflict_analysis/production_studio":"6e953eaf47101b441cb703d4da2d784eb69f3eff"}}''')
-SCHEMA = "OWNER_ALPHA_PACKAGE_MANIFEST_V2"
-PACKAGE_VERSION = "0.1.0-alpha.1"
+CONTROL = json.loads('{"base_head":"c6c7118080ab1a1dcb86216f4092dabcf8125be7","base_tree":"5a4a40431e72fb6b942b895225ce11bba2898052","base_parent":"22f0f173a941de88d6920b6e19821168e9b30cc8","readme_blob":"e0da5bcf5f24809f6ca788a1a8f6b0f0144bf1f3","migration":"domain/migrations/0019_analysis_geography.py","migration_blob":"8a2a5b3dfa750932ddb17228dfb476c5e3e88b03","allowlist":["software/conflict_analysis/README.md",".github/workflows/conflict-analysis-owner-alpha-package.yml","software/conflict_analysis/docs/adr/0017-owner-alpha-windows-wsl-package.md","software/conflict_analysis/owner_alpha_package/START_HERE_RU.txt","software/conflict_analysis/owner_alpha_package/manifest.schema.json","software/conflict_analysis/owner_alpha_package/linux/Containerfile","software/conflict_analysis/owner_alpha_package/linux/build-rootfs.sh","software/conflict_analysis/owner_alpha_package/linux/owner-alpha-supervisor.sh","software/conflict_analysis/owner_alpha_package/linux/owner-alpha-health.sh","software/conflict_analysis/owner_alpha_package/linux/nginx.conf","software/conflict_analysis/owner_alpha_package/linux/gunicorn.conf.py","software/conflict_analysis/owner_alpha_package/linux/wsl.conf","software/conflict_analysis/owner_alpha_package/windows/OwnerAlpha.Common.psm1","software/conflict_analysis/owner_alpha_package/windows/OwnerAlpha.Cdp.psm1","software/conflict_analysis/owner_alpha_package/windows/Install-OwnerAlpha.ps1","software/conflict_analysis/owner_alpha_package/windows/Start-OwnerAlpha.ps1","software/conflict_analysis/owner_alpha_package/windows/Grant-Publisher.ps1","software/conflict_analysis/owner_alpha_package/windows/Status-OwnerAlpha.ps1","software/conflict_analysis/owner_alpha_package/windows/Stop-OwnerAlpha.ps1","software/conflict_analysis/owner_alpha_package/windows/Reset-OwnerAlpha.ps1","software/conflict_analysis/owner_alpha_package/windows/Uninstall-OwnerAlpha.ps1","software/conflict_analysis/owner_alpha_package/tests/test_manifest.py","software/conflict_analysis/owner_alpha_package/tests/test_linux_contract.py","software/conflict_analysis/owner_alpha_package/tests/OwnerAlpha.Windows.Contract.Tests.ps1","software/conflict_analysis/owner_alpha_package/tests/OwnerAlpha.Windows.WslE2E.Tests.ps1","software/conflict_analysis/scripts/build_owner_alpha_package.py","software/conflict_analysis/scripts/verify_owner_alpha_package.py","software/conflict_analysis/scripts/verify_owner_alpha_windows_evidence.py"],"tests":{"portable":["test_manifest_schema_exact_chain_refs_versions_hashes_artifacts_and_nonclaims","test_archive_is_deterministic_case_safe_traversal_free_and_cmd_wrappers_are_exact","test_rootfs_has_exact_runtime_versions_users_permissions_and_no_secrets_build_tools_or_source_tree","test_postgresql_socket_nginx_static_gunicorn_loopback_and_no_lan_configuration_are_exact","test_clean_rootfs_runs_migrations_collectstatic_help_and_readiness_without_schema_drift","test_access_secret_transport_public_receipt_and_three_profile_material_never_leak","test_build_binds_exact_accepted_chain_g10_tree_wheel_sbom_notices_and_normalized_rootfs","test_package_scripts_verify_integrity_before_install_and_never_bypass_execution_policy","test_backup_restore_stop_reset_and_uninstall_have_exact_nondestructive_or_destructive_boundaries","test_showcase_sqlite_runserver_mutable_download_and_unaccepted_artifacts_are_absent"],"pester":["test_preflight_rejects_unsupported_windows_wsl_edge_path_port_acl_and_stale_identity_before_import","test_install_verifies_all_bytes_imports_one_exact_wsl2_distribution_and_reconciles_exact_replay","test_start_generates_no_public_secret_and_binds_only_the_frozen_loopback_origin","test_access_prepare_stream_is_memory_only_and_exact_three_profile_permissions_are_preserved","test_cdp_sets_exact_cookie_in_three_acl_profiles_then_closes_every_debug_endpoint","test_studio_editor_publisher_and_player_assessor_sessions_and_project_scope_are_separate","test_status_restart_and_stop_are_replay_safe_and_database_and_receipt_state_persists","test_stop_requires_no_busy_unknown_confirmation_and_revokes_before_profile_deletion","test_backup_restore_reset_and_uninstall_require_exact_confirmation_and_leave_the_declared_state","test_no_lan_postgres_gunicorn_debug_port_normal_edge_profile_or_secret_exposure"],"windows":["test_windows_owner_alpha_complete_three_profile_studio_player_xlsx_evidence_package_backup_and_restart","test_windows_owner_alpha_loss_scope_negative_recovery_restore_and_destructive_cleanup"]},"predecessors":[{"name":"F0L","head":"bfbd6b94c98ad27378c1452e38a69bf8b1fb169f","tree":"4806308745d46726c71eec38b3acac71f31b1542","acceptance":"#85/5530604165"},{"name":"F1","head":"d2f5a881e10dbb688371e8c5add6bf9375404738","tree":"7f5fd4f321282a48a799698861ce6f2bd3940cd1","acceptance":"#84/5561033107"},{"name":"FD08","head":"68b14882a06b2e90710ebd06e584dc5300fdfe7e","tree":"5969ee705ae935bf305a1b2531bc3bc77ade03cb","acceptance":"#23/5585330480"},{"name":"G7","head":"319450a64cb381df2e392027c64de157e2ed830c","tree":"95a8a2a5a7248dd3ec030963c3b25709d49364b0","acceptance":"#25/5591235510"},{"name":"G8","head":"df537ee138088a1fc691cc89a257259817db4644","tree":"67739a84d7bcc9406cbb830d9a58656b05eee06a","acceptance":"#29/5624279071"},{"name":"G9","head":"561ef5327bf655a558adb21c54d0fdf0559d7024","tree":"5b209c782e1ac1a4783b01391dd59d813559ce57","acceptance":"#26/5632713857"}],"sentinels":{"software/conflict_analysis/README.md":"e0da5bcf5f24809f6ca788a1a8f6b0f0144bf1f3","software/conflict_analysis/pyproject.toml":"61befae98fa81af0ffd2e40f3943c5b9c77a796a","software/conflict_analysis/conflict_analysis/settings.py":"c384d860388b328b897d8b808867d330d029f1fd","software/conflict_analysis/conflict_analysis/urls.py":"aa290e9b4b28720864001dfe44e113f16aedfdf6","software/conflict_analysis/domain/models.py":"f2352f54d938ce377f5a2cfd9d6b90e67c039193","software/conflict_analysis/domain/enums.py":"dd50f597199711bfa66d37fc40e8908f9ea9879b","software/conflict_analysis/domain/urls.py":"a834024cd4dfb666812147b0e9c830168bd489cf","software/conflict_analysis/domain/migrations/0018_workspace_assessment_projection.py":"292a8eb4abafeef80d6efc7d3c2d4cda5f771fd9",".github/workflows/conflict-analysis.yml":"773515daf483050fa936fcaa1709fadf73c5b0df","software/conflict_analysis/domain":"78e3f0aa20f4e8b9bdb0853eee5678c82efc244c","software/conflict_analysis/production_player":"b1dc6c79704f9fcafa8272e2c22489dbd06a209e","software/conflict_analysis/production_studio":"6e953eaf47101b441cb703d4da2d784eb69f3eff"}}')
+CONTROL["tests"]["portable"].append("test_mvp7_zero_permission_profile_matrix_geography_write_and_restart_persistence")
+SCHEMA = "MVP7_PACKAGE_MANIFEST_V1"
+PACKAGE_VERSION = "0.7.0-r1-candidate"
 MANIFEST_NAME = SCHEMA + ".json"
 PROFILE_NAMES = ("STUDIO_EDITOR", "STUDIO_PUBLISHER", "PLAYER_ASSESSOR")
 WRAPPERS = {
@@ -93,46 +94,38 @@ def git(repo: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
-def source_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
-    head, tree = git(repo, "rev-parse", "HEAD"), git(repo, "rev-parse", "HEAD^{tree}")
-    require(git(repo, "rev-parse", CONTROL["base_head"] + "^{tree}") == CONTROL["base_tree"],
-            "BLOCKED_G10_PARENT_IDENTITY_DRIFT", "accepted base tree drift")
-    for entry in CONTROL["predecessors"]:
-        git(repo, "merge-base", "--is-ancestor", entry["head"], head)
-        require(git(repo, "rev-parse", entry["head"] + "^{tree}") == entry["tree"],
-                "BLOCKED_G10_PARENT_IDENTITY_DRIFT", entry["name"])
-    for path, expected in CONTROL["sentinels"].items():
-        actual = git(repo, "rev-parse", CONTROL["base_head"] + ":" + path)
-        require(actual == expected, "BLOCKED_G10_PARENT_IDENTITY_DRIFT", path)
-        if path != CONTROL["allowlist"][0]:
-            require(git(repo, "rev-parse", head + ":" + path) == expected,
-                    "BLOCKED_G10_DOMAIN_OR_PRODUCT_MUTATION", path)
-    require(not git(repo, "status", "--porcelain=v1", "--untracked-files=all"),
-            "BLOCKED_G10_RUNTIME_IDENTITY_DRIFT", "build requires a clean committed source")
-    commits = git(repo, "rev-list", "--reverse", CONTROL["base_head"] + ".." + head).splitlines()
-    require(not git(repo, "rev-list", "--merges", CONTROL["base_head"] + ".." + head),
-            "BLOCKED_G10_FORBIDDEN_GIT_OPERATION", "merge in delivery ancestry")
-    require(len(commits) in ((4,) if final else (0, 1, 2, 3, 4)),
-            "BLOCKED_G10_FORBIDDEN_GIT_OPERATION", "ordinary commit budget")
-    expected_prefix = ["b589aae93123c9a01cea43a4986c2a3a8250c8cc",
-                       "4bb2d8aebec9a57ee8e821dde4e230be2a9dabfd",
-                       "63c5394c02261bd35e51054f223ae545aaaf4f0d"]
-    require(commits[:3] == expected_prefix[:min(len(commits), 3)],
-            "BLOCKED_G10_FORBIDDEN_GIT_OPERATION", "frozen first three ordinary commits")
-    for commit, parent in zip(commits, [CONTROL["base_head"], *commits[:-1]]):
-        require(git(repo, "show", "-s", "--format=%P", commit) == parent,
-                "BLOCKED_G10_FORBIDDEN_GIT_OPERATION", "sole ordinary parent required")
+LOCK = strict_json((Path(__file__).resolve().parents[1] / "installer/source.lock.json").read_bytes())
+
+def allowed_installer_path(path: str) -> bool:
+    return (path == ".github/workflows/conflict-analysis-mvp7-installer.yml"
+            or path.startswith("software/conflict_analysis/installer/")
+            or path.startswith("software/conflict_analysis/owner_alpha_package/")
+            or path in {"software/conflict_analysis/scripts/build_owner_alpha_package.py",
+                        "software/conflict_analysis/scripts/verify_owner_alpha_package.py",
+                        "software/conflict_analysis/scripts/verify_owner_alpha_windows_evidence.py"}
+            or (path.startswith("software/conflict_analysis/docs/") and "/" not in path.removeprefix("software/conflict_analysis/docs/") and "installer" in path))
+
+def delivery_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
+    head=git(repo,"rev-parse","HEAD");parent=LOCK["installer_parent"]
+    require(git(repo,"branch","--show-current") in ("",LOCK["installer_branch"]),"BLOCKED_MVP7_HISTORY","branch")
     if final:
-        changes = dict(line.split("\t", 1)[::-1] for line in
-                       git(repo, "diff", "--no-renames", "--name-status",
-                           CONTROL["base_head"], head).splitlines())
-        expected = {p: ("M" if i == 0 else "A")
-                    for i, p in enumerate(CONTROL["allowlist"])}
-        require(changes == expected, "BLOCKED_G10_ALLOWLIST_DRIFT", "exact 1M+27A required")
-    return {"head": head, "tree": tree, "parent": git(repo, "show", "-s", "--format=%P", head),
-            "base_head": CONTROL["base_head"], "base_tree": CONTROL["base_tree"],
-            "predecessors": CONTROL["predecessors"], "ordinary_commits": commits,
-            "source_date_epoch": int(git(repo, "show", "-s", "--format=%ct", head))}
+        require(not git(repo,"status","--porcelain=v1","--untracked-files=all"),"BLOCKED_MVP7_HISTORY","clean committed checkout required")
+        require(git(repo,"show","-s","--format=%P",head)==parent,"BLOCKED_MVP7_HISTORY","one ordinary parent")
+        require(git(repo,"rev-list","--count",parent+".."+head)=="1","BLOCKED_MVP7_HISTORY","one commit")
+        require(git(repo,"show","-s","--format=%B",head)==LOCK["installer_message"],"BLOCKED_MVP7_HISTORY","message")
+    else:
+        require(head==parent or git(repo,"show","-s","--format=%P",head)==parent,"BLOCKED_MVP7_HISTORY","precommit parent")
+    paths=git(repo,"diff","--name-only",parent,head).splitlines()
+    require(all(allowed_installer_path(p) for p in paths),"BLOCKED_MVP7_SOURCE_MUTATION","allowlist")
+    return {"head":head,"tree":git(repo,"rev-parse","HEAD^{tree}"),"parent":parent}
+
+def source_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
+    delivery_identity(repo,final=final)
+    source=LOCK["source"];head=source["head"]
+    require(git(repo,"rev-parse",head+"^{tree}")==source["tree"],"BLOCKED_MVP7_SOURCE_MUTATION","exact C tree")
+    require(git(repo,"show","-s","--format=%P",head)==source["parent"],"BLOCKED_MVP7_SOURCE_MUTATION","exact C parent")
+    require(git(repo,"rev-parse",head+":software/conflict_analysis/"+CONTROL["migration"])==CONTROL["migration_blob"],"BLOCKED_MVP7_SOURCE_MUTATION","migration 0019")
+    return source.copy()
 
 
 def safe_member(name: str) -> bool:
@@ -164,13 +157,12 @@ def verify_manifest(manifest: dict[str, Any]) -> None:
     require(manifest["schema"] == SCHEMA and manifest["package_version"] == PACKAGE_VERSION,
             "BLOCKED_G10_RUNTIME_IDENTITY_DRIFT", "manifest contract")
     source = manifest["source"]
-    require(source["base_head"] == CONTROL["base_head"] and
-            source["base_tree"] == CONTROL["base_tree"] and
-            source["predecessors"] == CONTROL["predecessors"],
-            "BLOCKED_G10_PARENT_IDENTITY_DRIFT", "manifest accepted chain")
-    require(source["head"] != CONTROL["base_head"] and GIT_SHA.fullmatch(source["head"]) and
-            GIT_SHA.fullmatch(source["tree"]),
-            "BLOCKED_G10_RUNTIME_IDENTITY_DRIFT", "final G10 source identity required")
+    require(source == LOCK["source"], "BLOCKED_MVP7_SOURCE_MUTATION", "application wheel must be exact C")
+    delivery=manifest["delivery"]
+    require(set(delivery)=={"head","tree","parent"} and all(GIT_SHA.fullmatch(v) for v in delivery.values())
+            and delivery["parent"]==LOCK["installer_parent"],"BLOCKED_MVP7_HISTORY","delivery identity")
+    require(manifest["acceptance"] == {"acceptance_run":35216652773,"WINDOWS11_WSL2_E2E":"BLOCKED_NO_RUNNER",
+            "CLEAN_PC_SMOKE":"NOT_EXECUTED","PARTNER_RELEASE_READY":False},"BLOCKED_MVP7_NONCLAIM","acceptance boundary")
     require(manifest["migration"] == {"path": CONTROL["migration"], "blob": CONTROL["migration_blob"]},
             "BLOCKED_G10_UNAUTHORIZED_MIGRATION", "migration identity")
     require(manifest["test_registry"] == CONTROL["tests"],

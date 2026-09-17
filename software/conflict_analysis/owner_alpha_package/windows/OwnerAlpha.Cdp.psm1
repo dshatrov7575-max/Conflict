@@ -88,7 +88,9 @@ function Open-OwnerProfile([hashtable]$Context,[hashtable]$Cookie) {
     Assert-OwnerGate ($process.WaitForExit(15000)) 'BLOCKED_G10_NETWORK_EXPOSURE'
     Assert-OwnerDebugClosed $port
     $route=if($Cookie.profile -eq 'PLAYER_ASSESSOR'){'/player/'}else{'/studio/drafts/'}
-    $visible=Start-OwnerEdgeProcess $Context.capacity.edgePath ($base+@('--new-window',('http://127.0.0.1:'+$Context.record.port+$route)))
+    $pages=@(('http://127.0.0.1:'+$Context.record.port+$route))
+    if($Cookie.profile -eq 'STUDIO_PUBLISHER') { $pages+=('http://127.0.0.1:'+$Context.record.port+'/analysis/') }
+    $visible=Start-OwnerEdgeProcess $Context.capacity.edgePath ($base+@('--new-window')+$pages)
     $Context.record.profiles[$Cookie.profile].pids=@($visible.Id)
     $Context.record.profiles[$Cookie.profile].debug_closed=$true
     Write-OwnerJson $Context.stateFile $Context.record

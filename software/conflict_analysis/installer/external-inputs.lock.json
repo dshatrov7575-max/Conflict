@@ -1,0 +1,647 @@
+{
+  "debs": [
+    {
+      "architecture": "amd64",
+      "bytes": 612736,
+      "control": "Package: nginx\nVersion: 1.26.3-3+deb13u8\nArchitecture: amd64\nMaintainer: Debian Nginx Maintainers <pkg-nginx-maintainers@alioth-lists.debian.net>\nInstalled-Size: 1556\nDepends: libc6 (>= 2.34), libcrypt1 (>= 1:4.1.0), libpcre2-8-0 (>= 10.22), libssl3t64 (>= 3.0.0), zlib1g (>= 1:1.1.4), iproute2, nginx-common (= 1.26.3-3+deb13u8)\nBreaks: nginx-core (<< 1.22.1-6~), nginx-extras (<< 1.22.1-6~), nginx-light (<< 1.22.1-6~)\nReplaces: nginx-core (<< 1.22.1-6~), nginx-extras (<< 1.22.1-6~), nginx-light (<< 1.22.1-6~)\nProvides: httpd, httpd-cgi, nginx-abi-1.26.3-1\nSection: httpd\nPriority: optional\nHomepage: https://nginx.org\nDescription: small, powerful, scalable web/proxy server\n Nginx (\"engine X\") is a high-performance web and reverse proxy server\n created by Igor Sysoev. It can be used both as a standalone web server\n and as a proxy to reduce the load on back-end HTTP or mail servers.\n",
+      "filename": "nginx_1.26.3-3+deb13u8_amd64.deb",
+      "name": "nginx",
+      "sha256": "4c9b5f9b78874298e057a32b3854c21eef3cf2b6c6855b028b6f28c1774c9b3b",
+      "snapshot_sha1": "9d0ec6df1198961d5890cea423bf168ee56cf982",
+      "url": "https://snapshot.debian.org/file/9d0ec6df1198961d5890cea423bf168ee56cf982",
+      "version": "1.26.3-3+deb13u8"
+    },
+    {
+      "architecture": "all",
+      "bytes": 111428,
+      "control": "Package: nginx-common\nSource: nginx\nVersion: 1.26.3-3+deb13u8\nArchitecture: all\nMaintainer: Debian Nginx Maintainers <pkg-nginx-maintainers@alioth-lists.debian.net>\nInstalled-Size: 305\nDepends: debconf (>= 0.5) | debconf-2.0\nSuggests: fcgiwrap, nginx-doc, ssl-cert\nBreaks: nginx (<< 1.22.1-8)\nReplaces: nginx (<< 1.22.1-8)\nSection: httpd\nPriority: optional\nMulti-Arch: foreign\nHomepage: https://nginx.org\nDescription: small, powerful, scalable web/proxy server - common files\n Nginx (\"engine X\") is a high-performance web and reverse proxy server\n created by Igor Sysoev. It can be used both as a standalone web server\n and as a proxy to reduce the load on back-end HTTP or mail servers.\n .\n This package contains base configuration files used by all versions of\n nginx.\n",
+      "filename": "nginx-common_1.26.3-3+deb13u8_all.deb",
+      "name": "nginx-common",
+      "sha256": "4947615078bbc9457995a2a077da94c60c326e95503da83f55b2d197ec471250",
+      "snapshot_sha1": "73ec9b3e4bbaacb7e452c14e6e81467575d3e75e",
+      "url": "https://snapshot.debian.org/file/73ec9b3e4bbaacb7e452c14e6e81467575d3e75e",
+      "version": "1.26.3-3+deb13u8"
+    }
+  ],
+  "nsis": {
+    "bytes": 2362938,
+    "compiler_bytes": 468992,
+    "compiler_path": "nsis-3.12/Bin/makensis.exe",
+    "compiler_sha256": "25d1aa7081db1a9de9690b59983f9652b7409a189c3444328cc1841eff693e8d",
+    "filename": "nsis-3.12.zip",
+    "sha256": "56581f90db321581c5381193d796fffcf2d24b2f8fed2160a6c6a3baa67f2c4f",
+    "url": "https://downloads.sourceforge.net/project/nsis/NSIS%203/3.12/nsis-3.12.zip",
+    "version": "3.12"
+  },
+  "oci": {
+    "postgres": {
+      "image": "docker.io/library/postgres@sha256:4cc13dede823cab4e05290c7fb3350fb4e599ecabd9b07e6706b5d5e8f5bc929",
+      "inputs": [
+        {
+          "bytes": 3439,
+          "sha256": "4cc13dede823cab4e05290c7fb3350fb4e599ecabd9b07e6706b5d5e8f5bc929",
+          "url": "https://registry-1.docker.io/v2/library/postgres/manifests/sha256:4cc13dede823cab4e05290c7fb3350fb4e599ecabd9b07e6706b5d5e8f5bc929"
+        },
+        {
+          "bytes": 10042,
+          "sha256": "4b87d5343a0e499eea33b6c19ec152a3ed4a0d1a453eadd26ff415a406821a6e",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:4b87d5343a0e499eea33b6c19ec152a3ed4a0d1a453eadd26ff415a406821a6e"
+        },
+        {
+          "bytes": 29780765,
+          "sha256": "26c307b5e35a59ce911f5fde5b9458120ec8734e831ea2da5649a9ad14abfd3d",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:26c307b5e35a59ce911f5fde5b9458120ec8734e831ea2da5649a9ad14abfd3d"
+        },
+        {
+          "bytes": 1170,
+          "sha256": "5db2b7edf527f081a260ecef821b440ed1c4e11b003317b2d298ca8a2b1feb38",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:5db2b7edf527f081a260ecef821b440ed1c4e11b003317b2d298ca8a2b1feb38"
+        },
+        {
+          "bytes": 6442929,
+          "sha256": "130549402290405a478adedd2e14bf54504d90b21f8c1275ae05d89e93d139ba",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:130549402290405a478adedd2e14bf54504d90b21f8c1275ae05d89e93d139ba"
+        },
+        {
+          "bytes": 1256729,
+          "sha256": "8241f4a143196e6b132776cb3cced649a6a9aceb7c0025628e9b266c77c65ec6",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:8241f4a143196e6b132776cb3cced649a6a9aceb7c0025628e9b266c77c65ec6"
+        },
+        {
+          "bytes": 8203885,
+          "sha256": "a4dcdc0137d7e97a1ea0fb395989176aaa1802b3ac453bca048e97853649934d",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:a4dcdc0137d7e97a1ea0fb395989176aaa1802b3ac453bca048e97853649934d"
+        },
+        {
+          "bytes": 1311671,
+          "sha256": "d1052e262c2e9c5ae99c759fb374148dd8b27025560641fa26bd45a1d0fc14f8",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:d1052e262c2e9c5ae99c759fb374148dd8b27025560641fa26bd45a1d0fc14f8"
+        },
+        {
+          "bytes": 116,
+          "sha256": "39762d0b4bb22fb28e7a42cd8b9cca6a18447391cf4d0524b944ea9365dcd689",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:39762d0b4bb22fb28e7a42cd8b9cca6a18447391cf4d0524b944ea9365dcd689"
+        },
+        {
+          "bytes": 3142,
+          "sha256": "38639b9be6a64cea811b63317eba2e007bdbc35f4e3bc8dc98fb7d4d613d0b04",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:38639b9be6a64cea811b63317eba2e007bdbc35f4e3bc8dc98fb7d4d613d0b04"
+        },
+        {
+          "bytes": 115325793,
+          "sha256": "4e6c52c74256575fda337aee8275a7a5ceb3fc1d10379302280f77d972bb7a98",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:4e6c52c74256575fda337aee8275a7a5ceb3fc1d10379302280f77d972bb7a98"
+        },
+        {
+          "bytes": 19324,
+          "sha256": "f51baa0c6c0d8a7c2d3c958365c33e840a7f9d04e5552956273bbcdbe83c3a04",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:f51baa0c6c0d8a7c2d3c958365c33e840a7f9d04e5552956273bbcdbe83c3a04"
+        },
+        {
+          "bytes": 128,
+          "sha256": "88bb22edda9bcb522bc1fd99537f044db3ec9032c34b19c45185eb1d372ba7d3",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:88bb22edda9bcb522bc1fd99537f044db3ec9032c34b19c45185eb1d372ba7d3"
+        },
+        {
+          "bytes": 6109,
+          "sha256": "f7d54729e84b7d110a2fe30a2207bd237acd7530fbfdabd1f828e6b69e7cdbed",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:f7d54729e84b7d110a2fe30a2207bd237acd7530fbfdabd1f828e6b69e7cdbed"
+        },
+        {
+          "bytes": 185,
+          "sha256": "f90dd111f2e536ce9f6ea373cc0019cd8c79de260096f01d300152d777a0c6b0",
+          "url": "https://registry-1.docker.io/v2/library/postgres/blobs/sha256:f90dd111f2e536ce9f6ea373cc0019cd8c79de260096f01d300152d777a0c6b0"
+        }
+      ],
+      "repository": "library/postgres"
+    },
+    "python": {
+      "image": "docker.io/library/python@sha256:2fe5997d249a808b8eeea52c58a1dbffbba28754dc11699ef5c029f2d818ce79",
+      "inputs": [
+        {
+          "bytes": 1746,
+          "sha256": "2fe5997d249a808b8eeea52c58a1dbffbba28754dc11699ef5c029f2d818ce79",
+          "url": "https://registry-1.docker.io/v2/library/python/manifests/sha256:2fe5997d249a808b8eeea52c58a1dbffbba28754dc11699ef5c029f2d818ce79"
+        },
+        {
+          "bytes": 5664,
+          "sha256": "ec7d6c95cd3692a2e2d228a8b1ca74e4025b54121fcc4c5da6f09cfa473315ad",
+          "url": "https://registry-1.docker.io/v2/library/python/blobs/sha256:ec7d6c95cd3692a2e2d228a8b1ca74e4025b54121fcc4c5da6f09cfa473315ad"
+        },
+        {
+          "bytes": 29792658,
+          "sha256": "6310eb16bf4251731feab01e8f633bf5e2d75a657ccad97f420b1f83cce457be",
+          "url": "https://registry-1.docker.io/v2/library/python/blobs/sha256:6310eb16bf4251731feab01e8f633bf5e2d75a657ccad97f420b1f83cce457be"
+        },
+        {
+          "bytes": 4265332,
+          "sha256": "dbd0b7849e6c06b61e1fa6b7ffe053f246ce0075890620e3db64b47bb662433a",
+          "url": "https://registry-1.docker.io/v2/library/python/blobs/sha256:dbd0b7849e6c06b61e1fa6b7ffe053f246ce0075890620e3db64b47bb662433a"
+        },
+        {
+          "bytes": 12116924,
+          "sha256": "1560cfed01dc4c72c07f789d860078d74466a1f9a26b33a2e35d887b5f90dd3f",
+          "url": "https://registry-1.docker.io/v2/library/python/blobs/sha256:1560cfed01dc4c72c07f789d860078d74466a1f9a26b33a2e35d887b5f90dd3f"
+        },
+        {
+          "bytes": 249,
+          "sha256": "56235e4245636e401a28cf88944d543b29ee028ae3b6c27e03d6b43e7b4eac5f",
+          "url": "https://registry-1.docker.io/v2/library/python/blobs/sha256:56235e4245636e401a28cf88944d543b29ee028ae3b6c27e03d6b43e7b4eac5f"
+        }
+      ],
+      "repository": "library/python"
+    }
+  },
+  "schema": "MVP7_EXTERNAL_INPUTS_V1",
+  "wheels": [
+    {
+      "bytes": 25478,
+      "filename": "asgiref-3.12.1-py3-none-any.whl",
+      "name": "asgiref",
+      "requires": [
+        "typing_extensions>=4; python_version < \"3.11\"",
+        "pytest; extra == \"tests\"",
+        "pytest-asyncio; extra == \"tests\"",
+        "mypy>=1.14.0; extra == \"mypy\""
+      ],
+      "sha256": "fe386d1c2bff7259ea95929266d12a8cf9a8b5a1c2598402967d8792e7a7c094",
+      "url": "https://files.pythonhosted.org/packages/c0/1b/54f4ad77cd8a584fa70746c47df988e002cf1ee1eba43364d46f87803647/asgiref-3.12.1-py3-none-any.whl",
+      "version": "3.12.1"
+    },
+    {
+      "bytes": 67548,
+      "filename": "attrs-26.1.0-py3-none-any.whl",
+      "name": "attrs",
+      "requires": [],
+      "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309",
+      "url": "https://files.pythonhosted.org/packages/64/b4/17d4b0b2a2dc85a6df63d1157e028ed19f90d4cd97c36717afef2bc2f395/attrs-26.1.0-py3-none-any.whl",
+      "version": "26.1.0"
+    },
+    {
+      "bytes": 23382,
+      "filename": "build-1.3.0-py3-none-any.whl",
+      "name": "build",
+      "requires": [
+        "packaging >= 19.1",
+        "pyproject_hooks",
+        "colorama; os_name == \"nt\"",
+        "importlib-metadata >= 4.6; python_full_version < \"3.10.2\"",
+        "tomli >= 1.1.0; python_version < \"3.11\"",
+        "uv >= 0.1.18 ; extra == \"uv\"",
+        "virtualenv >= 20.11 ; extra == \"virtualenv\" and ( python_version < '3.10')",
+        "virtualenv >= 20.17 ; extra == \"virtualenv\" and ( python_version >= '3.10' and python_version < '3.14')",
+        "virtualenv >= 20.31 ; extra == \"virtualenv\" and ( python_version >= '3.14')"
+      ],
+      "sha256": "7145f0b5061ba90a1500d60bd1b13ca0a8a4cebdd0cc16ed8adf1c0e739f43b4",
+      "url": "https://files.pythonhosted.org/packages/cb/8c/2b30c12155ad8de0cf641d76a8b396a16d2c36bc6d50b621a62b7c4567c1/build-1.3.0-py3-none-any.whl",
+      "version": "1.3.0"
+    },
+    {
+      "bytes": 25335,
+      "filename": "colorama-0.4.6-py2.py3-none-any.whl",
+      "name": "colorama",
+      "requires": [],
+      "sha256": "4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6",
+      "url": "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl",
+      "version": "0.4.6"
+    },
+    {
+      "bytes": 8315563,
+      "filename": "django-5.2.17-py3-none-any.whl",
+      "name": "Django",
+      "requires": [
+        "asgiref>=3.8.1",
+        "sqlparse>=0.3.1",
+        "tzdata; sys_platform == \"win32\"",
+        "argon2-cffi>=19.1.0; extra == \"argon2\"",
+        "bcrypt; extra == \"bcrypt\""
+      ],
+      "sha256": "f04fb3b36ee119e1af4fa1d397d5fd6cf12700f49321e84d4f4c642c5b1973db",
+      "url": "https://files.pythonhosted.org/packages/df/f8/ce120525ca78f12b07daf65786679c5d0b54a75285a8958d3ae55e39da35/django-5.2.17-py3-none-any.whl",
+      "version": "5.2.17"
+    },
+    {
+      "bytes": 1080442,
+      "filename": "djangorestframework-3.16.1-py3-none-any.whl",
+      "name": "djangorestframework",
+      "requires": [
+        "django>=4.2"
+      ],
+      "sha256": "33a59f47fb9c85ede792cbf88bde71893bcda0667bc573f784649521f1102cec",
+      "url": "https://files.pythonhosted.org/packages/b0/ce/bf8b9d3f415be4ac5588545b5fcdbbb841977db1c1d923f7568eeabe1689/djangorestframework-3.16.1-py3-none-any.whl",
+      "version": "3.16.1"
+    },
+    {
+      "bytes": 85029,
+      "filename": "gunicorn-23.0.0-py3-none-any.whl",
+      "name": "gunicorn",
+      "requires": [
+        "packaging",
+        "importlib-metadata ; python_version < \"3.8\"",
+        "eventlet !=0.36.0,>=0.24.1 ; extra == 'eventlet'",
+        "gevent >=1.4.0 ; extra == 'gevent'",
+        "setproctitle ; extra == 'setproctitle'",
+        "gevent ; extra == 'testing'",
+        "eventlet ; extra == 'testing'",
+        "coverage ; extra == 'testing'",
+        "pytest ; extra == 'testing'",
+        "pytest-cov ; extra == 'testing'",
+        "tornado >=0.2 ; extra == 'tornado'"
+      ],
+      "sha256": "ec400d38950de4dfd418cff8328b2c8faed0edb0d517d3394e457c317908ca4d",
+      "url": "https://files.pythonhosted.org/packages/cb/7d/6dac2a6e1eba33ee43f318edbed4ff29151a49b5d37f080aad1e6469bca4/gunicorn-23.0.0-py3-none-any.whl",
+      "version": "23.0.0"
+    },
+    {
+      "bytes": 7484,
+      "filename": "iniconfig-2.3.0-py3-none-any.whl",
+      "name": "iniconfig",
+      "requires": [],
+      "sha256": "f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12",
+      "url": "https://files.pythonhosted.org/packages/cb/b1/3846dd7f199d53cb17f49cba7e651e9ce294d8497c8c150530ed11865bb8/iniconfig-2.3.0-py3-none-any.whl",
+      "version": "2.3.0"
+    },
+    {
+      "bytes": 90630,
+      "filename": "jsonschema-4.26.0-py3-none-any.whl",
+      "name": "jsonschema",
+      "requires": [
+        "attrs>=22.2.0",
+        "jsonschema-specifications>=2023.03.6",
+        "referencing>=0.28.4",
+        "rpds-py>=0.25.0",
+        "fqdn; extra == 'format'",
+        "idna; extra == 'format'",
+        "isoduration; extra == 'format'",
+        "jsonpointer>1.13; extra == 'format'",
+        "rfc3339-validator; extra == 'format'",
+        "rfc3987; extra == 'format'",
+        "uri-template; extra == 'format'",
+        "webcolors>=1.11; extra == 'format'",
+        "fqdn; extra == 'format-nongpl'",
+        "idna; extra == 'format-nongpl'",
+        "isoduration; extra == 'format-nongpl'",
+        "jsonpointer>1.13; extra == 'format-nongpl'",
+        "rfc3339-validator; extra == 'format-nongpl'",
+        "rfc3986-validator>0.1.0; extra == 'format-nongpl'",
+        "rfc3987-syntax>=1.1.0; extra == 'format-nongpl'",
+        "uri-template; extra == 'format-nongpl'",
+        "webcolors>=24.6.0; extra == 'format-nongpl'"
+      ],
+      "sha256": "d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce",
+      "url": "https://files.pythonhosted.org/packages/69/90/f63fb5873511e014207a475e2bb4e8b2e570d655b00ac19a9a0ca0a385ee/jsonschema-4.26.0-py3-none-any.whl",
+      "version": "4.26.0"
+    },
+    {
+      "bytes": 18437,
+      "filename": "jsonschema_specifications-2025.9.1-py3-none-any.whl",
+      "name": "jsonschema-specifications",
+      "requires": [
+        "referencing>=0.31.0"
+      ],
+      "sha256": "98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe",
+      "url": "https://files.pythonhosted.org/packages/41/45/1a4ed80516f02155c51f51e8cedb3c1902296743db0bbc66608a0db2814f/jsonschema_specifications-2025.9.1-py3-none-any.whl",
+      "version": "2025.9.1"
+    },
+    {
+      "bytes": 129956,
+      "filename": "packaging-26.3-py3-none-any.whl",
+      "name": "packaging",
+      "requires": [],
+      "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+      "url": "https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl",
+      "version": "26.3"
+    },
+    {
+      "bytes": 20538,
+      "filename": "pluggy-1.6.0-py3-none-any.whl",
+      "name": "pluggy",
+      "requires": [
+        "pre-commit; extra == \"dev\"",
+        "tox; extra == \"dev\"",
+        "pytest; extra == \"testing\"",
+        "pytest-benchmark; extra == \"testing\"",
+        "coverage; extra == \"testing\""
+      ],
+      "sha256": "e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746",
+      "url": "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl",
+      "version": "1.6.0"
+    },
+    {
+      "bytes": 213598,
+      "filename": "psycopg-3.3.5-py3-none-any.whl",
+      "name": "psycopg",
+      "requires": [
+        "typing-extensions>=4.6; python_version < \"3.13\"",
+        "tzdata; sys_platform == \"win32\"",
+        "psycopg-c==3.3.5; implementation_name != \"pypy\" and extra == \"c\"",
+        "psycopg-binary==3.3.5; implementation_name != \"pypy\" and extra == \"binary\"",
+        "psycopg-pool; extra == \"pool\"",
+        "anyio>=4.0; extra == \"test\"",
+        "mypy>=2.1.0; implementation_name != \"pypy\" and extra == \"test\"",
+        "pproxy>=2.7; extra == \"test\"",
+        "pytest>=6.2.5; extra == \"test\"",
+        "pytest-cov>=3.0; extra == \"test\"",
+        "pytest-randomly>=3.5; extra == \"test\"",
+        "ast-comments>=1.1.2; extra == \"dev\"",
+        "black>=26.1.0; extra == \"dev\"",
+        "codespell>=2.2; extra == \"dev\"",
+        "cython-lint>=0.21; extra == \"dev\"",
+        "dnspython>=2.1; extra == \"dev\"",
+        "flake8>=4.0; extra == \"dev\"",
+        "isort[colors]<9.0,>=6.0; extra == \"dev\"",
+        "isort-psycopg; extra == \"dev\"",
+        "mypy>=2.1.0; extra == \"dev\"",
+        "pre-commit>=4.0.1; extra == \"dev\"",
+        "types-setuptools>=57.4; extra == \"dev\"",
+        "types-shapely>=2.0; extra == \"dev\"",
+        "wheel>=0.37; extra == \"dev\"",
+        "Sphinx>=9.1; extra == \"docs\"",
+        "furo==2025.12.19; extra == \"docs\"",
+        "sphinx-autobuild>=2025.8.25; extra == \"docs\"",
+        "sphinx-autodoc-typehints>=3.10.2; extra == \"docs\""
+      ],
+      "sha256": "ce5aa5cdb4f9379f00f487590e5890bfa7df9a164648c969ffa628505e21af4e",
+      "url": "https://files.pythonhosted.org/packages/3d/2e/d0a645bcaadde68bd6d93c43f02f14b0191bdda367ce3f7722abe3da744a/psycopg-3.3.5-py3-none-any.whl",
+      "version": "3.3.5"
+    },
+    {
+      "bytes": 5227752,
+      "filename": "psycopg_binary-3.3.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "name": "psycopg-binary",
+      "requires": [],
+      "sha256": "682a17a57415c3ca1731eec018ed031f012ffcb81ba74806eb219cb396065672",
+      "url": "https://files.pythonhosted.org/packages/21/d1/0f244dfef389e52e9dc3056f2a9033d1f6901e97d24d9a9c8b836e32ab6b/psycopg_binary-3.3.5-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "version": "3.3.5"
+    },
+    {
+      "bytes": 1250147,
+      "filename": "pygments-2.21.0-py3-none-any.whl",
+      "name": "Pygments",
+      "requires": [
+        "colorama>=0.4.6; extra == 'windows-terminal'"
+      ],
+      "sha256": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9",
+      "url": "https://files.pythonhosted.org/packages/71/46/17f022dd3e953bf20a04a028a21ec746d942f8d2af30fa0f124fa0e6a684/pygments-2.21.0-py3-none-any.whl",
+      "version": "2.21.0"
+    },
+    {
+      "bytes": 10216,
+      "filename": "pyproject_hooks-1.2.0-py3-none-any.whl",
+      "name": "pyproject_hooks",
+      "requires": [],
+      "sha256": "9e5c6bfa8dcc30091c74b0cf803c81fdd29d94f01992a7707bc97babb1141913",
+      "url": "https://files.pythonhosted.org/packages/bd/24/12818598c362d7f300f18e74db45963dbcb85150324092410c8b49405e42/pyproject_hooks-1.2.0-py3-none-any.whl",
+      "version": "1.2.0"
+    },
+    {
+      "bytes": 365750,
+      "filename": "pytest-8.4.2-py3-none-any.whl",
+      "name": "pytest",
+      "requires": [
+        "colorama>=0.4; sys_platform == \"win32\"",
+        "exceptiongroup>=1; python_version < \"3.11\"",
+        "iniconfig>=1",
+        "packaging>=20",
+        "pluggy<2,>=1.5",
+        "pygments>=2.7.2",
+        "tomli>=1; python_version < \"3.11\"",
+        "argcomplete; extra == \"dev\"",
+        "attrs>=19.2; extra == \"dev\"",
+        "hypothesis>=3.56; extra == \"dev\"",
+        "mock; extra == \"dev\"",
+        "requests; extra == \"dev\"",
+        "setuptools; extra == \"dev\"",
+        "xmlschema; extra == \"dev\""
+      ],
+      "sha256": "872f880de3fc3a5bdc88a11b39c9710c3497a547cfa9320bc3c5e62fbf272e79",
+      "url": "https://files.pythonhosted.org/packages/a8/a4/20da314d277121d6534b3a980b29035dcd51e6744bd79075a6ce8fa4eb8d/pytest-8.4.2-py3-none-any.whl",
+      "version": "8.4.2"
+    },
+    {
+      "bytes": 25281,
+      "filename": "pytest_django-4.11.1-py3-none-any.whl",
+      "name": "pytest-django",
+      "requires": [
+        "pytest>=7.0.0",
+        "sphinx; extra == \"docs\"",
+        "sphinx_rtd_theme; extra == \"docs\"",
+        "Django; extra == \"testing\"",
+        "django-configurations>=2.0; extra == \"testing\""
+      ],
+      "sha256": "1b63773f648aa3d8541000c26929c1ea63934be1cfa674c76436966d73fe6a10",
+      "url": "https://files.pythonhosted.org/packages/be/ac/bd0608d229ec808e51a21044f3f2f27b9a37e7a0ebaca7247882e67876af/pytest_django-4.11.1-py3-none-any.whl",
+      "version": "4.11.1"
+    },
+    {
+      "bytes": 26766,
+      "filename": "referencing-0.37.0-py3-none-any.whl",
+      "name": "referencing",
+      "requires": [
+        "attrs>=22.2.0",
+        "rpds-py>=0.7.0",
+        "typing-extensions>=4.4.0; python_version < '3.13'"
+      ],
+      "sha256": "381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231",
+      "url": "https://files.pythonhosted.org/packages/2c/58/ca301544e1fa93ed4f80d724bf5b194f6e4b945841c5bfd555878eea9fcb/referencing-0.37.0-py3-none-any.whl",
+      "version": "0.37.0"
+    },
+    {
+      "bytes": 366189,
+      "filename": "rpds_py-2026.6.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "name": "rpds-py",
+      "requires": [],
+      "sha256": "ecabd69db66de867690f9797f2f8fa27ba501bbc24540cbdbdc649cd15888ba6",
+      "url": "https://files.pythonhosted.org/packages/04/8f/d2f3f532616be4d06c316ef119683e832bd3d41e112bf3a88f4151c95b17/rpds_py-2026.6.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "version": "2026.6.3"
+    },
+    {
+      "bytes": 1201486,
+      "filename": "setuptools-80.9.0-py3-none-any.whl",
+      "name": "setuptools",
+      "requires": [
+        "pytest!=8.1.*,>=6; extra == \"test\"",
+        "virtualenv>=13.0.0; extra == \"test\"",
+        "wheel>=0.44.0; extra == \"test\"",
+        "pip>=19.1; extra == \"test\"",
+        "packaging>=24.2; extra == \"test\"",
+        "jaraco.envs>=2.2; extra == \"test\"",
+        "pytest-xdist>=3; extra == \"test\"",
+        "jaraco.path>=3.7.2; extra == \"test\"",
+        "build[virtualenv]>=1.0.3; extra == \"test\"",
+        "filelock>=3.4.0; extra == \"test\"",
+        "ini2toml[lite]>=0.14; extra == \"test\"",
+        "tomli-w>=1.0.0; extra == \"test\"",
+        "pytest-timeout; extra == \"test\"",
+        "pytest-perf; sys_platform != \"cygwin\" and extra == \"test\"",
+        "jaraco.develop>=7.21; (python_version >= \"3.9\" and sys_platform != \"cygwin\") and extra == \"test\"",
+        "pytest-home>=0.5; extra == \"test\"",
+        "pytest-subprocess; extra == \"test\"",
+        "pyproject-hooks!=1.1; extra == \"test\"",
+        "jaraco.test>=5.5; extra == \"test\"",
+        "sphinx>=3.5; extra == \"doc\"",
+        "jaraco.packaging>=9.3; extra == \"doc\"",
+        "rst.linker>=1.9; extra == \"doc\"",
+        "furo; extra == \"doc\"",
+        "sphinx-lint; extra == \"doc\"",
+        "jaraco.tidelift>=1.4; extra == \"doc\"",
+        "pygments-github-lexers==0.0.5; extra == \"doc\"",
+        "sphinx-favicon; extra == \"doc\"",
+        "sphinx-inline-tabs; extra == \"doc\"",
+        "sphinx-reredirects; extra == \"doc\"",
+        "sphinxcontrib-towncrier; extra == \"doc\"",
+        "sphinx-notfound-page<2,>=1; extra == \"doc\"",
+        "pyproject-hooks!=1.1; extra == \"doc\"",
+        "towncrier<24.7; extra == \"doc\"",
+        "packaging>=24.2; extra == \"core\"",
+        "more_itertools>=8.8; extra == \"core\"",
+        "jaraco.text>=3.7; extra == \"core\"",
+        "importlib_metadata>=6; python_version < \"3.10\" and extra == \"core\"",
+        "tomli>=2.0.1; python_version < \"3.11\" and extra == \"core\"",
+        "wheel>=0.43.0; extra == \"core\"",
+        "platformdirs>=4.2.2; extra == \"core\"",
+        "jaraco.functools>=4; extra == \"core\"",
+        "more_itertools; extra == \"core\"",
+        "pytest-checkdocs>=2.4; extra == \"check\"",
+        "pytest-ruff>=0.2.1; sys_platform != \"cygwin\" and extra == \"check\"",
+        "ruff>=0.8.0; sys_platform != \"cygwin\" and extra == \"check\"",
+        "pytest-cov; extra == \"cover\"",
+        "pytest-enabler>=2.2; extra == \"enabler\"",
+        "pytest-mypy; extra == \"type\"",
+        "mypy==1.14.*; extra == \"type\"",
+        "importlib_metadata>=7.0.2; python_version < \"3.10\" and extra == \"type\"",
+        "jaraco.develop>=7.21; sys_platform != \"cygwin\" and extra == \"type\""
+      ],
+      "sha256": "062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922",
+      "url": "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl",
+      "version": "80.9.0"
+    },
+    {
+      "bytes": 50070,
+      "filename": "sqlparse-0.6.0-py3-none-any.whl",
+      "name": "sqlparse",
+      "requires": [
+        "build; extra == 'dev'",
+        "furo; extra == 'doc'",
+        "sphinx; extra == 'doc'"
+      ],
+      "sha256": "b861c0288ce2fa56209a9a6412d2e066ac664b3873b89c26c9d8415e8e32996f",
+      "url": "https://files.pythonhosted.org/packages/d9/50/f00935da0ec7cbf325f8dc4f772ae46fbc7b672dd62876e73f0a94adda57/sqlparse-0.6.0-py3-none-any.whl",
+      "version": "0.6.0"
+    },
+    {
+      "bytes": 45571,
+      "filename": "typing_extensions-4.16.0-py3-none-any.whl",
+      "name": "typing_extensions",
+      "requires": [],
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "url": "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl",
+      "version": "4.16.0"
+    },
+    {
+      "bytes": 347494,
+      "filename": "tzdata-2026.4-py2.py3-none-any.whl",
+      "name": "tzdata",
+      "requires": [],
+      "sha256": "c2169a8b0a7a5e9674da5a135ccdfb2b3e671b333ed9fed17b41f73c34476e81",
+      "url": "https://files.pythonhosted.org/packages/f9/bc/8737e8d54cf51106118039b83f485a4783112fab49ea9d044b234978a46e/tzdata-2026.4-py2.py3-none-any.whl",
+      "version": "2026.4"
+    },
+    {
+      "bytes": 72494,
+      "filename": "wheel-0.45.1-py3-none-any.whl",
+      "name": "wheel",
+      "requires": [
+        "pytest >= 6.0.0 ; extra == \"test\"",
+        "setuptools >= 65 ; extra == \"test\""
+      ],
+      "sha256": "708e7481cc80179af0e556bbf0cc00b8444c7321e2700b8d8580231d13017248",
+      "url": "https://files.pythonhosted.org/packages/0b/2c/87f3254fd8ffd29e4c02732eee68a83a1d3c346ae39bc6822dcbcb697f2b/wheel-0.45.1-py3-none-any.whl",
+      "version": "0.45.1"
+    }
+  ],
+  "windows_wheels": [
+    {
+      "bytes": 67548,
+      "filename": "attrs-26.1.0-py3-none-any.whl",
+      "name": "attrs",
+      "requires": [],
+      "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309",
+      "url": "https://files.pythonhosted.org/packages/64/b4/17d4b0b2a2dc85a6df63d1157e028ed19f90d4cd97c36717afef2bc2f395/attrs-26.1.0-py3-none-any.whl",
+      "version": "26.1.0"
+    },
+    {
+      "bytes": 90630,
+      "filename": "jsonschema-4.26.0-py3-none-any.whl",
+      "name": "jsonschema",
+      "requires": [
+        "attrs>=22.2.0",
+        "jsonschema-specifications>=2023.03.6",
+        "referencing>=0.28.4",
+        "rpds-py>=0.25.0",
+        "fqdn; extra == 'format'",
+        "idna; extra == 'format'",
+        "isoduration; extra == 'format'",
+        "jsonpointer>1.13; extra == 'format'",
+        "rfc3339-validator; extra == 'format'",
+        "rfc3987; extra == 'format'",
+        "uri-template; extra == 'format'",
+        "webcolors>=1.11; extra == 'format'",
+        "fqdn; extra == 'format-nongpl'",
+        "idna; extra == 'format-nongpl'",
+        "isoduration; extra == 'format-nongpl'",
+        "jsonpointer>1.13; extra == 'format-nongpl'",
+        "rfc3339-validator; extra == 'format-nongpl'",
+        "rfc3986-validator>0.1.0; extra == 'format-nongpl'",
+        "rfc3987-syntax>=1.1.0; extra == 'format-nongpl'",
+        "uri-template; extra == 'format-nongpl'",
+        "webcolors>=24.6.0; extra == 'format-nongpl'"
+      ],
+      "sha256": "d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce",
+      "url": "https://files.pythonhosted.org/packages/69/90/f63fb5873511e014207a475e2bb4e8b2e570d655b00ac19a9a0ca0a385ee/jsonschema-4.26.0-py3-none-any.whl",
+      "version": "4.26.0"
+    },
+    {
+      "bytes": 18437,
+      "filename": "jsonschema_specifications-2025.9.1-py3-none-any.whl",
+      "name": "jsonschema-specifications",
+      "requires": [
+        "referencing>=0.31.0"
+      ],
+      "sha256": "98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe",
+      "url": "https://files.pythonhosted.org/packages/41/45/1a4ed80516f02155c51f51e8cedb3c1902296743db0bbc66608a0db2814f/jsonschema_specifications-2025.9.1-py3-none-any.whl",
+      "version": "2025.9.1"
+    },
+    {
+      "bytes": 26766,
+      "filename": "referencing-0.37.0-py3-none-any.whl",
+      "name": "referencing",
+      "requires": [
+        "attrs>=22.2.0",
+        "rpds-py>=0.7.0",
+        "typing-extensions>=4.4.0; python_version < '3.13'"
+      ],
+      "sha256": "381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231",
+      "url": "https://files.pythonhosted.org/packages/2c/58/ca301544e1fa93ed4f80d724bf5b194f6e4b945841c5bfd555878eea9fcb/referencing-0.37.0-py3-none-any.whl",
+      "version": "0.37.0"
+    },
+    {
+      "bytes": 45571,
+      "filename": "typing_extensions-4.16.0-py3-none-any.whl",
+      "name": "typing_extensions",
+      "requires": [],
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "url": "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl",
+      "version": "4.16.0"
+    },
+    {
+      "bytes": 220394,
+      "filename": "rpds_py-2026.6.3-cp312-cp312-win_amd64.whl",
+      "name": "rpds-py",
+      "requires": [],
+      "sha256": "2c958bf94822e9290a40aaf2a822d4bc5c88099093e3948ad6c571eca9272e5f",
+      "url": "https://files.pythonhosted.org/packages/04/3a/f0ee4d4dde9d3b69dedf1b5f74e7a40017046d55052d173e418c6a94f960/rpds_py-2026.6.3-cp312-cp312-win_amd64.whl",
+      "version": "2026.6.3"
+    }
+  ]
+}

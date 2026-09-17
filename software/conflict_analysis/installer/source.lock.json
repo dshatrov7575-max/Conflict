@@ -1,0 +1,80 @@
+{
+  "acceptance_run": 35216652773,
+  "installer_branch": "codex/mvp7-r1-windows-setup-20260917",
+  "installer_message": "build(installer): add MVP7 R1 Windows setup candidate",
+  "installer_parent": "c8263b81adb8fcb90ec92b65342f9620884c929b",
+  "migration": {
+    "blob": "8a2a5b3dfa750932ddb17228dfb476c5e3e88b03",
+    "path": "domain/migrations/0019_analysis_geography.py"
+  },
+  "r1_regression_oracle": {
+    "admin0": 9,
+    "admin1": 16,
+    "analysis_browser": "PASS",
+    "disputed": 48,
+    "geography_browser": "PASS",
+    "geography_wheel_assets": 22,
+    "inherited_chromium": 8,
+    "isolated_wheel_geography_runtime": "PASS",
+    "natural_earth_runtime_files": 24,
+    "places": 439,
+    "postgresql_foundation_analysis": 379,
+    "product_postgresql": 55,
+    "product_sqlite": 55,
+    "sqlite_expected_skips": 28,
+    "sqlite_foundation_analysis": 351,
+    "studio_lifecycle_postgresql": 15,
+    "studio_lifecycle_sqlite": 15
+  },
+  "source": {
+    "base_head": "c6c7118080ab1a1dcb86216f4092dabcf8125be7",
+    "base_tree": "5a4a40431e72fb6b942b895225ce11bba2898052",
+    "head": "85a253126bf270664c4786d159994e7359b5d2c5",
+    "ordinary_commits": [
+      "ba09340fecc446f677f8b4cf0c4ba3e565ebcee5",
+      "2731ecd26dde5f321507ca237c4d18167d8bd631",
+      "85a253126bf270664c4786d159994e7359b5d2c5"
+    ],
+    "parent": "2731ecd26dde5f321507ca237c4d18167d8bd631",
+    "predecessors": [
+      {
+        "acceptance": "#85/5530604165",
+        "head": "bfbd6b94c98ad27378c1452e38a69bf8b1fb169f",
+        "name": "F0L",
+        "tree": "4806308745d46726c71eec38b3acac71f31b1542"
+      },
+      {
+        "acceptance": "#84/5561033107",
+        "head": "d2f5a881e10dbb688371e8c5add6bf9375404738",
+        "name": "F1",
+        "tree": "7f5fd4f321282a48a799698861ce6f2bd3940cd1"
+      },
+      {
+        "acceptance": "#23/5585330480",
+        "head": "68b14882a06b2e90710ebd06e584dc5300fdfe7e",
+        "name": "FD08",
+        "tree": "5969ee705ae935bf305a1b2531bc3bc77ade03cb"
+      },
+      {
+        "acceptance": "#25/5591235510",
+        "head": "319450a64cb381df2e392027c64de157e2ed830c",
+        "name": "G7",
+        "tree": "95a8a2a5a7248dd3ec030963c3b25709d49364b0"
+      },
+      {
+        "acceptance": "#29/5624279071",
+        "head": "df537ee138088a1fc691cc89a257259817db4644",
+        "name": "G8",
+        "tree": "67739a84d7bcc9406cbb830d9a58656b05eee06a"
+      },
+      {
+        "acceptance": "#26/5632713857",
+        "head": "561ef5327bf655a558adb21c54d0fdf0559d7024",
+        "name": "G9",
+        "tree": "5b209c782e1ac1a4783b01391dd59d813559ce57"
+      }
+    ],
+    "source_date_epoch": 1789590115,
+    "tree": "5567183dbe16fc6c7c8caac051b7694f37b92457"
+  }
+}

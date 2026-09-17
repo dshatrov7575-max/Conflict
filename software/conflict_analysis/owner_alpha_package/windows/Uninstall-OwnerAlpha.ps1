@@ -1,14 +1,8 @@
 [CmdletBinding()]
-param([string]$PackageRoot=(Split-Path $PSScriptRoot),[string]$StateRoot='',[int]$Port=8765,
-      [string]$Confirmation='')
+param([string]$PackageRoot=(Split-Path $PSScriptRoot),[string]$StateRoot='',[int]$Port=8765,[string]$Confirmation='')
 Import-Module (Join-Path $PSScriptRoot 'OwnerAlpha.Common.psm1') -Force
 $context=Get-OwnerContext $PackageRoot $StateRoot $Port
-Assert-OwnerInstalled $context
-Confirm-OwnerAction 'UNINSTALL' $context.record.instance $Confirmation
-$null=Backup-OwnerState $context ('BACKUP '+$context.record.instance)
-$null=Stop-OwnerState $context
-$null=Invoke-OwnerProcess "$env:WINDIR\System32\wsl.exe" @('--unregister',$context.record.distribution)
-$context.record.phase='UNINSTALLED'
-Write-OwnerJson $context.stateFile $context.record
-@{phase='UNINSTALLED';instance=$context.record.instance;privateBackupsPreserved=$true;immutableZipPreserved=$true} | ConvertTo-Json
-
+if ($context.record) { $null=Stop-OwnerState $context }
+# The outer uninstaller deletes program files only. WSL distribution, DB,
+# installation.json and every backup remain under the external StateRoot.
+@{phase='PROGRAM_REMOVAL_READY';statePreserved=$true;backupsPreserved=$true} | ConvertTo-Json

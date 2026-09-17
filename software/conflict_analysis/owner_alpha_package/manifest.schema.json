@@ -14,14 +14,16 @@
     "test_registry",
     "payload",
     "artifact_order",
-    "nonclaims"
+    "nonclaims",
+    "delivery",
+    "acceptance"
   ],
   "properties": {
     "schema": {
-      "const": "OWNER_ALPHA_PACKAGE_MANIFEST_V2"
+      "const": "MVP7_PACKAGE_MANIFEST_V1"
     },
     "package_version": {
-      "const": "0.1.0-alpha.1"
+      "const": "0.7.0-r1-candidate"
     },
     "source": {
       "type": "object",
@@ -83,8 +85,8 @@
         },
         "ordinary_commits": {
           "type": "array",
-          "minItems": 4,
-          "maxItems": 4,
+          "minItems": 3,
+          "maxItems": 3,
           "uniqueItems": true,
           "items": {
             "$ref": "#/$defs/git"
@@ -105,10 +107,10 @@
       ],
       "properties": {
         "path": {
-          "const": "domain/migrations/0018_workspace_assessment_projection.py"
+          "const": "domain/migrations/0019_analysis_geography.py"
         },
         "blob": {
-          "const": "292a8eb4abafeef80d6efc7d3c2d4cda5f771fd9"
+          "const": "8a2a5b3dfa750932ddb17228dfb476c5e3e88b03"
         }
       }
     },
@@ -142,8 +144,8 @@
       "properties": {
         "portable": {
           "type": "array",
-          "minItems": 10,
-          "maxItems": 10,
+          "minItems": 11,
+          "maxItems": 11,
           "uniqueItems": true,
           "items": {
             "type": "string"
@@ -190,6 +192,12 @@
       "additionalProperties": {
         "const": false
       }
+    },
+    "delivery": {
+      "type": "object"
+    },
+    "acceptance": {
+      "type": "object"
     }
   },
   "$defs": {

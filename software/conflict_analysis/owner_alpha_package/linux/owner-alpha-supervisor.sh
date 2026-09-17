@@ -122,7 +122,14 @@ def provision_empty(port):
     start_pg()
     sql("CREATE ROLE owneralpha LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION;\n"
         "CREATE DATABASE conflict_analysis OWNER owneralpha;\n",database="postgres")
-def users(create=False):
+def profile_groups(profile, project_id):
+    names={"studio-project:"+str(project_id)}
+    if profile in ("STUDIO_PUBLISHER","PLAYER_ASSESSOR"):
+        names.add("analysis-reader:"+str(project_id))
+    if profile=="STUDIO_PUBLISHER":
+        names.add("analysis-location-editor:"+str(project_id))
+    return names
+def users(create=False, validate_scope=True):
     from django.contrib.auth import get_user_model
     from django.contrib.auth.models import Permission
     from django.db import transaction
@@ -159,14 +166,43 @@ def users(create=False):
              "BLOCKED_G10_ACCESS_PROVISIONING_GAP")
         need(frozenset(user.get_all_permissions())==permissions[profile],
              "BLOCKED_G10_ACCESS_PROVISIONING_GAP")
-        for group in user.groups.all():
-            need(re.fullmatch(r"studio-project:[0-9a-f-]{36}",group.name)
+        groups=list(user.groups.all())
+        for group in groups:
+            need(re.fullmatch(r"(?:studio-project|analysis-reader|analysis-location-editor):[0-9a-f-]{36}",group.name)
                  and not group.permissions.exists(),"BLOCKED_G10_ACCESS_PROVISIONING_GAP")
+        if validate_scope and not create:
+            from domain.models import Project
+            from domain.demo_data import PROJECT_CODE, stable_demo_uuid
+            actual={g.name for g in groups}
+            scoped={uuid.UUID(name.split(":",1)[1]) for name in actual if name.startswith("studio-project:")}
+            need(stable_demo_uuid("project",PROJECT_CODE) in scoped,
+                 "BLOCKED_G10_ACCESS_PROVISIONING_GAP")
+            need(Project.objects.filter(pk__in=scoped).count()==len(scoped),
+                 "BLOCKED_G10_ACCESS_PROVISIONING_GAP")
+            expected=set().union(*(profile_groups(profile,p) for p in scoped))
+            need(actual==expected,"BLOCKED_G10_ACCESS_PROVISIONING_GAP")
         if profile=="PLAYER_ASSESSOR": assessment_principal(user)
         else: need(studio_principal_from_user(user).role.value==profile,
                    "BLOCKED_G10_ACCESS_PROVISIONING_GAP")
         verified[profile]=user
     return verified
+def seed_demo():
+    from django.contrib.auth.models import Group
+    from domain.services.seed import seed_zhanaozen_demo
+    from domain.services.geography import install_pinned_geographic_areas
+    from domain.services.project_definitions import project_access_group_name
+    from domain.services.analysis_admission import analysis_reader_group_name, analysis_location_editor_group_name
+    project=seed_zhanaozen_demo()
+    install_pinned_geographic_areas()
+    verified=users(validate_scope=False)
+    for profile,user in verified.items():
+        for name in profile_groups(profile,project.pk):
+            group,_=Group.objects.get_or_create(name=name)
+            need(not group.permissions.exists(),"BLOCKED_G10_ACCESS_PROVISIONING_GAP")
+            user.groups.add(group)
+    users()
+
+
 def migrate_clean():
     from django.core.management import call_command
     from django.db import connection
@@ -174,9 +210,13 @@ def migrate_clean():
     from django.core.checks import run_checks, ERROR
     executor=MigrationExecutor(connection)
     leaves=executor.loader.graph.leaf_nodes("domain")
-    need(leaves==[("domain","0018_workspace_assessment_projection")],
+    need(leaves==[("domain","0019_analysis_geography")],
          "BLOCKED_G10_UNAUTHORIZED_MIGRATION")
     call_command("migrate",interactive=False,verbosity=0)
+    executor=MigrationExecutor(connection)
+    need(executor.loader.graph.leaf_nodes("domain")==[("domain","0019_analysis_geography")]
+         and not executor.migration_plan(executor.loader.graph.leaf_nodes()),
+         "BLOCKED_G10_UNAUTHORIZED_MIGRATION")
     call_command("makemigrations",check=True,dry_run=True,verbosity=0)
     need(not [e for e in run_checks(include_deployment_checks=True) if e.level>=ERROR],
          "BLOCKED_G10_RUNTIME_IDENTITY_DRIFT")
@@ -218,7 +258,10 @@ def grant(project_id):
     need(not group.permissions.exists(),"BLOCKED_G10_ACCESS_PROVISIONING_GAP")
     with transaction.atomic():
         for profile in ("STUDIO_PUBLISHER","PLAYER_ASSESSOR"):
-            verified[profile].groups.add(group)
+            for name in profile_groups(profile,project_id):
+                scoped,_=Group.objects.get_or_create(name=name)
+                need(not scoped.permissions.exists(),"BLOCKED_G10_ACCESS_PROVISIONING_GAP")
+                verified[profile].groups.add(scoped)
     users()
     return {"project_id":str(project_id),"granted":["STUDIO_PUBLISHER","PLAYER_ASSESSOR"]}
 def start_services():
@@ -228,7 +271,8 @@ def start_services():
     from django.db import connection
     from django.db.migrations.executor import MigrationExecutor
     executor=MigrationExecutor(connection)
-    need(not executor.migration_plan(executor.loader.graph.leaf_nodes()),
+    need(executor.loader.graph.leaf_nodes("domain")==[("domain","0019_analysis_geography")]
+         and not executor.migration_plan(executor.loader.graph.leaf_nodes()),
          "BLOCKED_G10_UNAUTHORIZED_MIGRATION")
     RUN.mkdir(mode=0o700,exist_ok=True); os.chown(RUN,18001,18001)
     (RUN/"nginx.conf").write_text((PACKAGE/"nginx.conf").read_text().replace("__PORT__",str(s["port"])))
@@ -420,7 +464,8 @@ def restore_stream():
     from django.db import connection
     from django.db.migrations.executor import MigrationExecutor
     executor=MigrationExecutor(connection)
-    need(not executor.migration_plan(executor.loader.graph.leaf_nodes()),
+    need(executor.loader.graph.leaf_nodes("domain")==[("domain","0019_analysis_geography")]
+         and not executor.migration_plan(executor.loader.graph.leaf_nodes()),
          "BLOCKED_G10_UNAUTHORIZED_MIGRATION")
     session_revoke()
     need(graph(False)==read(candidate/"logical-without-sessions.json"))
@@ -445,7 +490,7 @@ def main():
     if command in ("initialize","restore-empty"):
         provision_empty(int(sys.argv[2]))
         if command=="restore-empty": return {"phase":"EMPTY"}
-        configure_env(); migrate_clean(); users(create=True)
+        configure_env(); migrate_clean(); users(create=True); seed_demo()
         s=state(); s["phase"]="STOPPED"; write(STATE/"state.json",s)
         return {"phase":"STOPPED","user_pks":read(STATE/"principals.json")}
     if command=="health":
