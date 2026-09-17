@@ -38,7 +38,7 @@ def test_manifest_schema_exact_chain_refs_versions_hashes_artifacts_and_nonclaim
             if args[:3]==("show","-s","--format=%P") and args[3]==real_git(repo,"rev-parse","HEAD"):return bad_parent
             return real_git(repo,*args)
         with patch.object(verify,"git",side_effect=fake),pytest.raises(verify.GateError):verify.source_identity(repo)
-    for count in ("0","2"):
+    for count in ("0","1","3"):
         def fake(repo,*args):
             if args[:2]==("rev-list","--count"):return count
             return real_git(repo,*args)
@@ -50,6 +50,7 @@ def test_manifest_schema_exact_chain_refs_versions_hashes_artifacts_and_nonclaim
     assert len(manifest["test_registry"]["portable"])==11
     for family,key,value in (
         ("source","base_head","0"*40),("source","base_tree","0"*40),
+        ("delivery","parent",verify.LOCK["installer_parent"]),
         ("migration","blob","0"*40),("nonclaims","final_windows_acceptance",True),
         ("runtime","offline_install",False),("runtime","python","3.12.0")):
         broken=copy.deepcopy(manifest); broken[family][key]=value

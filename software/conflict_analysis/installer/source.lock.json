@@ -1,6 +1,8 @@
 {
   "acceptance_run": 35216652773,
+  "correction_message": "fix(installer): repair private runtime service paths",
   "installer_branch": "codex/mvp7-r1-windows-setup-20260917",
+  "installer_commit_a": "21c4812a8eaf8d503454699c191d99abaf538036",
   "installer_message": "build(installer): add MVP7 R1 Windows setup candidate",
   "installer_parent": "c8263b81adb8fcb90ec92b65342f9620884c929b",
   "migration": {

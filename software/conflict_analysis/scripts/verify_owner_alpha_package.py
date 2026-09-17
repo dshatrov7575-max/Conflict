@@ -105,18 +105,36 @@ def allowed_installer_path(path: str) -> bool:
                         "software/conflict_analysis/scripts/verify_owner_alpha_windows_evidence.py"}
             or (path.startswith("software/conflict_analysis/docs/") and "/" not in path.removeprefix("software/conflict_analysis/docs/") and "installer" in path))
 
+CORRECTIVE_PATHS = frozenset({
+    "software/conflict_analysis/owner_alpha_package/linux/nginx.conf",
+    "software/conflict_analysis/owner_alpha_package/linux/owner-alpha-supervisor.sh",
+    "software/conflict_analysis/owner_alpha_package/tests/test_linux_contract.py",
+    "software/conflict_analysis/owner_alpha_package/tests/test_manifest.py",
+    "software/conflict_analysis/installer/test_contract.py",
+    "software/conflict_analysis/installer/source.lock.json",
+    "software/conflict_analysis/scripts/verify_owner_alpha_package.py",
+})
+
 def delivery_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
-    head=git(repo,"rev-parse","HEAD");parent=LOCK["installer_parent"]
+    head=git(repo,"rev-parse","HEAD")
+    base=LOCK["installer_parent"]  # Accepted R1 run still belongs to F, never A.
+    first=LOCK["installer_commit_a"]
     require(git(repo,"branch","--show-current") in ("",LOCK["installer_branch"]),"BLOCKED_MVP7_HISTORY","branch")
+    require(git(repo,"show","-s","--format=%P",first)==base,"BLOCKED_MVP7_HISTORY","A ordinary parent F")
+    require(git(repo,"show","-s","--format=%B",first)==LOCK["installer_message"],"BLOCKED_MVP7_HISTORY","A message")
     if final:
         require(not git(repo,"status","--porcelain=v1","--untracked-files=all"),"BLOCKED_MVP7_HISTORY","clean committed checkout required")
-        require(git(repo,"show","-s","--format=%P",head)==parent,"BLOCKED_MVP7_HISTORY","one ordinary parent")
-        require(git(repo,"rev-list","--count",parent+".."+head)=="1","BLOCKED_MVP7_HISTORY","one commit")
-        require(git(repo,"show","-s","--format=%B",head)==LOCK["installer_message"],"BLOCKED_MVP7_HISTORY","message")
+        require(git(repo,"show","-s","--format=%P",head)==first,"BLOCKED_MVP7_HISTORY","B ordinary parent A")
+        require(git(repo,"rev-list","--count",base+".."+head)=="2","BLOCKED_MVP7_HISTORY","two installer commits")
+        require(git(repo,"show","-s","--format=%B",head)==LOCK["correction_message"],"BLOCKED_MVP7_HISTORY","B message")
+        delta=git(repo,"diff","--name-status","--no-renames",first,head).splitlines()
+        require(set(delta)=={"M\t"+p for p in CORRECTIVE_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact B modified paths")
+        parent=first
     else:
-        require(head==parent or git(repo,"show","-s","--format=%P",head)==parent,"BLOCKED_MVP7_HISTORY","precommit parent")
-    paths=git(repo,"diff","--name-only",parent,head).splitlines()
-    require(all(allowed_installer_path(p) for p in paths),"BLOCKED_MVP7_SOURCE_MUTATION","allowlist")
+        require(head==first,"BLOCKED_MVP7_HISTORY","precommit parent A")
+        parent=base
+    paths=git(repo,"diff","--name-only",base,head).splitlines()
+    require(all(allowed_installer_path(p) for p in paths),"BLOCKED_MVP7_SOURCE_MUTATION","installer allowlist")
     return {"head":head,"tree":git(repo,"rev-parse","HEAD^{tree}"),"parent":parent}
 
 def source_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
@@ -160,7 +178,7 @@ def verify_manifest(manifest: dict[str, Any]) -> None:
     require(source == LOCK["source"], "BLOCKED_MVP7_SOURCE_MUTATION", "application wheel must be exact C")
     delivery=manifest["delivery"]
     require(set(delivery)=={"head","tree","parent"} and all(GIT_SHA.fullmatch(v) for v in delivery.values())
-            and delivery["parent"]==LOCK["installer_parent"],"BLOCKED_MVP7_HISTORY","delivery identity")
+            and delivery["parent"]==LOCK["installer_commit_a"],"BLOCKED_MVP7_HISTORY","delivery identity")
     require(manifest["acceptance"] == {"acceptance_run":35216652773,"WINDOWS11_WSL2_E2E":"BLOCKED_NO_RUNNER",
             "CLEAN_PC_SMOKE":"NOT_EXECUTED","PARTNER_RELEASE_READY":False},"BLOCKED_MVP7_NONCLAIM","acceptance boundary")
     require(manifest["migration"] == {"path": CONTROL["migration"], "blob": CONTROL["migration_blob"]},

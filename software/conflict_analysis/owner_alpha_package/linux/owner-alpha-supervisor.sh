@@ -91,7 +91,13 @@ def configure_env():
     return s
 def start_pg():
     PGSOCK.mkdir(exist_ok=True,mode=0o710)
+    need(not PGSOCK.is_symlink(),"BLOCKED_G10_RUNTIME_IDENTITY_DRIFT")
+    # mkdir's requested mode is masked by the controller's umask(0077).
+    os.chmod(PGSOCK,0o710)
     os.chown(PGSOCK,999,18001)
+    st=PGSOCK.stat()
+    need((st.st_uid,st.st_gid,st.st_mode & 0o7777)==(999,18001,0o710),
+         "BLOCKED_G10_RUNTIME_IDENTITY_DRIFT")
     if not proc_alive(PG/"postmaster.pid"):
         pgcommand(["pg_ctl","-D",PG,"-l","/dev/null","-w","-t","30","start"])
     return True
@@ -274,14 +280,31 @@ def start_services():
     need(executor.loader.graph.leaf_nodes("domain")==[("domain","0019_analysis_geography")]
          and not executor.migration_plan(executor.loader.graph.leaf_nodes()),
          "BLOCKED_G10_UNAUTHORIZED_MIGRATION")
-    RUN.mkdir(mode=0o700,exist_ok=True); os.chown(RUN,18001,18001)
-    (RUN/"nginx.conf").write_text((PACKAGE/"nginx.conf").read_text().replace("__PORT__",str(s["port"])))
-    os.chown(RUN/"nginx.conf",18001,18001)
+    temp_paths={"client_body_temp_path":"client","proxy_temp_path":"proxy",
+                "fastcgi_temp_path":"fastcgi","uwsgi_temp_path":"uwsgi","scgi_temp_path":"scgi"}
+    config=(PACKAGE/"nginx.conf").read_text().replace("__PORT__",str(s["port"]))
+    directives=re.findall(r"^\s*(\w+_temp_path)\s+([^;]+);",config,re.M)
+    need(len(directives)==5 and dict(directives)=={k:str(RUN/v) for k,v in temp_paths.items()},
+         "BLOCKED_G10_RUNTIME_IDENTITY_DRIFT")
+    for directory in (RUN,*(RUN/name for name in temp_paths.values())):
+        directory.mkdir(mode=0o700,exist_ok=True)
+        need(not directory.is_symlink(),"BLOCKED_G10_RUNTIME_IDENTITY_DRIFT")
+        os.chmod(directory,0o700); os.chown(directory,18001,18001)
+        st=directory.stat()
+        need((st.st_uid,st.st_gid,st.st_mode & 0o7777)==(18001,18001,0o700),
+             "BLOCKED_G10_RUNTIME_IDENTITY_DRIFT")
+    (RUN/"nginx.conf").write_text(config)
+    os.chmod(RUN/"nginx.conf",0o600); os.chown(RUN/"nginx.conf",18001,18001)
+    execute(["nginx","-t","-c",RUN/"nginx.conf"],user="owneralpha")
     if not proc_alive(RUN/"gunicorn.pid"):
         execute([PACKAGE/"venv/bin/gunicorn","--config",PACKAGE/"gunicorn.conf.py",
                  "conflict_analysis.wsgi:application"],user="owneralpha")
     if not proc_alive(RUN/"nginx.pid"):
         execute(["nginx","-c",RUN/"nginx.conf"],user="owneralpha")
+    need(proc_alive(RUN/"nginx.pid") and proc_alive(RUN/"gunicorn.pid")
+         and (RUN/"gunicorn.sock").is_socket(),"BLOCKED_G10_RUNTIME_OPERATION_FAILED")
+    need(network_check()["tcp_listeners"]==[["127.0.0.1",s["port"]]],
+         "BLOCKED_G10_NETWORK_EXPOSURE")
     s["phase"]="READY"; write(STATE/"state.json",s)
     return health()
 def network_check():

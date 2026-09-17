@@ -72,6 +72,32 @@ def test_postgresql_socket_nginx_static_gunicorn_loopback_and_no_lan_configurati
     _,_,_,runtime=built
     health=runtime.invoke("start")
     assert health["phase"]=="READY" and health["tcp_listeners"]==[["127.0.0.1",runtime.port]]
+    # The actual package runtime, under umask(0077), must expose only its loopback socket.
+    command(["docker","exec",runtime.name,"runuser","-u","owneralpha","--",
+             "nginx","-t","-c","/run/owner-alpha/nginx.conf"])
+    proof=r"""
+import os,re
+from pathlib import Path
+root=Path('/run/owner-alpha')
+names={'client_body_temp_path':'client','proxy_temp_path':'proxy','fastcgi_temp_path':'fastcgi',
+       'uwsgi_temp_path':'uwsgi','scgi_temp_path':'scgi'}
+rows=re.findall(r'^\s*(\w+_temp_path)\s+([^;]+);',(root/'nginx.conf').read_text(),re.M)
+assert len(rows)==5 and dict(rows)=={k:str(root/v) for k,v in names.items()}
+for directory in (root,*(root/name for name in names.values())):
+    st=directory.stat()
+    assert not directory.is_symlink() and (st.st_uid,st.st_gid,st.st_mode & 0o7777)==(18001,18001,0o700)
+st=Path('/run/owner-alpha-pg').stat()
+assert (st.st_uid,st.st_gid,st.st_mode & 0o7777)==(999,18001,0o710)
+for service in ('nginx','gunicorn'):
+    pid=int((root/(service+'.pid')).read_text().strip());os.kill(pid,0)
+    assert service.encode() in Path('/proc/'+str(pid)+'/cmdline').read_bytes()
+assert (root/'gunicorn.sock').is_socket()
+print('PRIVATE_SERVICE_PATHS=PASS')
+"""
+    command(["docker","exec",runtime.name,"/opt/owner-alpha/venv/bin/python","-c",proof])
+    denied=command(["docker","exec",runtime.name,"runuser","-u","owneralpha","--",
+                    "test","-w","/var/lib/nginx"],success=False)
+    assert denied.returncode==1
     assert runtime.sql("SHOW listen_addresses;").decode().strip()==""
     assert runtime.sql("SHOW unix_socket_directories;").decode().strip()=="/run/owner-alpha-pg"
     for socket in ("/run/owner-alpha-pg/.s.PGSQL.5432","/run/owner-alpha/gunicorn.sock"):
