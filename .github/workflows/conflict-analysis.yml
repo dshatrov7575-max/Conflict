@@ -7322,19 +7322,21 @@ jobs:
       R1_BASE_TREE: 5a4a40431e72fb6b942b895225ce11bba2898052
       R1_COMMIT_A: ba09340fecc446f677f8b4cf0c4ba3e565ebcee5
       R1_COMMIT_B: 2731ecd26dde5f321507ca237c4d18167d8bd631
-      TRIGGER_COMMIT_D: ${{ github.sha }}
+      R1_COMMIT_D: f90fb0d08fcdb897b392690e539b9032beeba205
+      R1_COMMIT_D_TREE: c263f85f48aa4ecb9b60eba2afdd635d67925f28
+      TRIGGER_COMMIT_E: ${{ github.sha }}
       TESTED_SOURCE_COMMIT_C: 85a253126bf270664c4786d159994e7359b5d2c5
       TESTED_SOURCE_TREE_C: 5567183dbe16fc6c7c8caac051b7694f37b92457
     defaults:
       run:
         working-directory: software/conflict_analysis
     steps:
-    - name: Check out trigger commit D
+    - name: Check out trigger commit E
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
         ref: ${{ github.sha }}
-    - name: Prove trigger commit D and exact four-commit history
+    - name: Prove trigger commit E and exact five-commit history
       shell: bash
       working-directory: .
       run: |
@@ -7344,28 +7346,33 @@ jobs:
         from pathlib import Path
         def git(*args):return subprocess.check_output(['git',*args],text=True).strip()
         base=os.environ['R1_BASE'];a=os.environ['R1_COMMIT_A'];b=os.environ['R1_COMMIT_B']
-        c=os.environ['TESTED_SOURCE_COMMIT_C'];d=os.environ['TRIGGER_COMMIT_D']
+        c=os.environ['TESTED_SOURCE_COMMIT_C'];e=os.environ['TRIGGER_COMMIT_E']
         assert os.environ['GITHUB_EVENT_NAME']=='push'
         assert os.environ['GITHUB_REF']=='refs/heads/codex/ux-v2-r1-geography-20260916'
-        assert d==os.environ['GITHUB_SHA']==git('rev-parse','HEAD')
-        assert git('rev-parse','HEAD^')==c
+        d=os.environ['R1_COMMIT_D']
+        assert e==os.environ['GITHUB_SHA']==git('rev-parse','HEAD')
+        assert git('rev-parse','HEAD^')==d
+        assert git('rev-parse',d+'^')==c
+        assert git('rev-parse',d+'^{tree}')==os.environ['R1_COMMIT_D_TREE']
         assert git('rev-parse',c+'^')==b
         assert git('rev-parse',b+'^')==a
         assert git('rev-parse',a+'^')==base
         assert git('rev-parse',base+'^{tree}')==os.environ['R1_BASE_TREE']
         assert git('rev-parse',c+'^{tree}')==os.environ['TESTED_SOURCE_TREE_C']
-        assert git('rev-list','--count',base+'..HEAD')=='4'
+        assert git('rev-list','--count',base+'..HEAD')=='5'
         messages=((a,'feat(geography): add append-only project location foundation'),
                   (b,'feat(analysis): add offline project location map'),
                   (c,'fix(geography): replace ODbL map data with Natural Earth'),
-                  (d,'ci(geography): run exact commit C gate'))
+                  (d,'ci(geography): run exact commit C gate'),
+                  (e,'ci(studio): use file-backed SQLite live-server test database'))
         for commit,message in messages:
             assert git('show','-s','--format=%B',commit)==message
             assert len(git('show','-s','--format=%P',commit).split())==1
         assert git('diff','--name-status',c,d)=='M\t.github/workflows/conflict-analysis.yml'
+        assert git('diff','--name-status',d,e)=='M\t.github/workflows/conflict-analysis.yml'
         assert not git('status','--porcelain=v1')
-        receipt={'TRIGGER_COMMIT_D':d,'TRIGGER_TREE_D':git('rev-parse','HEAD^{tree}'),
-                 'TRIGGER_PARENT_D':c,'TESTED_SOURCE_COMMIT_C':c,
+        receipt={'TRIGGER_COMMIT_E':e,'TRIGGER_TREE_E':git('rev-parse','HEAD^{tree}'),
+                 'TRIGGER_PARENT_E':d,'TESTED_SOURCE_COMMIT_C':c,
                  'TESTED_SOURCE_TREE_C':os.environ['TESTED_SOURCE_TREE_C'],
                  'TESTED_SOURCE_PARENT_C':b,'EVENT':os.environ['GITHUB_EVENT_NAME'],
                  'REF':os.environ['GITHUB_REF'],'RUN_ID':os.environ['GITHUB_RUN_ID'],
@@ -7374,7 +7381,7 @@ jobs:
         path.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n',encoding='utf8')
         print(json.dumps(receipt,sort_keys=True))
         PY
-        git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check "$TESTED_SOURCE_COMMIT_C" HEAD
+        git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check "$R1_COMMIT_D" HEAD
     - name: Check out exact tested source commit C
       uses: actions/checkout@v4
       with:
@@ -7389,18 +7396,18 @@ jobs:
         import json,os,subprocess
         from pathlib import Path
         def git(*args):return subprocess.check_output(['git',*args],text=True).strip()
-        c=os.environ['TESTED_SOURCE_COMMIT_C'];d=os.environ['TRIGGER_COMMIT_D']
-        assert git('rev-parse','HEAD')==c and c!=d
+        c=os.environ['TESTED_SOURCE_COMMIT_C'];e=os.environ['TRIGGER_COMMIT_E']
+        assert git('rev-parse','HEAD')==c and c!=e
         assert git('rev-parse','HEAD^{tree}')==os.environ['TESTED_SOURCE_TREE_C']
         assert git('rev-parse','HEAD^')==os.environ['R1_COMMIT_B']
         assert not git('status','--porcelain=v1')
         root=Path(os.environ['RUNNER_TEMP']);path=root/'geography-source-identity.json'
         receipt=json.loads(path.read_text(encoding='utf8'))
-        assert receipt['TRIGGER_COMMIT_D']==d==os.environ['GITHUB_SHA']
+        assert receipt['TRIGGER_COMMIT_E']==e==os.environ['GITHUB_SHA']
         assert receipt['TESTED_SOURCE_COMMIT_C']==c and receipt['TRIGGER_GUARD']=='PASS'
         receipt['SOURCE_GUARD']='PASS'
         path.write_text(json.dumps(receipt,sort_keys=True,indent=2)+'\n',encoding='utf8')
-        identity=f'TRIGGER_COMMIT_D={d}\nTESTED_SOURCE_COMMIT_C={c}\n'
+        identity=f'TRIGGER_COMMIT_E={e}\nTESTED_SOURCE_COMMIT_C={c}\n'
         (root/'geography-source-identity.env').write_text(identity,encoding='utf8')
         with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a',encoding='utf8') as out:
             out.write('## Geography CI source identity\n\n```text\n'+identity+'```\n')
@@ -7857,9 +7864,97 @@ jobs:
         set -euo pipefail
         python -m pytest production_studio/tests/test_lifecycle_publication.py -p no:cacheprovider \
           --junitxml="$RUNNER_TEMP/analysis-r0-studio-lifecycle-postgresql.xml"
-        USE_SQLITE=true SQLITE_PATH="$RUNNER_TEMP/analysis-r0-studio-lifecycle.sqlite3" \
-          python -m pytest production_studio/tests/test_lifecycle_publication.py -p no:cacheprovider \
-          --junitxml="$RUNNER_TEMP/analysis-r0-studio-lifecycle-sqlite.xml"
+        sqlite_settings_dir="$(mktemp -d "$RUNNER_TEMP/geography-sqlite-lifecycle-XXXXXX")"
+        export USE_SQLITE=true
+        export SQLITE_PATH="$RUNNER_TEMP/analysis-r0-studio-lifecycle.sqlite3"
+        export STUDIO_SQLITE_TEST_NAME="$sqlite_settings_dir/test-lifecycle.sqlite3"
+        export STUDIO_SQLITE_PROOF_PATH="$RUNNER_TEMP/geography-sqlite-lifecycle-database.json"
+        export PYTHONPATH="$sqlite_settings_dir:$PWD${PYTHONPATH:+:$PYTHONPATH}"
+        export DJANGO_SETTINGS_MODULE=ci_studio_sqlite_settings
+        export STUDIO_SQLITE_SETTINGS_DIR="$sqlite_settings_dir"
+        python - <<'PY'
+        import os
+        from pathlib import Path
+        root=Path(os.environ['STUDIO_SQLITE_SETTINGS_DIR']).resolve()
+        assert root.parent==Path(os.environ['RUNNER_TEMP']).resolve()
+        assert not list(root.iterdir()), 'Settings directory must be newly allocated and empty'
+        settings_source="""from conflict_analysis.settings import *
+        from copy import deepcopy
+        import os
+        DATABASES = deepcopy(DATABASES)
+        assert DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3"
+        DATABASES["default"].setdefault("TEST", {})["NAME"] = os.environ["STUDIO_SQLITE_TEST_NAME"]
+        """
+        plugin_source=r"""import json, os
+        from pathlib import Path
+        def pytest_runtest_call(item):
+            from django.db import connections
+            connection = connections["default"]
+            expected = Path(os.environ["STUDIO_SQLITE_TEST_NAME"]).resolve()
+            assert connection.vendor == "sqlite"
+            assert Path(connection.settings_dict["NAME"]).resolve() == expected
+            assert Path(connection.settings_dict["TEST"]["NAME"]).resolve() == expected
+            assert connection.creation._get_test_db_name() == str(expected)
+            assert not connection.is_in_memory_db()
+            assert expected.is_file()
+            proof_path = Path(os.environ["STUDIO_SQLITE_PROOF_PATH"])
+            proof = json.loads(proof_path.read_text(encoding="utf8"))
+            proof["actual_test_database_NAME"] = str(expected)
+            proof["actual_test_database_is_file"] = True
+            proof["verified_test_nodeids"].append(item.nodeid)
+            proof_path.write_text(json.dumps(proof, sort_keys=True, indent=2)+"\n", encoding="utf8")
+        """
+        (root/'ci_studio_sqlite_settings.py').write_text(settings_source,encoding='utf8')
+        (root/'ci_studio_sqlite_proof.py').write_text(plugin_source,encoding='utf8')
+        PY
+        python - <<'PY'
+        import hashlib,json,os
+        from pathlib import Path
+        import django
+        django.setup()
+        from django.conf import settings
+        from django.db import connections
+        import conflict_analysis.settings as source_settings
+        import ci_studio_sqlite_settings as effective_settings
+        connection=connections['default']
+        name=settings.DATABASES['default']['TEST']['NAME']
+        expected=Path(os.environ['STUDIO_SQLITE_TEST_NAME']).resolve()
+        configured=Path(os.environ['SQLITE_PATH']).resolve()
+        root=Path(os.environ['STUDIO_SQLITE_SETTINGS_DIR']).resolve()
+        assert Path(source_settings.__file__).resolve()==Path('conflict_analysis/settings.py').resolve()
+        assert Path(effective_settings.__file__).resolve()==root/'ci_studio_sqlite_settings.py'
+        assert connection.vendor=='sqlite'
+        assert name==str(expected) and connection.creation._get_test_db_name()==name
+        assert name!=':memory:' and not name.startswith('file:') and 'mode=memory' not in name
+        assert expected.is_absolute() and expected.parent==root and expected!=configured
+        assert root.parent==Path(os.environ['RUNNER_TEMP']).resolve()
+        assert not expected.exists(), 'The uniquely allocated test database must not pre-exist'
+        proof={'TESTED_SOURCE_COMMIT_C':os.environ['TESTED_SOURCE_COMMIT_C'],
+               'TRIGGER_COMMIT_E':os.environ['TRIGGER_COMMIT_E'],
+               'configured_NAME':str(configured),'effective_TEST_NAME':name,
+               'derived_test_database_NAME':connection.creation._get_test_db_name(),
+               'settings_module':str(Path(effective_settings.__file__).resolve()),
+               'settings_module_sha256':hashlib.sha256(Path(effective_settings.__file__).read_bytes()).hexdigest(),
+               'unique_directory_allocated':True,'test_file_preexists':False,
+               'distinct_from_SQLITE_PATH':True,'in_memory':False,
+               'verified_test_nodeids':[],'preflight':'PASS'}
+        Path(os.environ['STUDIO_SQLITE_PROOF_PATH']).write_text(json.dumps(proof,sort_keys=True,indent=2)+'\n',encoding='utf8')
+        print(json.dumps(proof,sort_keys=True))
+        PY
+        python -m pytest production_studio/tests/test_lifecycle_publication.py -p no:cacheprovider \
+          -p ci_studio_sqlite_proof --junitxml="$RUNNER_TEMP/analysis-r0-studio-lifecycle-sqlite.xml"
+        python - <<'PY'
+        import json,os
+        from pathlib import Path
+        proof_path=Path(os.environ['STUDIO_SQLITE_PROOF_PATH'])
+        proof=json.loads(proof_path.read_text(encoding='utf8'))
+        assert len(proof['verified_test_nodeids'])==15
+        assert len(set(proof['verified_test_nodeids']))==15
+        assert proof['actual_test_database_is_file'] is True
+        proof['lifecycle_test_database_guard']='PASS'
+        proof_path.write_text(json.dumps(proof,sort_keys=True,indent=2)+'\n',encoding='utf8')
+        print('SQLITE_LIFECYCLE_FILE_BACKED_TEST_DATABASE=PASS')
+        PY
     - name: Record trigger source and full gate outcome
       if: always()
       shell: bash
@@ -7874,7 +7969,7 @@ jobs:
         root=Path(os.environ['RUNNER_TEMP']);identity=root/'geography-source-identity.json'
         receipt=json.loads(identity.read_text(encoding='utf8')) if identity.is_file() else {}
         current=subprocess.run(['git','rev-parse','HEAD'],capture_output=True,text=True)
-        receipt.update(TRIGGER_COMMIT_D=os.environ['TRIGGER_COMMIT_D'],
+        receipt.update(TRIGGER_COMMIT_E=os.environ['TRIGGER_COMMIT_E'],
                        TESTED_SOURCE_COMMIT_C=os.environ['TESTED_SOURCE_COMMIT_C'],
                        EVENT=os.environ['GITHUB_EVENT_NAME'],RUN_ID=os.environ['GITHUB_RUN_ID'],
                        GATE_STEPS_STATUS=os.environ['GATE_STEPS_STATUS'],
@@ -7893,6 +7988,7 @@ jobs:
           ${{ runner.temp }}/analysis-r0-*.xml
           ${{ runner.temp }}/geography-*.json
           ${{ runner.temp }}/geography-source-identity.env
+          ${{ runner.temp }}/geography-sqlite-lifecycle-*/*.py
           ${{ runner.temp }}/geography-browser/
           ${{ runner.temp }}/ne-*.json
           ${{ runner.temp }}/ne-*.log
