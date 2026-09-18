@@ -88,5 +88,7 @@
   "transaction_correction_message": "fix(installer): make Windows installation transactional",
   "uninstall_correction_message": "fix(installer): canonicalize uninstall target path",
   "installer_commit_e2": "33742b06d2c38fad567d52f5a07d2bc34fce5eaa",
-  "harness_correction_message": "test(installer): stabilize interrupted rollback contract"
+  "harness_correction_message": "test(installer): stabilize interrupted rollback contract",
+  "installer_commit_e3": "7e6737c9e2b5ae42cc770f61a692b92c6dd8d7a3",
+  "rollback_fixture_correction_message": "test(installer): canonicalize rollback fixture identity"
 }

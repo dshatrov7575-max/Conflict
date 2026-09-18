@@ -258,7 +258,11 @@ function Invoke-Mvp7TransactionFaultMatrix {
     Assert-Contract (Test-Path -LiteralPath $proof)
     $emptyTx=Read-OwnerJson $proof
     Assert-OwnerTransaction $emptyTx $emptyTx
-    Assert-Contract ($emptyTx.outer -eq $true -and $emptyTx.state -ceq $global:Mvp7MatrixState -and $emptyTx.stateExisted -eq $false)
+    $emptyState=Assert-OwnerPath $emptyTx.state
+    $expectedState=Assert-OwnerPath $global:Mvp7MatrixState
+    Assert-Contract ($emptyTx.outer -eq $true)
+    Assert-Contract ($emptyTx.stateExisted -eq $false)
+    Assert-Contract ($emptyState -ceq $expectedState)
     if (-not (Test-Path -LiteralPath $global:Mvp7MatrixState)) {
         $null=New-OwnerPrivateDirectory $global:Mvp7MatrixState -RequireNew
         (Get-Item -LiteralPath $global:Mvp7MatrixState).CreationTimeUtc=[DateTime]::new([int64]$emptyTx.stateCreatedTicks,[DateTimeKind]::Utc)

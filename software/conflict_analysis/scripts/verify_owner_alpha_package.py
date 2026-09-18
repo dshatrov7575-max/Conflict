@@ -145,6 +145,7 @@ def delivery_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
     fourth=LOCK["installer_commit_d"]
     fifth=LOCK["installer_commit_e"]
     sixth=LOCK["installer_commit_e2"]
+    seventh=LOCK["installer_commit_e3"]
     require(git(repo,"branch","--show-current") in ("",LOCK["installer_branch"]),"BLOCKED_MVP7_HISTORY","branch")
     require(git(repo,"show","-s","--format=%P",first)==base,"BLOCKED_MVP7_HISTORY","A ordinary parent F")
     require(git(repo,"show","-s","--format=%B",first)==LOCK["installer_message"],"BLOCKED_MVP7_HISTORY","A message")
@@ -171,17 +172,22 @@ def delivery_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
     require(git(repo,"show","-s","--format=%B",sixth)==LOCK["uninstall_correction_message"],"BLOCKED_MVP7_HISTORY","E2 message")
     delta_e2=git(repo,"diff","--name-status","--no-renames",fifth,sixth).splitlines()
     require(set(delta_e2)=={"M\t"+p for p in UNINSTALL_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact E2 modified paths")
+    require(git(repo,"show","-s","--format=%P",seventh)==sixth,"BLOCKED_MVP7_HISTORY","E3 ordinary parent E2")
+    require(git(repo,"rev-list","--count",base+".."+seventh)=="7","BLOCKED_MVP7_HISTORY","seven frozen installer predecessors")
+    require(git(repo,"show","-s","--format=%B",seventh)==LOCK["harness_correction_message"],"BLOCKED_MVP7_HISTORY","E3 message")
+    delta_e3=git(repo,"diff","--name-status","--no-renames",sixth,seventh).splitlines()
+    require(set(delta_e3)=={"M\t"+p for p in HARNESS_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact E3 modified paths")
     if final:
         require(not git(repo,"status","--porcelain=v1","--untracked-files=all"),"BLOCKED_MVP7_HISTORY","clean committed checkout required")
-        require(git(repo,"show","-s","--format=%P",head)==sixth,"BLOCKED_MVP7_HISTORY","E3 ordinary parent E2")
-        require(git(repo,"rev-list","--count",base+".."+head)=="7","BLOCKED_MVP7_HISTORY","seven installer commits")
-        require(git(repo,"show","-s","--format=%B",head)==LOCK["harness_correction_message"],"BLOCKED_MVP7_HISTORY","E3 message")
-        delta=git(repo,"diff","--name-status","--no-renames",sixth,head).splitlines()
-        require(set(delta)=={"M\t"+p for p in HARNESS_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact E3 modified paths")
-        parent=sixth
+        require(git(repo,"show","-s","--format=%P",head)==seventh,"BLOCKED_MVP7_HISTORY","E4 ordinary parent E3")
+        require(git(repo,"rev-list","--count",base+".."+head)=="8","BLOCKED_MVP7_HISTORY","eight installer commits")
+        require(git(repo,"show","-s","--format=%B",head)==LOCK["rollback_fixture_correction_message"],"BLOCKED_MVP7_HISTORY","E4 message")
+        delta=git(repo,"diff","--name-status","--no-renames",seventh,head).splitlines()
+        require(set(delta)=={"M\t"+p for p in HARNESS_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact E4 modified paths")
+        parent=seventh
     else:
-        require(head==sixth,"BLOCKED_MVP7_HISTORY","precommit parent E2")
-        parent=fifth
+        require(head==seventh,"BLOCKED_MVP7_HISTORY","precommit parent E3")
+        parent=sixth
     paths=git(repo,"diff","--name-only",base,head).splitlines()
     require(all(allowed_installer_path(p) for p in paths),"BLOCKED_MVP7_SOURCE_MUTATION","installer allowlist")
     return {"head":head,"tree":git(repo,"rev-parse","HEAD^{tree}"),"parent":parent}
@@ -227,7 +233,7 @@ def verify_manifest(manifest: dict[str, Any]) -> None:
     require(source == LOCK["source"], "BLOCKED_MVP7_SOURCE_MUTATION", "application wheel must be exact C")
     delivery=manifest["delivery"]
     require(set(delivery)=={"head","tree","parent"} and all(GIT_SHA.fullmatch(v) for v in delivery.values())
-            and delivery["parent"]==LOCK["installer_commit_e2"],"BLOCKED_MVP7_HISTORY","delivery identity")
+            and delivery["parent"]==LOCK["installer_commit_e3"],"BLOCKED_MVP7_HISTORY","delivery identity")
     require(manifest["acceptance"] == {"acceptance_run":35216652773,"WINDOWS11_WSL2_E2E":"BLOCKED_NO_RUNNER",
             "CLEAN_PC_SMOKE":"NOT_EXECUTED","PARTNER_RELEASE_READY":False},"BLOCKED_MVP7_NONCLAIM","acceptance boundary")
     require(manifest["migration"] == {"path": CONTROL["migration"], "blob": CONTROL["migration_blob"]},

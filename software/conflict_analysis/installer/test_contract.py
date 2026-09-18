@@ -54,6 +54,9 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
     sixth='33742b06d2c38fad567d52f5a07d2bc34fce5eaa'
     assert v.LOCK['installer_commit_e2']==sixth
     assert v.LOCK['harness_correction_message']=='test(installer): stabilize interrupted rollback contract'
+    seventh='7e6737c9e2b5ae42cc770f61a692b92c6dd8d7a3'
+    assert v.LOCK['installer_commit_e3']==seventh
+    assert v.LOCK['rollback_fixture_correction_message']=='test(installer): canonicalize rollback fixture identity'
     assert v.HARNESS_PATHS=={'software/conflict_analysis/owner_alpha_package/tests/OwnerAlpha.Windows.Contract.Tests.ps1','software/conflict_analysis/installer/test_contract.py','software/conflict_analysis/installer/source.lock.json','software/conflict_analysis/scripts/verify_owner_alpha_package.py'}
     head='d'*40;tree='e'*40
     answers={
@@ -80,14 +83,18 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         ('rev-list','--count',base+'..'+sixth):'6',
         ('show','-s','--format=%B',sixth):v.LOCK['uninstall_correction_message'],
         ('diff','--name-status','--no-renames',fifth,sixth):'\n'.join('M\t'+p for p in sorted(v.UNINSTALL_PATHS)),
-        ('show','-s','--format=%P',head):sixth,
-        ('rev-list','--count',base+'..'+head):'7',
-        ('show','-s','--format=%B',head):v.LOCK['harness_correction_message'],
-        ('diff','--name-status','--no-renames',sixth,head):'\n'.join('M\t'+p for p in sorted(v.HARNESS_PATHS)),
+        ('show','-s','--format=%P',seventh):sixth,
+        ('rev-list','--count',base+'..'+seventh):'7',
+        ('show','-s','--format=%B',seventh):v.LOCK['harness_correction_message'],
+        ('diff','--name-status','--no-renames',sixth,seventh):'\n'.join('M\t'+p for p in sorted(v.HARNESS_PATHS)),
+        ('show','-s','--format=%P',head):seventh,
+        ('rev-list','--count',base+'..'+head):'8',
+        ('show','-s','--format=%B',head):v.LOCK['rollback_fixture_correction_message'],
+        ('diff','--name-status','--no-renames',seventh,head):'\n'.join('M\t'+p for p in sorted(v.HARNESS_PATHS)),
         ('diff','--name-only',base,head):'\n'.join(sorted(v.CORRECTIVE_PATHS)),
     }
     monkeypatch.setattr(v,'git',lambda repo,*args:answers[args])
-    assert v.delivery_identity(APP)=={'head':head,'tree':tree,'parent':sixth}
+    assert v.delivery_identity(APP)=={'head':head,'tree':tree,'parent':seventh}
     invalid=[
         (('show','-s','--format=%P',first),'0'*40),
         (('show','-s','--format=%P',second),base),
@@ -95,7 +102,9 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         (('show','-s','--format=%P',head),base),
         (('show','-s','--format=%P',head),second),
         (('show','-s','--format=%P',head),third+' '+base),
+        (('show','-s','--format=%P',head),sixth),
         (('show','-s','--format=%P',sixth),fourth),
+        (('show','-s','--format=%P',seventh),fifth),
         (('show','-s','--format=%B',first),'changed A'),
         (('show','-s','--format=%B',second),'changed B'),
         (('show','-s','--format=%B',third),'changed C'),
@@ -104,15 +113,17 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         (('show','-s','--format=%P',fifth),third),
         (('show','-s','--format=%B',fifth),'changed E'),
         (('show','-s','--format=%B',sixth),'changed E2'),
-        (('show','-s','--format=%B',head),'changed E3'),
+        (('show','-s','--format=%B',seventh),'changed E3'),
+        (('show','-s','--format=%B',head),'changed E4'),
         (('status','--porcelain=v1','--untracked-files=all'),' M extra'),
         (('diff','--name-only',base,head),'software/conflict_analysis/domain/models.py'),
     ]
-    invalid += [(('rev-list','--count',base+'..'+head),str(n)) for n in (0,1,2,3,4,5,6,8)]
+    invalid += [(('rev-list','--count',base+'..'+head),str(n)) for n in (0,1,2,3,4,5,6,7,9)]
+    invalid += [(('rev-list','--count',base+'..'+seventh),str(n)) for n in (0,1,2,3,4,5,6,8)]
     invalid += [(('rev-list','--count',base+'..'+sixth),str(n)) for n in (0,1,2,3,4,5,7)]
     invalid += [(('rev-list','--count',base+'..'+fifth),str(n)) for n in (0,1,2,3,4,6)]
     invalid += [(('rev-list','--count',base+'..'+fourth),str(n)) for n in (0,1,2,3,5)]
-    for parent,child in ((first,second),(second,third),(third,fourth),(fourth,fifth),(fifth,sixth),(sixth,head)):
+    for parent,child in ((first,second),(second,third),(third,fourth),(fourth,fifth),(fifth,sixth),(sixth,seventh),(seventh,head)):
         key=('diff','--name-status','--no-renames',parent,child)
         invalid.extend([(key,'M\tsoftware/conflict_analysis/domain/models.py'),
                         (key,answers[key].replace('M\t','A\t',1)),
