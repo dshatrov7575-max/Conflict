@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param([string]$PackageRoot=(Split-Path $PSScriptRoot),[string]$StateRoot='',[int]$Port=8765,
-      [switch]$Restore,[string]$BackupPath='',[string]$Confirmation='',[switch]$SwitchRestored,[switch]$NoPrompt)
+      [switch]$Restore,[string]$BackupPath='',[string]$Confirmation='',[switch]$SwitchRestored,[switch]$NoPrompt,[hashtable]$Transaction)
 Import-Module (Join-Path $PSScriptRoot 'OwnerAlpha.Common.psm1') -Force
 $context=Get-OwnerContext $PackageRoot $StateRoot $Port
 if ($Restore) {
@@ -43,6 +43,6 @@ if ($Restore) {
     Assert-OwnerInstalled $context
     Invoke-OwnerWsl $context.record.distribution @('health') | ConvertTo-Json -Depth 10
 } else {
-    $record=New-OwnerInstall $context
+    $record=New-OwnerInstall $context -Transaction $Transaction
     @{phase=$record.phase;instance=$record.instance;distribution=$record.distribution} | ConvertTo-Json
 }

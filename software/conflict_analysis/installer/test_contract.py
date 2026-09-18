@@ -43,6 +43,10 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
     assert v.LOCK['installer_commit_c']==third
     assert v.LOCK['restore_correction_message']=='fix(installer): canonicalize restore graph verification'
     assert v.RESTORE_PATHS==v.READINESS_PATHS
+    fourth='1e109ad2f37d3de4d0d0fa3a9b9ad1dbace182d4'
+    assert v.LOCK['installer_commit_d']==fourth
+    assert v.LOCK['transaction_correction_message']=='fix(installer): make Windows installation transactional'
+    assert len(v.TRANSACTION_PATHS)==11
     head='d'*40;tree='e'*40
     answers={
         ('rev-parse','HEAD'):head, ('rev-parse','HEAD^{tree}'):tree,
@@ -56,14 +60,18 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         ('show','-s','--format=%P',third):second,
         ('show','-s','--format=%B',third):v.LOCK['readiness_correction_message'],
         ('diff','--name-status','--no-renames',second,third):'\n'.join('M\t'+p for p in sorted(v.READINESS_PATHS)),
-        ('show','-s','--format=%P',head):third,
-        ('rev-list','--count',base+'..'+head):'4',
-        ('show','-s','--format=%B',head):v.LOCK['restore_correction_message'],
-        ('diff','--name-status','--no-renames',third,head):'\n'.join('M\t'+p for p in sorted(v.RESTORE_PATHS)),
+        ('show','-s','--format=%P',fourth):third,
+        ('show','-s','--format=%B',fourth):v.LOCK['restore_correction_message'],
+        ('diff','--name-status','--no-renames',third,fourth):'\n'.join('M\t'+p for p in sorted(v.RESTORE_PATHS)),
+        ('rev-list','--count',base+'..'+fourth):'4',
+        ('show','-s','--format=%P',head):fourth,
+        ('rev-list','--count',base+'..'+head):'5',
+        ('show','-s','--format=%B',head):v.LOCK['transaction_correction_message'],
+        ('diff','--name-status','--no-renames',fourth,head):'\n'.join('M\t'+p for p in sorted(v.TRANSACTION_PATHS)),
         ('diff','--name-only',base,head):'\n'.join(sorted(v.CORRECTIVE_PATHS)),
     }
     monkeypatch.setattr(v,'git',lambda repo,*args:answers[args])
-    assert v.delivery_identity(APP)=={'head':head,'tree':tree,'parent':third}
+    assert v.delivery_identity(APP)=={'head':head,'tree':tree,'parent':fourth}
     invalid=[
         (('show','-s','--format=%P',first),'0'*40),
         (('show','-s','--format=%P',second),base),
@@ -74,12 +82,15 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         (('show','-s','--format=%B',first),'changed A'),
         (('show','-s','--format=%B',second),'changed B'),
         (('show','-s','--format=%B',third),'changed C'),
-        (('show','-s','--format=%B',head),'changed D'),
+        (('show','-s','--format=%B',fourth),'changed D'),
+        (('show','-s','--format=%P',fourth),base),
+        (('show','-s','--format=%B',head),'changed E'),
         (('status','--porcelain=v1','--untracked-files=all'),' M extra'),
         (('diff','--name-only',base,head),'software/conflict_analysis/domain/models.py'),
     ]
-    invalid += [(('rev-list','--count',base+'..'+head),str(n)) for n in (0,1,2,3,5)]
-    for parent,child in ((first,second),(second,third),(third,head)):
+    invalid += [(('rev-list','--count',base+'..'+head),str(n)) for n in (0,1,2,3,4,6)]
+    invalid += [(('rev-list','--count',base+'..'+fourth),str(n)) for n in (0,1,2,3,5)]
+    for parent,child in ((first,second),(second,third),(third,fourth),(fourth,head)):
         key=('diff','--name-status','--no-renames',parent,child)
         invalid.extend([(key,'M\tsoftware/conflict_analysis/domain/models.py'),
                         (key,answers[key].replace('M\t','A\t',1)),
@@ -107,8 +118,12 @@ def test_nsis_payload_only_mode_cannot_install_or_bypass_gate():
     assert text.index('verified:')<text.index('install:')
     assert 'Quit' in text[text.index('verified:'):text.index('install:')]
     code=(ROOT/'Install-Mvp7.ps1').read_text()
-    assert code.index('Assert-Mvp7Archive')<code.index('if ($VerifyOnly)')<code.index('Assert-Mvp7Host')<code.index('Expand-Mvp7Archive')
-    assert code.index('Install-OwnerAlpha.ps1')<code.index("'mvp7-installation.json.pending'")
+    assert code.index('Assert-Mvp7Archive')<code.index('if ($VerifyOnly)')<code.index('Assert-Mvp7Host')<code.index('Invoke-Mvp7Installation')
+    module=(ROOT/'Mvp7.Setup.psm1').read_text()
+    flow=module.split('function Invoke-Mvp7Installation',1)[1].split('function Remove-Mvp7Program',1)[0]
+    assert flow.index('Assert-Mvp7DiskCapacity')<flow.index('New-Mvp7PrivateProgram')<flow.index('Expand-Mvp7Archive')
+    assert flow.index('Invoke-Mvp7InnerInstall')<flow.index('Complete-OwnerInstallTransaction')<flow.index('Publish-Mvp7Installation')
+    assert 'Undo-Mvp7Installation' in flow
 
 def test_runtime_and_installer_have_no_external_download_or_policy_mutation(tmp_path):
     texts=[p.read_text() for p in (APP/'owner_alpha_package/windows').glob('*') if p.suffix in {'.ps1','.psm1'}]
@@ -152,7 +167,9 @@ def test_runtime_and_installer_have_no_external_download_or_policy_mutation(tmp_
 def test_first_install_marker_follows_success_and_uninstall_preserves_state():
     common=(APP/'owner_alpha_package/windows/OwnerAlpha.Common.psm1').read_text()
     install=common[common.index('function New-OwnerInstall'):common.index('function Assert-OwnerInstalled')]
-    assert install.index('New-OwnerPrivateDirectory')<install.index('installation.pending.json')<install.index("'--import'")
+    assert install.index('Assert-OwnerInstallDisk')<install.index('New-OwnerPrivateDirectory')<install.index("'--import'")
+    assert install.index('Write-OwnerJson $pending')<install.index("'--import'")
+    assert 'Undo-OwnerInstallTransaction' in install
     assert install.index('$result=Invoke-OwnerWsl')<install.index('Write-OwnerJson $Context.stateFile')
     uninstall=(APP/'owner_alpha_package/windows/Uninstall-OwnerAlpha.ps1').read_text()
     assert '--unregister' not in uninstall and 'Remove-Item' not in uninstall

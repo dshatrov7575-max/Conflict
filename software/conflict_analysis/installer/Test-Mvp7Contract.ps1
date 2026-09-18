@@ -55,6 +55,10 @@ if ($InnerZip) {
         Reject { Assert-Mvp7Archive $InnerZip $sha ($bytes+1) }
     }
 }
-$report=@{WINDOWS_CONTRACT='PASS';tests=$results.ToArray();WINDOWS11_WSL2_E2E='BLOCKED_NO_RUNNER';CLEAN_PC_SMOKE='NOT_EXECUTED';PARTNER_RELEASE_READY=$false}
+Check 'Transactional install fault matrix and clean retry (mocked WSL only)' {
+    if (-not (Get-Variable -Name Mvp7TransactionContractResults -Scope Global -ErrorAction SilentlyContinue)) { throw 'Pester transaction matrix evidence required' }
+    if ($global:Mvp7TransactionContractResults.Count -ne 13) { throw 'Incomplete transaction fault matrix' }
+}
+$report=@{transaction_fault_matrix=$global:Mvp7TransactionContractResults.ToArray();disk_capacity_policy=@{program_reserve_bytes=[long]512MB;state_reserve_bytes=[long]1GB;same_volume='sum both reservations'};WINDOWS_CONTRACT='PASS';tests=$results.ToArray();WINDOWS11_WSL2_E2E='BLOCKED_NO_RUNNER';CLEAN_PC_SMOKE='NOT_EXECUTED';PARTNER_RELEASE_READY=$false}
 $report | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $EvidenceRoot 'windows-contract.json') -Encoding utf8
 $report | ConvertTo-Json -Depth 12

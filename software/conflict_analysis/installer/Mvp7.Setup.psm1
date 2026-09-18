@@ -82,6 +82,172 @@ function Expand-Mvp7Archive([string]$Zip,[string]$Destination,[string]$Sha256,[l
     Assert-Mvp7 (-not (Test-Path -LiteralPath $destination)) 'Каталог назначения уже существует.'
     [IO.Compression.ZipFile]::ExtractToDirectory($Zip,$destination)
 }
+# Capacity uses verified archive lengths; it never creates a directory or marker.
+function Get-Mvp7DiskPlan([string]$Zip,[hashtable]$Manifest,[string]$ProgramRoot,[string]$StateRoot) {
+    $archive=[IO.Compression.ZipFile]::OpenRead($Zip)
+    try { $expanded=[long]0;foreach ($entry in $archive.Entries) { $expanded+=$entry.Length } }
+    finally { $archive.Dispose() }
+    $rootfs=[long]$Manifest.payload['rootfs/conflict-analysis-functional-alpha-rootfs.tar'].bytes
+    Assert-Mvp7 ($expanded -gt 0 -and $expanded -le 1TB -and $rootfs -gt 0 -and $rootfs -le $expanded) 'BLOCKED_MVP7_DISK_CAPACITY'
+    $controllers=[long]0
+    foreach ($name in @('Mvp7.Setup.psm1','Launch-Mvp7.ps1','Uninstall-Mvp7.ps1')) { $controllers+=(Get-Item -LiteralPath (Join-Path $PSScriptRoot $name)).Length }
+    $bootstrap=[long]$Manifest.payload['windows/OwnerAlpha.Common.psm1'].bytes
+    return @{programVolume=[IO.Path]::GetPathRoot($ProgramRoot);stateVolume=[IO.Path]::GetPathRoot($StateRoot);
+        zipBytes=[long](Get-Item -LiteralPath $Zip).Length;expandedBytes=$expanded;rootfsBytes=$rootfs;
+        programReserveBytes=[long]512MB;stateReserveBytes=[long]1GB;
+        programRequiredBytes=[long]($expanded+(Get-Item -LiteralPath $Zip).Length+$controllers+$bootstrap+512MB);
+        stateRequiredBytes=[long](2*$rootfs+1GB)}
+}
+function Get-Mvp7VolumeFree([string]$Volume) {
+    $drive=[IO.DriveInfo]::new($Volume)
+    Assert-Mvp7 $drive.IsReady 'BLOCKED_MVP7_DISK_CAPACITY'
+    return [long]$drive.AvailableFreeSpace
+}
+function Assert-Mvp7DiskCapacity([hashtable]$Plan) {
+    try {
+        $requirements=@{}
+        foreach ($kind in @('program','state')) {
+            $volume=$Plan[$kind+'Volume']
+            if (-not $requirements.ContainsKey($volume)) { $requirements[$volume]=[long]0 }
+            $requirements[$volume]+=$Plan[$kind+'RequiredBytes']
+        }
+        foreach ($volume in $requirements.Keys) {
+            Assert-Mvp7 ((Get-Mvp7VolumeFree $volume) -ge $requirements[$volume]) 'BLOCKED_MVP7_DISK_CAPACITY'
+        }
+    } catch { throw 'BLOCKED_MVP7_DISK_CAPACITY' }
+}
+function Get-Mvp7DistroExists([string]$Name) {
+    $key='HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss'
+    if (-not (Test-Path -LiteralPath $key)) { return $false }
+    return [bool]@(Get-ChildItem -LiteralPath $key | Where-Object { (Get-ItemProperty -LiteralPath $_.PSPath).DistributionName -ceq $Name }).Count
+}
+function Assert-Mvp7Transaction([hashtable]$Transaction,[hashtable]$Manifest,[string]$Sha256) {
+    $tx=$Transaction;$code='BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+    Assert-Mvp7 ($tx.schema -ceq 'MVP7_INSTALL_TRANSACTION_V1' -and $tx.source -ceq $script:SourceC -and
+        $tx.installer -ceq $Manifest.delivery.head -and $tx.inner_sha256 -ceq $Sha256 -and
+        $tx.nonce -cmatch '^[0-9a-f]{32}$' -and $tx.outer -eq $true -and
+        $tx.program -ceq (Assert-Mvp7Path (Get-Mvp7ProgramRoot)) -and
+        $tx.state -ceq (Assert-Mvp7Path (Get-Mvp7StateRoot)) -and
+        $tx.distribution -ceq (Join-Path $tx.state 'distribution') -and
+        $tx.distro -ceq ('Conflict-Alpha-'+$script:TreeC.Substring(0,12)+'-'+$tx.nonce.Substring(0,8)) -and
+        $tx.programExisted -eq $false -and $tx.stateExisted -eq $false -and $tx.distroExisted -eq $false -and $tx.distributionExisted -eq $false) $code
+}
+function New-Mvp7PrivateProgram([string]$ProgramRoot) {
+    $full=Assert-Mvp7Path $ProgramRoot
+    $null=New-Item -ItemType Directory -Path $full
+    $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User
+    $acl=[Security.AccessControl.DirectorySecurity]::new()
+    $acl.SetOwner($sid);$acl.SetAccessRuleProtection($true,$false)
+    foreach ($principal in @($sid,[Security.Principal.SecurityIdentifier]::new('S-1-5-18'))) {
+        $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($principal,'FullControl','ContainerInherit,ObjectInherit','None','Allow'))
+    }
+    Set-Acl -LiteralPath $full -AclObject $acl
+}
+function Write-Mvp7Pending([hashtable]$Transaction) {
+    $path=Join-Path $Transaction.program 'mvp7-installation.json.pending'
+    $raw=[Text.UTF8Encoding]::new($false).GetBytes(($Transaction | ConvertTo-Json -Depth 20 -Compress))
+    $stream=[IO.File]::Open($path,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
+    try { $stream.Write($raw,0,$raw.Length);$stream.Flush($true) } finally { $stream.Dispose() }
+}
+function Copy-Mvp7TransactionModule([string]$Zip,[string]$ProgramRoot,[hashtable]$Manifest) {
+    $target=Join-Path $ProgramRoot 'OwnerAlpha.Common.psm1'
+    $archive=[IO.Compression.ZipFile]::OpenRead($Zip)
+    try {
+        $stream=$archive.GetEntry('windows/OwnerAlpha.Common.psm1').Open()
+        $output=[IO.File]::Open($target,[IO.FileMode]::CreateNew)
+        try { $stream.CopyTo($output) } finally { $stream.Dispose();$output.Dispose() }
+    } finally { $archive.Dispose() }
+    Import-Mvp7TransactionModule $ProgramRoot $Manifest
+}
+function Import-Mvp7TransactionModule([string]$ProgramRoot,[hashtable]$Manifest) {
+    $target=Assert-Mvp7Path (Join-Path $ProgramRoot 'OwnerAlpha.Common.psm1')
+    $meta=$Manifest.payload['windows/OwnerAlpha.Common.psm1']
+    Assert-Mvp7 ((Get-Item -LiteralPath $target).Length -eq $meta.bytes -and
+        (Get-FileHash -LiteralPath $target).Hash.ToLowerInvariant() -ceq $meta.sha256) 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+    Import-Module $target -Force -Global
+}
+function Copy-Mvp7Controllers([string]$ProgramRoot) {
+    $control=Join-Path $ProgramRoot 'installer'
+    $null=New-Item -ItemType Directory -Path $control
+    foreach ($name in @('Mvp7.Setup.psm1','Launch-Mvp7.ps1','Uninstall-Mvp7.ps1')) {
+        Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $control $name)
+    }
+}
+function Invoke-Mvp7InnerInstall([hashtable]$Transaction) {
+    & (Join-Path $Transaction.program 'app/windows/Install-OwnerAlpha.ps1') -PackageRoot (Join-Path $Transaction.program 'app') -StateRoot $Transaction.state -NoPrompt -Transaction $Transaction
+}
+function Publish-Mvp7Installation([hashtable]$Transaction) {
+    # Last mutating step. Once this atomic rename succeeds the installation is
+    # complete; no subsequent rollback may delete it.
+    [IO.File]::Move((Join-Path $Transaction.program 'mvp7-installation.json.pending'),(Join-Path $Transaction.program 'mvp7-installation.json'))
+}
+function Undo-Mvp7Installation([hashtable]$Transaction,[hashtable]$Manifest,[string]$Sha256) {
+    $code='BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+    try {
+        Assert-Mvp7Transaction $Transaction $Manifest $Sha256
+        $root=Assert-Mvp7Path $Transaction.program
+        Assert-Mvp7 (-not (Test-Path -LiteralPath (Join-Path $root 'mvp7-installation.json'))) $code
+        $acl=Get-Acl -LiteralPath $root
+        $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+        Assert-Mvp7 ($acl.AreAccessRulesProtected -and $acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -eq $sid) $code
+        foreach ($rule in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])) {
+            Assert-Mvp7 ($rule.IdentityReference.Value -in @($sid,'S-1-5-18') -and $rule.AccessControlType -eq 'Allow') $code
+        }
+        $pending=Join-Path $root 'mvp7-installation.json.pending'
+        $actual=Get-Content -LiteralPath $pending -Raw -Encoding utf8 | ConvertFrom-Json -AsHashtable
+        Assert-Mvp7Transaction $actual $Manifest $Sha256
+        Assert-Mvp7 ($actual.nonce -ceq $Transaction.nonce -and $actual.programCreatedTicks -eq $Transaction.programCreatedTicks -and
+            (Get-Item -LiteralPath $root).CreationTimeUtc.Ticks -eq $actual.programCreatedTicks) $code
+        foreach ($entry in Get-ChildItem -LiteralPath $root -Recurse -Force) {
+            Assert-Mvp7 (-not ($entry.Attributes -band [IO.FileAttributes]::ReparsePoint)) $code
+        }
+        if (-not $actual.stateExisted -and ((Test-Path -LiteralPath $actual.state) -or (Get-Mvp7DistroExists $actual.distro))) {
+            Import-Mvp7TransactionModule $root $Manifest
+            Undo-OwnerInstallTransaction $actual
+        }
+        # Never recursively delete state or backups. Only the proven program tree.
+        Remove-Item -LiteralPath $root -Recurse -Force
+    } catch { throw $code }
+}
+function Invoke-Mvp7Installation([string]$Zip,[string]$Sha256,[long]$Bytes,[hashtable]$Manifest) {
+    $root=Assert-Mvp7Path (Get-Mvp7ProgramRoot);$state=Assert-Mvp7Path (Get-Mvp7StateRoot)
+    Assert-Mvp7 ($Manifest.delivery.head -cmatch '^[0-9a-f]{40}$' -and
+        $Manifest.delivery.parent -ceq '1e109ad2f37d3de4d0d0fa3a9b9ad1dbace182d4') 'BLOCKED_MVP7_HISTORY'
+    $plan=Get-Mvp7DiskPlan $Zip $Manifest $root $state
+    Assert-Mvp7DiskCapacity $plan
+    if (Test-Path -LiteralPath $root) {
+        Assert-Mvp7 (-not (Test-Path -LiteralPath (Join-Path $root 'mvp7-installation.json'))) 'Программа уже установлена. Сначала используйте удаление программы; состояние сохранится.'
+        try {
+            $prior=Get-Content -LiteralPath (Join-Path $root 'mvp7-installation.json.pending') -Raw -Encoding utf8 | ConvertFrom-Json -AsHashtable
+            Undo-Mvp7Installation $prior $Manifest $Sha256
+        } catch { throw 'BLOCKED_MVP7_ROLLBACK_UNPROVEN' }
+    }
+    $nonce=[guid]::NewGuid().ToString('N')
+    $distro='Conflict-Alpha-'+$script:TreeC.Substring(0,12)+'-'+$nonce.Substring(0,8)
+    $tx=@{schema='MVP7_INSTALL_TRANSACTION_V1';source=$script:SourceC;installer=$Manifest.delivery.head;nonce=$nonce;
+        program=$root;state=$state;distribution=(Join-Path $state 'distribution');distro=$distro;outer=$true;
+        programExisted=(Test-Path -LiteralPath $root);stateExisted=(Test-Path -LiteralPath $state);
+        distributionExisted=(Test-Path -LiteralPath (Join-Path $state 'distribution'));distroExisted=(Get-Mvp7DistroExists $distro);
+        inner_sha256=$Sha256;disk=$plan}
+    Assert-Mvp7 (-not $tx.programExisted -and -not $tx.distroExisted) 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
+    # Existing state, including retained backups, is never modified by fresh install.
+    Assert-Mvp7 (-not $tx.stateExisted -and -not $tx.distributionExisted) 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
+    try {
+        New-Mvp7PrivateProgram $root
+        $tx.programCreatedTicks=(Get-Item -LiteralPath $root).CreationTimeUtc.Ticks
+        Write-Mvp7Pending $tx
+        Copy-Mvp7TransactionModule $Zip $root $Manifest
+        Expand-Mvp7Archive $Zip (Join-Path $root 'app') $Sha256 $Bytes
+        Copy-Mvp7Controllers $root
+        $null=Invoke-Mvp7InnerInstall $tx
+        Complete-OwnerInstallTransaction $tx
+        Publish-Mvp7Installation $tx
+    } catch {
+        $failure=$_
+        Undo-Mvp7Installation $tx $Manifest $Sha256
+        throw $failure
+    }
+}
 function Remove-Mvp7Program([string]$ProgramRoot) {
     $full=Assert-Mvp7Path $ProgramRoot
     Assert-Mvp7 ($full -ieq (Get-Mvp7ProgramRoot)) 'Удаление за пределами каталога программы запрещено.'

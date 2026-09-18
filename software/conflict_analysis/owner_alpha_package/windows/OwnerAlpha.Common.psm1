@@ -32,13 +32,15 @@ function Assert-OwnerPath([string]$Path,[string]$Within = '') {
     }
     return $full
 }
-function New-OwnerPrivateDirectory([string]$Path) {
+function New-OwnerPrivateDirectory([string]$Path,[switch]$RequireNew) {
     $full = Assert-OwnerPath $Path
     if (Test-Path -LiteralPath $full) {
+        Assert-OwnerGate (-not $RequireNew) 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
         Assert-OwnerPrivateDirectory $full
         return $full
     }
-    $null = New-Item -ItemType Directory -Path $full -Force
+    if ($RequireNew) { $null=New-Item -ItemType Directory -Path $full }
+    else { $null=New-Item -ItemType Directory -Path $full -Force }
     $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User
     $acl = [Security.AccessControl.DirectorySecurity]::new()
     $acl.SetOwner($sid)
@@ -71,7 +73,7 @@ function Write-OwnerJson([string]$Path,[object]$Value) {
     [IO.File]::Move($pending,$Path,$true)
 }
 function Invoke-OwnerProcess {
-    param([string]$Executable,[string[]]$Arguments,[byte[]]$InputBytes,[string]$InputPath,[string]$OutputPath,[hashtable]$Environment=@{})
+    param([string]$Executable,[string[]]$Arguments,[byte[]]$InputBytes,[string]$InputPath,[string]$OutputPath,[hashtable]$Environment=@{},[int]$TimeoutSeconds=0)
     $start = [Diagnostics.ProcessStartInfo]::new()
     $start.FileName = $Executable
     $start.UseShellExecute = $false
@@ -93,7 +95,12 @@ function Invoke-OwnerProcess {
             try { $source.CopyTo($process.StandardInput.BaseStream) } finally { $source.Dispose() }
         } elseif ($InputBytes) { $process.StandardInput.BaseStream.Write($InputBytes,0,$InputBytes.Length) }
         $process.StandardInput.Close()
-        $process.WaitForExit()
+        if ($TimeoutSeconds -gt 0) {
+            if (-not $process.WaitForExit($TimeoutSeconds*1000)) {
+                $process.Kill($true)
+                Stop-OwnerGate 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+            }
+        } else { $process.WaitForExit() }
         $null = $copy.GetAwaiter().GetResult()
         $null = $errorTask.GetAwaiter().GetResult()
         if ($process.ExitCode -ne 0) {
@@ -233,37 +240,203 @@ function Confirm-OwnerAction([string]$Action,[string]$Instance,[string]$Confirma
     if (-not $Confirmation) { $Confirmation=Read-Host ("Для подтверждения введите: "+$expected) }
     Assert-OwnerGate ($Confirmation -ceq $expected) 'BLOCKED_G10_CONFIRMATION_REQUIRED'
 }
+# Transaction ownership is an immutable identity plus private-directory creation
+# evidence. A matching path or distribution name alone never authorizes deletion.
+function Get-OwnerDistroRegistration([string]$Name) {
+    $root='HKCU:\Software\Microsoft\Windows\CurrentVersion\Lxss'
+    if (-not (Test-Path -LiteralPath $root)) { return $null }
+    $found=@(Get-ChildItem -LiteralPath $root | ForEach-Object {
+        $item=Get-ItemProperty -LiteralPath $_.PSPath
+        if ($item.DistributionName -ceq $Name) {
+            @{name=$item.DistributionName;key=$_.PSChildName;version=$item.Version;
+              path=([string]$item.BasePath).Replace('\\?\','').TrimEnd('\')}
+        }
+    })
+    Assert-OwnerGate ($found.Count -le 1) 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+    if ($found.Count) { return $found[0] }
+    return $null
+}
+function Assert-OwnerTransaction([hashtable]$Actual,[hashtable]$Expected) {
+    $code='BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+    foreach ($key in @('schema','source','installer','nonce','program','state','distribution','distro','stateExisted','distroExisted')) {
+        Assert-OwnerGate ($Actual.ContainsKey($key) -and $Expected.ContainsKey($key) -and $Actual[$key] -ceq $Expected[$key]) $code
+    }
+    Assert-OwnerGate ($Actual.schema -ceq 'MVP7_INSTALL_TRANSACTION_V1' -and $Actual.nonce -cmatch '^[0-9a-f]{32}$' -and
+        $Actual.source -cmatch '^[0-9a-f]{40}$' -and $Actual.installer -cmatch '^[0-9a-f]{40}$' -and
+        $Actual.distro -cmatch '^Conflict-Alpha-[0-9a-f]{12}-[0-9a-f]{8}$' -and -not $Actual.distroExisted) $code
+    $state=Assert-OwnerPath $Actual.state
+    Assert-OwnerGate ($Actual.distribution -ceq (Join-Path $state 'distribution')) $code
+}
+function Assert-OwnerTransactionTree([string]$Root) {
+    $null=Assert-OwnerPath $Root
+    foreach ($entry in Get-ChildItem -LiteralPath $Root -Recurse -Force) {
+        Assert-OwnerGate (-not ($entry.Attributes -band [IO.FileAttributes]::ReparsePoint)) 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+    }
+}
+function Get-OwnerInstallDiskRequirement([long]$RootfsBytes) {
+    Assert-OwnerGate ($RootfsBytes -gt 0 -and $RootfsBytes -le 1TB) 'BLOCKED_MVP7_DISK_CAPACITY'
+    # Two rootfs sizes allow VHD/import overhead and initial database growth;
+    # one GiB is an explicit additional state-volume reserve.
+    return [long](2*$RootfsBytes+1GB)
+}
+function Assert-OwnerInstallDisk([string]$StateRoot,[long]$RootfsBytes) {
+    $null=Assert-OwnerPath $StateRoot
+    $drive=[IO.DriveInfo]::new([IO.Path]::GetPathRoot($StateRoot))
+    Assert-OwnerGate ($drive.IsReady -and $drive.AvailableFreeSpace -ge (Get-OwnerInstallDiskRequirement $RootfsBytes)) 'BLOCKED_MVP7_DISK_CAPACITY'
+}
+function Get-OwnerPendingTransaction([hashtable]$Expected) {
+    $pending=Join-Path $Expected.state 'installation.pending.json'
+    $final=Join-Path $Expected.state 'installation.json'
+    if (Test-Path -LiteralPath $pending) { $actual=Read-OwnerJson $pending }
+    elseif (Test-Path -LiteralPath $final) {
+        Assert-OwnerGate ($Expected.outer -and (Test-Path -LiteralPath (Join-Path $Expected.program 'mvp7-installation.json.pending')) -and
+            -not (Test-Path -LiteralPath (Join-Path $Expected.program 'mvp7-installation.json'))) 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+        $outer=Read-OwnerJson (Join-Path $Expected.program 'mvp7-installation.json.pending')
+        Assert-OwnerTransaction $outer $Expected
+        $actual=(Read-OwnerJson $final).transaction
+    }
+    elseif ($Expected.outer -and (Test-Path -LiteralPath (Join-Path $Expected.program 'mvp7-rollback-ownership.json'))) {
+        $actual=Read-OwnerJson (Join-Path $Expected.program 'mvp7-rollback-ownership.json')
+    }
+    else { Stop-OwnerGate 'BLOCKED_MVP7_ROLLBACK_UNPROVEN' }
+    Assert-OwnerTransaction $actual $Expected
+    return $actual
+}
+function Remove-OwnerEmptyTransactionState([string]$StateRoot) {
+    # Non-recursive final removal; ownership and emptiness have already been proved.
+    [IO.Directory]::Delete($StateRoot)
+}
+function Undo-OwnerInstallTransaction([hashtable]$Transaction) {
+    $code='BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+    try {
+        Assert-OwnerTransaction $Transaction $Transaction
+        if ($Transaction.outer) {
+            Assert-OwnerGate (-not (Test-Path -LiteralPath (Join-Path $Transaction.program 'mvp7-installation.json'))) $code
+        }
+        # Pre-existing state is never acquired by an installation transaction.
+        if ($Transaction.stateExisted) { return }
+        if (-not (Test-Path -LiteralPath $Transaction.state)) {
+            Assert-OwnerGate ($null -eq (Get-OwnerDistroRegistration $Transaction.distro)) $code
+            return
+        }
+        $tx=Get-OwnerPendingTransaction $Transaction
+        Assert-OwnerPrivateDirectory $tx.state
+        Assert-OwnerTransactionTree $tx.state
+        Assert-OwnerGate ((Get-Item -LiteralPath $tx.state).CreationTimeUtc.Ticks -eq $tx.stateCreatedTicks) $code
+        $allowed=@('installation.pending.json','installation.pending.json.pending','installation.json','installation.json.pending','distribution')
+        foreach ($entry in Get-ChildItem -LiteralPath $tx.state -Force) {
+            Assert-OwnerGate ($entry.Name -cin $allowed) $code
+        }
+        $final=Join-Path $tx.state 'installation.json'
+        if (Test-Path -LiteralPath $final) {
+            $record=Read-OwnerJson $final
+            Assert-OwnerTransaction $record.transaction $tx
+            Assert-OwnerGate ($record.distribution -ceq $tx.distro -and $record.backupReceipts.Count -eq 0 -and $record.profiles.Count -eq 0) $code
+        }
+        $registration=Get-OwnerDistroRegistration $tx.distro
+        if (Test-Path -LiteralPath $tx.distribution) {
+            Assert-OwnerGate ($tx.ContainsKey('distributionCreatedTicks') -and
+                (Get-Item -LiteralPath $tx.distribution).CreationTimeUtc.Ticks -eq $tx.distributionCreatedTicks) $code
+            Assert-OwnerPrivateDirectory $tx.distribution
+            foreach ($entry in Get-ChildItem -LiteralPath $tx.distribution -Force) {
+                Assert-OwnerGate (-not $entry.PSIsContainer -and $entry.Name -ceq 'ext4.vhdx') $code
+            }
+        }
+        if ($registration) {
+            Assert-OwnerGate ($tx.importAttempted -eq $true -and $registration.name -ceq $tx.distro -and
+                $registration.version -eq 2 -and $registration.path -ieq $tx.distribution -and
+                (Test-Path -LiteralPath $tx.distribution)) $code
+            # This is the only destructive WSL operation: one exact, proven import.
+            $null=Invoke-OwnerProcess "$env:WINDIR\System32\wsl.exe" @('--unregister',$tx.distro) -TimeoutSeconds 60
+            Assert-OwnerGate ($null -eq (Get-OwnerDistroRegistration $tx.distro)) $code
+        }
+        if (Test-Path -LiteralPath $tx.distribution) {
+            Assert-OwnerGate (@(Get-ChildItem -LiteralPath $tx.distribution -Force).Count -eq 0) $code
+            Remove-Item -LiteralPath $tx.distribution
+        }
+        if ($tx.outer) {
+            # Retain ownership proof outside StateRoot until the entire rollback
+            # completes. A crash after removing its last marker is recoverable.
+            $outer=Read-OwnerJson (Join-Path $tx.program 'mvp7-installation.json.pending')
+            Assert-OwnerTransaction $outer $tx
+            $proof=Join-Path $tx.program 'mvp7-rollback-ownership.json'
+            if (Test-Path -LiteralPath $proof) {
+                $saved=Read-OwnerJson $proof
+                Assert-OwnerTransaction $saved $tx
+                Assert-OwnerGate ($saved.stateCreatedTicks -eq $tx.stateCreatedTicks) $code
+            } else { Write-OwnerJson $proof $tx }
+        }
+        foreach ($name in $allowed | Where-Object { $_ -ne 'distribution' }) {
+            $path=Join-Path $tx.state $name
+            if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path }
+        }
+        Assert-OwnerGate (@(Get-ChildItem -LiteralPath $tx.state -Force).Count -eq 0) $code
+        Remove-OwnerEmptyTransactionState $tx.state
+    } catch { Stop-OwnerGate $code }
+}
+function Complete-OwnerInstallTransaction([hashtable]$Transaction) {
+    $tx=Get-OwnerPendingTransaction $Transaction
+    Assert-OwnerTransaction $tx $Transaction
+    $record=Read-OwnerJson (Join-Path $tx.state 'installation.json')
+    Assert-OwnerTransaction $record.transaction $tx
+    Remove-Item -LiteralPath (Join-Path $tx.state 'installation.pending.json')
+}
 function New-OwnerInstall {
-    param([hashtable]$Context,[switch]$RestoreEmpty)
+    param([hashtable]$Context,[switch]$RestoreEmpty,[hashtable]$Transaction)
     Assert-OwnerGate (-not $Context.record) 'BLOCKED_G10_RUNTIME_IDENTITY_DRIFT'
     Assert-OwnerPortFree $Context.port
-    $root=New-OwnerPrivateDirectory $Context.root
-    $instance=[guid]::NewGuid().ToString('N').Substring(0,8)
-    $distro='Conflict-Alpha-'+$Context.manifest.source.tree.Substring(0,12)+'-'+$instance
-    $vhd=New-OwnerPrivateDirectory (Join-Path $root 'distribution')
-    $record=@{schema='G10_INSTALLATION_V1';instance=$instance;distribution=$distro;phase='IMPORT_PENDING';port=$Context.port;
-              manifest=(Get-OwnerFileIdentity (Join-Path $Context.package $script:ManifestName));
-              source=$Context.manifest.source;profiles=@{};backupReceipts=@()}
-    $pending=Join-Path $root 'installation.pending.json'
-    Assert-OwnerGate (-not (Test-Path -LiteralPath $pending)) 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
-    Write-OwnerJson $pending $record
     $rootfs=Join-Path $Context.package 'rootfs/conflict-analysis-functional-alpha-rootfs.tar'
-    try {
-        $null=Invoke-OwnerProcess "$env:WINDIR\System32\wsl.exe" @('--import',$distro,$vhd,$rootfs,'--version','2')
-    } catch {
-        $code='BLOCKED_MVP7_WSL2_PACKAGE_IMPORT_FAILED'
-        if ($_.Exception.Data.Contains('ExitCode')) { $code+='_EXIT_'+[string]$_.Exception.Data['ExitCode'] }
-        Stop-OwnerGate $code
+    Assert-OwnerInstallDisk $Context.root (Get-Item -LiteralPath $rootfs).Length
+    if (-not $Transaction) {
+        $nonce=[guid]::NewGuid().ToString('N')
+        $Transaction=@{schema='MVP7_INSTALL_TRANSACTION_V1';source=$Context.manifest.source.head;
+            installer=$Context.manifest.delivery.head;nonce=$nonce;program=$Context.package;state=$Context.root;
+            distribution=(Join-Path $Context.root 'distribution');distro=('Conflict-Alpha-'+$Context.manifest.source.tree.Substring(0,12)+'-'+$nonce.Substring(0,8));
+            stateExisted=(Test-Path -LiteralPath $Context.root);distroExisted=$false;outer=$false}
     }
-    $id=Invoke-OwnerWsl $distro @('identity')
-    Assert-OwnerGate ($id.source.head -ceq $Context.manifest.source.head -and $id.source.tree -ceq $Context.manifest.source.tree -and $id.wheel.sha256 -ceq $Context.manifest.wheel.sha256) 'BLOCKED_G10_RUNTIME_IDENTITY_DRIFT'
-    $command=if($RestoreEmpty){'restore-empty'}else{'initialize'}
-    $result=Invoke-OwnerWsl $distro @($command,[string]$Context.port)
-    $record.phase=$result.phase
-    Write-OwnerJson $Context.stateFile $record
-    Remove-Item -LiteralPath $pending
-    $Context.record=$record
-    return $record
+    Assert-OwnerTransaction $Transaction $Transaction
+    Assert-OwnerGate ($Transaction.source -ceq $Context.manifest.source.head -and $Transaction.installer -ceq $Context.manifest.delivery.head -and
+        $Transaction.state -ceq $Context.root) 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+    Assert-OwnerGate (-not $Transaction.stateExisted -and -not (Test-Path -LiteralPath $Context.root)) 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
+    Assert-OwnerGate ($null -eq (Get-OwnerDistroRegistration $Transaction.distro)) 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
+    $tx=$Transaction.Clone()
+    $pending=Join-Path $tx.state 'installation.pending.json'
+    try {
+        $root=New-OwnerPrivateDirectory $tx.state -RequireNew
+        $tx.stateCreatedTicks=(Get-Item -LiteralPath $root).CreationTimeUtc.Ticks
+        $tx.importAttempted=$false
+        Write-OwnerJson $pending $tx
+        $vhd=New-OwnerPrivateDirectory $tx.distribution -RequireNew
+        $tx.distributionCreatedTicks=(Get-Item -LiteralPath $vhd).CreationTimeUtc.Ticks
+        Write-OwnerJson $pending $tx
+        Assert-OwnerGate ($null -eq (Get-OwnerDistroRegistration $tx.distro)) 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
+        $tx.importAttempted=$true
+        Write-OwnerJson $pending $tx
+        try {
+            $null=Invoke-OwnerProcess "$env:WINDIR\System32\wsl.exe" @('--import',$tx.distro,$vhd,$rootfs,'--version','2')
+        } catch {
+            $code='BLOCKED_MVP7_WSL2_PACKAGE_IMPORT_FAILED'
+            if ($_.Exception.Data.Contains('ExitCode')) { $code+='_EXIT_'+[string]$_.Exception.Data['ExitCode'] }
+            Stop-OwnerGate $code
+        }
+        $registration=Get-OwnerDistroRegistration $tx.distro
+        Assert-OwnerGate ($registration -and $registration.path -ieq $vhd -and $registration.version -eq 2) 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+        $id=Invoke-OwnerWsl $tx.distro @('identity')
+        Assert-OwnerGate ($id.source.head -ceq $Context.manifest.source.head -and $id.source.tree -ceq $Context.manifest.source.tree -and $id.wheel.sha256 -ceq $Context.manifest.wheel.sha256) 'BLOCKED_G10_RUNTIME_IDENTITY_DRIFT'
+        $command=if($RestoreEmpty){'restore-empty'}else{'initialize'}
+        $result=Invoke-OwnerWsl $tx.distro @($command,[string]$Context.port)
+        $record=@{schema='G10_INSTALLATION_V1';instance=$tx.nonce.Substring(0,8);distribution=$tx.distro;phase=$result.phase;port=$Context.port;
+            manifest=(Get-OwnerFileIdentity (Join-Path $Context.package $script:ManifestName));
+            source=$Context.manifest.source;profiles=@{};backupReceipts=@();transaction=$tx}
+        Write-OwnerJson $Context.stateFile $record
+        if (-not $tx.outer) { Complete-OwnerInstallTransaction $tx }
+        $Context.record=$record
+        return $record
+    } catch {
+        $failure=$_
+        Undo-OwnerInstallTransaction $tx
+        throw $failure
+    }
 }
 function Assert-OwnerInstalled([hashtable]$Context) {
     Assert-OwnerGate ([bool]$Context.record) 'BLOCKED_G10_NOT_INSTALLED'

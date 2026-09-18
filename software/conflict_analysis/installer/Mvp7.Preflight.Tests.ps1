@@ -33,6 +33,23 @@ Describe 'MVP7 preflight without registered Linux distros' {
         Assert-Mvp7Host
         Assert-MockCalled Invoke-OwnerProcess -ModuleName OwnerAlpha.Common -Times 0 -Exactly -ParameterFilter { $Arguments[0] -eq '--list' }
         Assert-MockCalled Invoke-OwnerProcess -ModuleName OwnerAlpha.Common -Times 0 -Exactly -ParameterFilter { $Arguments[0] -eq '--import' }
+        # Same-volume requirements must be summed; separate volumes must each pass.
+        Mock Get-Mvp7VolumeFree -ModuleName Mvp7.Setup { return [long]100 }
+        $plan=@{programVolume='C:\';stateVolume='C:\';programRequiredBytes=40L;stateRequiredBytes=60L}
+        Assert-Mvp7DiskCapacity $plan
+        $plan.stateRequiredBytes=61L
+        $rejected=$false
+        try { Assert-Mvp7DiskCapacity $plan } catch { $rejected=$_.Exception.Message -ceq 'BLOCKED_MVP7_DISK_CAPACITY' }
+        if (-not $rejected) { throw 'Shared-volume disk reservation must fail closed' }
+        $plan.stateVolume='D:\';$plan.programRequiredBytes=100L;$plan.stateRequiredBytes=100L
+        Assert-Mvp7DiskCapacity $plan
+        foreach ($kind in @('program','state')) {
+            $plan[$kind+'RequiredBytes']=101L;$rejected=$false
+            try { Assert-Mvp7DiskCapacity $plan } catch { $rejected=$_.Exception.Message -ceq 'BLOCKED_MVP7_DISK_CAPACITY' }
+            if (-not $rejected) { throw 'Each volume must independently have enough space' }
+            $plan[$kind+'RequiredBytes']=100L
+        }
+
     }
     It 'Missing WSL import capability fails both preflights' {
         Mock Invoke-OwnerProcess -ModuleName OwnerAlpha.Common {

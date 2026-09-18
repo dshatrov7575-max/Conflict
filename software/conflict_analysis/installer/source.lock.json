@@ -5,6 +5,7 @@
   "installer_commit_a": "21c4812a8eaf8d503454699c191d99abaf538036",
   "installer_commit_b": "7011f31c8b4a8a21986b85da18d5337e64c7aa28",
   "installer_commit_c": "ce522813cfbfd26c3a06fd53fbde54939559e4d9",
+  "installer_commit_d": "1e109ad2f37d3de4d0d0fa3a9b9ad1dbace182d4",
   "installer_message": "build(installer): add MVP7 R1 Windows setup candidate",
   "installer_parent": "c8263b81adb8fcb90ec92b65342f9620884c929b",
   "migration": {
@@ -82,5 +83,6 @@
     ],
     "source_date_epoch": 1789590115,
     "tree": "5567183dbe16fc6c7c8caac051b7694f37b92457"
-  }
+  },
+  "transaction_correction_message": "fix(installer): make Windows installation transactional"
 }
