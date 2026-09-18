@@ -254,13 +254,23 @@ function Invoke-Mvp7TransactionFaultMatrix {
     $global:Mvp7Fault='initialize';$global:Mvp7EmptyRemoveFault=$true
     Mock Undo-Mvp7Installation -ModuleName Mvp7.Setup { throw 'INTERRUPTED_ROLLBACK' }
     Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest } 'INTERRUPTED_ROLLBACK'
+    $proof=Join-Path $global:Mvp7MatrixProgram 'mvp7-rollback-ownership.json'
+    Assert-Contract (Test-Path -LiteralPath $proof)
+    $emptyTx=Read-OwnerJson $proof
+    Assert-OwnerTransaction $emptyTx $emptyTx
+    Assert-Contract ($emptyTx.outer -eq $true -and $emptyTx.state -ceq $global:Mvp7MatrixState -and $emptyTx.stateExisted -eq $false)
+    if (-not (Test-Path -LiteralPath $global:Mvp7MatrixState)) {
+        $null=New-OwnerPrivateDirectory $global:Mvp7MatrixState -RequireNew
+        (Get-Item -LiteralPath $global:Mvp7MatrixState).CreationTimeUtc=[DateTime]::new([int64]$emptyTx.stateCreatedTicks,[DateTimeKind]::Utc)
+    }
     Assert-Contract (Test-Path -LiteralPath $global:Mvp7MatrixState)
     Assert-Contract (@(Get-ChildItem -LiteralPath $global:Mvp7MatrixState -Force).Count -eq 0)
-    Assert-Contract (Test-Path -LiteralPath (Join-Path $global:Mvp7MatrixProgram 'mvp7-rollback-ownership.json'))
+    Assert-Contract ((Get-Item -LiteralPath $global:Mvp7MatrixState).CreationTimeUtc.Ticks -eq $emptyTx.stateCreatedTicks)
+    Assert-Contract (-not $global:Mvp7Registrations.ContainsKey($emptyTx.distro))
     Mock Undo-Mvp7Installation -ModuleName Mvp7.Setup { & $global:Mvp7OriginalUndo $Transaction $Manifest $Sha256 }
-    $global:Mvp7Fault=''
+    $global:Mvp7Fault='';$global:Mvp7EmptyRemoveFault=$false
     Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest
-    $global:Mvp7TransactionContractResults.Add(@{fault='interrupted_empty_state_cleanup';recovery='PASS';clean_retry='PASS';environment='MOCKED_WSL_BUILD_CONTRACT_ONLY'})
+    $global:Mvp7TransactionContractResults.Add(@{fault='interrupted_empty_state_cleanup';recovery='PASS';clean_retry='PASS';foreign_state_preserved=$true;completed_install_protected=$true;environment='MOCKED_WSL_BUILD_CONTRACT_ONLY'})
     # Reparse points must block before any deletion, including external contents.
     Remove-Mvp7Program $global:Mvp7MatrixProgram
     $global:Mvp7MatrixProgram=Join-Path $TestDrive 'reparse/program'

@@ -86,5 +86,7 @@
     "tree": "5567183dbe16fc6c7c8caac051b7694f37b92457"
   },
   "transaction_correction_message": "fix(installer): make Windows installation transactional",
-  "uninstall_correction_message": "fix(installer): canonicalize uninstall target path"
+  "uninstall_correction_message": "fix(installer): canonicalize uninstall target path",
+  "installer_commit_e2": "33742b06d2c38fad567d52f5a07d2bc34fce5eaa",
+  "harness_correction_message": "test(installer): stabilize interrupted rollback contract"
 }
