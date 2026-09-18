@@ -6,6 +6,30 @@ sys.path.insert(0,str(ROOT.parent/'scripts'))
 from verify_owner_alpha_package import verify_zip,identity,canonical,safe_member
 LOCK=json.loads((ROOT/'external-inputs.lock.json').read_text())
 def checked(args,**kw): return subprocess.run([str(a) for a in args],check=True,**kw)
+
+def run_direct_verify(pwsh, script, inner, expected_sha256, expected_bytes, runtime_root, runtime_manifest):
+    result=subprocess.run([str(pwsh),'-NoLogo','-NoProfile','-NonInteractive','-File',str(script),
+                           '-Zip',str(inner),'-Sha256',expected_sha256,'-Bytes',str(expected_bytes),
+                           '-RuntimeRoot',str(runtime_root),'-RuntimeManifest',str(runtime_manifest),'-VerifyOnly'],
+                          capture_output=True,text=True,timeout=600)
+    proof={'exit_code':result.returncode,'stdout':result.stdout,'stderr':result.stderr}
+    if result.returncode:
+        print(json.dumps({'direct_private_runtime_verify':proof},ensure_ascii=False,indent=2),file=sys.stderr)
+        raise RuntimeError('Bundled private runtime VerifyOnly failed')
+    return proof
+
+def run_setup_verify(target, extracted):
+    result=subprocess.run([str(target),'/S','/VERIFYONLY','/PAYLOADOUT='+str(extracted.resolve())],
+                          capture_output=True,text=True,timeout=600)
+    error_file=extracted/'verify-error.txt'
+    proof={'exit_code':result.returncode,'stdout':result.stdout,'stderr':result.stderr,
+           'verify_error_present':error_file.exists(),
+           'verify_error':error_file.read_text(encoding='utf-8',errors='replace') if error_file.exists() else ''}
+    if result.returncode:
+        print(json.dumps({'nsis_verifyonly':proof},ensure_ascii=False,indent=2),file=sys.stderr)
+        raise RuntimeError('NSIS VerifyOnly failed')
+    assert not error_file.exists(), 'verify-error.txt must not exist after successful VerifyOnly'
+    return proof
 def pe_fields(path):
     raw=path.read_bytes();offset=struct.unpack_from('<I',raw,0x3c)[0]
     assert raw[offset:offset+4]==b'PE\0\0'
@@ -59,13 +83,14 @@ def runtime_manifest(runtime_root, archive_identity, observed):
 def prepare_powershell_runtime(output):
     pin=LOCK['powershell'];archive=output/pin['filename']
     archive_identity=fetch_pin(pin,archive)
+    archive_record={**archive_identity,'version':pin['version']}
     runtime=safe_extract_zip(archive,output/'powershell-runtime')
     pwsh=runtime/'pwsh.exe'
     assert pwsh.is_file()
     command="[pscustomobject]@{PSEdition=$PSVersionTable.PSEdition;PSVersion=$PSVersionTable.PSVersion.ToString();Architecture=[Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString()} | ConvertTo-Json -Compress"
     observed=json.loads(subprocess.check_output([str(pwsh),'-NoLogo','-NoProfile','-NonInteractive','-Command',command],text=True))
     assert observed=={'PSEdition':'Core','PSVersion':pin['version'],'Architecture':'X64'},observed
-    manifest=runtime_manifest(runtime,archive_identity,observed)
+    manifest=runtime_manifest(runtime,archive_record,observed)
     assert manifest['entrypoint']['bytes']==pwsh.stat().st_size
     assert manifest['entrypoint']['sha256']==hashlib.sha256(pwsh.read_bytes()).hexdigest()
     (output/'runtime-manifest.json').write_bytes(canonical(manifest))
@@ -91,6 +116,7 @@ def main():
         shutil.copyfile(ROOT/name,build/name)
     shutil.copyfile(args.output/'runtime-manifest.json',build/'runtime-manifest.json')
     shutil.copytree(runtime_root,build/'pwsh')
+    direct_verify=run_direct_verify(build/'pwsh/pwsh.exe',build/'Install-Mvp7.ps1',args.inner,inner['sha256'],inner['bytes'],build/'pwsh',build/'runtime-manifest.json')
     def nsi(value):
         text=str(value);assert not any(c in text for c in ['"','$','\n','\r']),text
         return text
@@ -104,19 +130,22 @@ def main():
         extracted=args.output/('embedded-'+str(len(binaries)));extracted.mkdir()
         # This mode only verifies/extracts embedded ZIP into the requested folder.
         # It never installs, imports WSL, registers shortcuts or bypasses host gates.
-        checked([target,'/S','/VERIFYONLY','/PAYLOADOUT='+str(extracted.resolve())],timeout=600)
+        verify_proof=run_setup_verify(target,extracted)
         embedded=extracted/'inner.zip'
         assert embedded.stat().st_size==inner['bytes'] and identity(embedded)['sha256']==inner['sha256']
         verify_zip(embedded,expected_sha256=inner['sha256'],expected_bytes=inner['bytes'])
-        binaries.append(target)
-    same=binaries[0].read_bytes()==binaries[1].read_bytes()
+        binaries.append({'path':target,'verify':verify_proof})
+    binary_paths=[x['path'] for x in binaries]
+    same=binary_paths[0].read_bytes()==binary_paths[1].read_bytes()
     report={'SETUP_BUILD':'PASS','INNER_ZIP_VERIFY':'PASS','WINDOWS11_WSL2_E2E':'NOT_EXECUTED',
             'CLEAN_PC_SMOKE':'NOT_EXECUTED','PARTNER_RELEASE_READY':False,
             'host_powershell_required':False,'powershell_system_install':False,
             'powershell_path_mutation':False,'powershell_network_install':False,
             'private_runtime_shortcuts':True,'private_runtime_uninstall_bootstrap':True,
-            'setup':identity(binaries[0]),'inner':inner,'source':result['manifest']['source'],
+            'setup':identity(binary_paths[0]),'inner':inner,'source':result['manifest']['source'],
             'compiler':{**pin,'archive':nsis_archive,'observed_version':version},
+            'direct_private_runtime_verify':direct_verify,
+            'nsis_verifyonly':[x['verify'] for x in binaries],
             'bundled_runtime':{'version':LOCK['powershell']['version'],'archive':runtime['archive'],
                 'expanded_bytes':runtime['expanded_bytes'],'file_count':runtime['file_count'],
                 'entrypoint':runtime['entrypoint'],'observed_version':runtime['observed_version']},
@@ -128,11 +157,11 @@ def main():
             'transaction_contract':'MVP7_INSTALL_TRANSACTION_V1',
             'superseded_setup_sha256':'1b2893a727887bb3e0a76e4e4ad16810e8d6ba81e4c556cf07662f28af9bfa1a',
             'script_sources':{p.name:identity(p) for p in sorted(build.iterdir()) if p.is_file()},
-            'repeat':identity(binaries[1]),'byte_identical_exe':same,
-            'pe_fields':[pe_fields(p) for p in binaries],
+            'repeat':identity(binary_paths[1]),'byte_identical_exe':same,
+            'pe_fields':[pe_fields(p) for p in binary_paths],
             'embedded_payload_identity_proven':True}
     if not same:
-        a,b=(p.read_bytes() for p in binaries)
+        a,b=(p.read_bytes() for p in binary_paths)
         ranges=[];start=None
         for i in range(max(len(a),len(b))):
             unequal=a[i:i+1]!=b[i:i+1]

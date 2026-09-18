@@ -8,6 +8,7 @@ APP=ROOT.parent
 sys.path.insert(0,str(APP/'scripts'))
 import verify_owner_alpha_package as v
 import build_owner_alpha_package as b
+import build_setup as setup
 
 def test_external_inputs_have_exact_urls_sizes_hashes():
     lock=json.loads((ROOT/'external-inputs.lock.json').read_text(encoding='utf-8'))
@@ -82,6 +83,16 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         'software/conflict_analysis/owner_alpha_package/tests/OwnerAlpha.Windows.Contract.Tests.ps1',
         'software/conflict_analysis/scripts/verify_owner_alpha_package.py',
     }
+    ninth='92e7d9f83cded1c3ce0e08e4c3f3d8b3696b5733'
+    assert v.LOCK['installer_commit_e5']==ninth
+    assert v.LOCK['powershell_manifest_correction_message']=='fix(installer): repair bundled PowerShell manifest verification'
+    assert v.POWERSHELL_MANIFEST_PATHS=={
+        'software/conflict_analysis/installer/Mvp7Setup.nsi',
+        'software/conflict_analysis/installer/build_setup.py',
+        'software/conflict_analysis/installer/test_contract.py',
+        'software/conflict_analysis/installer/source.lock.json',
+        'software/conflict_analysis/scripts/verify_owner_alpha_package.py',
+    }
     head='d'*40;tree='e'*40;e4_tree='f'*40
     answers={
         ('rev-parse','HEAD'):head, ('rev-parse','HEAD^{tree}'):tree, ('rev-parse',eighth+'^{tree}'):e4_tree,
@@ -115,10 +126,14 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         ('rev-list','--count',base+'..'+eighth):'8',
         ('show','-s','--format=%B',eighth):v.LOCK['rollback_fixture_correction_message'],
         ('diff','--name-status','--no-renames',seventh,eighth):'\n'.join('M\t'+p for p in sorted(v.HARNESS_PATHS)),
-        ('show','-s','--format=%P',head):eighth,
-        ('rev-list','--count',base+'..'+head):'9',
-        ('show','-s','--format=%B',head):v.LOCK['powershell_runtime_correction_message'],
-        ('diff','--name-status','--no-renames',eighth,head):'\n'.join('M\t'+p for p in sorted(v.POWERSHELL_RUNTIME_PATHS)),
+        ('show','-s','--format=%P',ninth):eighth,
+        ('rev-list','--count',base+'..'+ninth):'9',
+        ('show','-s','--format=%B',ninth):v.LOCK['powershell_runtime_correction_message'],
+        ('diff','--name-status','--no-renames',eighth,ninth):'\n'.join('M\t'+p for p in sorted(v.POWERSHELL_RUNTIME_PATHS)),
+        ('show','-s','--format=%P',head):ninth,
+        ('rev-list','--count',base+'..'+head):'10',
+        ('show','-s','--format=%B',head):v.LOCK['powershell_manifest_correction_message'],
+        ('diff','--name-status','--no-renames',ninth,head):'\n'.join('M\t'+p for p in sorted(v.POWERSHELL_MANIFEST_PATHS)),
         ('diff','--name-only',base,head):'\n'.join(sorted(v.CORRECTIVE_PATHS)),
     }
     monkeypatch.setattr(v,'git',lambda repo,*args:answers[args])
@@ -131,6 +146,9 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         (('show','-s','--format=%P',head),second),
         (('show','-s','--format=%P',head),third+' '+base),
         (('show','-s','--format=%P',head),seventh),
+        (('show','-s','--format=%P',head),eighth),
+        (('show','-s','--format=%P',head),ninth+' '+base),
+        (('show','-s','--format=%P',ninth),seventh),
         (('show','-s','--format=%P',eighth),sixth),
         (('show','-s','--format=%P',sixth),fourth),
         (('show','-s','--format=%P',seventh),fifth),
@@ -144,17 +162,19 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         (('show','-s','--format=%B',sixth),'changed E2'),
         (('show','-s','--format=%B',seventh),'changed E3'),
         (('show','-s','--format=%B',eighth),'changed E4'),
-        (('show','-s','--format=%B',head),'changed E5'),
+        (('show','-s','--format=%B',ninth),'changed E5'),
+        (('show','-s','--format=%B',head),'changed E5a'),
         (('status','--porcelain=v1','--untracked-files=all'),' M extra'),
         (('diff','--name-only',base,head),'software/conflict_analysis/domain/models.py'),
     ]
-    invalid += [(('rev-list','--count',base+'..'+head),str(n)) for n in (0,1,2,3,4,5,6,7,8,10)]
+    invalid += [(('rev-list','--count',base+'..'+head),str(n)) for n in (0,1,2,3,4,5,6,7,8,9,11)]
+    invalid += [(('rev-list','--count',base+'..'+ninth),str(n)) for n in (0,1,2,3,4,5,6,7,8,10)]
     invalid += [(('rev-list','--count',base+'..'+eighth),str(n)) for n in (0,1,2,3,4,5,6,7,9)]
     invalid += [(('rev-list','--count',base+'..'+seventh),str(n)) for n in (0,1,2,3,4,5,6,8)]
     invalid += [(('rev-list','--count',base+'..'+sixth),str(n)) for n in (0,1,2,3,4,5,7)]
     invalid += [(('rev-list','--count',base+'..'+fifth),str(n)) for n in (0,1,2,3,4,6)]
     invalid += [(('rev-list','--count',base+'..'+fourth),str(n)) for n in (0,1,2,3,5)]
-    for parent,child in ((first,second),(second,third),(third,fourth),(fourth,fifth),(fifth,sixth),(sixth,seventh),(seventh,eighth),(eighth,head)):
+    for parent,child in ((first,second),(second,third),(third,fourth),(fourth,fifth),(fifth,sixth),(sixth,seventh),(seventh,eighth),(eighth,ninth),(ninth,head)):
         key=('diff','--name-status','--no-renames',parent,child)
         invalid.extend([(key,'M\tsoftware/conflict_analysis/domain/models.py'),
                         (key,answers[key].replace('M\t','A\t',1)),
@@ -181,6 +201,7 @@ def test_nsis_payload_only_mode_cannot_install_or_bypass_gate():
     assert 'WriteRegStr HKLM' not in text and 'RequestExecutionLevel admin' not in text
     assert text.index('verified:')<text.index('install:')
     assert 'Quit' in text[text.index('verified:'):text.index('install:')]
+    assert 'CopyFiles /SILENT "$PLUGINSDIR\\inner.zip" "$PayloadOut\\inner.zip"' in text
     assert 'SearchPath $Pwsh' not in text
     assert '$PROGRAMFILES64\\PowerShell' not in text
     assert 'Требуется установленный PowerShell 7' not in text
@@ -294,3 +315,81 @@ def _assert_private_daemon_helpers(module,tmp_path):
     assert caught.value.code=='BLOCKED_G10_RUNTIME_OPERATION_FAILED' and clock.now==15
     for timeout in (0,-1,16,60):
         with pytest.raises(scope['Halt']):scope['wait_daemon']('nginx',timeout)
+
+
+def test_powershell_runtime_manifest_archive_record_is_versioned(monkeypatch,tmp_path):
+    def fake_fetch(pin,target):
+        target.write_bytes(b'archive')
+        return {k:pin[k] for k in ['filename','bytes','sha256']}
+    def fake_extract(archive,destination):
+        destination.mkdir()
+        (destination/'pwsh.exe').write_bytes(b'pwsh')
+        (destination/'LICENSE.txt').write_text('license',encoding='utf-8')
+        (destination/'ThirdPartyNotices.txt').write_text('notices',encoding='utf-8')
+        return destination
+    monkeypatch.setattr(setup,'fetch_pin',fake_fetch)
+    monkeypatch.setattr(setup,'safe_extract_zip',fake_extract)
+    monkeypatch.setattr(setup.subprocess,'check_output',lambda *a,**k:'{"PSEdition":"Core","PSVersion":"7.6.6","Architecture":"X64"}')
+    runtime,manifest=setup.prepare_powershell_runtime(tmp_path)
+    assert runtime==tmp_path/'powershell-runtime'
+    assert manifest['archive']=={
+        'filename':'PowerShell-7.6.6-win-x64.zip',
+        'bytes':106328873,
+        'sha256':'02fe458be20493fbdf43f61ea20610b811ee6c738ab1676c61b9cfcd1a33c860',
+        'version':'7.6.6',
+    }
+    assert sorted(manifest['archive'])==['bytes','filename','sha256','version']
+    raw=json.loads((tmp_path/'runtime-manifest.json').read_text(encoding='utf-8'))
+    assert raw['archive']==manifest['archive']
+
+
+def test_runtime_manifest_version_fail_closed_and_no_host_pwsh_fallback():
+    setup_module=(ROOT/'Mvp7.Setup.psm1').read_text(encoding='utf-8')
+    assert "$manifest.archive.version -ceq '7.6.6'" in setup_module
+    assert '$manifest.archive.version' in setup_module
+    assert 'Повреждена встроенная среда PowerShell.' in setup_module
+    absent={
+        'schema':'MVP7_POWERSHELL_RUNTIME_MANIFEST_V1',
+        'archive':{'filename':'PowerShell-7.6.6-win-x64.zip','bytes':106328873,'sha256':'02fe458be20493fbdf43f61ea20610b811ee6c738ab1676c61b9cfcd1a33c860'},
+        'observed_version':{'PSEdition':'Core','PSVersion':'7.6.6','Architecture':'X64'},
+        'entrypoint':{'relative_path':'pwsh.exe','bytes':1,'sha256':'0'*64},
+        'file_count':1,'expanded_bytes':1,'files':[]}
+    wrong=copy.deepcopy(absent);wrong['archive']['version']='7.6.5'
+    assert 'version' not in absent['archive'] and wrong['archive']['version']!='7.6.6'
+    nsis=(ROOT/'Mvp7Setup.nsi').read_text(encoding='utf-8')
+    assert '$PLUGINSDIR\\pwsh\\pwsh.exe' in nsis
+    assert '$INSTDIR\\runtime\\pwsh\\pwsh.exe' in nsis
+    assert 'SearchPath $Pwsh' not in nsis and '$PROGRAMFILES64\\PowerShell' not in nsis
+
+
+def test_direct_private_runtime_verify_uses_bundled_runtime(monkeypatch,tmp_path):
+    calls=[]
+    class Done:
+        returncode=0;stdout='ok';stderr=''
+    monkeypatch.setattr(setup.subprocess,'run',lambda args,**kw:(calls.append((args,kw)) or Done()))
+    proof=setup.run_direct_verify(tmp_path/'pwsh/pwsh.exe',tmp_path/'Install-Mvp7.ps1',tmp_path/'inner.zip','a'*64,123,tmp_path/'pwsh',tmp_path/'runtime-manifest.json')
+    args,kw=calls[0]
+    assert proof=={'exit_code':0,'stdout':'ok','stderr':''}
+    assert args[0]==str(tmp_path/'pwsh/pwsh.exe') and '-VerifyOnly' in args
+    assert str(tmp_path/'pwsh') in args and str(tmp_path/'runtime-manifest.json') in args
+    assert args[0].casefold().startswith(str(tmp_path).casefold())
+    assert kw['capture_output'] is True and kw['text'] is True
+
+
+def test_nsis_verifyonly_exposes_child_error_and_success_has_no_error_file(monkeypatch,tmp_path,capsys):
+    target=tmp_path/'ConflictPartnerDemo_MVP7_Setup.exe';target.write_bytes(b'exe')
+    def fail(args,**kw):
+        out=Path(str(args[-1]).split('=',1)[1]);out.mkdir(parents=True,exist_ok=True)
+        (out/'verify-error.txt').write_text('Повреждена встроенная среда PowerShell.',encoding='utf-8')
+        return SimpleNamespace(returncode=1,stdout='',stderr='')
+    monkeypatch.setattr(setup.subprocess,'run',fail)
+    with pytest.raises(RuntimeError):setup.run_setup_verify(target,tmp_path/'failed')
+    captured=capsys.readouterr().err
+    assert 'Повреждена встроенная среда PowerShell.' in captured
+    def ok(args,**kw):
+        out=Path(str(args[-1]).split('=',1)[1]);out.mkdir(parents=True,exist_ok=True)
+        return SimpleNamespace(returncode=0,stdout='',stderr='')
+    monkeypatch.setattr(setup.subprocess,'run',ok)
+    proof=setup.run_setup_verify(target,tmp_path/'ok')
+    assert proof['exit_code']==0 and proof['verify_error_present'] is False
+    assert not (tmp_path/'ok/verify-error.txt').exists()

@@ -11,12 +11,14 @@
   "installer_commit_e2": "33742b06d2c38fad567d52f5a07d2bc34fce5eaa",
   "installer_commit_e3": "7e6737c9e2b5ae42cc770f61a692b92c6dd8d7a3",
   "installer_commit_e4": "cbba3a415afe63391ca449d66ad1d6a27f825daa",
+  "installer_commit_e5": "92e7d9f83cded1c3ce0e08e4c3f3d8b3696b5733",
   "installer_message": "build(installer): add MVP7 R1 Windows setup candidate",
   "installer_parent": "c8263b81adb8fcb90ec92b65342f9620884c929b",
   "migration": {
     "blob": "8a2a5b3dfa750932ddb17228dfb476c5e3e88b03",
     "path": "domain/migrations/0019_analysis_geography.py"
   },
+  "powershell_manifest_correction_message": "fix(installer): repair bundled PowerShell manifest verification",
   "powershell_runtime_correction_message": "fix(installer): bundle private PowerShell runtime",
   "r1_regression_oracle": {
     "admin0": 9,

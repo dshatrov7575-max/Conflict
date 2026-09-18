@@ -22,6 +22,7 @@ BrandingText "Тестовый кандидат. Проверка Windows 11 + W
 Var Pwsh
 Var VerifyOnly
 Var PayloadOut
+Var VerifyError
 Function .onInit
   SetShellVarContext current
   StrCpy $INSTDIR "$LOCALAPPDATA\Programs\ConflictPartnerDemo\MVP7"
@@ -56,7 +57,8 @@ Section "Установка"
   Pop $1
   StrCmp $0 "0" 0 failed
   StrCmp $PayloadOut "" verified
-  CopyFiles /SILENT "$PLUGINSDIR\inner.zip" "$PayloadOut"
+  CreateDirectory "$PayloadOut"
+  CopyFiles /SILENT "$PLUGINSDIR\inner.zip" "$PayloadOut\inner.zip"
   IfErrors failed
 verified:
   SetErrorLevel 0
@@ -77,6 +79,15 @@ install:
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\ConflictPartnerDemoMVP7" "InstallLocation" "$INSTDIR"
   Goto done
 failed:
+  StrCmp $VerifyOnly "1" 0 normalfailed
+  StrCmp $PayloadOut "" normalfailed
+  CreateDirectory "$PayloadOut"
+  FileOpen $2 "$PayloadOut\verify-error.txt" w
+  IfErrors normalfailed
+  StrCpy $VerifyError $1
+  FileWrite $2 $VerifyError
+  FileClose $2
+normalfailed:
   MessageBox MB_ICONSTOP "Установка остановлена. Проверьте Windows 11 x64, рабочую WSL2, Microsoft Edge и целостность файла. Политики компьютера не изменялись." /SD IDOK
   SetErrorLevel 1
   Quit
