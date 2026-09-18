@@ -250,7 +250,8 @@ function Invoke-Mvp7Installation([string]$Zip,[string]$Sha256,[long]$Bytes,[hash
 }
 function Remove-Mvp7Program([string]$ProgramRoot) {
     $full=Assert-Mvp7Path $ProgramRoot
-    Assert-Mvp7 ($full -ieq (Get-Mvp7ProgramRoot)) 'Удаление за пределами каталога программы запрещено.'
+    $expected=Assert-Mvp7Path (Get-Mvp7ProgramRoot)
+    Assert-Mvp7 ($full -ieq $expected) 'Удаление за пределами каталога программы запрещено.'
     $marker=Join-Path $full 'mvp7-installation.json'
     Assert-Mvp7 (Test-Path -LiteralPath $marker) 'Не найден маркер установленной программы.'
     $record=Get-Content -Raw -LiteralPath $marker | ConvertFrom-Json -AsHashtable

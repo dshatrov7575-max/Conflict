@@ -9,6 +9,23 @@ function Assert-ContractReject([scriptblock]$Probe,[string]$Code) {
     try { & $Probe; throw 'Expected rejection did not occur' }
     catch { Assert-Contract ($_.Exception.Message.Contains($Code)) }
 }
+function Assert-Mvp7UninstallBoundary([hashtable]$Tx,[string]$StateFile,[string]$StateHash,[string]$BackupFile,[string]$BackupHash) {
+    $equivalent=$Tx.program -replace '\\','/'
+    Assert-ContractReject { Remove-Mvp7Program (($Tx.program)+'-sibling') } 'Удаление за пределами каталога программы запрещено'
+    Assert-ContractReject { Remove-Mvp7Program (Split-Path $Tx.program) } 'Удаление за пределами каталога программы запрещено'
+    Assert-ContractReject { Remove-Mvp7Program (Join-Path $Tx.program 'app') } 'Удаление за пределами каталога программы запрещено'
+    $target=Join-Path $TestDrive ('uninstall-reparse-target-'+[guid]::NewGuid().ToString('N'))
+    $null=New-Item -ItemType Directory -Path $target
+    [IO.File]::WriteAllText((Join-Path $target 'keep'),'unchanged')
+    $link=Join-Path $Tx.program 'uninstall-reparse'
+    $null=New-Item -ItemType Junction -Path $link -Target $target
+    try {
+        Assert-ContractReject { Remove-Mvp7Program $equivalent } 'Удаление каталога со ссылками запрещено'
+        Assert-Contract ((Get-Content -Raw (Join-Path $target 'keep')) -ceq 'unchanged')
+    } finally { [IO.Directory]::Delete($link) }
+    Remove-Mvp7Program $equivalent
+    Assert-Contract ((Get-FileHash $BackupFile).Hash -ceq $BackupHash -and (Get-FileHash $StateFile).Hash -ceq $StateHash)
+}
 function New-ContractContext {
     $root=Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
     $package=Join-Path $TestDrive ('package-'+[guid]::NewGuid().ToString('N'))
@@ -166,8 +183,7 @@ function Invoke-Mvp7TransactionFaultMatrix {
         $null=New-Item -ItemType Directory -Path $backup
         $backupFile=Join-Path $backup 'retained.bin';[IO.File]::WriteAllBytes($backupFile,[byte[]](0,17,255))
         $backupHash=(Get-FileHash $backupFile).Hash
-        Remove-Mvp7Program $tx.program
-        Assert-Contract ((Get-FileHash $backupFile).Hash -ceq $backupHash -and (Get-FileHash $stateFile).Hash -ceq $stateHash)
+        Assert-Mvp7UninstallBoundary $tx $stateFile $stateHash $backupFile $backupHash
         # A retained state must never be acquired or deleted by fresh install.
         Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest } 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
         Assert-Contract (-not (Test-Path -LiteralPath $tx.program) -and (Get-FileHash $backupFile).Hash -ceq $backupHash)

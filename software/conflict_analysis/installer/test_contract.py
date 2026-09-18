@@ -47,6 +47,10 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
     assert v.LOCK['installer_commit_d']==fourth
     assert v.LOCK['transaction_correction_message']=='fix(installer): make Windows installation transactional'
     assert len(v.TRANSACTION_PATHS)==11
+    fifth='43a37838b94695e3516ca086c0e409719328f8e4'
+    assert v.LOCK['installer_commit_e']==fifth
+    assert v.LOCK['uninstall_correction_message']=='fix(installer): canonicalize uninstall target path'
+    assert len(v.UNINSTALL_PATHS)==5
     head='d'*40;tree='e'*40
     answers={
         ('rev-parse','HEAD'):head, ('rev-parse','HEAD^{tree}'):tree,
@@ -64,14 +68,18 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         ('show','-s','--format=%B',fourth):v.LOCK['restore_correction_message'],
         ('diff','--name-status','--no-renames',third,fourth):'\n'.join('M\t'+p for p in sorted(v.RESTORE_PATHS)),
         ('rev-list','--count',base+'..'+fourth):'4',
-        ('show','-s','--format=%P',head):fourth,
-        ('rev-list','--count',base+'..'+head):'5',
-        ('show','-s','--format=%B',head):v.LOCK['transaction_correction_message'],
-        ('diff','--name-status','--no-renames',fourth,head):'\n'.join('M\t'+p for p in sorted(v.TRANSACTION_PATHS)),
+        ('show','-s','--format=%P',fifth):fourth,
+        ('show','-s','--format=%B',fifth):v.LOCK['transaction_correction_message'],
+        ('diff','--name-status','--no-renames',fourth,fifth):'\n'.join('M\t'+p for p in sorted(v.TRANSACTION_PATHS)),
+        ('rev-list','--count',base+'..'+fifth):'5',
+        ('show','-s','--format=%P',head):fifth,
+        ('rev-list','--count',base+'..'+head):'6',
+        ('show','-s','--format=%B',head):v.LOCK['uninstall_correction_message'],
+        ('diff','--name-status','--no-renames',fifth,head):'\n'.join('M\t'+p for p in sorted(v.UNINSTALL_PATHS)),
         ('diff','--name-only',base,head):'\n'.join(sorted(v.CORRECTIVE_PATHS)),
     }
     monkeypatch.setattr(v,'git',lambda repo,*args:answers[args])
-    assert v.delivery_identity(APP)=={'head':head,'tree':tree,'parent':fourth}
+    assert v.delivery_identity(APP)=={'head':head,'tree':tree,'parent':fifth}
     invalid=[
         (('show','-s','--format=%P',first),'0'*40),
         (('show','-s','--format=%P',second),base),
@@ -84,13 +92,16 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         (('show','-s','--format=%B',third),'changed C'),
         (('show','-s','--format=%B',fourth),'changed D'),
         (('show','-s','--format=%P',fourth),base),
+        (('show','-s','--format=%P',fifth),third),
+        (('show','-s','--format=%B',fifth),'changed E'),
         (('show','-s','--format=%B',head),'changed E'),
         (('status','--porcelain=v1','--untracked-files=all'),' M extra'),
         (('diff','--name-only',base,head),'software/conflict_analysis/domain/models.py'),
     ]
-    invalid += [(('rev-list','--count',base+'..'+head),str(n)) for n in (0,1,2,3,4,6)]
+    invalid += [(('rev-list','--count',base+'..'+head),str(n)) for n in (0,1,2,3,4,5,7)]
+    invalid += [(('rev-list','--count',base+'..'+fifth),str(n)) for n in (0,1,2,3,4,6)]
     invalid += [(('rev-list','--count',base+'..'+fourth),str(n)) for n in (0,1,2,3,5)]
-    for parent,child in ((first,second),(second,third),(third,fourth),(fourth,head)):
+    for parent,child in ((first,second),(second,third),(third,fourth),(fourth,fifth),(fifth,head)):
         key=('diff','--name-status','--no-renames',parent,child)
         invalid.extend([(key,'M\tsoftware/conflict_analysis/domain/models.py'),
                         (key,answers[key].replace('M\t','A\t',1)),
