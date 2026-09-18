@@ -22,8 +22,66 @@ function Invoke-Mvp7WslProbe([string]$Executable,[string]$Option) {
     Assert-Mvp7 ($LASTEXITCODE -eq 0) ('BLOCKED_MVP7_WSL_CAPABILITY: WSL не ответила на '+$Option)
     return $text
 }
+function Convert-Mvp7RuntimeRelativePath([string]$RelativePath) {
+    Assert-Mvp7 ($RelativePath -and $RelativePath -ceq $RelativePath.Normalize() -and $RelativePath -notmatch '^[\\/]|(^|[\\/])\.\.([\\/]|$)|[\x00-\x1f:]|[\\/]$|[. ]([\\/]|$)') 'Повреждён манифест встроенной среды PowerShell.'
+    return ($RelativePath -replace '/', [IO.Path]::DirectorySeparatorChar)
+}
+function Read-Mvp7RuntimeManifest([string]$RuntimeManifest) {
+    $path=Assert-Mvp7Path $RuntimeManifest
+    $manifest=Get-Content -LiteralPath $path -Raw -Encoding utf8 | ConvertFrom-Json -AsHashtable
+    Assert-Mvp7 ($manifest.schema -ceq 'MVP7_POWERSHELL_RUNTIME_MANIFEST_V1') 'Повреждён манифест встроенной среды PowerShell.'
+    Assert-Mvp7 ($manifest.archive.version -ceq '7.6.6' -and $manifest.archive.bytes -eq 106328873 -and $manifest.archive.sha256 -ceq '02fe458be20493fbdf43f61ea20610b811ee6c738ab1676c61b9cfcd1a33c860') 'Повреждена встроенная среда PowerShell.'
+    return $manifest
+}
+function Assert-Mvp7BundledPowerShellProcess {
+    Assert-Mvp7 ($PSVersionTable.PSEdition -ceq 'Core' -and $PSVersionTable.PSVersion.ToString() -ceq '7.6.6' -and [Environment]::Is64BitProcess -and [Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString() -ceq 'X64') 'Повреждена встроенная среда PowerShell.'
+}
+function Assert-Mvp7Runtime([string]$RuntimeRoot,[string]$RuntimeManifest,[switch]$CurrentProcess) {
+    $root=(Assert-Mvp7Path $RuntimeRoot).TrimEnd([IO.Path]::DirectorySeparatorChar)
+    $manifest=Read-Mvp7RuntimeManifest $RuntimeManifest
+    $seen=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    $total=[long]0;$count=0
+    foreach ($file in $manifest.files) {
+        $relative=$file.relative_path
+        Assert-Mvp7 ($seen.Add($relative)) 'Повторный путь во встроенной среде PowerShell.'
+        $target=[IO.Path]::GetFullPath((Join-Path $root (Convert-Mvp7RuntimeRelativePath $relative)))
+        Assert-Mvp7 ($target.StartsWith($root+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) 'Недопустимый путь во встроенной среде PowerShell.'
+        Assert-Mvp7 (Test-Path -LiteralPath $target -PathType Leaf) 'Отсутствует файл встроенной среды PowerShell.'
+        $item=Get-Item -LiteralPath $target -Force
+        Assert-Mvp7 (-not ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) 'Ссылки во встроенной среде PowerShell запрещены.'
+        Assert-Mvp7 ($item.Length -eq [long]$file.bytes -and (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant() -ceq $file.sha256) 'Контрольная сумма встроенной среды PowerShell не совпадает.'
+        $total+=[long]$file.bytes;$count++
+    }
+    foreach ($entry in Get-ChildItem -LiteralPath $root -Recurse -Force) {
+        Assert-Mvp7 (-not ($entry.Attributes -band [IO.FileAttributes]::ReparsePoint)) 'Ссылки во встроенной среде PowerShell запрещены.'
+        if (-not $entry.PSIsContainer) {
+            $relative=$entry.FullName.Substring($root.Length).TrimStart('\') -replace '\\','/'
+            Assert-Mvp7 ($seen.Contains($relative)) 'Лишний файл во встроенной среде PowerShell.'
+        }
+    }
+    Assert-Mvp7 ($count -eq [int]$manifest.file_count -and $total -eq [long]$manifest.expanded_bytes) 'Размер встроенной среды PowerShell не совпадает.'
+    $entrypoint=[IO.Path]::GetFullPath((Join-Path $root (Convert-Mvp7RuntimeRelativePath $manifest.entrypoint.relative_path)))
+    Assert-Mvp7 ((Split-Path $entrypoint -Leaf) -ceq 'pwsh.exe' -and (Test-Path -LiteralPath $entrypoint -PathType Leaf)) 'Не найден встроенный pwsh.exe.'
+    Assert-Mvp7 ((Get-Item -LiteralPath $entrypoint).Length -eq [long]$manifest.entrypoint.bytes -and (Get-FileHash -LiteralPath $entrypoint -Algorithm SHA256).Hash.ToLowerInvariant() -ceq $manifest.entrypoint.sha256) 'Контрольная сумма встроенного pwsh.exe не совпадает.'
+    if ($CurrentProcess) {
+        Assert-Mvp7BundledPowerShellProcess
+        $process=(Get-Process -Id $PID).Path
+        Assert-Mvp7 ((Assert-Mvp7Path $process) -ieq $entrypoint) 'Установщик запущен не собственной встроенной средой PowerShell.'
+    }
+    return $manifest
+}
+function Copy-Mvp7Runtime([string]$RuntimeRoot,[string]$RuntimeManifest,[string]$ProgramRoot) {
+    $null=Assert-Mvp7Runtime $RuntimeRoot $RuntimeManifest
+    $runtimeParent=Join-Path $ProgramRoot 'runtime'
+    $target=Join-Path $runtimeParent 'pwsh'
+    Assert-Mvp7 (-not (Test-Path -LiteralPath $target)) 'Каталог встроенной среды уже существует.'
+    $null=New-Item -ItemType Directory -Path $runtimeParent
+    Copy-Item -LiteralPath $RuntimeRoot -Destination $target -Recurse
+    $null=Assert-Mvp7Runtime $target $RuntimeManifest
+}
 function Assert-Mvp7Host {
-    Assert-Mvp7 ($IsWindows -and [Environment]::Is64BitProcess -and $PSVersionTable.PSVersion.Major -ge 7) 'Нужны Windows x64 и PowerShell 7.'
+    Assert-Mvp7BundledPowerShellProcess
+    Assert-Mvp7 ($IsWindows -and [Environment]::Is64BitProcess) 'Нужна Windows x64.'
     $os=Get-CimInstance Win32_OperatingSystem
     Assert-Mvp7 ($os.ProductType -eq 1 -and [int]$os.BuildNumber -ge 22000 -and $os.Caption -match 'Windows 11') 'Установка разрешена только на Windows 11 x64.'
     $computer=Get-CimInstance Win32_ComputerSystem
@@ -83,19 +141,20 @@ function Expand-Mvp7Archive([string]$Zip,[string]$Destination,[string]$Sha256,[l
     [IO.Compression.ZipFile]::ExtractToDirectory($Zip,$destination)
 }
 # Capacity uses verified archive lengths; it never creates a directory or marker.
-function Get-Mvp7DiskPlan([string]$Zip,[hashtable]$Manifest,[string]$ProgramRoot,[string]$StateRoot) {
+function Get-Mvp7DiskPlan([string]$Zip,[hashtable]$Manifest,[string]$ProgramRoot,[string]$StateRoot,[hashtable]$Runtime) {
     $archive=[IO.Compression.ZipFile]::OpenRead($Zip)
     try { $expanded=[long]0;foreach ($entry in $archive.Entries) { $expanded+=$entry.Length } }
     finally { $archive.Dispose() }
     $rootfs=[long]$Manifest.payload['rootfs/conflict-analysis-functional-alpha-rootfs.tar'].bytes
-    Assert-Mvp7 ($expanded -gt 0 -and $expanded -le 1TB -and $rootfs -gt 0 -and $rootfs -le $expanded) 'BLOCKED_MVP7_DISK_CAPACITY'
+    $runtimeBytes=[long]$Runtime.expanded_bytes
+    Assert-Mvp7 ($expanded -gt 0 -and $expanded -le 1TB -and $rootfs -gt 0 -and $rootfs -le $expanded -and $runtimeBytes -gt 0 -and $runtimeBytes -le 1GB) 'BLOCKED_MVP7_DISK_CAPACITY'
     $controllers=[long]0
     foreach ($name in @('Mvp7.Setup.psm1','Launch-Mvp7.ps1','Uninstall-Mvp7.ps1')) { $controllers+=(Get-Item -LiteralPath (Join-Path $PSScriptRoot $name)).Length }
     $bootstrap=[long]$Manifest.payload['windows/OwnerAlpha.Common.psm1'].bytes
     return @{programVolume=[IO.Path]::GetPathRoot($ProgramRoot);stateVolume=[IO.Path]::GetPathRoot($StateRoot);
-        zipBytes=[long](Get-Item -LiteralPath $Zip).Length;expandedBytes=$expanded;rootfsBytes=$rootfs;
+        zipBytes=[long](Get-Item -LiteralPath $Zip).Length;expandedBytes=$expanded;rootfsBytes=$rootfs;expanded_runtime_bytes=$runtimeBytes;
         programReserveBytes=[long]512MB;stateReserveBytes=[long]1GB;
-        programRequiredBytes=[long]($expanded+(Get-Item -LiteralPath $Zip).Length+$controllers+$bootstrap+512MB);
+        programRequiredBytes=[long]($expanded+$runtimeBytes+(Get-Item -LiteralPath $Zip).Length+$controllers+$bootstrap+512MB);
         stateRequiredBytes=[long](2*$rootfs+1GB)}
 }
 function Get-Mvp7VolumeFree([string]$Volume) {
@@ -209,11 +268,13 @@ function Undo-Mvp7Installation([hashtable]$Transaction,[hashtable]$Manifest,[str
         Remove-Item -LiteralPath $root -Recurse -Force
     } catch { throw $code }
 }
-function Invoke-Mvp7Installation([string]$Zip,[string]$Sha256,[long]$Bytes,[hashtable]$Manifest) {
+function Invoke-Mvp7Installation([string]$Zip,[string]$Sha256,[long]$Bytes,[hashtable]$Manifest,[hashtable]$Runtime,[string]$RuntimeRoot,[string]$RuntimeManifest) {
+    Assert-Mvp7 ($Runtime -and $RuntimeRoot -and $RuntimeManifest) 'Повреждена встроенная среда PowerShell.'
+    $null=Assert-Mvp7Runtime $RuntimeRoot $RuntimeManifest
     $root=Assert-Mvp7Path (Get-Mvp7ProgramRoot);$state=Assert-Mvp7Path (Get-Mvp7StateRoot)
     Assert-Mvp7 ($Manifest.delivery.head -cmatch '^[0-9a-f]{40}$' -and
         $Manifest.delivery.parent -ceq '1e109ad2f37d3de4d0d0fa3a9b9ad1dbace182d4') 'BLOCKED_MVP7_HISTORY'
-    $plan=Get-Mvp7DiskPlan $Zip $Manifest $root $state
+    $plan=Get-Mvp7DiskPlan $Zip $Manifest $root $state $Runtime
     Assert-Mvp7DiskCapacity $plan
     if (Test-Path -LiteralPath $root) {
         Assert-Mvp7 (-not (Test-Path -LiteralPath (Join-Path $root 'mvp7-installation.json'))) 'Программа уже установлена. Сначала используйте удаление программы; состояние сохранится.'
@@ -228,7 +289,7 @@ function Invoke-Mvp7Installation([string]$Zip,[string]$Sha256,[long]$Bytes,[hash
         program=$root;state=$state;distribution=(Join-Path $state 'distribution');distro=$distro;outer=$true;
         programExisted=(Test-Path -LiteralPath $root);stateExisted=(Test-Path -LiteralPath $state);
         distributionExisted=(Test-Path -LiteralPath (Join-Path $state 'distribution'));distroExisted=(Get-Mvp7DistroExists $distro);
-        inner_sha256=$Sha256;disk=$plan}
+        inner_sha256=$Sha256;runtime=$Runtime;disk=$plan}
     Assert-Mvp7 (-not $tx.programExisted -and -not $tx.distroExisted) 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
     # Existing state, including retained backups, is never modified by fresh install.
     Assert-Mvp7 (-not $tx.stateExisted -and -not $tx.distributionExisted) 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
@@ -236,6 +297,7 @@ function Invoke-Mvp7Installation([string]$Zip,[string]$Sha256,[long]$Bytes,[hash
         New-Mvp7PrivateProgram $root
         $tx.programCreatedTicks=(Get-Item -LiteralPath $root).CreationTimeUtc.Ticks
         Write-Mvp7Pending $tx
+        Copy-Mvp7Runtime $RuntimeRoot $RuntimeManifest $root
         Copy-Mvp7TransactionModule $Zip $root $Manifest
         Expand-Mvp7Archive $Zip (Join-Path $root 'app') $Sha256 $Bytes
         Copy-Mvp7Controllers $root

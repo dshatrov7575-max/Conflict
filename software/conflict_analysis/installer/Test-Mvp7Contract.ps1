@@ -57,8 +57,10 @@ if ($InnerZip) {
 }
 Check 'Transactional install fault matrix and clean retry (mocked WSL only)' {
     if (-not (Get-Variable -Name Mvp7TransactionContractResults -Scope Global -ErrorAction SilentlyContinue)) { throw 'Pester transaction matrix evidence required' }
-    if ($global:Mvp7TransactionContractResults.Count -ne 13) { throw 'Incomplete transaction fault matrix' }
+    if ($global:Mvp7TransactionContractResults.Count -ne 14) { throw 'Incomplete transaction fault matrix' }
+    $runtimeCopy=@($global:Mvp7TransactionContractResults | Where-Object { $_.fault -eq 'runtime_copy' })
+    if ($runtimeCopy.Count -ne 1 -or $runtimeCopy[0].runtime_copy_interruption -ne 'PASS' -or $runtimeCopy[0].retry_after_runtime_copy_failure -ne 'PASS') { throw 'Runtime copy rollback contract missing' }
 }
-$report=@{transaction_fault_matrix=$global:Mvp7TransactionContractResults.ToArray();disk_capacity_policy=@{program_reserve_bytes=[long]512MB;state_reserve_bytes=[long]1GB;same_volume='sum both reservations'};WINDOWS_CONTRACT='PASS';tests=$results.ToArray();WINDOWS11_WSL2_E2E='BLOCKED_NO_RUNNER';CLEAN_PC_SMOKE='NOT_EXECUTED';PARTNER_RELEASE_READY=$false}
+$report=@{transaction_fault_matrix=$global:Mvp7TransactionContractResults.ToArray();host_powershell_required=$false;powershell_system_install=$false;powershell_path_mutation=$false;powershell_network_install=$false;private_runtime_shortcuts=$true;private_runtime_uninstall_bootstrap=$true;disk_capacity_policy=@{program_reserve_bytes=[long]512MB;state_reserve_bytes=[long]1GB;same_volume='sum both reservations'};WINDOWS_CONTRACT='PASS';tests=$results.ToArray();WINDOWS11_WSL2_E2E='NOT_EXECUTED';CLEAN_PC_SMOKE='NOT_EXECUTED';PARTNER_RELEASE_READY=$false}
 $report | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $EvidenceRoot 'windows-contract.json') -Encoding utf8
 $report | ConvertTo-Json -Depth 12

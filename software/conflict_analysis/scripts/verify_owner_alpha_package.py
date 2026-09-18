@@ -136,6 +136,20 @@ HARNESS_PATHS = frozenset([
     "software/conflict_analysis/scripts/verify_owner_alpha_package.py",
 ])
 
+POWERSHELL_RUNTIME_PATHS = frozenset([
+    "software/conflict_analysis/installer/Mvp7Setup.nsi",
+    "software/conflict_analysis/installer/build_setup.py",
+    "software/conflict_analysis/installer/external-inputs.lock.json",
+    "software/conflict_analysis/installer/Install-Mvp7.ps1",
+    "software/conflict_analysis/installer/Mvp7.Setup.psm1",
+    "software/conflict_analysis/installer/Mvp7.Preflight.Tests.ps1",
+    "software/conflict_analysis/installer/Test-Mvp7Contract.ps1",
+    "software/conflict_analysis/installer/test_contract.py",
+    "software/conflict_analysis/installer/source.lock.json",
+    "software/conflict_analysis/owner_alpha_package/tests/OwnerAlpha.Windows.Contract.Tests.ps1",
+    "software/conflict_analysis/scripts/verify_owner_alpha_package.py",
+])
+
 def delivery_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
     head=git(repo,"rev-parse","HEAD")
     base=LOCK["installer_parent"]  # Accepted R1 run still belongs to F, never A.
@@ -146,6 +160,7 @@ def delivery_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
     fifth=LOCK["installer_commit_e"]
     sixth=LOCK["installer_commit_e2"]
     seventh=LOCK["installer_commit_e3"]
+    eighth=LOCK["installer_commit_e4"]
     require(git(repo,"branch","--show-current") in ("",LOCK["installer_branch"]),"BLOCKED_MVP7_HISTORY","branch")
     require(git(repo,"show","-s","--format=%P",first)==base,"BLOCKED_MVP7_HISTORY","A ordinary parent F")
     require(git(repo,"show","-s","--format=%B",first)==LOCK["installer_message"],"BLOCKED_MVP7_HISTORY","A message")
@@ -177,20 +192,23 @@ def delivery_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
     require(git(repo,"show","-s","--format=%B",seventh)==LOCK["harness_correction_message"],"BLOCKED_MVP7_HISTORY","E3 message")
     delta_e3=git(repo,"diff","--name-status","--no-renames",sixth,seventh).splitlines()
     require(set(delta_e3)=={"M\t"+p for p in HARNESS_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact E3 modified paths")
+    require(git(repo,"show","-s","--format=%P",eighth)==seventh,"BLOCKED_MVP7_HISTORY","E4 ordinary parent E3")
+    require(git(repo,"rev-list","--count",base+".."+eighth)=="8","BLOCKED_MVP7_HISTORY","eight frozen installer predecessors")
+    require(git(repo,"show","-s","--format=%B",eighth)==LOCK["rollback_fixture_correction_message"],"BLOCKED_MVP7_HISTORY","E4 message")
+    delta_e4=git(repo,"diff","--name-status","--no-renames",seventh,eighth).splitlines()
+    require(set(delta_e4)=={"M\t"+p for p in HARNESS_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact E4 modified paths")
     if final:
         require(not git(repo,"status","--porcelain=v1","--untracked-files=all"),"BLOCKED_MVP7_HISTORY","clean committed checkout required")
-        require(git(repo,"show","-s","--format=%P",head)==seventh,"BLOCKED_MVP7_HISTORY","E4 ordinary parent E3")
-        require(git(repo,"rev-list","--count",base+".."+head)=="8","BLOCKED_MVP7_HISTORY","eight installer commits")
-        require(git(repo,"show","-s","--format=%B",head)==LOCK["rollback_fixture_correction_message"],"BLOCKED_MVP7_HISTORY","E4 message")
-        delta=git(repo,"diff","--name-status","--no-renames",seventh,head).splitlines()
-        require(set(delta)=={"M\t"+p for p in HARNESS_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact E4 modified paths")
-        parent=seventh
+        require(git(repo,"show","-s","--format=%P",head)==eighth,"BLOCKED_MVP7_HISTORY","E5 ordinary parent E4")
+        require(git(repo,"rev-list","--count",base+".."+head)=="9","BLOCKED_MVP7_HISTORY","nine installer commits")
+        require(git(repo,"show","-s","--format=%B",head)==LOCK["powershell_runtime_correction_message"],"BLOCKED_MVP7_HISTORY","E5 message")
+        delta=git(repo,"diff","--name-status","--no-renames",eighth,head).splitlines()
+        require(set(delta)=={"M\t"+p for p in POWERSHELL_RUNTIME_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact E5 modified paths")
     else:
-        require(head==seventh,"BLOCKED_MVP7_HISTORY","precommit parent E3")
-        parent=sixth
+        require(head==eighth,"BLOCKED_MVP7_HISTORY","precommit parent E4")
     paths=git(repo,"diff","--name-only",base,head).splitlines()
     require(all(allowed_installer_path(p) for p in paths),"BLOCKED_MVP7_SOURCE_MUTATION","installer allowlist")
-    return {"head":head,"tree":git(repo,"rev-parse","HEAD^{tree}"),"parent":parent}
+    return {"head":eighth,"tree":git(repo,"rev-parse",eighth+"^{tree}"),"parent":seventh}
 
 def source_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
     delivery_identity(repo,final=final)

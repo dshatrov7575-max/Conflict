@@ -45,6 +45,23 @@ function Invoke-Mvp7TransactionFaultMatrix {
     $global:Mvp7HoldRollback=$false
     $global:Mvp7EmptyRemoveFault=$false
     $global:Mvp7UnregisterCalls=0
+    $global:Mvp7RuntimeCopyFailed=$false
+    $runtimeRoot=Join-Path $TestDrive 'bundled-runtime'
+    $null=New-Item -ItemType Directory -Path $runtimeRoot
+    [IO.File]::WriteAllBytes((Join-Path $runtimeRoot 'pwsh.exe'),[byte[]](80,87,83,72,55,54,54))
+    [IO.File]::WriteAllText((Join-Path $runtimeRoot 'LICENSE.txt'),'license')
+    [IO.File]::WriteAllText((Join-Path $runtimeRoot 'THIRD-PARTY-NOTICES.txt'),'third party notices')
+    $runtimeFiles=@()
+    $runtimeExpanded=[long]0
+    foreach ($file in @(Get-ChildItem -LiteralPath $runtimeRoot -File | Sort-Object Name)) {
+        $runtimeFiles+=@{relative_path=$file.Name;bytes=$file.Length;sha256=(Get-FileHash -LiteralPath $file.FullName).Hash.ToLowerInvariant()}
+        $runtimeExpanded+=$file.Length
+    }
+    $entrypoint=$runtimeFiles | Where-Object { $_.relative_path -ceq 'pwsh.exe' } | Select-Object -First 1
+    $global:Mvp7MatrixRuntimeManifestPath=Join-Path $TestDrive 'runtime-manifest.json'
+    $global:Mvp7MatrixRuntime=@{schema='MVP7_POWERSHELL_RUNTIME_MANIFEST_V1';archive=@{version='7.6.6';filename='PowerShell-7.6.6-win-x64.zip';bytes=106328873;sha256='02fe458be20493fbdf43f61ea20610b811ee6c738ab1676c61b9cfcd1a33c860';asset_id=551207033;url='https://github.com/PowerShell/PowerShell/releases/download/v7.6.6/PowerShell-7.6.6-win-x64.zip'};file_count=$runtimeFiles.Count;expanded_bytes=$runtimeExpanded;entrypoint=$entrypoint;observed_version=@{PSEdition='Core';PSVersion='7.6.6';Architecture='X64'};files=$runtimeFiles}
+    $global:Mvp7MatrixRuntime | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $global:Mvp7MatrixRuntimeManifestPath -Encoding utf8
+    $global:Mvp7MatrixRuntimeRoot=$runtimeRoot
     $common=Join-Path $PSScriptRoot '../windows/OwnerAlpha.Common.psm1'
     $bytes=[IO.File]::ReadAllBytes($common)
     $global:Mvp7MatrixManifest=@{source=@{head='85a253126bf270664c4786d159994e7359b5d2c5';tree='5567183dbe16fc6c7c8caac051b7694f37b92457'};
@@ -72,6 +89,18 @@ function Invoke-Mvp7TransactionFaultMatrix {
         # keep the production module already imported so Pester's WSL mocks survive.
         $file=Join-Path $ProgramRoot 'OwnerAlpha.Common.psm1'
         Assert-Contract ((Get-FileHash $file).Hash.ToLowerInvariant() -ceq $Manifest.payload['windows/OwnerAlpha.Common.psm1'].sha256)
+    }
+    Mock Copy-Mvp7Runtime -ModuleName Mvp7.Setup {
+        if ($global:Mvp7Fault -eq 'runtime_copy') {
+            $runtimeParent=Join-Path $ProgramRoot 'runtime'
+            $null=New-Item -ItemType Directory -Path $runtimeParent
+            $target=Join-Path $runtimeParent 'pwsh'
+            $null=New-Item -ItemType Directory -Path $target
+            [IO.File]::WriteAllText((Join-Path $target 'partial'),'partial runtime')
+            $global:Mvp7RuntimeCopyFailed=$true
+            throw 'FAULT_RUNTIME_COPY'
+        }
+        & $global:Mvp7OriginalRuntimeCopy $RuntimeRoot $RuntimeManifest $ProgramRoot
     }
     Mock Expand-Mvp7Archive -ModuleName Mvp7.Setup {
         if ($global:Mvp7Fault -eq 'extraction') {
@@ -141,13 +170,13 @@ function Invoke-Mvp7TransactionFaultMatrix {
     [IO.File]::WriteAllBytes($sentinel,[byte[]](0,255,1,0,17))
     $sentinelHash=(Get-FileHash $sentinel).Hash
     $existing=$global:Mvp7Registrations['existing-distro'] | ConvertTo-Json -Compress
-    foreach ($fault in @('disk','extraction','controller_copy','before_import','import_nonzero','after_import','identity','initialize','final_marker')) {
+    foreach ($fault in @('disk','extraction','controller_copy','runtime_copy','before_import','import_nonzero','after_import','identity','initialize','final_marker')) {
         $global:Mvp7MatrixProgram=Join-Path $TestDrive ($fault+'/program')
         $global:Mvp7MatrixState=Join-Path $TestDrive ($fault+'/state')
         $global:Mvp7Fault=$fault;$global:Mvp7FailOnce=$true
         $callsBefore=$global:Mvp7UnregisterCalls
         $caught=$false
-        try { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest }
+        try { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath }
         catch {
             $caught=$true
             if ($_.Exception.Message.Contains('BLOCKED_MVP7_ROLLBACK_UNPROVEN')) { throw }
@@ -163,7 +192,7 @@ function Invoke-Mvp7TransactionFaultMatrix {
         Assert-Contract (($global:Mvp7UnregisterCalls-$callsBefore) -eq $expectedUnregister)
         # Same package, same target, no manual cleanup before retry.
         $global:Mvp7Fault=''
-        Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest
+        Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath
         $tx=$global:Mvp7LastTransaction
         $marker=Join-Path $tx.program 'mvp7-installation.json'
         $stateFile=Join-Path $tx.state 'installation.json'
@@ -175,7 +204,7 @@ function Invoke-Mvp7TransactionFaultMatrix {
         Assert-OwnerInstalled $installed
         Assert-ContractReject { New-OwnerInstall $installed } 'BLOCKED_G10_RUNTIME_IDENTITY_DRIFT'
         $markerHash=(Get-FileHash $marker).Hash;$stateHash=(Get-FileHash $stateFile).Hash
-        Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest } 'Программа уже установлена'
+        Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath } 'Программа уже установлена'
         Assert-ContractReject { Undo-OwnerInstallTransaction $tx } 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
         Assert-ContractReject { Undo-Mvp7Installation $tx $global:Mvp7MatrixManifest $sha } 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
         Assert-Contract ((Get-FileHash $marker).Hash -ceq $markerHash -and (Get-FileHash $stateFile).Hash -ceq $stateHash)
@@ -185,10 +214,12 @@ function Invoke-Mvp7TransactionFaultMatrix {
         $backupHash=(Get-FileHash $backupFile).Hash
         Assert-Mvp7UninstallBoundary $tx $stateFile $stateHash $backupFile $backupHash
         # A retained state must never be acquired or deleted by fresh install.
-        Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest } 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
+        Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath } 'BLOCKED_MVP7_INCOMPLETE_INSTALL'
         Assert-Contract (-not (Test-Path -LiteralPath $tx.program) -and (Get-FileHash $backupFile).Hash -ceq $backupHash)
         $global:Mvp7Registrations.Remove($tx.distro) # fixture registry only, never real WSL
-        $global:Mvp7TransactionContractResults.Add(@{fault=$fault;rollback='PASS';clean_retry='PASS';foreign_state_preserved=$true;completed_install_protected=$true;uninstall_preserves_state_backups=$true;environment='MOCKED_WSL_BUILD_CONTRACT_ONLY'})
+        $entry=@{fault=$fault;rollback='PASS';clean_retry='PASS';foreign_state_preserved=$true;completed_install_protected=$true;uninstall_preserves_state_backups=$true;environment='MOCKED_WSL_BUILD_CONTRACT_ONLY'}
+        if ($fault -eq 'runtime_copy') { $entry.runtime_copy_interruption='PASS';$entry.retry_after_runtime_copy_failure='PASS' }
+        $global:Mvp7TransactionContractResults.Add($entry)
     }
     # Abrupt termination: leave an exact pending transaction by interrupting its
     # first rollback, then let the next Setup recover it using the production path.
@@ -196,7 +227,7 @@ function Invoke-Mvp7TransactionFaultMatrix {
     $global:Mvp7MatrixState=Join-Path $TestDrive 'recovery/state'
     $global:Mvp7Fault='extraction'
     Mock Undo-Mvp7Installation -ModuleName Mvp7.Setup { throw 'INTERRUPTED_ROLLBACK' }
-    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest } 'INTERRUPTED_ROLLBACK'
+    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath } 'INTERRUPTED_ROLLBACK'
     # Remove only this mock by replacing it with the original implementation.
     Mock Undo-Mvp7Installation -ModuleName Mvp7.Setup { & $global:Mvp7OriginalUndo $Transaction $Manifest $Sha256 }
     $pending=Join-Path $global:Mvp7MatrixProgram 'mvp7-installation.json.pending'
@@ -205,12 +236,12 @@ function Invoke-Mvp7TransactionFaultMatrix {
     foreach ($field in @('nonce','source','installer','program','state','distro')) {
         $foreign=$tx.Clone();$foreign[$field]='foreign'
         [IO.File]::WriteAllText($pending,($foreign | ConvertTo-Json -Depth 20))
-        Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest } 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+        Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath } 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
         Assert-Contract (Test-Path -LiteralPath $pending)
     }
     [IO.File]::WriteAllBytes($pending,$raw)
     $global:Mvp7Fault=''
-    Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest
+    Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath
     Assert-Contract (Test-Path -LiteralPath (Join-Path $global:Mvp7MatrixProgram 'mvp7-installation.json'))
     $global:Mvp7TransactionContractResults.Add(@{fault='interrupted_rollback';recovery='PASS';foreign_markers_blocked='PASS';clean_retry='PASS';environment='MOCKED_WSL_BUILD_CONTRACT_ONLY'})
     # Interrupted initialize with a registered distro: foreign state identity or
@@ -219,7 +250,7 @@ function Invoke-Mvp7TransactionFaultMatrix {
     $global:Mvp7MatrixState=Join-Path $TestDrive 'recovery-import/state'
     $global:Mvp7Fault='initialize';$global:Mvp7HoldRollback=$true
     Mock Undo-Mvp7Installation -ModuleName Mvp7.Setup { throw 'INTERRUPTED_ROLLBACK' }
-    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest } 'INTERRUPTED_ROLLBACK'
+    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath } 'INTERRUPTED_ROLLBACK'
     Mock Undo-Mvp7Installation -ModuleName Mvp7.Setup { & $global:Mvp7OriginalUndo $Transaction $Manifest $Sha256 }
     $global:Mvp7HoldRollback=$false
     $tx=$global:Mvp7LastTransaction
@@ -229,23 +260,23 @@ function Invoke-Mvp7TransactionFaultMatrix {
     $beforeUnregister=$global:Mvp7UnregisterCalls
     $journal.nonce='0'*32
     [IO.File]::WriteAllText($statePending,($journal | ConvertTo-Json -Depth 20))
-    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest } 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath } 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
     Assert-Contract ($global:Mvp7UnregisterCalls -eq $beforeUnregister -and (Test-Path -LiteralPath $statePending))
     [IO.File]::WriteAllBytes($statePending,$saved)
     $registration=$global:Mvp7Registrations[$tx.distro]
     $registration.path='C:\pre-existing-unrelated-distribution'
-    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest } 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath } 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
     Assert-Contract ($global:Mvp7UnregisterCalls -eq $beforeUnregister -and (Test-Path -LiteralPath $statePending))
     $registration.path=$tx.distribution
     # Even a real pending transaction cannot authorize deletion of new backups.
     $retained=Join-Path $tx.state 'backups';$null=New-Item -ItemType Directory -Path $retained
     [IO.File]::WriteAllBytes((Join-Path $retained 'keep.bin'),[byte[]](0,255,42))
-    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest } 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath } 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
     Assert-Contract ($global:Mvp7UnregisterCalls -eq $beforeUnregister -and ([IO.File]::ReadAllBytes((Join-Path $retained 'keep.bin')) -join ',') -ceq '0,255,42')
     # Remove only the injected test backup to restore the exact interrupted fixture.
     Remove-Item -LiteralPath (Join-Path $retained 'keep.bin');Remove-Item -LiteralPath $retained
     $global:Mvp7Fault=''
-    Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest
+    Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath
     Assert-Contract (-not $global:Mvp7Registrations.ContainsKey($tx.distro))
     Assert-Contract ($global:Mvp7UnregisterCalls -eq ($beforeUnregister+1))
     $global:Mvp7TransactionContractResults.Add(@{fault='interrupted_after_import';recovery='PASS';wrong_nonce_blocked='PASS';wrong_registration_path_blocked='PASS';backups_preserved='PASS';clean_retry='PASS';environment='MOCKED_WSL_BUILD_CONTRACT_ONLY'})
@@ -253,7 +284,7 @@ function Invoke-Mvp7TransactionFaultMatrix {
     $global:Mvp7MatrixState=Join-Path $TestDrive 'recovery-empty/state'
     $global:Mvp7Fault='initialize';$global:Mvp7EmptyRemoveFault=$true
     Mock Undo-Mvp7Installation -ModuleName Mvp7.Setup { throw 'INTERRUPTED_ROLLBACK' }
-    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest } 'INTERRUPTED_ROLLBACK'
+    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath } 'INTERRUPTED_ROLLBACK'
     $proof=Join-Path $global:Mvp7MatrixProgram 'mvp7-rollback-ownership.json'
     Assert-Contract (Test-Path -LiteralPath $proof)
     $emptyTx=Read-OwnerJson $proof
@@ -273,7 +304,7 @@ function Invoke-Mvp7TransactionFaultMatrix {
     Assert-Contract (-not $global:Mvp7Registrations.ContainsKey($emptyTx.distro))
     Mock Undo-Mvp7Installation -ModuleName Mvp7.Setup { & $global:Mvp7OriginalUndo $Transaction $Manifest $Sha256 }
     $global:Mvp7Fault='';$global:Mvp7EmptyRemoveFault=$false
-    Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest
+    Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath
     $global:Mvp7TransactionContractResults.Add(@{fault='interrupted_empty_state_cleanup';recovery='PASS';clean_retry='PASS';foreign_state_preserved=$true;completed_install_protected=$true;environment='MOCKED_WSL_BUILD_CONTRACT_ONLY'})
     # Reparse points must block before any deletion, including external contents.
     Remove-Mvp7Program $global:Mvp7MatrixProgram
@@ -281,22 +312,23 @@ function Invoke-Mvp7TransactionFaultMatrix {
     $global:Mvp7MatrixState=Join-Path $TestDrive 'reparse/state'
     $global:Mvp7Fault='extraction'
     Mock Undo-Mvp7Installation -ModuleName Mvp7.Setup { throw 'INTERRUPTED_ROLLBACK' }
-    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest } 'INTERRUPTED_ROLLBACK'
+    Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath } 'INTERRUPTED_ROLLBACK'
     Mock Undo-Mvp7Installation -ModuleName Mvp7.Setup { & $global:Mvp7OriginalUndo $Transaction $Manifest $Sha256 }
     $link=Join-Path $global:Mvp7MatrixProgram 'foreign-junction'
     $target=Join-Path $TestDrive 'outside-junction';$null=New-Item -ItemType Directory -Path $target
     [IO.File]::WriteAllText((Join-Path $target 'keep'),'unchanged')
     $null=New-Item -ItemType Junction -Path $link -Target $target
     try {
-        Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest } 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
+        Assert-ContractReject { Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath } 'BLOCKED_MVP7_ROLLBACK_UNPROVEN'
         Assert-Contract ((Get-Content -Raw (Join-Path $target 'keep')) -ceq 'unchanged')
     } finally { [IO.Directory]::Delete($link) }
     $global:Mvp7Fault=''
-    Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest
+    Invoke-Mvp7Installation $zip $sha $zipBytes $global:Mvp7MatrixManifest $global:Mvp7MatrixRuntime $global:Mvp7MatrixRuntimeRoot $global:Mvp7MatrixRuntimeManifestPath
     $global:Mvp7TransactionContractResults.Add(@{fault='reparse_point';blocked='PASS';foreign_contents_preserved=$true;environment='MOCKED_WSL_BUILD_CONTRACT_ONLY'})
 }
 $global:Mvp7OriginalUndo=(Get-Command Undo-Mvp7Installation).ScriptBlock
 $global:Mvp7OriginalOwnerUndo=(Get-Command Undo-OwnerInstallTransaction).ScriptBlock
+$global:Mvp7OriginalRuntimeCopy=(Get-Command Copy-Mvp7Runtime).ScriptBlock
 Describe 'G10 Windows package contract (not real Windows E2E)' {
     It 'test_preflight_rejects_unsupported_windows_wsl_edge_path_port_acl_and_stale_identity_before_import' {
         foreach ($path in @('\\server\share\package','C:\bad"path',('C:\'+('a'*200)))) {

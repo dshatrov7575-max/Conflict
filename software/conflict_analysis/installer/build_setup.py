@@ -1,5 +1,5 @@
 """NSIS build/embedded payload proof only; never Windows 11 E2E."""
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import argparse,hashlib,json,os,shutil,struct,subprocess,sys,urllib.request,zipfile
 ROOT=Path(__file__).resolve().parent
 sys.path.insert(0,str(ROOT.parent/'scripts'))
@@ -11,25 +11,86 @@ def pe_fields(path):
     assert raw[offset:offset+4]==b'PE\0\0'
     return {'coff_timestamp':struct.unpack_from('<I',raw,offset+8)[0],
             'optional_checksum':struct.unpack_from('<I',raw,offset+24+64)[0]}
+def fetch_pin(pin, target):
+    with urllib.request.urlopen(pin['url'],timeout=240) as r,target.open('xb') as out:
+        shutil.copyfileobj(r,out)
+    observed=identity(target)
+    assert observed=={k:pin[k] for k in ['filename','bytes','sha256']},observed
+    return observed
+def safe_zip_name(name):
+    clean=name.rstrip('/')
+    return bool(clean) and safe_member(clean)
+def safe_extract_zip(archive_path, destination):
+    destination.mkdir(parents=True,exist_ok=False)
+    seen=set()
+    with zipfile.ZipFile(archive_path) as archive:
+        for info in archive.infolist():
+            name=info.filename.rstrip('/')
+            assert safe_zip_name(info.filename),info.filename
+            key=name.casefold()
+            assert key not in seen,name
+            seen.add(key)
+            mode=(info.external_attr>>16)&0o170000
+            assert not (info.flag_bits & 1) and mode not in (0o120000,0o160000,0o140000),name
+            target=(destination/PurePosixPath(name)).resolve()
+            assert target.is_relative_to(destination.resolve()),name
+            if info.is_dir():
+                target.mkdir(parents=True,exist_ok=True)
+                continue
+            target.parent.mkdir(parents=True,exist_ok=True)
+            with archive.open(info) as source,target.open('xb') as out:
+                shutil.copyfileobj(source,out)
+    return destination
+def runtime_manifest(runtime_root, archive_identity, observed):
+    entries=[];expanded=0
+    for path in sorted(p for p in runtime_root.rglob('*') if p.is_file()):
+        rel=path.relative_to(runtime_root).as_posix()
+        assert safe_member(rel),rel
+        meta={'relative_path':rel,'bytes':path.stat().st_size,'sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
+        entries.append(meta);expanded+=meta['bytes']
+    names=[x['relative_path'].casefold() for x in entries]
+    assert len(names)==len(set(names))
+    entrypoint=next(x for x in entries if x['relative_path']=='pwsh.exe')
+    lower={x['relative_path'].casefold() for x in entries}
+    assert any('license' in x for x in lower) and any('third' in x and 'notice' in x for x in lower)
+    return {'schema':'MVP7_POWERSHELL_RUNTIME_MANIFEST_V1','archive':archive_identity,
+            'file_count':len(entries),'expanded_bytes':expanded,'entrypoint':entrypoint,
+            'observed_version':observed,'files':entries}
+def prepare_powershell_runtime(output):
+    pin=LOCK['powershell'];archive=output/pin['filename']
+    archive_identity=fetch_pin(pin,archive)
+    runtime=safe_extract_zip(archive,output/'powershell-runtime')
+    pwsh=runtime/'pwsh.exe'
+    assert pwsh.is_file()
+    command="[pscustomobject]@{PSEdition=$PSVersionTable.PSEdition;PSVersion=$PSVersionTable.PSVersion.ToString();Architecture=[Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString()} | ConvertTo-Json -Compress"
+    observed=json.loads(subprocess.check_output([str(pwsh),'-NoLogo','-NoProfile','-NonInteractive','-Command',command],text=True))
+    assert observed=={'PSEdition':'Core','PSVersion':pin['version'],'Architecture':'X64'},observed
+    manifest=runtime_manifest(runtime,archive_identity,observed)
+    assert manifest['entrypoint']['bytes']==pwsh.stat().st_size
+    assert manifest['entrypoint']['sha256']==hashlib.sha256(pwsh.read_bytes()).hexdigest()
+    (output/'runtime-manifest.json').write_bytes(canonical(manifest))
+    return runtime,manifest
+
 def main():
     p=argparse.ArgumentParser();p.add_argument('--inner',type=Path,required=True);p.add_argument('--output',type=Path,required=True);args=p.parse_args()
     assert os.name=='nt','Windows build environment required'
     result=verify_zip(args.inner);inner=identity(args.inner)
     args.output.mkdir(parents=True,exist_ok=False)
     pin=LOCK['nsis'];archive=args.output/pin['filename']
-    with urllib.request.urlopen(pin['url'],timeout=180) as r,archive.open('xb') as out:shutil.copyfileobj(r,out)
-    assert identity(archive)=={k:pin[k] for k in ['filename','bytes','sha256']}
+    nsis_archive=fetch_pin(pin,archive)
     tools=args.output/'compiler'
-    with zipfile.ZipFile(archive) as z:
-        assert all(safe_member(n.rstrip('/')) for n in z.namelist())
-        z.extractall(tools)
+    safe_extract_zip(archive,tools)
     compiler=tools/pin['compiler_path']
     assert compiler.stat().st_size==pin['compiler_bytes'] and identity(compiler)['sha256']==pin['compiler_sha256']
     env={**os.environ,'NSISDIR':str(tools/'nsis-3.12')}
     version=subprocess.check_output([str(compiler),'/VERSION'],env=env,text=True).strip()
     assert version=='v3.12',version
+    runtime_root,runtime=prepare_powershell_runtime(args.output)
     build=args.output/'script';build.mkdir()
-    for name in ['Mvp7Setup.nsi','Mvp7.Setup.psm1','Install-Mvp7.ps1','Launch-Mvp7.ps1','Uninstall-Mvp7.ps1']:shutil.copyfile(ROOT/name,build/name)
+    for name in ['Mvp7Setup.nsi','Mvp7.Setup.psm1','Install-Mvp7.ps1','Launch-Mvp7.ps1','Uninstall-Mvp7.ps1']:
+        shutil.copyfile(ROOT/name,build/name)
+    shutil.copyfile(args.output/'runtime-manifest.json',build/'runtime-manifest.json')
+    shutil.copytree(runtime_root,build/'pwsh')
     def nsi(value):
         text=str(value);assert not any(c in text for c in ['"','$','\n','\r']),text
         return text
@@ -49,18 +110,24 @@ def main():
         verify_zip(embedded,expected_sha256=inner['sha256'],expected_bytes=inner['bytes'])
         binaries.append(target)
     same=binaries[0].read_bytes()==binaries[1].read_bytes()
-    report={'SETUP_BUILD':'PASS','INNER_ZIP_VERIFY':'PASS','WINDOWS11_WSL2_E2E':'BLOCKED_NO_RUNNER',
+    report={'SETUP_BUILD':'PASS','INNER_ZIP_VERIFY':'PASS','WINDOWS11_WSL2_E2E':'NOT_EXECUTED',
             'CLEAN_PC_SMOKE':'NOT_EXECUTED','PARTNER_RELEASE_READY':False,
+            'host_powershell_required':False,'powershell_system_install':False,
+            'powershell_path_mutation':False,'powershell_network_install':False,
+            'private_runtime_shortcuts':True,'private_runtime_uninstall_bootstrap':True,
             'setup':identity(binaries[0]),'inner':inner,'source':result['manifest']['source'],
-            'compiler':{**pin,'observed_version':version},
+            'compiler':{**pin,'archive':nsis_archive,'observed_version':version},
+            'bundled_runtime':{'version':LOCK['powershell']['version'],'archive':runtime['archive'],
+                'expanded_bytes':runtime['expanded_bytes'],'file_count':runtime['file_count'],
+                'entrypoint':runtime['entrypoint'],'observed_version':runtime['observed_version']},
             'delivery':result['manifest']['delivery'],
             'disk_capacity_policy':{'program_reserve_bytes':512*1024**2,'state_reserve_bytes':1024**3,
-                'program_formula':'actual ZIP bytes + expanded archive bytes + controller bytes + bootstrap bytes + reserve',
+                'program_formula':'actual ZIP bytes + expanded archive bytes + private PowerShell runtime bytes + controller bytes + bootstrap bytes + reserve',
                 'state_formula':'2 * manifest rootfs bytes + reserve','same_volume':'sum program and state requirements',
                 'zero_mutations_before_preflight':True},
             'transaction_contract':'MVP7_INSTALL_TRANSACTION_V1',
-            'superseded_internal_candidate_sha256':'491f7bdf9946fe8f470b19ddcdfafd877cdb4cc06ce2a616b32d520061e29e92',
-            'script_sources':{p.name:identity(p) for p in sorted(build.iterdir())},
+            'superseded_setup_sha256':'1b2893a727887bb3e0a76e4e4ad16810e8d6ba81e4c556cf07662f28af9bfa1a',
+            'script_sources':{p.name:identity(p) for p in sorted(build.iterdir()) if p.is_file()},
             'repeat':identity(binaries[1]),'byte_identical_exe':same,
             'pe_fields':[pe_fields(p) for p in binaries],
             'embedded_payload_identity_proven':True}

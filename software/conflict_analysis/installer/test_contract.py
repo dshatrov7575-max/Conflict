@@ -10,8 +10,8 @@ import verify_owner_alpha_package as v
 import build_owner_alpha_package as b
 
 def test_external_inputs_have_exact_urls_sizes_hashes():
-    lock=json.loads((ROOT/'external-inputs.lock.json').read_text())
-    pins=lock['wheels']+lock['debs']+lock['windows_wheels']+[lock['nsis']]
+    lock=json.loads((ROOT/'external-inputs.lock.json').read_text(encoding='utf-8'))
+    pins=lock['wheels']+lock['debs']+lock['windows_wheels']+[lock['nsis'], lock['powershell']]
     pins += [pin for image in lock['oci'].values() for pin in image['inputs']]
     for pin in pins:
         assert pin['url'].startswith('https://') and type(pin['bytes']) is int and pin['bytes']>0
@@ -19,6 +19,14 @@ def test_external_inputs_have_exact_urls_sizes_hashes():
     assert lock['wheels']==b.PINS['wheels'] and lock['debs']==b.PINS['debs']
     assert {k:x['image'] for k,x in lock['oci'].items()}==b.PINS['oci']
     assert lock['nsis']['version']=='3.12'
+    assert lock['powershell']=={
+        'version':'7.6.6',
+        'filename':'PowerShell-7.6.6-win-x64.zip',
+        'bytes':106328873,
+        'sha256':'02fe458be20493fbdf43f61ea20610b811ee6c738ab1676c61b9cfcd1a33c860',
+        'asset_id':551207033,
+        'url':'https://github.com/PowerShell/PowerShell/releases/download/v7.6.6/PowerShell-7.6.6-win-x64.zip',
+    }
     assert b.validate_closure()
 
 def test_product_source_and_allowlist_are_bounded(monkeypatch):
@@ -58,9 +66,25 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
     assert v.LOCK['installer_commit_e3']==seventh
     assert v.LOCK['rollback_fixture_correction_message']=='test(installer): canonicalize rollback fixture identity'
     assert v.HARNESS_PATHS=={'software/conflict_analysis/owner_alpha_package/tests/OwnerAlpha.Windows.Contract.Tests.ps1','software/conflict_analysis/installer/test_contract.py','software/conflict_analysis/installer/source.lock.json','software/conflict_analysis/scripts/verify_owner_alpha_package.py'}
-    head='d'*40;tree='e'*40
+    eighth='cbba3a415afe63391ca449d66ad1d6a27f825daa'
+    assert v.LOCK['installer_commit_e4']==eighth
+    assert v.LOCK['powershell_runtime_correction_message']=='fix(installer): bundle private PowerShell runtime'
+    assert v.POWERSHELL_RUNTIME_PATHS=={
+        'software/conflict_analysis/installer/Mvp7Setup.nsi',
+        'software/conflict_analysis/installer/build_setup.py',
+        'software/conflict_analysis/installer/external-inputs.lock.json',
+        'software/conflict_analysis/installer/Install-Mvp7.ps1',
+        'software/conflict_analysis/installer/Mvp7.Setup.psm1',
+        'software/conflict_analysis/installer/Mvp7.Preflight.Tests.ps1',
+        'software/conflict_analysis/installer/Test-Mvp7Contract.ps1',
+        'software/conflict_analysis/installer/test_contract.py',
+        'software/conflict_analysis/installer/source.lock.json',
+        'software/conflict_analysis/owner_alpha_package/tests/OwnerAlpha.Windows.Contract.Tests.ps1',
+        'software/conflict_analysis/scripts/verify_owner_alpha_package.py',
+    }
+    head='d'*40;tree='e'*40;e4_tree='f'*40
     answers={
-        ('rev-parse','HEAD'):head, ('rev-parse','HEAD^{tree}'):tree,
+        ('rev-parse','HEAD'):head, ('rev-parse','HEAD^{tree}'):tree, ('rev-parse',eighth+'^{tree}'):e4_tree,
         ('branch','--show-current'):v.LOCK['installer_branch'],
         ('show','-s','--format=%P',first):base,
         ('show','-s','--format=%B',first):v.LOCK['installer_message'],
@@ -87,14 +111,18 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         ('rev-list','--count',base+'..'+seventh):'7',
         ('show','-s','--format=%B',seventh):v.LOCK['harness_correction_message'],
         ('diff','--name-status','--no-renames',sixth,seventh):'\n'.join('M\t'+p for p in sorted(v.HARNESS_PATHS)),
-        ('show','-s','--format=%P',head):seventh,
-        ('rev-list','--count',base+'..'+head):'8',
-        ('show','-s','--format=%B',head):v.LOCK['rollback_fixture_correction_message'],
-        ('diff','--name-status','--no-renames',seventh,head):'\n'.join('M\t'+p for p in sorted(v.HARNESS_PATHS)),
+        ('show','-s','--format=%P',eighth):seventh,
+        ('rev-list','--count',base+'..'+eighth):'8',
+        ('show','-s','--format=%B',eighth):v.LOCK['rollback_fixture_correction_message'],
+        ('diff','--name-status','--no-renames',seventh,eighth):'\n'.join('M\t'+p for p in sorted(v.HARNESS_PATHS)),
+        ('show','-s','--format=%P',head):eighth,
+        ('rev-list','--count',base+'..'+head):'9',
+        ('show','-s','--format=%B',head):v.LOCK['powershell_runtime_correction_message'],
+        ('diff','--name-status','--no-renames',eighth,head):'\n'.join('M\t'+p for p in sorted(v.POWERSHELL_RUNTIME_PATHS)),
         ('diff','--name-only',base,head):'\n'.join(sorted(v.CORRECTIVE_PATHS)),
     }
     monkeypatch.setattr(v,'git',lambda repo,*args:answers[args])
-    assert v.delivery_identity(APP)=={'head':head,'tree':tree,'parent':seventh}
+    assert v.delivery_identity(APP)=={'head':eighth,'tree':e4_tree,'parent':seventh}
     invalid=[
         (('show','-s','--format=%P',first),'0'*40),
         (('show','-s','--format=%P',second),base),
@@ -102,7 +130,8 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         (('show','-s','--format=%P',head),base),
         (('show','-s','--format=%P',head),second),
         (('show','-s','--format=%P',head),third+' '+base),
-        (('show','-s','--format=%P',head),sixth),
+        (('show','-s','--format=%P',head),seventh),
+        (('show','-s','--format=%P',eighth),sixth),
         (('show','-s','--format=%P',sixth),fourth),
         (('show','-s','--format=%P',seventh),fifth),
         (('show','-s','--format=%B',first),'changed A'),
@@ -114,16 +143,18 @@ def test_product_source_and_allowlist_are_bounded(monkeypatch):
         (('show','-s','--format=%B',fifth),'changed E'),
         (('show','-s','--format=%B',sixth),'changed E2'),
         (('show','-s','--format=%B',seventh),'changed E3'),
-        (('show','-s','--format=%B',head),'changed E4'),
+        (('show','-s','--format=%B',eighth),'changed E4'),
+        (('show','-s','--format=%B',head),'changed E5'),
         (('status','--porcelain=v1','--untracked-files=all'),' M extra'),
         (('diff','--name-only',base,head),'software/conflict_analysis/domain/models.py'),
     ]
-    invalid += [(('rev-list','--count',base+'..'+head),str(n)) for n in (0,1,2,3,4,5,6,7,9)]
+    invalid += [(('rev-list','--count',base+'..'+head),str(n)) for n in (0,1,2,3,4,5,6,7,8,10)]
+    invalid += [(('rev-list','--count',base+'..'+eighth),str(n)) for n in (0,1,2,3,4,5,6,7,9)]
     invalid += [(('rev-list','--count',base+'..'+seventh),str(n)) for n in (0,1,2,3,4,5,6,8)]
     invalid += [(('rev-list','--count',base+'..'+sixth),str(n)) for n in (0,1,2,3,4,5,7)]
     invalid += [(('rev-list','--count',base+'..'+fifth),str(n)) for n in (0,1,2,3,4,6)]
     invalid += [(('rev-list','--count',base+'..'+fourth),str(n)) for n in (0,1,2,3,5)]
-    for parent,child in ((first,second),(second,third),(third,fourth),(fourth,fifth),(fifth,sixth),(sixth,seventh),(seventh,head)):
+    for parent,child in ((first,second),(second,third),(third,fourth),(fourth,fifth),(fifth,sixth),(sixth,seventh),(seventh,eighth),(eighth,head)):
         key=('diff','--name-status','--no-renames',parent,child)
         invalid.extend([(key,'M\tsoftware/conflict_analysis/domain/models.py'),
                         (key,answers[key].replace('M\t','A\t',1)),
@@ -145,29 +176,39 @@ def test_real_zip_verifier_rejects_collision_traversal_extra(tmp_path,names):
     with pytest.raises(v.GateError):v.verify_zip(p)
 
 def test_nsis_payload_only_mode_cannot_install_or_bypass_gate():
-    text=(ROOT/'Mvp7Setup.nsi').read_text()
+    text=(ROOT/'Mvp7Setup.nsi').read_text(encoding='utf-8')
     assert 'RequestExecutionLevel user' in text and 'MUI_LANGUAGE "Russian"' in text
     assert 'WriteRegStr HKLM' not in text and 'RequestExecutionLevel admin' not in text
     assert text.index('verified:')<text.index('install:')
     assert 'Quit' in text[text.index('verified:'):text.index('install:')]
-    code=(ROOT/'Install-Mvp7.ps1').read_text()
-    assert code.index('Assert-Mvp7Archive')<code.index('if ($VerifyOnly)')<code.index('Assert-Mvp7Host')<code.index('Invoke-Mvp7Installation')
-    module=(ROOT/'Mvp7.Setup.psm1').read_text()
+    assert 'SearchPath $Pwsh' not in text
+    assert '$PROGRAMFILES64\\PowerShell' not in text
+    assert 'Требуется установленный PowerShell 7' not in text
+    assert '$PLUGINSDIR\\pwsh\\pwsh.exe' in text
+    assert '$INSTDIR\\runtime\\pwsh\\pwsh.exe' in text
+    assert 'runtime-manifest.json' in text
+    code=(ROOT/'Install-Mvp7.ps1').read_text(encoding='utf-8')
+    assert code.index('Assert-Mvp7Runtime')<code.index('Assert-Mvp7Archive')<code.index('if ($VerifyOnly)')<code.index('Assert-Mvp7Host')<code.index('Invoke-Mvp7Installation')
+    module=(ROOT/'Mvp7.Setup.psm1').read_text(encoding='utf-8')
     flow=module.split('function Invoke-Mvp7Installation',1)[1].split('function Remove-Mvp7Program',1)[0]
-    assert flow.index('Assert-Mvp7DiskCapacity')<flow.index('New-Mvp7PrivateProgram')<flow.index('Expand-Mvp7Archive')
+    assert flow.index('Assert-Mvp7DiskCapacity')<flow.index('New-Mvp7PrivateProgram')<flow.index('Copy-Mvp7Runtime')<flow.index('Expand-Mvp7Archive')
     assert flow.index('Invoke-Mvp7InnerInstall')<flow.index('Complete-OwnerInstallTransaction')<flow.index('Publish-Mvp7Installation')
     assert 'Undo-Mvp7Installation' in flow
 
 def test_runtime_and_installer_have_no_external_download_or_policy_mutation(tmp_path):
-    texts=[p.read_text() for p in (APP/'owner_alpha_package/windows').glob('*') if p.suffix in {'.ps1','.psm1'}]
-    texts += [p.read_text() for p in ROOT.glob('*.ps*')]
+    texts=[p.read_text(encoding='utf-8') for p in (APP/'owner_alpha_package/windows').glob('*') if p.suffix in {'.ps1','.psm1'}]
+    texts += [p.read_text(encoding='utf-8') for p in ROOT.glob('*.ps*')]
     runtime='\n'.join(texts)
     for token in ['Set-ExecutionPolicy','-ExecutionPolicy Bypass','Unblock-File','Import-Certificate','New-NetFirewallRule','Enable-WindowsOptionalFeature','wsl --install','wsl --update','Invoke-WebRequest','Invoke-RestMethod','Start-BitsTransfer']:
         assert token.casefold() not in runtime.casefold()
-    linux=(APP/'owner_alpha_package/linux/owner-alpha-supervisor.sh').read_text()
+    setup=(ROOT/'Mvp7.Setup.psm1').read_text(encoding='utf-8')
+    assert 'Assert-Mvp7BundledPowerShellProcess' in setup
+    assert 'Get-Command pwsh' not in setup and r'Program Files\PowerShell' not in setup
+    assert 'Copy-Mvp7Runtime' in setup and 'Read-Mvp7RuntimeManifest' in setup
+    linux=(APP/'owner_alpha_package/linux/owner-alpha-supervisor.sh').read_text(encoding='utf-8')
     for token in ['apt-get','pip install','curl ','wget ']:assert token not in linux
     assert '127.0.0.1' in linux and 'USE_SQLITE="false"' in linux
-    config=(APP/'owner_alpha_package/linux/nginx.conf').read_text()
+    config=(APP/'owner_alpha_package/linux/nginx.conf').read_text(encoding='utf-8')
     directives=re.findall(r'^\s*(\w+_temp_path)\s+([^;]+);',config,re.M)
     assert len(directives)==5 and dict(directives)=={
         'client_body_temp_path':'/run/owner-alpha/client','proxy_temp_path':'/run/owner-alpha/proxy',
@@ -185,7 +226,7 @@ def test_runtime_and_installer_have_no_external_download_or_policy_mutation(tmp_
     assert start.index('execute([PACKAGE/"venv/bin/gunicorn"')<start.index('wait_daemon("gunicorn")')
     assert start.index('execute(["nginx","-c"')<start.index('wait_daemon("nginx")')
     _assert_private_daemon_helpers(module,tmp_path)
-    harness=ast.parse((APP/'owner_alpha_package/tests/test_linux_contract.py').read_text())
+    harness=ast.parse((APP/'owner_alpha_package/tests/test_linux_contract.py').read_text(encoding='utf-8'))
     probes=0
     for node in ast.walk(harness):
         if isinstance(node,ast.List):
@@ -198,18 +239,18 @@ def test_runtime_and_installer_have_no_external_download_or_policy_mutation(tmp_
     assert 'network_check()["tcp_listeners"]==[["127.0.0.1",s["port"]]]' in start
 
 def test_first_install_marker_follows_success_and_uninstall_preserves_state():
-    common=(APP/'owner_alpha_package/windows/OwnerAlpha.Common.psm1').read_text()
+    common=(APP/'owner_alpha_package/windows/OwnerAlpha.Common.psm1').read_text(encoding='utf-8')
     install=common[common.index('function New-OwnerInstall'):common.index('function Assert-OwnerInstalled')]
     assert install.index('Assert-OwnerInstallDisk')<install.index('New-OwnerPrivateDirectory')<install.index("'--import'")
     assert install.index('Write-OwnerJson $pending')<install.index("'--import'")
     assert 'Undo-OwnerInstallTransaction' in install
     assert install.index('$result=Invoke-OwnerWsl')<install.index('Write-OwnerJson $Context.stateFile')
-    uninstall=(APP/'owner_alpha_package/windows/Uninstall-OwnerAlpha.ps1').read_text()
+    uninstall=(APP/'owner_alpha_package/windows/Uninstall-OwnerAlpha.ps1').read_text(encoding='utf-8')
     assert '--unregister' not in uninstall and 'Remove-Item' not in uninstall
     assert 'Stop-OwnerState' in uninstall
 
 def test_nonclaims_are_literal_and_schema_requires_provenance():
-    schema=json.loads((APP/'owner_alpha_package/manifest.schema.json').read_text())
+    schema=json.loads((APP/'owner_alpha_package/manifest.schema.json').read_text(encoding='utf-8'))
     assert {'source','delivery','acceptance','migration','payload'}<=set(schema['required'])
     assert schema['properties']['source']['properties']['ordinary_commits']['maxItems']==3
     assert schema['properties']['migration']['properties']['path']['const'].endswith('0019_analysis_geography.py')

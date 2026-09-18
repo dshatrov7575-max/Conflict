@@ -17,6 +17,7 @@ Describe 'MVP7 preflight without registered Linux distros' {
             Mock Test-Path -ModuleName $module { $true }
         }
         Mock Get-OwnerEdgeCapacity -ModuleName OwnerAlpha.Common { @{path='C:\mock\msedge.exe';version='153.0.4234.32'} }
+        Mock Assert-Mvp7BundledPowerShellProcess -ModuleName Mvp7.Setup { }
     }
     It 'WSL2 capability present with no registered distros passes both preflights' {
         Mock Invoke-OwnerProcess -ModuleName OwnerAlpha.Common {

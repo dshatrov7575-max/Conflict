@@ -1,18 +1,23 @@
 {
   "acceptance_run": 35216652773,
   "correction_message": "fix(installer): repair private runtime service paths",
+  "harness_correction_message": "test(installer): stabilize interrupted rollback contract",
   "installer_branch": "codex/mvp7-r1-windows-setup-20260917",
   "installer_commit_a": "21c4812a8eaf8d503454699c191d99abaf538036",
   "installer_commit_b": "7011f31c8b4a8a21986b85da18d5337e64c7aa28",
   "installer_commit_c": "ce522813cfbfd26c3a06fd53fbde54939559e4d9",
   "installer_commit_d": "1e109ad2f37d3de4d0d0fa3a9b9ad1dbace182d4",
   "installer_commit_e": "43a37838b94695e3516ca086c0e409719328f8e4",
+  "installer_commit_e2": "33742b06d2c38fad567d52f5a07d2bc34fce5eaa",
+  "installer_commit_e3": "7e6737c9e2b5ae42cc770f61a692b92c6dd8d7a3",
+  "installer_commit_e4": "cbba3a415afe63391ca449d66ad1d6a27f825daa",
   "installer_message": "build(installer): add MVP7 R1 Windows setup candidate",
   "installer_parent": "c8263b81adb8fcb90ec92b65342f9620884c929b",
   "migration": {
     "blob": "8a2a5b3dfa750932ddb17228dfb476c5e3e88b03",
     "path": "domain/migrations/0019_analysis_geography.py"
   },
+  "powershell_runtime_correction_message": "fix(installer): bundle private PowerShell runtime",
   "r1_regression_oracle": {
     "admin0": 9,
     "admin1": 16,
@@ -34,6 +39,7 @@
   },
   "readiness_correction_message": "fix(installer): harden private daemon readiness",
   "restore_correction_message": "fix(installer): canonicalize restore graph verification",
+  "rollback_fixture_correction_message": "test(installer): canonicalize rollback fixture identity",
   "source": {
     "base_head": "c6c7118080ab1a1dcb86216f4092dabcf8125be7",
     "base_tree": "5a4a40431e72fb6b942b895225ce11bba2898052",
@@ -86,9 +92,5 @@
     "tree": "5567183dbe16fc6c7c8caac051b7694f37b92457"
   },
   "transaction_correction_message": "fix(installer): make Windows installation transactional",
-  "uninstall_correction_message": "fix(installer): canonicalize uninstall target path",
-  "installer_commit_e2": "33742b06d2c38fad567d52f5a07d2bc34fce5eaa",
-  "harness_correction_message": "test(installer): stabilize interrupted rollback contract",
-  "installer_commit_e3": "7e6737c9e2b5ae42cc770f61a692b92c6dd8d7a3",
-  "rollback_fixture_correction_message": "test(installer): canonicalize rollback fixture identity"
+  "uninstall_correction_message": "fix(installer): canonicalize uninstall target path"
 }
