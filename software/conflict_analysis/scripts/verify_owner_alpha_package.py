@@ -158,6 +158,12 @@ POWERSHELL_MANIFEST_PATHS = frozenset([
     "software/conflict_analysis/scripts/verify_owner_alpha_package.py",
 ])
 
+POWERSHELL_RUNTIME_FINALIZATION_PATHS = frozenset([
+    "software/conflict_analysis/installer/test_contract.py",
+    "software/conflict_analysis/installer/source.lock.json",
+    "software/conflict_analysis/scripts/verify_owner_alpha_package.py",
+])
+
 def delivery_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
     head=git(repo,"rev-parse","HEAD")
     base=LOCK["installer_parent"]  # Accepted R1 run still belongs to F, never A.
@@ -170,6 +176,7 @@ def delivery_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
     seventh=LOCK["installer_commit_e3"]
     eighth=LOCK["installer_commit_e4"]
     ninth=LOCK["installer_commit_e5"]
+    tenth=LOCK["installer_commit_e5a"]
     require(git(repo,"branch","--show-current") in ("",LOCK["installer_branch"]),"BLOCKED_MVP7_HISTORY","branch")
     require(git(repo,"show","-s","--format=%P",first)==base,"BLOCKED_MVP7_HISTORY","A ordinary parent F")
     require(git(repo,"show","-s","--format=%B",first)==LOCK["installer_message"],"BLOCKED_MVP7_HISTORY","A message")
@@ -211,15 +218,20 @@ def delivery_identity(repo: Path, *, final: bool = True) -> dict[str, Any]:
     require(git(repo,"show","-s","--format=%B",ninth)==LOCK["powershell_runtime_correction_message"],"BLOCKED_MVP7_HISTORY","E5 message")
     delta_e5=git(repo,"diff","--name-status","--no-renames",eighth,ninth).splitlines()
     require(set(delta_e5)=={"M\t"+p for p in POWERSHELL_RUNTIME_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact E5 modified paths")
+    require(git(repo,"show","-s","--format=%P",tenth)==ninth,"BLOCKED_MVP7_HISTORY","E5a ordinary parent E5")
+    require(git(repo,"rev-list","--count",base+".."+tenth)=="10","BLOCKED_MVP7_HISTORY","ten installer commits")
+    require(git(repo,"show","-s","--format=%B",tenth)==LOCK["powershell_manifest_correction_message"],"BLOCKED_MVP7_HISTORY","E5a message")
+    delta_e5a=git(repo,"diff","--name-status","--no-renames",ninth,tenth).splitlines()
+    require(set(delta_e5a)=={"M\t"+p for p in POWERSHELL_MANIFEST_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact E5a modified paths")
     if final:
         require(not git(repo,"status","--porcelain=v1","--untracked-files=all"),"BLOCKED_MVP7_HISTORY","clean committed checkout required")
-        require(git(repo,"show","-s","--format=%P",head)==ninth,"BLOCKED_MVP7_HISTORY","E5a ordinary parent E5")
-        require(git(repo,"rev-list","--count",base+".."+head)=="10","BLOCKED_MVP7_HISTORY","ten installer commits")
-        require(git(repo,"show","-s","--format=%B",head)==LOCK["powershell_manifest_correction_message"],"BLOCKED_MVP7_HISTORY","E5a message")
-        delta=git(repo,"diff","--name-status","--no-renames",ninth,head).splitlines()
-        require(set(delta)=={"M\t"+p for p in POWERSHELL_MANIFEST_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact E5a modified paths")
+        require(git(repo,"show","-s","--format=%P",head)==tenth,"BLOCKED_MVP7_HISTORY","E5 private runtime finalization parent E5a")
+        require(git(repo,"rev-list","--count",base+".."+head)=="11","BLOCKED_MVP7_HISTORY","eleven installer commits")
+        require(git(repo,"show","-s","--format=%B",head)==LOCK["powershell_runtime_finalization_message"],"BLOCKED_MVP7_HISTORY","E5 private runtime finalization message")
+        delta=git(repo,"diff","--name-status","--no-renames",tenth,head).splitlines()
+        require(set(delta)=={"M\t"+p for p in POWERSHELL_RUNTIME_FINALIZATION_PATHS},"BLOCKED_MVP7_SOURCE_MUTATION","exact private runtime finalization modified paths")
     else:
-        require(head==ninth,"BLOCKED_MVP7_HISTORY","precommit parent E5")
+        require(head==tenth,"BLOCKED_MVP7_HISTORY","precommit parent E5a")
     paths=git(repo,"diff","--name-only",base,head).splitlines()
     require(all(allowed_installer_path(p) for p in paths),"BLOCKED_MVP7_SOURCE_MUTATION","installer allowlist")
     return {"head":eighth,"tree":git(repo,"rev-parse",eighth+"^{tree}"),"parent":seventh}
