@@ -24,7 +24,7 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["conflict_analysis*", "domain*", "production_studio*", "production_player*"]
+include = ["conflict_analysis*", "domain*", "production_studio*", "production_player*", "calculation*"]
 
 [tool.setuptools.package-data]
 "domain" = [
