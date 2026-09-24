@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://conflictology.invalid/schemas/foundation-package-2.1.0.schema.json",
+  "title": "Conflict Analysis Foundation Package 2.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "format_version",
+    "package_scope",
+    "package_id",
+    "project",
+    "selected_definition_id",
+    "workspace",
+    "workspace_package",
+    "project_definition",
+    "manifest"
+  ],
+  "properties": {
+    "format": {"const": "conflict-analysis-foundation"},
+    "format_version": {"const": "2.1.0"},
+    "package_scope": {"enum": ["WORKSPACE", "PROJECT_DEFINITION"]},
+    "package_id": {"$ref": "#/$defs/code"},
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "code", "version"],
+      "properties": {
+        "id": {"$ref": "#/$defs/uuid"},
+        "code": {"$ref": "#/$defs/code"},
+        "version": {"$ref": "#/$defs/version"}
+      }
+    },
+    "selected_definition_id": {"$ref": "#/$defs/uuid"},
+    "workspace": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "code", "version", "project_definition_version_id", "project_definition_hash"],
+          "properties": {
+            "id": {"$ref": "#/$defs/uuid"},
+            "code": {"$ref": "#/$defs/code"},
+            "version": {"$ref": "#/$defs/version"},
+            "project_definition_version_id": {"$ref": "#/$defs/uuid"},
+            "project_definition_hash": {"$ref": "#/$defs/sha256"},
+            "label": {"type": "string"},
+            "metadata": {"type": "object"}
+          }
+        }
+      ]
+    },
+    "workspace_package": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "object"}
+      ]
+    },
+    "project_definition": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/project_definition"}
+      ]
+    },
+    "manifest": {"$ref": "#/$defs/package_manifest"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"package_scope": {"const": "WORKSPACE"}}},
+      "then": {
+        "properties": {
+          "workspace": {"type": "object"},
+          "workspace_package": {"type": "object"},
+          "project_definition": {"type": "null"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"package_scope": {"const": "PROJECT_DEFINITION"}}},
+      "then": {
+        "properties": {
+          "workspace": {"type": "null"},
+          "workspace_package": {"type": "null"},
+          "project_definition": {"$ref": "#/$defs/project_definition"}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "uuid": {"type": "string", "format": "uuid"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "datetime_or_null": {"type": ["string", "null"], "format": "date-time"},
+    "code_or_null": {
+      "oneOf": [{"$ref": "#/$defs/code"}, {"type": "null"}]
+    },
+    "project_definition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "code",
+        "version",
+        "is_current",
+        "publication_status",
+        "manifest",
+        "manifest_hash",
+        "published_at",
+        "schema_version",
+        "semantic_version",
+        "construct_version",
+        "validated_at",
+        "validated_by",
+        "validation_result",
+        "published_by",
+        "supersedes_code"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/uuid"},
+        "code": {"$ref": "#/$defs/code"},
+        "version": {"$ref": "#/$defs/version"},
+        "metadata": {"type": "object"},
+        "is_current": {"type": "boolean"},
+        "publication_status": {"enum": ["DRAFT", "VALIDATED", "PUBLISHED", "RETIRED"]},
+        "manifest": {"$ref": "project-definition-manifest-1.0.0.schema.json"},
+        "manifest_hash": {"$ref": "#/$defs/sha256"},
+        "published_at": {"$ref": "#/$defs/datetime_or_null"},
+        "schema_version": {"const": "1.0.0"},
+        "semantic_version": {"$ref": "#/$defs/version"},
+        "construct_version": {"$ref": "#/$defs/version"},
+        "validated_at": {"$ref": "#/$defs/datetime_or_null"},
+        "validated_by": {"type": "string", "maxLength": 255},
+        "validation_result": {"type": "object"},
+        "published_by": {"type": "string", "maxLength": 255},
+        "supersedes_code": {"$ref": "#/$defs/code_or_null"}
+      }
+    },
+    "package_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hash_algorithm", "payload_sha256"],
+      "properties": {
+        "hash_algorithm": {"const": "sha256"},
+        "payload_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

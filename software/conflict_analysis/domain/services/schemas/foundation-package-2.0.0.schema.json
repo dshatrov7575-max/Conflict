@@ -1,0 +1,558 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://conflictology.invalid/schemas/foundation-package-2.0.0.schema.json",
+  "title": "Conflict Analysis Foundation Package 2.0.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "format_version",
+    "package_id",
+    "schema_version",
+    "template_version",
+    "method_version",
+    "ontology_version",
+    "dataset_version",
+    "workspace",
+    "project_definition_versions",
+    "time_slices",
+    "actors",
+    "actor_relations",
+    "analytical_elements",
+    "actor_element_roles",
+    "expert_profiles",
+    "experiments",
+    "assessment_sets",
+    "actor_element_assessments",
+    "parameter_definitions",
+    "parameter_values",
+    "sources",
+    "documents",
+    "document_versions",
+    "document_contents",
+    "text_fragments",
+    "facts",
+    "fact_evidence_links",
+    "assessment_fact_links",
+    "parameter_value_fact_links",
+    "power_profiles",
+    "power_components",
+    "power_component_fact_links",
+    "chat_conversations",
+    "chat_messages",
+    "chat_citations",
+    "gaps",
+    "help_topics",
+    "ui_help_bindings",
+    "terminology_entries",
+    "legacy_term_mappings",
+    "compatibility_receipts",
+    "manifest"
+  ],
+  "properties": {
+    "format": {"const": "conflict-analysis-foundation"},
+    "format_version": {"const": "2.0.0"},
+    "package_id": {"$ref": "#/$defs/code"},
+    "schema_version": {"$ref": "#/$defs/version"},
+    "template_version": {"$ref": "#/$defs/version"},
+    "method_version": {"$ref": "#/$defs/version"},
+    "ontology_version": {"$ref": "#/$defs/version"},
+    "dataset_version": {"$ref": "#/$defs/version"},
+    "workspace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "code",
+        "version",
+        "project_definition_version_id",
+        "project_definition_hash"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/uuid"},
+        "code": {"$ref": "#/$defs/code"},
+        "version": {"$ref": "#/$defs/version"},
+        "project_definition_version_id": {"$ref": "#/$defs/uuid"},
+        "project_definition_hash": {"$ref": "#/$defs/sha256"},
+        "label": {"type": "string"},
+        "metadata": {"type": "object"}
+      }
+    },
+    "project_definition_versions": {"$ref": "#/$defs/project_definition_version_array"},
+    "time_slices": {"$ref": "#/$defs/time_slice_array"},
+    "actors": {"$ref": "#/$defs/actor_array"},
+    "actor_relations": {"$ref": "#/$defs/actor_relation_array"},
+    "analytical_elements": {"$ref": "#/$defs/analytical_element_array"},
+    "actor_element_roles": {"$ref": "#/$defs/actor_element_role_array"},
+    "expert_profiles": {"$ref": "#/$defs/expert_profile_array"},
+    "experiments": {"$ref": "#/$defs/experiment_array"},
+    "assessment_sets": {"$ref": "#/$defs/assessment_set_array"},
+    "actor_element_assessments": {"$ref": "#/$defs/actor_element_assessment_array"},
+    "parameter_definitions": {"$ref": "#/$defs/parameter_definition_array"},
+    "parameter_values": {"$ref": "#/$defs/parameter_value_array"},
+    "sources": {"$ref": "#/$defs/source_array"},
+    "documents": {"$ref": "#/$defs/document_array"},
+    "document_versions": {"$ref": "#/$defs/document_version_array"},
+    "document_contents": {"$ref": "#/$defs/document_content_array"},
+    "text_fragments": {"$ref": "#/$defs/text_fragment_array"},
+    "facts": {"$ref": "#/$defs/fact_array"},
+    "fact_evidence_links": {"$ref": "#/$defs/fact_evidence_link_array"},
+    "assessment_fact_links": {"$ref": "#/$defs/assessment_fact_link_array"},
+    "parameter_value_fact_links": {"$ref": "#/$defs/parameter_value_fact_link_array"},
+    "power_profiles": {"$ref": "#/$defs/power_profile_array"},
+    "power_components": {"$ref": "#/$defs/power_component_array"},
+    "power_component_fact_links": {"$ref": "#/$defs/power_component_fact_link_array"},
+    "chat_conversations": {"$ref": "#/$defs/chat_conversation_array"},
+    "chat_messages": {"$ref": "#/$defs/chat_message_array"},
+    "chat_citations": {"$ref": "#/$defs/chat_citation_array"},
+    "gaps": {"$ref": "#/$defs/gap_array"},
+    "help_topics": {"$ref": "#/$defs/help_topic_array"},
+    "ui_help_bindings": {"$ref": "#/$defs/ui_help_binding_array"},
+    "terminology_entries": {"$ref": "#/$defs/terminology_entry_array"},
+    "legacy_term_mappings": {"$ref": "#/$defs/legacy_term_mapping_array"},
+    "compatibility_receipts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "code", "version", "legacy_model", "legacy_id", "legacy_code", "canonical_model", "canonical_id", "canonical_code", "status", "reason", "migration_version"],
+        "properties": {
+          "id": {"$ref": "#/$defs/uuid"},
+          "code": {"$ref": "#/$defs/code"},
+          "version": {"$ref": "#/$defs/version"},
+          "legacy_model": {"type": "string", "minLength": 1},
+          "legacy_id": {"$ref": "#/$defs/uuid"},
+          "legacy_code": {"type": "string", "minLength": 1},
+          "status": {"enum": ["MIGRATED", "UNRESOLVED"]},
+          "canonical_model": {"type": "string"},
+          "canonical_id": {"oneOf": [{"$ref": "#/$defs/uuid"}, {"type": "null"}]},
+          "canonical_code": {"type": "string"},
+          "reason": {"type": "string"},
+          "migration_version": {"$ref": "#/$defs/version"}
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hash_algorithm", "payload_sha256", "entity_counts"],
+      "properties": {
+        "hash_algorithm": {"const": "sha256"},
+        "payload_sha256": {"$ref": "#/$defs/sha256"},
+        "entity_counts": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "uuid": {"type": "string", "format": "uuid"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "date": {"type": "string", "format": "date"},
+    "date_or_null": {"type": ["string", "null"], "format": "date"},
+    "datetime_or_null": {"type": ["string", "null"], "format": "date-time"},
+    "code_or_null": {
+      "oneOf": [{"$ref": "#/$defs/code"}, {"type": "null"}]
+    },
+    "confidence": {
+      "oneOf": [
+        {"type": "number", "minimum": 0, "maximum": 100},
+        {"type": "string", "pattern": "^(100(?:\\.0+)?|[0-9]?[0-9](?:\\.[0-9]+)?)$"},
+        {"type": "null"}
+      ]
+    },
+    "entity_base": {
+      "type": "object",
+      "required": ["id", "code", "version"],
+      "properties": {
+        "id": {"$ref": "#/$defs/uuid"},
+        "code": {"$ref": "#/$defs/code"},
+        "version": {"$ref": "#/$defs/version"},
+        "metadata": {"type": "object"}
+      }
+    },
+    "project_definition_version": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {
+          "type": "object",
+          "required": ["is_current", "publication_status", "manifest", "manifest_hash", "published_at", "schema_version", "semantic_version", "construct_version", "validated_at", "validated_by", "validation_result", "published_by", "supersedes_code"],
+          "properties": {
+            "is_current": {"type": "boolean"},
+            "publication_status": {"enum": ["DRAFT", "VALIDATED", "PUBLISHED", "RETIRED"]},
+            "manifest": {"type": "object"},
+            "manifest_hash": {"$ref": "#/$defs/sha256"},
+            "published_at": {"$ref": "#/$defs/datetime_or_null"},
+            "schema_version": {"$ref": "#/$defs/version"},
+            "semantic_version": {"$ref": "#/$defs/version"},
+            "construct_version": {"$ref": "#/$defs/version"},
+            "validated_at": {"$ref": "#/$defs/datetime_or_null"},
+            "validated_by": {"type": "string"},
+            "validation_result": {"type": "object"},
+            "published_by": {"type": "string"},
+            "supersedes_code": {"$ref": "#/$defs/code_or_null"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "time_slice": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["name", "cutoff_date", "order"], "properties": {
+          "name": {"type": "string"}, "cutoff_date": {"$ref": "#/$defs/date"}, "order": {"type": "integer", "minimum": 0}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "actor": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["parent_code", "actor_type", "label", "description", "order"], "properties": {
+          "parent_code": {"$ref": "#/$defs/code_or_null"}, "actor_type": {"type": "string", "minLength": 1},
+          "label": {"type": "string", "minLength": 1}, "description": {"type": "string"}, "order": {"type": "integer", "minimum": 0}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "actor_relation": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["source_actor_code", "target_actor_code", "relation_type", "description"], "properties": {
+          "source_actor_code": {"$ref": "#/$defs/code"}, "target_actor_code": {"$ref": "#/$defs/code"},
+          "relation_type": {"$ref": "#/$defs/code"}, "description": {"type": "string"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "analytical_element": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["parent_code", "element_type", "label", "reference_statement", "description", "order"], "properties": {
+          "parent_code": {"$ref": "#/$defs/code_or_null"}, "element_type": {"type": "string", "minLength": 1},
+          "label": {"type": "string", "minLength": 1}, "reference_statement": {"type": "string"},
+          "description": {"type": "string"}, "order": {"type": "integer", "minimum": 0}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "actor_element_role": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["actor_code", "element_code", "role", "note"], "properties": {
+          "actor_code": {"$ref": "#/$defs/code"}, "element_code": {"$ref": "#/$defs/code"},
+          "role": {"type": "string", "minLength": 1}, "note": {"type": "string"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "expert_profile": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["kind", "display_name", "identity_key", "provider", "model_name"], "properties": {
+          "kind": {"enum": ["HUMAN", "AI"]}, "display_name": {"type": "string", "minLength": 1},
+          "identity_key": {"type": "string", "minLength": 1}, "provider": {"type": "string"}, "model_name": {"type": "string"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "assessment_set": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["kind", "name", "description", "independent"], "properties": {
+          "kind": {"enum": ["HUMAN", "AI"]}, "name": {"type": "string", "minLength": 1},
+          "description": {"type": "string"}, "independent": {"const": true}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "experiment": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["expert_profile_code", "assessment_set_code", "experiment_type", "name", "status", "color", "order", "method_version", "frozen_at"], "properties": {
+          "expert_profile_code": {"$ref": "#/$defs/code"}, "assessment_set_code": {"$ref": "#/$defs/code"},
+          "experiment_type": {"enum": ["ASSESSMENT", "MODELING"]},
+          "name": {"type": "string", "minLength": 1}, "status": {"enum": ["DRAFT", "ACTIVE", "FROZEN", "ARCHIVED"]},
+          "color": {"type": "string"}, "order": {"type": "integer", "minimum": 0},
+          "method_version": {"type": "string"}, "frozen_at": {"$ref": "#/$defs/datetime_or_null"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "actor_element_assessment": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["assessment_set_code", "experiment_code", "actor_code", "element_code", "time_slice_code", "supersedes_code", "reference_statement", "reference_statement_incomplete", "status", "confidence_level", "knowledge_cutoff", "method_version", "provenance"], "properties": {
+          "assessment_set_code": {"$ref": "#/$defs/code"}, "experiment_code": {"$ref": "#/$defs/code"},
+          "actor_code": {"$ref": "#/$defs/code"}, "element_code": {"$ref": "#/$defs/code"}, "time_slice_code": {"$ref": "#/$defs/code"},
+          "supersedes_code": {"$ref": "#/$defs/code_or_null"},
+          "reference_statement": {"type": "string"}, "reference_statement_incomplete": {"type": "boolean"},
+          "status": {"type": "string", "minLength": 1}, "confidence_level": {"enum": ["UNKNOWN", "LOW", "MEDIUM", "HIGH"]},
+          "knowledge_cutoff": {"$ref": "#/$defs/date"}, "method_version": {"type": "string"}, "provenance": {"type": "object"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "parameter_definition": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["name", "description", "target_type", "value_type", "scale_min", "scale_max", "scale_metadata"], "properties": {
+          "name": {"type": "string", "minLength": 1}, "description": {"type": "string"},
+          "target_type": {"type": "string", "minLength": 1}, "value_type": {"enum": ["INTEGER", "DECIMAL", "BOOLEAN", "TEXT"]},
+          "scale_min": {"type": ["number", "string", "null"]}, "scale_max": {"type": ["number", "string", "null"]}, "scale_metadata": {"type": "object"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "parameter_value": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["assessment_code", "assessment_set_code", "parameter_definition_code", "supersedes_code", "status", "temporal_status", "value", "note", "confidence", "range_min", "range_max", "rationale"], "properties": {
+          "assessment_code": {"$ref": "#/$defs/code"}, "assessment_set_code": {"$ref": "#/$defs/code"},
+          "parameter_definition_code": {"$ref": "#/$defs/code"}, "supersedes_code": {"$ref": "#/$defs/code_or_null"},
+          "status": {"enum": ["UNKNOWN", "NOT_APPLICABLE", "INSUFFICIENT_DATA", "PROVISIONAL", "CONFIRMED", "OPEN_METHOD", "DISPUTED", "RETROSPECTIVE_KNOWLEDGE"]},
+          "temporal_status": {"enum": ["CONTEMPORANEOUS", "RETROSPECTIVE_KNOWLEDGE", "NO_DIRECT_POSITION", "UNKNOWN"]},
+          "value": {}, "note": {"type": "string"}, "confidence": {"$ref": "#/$defs/confidence"},
+          "range_min": {}, "range_max": {}, "rationale": {"type": "string"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "source": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["name", "publisher", "independence_group", "independence_status", "homepage_url"], "properties": {
+          "name": {"type": "string", "minLength": 1}, "publisher": {"type": "string", "minLength": 1},
+          "independence_group": {"type": "string"}, "independence_status": {"enum": ["INDEPENDENT", "DEPENDENT", "UNKNOWN", "UNVERIFIED"]},
+          "homepage_url": {"oneOf": [{"type": "string", "format": "uri"}, {"const": ""}]}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "document": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["source_code", "title", "canonical_url", "published_on", "accessed_on"], "properties": {
+          "source_code": {"$ref": "#/$defs/code"}, "title": {"type": "string", "minLength": 1},
+          "canonical_url": {"oneOf": [{"type": "string", "format": "uri"}, {"const": ""}]}, "published_on": {"$ref": "#/$defs/date_or_null"}, "accessed_on": {"$ref": "#/$defs/date_or_null"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "document_version": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["document_code", "supersedes_code", "status", "capture_url", "captured_at", "checksum", "media_type"], "properties": {
+          "document_code": {"$ref": "#/$defs/code"}, "status": {"type": "string", "minLength": 1},
+          "supersedes_code": {"$ref": "#/$defs/code_or_null"},
+          "capture_url": {"oneOf": [{"type": "string", "format": "uri"}, {"const": ""}]}, "captured_at": {"type": "string", "format": "date-time"},
+          "checksum": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]}, "media_type": {"type": "string"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "document_content": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["document_version_code", "encoding", "normalization_version", "content", "checksum"], "properties": {
+          "document_version_code": {"$ref": "#/$defs/code"}, "encoding": {"enum": ["UTF8", "BASE64"]},
+          "normalization_version": {"$ref": "#/$defs/version"},
+          "content": {"type": "string", "minLength": 1}, "checksum": {"$ref": "#/$defs/sha256"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "text_fragment": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["document_version_code", "anchor_status", "start_offset", "end_offset", "selector", "page", "section", "exact_text", "exact_text_sha256"], "properties": {
+          "document_version_code": {"$ref": "#/$defs/code"}, "anchor_status": {"enum": ["EXACT", "HASH_RECORDED_PENDING_INGEST", "URL_ONLY", "UNRESOLVED", "ANCHOR_MISMATCH"]},
+          "start_offset": {"type": ["integer", "null"], "minimum": 0}, "end_offset": {"type": ["integer", "null"], "minimum": 0},
+          "selector": {"type": "object"}, "page": {"type": "string"}, "section": {"type": "string"}, "exact_text": {"type": "string"},
+          "exact_text_sha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "fact": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["experiment_code", "fact_type", "statement", "origin", "directness", "visibility", "status", "confidence", "temporal_status", "coder_identifier"], "properties": {
+          "experiment_code": {"$ref": "#/$defs/code_or_null"}, "fact_type": {"type": "string", "minLength": 1},
+          "statement": {"type": "string", "minLength": 1}, "origin": {"type": "string", "minLength": 1},
+          "directness": {"type": "string", "minLength": 1}, "visibility": {"type": "string", "minLength": 1}, "status": {"type": "string", "minLength": 1},
+          "confidence": {"$ref": "#/$defs/confidence"}, "temporal_status": {"type": "string", "minLength": 1}, "coder_identifier": {"type": "string", "minLength": 1}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "fact_evidence_link": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["fact_code", "fragment_code", "relation", "temporal_status", "learned_on", "rationale"], "properties": {
+          "fact_code": {"$ref": "#/$defs/code"}, "fragment_code": {"$ref": "#/$defs/code"},
+          "relation": {"enum": ["SUPPORTS", "REFUTES", "CONTEXT", "CHALLENGES", "CONTEXTUALIZES"]}, "temporal_status": {"type": "string", "minLength": 1},
+          "learned_on": {"$ref": "#/$defs/date_or_null"}, "rationale": {"type": "string"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "assessment_fact_link": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["assessment_code", "fact_code", "role", "temporal_status", "learned_on", "rationale"], "properties": {
+          "assessment_code": {"$ref": "#/$defs/code"}, "fact_code": {"$ref": "#/$defs/code"},
+          "role": {"type": "string", "minLength": 1}, "temporal_status": {"type": "string", "minLength": 1},
+          "learned_on": {"$ref": "#/$defs/date_or_null"}, "rationale": {"type": "string"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "parameter_value_fact_link": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["parameter_value_code", "fact_code", "role", "temporal_status", "learned_on", "rationale"], "properties": {
+          "parameter_value_code": {"$ref": "#/$defs/code"}, "fact_code": {"$ref": "#/$defs/code"},
+          "role": {"type": "string", "minLength": 1}, "temporal_status": {"type": "string", "minLength": 1},
+          "learned_on": {"$ref": "#/$defs/date_or_null"}, "rationale": {"type": "string"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "power_profile": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["assessment_code", "method_version", "note"], "properties": {
+          "assessment_code": {"$ref": "#/$defs/code"}, "method_version": {"type": "string"}, "note": {"type": "string"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "power_component": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["profile_code", "dimension", "status", "value", "confidence", "rationale", "provenance"], "properties": {
+          "profile_code": {"$ref": "#/$defs/code"}, "dimension": {"enum": ["FA", "ER", "OC", "CC", "AL", "IC", "NI", "EB"]},
+          "status": {"enum": ["UNKNOWN", "NOT_APPLICABLE", "INSUFFICIENT_DATA", "PROVISIONAL", "CONFIRMED", "OPEN_METHOD", "DISPUTED", "RETROSPECTIVE_KNOWLEDGE"]}, "value": {}, "confidence": {"$ref": "#/$defs/confidence"},
+          "rationale": {"type": "string"}, "provenance": {"type": "object"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "power_component_fact_link": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["component_code", "fact_code", "role"], "properties": {
+          "component_code": {"$ref": "#/$defs/code"}, "fact_code": {"$ref": "#/$defs/code"}, "role": {"type": "string", "minLength": 1}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "chat_conversation": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["channel_type", "owner_identifier", "participants", "title", "provider", "model_name", "archived_at"], "properties": {
+          "channel_type": {"enum": ["PERSONAL", "PROJECT_SHARED"]},
+          "owner_identifier": {"type": "string", "minLength": 1},
+          "participants": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "title": {"type": "string"}, "provider": {"type": "string"}, "model_name": {"type": "string"},
+          "archived_at": {"$ref": "#/$defs/datetime_or_null"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "chat_message": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["conversation_code", "sequence", "role", "content", "provider", "model_name", "provider_request_id", "status", "error"], "properties": {
+          "conversation_code": {"$ref": "#/$defs/code"}, "sequence": {"type": "integer", "minimum": 0},
+          "role": {"enum": ["SYSTEM", "USER", "ASSISTANT", "TOOL"]}, "content": {"type": "string"},
+          "provider": {"type": "string"}, "model_name": {"type": "string"}, "provider_request_id": {"type": "string"},
+          "status": {"enum": ["COMPLETE", "ERROR"]}, "error": {"type": "string"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "chat_citation": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["message_code", "fact_code", "fragment_code", "document_version_code", "quote_start", "quote_end", "quote_text", "label"], "properties": {
+          "message_code": {"$ref": "#/$defs/code"}, "fact_code": {"$ref": "#/$defs/code_or_null"},
+          "fragment_code": {"$ref": "#/$defs/code_or_null"}, "document_version_code": {"$ref": "#/$defs/code_or_null"},
+          "quote_start": {"type": ["integer", "null"], "minimum": 0}, "quote_end": {"type": ["integer", "null"], "minimum": 1},
+          "quote_text": {"type": "string"}, "label": {"type": "string"}
+        }},
+        {"oneOf": [
+          {"type": "object", "properties": {"fact_code": {"$ref": "#/$defs/code"}, "fragment_code": {"type": "null"}, "document_version_code": {"type": "null"}, "quote_start": {"type": "null"}, "quote_end": {"type": "null"}, "quote_text": {"const": ""}}},
+          {"type": "object", "properties": {"fragment_code": {"$ref": "#/$defs/code"}, "document_version_code": {"$ref": "#/$defs/code"}, "quote_start": {"type": "integer", "minimum": 0}, "quote_end": {"type": "integer", "minimum": 1}, "quote_text": {"type": "string", "minLength": 1}}}
+        ]}
+      ], "unevaluatedProperties": false
+    },
+    "gap": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["type", "document_version_code", "status", "required_behavior", "resolution"], "properties": {
+          "type": {"type": "string", "minLength": 1}, "document_version_code": {"$ref": "#/$defs/code_or_null"},
+          "status": {"enum": ["OPEN", "RESOLVED"]}, "required_behavior": {"type": "string", "minLength": 1}, "resolution": {"type": "string"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "help_topic": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["stable_key", "title", "application_scope", "construct_version", "term_version", "locale", "sanitized_html", "content_sha256", "publication_status", "published_at"], "properties": {
+          "stable_key": {"$ref": "#/$defs/code"}, "locale": {"type": "string", "minLength": 2},
+          "title": {"type": "string", "minLength": 1}, "application_scope": {"type": "string"},
+          "construct_version": {"type": "string"}, "term_version": {"type": "string"},
+          "sanitized_html": {"type": "string"}, "content_sha256": {"$ref": "#/$defs/sha256"},
+          "publication_status": {"enum": ["DRAFT", "VALIDATED", "PUBLISHED", "RETIRED"]}, "published_at": {"$ref": "#/$defs/datetime_or_null"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "ui_help_binding": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["ui_key", "locale", "topic_version", "help_topic_code"], "properties": {
+          "ui_key": {"$ref": "#/$defs/code"}, "locale": {"type": "string", "minLength": 2},
+          "topic_version": {"$ref": "#/$defs/version"}, "help_topic_code": {"$ref": "#/$defs/code"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "terminology_entry": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["canonical_ru_name", "canonical_ru_acronym", "exact_en_term", "exact_en_acronym", "source_framework", "source_citation", "construct_version", "locale", "display_metadata"], "properties": {
+          "canonical_ru_name": {"type": "string", "minLength": 1}, "canonical_ru_acronym": {"type": "string"},
+          "exact_en_term": {"type": "string", "minLength": 1}, "exact_en_acronym": {"type": "string"},
+          "source_framework": {"type": "string", "minLength": 1}, "source_citation": {"type": "string", "minLength": 1},
+          "construct_version": {"$ref": "#/$defs/version"}, "locale": {"type": "string", "minLength": 2}, "display_metadata": {"type": "object"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "legacy_term_mapping": {
+      "allOf": [
+        {"$ref": "#/$defs/entity_base"},
+        {"type": "object", "required": ["terminology_entry_code", "legacy_code", "legacy_label", "source_version", "mapping_status", "notes"], "properties": {
+          "terminology_entry_code": {"$ref": "#/$defs/code_or_null"}, "legacy_code": {"$ref": "#/$defs/code"},
+          "legacy_label": {"type": "string"}, "source_version": {"$ref": "#/$defs/version"},
+          "mapping_status": {"enum": ["RENAME_ONLY", "TRANSFER_WITH_REVIEW", "METHOD_BLOCKED", "RECODING_REQUIRED"]}, "notes": {"type": "string"}
+        }}
+      ], "unevaluatedProperties": false
+    },
+    "project_definition_version_array": {"type": "array", "items": {"$ref": "#/$defs/project_definition_version"}},
+    "time_slice_array": {"type": "array", "items": {"$ref": "#/$defs/time_slice"}},
+    "actor_array": {"type": "array", "items": {"$ref": "#/$defs/actor"}},
+    "actor_relation_array": {"type": "array", "items": {"$ref": "#/$defs/actor_relation"}},
+    "analytical_element_array": {"type": "array", "items": {"$ref": "#/$defs/analytical_element"}},
+    "actor_element_role_array": {"type": "array", "items": {"$ref": "#/$defs/actor_element_role"}},
+    "expert_profile_array": {"type": "array", "items": {"$ref": "#/$defs/expert_profile"}},
+    "experiment_array": {"type": "array", "items": {"$ref": "#/$defs/experiment"}},
+    "assessment_set_array": {"type": "array", "items": {"$ref": "#/$defs/assessment_set"}},
+    "actor_element_assessment_array": {"type": "array", "items": {"$ref": "#/$defs/actor_element_assessment"}},
+    "parameter_definition_array": {"type": "array", "items": {"$ref": "#/$defs/parameter_definition"}},
+    "parameter_value_array": {"type": "array", "items": {"$ref": "#/$defs/parameter_value"}},
+    "source_array": {"type": "array", "items": {"$ref": "#/$defs/source"}},
+    "document_array": {"type": "array", "items": {"$ref": "#/$defs/document"}},
+    "document_version_array": {"type": "array", "items": {"$ref": "#/$defs/document_version"}},
+    "document_content_array": {"type": "array", "items": {"$ref": "#/$defs/document_content"}},
+    "text_fragment_array": {"type": "array", "items": {"$ref": "#/$defs/text_fragment"}},
+    "fact_array": {"type": "array", "items": {"$ref": "#/$defs/fact"}},
+    "fact_evidence_link_array": {"type": "array", "items": {"$ref": "#/$defs/fact_evidence_link"}},
+    "assessment_fact_link_array": {"type": "array", "items": {"$ref": "#/$defs/assessment_fact_link"}},
+    "parameter_value_fact_link_array": {"type": "array", "items": {"$ref": "#/$defs/parameter_value_fact_link"}},
+    "power_profile_array": {"type": "array", "items": {"$ref": "#/$defs/power_profile"}},
+    "power_component_array": {"type": "array", "items": {"$ref": "#/$defs/power_component"}},
+    "power_component_fact_link_array": {"type": "array", "items": {"$ref": "#/$defs/power_component_fact_link"}},
+    "chat_conversation_array": {"type": "array", "items": {"$ref": "#/$defs/chat_conversation"}},
+    "chat_message_array": {"type": "array", "items": {"$ref": "#/$defs/chat_message"}},
+    "chat_citation_array": {"type": "array", "items": {"$ref": "#/$defs/chat_citation"}},
+    "gap_array": {"type": "array", "items": {"$ref": "#/$defs/gap"}},
+    "help_topic_array": {"type": "array", "items": {"$ref": "#/$defs/help_topic"}},
+    "ui_help_binding_array": {"type": "array", "items": {"$ref": "#/$defs/ui_help_binding"}}
+    ,"terminology_entry_array": {"type": "array", "items": {"$ref": "#/$defs/terminology_entry"}}
+    ,"legacy_term_mapping_array": {"type": "array", "items": {"$ref": "#/$defs/legacy_term_mapping"}}
+  }
+}
