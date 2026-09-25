@@ -16,6 +16,11 @@
 </dl>
 <h2>UNO: <span data-testid="uno">{{ run.UNO|default_if_none:'Недостаточно данных' }}</span></h2>
 <p>Статус: <strong data-testid="run-status">{{ run.status }}</strong></p>
+{% if scenario_token %}<form method="post" action="{% url 'scenario_modeling:update' %}">
+  {% csrf_token %}
+  <input type="hidden" name="scenario_token" value="{{ scenario_token }}">
+  <button type="submit" name="action" value="start" data-testid="create-scenario">Создать сценарий из этого расчёта</button>
+</form>{% else %}<p>Snapshot превышает лимит размера Scenario MVP. Результат расчёта и JSON доступны ниже.</p>{% endif %}
 <p>Допущено строк: {{ run.completeness.eligible_rows }} / {{ run.completeness.expected_rows }}.
   Вычислимо ПТН: {{ run.completeness.computable_ptns }} / {{ run.completeness.expected_ptns }}.
   Известно весов ПТН: {{ run.completeness.known_ptn_weights }} / {{ run.completeness.expected_ptns }}.</p>

@@ -1,0 +1,86 @@
+{% extends 'player_integration/base.html' %}
+{% load static %}
+{% block title %}Сценарное моделирование{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'scenario_modeling/scenario.css' %}">
+<script src="{% static 'scenario_modeling/scenario.js' %}" defer></script>
+{% endblock %}
+{% block content %}
+<h1>Сценарное моделирование</h1>
+<p>{{ experiment.name }} · <strong data-testid="assessment-kind">{{ experiment.assessment_set.kind }}</strong> · {{ experiment.expert_profile.display_name }}</p>
+<p>Сценарий — сохранённый baseline и список изменений. Пересчёт использует этот снимок, даже если исходные оценки уже исправлены.</p>
+<div class="scenario-metrics" aria-label="Сравнение UNO">
+  <section><h2>Baseline UNO</h2><strong data-testid="baseline-uno">{{ baseline.UNO|default_if_none:'Недостаточно данных' }}</strong><p>{{ baseline.status }}</p></section>
+  <section><h2>Scenario UNO</h2><strong data-testid="scenario-uno">{{ scenario.UNO|default_if_none:'Недостаточно данных' }}</strong><p data-testid="scenario-status">{{ scenario.status }}</p></section>
+  <section><h2>Delta UNO</h2><strong data-testid="delta-uno">{{ delta_uno|default_if_none:'Недостаточно данных' }}</strong><p>Scenario − baseline</p></section>
+</div>
+<h2>Изменить параметр</h2>
+<p>POS: −10…10. KVS, RGU и KVPTN: 0…10. UNKNOWN и другие отсутствующие значения сохраняются и недоступны для изменения.</p>
+{% if has_parameters %}
+<form method="post" action="{% url 'scenario_modeling:update' %}" id="override-form">
+  {% csrf_token %}<input type="hidden" name="scenario_token" value="{{ scenario_token }}">
+  {{ form.non_field_errors }}
+  <p>{{ form.parameter.label_tag }} {{ form.parameter }} {{ form.parameter.errors }}</p>
+  <p>{{ form.value.label_tag }} {{ form.value }} {{ form.value.errors }}</p>
+  <div id="slider-controls" hidden>
+    <label for="scenario-slider">Значение на шкале</label>
+    <input type="range" id="scenario-slider" min="-10" max="10" step="0.1" aria-describedby="slider-help">
+    <p id="slider-help">Ползунок имеет шаг 0,1. Поле выше принимает более точное десятичное значение.</p>
+  </div>
+  <button type="submit" name="action" value="set" data-testid="apply-override">Применить и пересчитать</button>
+</form>
+{% else %}<p>В этом snapshot нет известных числовых параметров для изменения.</p>{% endif %}
+{{ choices|json_script:'scenario-parameters' }}
+<h2>Изменённые параметры</h2>
+<p>Каждое значение сценария — гипотетическое, со статусом PROVISIONAL и отдельным источником SCENARIO. Оно не становится исходной оценкой.</p>
+{% if changes %}
+<form method="post" action="{% url 'scenario_modeling:update' %}" class="inline-form">
+{% csrf_token %}<input type="hidden" name="scenario_token" value="{{ scenario_token }}">
+<input type="hidden" name="action" value="remove">
+<div class="table-scroll"><table data-testid="changes">
+  <thead><tr><th scope="col">Параметр</th><th scope="col">Baseline</th><th scope="col">Сценарий</th><th scope="col">Действие</th></tr></thead>
+  <tbody>{% for change in changes %}<tr>
+    <th scope="row">{{ change.label }}</th><td>{{ change.baseline_value }} · {{ change.baseline_status }}</td><td>{{ change.value }}</td>
+    <td><button type="submit" name="parameter" value="{{ change.parameter }}">Убрать изменение</button></td>
+  </tr>{% endfor %}</tbody>
+</table></div></form>
+<h2>Влияние параметров</h2>
+<p>Для каждого изменения показан отдельный расчёт: baseline плюс только этот override. Эти delta не складываются: при совместных изменениях результат может отличаться. Это чувствительность модели, а не доказательство причинного влияния.</p>
+{% for change in changes %}<details open>
+  <summary>{{ change.label }}</summary><p>{{ change.explanation }}</p>
+  <p>UNO только с этим изменением: <strong>{{ change.isolated_uno|default_if_none:'Недостаточно данных' }}</strong>.
+    Delta к baseline: <strong>{{ change.isolated_delta|default_if_none:'Недостаточно данных' }}</strong>.</p>
+  <p>Источник baseline: <code>{{ change.baseline_source_id }}</code>, версия {{ change.baseline_source_version }}.</p>
+</details>{% endfor %}
+{% else %}<p data-testid="no-changes">Override пока нет. Сценарий совпадает с baseline.</p>{% endif %}
+<form method="post" action="{% url 'scenario_modeling:update' %}">
+  {% csrf_token %}<input type="hidden" name="scenario_token" value="{{ scenario_token }}">
+  <button type="submit" name="action" value="recalculate" data-testid="recalculate">Пересчитать сценарий</button>
+  <button type="submit" name="action" value="reset" data-testid="reset">Сбросить все изменения</button>
+</form>
+<h2>Результат Core по ПТН</h2>
+<p>Допущено строк: {{ scenario.completeness.eligible_rows }} / {{ scenario.completeness.expected_rows }}.
+  Вычислимо ПТН: {{ scenario.completeness.computable_ptns }} / {{ scenario.completeness.expected_ptns }}.</p>
+<div class="table-scroll"><table>
+  <thead><tr><th scope="col">ПТН</th><th scope="col">W</th><th scope="col">Pol</th><th scope="col">Вклад UNO</th><th scope="col">Статус</th></tr></thead>
+  <tbody>{% for ptn in scenario.ptns %}<tr><th scope="row">{{ ptn.ptn_id }}</th><td>{{ ptn.W }}</td>
+    <td>{{ ptn.Pol|default_if_none:'—' }}</td><td>{{ ptn.UNO_contribution|default_if_none:'—' }}</td><td>{{ ptn.status }}</td></tr>{% endfor %}</tbody>
+</table></div>
+<h2>Предупреждения Core</h2>
+<h3>Baseline</h3><ul>{% for warning in baseline.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
+<h3>Сценарий</h3><ul>{% for warning in scenario.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
+<details><summary>Идентичность и воспроизведение</summary>
+  <dl><dt>Сценарий</dt><dd>{{ scenario_id }}</dd>
+    <dt>Baseline snapshot</dt><dd data-testid="baseline-id">{{ model.baseline.id }}</dd>
+    <dt>Scenario snapshot</dt><dd>{{ scenario.snapshot_id }}</dd>
+    <dt>Набор оценок</dt><dd>{{ model.baseline.assessment_set_id }}</dd>
+    <dt>Временной срез</dt><dd>{{ model.baseline.time_slice_id }} / {{ model.baseline.time_slice_version }}</dd>
+    <dt>Стратегия</dt><dd>{{ scenario.strategy_id }} / {{ scenario.strategy_version }}</dd>
+    <dt>Хеш результата</dt><dd data-testid="result-digest">{{ result_digest }}</dd></dl>
+  <p>Сценарий хранится в подписанной форме и действует в текущей сессии до 8 часов бездействия. Сервер не ведёт историю сценариев. Скопируйте JSON для сохранения и воспроизведения в Python.</p>
+  <label for="model-json">Scenario Model (baseline + overrides)</label><textarea id="model-json" readonly rows="6">{{ model_json }}</textarea>
+  <label for="scenario-snapshot-json">Производный snapshot сценария</label><textarea id="scenario-snapshot-json" readonly rows="6">{{ scenario_snapshot_json }}</textarea>
+  <label for="scenario-run-json">Scenario CalculationRun</label><textarea id="scenario-run-json" readonly rows="6">{{ scenario_run_json }}</textarea>
+</details>
+<p><a href="{% url 'player_integration:result' model.baseline.experiment_id model.baseline.time_slice_id %}">Подготовить новый baseline из текущих оценок</a></p>
+{% endblock %}
