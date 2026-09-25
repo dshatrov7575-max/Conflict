@@ -1,0 +1,275 @@
+{
+  "report_id": "ZHANAOZEN_2011_HISTORICAL_ASSESSMENT_REPORT",
+  "pilot_id": "ZHANAOZEN_2011_V4_PILOT_V1",
+  "audit_kind": "PACKET_STRUCTURE_AND_COVERAGE_ONLY",
+  "source_url": "https://docs.google.com/spreadsheets/d/1QbPyyXk09RrMoFiFsxXknZyiky4TTFyM/edit",
+  "packet_bytes": 51240,
+  "packet_sha256": "04a5098cdbcbed580f9f71ce0b28c0a4f50fbae48a97f579274556bcf26030df",
+  "packet_json_bytes": 159511,
+  "packet_json_sha256": "3a24135df10f1610854478b4526b176d6c3f912a8837044fecf700b04e147256",
+  "archive_bytes": 131883,
+  "archive_sha256": "a1903fd0cc492b877a80c00a0fb2c70fd601477df8373b5251ac5ab2ffa3b4bc",
+  "archive_manifest_checks": {
+    "ZHANAOZEN_V4_2011_SEALED_EVIDENCE_PACKET_CP3.json": true,
+    "ZHANAOZEN_V4_2011_SEALED_EVIDENCE_PACKET_CP3.xlsx": true,
+    "ZHANAOZEN_V4_2011_HUMAN_BLIND_CODING_TEMPLATE_CP3.xlsx": true,
+    "ZHANAOZEN_V4_2011_EVIDENCE_READINESS_CP3.xlsx": true
+  },
+  "json_excel_differing_cells": [],
+  "case_id": "292d238f-9fee-578f-bddd-6f923163788a",
+  "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+  "information_cutoff_date": "2011-12-15",
+  "capture_files_present_in_cp3_archive": [],
+  "human_template_rows": 20,
+  "human_template_rows_with_coding": 0,
+  "sheet_counts": {
+    "Actors": 8,
+    "Elements": 6,
+    "CodingItems": 20,
+    "Sources": 27,
+    "Documents": 27,
+    "DocumentVersions": 27,
+    "TextFragments": 56,
+    "Facts": 56,
+    "FactFragmentLinks": 58,
+    "ItemFactLinks": 72
+  },
+  "duplicate_ids": {
+    "Actors": [],
+    "Elements": [],
+    "CodingItems": [],
+    "Sources": [],
+    "Documents": [],
+    "DocumentVersions": [],
+    "TextFragments": [],
+    "Facts": [],
+    "FactFragmentLinks": [],
+    "ItemFactLinks": []
+  },
+  "broken_references": [],
+  "fact_status_counts": {
+    "PROVISIONAL": 53,
+    "DISPUTED": 3
+  },
+  "fact_type_counts": {
+    "OBSERVED_EVENT": 18,
+    "ACTOR_CLAIM": 15,
+    "OFFICIAL_CLAIM": 17,
+    "EXPERT_INTERPRETATION": 6
+  },
+  "fact_fragment_relation_counts": {
+    "SUPPORTS": 58
+  },
+  "item_fact_role_counts": {
+    "PRIMARY_SUPPORT": 20,
+    "SECONDARY_SUPPORT": 52
+  },
+  "fragment_hash_matches": 56,
+  "fragment_hash_mismatch_ids": [],
+  "missing_fragment_context": 56,
+  "missing_translation_text": 56,
+  "publication_date_range": [
+    "2011-05-17",
+    "2011-11-27"
+  ],
+  "fact_date_range": [
+    "2011-05-17",
+    "2011-11-27"
+  ],
+  "capture_dates": [
+    "2026-08-24T12:00:00Z",
+    "2026-08-25T13:49:00Z"
+  ],
+  "after_cutoff_flag_counts": {
+    "False": 27
+  },
+  "publication_precision_counts": {
+    "DAY": 26,
+    "MONTH": 1
+  },
+  "recorded_independence_groups": {
+    "IG-RFERL": 11,
+    "IG-AZATTYQ": 3,
+    "IG-AMNESTY": 1,
+    "IG-EURASIANET": 2,
+    "IG-IPHR-KIBHR": 1,
+    "IG-US-OSCE": 1,
+    "IG-EU-OSCE": 1,
+    "IG-KZ-OSCE": 1,
+    "IG-KMG-EP": 1,
+    "IG-LADA": 3,
+    "IG-AZATTYQ-2011-11-24": 1,
+    "IG-TENGRINEWS": 1
+  },
+  "coding_items_by_element": {
+    "KZ.ZHANAOZEN.ELEMENT.E02": 4,
+    "KZ.ZHANAOZEN.ELEMENT.E05": 8,
+    "KZ.ZHANAOZEN.ELEMENT.E06": 3,
+    "KZ.ZHANAOZEN.ELEMENT.E04": 5
+  },
+  "coding_items_by_actor": {
+    "KZ.ZHANAOZEN.ACTOR.GU01": 3,
+    "KZ.ZHANAOZEN.ACTOR.GU02": 2,
+    "KZ.ZHANAOZEN.ACTOR.GU03": 4,
+    "KZ.ZHANAOZEN.ACTOR.GU04": 2,
+    "KZ.ZHANAOZEN.ACTOR.GU05": 3,
+    "KZ.ZHANAOZEN.ACTOR.GU06": 2,
+    "KZ.ZHANAOZEN.ACTOR.GU07": 2,
+    "KZ.ZHANAOZEN.ACTOR.GU08": 2
+  },
+  "linked_unique_facts": 42,
+  "unlinked_fact_ids": [
+    "ffcfa8dd-b358-5790-bcb7-ee8992129dec",
+    "d752804a-0c2c-5244-b0ef-edacb6dc01e2",
+    "383912e2-0c73-50c3-8c3d-499ef9de82e8",
+    "6a2fcd1f-8432-5d05-8116-1f68cc31ed34",
+    "7bf6c3d8-e010-5b17-b966-2fc73b85ece7",
+    "10d94580-3cf3-589c-8559-75cb21dff279",
+    "d1f5c61d-2e15-5432-b13f-25701c2eec7f",
+    "a2592518-5346-5ad7-853b-108cca8eaf88",
+    "69a7dd61-50d8-5995-a91c-723b63879fa4",
+    "691f6a30-feff-56f3-92aa-79d80789b5aa",
+    "32e71021-370a-5b8c-b571-2275e4f5e2e0",
+    "73cdf802-2f7a-5315-9dce-ea474d9d2914",
+    "54d57a34-8a15-5bd9-804c-d6298b30a008",
+    "3f33111a-2dca-55e9-92b5-800b4abab4b0"
+  ],
+  "disputed_facts": [
+    {
+      "fact_id": "7bf6c3d8-e010-5b17-b966-2fc73b85ece7",
+      "statement": "Работница ОзенМунайГаза заявила, что около 3000 работников подали заявления о выходе из «Нур Отана».",
+      "linked_to_coding_item": false
+    },
+    {
+      "fact_id": "10d94580-3cf3-589c-8559-75cb21dff279",
+      "statement": "Филиал «Нур Отана» в Жанаозене заявил о 1089 зарегистрированных заявлениях о выходе.",
+      "linked_to_coding_item": false
+    },
+    {
+      "fact_id": "a2592518-5346-5ad7-853b-108cca8eaf88",
+      "statement": "Eurasianet привёл оценку до 15000 участников забастовок на пике.",
+      "linked_to_coding_item": false
+    }
+  ],
+  "missing_actor_element_pairs": [
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU01",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E01"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU01",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E03"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU01",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E04"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU02",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E01"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU02",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E03"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU02",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E04"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU02",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E06"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU03",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E01"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU03",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E03"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU04",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E01"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU04",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E02"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU04",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E03"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU04",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E06"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU05",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E01"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU05",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E03"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU05",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E06"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU06",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E01"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU06",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E02"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU06",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E03"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU06",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E06"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU07",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E01"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU07",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E02"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU07",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E03"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU07",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E06"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU08",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E01"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU08",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E02"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU08",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E03"
+    },
+    {
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU08",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E04"
+    }
+  ],
+  "limits": [
+    "Record counts are inventory statistics, never factor values.",
+    "Recorded independence-group counts do not establish independent corroboration.",
+    "Publication dates and is_after_cutoff flags do not establish availability of the captured version before cutoff.",
+    "Document capture files are not embedded in this workbook; their content hashes were not verified.",
+    "No HUMAN historical assessment or ValidationRecord is created."
+  ]
+}
