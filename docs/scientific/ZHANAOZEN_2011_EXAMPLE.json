@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0.0",
+  "document_kind": "STRUCTURE_ONLY",
+  "dataset_reference": null,
+  "cases": [
+    {
+      "case_id": "ZHANAOZEN_2011_EXAMPLE",
+      "country": null,
+      "time_period": {"start_date": null, "end_date": null},
+      "episode_boundary": null,
+      "source_reference": [],
+      "episodes": [
+        {
+          "episode_id": "STRUCTURE_ONLY_EPISODE",
+          "start_date": null,
+          "end_date": null,
+          "description": null,
+          "outcome_class": null,
+          "evidence": [],
+          "factor_mappings": [
+            {
+              "mapping_id": "STRUCTURE_ONLY_POS",
+              "factor_id": "POS",
+              "evidence_reference": [],
+              "observed_indicator": null,
+              "confidence_level": "UNKNOWN",
+              "mapping_status": "UNKNOWN",
+              "mapping_rationale": null
+            },
+            {
+              "mapping_id": "STRUCTURE_ONLY_KVS",
+              "factor_id": "KVS",
+              "evidence_reference": [],
+              "observed_indicator": null,
+              "confidence_level": "UNKNOWN",
+              "mapping_status": "UNKNOWN",
+              "mapping_rationale": null
+            },
+            {
+              "mapping_id": "STRUCTURE_ONLY_RGU",
+              "factor_id": "RGU",
+              "evidence_reference": [],
+              "observed_indicator": null,
+              "confidence_level": "UNKNOWN",
+              "mapping_status": "UNKNOWN",
+              "mapping_rationale": null
+            },
+            {
+              "mapping_id": "STRUCTURE_ONLY_KVPTN",
+              "factor_id": "KVPTN",
+              "evidence_reference": [],
+              "observed_indicator": null,
+              "confidence_level": "UNKNOWN",
+              "mapping_status": "UNKNOWN",
+              "mapping_rationale": null
+            }
+          ],
+          "outcome": {
+            "event_type": null,
+            "escalation_level": null,
+            "resolution_type": null
+          }
+        }
+      ]
+    }
+  ]
+}
