@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "conflict-analysis"
+version = "0.1.0"
+description = "Extensible conflict-analysis data foundation"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "Django>=5.2,<5.3",
+    "djangorestframework>=3.16,<3.17",
+    "gunicorn>=23,<24",
+    "jsonschema>=4.23,<5",
+    "psycopg[binary]>=3.2,<4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<9",
+    "pytest-django>=4.10,<5",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["conflict_analysis*", "domain*"]
+
+[tool.setuptools.package-data]
+"domain.services" = ["schemas/*.json"]
