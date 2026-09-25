@@ -1,0 +1,58 @@
+{% extends 'player_integration/base.html' %}
+{% block title %}Результат расчёта{% endblock %}
+{% block content %}
+<h1>Результат расчёта · {{ lane.experiment_name }}</h1>
+<p><strong data-testid="assessment-kind">{{ lane.assessment_kind }}</strong> · {{ lane.experiment_status }} · {{ lane.expert_name }}</p>
+<dl>
+  <dt>Эксперимент</dt><dd>{{ lane.experiment_id }}</dd>
+  <dt>Набор оценок</dt><dd>{{ lane.assessment_set_id }}</dd>
+  <dt>Профиль эксперта</dt><dd>{{ lane.expert_profile_id }}</dd>
+  <dt>Проект / рабочее пространство</dt><dd>{{ snapshot.project_id }} / {{ snapshot.workspace_id }}</dd>
+  <dt>Определение / хеш</dt><dd>{{ snapshot.definition_version_id }} / {{ snapshot.definition_hash }}</dd>
+  <dt>Временной срез / версия / дата</dt><dd>{{ snapshot.time_slice_id }} / {{ snapshot.time_slice_version }} / {{ snapshot.cutoff_date }}</dd>
+  <dt>Стратегия</dt><dd>{{ run.strategy_id }} / {{ run.strategy_version }}</dd>
+  <dt>Snapshot</dt><dd><code>{{ run.snapshot_id }}</code></dd>
+  <dt>Хеш результата</dt><dd><code>{{ result_digest }}</code></dd>
+</dl>
+<h2>UNO: <span data-testid="uno">{{ run.UNO|default_if_none:'Недостаточно данных' }}</span></h2>
+<p>Статус: <strong data-testid="run-status">{{ run.status }}</strong></p>
+<p>Допущено строк: {{ run.completeness.eligible_rows }} / {{ run.completeness.expected_rows }}.
+  Вычислимо ПТН: {{ run.completeness.computable_ptns }} / {{ run.completeness.expected_ptns }}.
+  Известно весов ПТН: {{ run.completeness.known_ptn_weights }} / {{ run.completeness.expected_ptns }}.</p>
+<div class="table-scroll"><table>
+  <caption>Метрики ПТН · «—» означает отсутствие результата, 0 — известный ноль</caption>
+  <thead><tr><th scope="col">ПТН</th><th scope="col">P</th><th scope="col">N</th><th scope="col">A</th><th scope="col">B</th><th scope="col">Pol</th><th scope="col">W</th><th scope="col">Вклад UNO</th><th scope="col">Строки</th><th scope="col">Статус</th></tr></thead>
+  <tbody>{% for ptn in run.ptns %}<tr>
+    <th scope="row"><code>{{ ptn.ptn_id }}</code></th>
+    <td>{{ ptn.P|default_if_none:'—' }}</td><td>{{ ptn.N|default_if_none:'—' }}</td>
+    <td>{{ ptn.A|default_if_none:'—' }}</td><td>{{ ptn.B|default_if_none:'—' }}</td>
+    <td>{{ ptn.Pol|default_if_none:'—' }}</td><td>{{ ptn.W }}</td>
+    <td>{{ ptn.UNO_contribution|default_if_none:'—' }}</td><td>{{ ptn.eligible_rows }} / {{ ptn.expected_rows }}</td><td>{{ ptn.status }}</td>
+  </tr>{% endfor %}</tbody>
+</table></div>
+<h2>Предупреждения Core</h2>
+<ul>{% for warning in run.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
+<h2>Трассировка входов и вкладов</h2>
+{% for ptn in run.ptns %}<details>
+  <summary>ПТН {{ ptn.ptn_id }} · {{ ptn.status }}</summary>
+  <p>KVPTN: {{ ptn.kvptn.value|default_if_none:'—' }} · {{ ptn.kvptn.status }} · {{ ptn.kvptn.source_id }} / {{ ptn.kvptn.source_version }}</p>
+  {% for actor in ptn.trace %}<section>
+    <h3>Участник {{ actor.input.actor_id }}</h3>
+    <p>Связь: {{ actor.input.relation_id }}. Оценка: {{ actor.input.assessment_id }}.</p>
+    <ul>
+      <li>POS: {{ actor.input.attitude.value|default_if_none:'—' }} · {{ actor.input.attitude.status }} · {{ actor.input.attitude.source_id }} / {{ actor.input.attitude.source_version }}</li>
+      <li>KVS (SAL): {{ actor.input.kvs.value|default_if_none:'—' }} · {{ actor.input.kvs.status }} · {{ actor.input.kvs.source_id }} / {{ actor.input.kvs.source_version }}</li>
+      <li>RGU: {{ actor.input.rgu.value|default_if_none:'—' }} · {{ actor.input.rgu.status }} · {{ actor.input.rgu.source_id }} / {{ actor.input.rgu.source_version }}</li>
+    </ul>
+    <p>Допущен: {{ actor.eligible|yesno:'да,нет' }}. Отсутствуют: {{ actor.missing|join:', '|default:'нет' }}.</p>
+    <p>Вес: {{ actor.weight|default_if_none:'—' }}. Числители P / N: {{ actor.positive_numerator|default_if_none:'—' }} / {{ actor.negative_numerator|default_if_none:'—' }}.
+      Вклады P / N: {{ actor.P_contribution|default_if_none:'—' }} / {{ actor.N_contribution|default_if_none:'—' }}.</p>
+  </section>{% endfor %}
+</details>{% endfor %}
+<h2>Сохранение и воспроизведение</h2>
+<p>Скопируйте snapshot и run, чтобы сохранить именно этот расчёт. Сервер не ведёт историю запусков.
+  Новый запуск прочитает актуальные оценки. Хеши подтверждают идентичность данных, а не их достоверность.</p>
+<details><summary>CalculationSnapshot JSON</summary><label for="snapshot-json">Snapshot</label><textarea id="snapshot-json" readonly rows="8" spellcheck="false">{{ snapshot_json }}</textarea></details>
+<details><summary>CalculationRun JSON</summary><label for="run-json">Run</label><textarea id="run-json" readonly rows="8" spellcheck="false">{{ run_json }}</textarea></details>
+<p><a href="{% url 'player_integration:result' lane.experiment_id snapshot.time_slice_id %}">Подготовить новый расчёт</a></p>
+{% endblock %}

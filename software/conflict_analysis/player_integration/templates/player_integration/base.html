@@ -1,0 +1,19 @@
+{% load static %}<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Расчёт эксперимента{% endblock %} · Player</title>
+  <link rel="stylesheet" href="{% static 'player_integration/result.css' %}">
+</head>
+<body><main>
+  <nav><a href="{% url 'player_integration:start' %}">Расчёт эксперимента</a> · <a href="/player/">Player</a></nav>
+  {% block content %}{% endblock %}
+  <aside aria-label="Границы интерпретации">
+    <strong>POLARIZATION_V1_BETA / 1.0.0</strong>
+    <p>Бета-индекс поляризации. Это не прогноз, вероятность, риск или научно подтверждённая
+      общая интенсивность конфликта. Зависимость KVS и KVPTN не проверена.</p>
+    <p>Расчёт использует один эксперимент HUMAN или AI. Результат и веса не записываются
+      в ParameterValue. Отсутствующее значение не заменяется нулём.</p>
+  </aside>
+</main></body></html>

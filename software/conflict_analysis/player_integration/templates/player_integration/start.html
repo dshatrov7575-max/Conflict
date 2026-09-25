@@ -1,0 +1,6 @@
+{% extends 'player_integration/base.html' %}
+{% block content %}
+<h1>Расчёт эксперимента</h1>
+<p>Укажите точный идентификатор оценочного эксперимента из Player.</p>
+<form method="get">{{ form.as_p }}<button type="submit">Открыть эксперимент</button></form>
+{% endblock %}

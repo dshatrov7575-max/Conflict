@@ -1,0 +1,10 @@
+{% extends 'player_integration/base.html' %}
+{% block content %}
+<h1>{{ experiment.name }}</h1>
+<p><strong>{{ experiment.assessment_set.kind }}</strong> · {{ experiment.status }} · {{ experiment.expert_profile.display_name }}</p>
+<p>Эксперимент: <code>{{ experiment.pk }}</code></p>
+<h2>Выберите временной срез</h2>
+<ul>{% for slice in slices %}
+  <li><a href="{% url 'player_integration:result' experiment.pk slice.pk %}">{{ slice.name }} · {{ slice.cutoff_date|date:'Y-m-d' }} · {{ slice.version }}</a></li>
+{% empty %}<li>Нет временных срезов в рабочем пространстве эксперимента.</li>{% endfor %}</ul>
+{% endblock %}
