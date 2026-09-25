@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Расчёт эксперимента{% endblock %} · Player</title>
   <link rel="stylesheet" href="{% static 'player_integration/result.css' %}">
+  {% block extra_head %}{% endblock %}
 </head>
 <body><main>
   <nav><a href="{% url 'player_integration:start' %}">Расчёт эксперимента</a> · <a href="/player/">Player</a></nav>

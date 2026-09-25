@@ -1,0 +1,10 @@
+.scenario-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.scenario-metrics section { padding: 1rem; background: white; border: 1px solid #c7d2dc; border-radius: 6px; }
+.scenario-metrics h2 { font-size: 1rem; margin-top: 0; }
+.scenario-metrics strong { font-size: 1.65rem; overflow-wrap: anywhere; }
+.scenario-metrics p { margin-bottom: 0; }
+#override-form select { min-width: 0; max-width: 100%; }
+#id_value { max-width: 20rem; display: block; }
+.inline-form { margin: 0; padding: 0; border: 0; }
+.inline-form button { margin: 0; }
+@media (max-width: 680px) { .scenario-metrics { grid-template-columns: 1fr; } }
