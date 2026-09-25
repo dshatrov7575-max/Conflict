@@ -1,0 +1,39 @@
+{
+  "pilot_id": "ZHANAOZEN_2011_VALIDATION_PILOT",
+  "case_id": "ZHANAOZEN_2011_EXAMPLE",
+  "country": null,
+  "event_period": {
+    "start_date": null,
+    "end_date": null
+  },
+  "information_cutoff_date": null,
+  "evidence_package_reference": {
+    "reference": "https://docs.google.com/spreadsheets/d/1QbPyyXk09RrMoFiFsxXknZyiky4TTFyM/edit?usp=drivesdk&ouid=100628083284865869908&rtpof=true&sd=true",
+    "sha256": null,
+    "artifact_kind": "DATA",
+    "json_pointer": null
+  },
+  "case_mapping_reference": {
+    "reference": "docs/scientific/ZHANAOZEN_2011_EXAMPLE.json",
+    "sha256": "997ab230a4ca8ce21e49fef21ddfaab8f8f0d255fde4dfe49758cb91246b8152",
+    "artifact_kind": "STRUCTURE_ONLY",
+    "json_pointer": "/cases/0"
+  },
+  "factor_mapping_reference": {
+    "reference": "docs/scientific/ZHANAOZEN_2011_EXAMPLE.json",
+    "sha256": "997ab230a4ca8ce21e49fef21ddfaab8f8f0d255fde4dfe49758cb91246b8152",
+    "artifact_kind": "STRUCTURE_ONLY",
+    "json_pointer": "/cases/0/episodes/0/factor_mappings"
+  },
+  "historical_assessment_reference": null,
+  "observed_outcome_reference": null,
+  "limitations": [
+    "Только структура подготовки; эмпирическая проверка модели не выполнялась.",
+    "Один кейс не является валидацией модели; результат нельзя обобщать.",
+    "Страна, окно исхода и cutoff пилота не заполнены; шаблон запрещено использовать как input.",
+    "Evidence Package доступен в Google Drive; SHA-256 исходных байтов XLSX здесь не проверен. Ссылка не подтверждает временную допустимость всех свидетельств.",
+    "Case Mapping и Factor Mapping ссылаются на существующий STRUCTURE_ONLY-пример PR-5; это не завершённая разметка.",
+    "Согласованные Historical Assessment и Observed outcome для этого пилота не установлены; ссылки остаются null."
+  ],
+  "status": "STRUCTURE_ONLY"
+}
