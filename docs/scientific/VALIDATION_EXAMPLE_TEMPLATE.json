@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "record_kind": "TEMPLATE",
+  "validation_id": null,
+  "case_id": null,
+  "country": null,
+  "event_period": {
+    "start_date": null,
+    "end_date": null
+  },
+  "information_cutoff_date": null,
+  "model_version": null,
+  "input_snapshot_reference": null,
+  "factor_mapping_reference": null,
+  "calculated_result": null,
+  "observed_outcome": null,
+  "comparison_type": null,
+  "limitations": [
+    "Незаполненный шаблон; эмпирическая проверка не выполнялась."
+  ],
+  "status": "INSUFFICIENT_DATA",
+  "protocol_reference": null,
+  "comparison_report_reference": null
+}
