@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0.0",
+  "documentation_version": "0.1.0",
+  "baseline_commit": "f12cfd2c76d54068f5b6cc98511bc0be84dd079e",
+  "model": {
+    "name": "Conflict Analysis MVP7",
+    "strategy_id": "POLARIZATION_V1_BETA",
+    "strategy_version": "1.0.0"
+  },
+  "factors": [
+    {
+      "factor_id": "POS",
+      "name": "Позиция актора по PTN",
+      "description": "Позиция для актор × PTN × время × эксперимент; вход ActorInput.attitude, получаемый из G8 POS.",
+      "theoretical_basis": [],
+      "indicators": [],
+      "measurement_notes": "Шкала [-10,10], 0 — нейтральная позиция относительно референтного утверждения. Подтверждённая универсальная рубрика кодирования здесь не установлена. Отсутствующие статусы сохраняют null; допустимость строки требует числовых attitude, kvs и rgu.",
+      "confidence_level": "UNKNOWN",
+      "confidence_rationale": null,
+      "source": [
+        {
+          "kind": "IMPLEMENTATION",
+          "reference": "https://github.com/dshatrov7575-max/Conflict/blob/f12cfd2c76d54068f5b6cc98511bc0be84dd079e/software/conflict_analysis/calculation/contracts.py",
+          "locator": "InputValue; ActorInput.attitude"
+        },
+        {
+          "kind": "IMPLEMENTATION",
+          "reference": "https://github.com/dshatrov7575-max/Conflict/blob/f12cfd2c76d54068f5b6cc98511bc0be84dd079e/software/conflict_analysis/calculation/README.md",
+          "locator": "Frozen numerical contract; Foundation/G8 adapter: POS supplies attitude"
+        }
+      ],
+      "selection_basis": "Включён как существующий вход направления позиции в POLARIZATION_V1_BETA; это основание каталогизации, не доказательство валидности шкалы.",
+      "methodology_version": null
+    },
+    {
+      "factor_id": "KVS",
+      "name": "Значимость PTN для актора",
+      "description": "Значимость вопроса для актор × PTN × время × эксперимент; вход ActorInput.kvs, получаемый из G8 SAL.",
+      "theoretical_basis": [],
+      "indicators": [],
+      "measurement_notes": "Шкала [0,10]; c=0 — известный нулевой вес. Участвует в w=r*c; зависимость KVS/KVPTN не валидирована. Отсутствие не заменяется нулём. Подтверждённая рубрика перевода свидетельств в баллы здесь не установлена.",
+      "confidence_level": "UNKNOWN",
+      "confidence_rationale": null,
+      "source": [
+        {
+          "kind": "IMPLEMENTATION",
+          "reference": "https://github.com/dshatrov7575-max/Conflict/blob/f12cfd2c76d54068f5b6cc98511bc0be84dd079e/software/conflict_analysis/calculation/contracts.py",
+          "locator": "ActorInput.kvs; _weight"
+        },
+        {
+          "kind": "IMPLEMENTATION",
+          "reference": "https://github.com/dshatrov7575-max/Conflict/blob/f12cfd2c76d54068f5b6cc98511bc0be84dd079e/software/conflict_analysis/calculation/README.md",
+          "locator": "Frozen numerical contract; Foundation/G8 adapter: SAL supplies KVS"
+        }
+      ],
+      "selection_basis": "Включён как существующий множитель веса строки актора; эмпирическое обоснование шкалы и произведения весов остаётся открытым.",
+      "methodology_version": null
+    },
+    {
+      "factor_id": "RGU",
+      "name": "Beta-вес актора",
+      "description": "Вес актора для время × эксперимент; один и тот же InputValue для всех его PTN в snapshot.",
+      "theoretical_basis": [],
+      "indicators": [],
+      "measurement_notes": "Шкала [0,10]; r=0 — известный нулевой вес. Caller-supplied BetaWeights.rgu; отсутствие остаётся UNKNOWN. Не V4 Power и не автоматический перевод POW. Эмпирическая рубрика не установлена этим каталогом.",
+      "confidence_level": "UNKNOWN",
+      "confidence_rationale": null,
+      "source": [
+        {
+          "kind": "IMPLEMENTATION",
+          "reference": "https://github.com/dshatrov7575-max/Conflict/blob/f12cfd2c76d54068f5b6cc98511bc0be84dd079e/software/conflict_analysis/calculation/contracts.py",
+          "locator": "ActorInput.rgu; CalculationSnapshot.__post_init__: one exact RGU per actor"
+        },
+        {
+          "kind": "IMPLEMENTATION",
+          "reference": "https://github.com/dshatrov7575-max/Conflict/blob/f12cfd2c76d54068f5b6cc98511bc0be84dd079e/software/conflict_analysis/calculation/foundation.py",
+          "locator": "BetaWeights.rgu; capture_snapshot"
+        }
+      ],
+      "selection_basis": "Включён как явный beta-вес актора, который уже использует стратегия; это не обоснование конкретных числовых весов.",
+      "methodology_version": null
+    },
+    {
+      "factor_id": "KVPTN",
+      "name": "Beta-вес PTN",
+      "description": "Важность PTN для агрегирования UNO в пределах времени и эксперимента выбранного snapshot.",
+      "theoretical_basis": [],
+      "indicators": [],
+      "measurement_notes": "Шкала [0,10]; caller-supplied BetaWeights.kvptn. q=0 исключает PTN из суммы. Отсутствующий q, положительный q у невычислимого PTN или сумма q=0 делают UNO недоступным. Рубрика и зависимость от KVS не валидированы этим каталогом.",
+      "confidence_level": "UNKNOWN",
+      "confidence_rationale": null,
+      "source": [
+        {
+          "kind": "IMPLEMENTATION",
+          "reference": "https://github.com/dshatrov7575-max/Conflict/blob/f12cfd2c76d54068f5b6cc98511bc0be84dd079e/software/conflict_analysis/calculation/contracts.py",
+          "locator": "PtnInput.kvptn; _weight"
+        },
+        {
+          "kind": "IMPLEMENTATION",
+          "reference": "https://github.com/dshatrov7575-max/Conflict/blob/f12cfd2c76d54068f5b6cc98511bc0be84dd079e/software/conflict_analysis/calculation/README.md",
+          "locator": "Frozen numerical contract: UNO eligibility; Foundation/G8 adapter: BetaWeights"
+        }
+      ],
+      "selection_basis": "Включён как существующий вес PTN при агрегации UNO; подтверждённое теоретическое выведение и эмпирическое обоснование чисел не внесены.",
+      "methodology_version": null
+    }
+  ]
+}

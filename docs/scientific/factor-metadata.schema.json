@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Conflict Analysis MVP7 scientific factor metadata 1.0.0",
+  "description": "Documentation-only catalog of existing beta inputs; never a calculation or historical-data schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "documentation_version", "baseline_commit", "model", "factors"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "documentation_version": {"$ref": "#/$defs/text"},
+    "baseline_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "strategy_id", "strategy_version"],
+      "properties": {
+        "name": {"const": "Conflict Analysis MVP7"},
+        "strategy_id": {"const": "POLARIZATION_V1_BETA"},
+        "strategy_version": {"const": "1.0.0"}
+      }
+    },
+    "factors": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {"$ref": "#/$defs/factor"},
+      "allOf": [
+        {"contains": {"properties": {"factor_id": {"const": "POS"}}}},
+        {"contains": {"properties": {"factor_id": {"const": "KVS"}}}},
+        {"contains": {"properties": {"factor_id": {"const": "RGU"}}}},
+        {"contains": {"properties": {"factor_id": {"const": "KVPTN"}}}}
+      ]
+    }
+  },
+  "$defs": {
+    "text": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "nullable_text": {"anyOf": [{"$ref": "#/$defs/text"}, {"type": "null"}]},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "reference", "locator"],
+      "properties": {
+        "kind": {"enum": ["IMPLEMENTATION", "LITERATURE", "METHODOLOGY", "EMPIRICAL"]},
+        "reference": {"$ref": "#/$defs/text"},
+        "locator": {"$ref": "#/$defs/text"}
+      }
+    },
+    "theoretical_basis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["theory", "reference", "relationship", "claim_status"],
+      "properties": {
+        "theory": {"$ref": "#/$defs/text"},
+        "reference": {"$ref": "#/$defs/text"},
+        "relationship": {"$ref": "#/$defs/text"},
+        "claim_status": {"enum": ["EXTERNAL_FOUNDATION", "PROJECT_HYPOTHESIS", "EMPIRICAL_RESULT", "PROPOSAL", "OPEN"]}
+      }
+    },
+    "indicator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "definition", "source_reference", "measurement_rule"],
+      "properties": {
+        "name": {"$ref": "#/$defs/text"},
+        "definition": {"$ref": "#/$defs/text"},
+        "source_reference": {"$ref": "#/$defs/text"},
+        "measurement_rule": {"$ref": "#/$defs/text"}
+      }
+    },
+    "factor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["factor_id", "name", "description", "theoretical_basis", "indicators", "measurement_notes", "confidence_level", "confidence_rationale", "source", "selection_basis", "methodology_version"],
+      "properties": {
+        "factor_id": {"enum": ["POS", "KVS", "RGU", "KVPTN"]},
+        "name": {"$ref": "#/$defs/text"},
+        "description": {"$ref": "#/$defs/text"},
+        "theoretical_basis": {"type": "array", "items": {"$ref": "#/$defs/theoretical_basis"}},
+        "indicators": {"type": "array", "items": {"$ref": "#/$defs/indicator"}},
+        "measurement_notes": {"$ref": "#/$defs/text"},
+        "confidence_level": {"enum": ["UNKNOWN", "LOW", "MEDIUM", "HIGH"]},
+        "confidence_rationale": {"$ref": "#/$defs/nullable_text"},
+        "source": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/source"}},
+        "selection_basis": {"$ref": "#/$defs/nullable_text"},
+        "methodology_version": {"$ref": "#/$defs/nullable_text"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"confidence_level": {"enum": ["LOW", "MEDIUM", "HIGH"]}}},
+          "then": {"properties": {"confidence_rationale": {"$ref": "#/$defs/text"}}}
+        }
+      ]
+    }
+  }
+}
