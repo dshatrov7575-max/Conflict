@@ -1,0 +1,20 @@
+{
+  "pilot_id": "ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1",
+  "coder_role": "H1",
+  "state": "BLANK_NOT_SIGNED",
+  "coder_id": null,
+  "outcome_preknowledge": null,
+  "prior_exposure_to_keys_or_ai_human_results": null,
+  "prior_authorship_or_coding_in_this_project": null,
+  "language_competence_for_all_supplied_fragments": null,
+  "received_only_own_allowlisted_packet": null,
+  "no_access_to_other_coder_or_answers": null,
+  "agrees_no_external_sources_or_ai": null,
+  "agrees_independent_work": null,
+  "will_stop_and_report_exposure": null,
+  "private_submission_location_verified": null,
+  "signed_by": null,
+  "signed_at_utc": null,
+  "coordinator_screened_by": null,
+  "coordinator_screened_at_utc": null
+}

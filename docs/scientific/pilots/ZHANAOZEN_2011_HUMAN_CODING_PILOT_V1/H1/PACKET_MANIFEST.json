@@ -1,0 +1,38 @@
+{
+  "pilot_id": "ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1",
+  "coder_role": "H1",
+  "state": "FROZEN_NOT_DISTRIBUTED",
+  "created_at_utc": "2026-09-26T14:47:00.036867+00:00",
+  "allowed_files": [
+    {
+      "file": "POS_KVS_V1_2_INSTRUCTIONS.md",
+      "sha256": "72823f5ae87f4a3de94fdef680c3d5e4250b79e50cc4d7d1aa65e80b6cf106e1",
+      "bytes": 59298
+    },
+    {
+      "file": "RESPONSE_TEMPLATE.json",
+      "sha256": "6b11c8a8338d5aae0547019a99951f2954e841204c49dd8bc387152998bfd27f",
+      "bytes": 15894
+    },
+    {
+      "file": "ACCESS_ATTESTATION.json",
+      "sha256": "96c7cd26ada379bd726f03effd8cec4f9f7646a088efe2ebfb68da5f4abc926c",
+      "bytes": 711
+    },
+    {
+      "file": "CODER_PACKET.md",
+      "sha256": "0a7c091839450763eebdf3ed0c4f7aa9ab51831f4446b0202ebe5958d4464545",
+      "bytes": 73980
+    }
+  ],
+  "self_hash": "Pinned by outer coordinator freeze; do not distribute outer manifest to coder.",
+  "not_in_packet": [
+    "answer_keys",
+    "answers",
+    "reliability_results",
+    "outcome_material",
+    "other_coder_packet",
+    "coordinator_crosswalk"
+  ],
+  "release": "HOLD_DO_NOT_DISTRIBUTE; no human assigned or started"
+}

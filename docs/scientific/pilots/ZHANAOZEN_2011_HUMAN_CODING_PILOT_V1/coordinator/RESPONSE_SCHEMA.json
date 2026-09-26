@@ -1,0 +1,851 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PR-11 HUMAN response form; standalone study document, not model schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "pilot_id",
+    "coder_role",
+    "submission_state",
+    "coder_id",
+    "started_at_utc",
+    "submitted_at_utc",
+    "items"
+  ],
+  "properties": {
+    "pilot_id": {
+      "const": "ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1"
+    },
+    "coder_role": {
+      "enum": [
+        "H1",
+        "H2"
+      ]
+    },
+    "submission_state": {
+      "enum": [
+        "BLANK_TEMPLATE",
+        "SUBMITTED"
+      ]
+    },
+    "coder_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "started_at_utc": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "submitted_at_utc": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "items": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "packet_item_id",
+          "POS",
+          "KVS"
+        ],
+        "properties": {
+          "packet_item_id": {
+            "type": "string",
+            "pattern": "^H[12]-(0[1-9]|1[0-2])$"
+          },
+          "POS": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "anchor",
+              "confidence",
+              "admission_checks",
+              "reason_codes",
+              "evidence_references",
+              "verbatim_evidence",
+              "anchor_predicates",
+              "qualitative_observation",
+              "rationale",
+              "choice_context",
+              "alternatives_set",
+              "satisfaction_criterion",
+              "conflict_alternatives"
+            ],
+            "properties": {
+              "status": {
+                "enum": [
+                  null,
+                  "NUMERIC",
+                  "UNKNOWN",
+                  "DISPUTED"
+                ]
+              },
+              "anchor": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "confidence": {
+                "enum": [
+                  null,
+                  "HIGH",
+                  "MEDIUM",
+                  "LOW",
+                  "UNKNOWN"
+                ]
+              },
+              "admission_checks": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "G1",
+                  "G2",
+                  "G3",
+                  "G4",
+                  "G5",
+                  "G6",
+                  "G7"
+                ],
+                "properties": {
+                  "G1": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "G2": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "G3": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "G4": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "G5": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "G6": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "G7": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  }
+                }
+              },
+              "reason_codes": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "ADMISSION_NOT_ESTABLISHED",
+                    "MISSING_CONTEXT",
+                    "CUTOFF_UNVERIFIED",
+                    "ATTRIBUTION_SCOPE_UNVERIFIED",
+                    "TIME_SCOPE_UNVERIFIED",
+                    "MISSING_PREDICATE",
+                    "UNLISTED_FORM",
+                    "UNDERSTANDING_NOT_ESTABLISHED",
+                    "RULE_OVERLAP",
+                    "SATISFACTION_UNDEFINED",
+                    "PROFILE_NOT_COVERED",
+                    "CHOICE_CONSTRAINED",
+                    "CONTENT_CONFLICT"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "evidence_references": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "uniqueItems": true
+              },
+              "verbatim_evidence": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "uniqueItems": true
+              },
+              "anchor_predicates": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "uniqueItems": true
+              },
+              "qualitative_observation": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rationale": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "choice_context": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "alternatives_set": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "uniqueItems": true
+              },
+              "satisfaction_criterion": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "conflict_alternatives": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "evidence_references",
+                    "interpretation",
+                    "confidence"
+                  ],
+                  "properties": {
+                    "evidence_references": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "uniqueItems": true,
+                      "minItems": 1
+                    },
+                    "interpretation": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "confidence": {
+                      "enum": [
+                        "HIGH",
+                        "MEDIUM"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "status": {
+                      "const": "NUMERIC"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "anchor": {
+                      "enum": [
+                        -10,
+                        -5,
+                        0,
+                        5,
+                        10
+                      ]
+                    },
+                    "confidence": {
+                      "enum": [
+                        "HIGH",
+                        "MEDIUM"
+                      ]
+                    },
+                    "admission_checks": {
+                      "properties": {
+                        "G1": {
+                          "const": true
+                        },
+                        "G2": {
+                          "const": true
+                        },
+                        "G3": {
+                          "const": true
+                        },
+                        "G4": {
+                          "const": true
+                        },
+                        "G5": {
+                          "const": true
+                        },
+                        "G6": {
+                          "const": true
+                        },
+                        "G7": {
+                          "const": true
+                        }
+                      }
+                    },
+                    "reason_codes": {
+                      "maxItems": 0
+                    },
+                    "evidence_references": {
+                      "minItems": 1
+                    },
+                    "verbatim_evidence": {
+                      "minItems": 1
+                    },
+                    "anchor_predicates": {
+                      "minItems": 1
+                    },
+                    "rationale": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "conflict_alternatives": {
+                      "maxItems": 0
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "status": {
+                      "const": "UNKNOWN"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "anchor": {
+                      "const": null
+                    },
+                    "confidence": {
+                      "enum": [
+                        "LOW",
+                        "UNKNOWN"
+                      ]
+                    },
+                    "reason_codes": {
+                      "minItems": 1
+                    },
+                    "rationale": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "conflict_alternatives": {
+                      "maxItems": 0
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "status": {
+                      "const": "DISPUTED"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "anchor": {
+                      "const": null
+                    },
+                    "confidence": {
+                      "const": null
+                    },
+                    "reason_codes": {
+                      "contains": {
+                        "const": "CONTENT_CONFLICT"
+                      }
+                    },
+                    "rationale": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "conflict_alternatives": {
+                      "minItems": 2
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "status": {
+                      "const": null
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "anchor": {
+                      "const": null
+                    },
+                    "confidence": {
+                      "const": null
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "KVS": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "anchor",
+              "confidence",
+              "admission_checks",
+              "reason_codes",
+              "evidence_references",
+              "verbatim_evidence",
+              "anchor_predicates",
+              "qualitative_observation",
+              "rationale",
+              "choice_context",
+              "alternatives_set",
+              "satisfaction_criterion",
+              "conflict_alternatives"
+            ],
+            "properties": {
+              "status": {
+                "enum": [
+                  null,
+                  "NUMERIC",
+                  "UNKNOWN",
+                  "DISPUTED"
+                ]
+              },
+              "anchor": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "confidence": {
+                "enum": [
+                  null,
+                  "HIGH",
+                  "MEDIUM",
+                  "LOW",
+                  "UNKNOWN"
+                ]
+              },
+              "admission_checks": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "G1",
+                  "G2",
+                  "G3",
+                  "G4",
+                  "G5",
+                  "G6",
+                  "G7"
+                ],
+                "properties": {
+                  "G1": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "G2": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "G3": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "G4": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "G5": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "G6": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  },
+                  "G7": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  }
+                }
+              },
+              "reason_codes": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "ADMISSION_NOT_ESTABLISHED",
+                    "MISSING_CONTEXT",
+                    "CUTOFF_UNVERIFIED",
+                    "ATTRIBUTION_SCOPE_UNVERIFIED",
+                    "TIME_SCOPE_UNVERIFIED",
+                    "MISSING_PREDICATE",
+                    "UNLISTED_FORM",
+                    "UNDERSTANDING_NOT_ESTABLISHED",
+                    "RULE_OVERLAP",
+                    "SATISFACTION_UNDEFINED",
+                    "PROFILE_NOT_COVERED",
+                    "CHOICE_CONSTRAINED",
+                    "CONTENT_CONFLICT"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "evidence_references": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "uniqueItems": true
+              },
+              "verbatim_evidence": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "uniqueItems": true
+              },
+              "anchor_predicates": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "uniqueItems": true
+              },
+              "qualitative_observation": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rationale": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "choice_context": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "alternatives_set": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "uniqueItems": true
+              },
+              "satisfaction_criterion": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "conflict_alternatives": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "evidence_references",
+                    "interpretation",
+                    "confidence"
+                  ],
+                  "properties": {
+                    "evidence_references": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "uniqueItems": true,
+                      "minItems": 1
+                    },
+                    "interpretation": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "confidence": {
+                      "enum": [
+                        "HIGH",
+                        "MEDIUM"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "status": {
+                      "const": "NUMERIC"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "anchor": {
+                      "enum": [
+                        0,
+                        2,
+                        5,
+                        8,
+                        10
+                      ]
+                    },
+                    "confidence": {
+                      "enum": [
+                        "HIGH",
+                        "MEDIUM"
+                      ]
+                    },
+                    "admission_checks": {
+                      "properties": {
+                        "G1": {
+                          "const": true
+                        },
+                        "G2": {
+                          "const": true
+                        },
+                        "G3": {
+                          "const": true
+                        },
+                        "G4": {
+                          "const": true
+                        },
+                        "G5": {
+                          "const": true
+                        },
+                        "G6": {
+                          "const": true
+                        },
+                        "G7": {
+                          "const": true
+                        }
+                      }
+                    },
+                    "reason_codes": {
+                      "maxItems": 0
+                    },
+                    "evidence_references": {
+                      "minItems": 1
+                    },
+                    "verbatim_evidence": {
+                      "minItems": 1
+                    },
+                    "anchor_predicates": {
+                      "minItems": 1
+                    },
+                    "rationale": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "conflict_alternatives": {
+                      "maxItems": 0
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "status": {
+                      "const": "UNKNOWN"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "anchor": {
+                      "const": null
+                    },
+                    "confidence": {
+                      "enum": [
+                        "LOW",
+                        "UNKNOWN"
+                      ]
+                    },
+                    "reason_codes": {
+                      "minItems": 1
+                    },
+                    "rationale": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "conflict_alternatives": {
+                      "maxItems": 0
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "status": {
+                      "const": "DISPUTED"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "anchor": {
+                      "const": null
+                    },
+                    "confidence": {
+                      "const": null
+                    },
+                    "reason_codes": {
+                      "contains": {
+                        "const": "CONTENT_CONFLICT"
+                      }
+                    },
+                    "rationale": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "conflict_alternatives": {
+                      "minItems": 2
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "status": {
+                      "const": null
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "anchor": {
+                      "const": null
+                    },
+                    "confidence": {
+                      "const": null
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "submission_state": {
+            "const": "SUBMITTED"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "coder_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "started_at_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "submitted_at_utc": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "items": {
+            "items": {
+              "properties": {
+                "POS": {
+                  "properties": {
+                    "status": {
+                      "enum": [
+                        "NUMERIC",
+                        "UNKNOWN",
+                        "DISPUTED"
+                      ]
+                    }
+                  }
+                },
+                "KVS": {
+                  "properties": {
+                    "status": {
+                      "enum": [
+                        "NUMERIC",
+                        "UNKNOWN",
+                        "DISPUTED"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
