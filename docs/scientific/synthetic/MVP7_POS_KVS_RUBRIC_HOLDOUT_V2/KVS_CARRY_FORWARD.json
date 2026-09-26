@@ -1,0 +1,74 @@
+{
+  "factor": "KVS",
+  "status": "READY_FOR_DOUBLE_BLIND_HUMAN_PILOT",
+  "source": "v1.1 only",
+  "v2_testing": "NOT_RETESTED_IN_V2",
+  "unchanged_rule_sections": 3,
+  "supported_intended_answers": 24,
+  "total_intended_answers": 24,
+  "coders": {
+    "A": {
+      "supported_answers": 24,
+      "total": 24,
+      "boundaries": {
+        "0/2": {
+          "resolved": 2,
+          "total": 2,
+          "threshold": 0.9
+        },
+        "2/5": {
+          "resolved": 2,
+          "total": 2,
+          "threshold": 0.9
+        },
+        "5/8": {
+          "resolved": 2,
+          "total": 2,
+          "threshold": 0.9
+        },
+        "8/10": {
+          "resolved": 2,
+          "total": 2,
+          "threshold": 0.9
+        }
+      }
+    },
+    "B": {
+      "supported_answers": 24,
+      "total": 24,
+      "boundaries": {
+        "0/2": {
+          "resolved": 2,
+          "total": 2,
+          "threshold": 0.9
+        },
+        "2/5": {
+          "resolved": 2,
+          "total": 2,
+          "threshold": 0.9
+        },
+        "5/8": {
+          "resolved": 2,
+          "total": 2,
+          "threshold": 0.9
+        },
+        "8/10": {
+          "resolved": 2,
+          "total": 2,
+          "threshold": 0.9
+        }
+      }
+    }
+  },
+  "source_sha256": {
+    "INTENDED_KEY.json": "0813e724287d7f0c42cddeb5b00a057a145b1eb5dca4c141b5ef05b27a3c2874",
+    "KEY_AUDIT.json": "4850aeae793efbe8b864e8475ef1a8b0ff9706bf388345e31b133a306e811eac",
+    "RATIONALE_AUDIT.json": "05f8ff07aa5ea0d5c70c418e735374079cdb0f92c38bd1110348ceadc9c72b5d",
+    "AI_CODER_A.json": "2c586c80126c19a8c52ae50b7bdf2a55388e1a158fcaade2c701b784e502e406",
+    "AI_CODER_B.json": "9db4d9d9967344782b8ae68eccd02545a69720dd47624f4c434a65fb7e4d0c56",
+    "ANONYMIZED_RESPONSE_BINDING.json": "65a3a0e9747dbb3a16df14eb0cb044607da0599b2a36c86e9bf43d12526a1835",
+    "FREEZE_MANIFEST.json": "2738587fabd7af22dab82746756a5ece7db445e512829b5bd2a5f29463123a7f",
+    "PREREGISTRATION.md": "38642b5dfae34b2b3243fec346b7e67d0fb7c6ba782f0ef45e3004c7d018437e"
+  },
+  "limits": "Read-only derivation from saved v1.1 audits; no old-case recoding, no new KVS experiment, no HUMAN pilot."
+}

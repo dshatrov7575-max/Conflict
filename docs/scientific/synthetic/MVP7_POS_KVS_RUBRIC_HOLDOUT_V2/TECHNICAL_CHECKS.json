@@ -1,0 +1,12 @@
+{
+  "status": "PASS_TECHNICAL_ONLY",
+  "cases": 36,
+  "pairs": 12,
+  "probes": 12,
+  "protected_local_files": 58,
+  "protected_external_sources": 6,
+  "frozen_files": 12,
+  "old_exact_reference_overlap": 0,
+  "old_exact_utterance_overlap": 0,
+  "limits": "Integrity/string checks do not establish semantic novelty, key correctness or enforced blinding."
+}

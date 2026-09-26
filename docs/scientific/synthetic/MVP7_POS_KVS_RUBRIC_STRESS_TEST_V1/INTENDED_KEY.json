@@ -1,0 +1,994 @@
+{
+  "artifact_id": "MVP7_POS_KVS_RUBRIC_STRESS_TEST_V1_INTENDED_KEY",
+  "status": "SYNTHETIC_PROPOSAL_FROZEN_INTENT",
+  "contains_human_coding": false,
+  "historical_evidence": false,
+  "scope": "Дизайнерские ожидания для вымышленных задач. Не ground truth, не final scores, не статистика согласия.",
+  "rubric_reference": "../../MVP7_POS_KVS_NUMERIC_ANCHORS_V1.md",
+  "rubric_sha256": "3971a424225b8789c1b4cbceec54b29406b1a26d5bcb92f353aa2753c4c0362c",
+  "freeze_rule": "Ключ и coder packet фиксируются до письменного stress review. После разбора bytes не меняются; ошибки ключа отмечаются только в отчёте. Это локальная фиксация, не внешняя preregistration.",
+  "distribution_policy": "Только организатору/аудитору. Не передавать кодерам или оценивающему их rationale reviewer до независимой фиксации ответов.",
+  "review_plan": {
+    "nature": "Логический desk review автором/ассистентом, видевшим ключ; не слепой эксперимент и не независимое HUMAN coding.",
+    "outcomes": {
+      "UNIQUE_FROM_RULE": "Из предъявленного текста и v1 следует один ответ без intended rationale. Не доказательство человеческого согласия.",
+      "RULE_AMBIGUITY": "Разные чтения действующего правила дают разные допустимые ответы либо отсутствует обязательное правило различения.",
+      "KEY_NOT_SUPPORTED": "Intended answer противоречит определённому правилу или требует отсутствующей посылки; ключ сохраняется.",
+      "TEST_FIXTURE_DEFECT": "Недостаток учебного условия мешает проверить именно задуманный признак."
+    },
+    "criteria": "Для каждой карточки проверить допуск, субъект/предмет/время, предикаты данного и соседних якорей, UNKNOWN/DISPUTED, достаточность текста независимо от скрытого основания. При нескольких разумных чтениях не подгонять вывод к ключу.",
+    "readiness": {
+      "READY_FOR_DOUBLE_BLIND_PILOT": "Материалы и правила выдачи готовы; критические предикаты и ключ пригодны для интерпретируемого независимого сравнения. Достигнутая надёжность заранее не требуется.",
+      "PARTIAL": "Набор готов, но остаются редакционные/процедурные или калибровочные пробелы; полноценная готовность не заявляется.",
+      "BLOCKED": "Остаётся содержательное решение о границе соседних якорей, которое нельзя принять, просто применив неизменённую v1."
+    },
+    "no_adaptation": "Не исправлять rubric v1, не перестраивать ключ после анализа, не считать ответы автора ответами независимого кодера. Предлагаемые исправления не применять."
+  },
+  "randomization": {
+    "method": "Fisher-Yates; uint32 LCG (a=1664525,c=1013904223), u=state/2^32; authoring order POS [-10,-5,0,5,10], KVS [0,2,5,8,10], six kinds per anchor",
+    "seed": 20260926
+  },
+  "cases": [
+    {
+      "id": "SYN-CAL-001",
+      "factor": "POS",
+      "target_anchor": 5,
+      "test_kind": "POSITIVE_LITERAL",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Прямое преимущественное неполное согласие с целым.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-002",
+      "factor": "POS",
+      "target_anchor": 0,
+      "test_kind": "BOUNDARY",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Безразличие к исходу само по себе не содержит отношения именно к принятию/отклонению R.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-003",
+      "factor": "POS",
+      "target_anchor": -5,
+      "test_kind": "POSITIVE_CONTEXT",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": -5,
+      "rationale": "Явный пересмотр в целевое время, а не усреднение утренней и текущей позиций.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-004",
+      "factor": "KVS",
+      "target_anchor": 5,
+      "test_kind": "INSUFFICIENT",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Одной важности недостаточно для сопоставимости, ранга и условий компромисса.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-005",
+      "factor": "POS",
+      "target_anchor": 5,
+      "test_kind": "CONTRADICTORY",
+      "intended_outcome": "DISPUTED",
+      "intended_anchor": null,
+      "rationale": "Несовместимые степени согласия, без допустимого правила приоритета источника.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "Единого числового confidence нет; отдельно оценить собственные альтернативы по общим условиям."
+    },
+    {
+      "id": "SYN-CAL-006",
+      "factor": "POS",
+      "target_anchor": 0,
+      "test_kind": "INSUFFICIENT",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Молчание не превращается в нулевой POS.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-007",
+      "factor": "POS",
+      "target_anchor": 0,
+      "test_kind": "POSITIVE_LITERAL",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 0,
+      "rationale": "Прямое осмысленное отсутствие направленного предпочтения.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-008",
+      "factor": "KVS",
+      "target_anchor": 10,
+      "test_kind": "POSITIVE_PARAPHRASE",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 10,
+      "rationale": "Эквивалент K-V с собственным условием и явной свободой выбора.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-009",
+      "factor": "KVS",
+      "target_anchor": 10,
+      "test_kind": "INSUFFICIENT",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Затраты и отказы без объяснения и содержания альтернатив не задают максимальный приоритет.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-010",
+      "factor": "POS",
+      "target_anchor": -10,
+      "test_kind": "CONTRADICTORY",
+      "intended_outcome": "DISPUTED",
+      "intended_anchor": null,
+      "rationale": "Одна единица и момент, несовместимые собственные степени; основания выбрать одну запись отсутствуют.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "Единого числового confidence нет; отдельно оценить собственные альтернативы по общим условиям."
+    },
+    {
+      "id": "SYN-CAL-011",
+      "factor": "POS",
+      "target_anchor": -10,
+      "test_kind": "INSUFFICIENT",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Есть направление без различимой степени; запрещён выбор -5/-10 по умолчанию.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-012",
+      "factor": "POS",
+      "target_anchor": -5,
+      "test_kind": "CONTRADICTORY",
+      "intended_outcome": "DISPUTED",
+      "intended_anchor": null,
+      "rationale": "Неполное направленное несогласие и явная нейтральность несовместимы в одной единице.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "Единого числового confidence нет; отдельно оценить собственные альтернативы по общим условиям."
+    },
+    {
+      "id": "SYN-CAL-013",
+      "factor": "POS",
+      "target_anchor": -10,
+      "test_kind": "BOUNDARY",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Сильное слово без отдельного обозначения полной/неполной степени нельзя автоматически считать полным несогласием.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-014",
+      "factor": "KVS",
+      "target_anchor": 5,
+      "test_kind": "POSITIVE_PARAPHRASE",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Смысловой эквивалент K-M с явно отделённым ведущим приоритетом.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-015",
+      "factor": "POS",
+      "target_anchor": -5,
+      "test_kind": "POSITIVE_LITERAL",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": -5,
+      "rationale": "Явный перевес несогласия при прямо обозначенной неполной степени.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-016",
+      "factor": "POS",
+      "target_anchor": -5,
+      "test_kind": "INSUFFICIENT",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Смысл якоря есть, но доступность именно этой редакции до учебного cutoff не установлена.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-017",
+      "factor": "POS",
+      "target_anchor": -10,
+      "test_kind": "POSITIVE_CONTEXT",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": -10,
+      "rationale": "Низкая важность и отсутствие действия не уменьшают прямо выраженную полноту POS.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-018",
+      "factor": "KVS",
+      "target_anchor": 8,
+      "test_kind": "POSITIVE_CONTEXT",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 8,
+      "rationale": "Явный пересмотр неуступаемости при сохранении ведущего ранга; не спор двух одновременных версий.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-019",
+      "factor": "POS",
+      "target_anchor": -5,
+      "test_kind": "POSITIVE_PARAPHRASE",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": -5,
+      "rationale": "Смысловой эквивалент преимущественного неполного несогласия, явно отделённый от нуля и полного полюса.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-020",
+      "factor": "KVS",
+      "target_anchor": 2,
+      "test_kind": "POSITIVE_LITERAL",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 2,
+      "rationale": "Одновременно положительная второстепенность, названная более важная альтернатива и добровольная уступка.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-021",
+      "factor": "POS",
+      "target_anchor": 10,
+      "test_kind": "BOUNDARY",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Полное согласие с одной частью не задаёт степень по целому.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-022",
+      "factor": "POS",
+      "target_anchor": 5,
+      "test_kind": "INSUFFICIENT",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Собственная позиция говорящего не удостоверяет весь actor scope комиссии.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-023",
+      "factor": "KVS",
+      "target_anchor": 8,
+      "test_kind": "POSITIVE_PARAPHRASE",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 8,
+      "rationale": "Совместное первое место плюс явная допустимость соглашения без A.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-024",
+      "factor": "KVS",
+      "target_anchor": 2,
+      "test_kind": "BOUNDARY",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Смешанный профиль: второстепенность плюс неуступаемость не соответствует K-S, K-L или K-V.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-025",
+      "factor": "KVS",
+      "target_anchor": 0,
+      "test_kind": "BOUNDARY",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Отсутствие интереса не содержит достаточного высказывания о влиянии на данное решение.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-026",
+      "factor": "POS",
+      "target_anchor": 5,
+      "test_kind": "POSITIVE_CONTEXT",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Гипотетическое будущее изменение не аннулирует явную позицию на целевое время.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-027",
+      "factor": "KVS",
+      "target_anchor": 10,
+      "test_kind": "BOUNDARY",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Невозможность выбора без A обусловлена внешним запретом; собственного предпочтения за пределами ограничения недостаточно для K-V.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-028",
+      "factor": "KVS",
+      "target_anchor": 10,
+      "test_kind": "CONTRADICTORY",
+      "intended_outcome": "DISPUTED",
+      "intended_anchor": null,
+      "rationale": "Собственные одновременные условия соглашения несовместимы.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "Единого числового confidence нет; отдельно оценить собственные альтернативы по общим условиям."
+    },
+    {
+      "id": "SYN-CAL-029",
+      "factor": "KVS",
+      "target_anchor": 0,
+      "test_kind": "INSUFFICIENT",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Отсутствие упоминаний A не является заявлением о нулевой значимости.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-030",
+      "factor": "KVS",
+      "target_anchor": 8,
+      "test_kind": "POSITIVE_LITERAL",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 8,
+      "rationale": "Прямое ведущее место и конкретный разрешённый обмен без A.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-031",
+      "factor": "POS",
+      "target_anchor": 10,
+      "test_kind": "CONTRADICTORY",
+      "intended_outcome": "DISPUTED",
+      "intended_anchor": null,
+      "rationale": "Противоположные собственные полные позиции в одной единице.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "Единого числового confidence нет; отдельно оценить собственные альтернативы по общим условиям."
+    },
+    {
+      "id": "SYN-CAL-032",
+      "factor": "POS",
+      "target_anchor": 10,
+      "test_kind": "POSITIVE_PARAPHRASE",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 10,
+      "rationale": "Полнота прямо названа, а смысловой охват не сужен.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-033",
+      "factor": "KVS",
+      "target_anchor": 0,
+      "test_kind": "CONTRADICTORY",
+      "intended_outcome": "DISPUTED",
+      "intended_anchor": null,
+      "rationale": "Нулевая и положительная второстепенная значимость в одной единице несовместимы.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "Единого числового confidence нет; отдельно оценить собственные альтернативы по общим условиям."
+    },
+    {
+      "id": "SYN-CAL-034",
+      "factor": "KVS",
+      "target_anchor": 5,
+      "test_kind": "POSITIVE_LITERAL",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Важность, сопоставимость, явно неведущий статус A и допустимый компромисс; второстепенность отрицается.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-035",
+      "factor": "KVS",
+      "target_anchor": 8,
+      "test_kind": "CONTRADICTORY",
+      "intended_outcome": "DISPUTED",
+      "intended_anchor": null,
+      "rationale": "Прямо несовместимые условия допустимости одного и того же пакета без A.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "Единого числового confidence нет; отдельно оценить собственные альтернативы по общим условиям."
+    },
+    {
+      "id": "SYN-CAL-036",
+      "factor": "POS",
+      "target_anchor": 5,
+      "test_kind": "POSITIVE_PARAPHRASE",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Явно выражены направление и неполная степень, не неполнота Evidence.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-037",
+      "factor": "KVS",
+      "target_anchor": 5,
+      "test_kind": "BOUNDARY",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Intended K-M: автор ключа счёл явное отсутствие выделенного ведущего вопроса решающим для K-M. Совместное первое место специально оставлено для проверки соседней границы.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-038",
+      "factor": "KVS",
+      "target_anchor": 8,
+      "test_kind": "INSUFFICIENT",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Сравнение только с B не доказывает ведущий статус A во всей известной повестке, включающей C.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-039",
+      "factor": "KVS",
+      "target_anchor": 2,
+      "test_kind": "POSITIVE_PARAPHRASE",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 2,
+      "rationale": "Сохранены все признаки K-S, включая собственное объяснение обмена.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-040",
+      "factor": "KVS",
+      "target_anchor": 0,
+      "test_kind": "POSITIVE_PARAPHRASE",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 0,
+      "rationale": "Полный смысловой эквивалент отсутствия значимости в конкретном решении.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-041",
+      "factor": "KVS",
+      "target_anchor": 5,
+      "test_kind": "CONTRADICTORY",
+      "intended_outcome": "DISPUTED",
+      "intended_anchor": null,
+      "rationale": "Несовместимость неведущего и единственного ведущего статуса при той же повестке.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "Единого числового confidence нет; отдельно оценить собственные альтернативы по общим условиям."
+    },
+    {
+      "id": "SYN-CAL-042",
+      "factor": "POS",
+      "target_anchor": -10,
+      "test_kind": "POSITIVE_PARAPHRASE",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": -10,
+      "rationale": "Полнота несогласия выражена семантически и дополнительно названа явно.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-043",
+      "factor": "KVS",
+      "target_anchor": 0,
+      "test_kind": "POSITIVE_LITERAL",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 0,
+      "rationale": "Прямо выражены отсутствие значимости и отсутствие влияния A на решение.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-044",
+      "factor": "KVS",
+      "target_anchor": 2,
+      "test_kind": "POSITIVE_CONTEXT",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 2,
+      "rationale": "Линия выбора подтверждена собственным объяснением приоритета, а не выведена из самого поведения.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-045",
+      "factor": "POS",
+      "target_anchor": 0,
+      "test_kind": "CONTRADICTORY",
+      "intended_outcome": "DISPUTED",
+      "intended_anchor": null,
+      "rationale": "Нейтральность и направленное согласие по одной единице несовместимы.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "Единого числового confidence нет; отдельно оценить собственные альтернативы по общим условиям."
+    },
+    {
+      "id": "SYN-CAL-046",
+      "factor": "KVS",
+      "target_anchor": 5,
+      "test_kind": "POSITIVE_CONTEXT",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "На целевое время собственный пересмотр однозначно задаёт профиль K-M; старый ранг не усредняется.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-047",
+      "factor": "POS",
+      "target_anchor": 0,
+      "test_kind": "POSITIVE_CONTEXT",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 0,
+      "rationale": "Важность предмета не меняет явно нейтральный POS.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-048",
+      "factor": "KVS",
+      "target_anchor": 2,
+      "test_kind": "INSUFFICIENT",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Чужая оценка не является собственным заявлением или объяснением выбора.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-049",
+      "factor": "POS",
+      "target_anchor": 5,
+      "test_kind": "BOUNDARY",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Неустановленное условие не позволяет вывести актуальное преимущественное согласие.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-050",
+      "factor": "KVS",
+      "target_anchor": 10,
+      "test_kind": "POSITIVE_CONTEXT",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 10,
+      "rationale": "Отношение других субъектов не создаёт DISPUTED собственной явно неуступаемой позиции.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-051",
+      "factor": "POS",
+      "target_anchor": 0,
+      "test_kind": "POSITIVE_PARAPHRASE",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 0,
+      "rationale": "Выражена нейтральность, а не недостаток знания.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-052",
+      "factor": "KVS",
+      "target_anchor": 10,
+      "test_kind": "POSITIVE_LITERAL",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 10,
+      "rationale": "Ведущее место и явно неуступаемое условие в полном наборе доступных вариантов.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-053",
+      "factor": "POS",
+      "target_anchor": -10,
+      "test_kind": "POSITIVE_LITERAL",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": -10,
+      "rationale": "Прямо выражены весь предмет и полная степень несогласия, без условий.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-054",
+      "factor": "KVS",
+      "target_anchor": 2,
+      "test_kind": "CONTRADICTORY",
+      "intended_outcome": "DISPUTED",
+      "intended_anchor": null,
+      "rationale": "Несовместимое собственное ранжирование A в одной единице, хотя обе речи допускают уступку.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "Единого числового confidence нет; отдельно оценить собственные альтернативы по общим условиям."
+    },
+    {
+      "id": "SYN-CAL-055",
+      "factor": "POS",
+      "target_anchor": -5,
+      "test_kind": "BOUNDARY",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Эпистемическая оценка прямо отделена от выраженной позиции.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-056",
+      "factor": "KVS",
+      "target_anchor": 8,
+      "test_kind": "BOUNDARY",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 8,
+      "rationale": "Intended K-L: автор ключа счёл явную уступку по A достаточной. Одновременно оставлена неуступаемость минимального удовлетворения для проверки границы K-L/K-V.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-057",
+      "factor": "POS",
+      "target_anchor": 10,
+      "test_kind": "INSUFFICIENT",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Старое наблюдение не переносится на целевое время без области действия/пересмотра.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "UNKNOWN для числа; узкое качественное наблюдение возможно отдельно."
+    },
+    {
+      "id": "SYN-CAL-058",
+      "factor": "POS",
+      "target_anchor": 10,
+      "test_kind": "POSITIVE_CONTEXT",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 10,
+      "rationale": "Согласованное явное покрытие всех частей составного reference допускается §3.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-059",
+      "factor": "KVS",
+      "target_anchor": 0,
+      "test_kind": "POSITIVE_CONTEXT",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 0,
+      "rationale": "Направленный POS не подменяет прямо заявленное отсутствие значимости KVS.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§4 KVS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    },
+    {
+      "id": "SYN-CAL-060",
+      "factor": "POS",
+      "target_anchor": 10,
+      "test_kind": "POSITIVE_LITERAL",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 10,
+      "rationale": "Прямое полное согласие с точным предметом.",
+      "rule_refs": [
+        "§2 G1–G6",
+        "§3 POS",
+        "§5",
+        "§6"
+      ],
+      "confidence_rule": "HIGH только при однозначном предикате и общих первичных допущениях; если разбор выявит неоднозначность, ключ не оправдывает числовой confidence."
+    }
+  ]
+}
+
