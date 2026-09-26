@@ -1,0 +1,561 @@
+{
+  "freeze_id": "MVP7_METHODOLOGY_AND_RUBRIC_FREEZE_PR10_V1",
+  "publication_title": "PR-10 — MVP7 Methodology and Rubric Freeze",
+  "created_at_utc": "2026-09-26T14:09:54.511688+00:00",
+  "status": "FROZEN_METHODOLOGICAL_DOCUMENTATION",
+  "base": {
+    "pr": "https://github.com/dshatrov7575-max/Conflict/pull/119",
+    "head_branch": "codex/pr-9-zhanaozen-historical-assessment-pilot",
+    "commit": "89154c6e32a774c59e65bc665cd6ce7860a2a001",
+    "tree": "c14df962fc44d75e0183cdec589df325483d7dae",
+    "must_remain_unchanged": true
+  },
+  "publication_branch": "codex/pr-10-methodology-rubric-freeze",
+  "factor_state": {
+    "POS": {
+      "role": "MEASURED_CONTENT_VARIABLE",
+      "status": "READY_FOR_DOUBLE_BLIND_HUMAN_PILOT",
+      "source": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/RESULT.json",
+      "basis": "New targeted V2 plus unchanged POS -5/0 inherited from v1.1."
+    },
+    "KVS": {
+      "role": "MEASURED_CONTENT_VARIABLE",
+      "status": "READY_FOR_DOUBLE_BLIND_HUMAN_PILOT",
+      "source": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/RESULT.json",
+      "basis": "Audited v1.1; NOT_RETESTED_IN_V2."
+    },
+    "RGU": {
+      "role": "EXOGENOUS_ANALYTIC_WEIGHTS",
+      "evidence_derived_coding": false
+    },
+    "KVPTN": {
+      "role": "EXOGENOUS_ANALYTIC_WEIGHTS",
+      "evidence_derived_coding": false
+    }
+  },
+  "execution_state": {
+    "HUMAN_coding": "NOT_PERFORMED",
+    "UNO": "NOT_COMPUTED",
+    "real_double_blind_pilot": "NOT_STARTED",
+    "weight_set_assigned_by_this_freeze": false,
+    "sensitivity_analysis_performed_by_this_freeze": false,
+    "empirical_model_validation_established": false
+  },
+  "precedence": [
+    {
+      "scope": "RGU/KVPTN semantics",
+      "current": "docs/scientific/MVP7_WEIGHT_SEMANTICS_DECISION_PATCH_V1.md",
+      "rule": "Overrides old empirical-weight hypotheses only; construct and hostile reviews are audit trail, not active measurement rubrics."
+    },
+    {
+      "scope": "POS/KVS numeric rules",
+      "ordered_deltas": [
+        "docs/scientific/MVP7_POS_KVS_NUMERIC_ANCHORS_V1.md",
+        "docs/scientific/MVP7_POS_KVS_RUBRIC_V1_1_PATCH.md",
+        "docs/scientific/MVP7_POS_KVS_RUBRIC_V1_2_PATCH.md"
+      ],
+      "rule": "Each delta overrides only clauses it explicitly changes; preserve all other admission/non-inference rules."
+    },
+    {
+      "scope": "Readiness",
+      "current": "docs/scientific/MVP7_POS_KVS_RUBRIC_V1_2_HOLDOUT_REPORT.md",
+      "rule": "Synthetic readiness only; old failure reports and keys retain their original conclusions and bytes."
+    }
+  ],
+  "preservation": {
+    "existing_versions_rewritten": false,
+    "existing_versions_deleted": false,
+    "code_core_formula_evidence_changed": false,
+    "old_frozen_keys_changed": false,
+    "prior_PROPOSAL_statuses_retained": true,
+    "source_statements_about_no_commit_are_historical": true
+  },
+  "scope": {
+    "existing_snapshots_copied": 61,
+    "new_publication_documents": 2,
+    "total_added_files_including_this_manifest": 63,
+    "allowed_extensions": [
+      ".md",
+      ".json"
+    ],
+    "synthetic_appendices": "Immutable textual packets, keys, AI records and audits necessary to inspect frozen reports; no real Evidence payloads."
+  },
+  "files": [
+    {
+      "path": "docs/scientific/MVP7_FACTOR_OPERATIONALIZATION_RULES_V1.md",
+      "sha256": "ca7b6d3dff6dd134e5fb99fc1873ca8715e1c5e77418195c19013acb773b5cfa",
+      "bytes": 69875,
+      "role": "operationalization_baseline_subject_to_explicit_deltas",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/MVP7_METHODOLOGY_RUBRIC_FREEZE.md",
+      "sha256": "0640b3f9d743fb2cdeecd32aaebd9999f6f473814cd2575cbf3e6ac9c838ebbc",
+      "bytes": 7566,
+      "role": "new_publication_navigation_and_precedence",
+      "source_bytes_preserved": null
+    },
+    {
+      "path": "docs/scientific/MVP7_POS_KVS_NUMERIC_ANCHORS_V1.md",
+      "sha256": "3971a424225b8789c1b4cbceec54b29406b1a26d5bcb92f353aa2753c4c0362c",
+      "bytes": 88317,
+      "role": "numeric_anchor_baseline_subject_to_v1_1_and_v1_2",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/MVP7_POS_KVS_RUBRIC_STRESS_TEST_V1.md",
+      "sha256": "7cb5a92430a3eba9261f5b1fab02cf55de49324de6ec28f88969350c16936686",
+      "bytes": 69272,
+      "role": "historical_stress_test_report",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT_REPORT.md",
+      "sha256": "912f8eac5543e9a6bdb902e681e0de415e63cae4c02c075422e3c29132a64f04",
+      "bytes": 16010,
+      "role": "historical_holdout_report_known_defects_preserved",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/MVP7_POS_KVS_RUBRIC_V1_1_PATCH.md",
+      "sha256": "76644923f3ca66fb6760ac5ffb64540f7ec8f5bbe0e9b4c3868787b6579e160d",
+      "bytes": 19205,
+      "role": "rubric_delta_v1_1",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/MVP7_POS_KVS_RUBRIC_V1_2_HOLDOUT_REPORT.md",
+      "sha256": "822a7e039825ee0a23dae211f8a114d3058215911690aa793b543b0700377e75",
+      "bytes": 16504,
+      "role": "current_targeted_holdout_report",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/MVP7_POS_KVS_RUBRIC_V1_2_PATCH.md",
+      "sha256": "dd176760c2c314e46364e6b27e09ac5cb3a1d9d7d7fe6e17484a5496ec8a514b",
+      "bytes": 11911,
+      "role": "current_rubric_delta_v1_2",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/MVP7_RGU_KVPTN_CONSTRUCT_HOSTILE_REVIEW_V1.md",
+      "sha256": "86bd9484e43c7d65824ca0c14ec892138fb4a7f4b2e24e80124c40f6b45d30c2",
+      "bytes": 82888,
+      "role": "hostile_review_audit_trail",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/MVP7_RGU_KVPTN_CONSTRUCT_REVIEW_V1.md",
+      "sha256": "86f2fc60ba7e90ff54563fb4c84dac7878f7948e69b5416a80c15b14efe40aba",
+      "bytes": 86765,
+      "role": "construct_review_audit_trail_not_active_weight_measurement",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/MVP7_WEIGHT_SEMANTICS_DECISION_PATCH_V1.md",
+      "sha256": "e57ca01c2414fea213003ca330a7f9d7b560eaf0fa2c0f1b60e6b1dc48129bbc",
+      "bytes": 58740,
+      "role": "current_weight_semantics_decision",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/AI_CODER_A.json",
+      "sha256": "3a904a5f3d3f8fc47e99ed51de50a6e739950a8c7d358720e610c85289dab263",
+      "bytes": 49534,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/AI_CODER_B.json",
+      "sha256": "30c7bfd92d9834bb7132646f0546f134f91a8a18c2bf027d9fe5f6b4e9d9bd67",
+      "bytes": 49180,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/ANONYMIZED_RESPONSES.json",
+      "sha256": "98d8588efe9acd2125dddb9c83b5368b0dbe2f2b77278fea0b053840806bf452",
+      "bytes": 105235,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/ANONYMIZED_RESPONSE_BINDING.json",
+      "sha256": "0ff9d4786fa5183157bd4e0a779abfbdc2f2271eb8e14bf1372cbfbfd075fa08",
+      "bytes": 301,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/AUDITOR_PRE_KEY_REVIEW.json",
+      "sha256": "d75480ff1372091bfa3bd2a78d6ea61bb3dcda88d4bf18c4086fb1f75e25dc22",
+      "bytes": 39605,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/AUTHOR_RECORD.json",
+      "sha256": "b26786f603e807669273d39c0ce497af2d49ecaf17302286a6116a31d8c38d15",
+      "bytes": 3233,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/BASELINE_MANIFEST.json",
+      "sha256": "bc8d0d259b9fb908f5fff4566ca9b6ebf0b3e04886d953b772e09846f599c054",
+      "bytes": 10882,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/CASES.json",
+      "sha256": "120fa6dcbe003b27d05205c433591b74a3591c64c38a29c863065fdb59a2cc18",
+      "bytes": 209328,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/CODER_PACKET.md",
+      "sha256": "9293bc57f78c7a0ad1219e24ef8538aac5055d8144499a9e221ded2ad3047fdb",
+      "bytes": 210258,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/ERROR_LEDGER.json",
+      "sha256": "c363b8e74fe0154006361b0f64e0a0a997be3301ba30df3934c018efdae44992",
+      "bytes": 491,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/EXCLUSION_CATALOG.json",
+      "sha256": "fc7fa7607159797c1a843d93903d5630acbd65d9ea9c2f43a12343039dea4ffa",
+      "bytes": 12872,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/FINAL_VERIFICATION.json",
+      "sha256": "b1a3893cd803ba88dfdd5c72a73c96f3a30ee00a36d7c10a911b44a05fa82bac",
+      "bytes": 7356,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/FREEZE_MANIFEST.json",
+      "sha256": "09dff558f2e4f705db456f1d5d02046b45c0c681a499860c190dfbf4339f6c8f",
+      "bytes": 1806,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/INTENDED_KEY.json",
+      "sha256": "e9b468786c5a5784069d4d4e8f1a649567658719d7cef768a2afe0e44c29a91a",
+      "bytes": 64826,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/KEY_AUDIT.json",
+      "sha256": "42e498010ba4d5c7bbf8c68208d8c80ce7ef0d2b8256d828c681aac7218db643",
+      "bytes": 50811,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/KEY_DISCLOSURE.json",
+      "sha256": "3e01bb24f28b899d826af712afad0071efac6adc60df818561677fad83898ef6",
+      "bytes": 282,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/KVS_CARRY_FORWARD.json",
+      "sha256": "3eded6a5912a198cc600ea14744e580e1c692ed951193ff788c2ad3a53d6af21",
+      "bytes": 2170,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/NOVELTY_REVIEW.json",
+      "sha256": "22c593a7d8c451180e719e36d702a362e9638fc0074b6f8827030877395c64e2",
+      "bytes": 4230,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/PATCHED_RUBRIC_FOR_CODERS.md",
+      "sha256": "e3d57484e6df3bc6a7e31e560ac803a3a0ac7c30bf9204d2698f409f9e3040cd",
+      "bytes": 55002,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/PLAN_FREEZE.json",
+      "sha256": "e4dea3c387467c301b6610ff2696f5f03585ebc98df85d9ead98a9ff31324940",
+      "bytes": 950,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/PREREGISTRATION.md",
+      "sha256": "e8fb4c965ec277d95d44b77359621899a7cc0304760aff544f0a7c107b827524",
+      "bytes": 9810,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/RATIONALE_AUDIT.json",
+      "sha256": "51129a1bed934eadd4ddc07ecf8f63f4080105b875a842d79053ce1286a6a41c",
+      "bytes": 31270,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/RESULT.json",
+      "sha256": "6a3277fc2df910425b4cd9e1386a22245b1531f8cda121db093749bf0b1f11d5",
+      "bytes": 7109,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/REVIEW_RUN_MANIFEST.json",
+      "sha256": "3a02c11ba492de0b4f5bfb735cb2665f58fb1c632b88e6e7d537d8d14d9b4a3b",
+      "bytes": 1345,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/RUBRIC_CLARITY_REVIEW.json",
+      "sha256": "4a14a05f768dad9eebd3ff6fb53277bc4066be1bf9f44b05fd9d1e6abde8ffdc",
+      "bytes": 7202,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/RUNNER_COMPATIBILITY.json",
+      "sha256": "8accba7545d9be4dfc85accd267f5c5dcb6e495b3a21cf20305be872f66ed5f3",
+      "bytes": 705,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/TECHNICAL_CHECKS.json",
+      "sha256": "21b60f7ba7f9ec426b1bb4013009ef24fca1bc185221ed8175fe5059a28e86d9",
+      "bytes": 356,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_STRESS_TEST_V1/CODER_PACKET.md",
+      "sha256": "2d46bb0231569b1100d298fe944978861f23e8a299072d679911e48ea6c3791d",
+      "bytes": 58644,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_STRESS_TEST_V1/FREEZE_MANIFEST.json",
+      "sha256": "97dc1afe7405c343b23215eefb77c34ba2cdec4a34f884ae621f216a1c2fd658",
+      "bytes": 4219,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_STRESS_TEST_V1/INTENDED_KEY.json",
+      "sha256": "2278d18a2366e4675fb3f568cee200c6cd8e3c2fe9c34b3e47a5b6481047ef1f",
+      "bytes": 45254,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_STRESS_TEST_V1/RUBRIC_FOR_CODERS.md",
+      "sha256": "fd3cf3633fa5397dead5c673be96fa800dc91555a498a23ea27769091d63a1d6",
+      "bytes": 35968,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/AI_CODER_A.json",
+      "sha256": "2c586c80126c19a8c52ae50b7bdf2a55388e1a158fcaade2c701b784e502e406",
+      "bytes": 136600,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/AI_CODER_B.json",
+      "sha256": "9db4d9d9967344782b8ae68eccd02545a69720dd47624f4c434a65fb7e4d0c56",
+      "bytes": 117542,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/ANONYMIZED_RESPONSES.json",
+      "sha256": "fe61819e075c9bcf09b14ad2dca1ce8a69d7f3092b19db3d8bc5068843dd0dfa",
+      "bytes": 260383,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/ANONYMIZED_RESPONSE_BINDING.json",
+      "sha256": "65a3a0e9747dbb3a16df14eb0cb044607da0599b2a36c86e9bf43d12526a1835",
+      "bytes": 301,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/AUDITOR_PRE_KEY_REVIEW.json",
+      "sha256": "cc33cb4f4b62acc730d6250fa1ed11cf38290dc6410c0cbdd689aab8ee7cbc21",
+      "bytes": 104944,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/CASES.json",
+      "sha256": "d58fa7d838254193511b693e4793fec2ab4c1e33dbb826954d72df7f18446049",
+      "bytes": 52513,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/CHECK_RESULTS.json",
+      "sha256": "b456bd44b0293b3b177cab8382bfa72aa57868c6c124503f69366f791bb45c4d",
+      "bytes": 19378,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/CODER_PACKET.md",
+      "sha256": "cfee1f1a2c2f561051087bb884050e2c0b0345eabc0bfab86a299800ab60ae70",
+      "bytes": 52733,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/ERROR_LEDGER.json",
+      "sha256": "db10cd70a9b365e5a2ad4c5c7972a8fd60cbb22184baf9c12679f7692d7d7a08",
+      "bytes": 9967,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/FINAL_VERIFICATION.json",
+      "sha256": "ba5a42a7ee63efed8a575a52083632c80d4b4240141e0eedb6ab252a5a3fdb8d",
+      "bytes": 5497,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/FREEZE_MANIFEST.json",
+      "sha256": "2738587fabd7af22dab82746756a5ece7db445e512829b5bd2a5f29463123a7f",
+      "bytes": 1844,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/GATE_RESULT.json",
+      "sha256": "56198833f1f2db65528d44353e030f8bce5a0945f63b3ecc0610db12bb1b940f",
+      "bytes": 11734,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/INTENDED_KEY.json",
+      "sha256": "0813e724287d7f0c42cddeb5b00a057a145b1eb5dca4c141b5ef05b27a3c2874",
+      "bytes": 39061,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/KEY_AUDIT.json",
+      "sha256": "4850aeae793efbe8b864e8475ef1a8b0ff9706bf388345e31b133a306e811eac",
+      "bytes": 189127,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/PATCHED_RUBRIC_FOR_CODERS.md",
+      "sha256": "cbcf0aa2b09aaabcbbc4b9b083b33aaeab69d10b78f45eb1daf6eea14933e08d",
+      "bytes": 48912,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/PATCH_PLAN_FREEZE.json",
+      "sha256": "63ac1f0f68ba9af3bfb6552e2a28b0de1cfa16085207f9056c12a1c3c774f589",
+      "bytes": 686,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/PREREGISTRATION.md",
+      "sha256": "38642b5dfae34b2b3243fec346b7e67d0fb7c6ba782f0ef45e3004c7d018437e",
+      "bytes": 10317,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/RATIONALE_AUDIT.json",
+      "sha256": "05f8ff07aa5ea0d5c70c418e735374079cdb0f92c38bd1110348ceadc9c72b5d",
+      "bytes": 67118,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/REVIEW_RUN_MANIFEST.json",
+      "sha256": "709929b84fc38ee966b6542737574343bbf0a3c673725d60ffa9eae32560937e",
+      "bytes": 996,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/SOURCE_MANIFEST.json",
+      "sha256": "6673c0a011257273b04c25ad318239cf050c02d84e92a54cd9edf15d8b5c2444",
+      "bytes": 7713,
+      "role": "immutable_synthetic_methodology_appendix",
+      "source_bytes_preserved": true
+    }
+  ],
+  "self": {
+    "path": "docs/scientific/MVP7_METHODOLOGY_RUBRIC_FREEZE_MANIFEST.json",
+    "sha256": "Recorded externally in PR body and delivery receipt; cannot self-hash recursively."
+  },
+  "intentionally_unpublished_code": [
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/build_holdout.py",
+      "sha256": "d0de5cfde305ac6f2bbaf42e5307e5656f6b463c9a4e386d810b00f1225ca22a",
+      "reason": "Executable research helper; excluded by documentation-only scope. Original remains local."
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/check_holdout.py",
+      "sha256": "ce17fbb4f2493e5bd1efbd1626adaffe8ade09c86fb812f2f99bb798acfb5722",
+      "reason": "Executable research helper; excluded by documentation-only scope. Original remains local."
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/score_holdout.py",
+      "sha256": "f9a1aa47486574b98818def2ccacce2d990d99ffdd735048b34f1ac613f48074",
+      "reason": "Executable research helper; excluded by documentation-only scope. Original remains local."
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/build_holdout.py",
+      "sha256": "3b902127069a5cc5c86396306b1b8eb702a475cc542718b25bb423c5086048b6",
+      "reason": "Executable research helper; excluded by documentation-only scope. Original remains local."
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/run_v2.py",
+      "sha256": "2208a49182a76aeb9b498ee6000994867a351c27d3775850622ad068a2de35f0",
+      "reason": "Executable research helper; excluded by documentation-only scope. Original remains local."
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/verify_and_score.py",
+      "sha256": "3fe1b452ead71ac0015a0bffde355e9cb19e70c307d20ad71fa245b76de69bba",
+      "reason": "Executable research helper; excluded by documentation-only scope. Original remains local."
+    }
+  ],
+  "portability_limits": [
+    "Historical local paths and host-specific run manifests remain byte-identical.",
+    "Six executable helpers referenced by historical reports/manifests are not shipped.",
+    "No external Evidence inputs or old code are copied to satisfy historical path references.",
+    "Local freeze timestamps are not externally trusted timestamps; AI access separation was instruction-based."
+  ]
+}

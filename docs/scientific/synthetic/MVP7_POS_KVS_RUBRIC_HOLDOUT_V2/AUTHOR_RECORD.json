@@ -1,0 +1,53 @@
+{
+  "role": "NEW_INDEPENDENT_SYNTHETIC_HOLDOUT_AUTHOR; author of fixtures and intended key, not an independent auditor",
+  "allowed_inputs": [
+    {
+      "path": "C:\\Users\\dshatrov\\Documents\\ChatGPT\\Conflict\\docs\\scientific\\synthetic\\MVP7_POS_KVS_RUBRIC_HOLDOUT_V2\\PATCHED_RUBRIC_FOR_CODERS.md",
+      "sha256": "e3d57484e6df3bc6a7e31e560ac803a3a0ac7c30bf9204d2698f409f9e3040cd"
+    },
+    {
+      "path": "C:\\Users\\dshatrov\\Documents\\ChatGPT\\Conflict\\docs\\scientific\\synthetic\\MVP7_POS_KVS_RUBRIC_HOLDOUT_V2\\PREREGISTRATION.md",
+      "sha256": "e8fb4c965ec277d95d44b77359621899a7cc0304760aff544f0a7c107b827524"
+    },
+    {
+      "path": "C:\\Users\\dshatrov\\Documents\\ChatGPT\\Conflict\\docs\\scientific\\synthetic\\MVP7_POS_KVS_RUBRIC_HOLDOUT_V2\\EXCLUSION_CATALOG.json",
+      "sha256": "fc7fa7607159797c1a843d93903d5630acbd65d9ea9c2f43a12343039dea4ffa"
+    }
+  ],
+  "completed_utc": "2026-09-26T11:52:04.730323+00:00",
+  "access_statement": "Прочитаны только три разрешённых входа. Старые карточки, ключи, ответы, результаты, Evidence и иные содержательные файлы репозитория не открывались. Путь интерпретатора предоставлен организатором как инструмент записи.",
+  "novelty_constraints": [
+    "Новые предметы и условия относительно полного EXCLUSION_CATALOG.json; прежние сюжеты не переносились путём переименования.",
+    "Язык закрытой рубрики намеренно повторяется; это разрешённый материал, а не новизна форм.",
+    "Оценка новизны ограничена разрешённым exclusion catalog: полные старые карточки не читались."
+  ],
+  "counts": {
+    "cases": 36,
+    "factor_POS": 36,
+    "adjacent_pairs": 12,
+    "pairs_per_boundary": {
+      "-10/-5": 4,
+      "0/+5": 4,
+      "+5/+10": 4
+    },
+    "probes": 12,
+    "positive_probes": 6,
+    "unknown_probes": 6
+  },
+  "seed": 2026092607,
+  "shuffle_method": "Python random.Random(seed).shuffle; IDs assigned after permutation",
+  "independence_limit": "Парные контрасты зависимы. 36 карточек не являются 36 независимыми наблюдениями.",
+  "author_checks_only": "Проверены схема, числа, связи ID, неизменность переноса полей в пакет и наличие требуемых цитат. Создание ключа не является независимым аудитом его поддержки.",
+  "protocol_constraints": [
+    "Patch и протокол не менялись.",
+    "Кодировщики автором не запускались.",
+    "Freeze автором не создавался.",
+    "Commit/PR не создавались."
+  ],
+  "generated_files": [
+    "CASES.json",
+    "CODER_PACKET.md",
+    "INTENDED_KEY.json",
+    "AUTHOR_RECORD.json"
+  ]
+}

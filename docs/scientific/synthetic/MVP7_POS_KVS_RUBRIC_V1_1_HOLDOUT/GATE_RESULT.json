@@ -1,0 +1,465 @@
+{
+  "computed_at_utc": "2026-09-26T11:08:03.775427+00:00",
+  "admission_status": "BLOCKED",
+  "rubric_status": "PROPOSAL",
+  "real_pilot_started": false,
+  "human_coding": false,
+  "pre_key_sequence_and_raw_response_hashes_verified": true,
+  "discrimination_interpretation": "NOT_ESTABLISHED_ON_FULL_HOLDOUT",
+  "gates": {
+    "G_KEY": false,
+    "G_ADJ": false,
+    "G_REFUSAL": false,
+    "G_INTEGRITY": true
+  },
+  "key_audit_verdicts": {
+    "SUPPORTED": 43,
+    "FIXTURE_DEFECT": 1,
+    "UNRESOLVED": 4
+  },
+  "coders": {
+    "A": {
+      "type": "AI_SYNTHETIC_ONLY",
+      "exact_matches_descriptive": 48,
+      "total_cases": 48,
+      "boundaries": {
+        "POS -10/-5": {
+          "resolved_pairs": 1,
+          "total_pairs": 2,
+          "rate": 0.5,
+          "threshold": 0.9,
+          "pass": false
+        },
+        "POS -5/0": {
+          "resolved_pairs": 2,
+          "total_pairs": 2,
+          "rate": 1.0,
+          "threshold": 0.9,
+          "pass": true
+        },
+        "POS 0/+5": {
+          "resolved_pairs": 1,
+          "total_pairs": 2,
+          "rate": 0.5,
+          "threshold": 0.9,
+          "pass": false
+        },
+        "POS +5/+10": {
+          "resolved_pairs": 1,
+          "total_pairs": 2,
+          "rate": 0.5,
+          "threshold": 0.9,
+          "pass": false
+        },
+        "KVS 0/2": {
+          "resolved_pairs": 2,
+          "total_pairs": 2,
+          "rate": 1.0,
+          "threshold": 0.9,
+          "pass": true
+        },
+        "KVS 2/5": {
+          "resolved_pairs": 2,
+          "total_pairs": 2,
+          "rate": 1.0,
+          "threshold": 0.9,
+          "pass": true
+        },
+        "KVS 5/8": {
+          "resolved_pairs": 2,
+          "total_pairs": 2,
+          "rate": 1.0,
+          "threshold": 0.9,
+          "pass": true
+        },
+        "KVS 8/10": {
+          "resolved_pairs": 2,
+          "total_pairs": 2,
+          "rate": 1.0,
+          "threshold": 0.9,
+          "pass": true
+        }
+      },
+      "pair_results": [
+        {
+          "pair_id": "PAIR-01",
+          "members": [
+            "SYN-H11-026",
+            "SYN-H11-022"
+          ],
+          "resolved": false
+        },
+        {
+          "pair_id": "PAIR-02",
+          "members": [
+            "SYN-H11-040",
+            "SYN-H11-002"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-03",
+          "members": [
+            "SYN-H11-019",
+            "SYN-H11-035"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-04",
+          "members": [
+            "SYN-H11-016",
+            "SYN-H11-029"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-05",
+          "members": [
+            "SYN-H11-047",
+            "SYN-H11-018"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-06",
+          "members": [
+            "SYN-H11-004",
+            "SYN-H11-037"
+          ],
+          "resolved": false
+        },
+        {
+          "pair_id": "PAIR-07",
+          "members": [
+            "SYN-H11-030",
+            "SYN-H11-032"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-08",
+          "members": [
+            "SYN-H11-039",
+            "SYN-H11-041"
+          ],
+          "resolved": false
+        },
+        {
+          "pair_id": "PAIR-09",
+          "members": [
+            "SYN-H11-011",
+            "SYN-H11-028"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-10",
+          "members": [
+            "SYN-H11-025",
+            "SYN-H11-021"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-11",
+          "members": [
+            "SYN-H11-001",
+            "SYN-H11-046"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-12",
+          "members": [
+            "SYN-H11-007",
+            "SYN-H11-044"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-13",
+          "members": [
+            "SYN-H11-043",
+            "SYN-H11-006"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-14",
+          "members": [
+            "SYN-H11-015",
+            "SYN-H11-045"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-15",
+          "members": [
+            "SYN-H11-036",
+            "SYN-H11-017"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-16",
+          "members": [
+            "SYN-H11-024",
+            "SYN-H11-031"
+          ],
+          "resolved": true
+        }
+      ],
+      "numbers_contrary_to_frozen_refusal_intents": [],
+      "refusal_errors": [],
+      "uncertified_positive_probes": [
+        "SYN-H11-042"
+      ],
+      "uncertified_cases": [
+        "SYN-H11-004",
+        "SYN-H11-022",
+        "SYN-H11-037",
+        "SYN-H11-039",
+        "SYN-H11-042"
+      ],
+      "uncertified_reason_types": {
+        "SYN-H11-004": "KEY_OR_FIXTURE_AMBIGUITY",
+        "SYN-H11-022": "KEY_OR_FIXTURE_AMBIGUITY",
+        "SYN-H11-037": "KEY_OR_FIXTURE_AMBIGUITY",
+        "SYN-H11-039": "KEY_OR_FIXTURE_AMBIGUITY",
+        "SYN-H11-042": "KEY_OR_FIXTURE_AMBIGUITY"
+      }
+    },
+    "B": {
+      "type": "AI_SYNTHETIC_ONLY",
+      "exact_matches_descriptive": 48,
+      "total_cases": 48,
+      "boundaries": {
+        "POS -10/-5": {
+          "resolved_pairs": 1,
+          "total_pairs": 2,
+          "rate": 0.5,
+          "threshold": 0.9,
+          "pass": false
+        },
+        "POS -5/0": {
+          "resolved_pairs": 2,
+          "total_pairs": 2,
+          "rate": 1.0,
+          "threshold": 0.9,
+          "pass": true
+        },
+        "POS 0/+5": {
+          "resolved_pairs": 1,
+          "total_pairs": 2,
+          "rate": 0.5,
+          "threshold": 0.9,
+          "pass": false
+        },
+        "POS +5/+10": {
+          "resolved_pairs": 1,
+          "total_pairs": 2,
+          "rate": 0.5,
+          "threshold": 0.9,
+          "pass": false
+        },
+        "KVS 0/2": {
+          "resolved_pairs": 2,
+          "total_pairs": 2,
+          "rate": 1.0,
+          "threshold": 0.9,
+          "pass": true
+        },
+        "KVS 2/5": {
+          "resolved_pairs": 2,
+          "total_pairs": 2,
+          "rate": 1.0,
+          "threshold": 0.9,
+          "pass": true
+        },
+        "KVS 5/8": {
+          "resolved_pairs": 2,
+          "total_pairs": 2,
+          "rate": 1.0,
+          "threshold": 0.9,
+          "pass": true
+        },
+        "KVS 8/10": {
+          "resolved_pairs": 2,
+          "total_pairs": 2,
+          "rate": 1.0,
+          "threshold": 0.9,
+          "pass": true
+        }
+      },
+      "pair_results": [
+        {
+          "pair_id": "PAIR-01",
+          "members": [
+            "SYN-H11-026",
+            "SYN-H11-022"
+          ],
+          "resolved": false
+        },
+        {
+          "pair_id": "PAIR-02",
+          "members": [
+            "SYN-H11-040",
+            "SYN-H11-002"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-03",
+          "members": [
+            "SYN-H11-019",
+            "SYN-H11-035"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-04",
+          "members": [
+            "SYN-H11-016",
+            "SYN-H11-029"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-05",
+          "members": [
+            "SYN-H11-047",
+            "SYN-H11-018"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-06",
+          "members": [
+            "SYN-H11-004",
+            "SYN-H11-037"
+          ],
+          "resolved": false
+        },
+        {
+          "pair_id": "PAIR-07",
+          "members": [
+            "SYN-H11-030",
+            "SYN-H11-032"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-08",
+          "members": [
+            "SYN-H11-039",
+            "SYN-H11-041"
+          ],
+          "resolved": false
+        },
+        {
+          "pair_id": "PAIR-09",
+          "members": [
+            "SYN-H11-011",
+            "SYN-H11-028"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-10",
+          "members": [
+            "SYN-H11-025",
+            "SYN-H11-021"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-11",
+          "members": [
+            "SYN-H11-001",
+            "SYN-H11-046"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-12",
+          "members": [
+            "SYN-H11-007",
+            "SYN-H11-044"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-13",
+          "members": [
+            "SYN-H11-043",
+            "SYN-H11-006"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-14",
+          "members": [
+            "SYN-H11-015",
+            "SYN-H11-045"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-15",
+          "members": [
+            "SYN-H11-036",
+            "SYN-H11-017"
+          ],
+          "resolved": true
+        },
+        {
+          "pair_id": "PAIR-16",
+          "members": [
+            "SYN-H11-024",
+            "SYN-H11-031"
+          ],
+          "resolved": true
+        }
+      ],
+      "numbers_contrary_to_frozen_refusal_intents": [],
+      "refusal_errors": [],
+      "uncertified_positive_probes": [
+        "SYN-H11-042"
+      ],
+      "uncertified_cases": [
+        "SYN-H11-004",
+        "SYN-H11-022",
+        "SYN-H11-037",
+        "SYN-H11-039",
+        "SYN-H11-042"
+      ],
+      "uncertified_reason_types": {
+        "SYN-H11-004": "KEY_OR_FIXTURE_AMBIGUITY",
+        "SYN-H11-022": "KEY_OR_FIXTURE_AMBIGUITY",
+        "SYN-H11-037": "KEY_OR_FIXTURE_AMBIGUITY",
+        "SYN-H11-039": "KEY_OR_FIXTURE_AMBIGUITY",
+        "SYN-H11-042": "KEY_OR_FIXTURE_AMBIGUITY"
+      }
+    }
+  },
+  "input_sha256": {
+    "INTENDED_KEY.json": "0813e724287d7f0c42cddeb5b00a057a145b1eb5dca4c141b5ef05b27a3c2874",
+    "FREEZE_MANIFEST.json": "2738587fabd7af22dab82746756a5ece7db445e512829b5bd2a5f29463123a7f",
+    "KEY_AUDIT.json": "4850aeae793efbe8b864e8475ef1a8b0ff9706bf388345e31b133a306e811eac",
+    "AUDITOR_PRE_KEY_REVIEW.json": "cc33cb4f4b62acc730d6250fa1ed11cf38290dc6410c0cbdd689aab8ee7cbc21",
+    "RATIONALE_AUDIT.json": "05f8ff07aa5ea0d5c70c418e735374079cdb0f92c38bd1110348ceadc9c72b5d",
+    "ANONYMIZED_RESPONSE_BINDING.json": "65a3a0e9747dbb3a16df14eb0cb044607da0599b2a36c86e9bf43d12526a1835",
+    "ANONYMIZED_RESPONSES.json": "fe61819e075c9bcf09b14ad2dca1ce8a69d7f3092b19db3d8bc5068843dd0dfa",
+    "REVIEW_RUN_MANIFEST.json": "709929b84fc38ee966b6542737574343bbf0a3c673725d60ffa9eae32560937e",
+    "AI_CODER_A.json": "2c586c80126c19a8c52ae50b7bdf2a55388e1a158fcaade2c701b784e502e406",
+    "AI_CODER_B.json": "9db4d9d9967344782b8ae68eccd02545a69720dd47624f4c434a65fb7e4d0c56"
+  },
+  "limits": [
+    "Synthetic instruction test, not empirical model validation or HUMAN reliability.",
+    "Pairs with unsupported/ambiguous intended answers remain in the denominator but cannot be certified. Such failures are not automatically coder errors.",
+    "Separate fresh AI contexts; same model family and shared filesystem are not an enforced double blind.",
+    "Author created both new scenarios and intended key, but did not supply coder answers.",
+    "Two paired contrasts per boundary are a small designed sample, not a statistical guarantee."
+  ]
+}
