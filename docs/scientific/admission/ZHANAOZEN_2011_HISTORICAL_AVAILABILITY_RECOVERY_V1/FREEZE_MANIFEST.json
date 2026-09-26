@@ -1,0 +1,67 @@
+{
+  "freeze_id": "ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1",
+  "frozen_at_utc": "2026-09-26T16:11:33.963531+00:00",
+  "base_commit": "0777f1704f920941198f68d8b62cb4f5cbf600eb",
+  "cutoff": "2011-12-15T23:59:59Z",
+  "audience": "COORDINATOR_ONLY_NOT_A_CODER_PACKET",
+  "overall_gate": "BLOCKED",
+  "HUMAN": "NOT_STARTED",
+  "no_coder_answers": true,
+  "frozen_chain_mutations": 0,
+  "previous_artifacts": [
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HUMAN_PILOT_ADMISSION_V1/ADMISSION_AUDIT.json",
+      "sha256": "0f4aefb5dcbdf76ff28d1c8647334bf47cb8b5d8d7f2b2be4eb808ee741ffa75",
+      "bytes": 229125
+    },
+    {
+      "path": "docs/scientific/ZHANAOZEN_2011_HUMAN_PILOT_ADMISSION_REPORT.md",
+      "sha256": "064b8923262fe085e10f79bd26730b34c2424c3eaed57574d2db156a5761fa31",
+      "bytes": 56140
+    },
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HUMAN_PILOT_ADMISSION_V1/ADMISSION_CHECKS.json",
+      "sha256": "1c605418d2b63001481e26240b76d3a7b639101540f124b5590184ae4fb2061f",
+      "bytes": 24418
+    }
+  ],
+  "original_pilot_outer_manifest_sha256": "fbf2fe0540738a8e356162d4dbe715c6141719a8224204f360dbdc8022241d6e",
+  "files": [
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+      "sha256": "24638c284ca258f0aec9fab5166260471b6b4f662f5747de0c2da5f3e17aa4da",
+      "bytes": 82780
+    },
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/CONTEXT_ATTRIBUTION_TRANSLATION.json",
+      "sha256": "6a9a5574b1653e43ddb9a47169e66e3221bbe61ee895ed32dbd6891ca801ad92",
+      "bytes": 107214
+    },
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/ADMISSION_REASSESSMENT.json",
+      "sha256": "7cf35cd083b899aaa9635daa4292a2a63f6a004e02232c3711b38f6f2ede9199",
+      "bytes": 46874
+    },
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/SEARCH_LEDGER.json",
+      "sha256": "63e264d7010bee38dea3ccd7c4a80174ea82b207947b7704e5f64aa66fbb5a4a",
+      "bytes": 251461
+    },
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/HUMAN_REVIEW_QUEUE.md",
+      "sha256": "1b1eca0adb104aac257b7ae99539a67a6525d986b972871ee4ca76973e816593",
+      "bytes": 10321
+    },
+    {
+      "path": "docs/scientific/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_REPORT.md",
+      "sha256": "172e4e88da236379b1082d89148533621d63da7f1d91aa2eec13ec6ce6e97260",
+      "bytes": 19183
+    },
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/RECOVERY_CHECKS.json",
+      "sha256": "d72118da26e099a8a0bb90aa55caab50154ed5db9971c632285dd3945bd3e9ba",
+      "bytes": 23878
+    }
+  ],
+  "self_hash_convention": "Self SHA-256 recorded in delivery receipt and PR; not recursively embedded."
+}

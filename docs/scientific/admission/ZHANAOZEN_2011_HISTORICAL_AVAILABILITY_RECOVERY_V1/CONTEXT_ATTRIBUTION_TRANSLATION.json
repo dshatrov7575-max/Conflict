@@ -1,0 +1,1390 @@
+{
+  "base_commit": "0777f1704f920941198f68d8b62cb4f5cbf600eb",
+  "audit_at_utc": "2026-09-26T16:11:33.963531+00:00",
+  "coordinator_only": true,
+  "version_context_reviews": [
+    {
+      "label": "D01",
+      "document_version_id": "64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "basis": "AUTHENTICATED_PRE_CUTOFF_WITNESS",
+      "witness_ids": [
+        "AW-D01-20110521181520",
+        "AW-D01-20110811165523"
+      ],
+      "source_url": "https://www.rferl.org/a/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+      "speaker": "RFE/RL пересказывает Наталью Соколову, юриста независимых профсоюзов региона; речь о бастующих Каражанбаса.",
+      "recovered": "Восстановлены говорящий, адресат требования и связь с работниками основного предприятия; доступен полный архивный абзац.",
+      "remaining": "Не установлен мандат на всех работников основных предприятий GU01 и действие этого сообщения на cutoff. Demand fragment не равен полной оценке всего R.",
+      "locator": "Основной текст статьи, абзац с атрибуцией Соколовой.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D03",
+      "document_version_id": "ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "basis": "AUTHENTICATED_PRE_CUTOFF_WITNESS",
+      "witness_ids": [
+        "AW-D03-20110527054702",
+        "AW-D03-20110916223846"
+      ],
+      "source_url": "https://www.rferl.org/a/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+      "speaker": "RFE/RL; о голодающих и требованиях сообщает пресс-секретарь OzenMunaiGaz Эстай Карашаев, затем авторский пересказ.",
+      "recovered": "Архивная статья восстанавливает пропущенное действие начали голодовку, название компании, 26 мая и коллективный договор. Это сообщение пресс-секретаря о работниках, а не прямая коллективная декларация.",
+      "remaining": "Широкий групповой мандат GU01 и собственное отношение всей группы к R не установлены. Frozen fragment и Fact не переписаны.",
+      "locator": "Основной текст, первые четыре абзаца.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D04",
+      "document_version_id": "adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "basis": "AUTHENTICATED_PRE_CUTOFF_WITNESS",
+      "witness_ids": [
+        "AW-D04-20110529132216"
+      ],
+      "source_url": "https://www.rferl.org/a/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+      "speaker": "RFE/RL о бастующих QarazhanbasMunai; есть анонимный участник, объясняющий увольнения.",
+      "recovered": "Исторический контекст однозначно называет QarazhanbasMunai. Пробел названия работодателя закрыт.",
+      "remaining": "Этот работодатель относится к основным предприятиям; материал не устанавливает принадлежность говорящих именно к подрядчикам GU02. Перенос на GU02 не обоснован.",
+      "locator": "Основной текст, абзацы о работодателе, увольнениях и требованиях.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D05",
+      "document_version_id": "3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "basis": "AUTHENTICATED_PRE_CUTOFF_WITNESS",
+      "witness_ids": [
+        "AW-D05-20110629041259",
+        "AW-D05-20110918081249"
+      ],
+      "source_url": "https://www.rferl.org/a/kazakhstan_oil_workers_protests/24221366.html",
+      "speaker": "RFE/RL и участник Куаныш Сисембаев о задержаниях; утверждение о законности приписано Генеральной прокуратуре.",
+      "recovered": "Восстановлены дата акции 5 июня, место Актау, участники Qarazhanbasmunai и субъект утверждения о законности.",
+      "remaining": "Слова прокуратуры не являются словами работников GU01/GU03. Для GU08 установлен конкретный орган и эпизод, но не мандат на всю группу органов и весь R.",
+      "locator": "Основной текст, абзацы о шествии и следующем сообщении прокуратуры.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D06",
+      "document_version_id": "bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "basis": "AUTHENTICATED_PRE_CUTOFF_WITNESS",
+      "witness_ids": [
+        "AW-D06-20110716171000"
+      ],
+      "source_url": "https://www.azattyq.org/a/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+      "speaker": "Сания Тойкен / Азаттық; сообщение о собравшихся нефтяниках, их семьях и населении города.",
+      "recovered": "Архив восстанавливает место, ближайшие события июля и контекст семей участников; exact Kazakh fragment подтверждён.",
+      "remaining": "Состав жителей вне нефтегазовых трудовых групп GU04 не выделен. Ночёвка на площади не является собственным высказыванием всех таких жителей. Предлагаемый перевод KK требует языковой проверки.",
+      "locator": "Основной текст, вводный абзац после даты 11.07.2011.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D07",
+      "document_version_id": "3dcd5aa1-e2a9-5dd9-a2d9-992f9c80e835",
+      "basis": "CURRENT_PUBLISHER_CONTENT_ONLY_NOT_HISTORICAL_PROOF",
+      "witness_ids": [],
+      "source_url": "https://rus.azattyq.org/a/oil_workers_strike_kazakhstan/24279930.html",
+      "speaker": "В текущей статье Азамата Майтанова цитируется пресс-релиз РД КМГ от 27 июля; число резюме относится к отделу кадров Озенмунайгаза.",
+      "recovered": "В текущем тексте найдены субъект статистики, назначение резюме и контекст замещения рабочих мест.",
+      "remaining": "Историческая сохранность этого текста не доказана; статистика компании не является отношением жителей GU04 к достаточности доступа.",
+      "locator": "Текущая статья, раздел об увольнениях, абзац с 3400 резюме.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D09",
+      "document_version_id": "f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "basis": "AUTHENTICATED_PRE_CUTOFF_WITNESS",
+      "witness_ids": [
+        "AW-D09-20110809011049",
+        "AW-D09-20111022101958"
+      ],
+      "source_url": "https://www.rferl.org/a/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+      "speaker": "RFE/RL сообщает о решении судьи Гульмаржан Адиль-Султани в отношении Натальи Соколовой.",
+      "recovered": "Архив восстанавливает имя, судью, дату 8 августа и условие запрета деятельности после освобождения.",
+      "remaining": "Судебное событие не переносится на собственную оценку GU01/GU03. Один судебный акт не устанавливает общую позицию всех органов GU08.",
+      "locator": "Основной текст, первые два абзаца.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D13",
+      "document_version_id": "00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "basis": "AUTHENTICATED_PRE_CUTOFF_WITNESS",
+      "witness_ids": [
+        "AW-D13-20110918124424",
+        "AW-D13-20111024200546"
+      ],
+      "source_url": "https://www.rferl.org/a/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+      "speaker": "Артур Нигметов / RFE/RL; конкретный участник — Мырзабай Лесов, водитель OzenMunaiGaz.",
+      "recovered": "Архивный контекст связывает требование оплаты с Лесовым и указывает предприятие, профессию и участие с мая.",
+      "remaining": "Это индивидуальное свидетельство; представительство всех GU01 или уволенных/соискателей GU03 не установлено. Факт увольнения именно Лесова из данного фрагмента не следует.",
+      "locator": "Начало основного текста и абзац после вводной истории семьи.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D14",
+      "document_version_id": "3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "basis": "AUTHENTICATED_PRE_CUTOFF_WITNESS",
+      "witness_ids": [
+        "AW-D14-20110927202906",
+        "AW-D14-20111106041751"
+      ],
+      "source_url": "https://www.rferl.org/a/kazakhstan_oil_workers_lawyer/24341367.html",
+      "speaker": "RFE/RL сообщает о бастующих Qarazhanbasmunai и OzenMunaiGaz и числе уволенных.",
+      "recovered": "Исторический текст восстанавливает работодателей, начало забастовки и связь числа 410 с участниками.",
+      "remaining": "Число уволенных не является представительной оценкой всего GU03; местные соискатели отдельно не охвачены.",
+      "locator": "Завершающие абзацы основного текста о продолжающейся забастовке.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D15",
+      "document_version_id": "2d63f3f4-cb01-5b8c-b4ec-9bedb09b4363",
+      "basis": "CURRENT_PUBLISHER_CONTENT_ONLY_NOT_HISTORICAL_PROOF",
+      "witness_ids": [],
+      "source_url": "https://rus.azattyq.org/a/24350449.html",
+      "speaker": "Текущая заметка Азаттык пересказывает заявление РД КМГ от 6 октября в ответ ОСДП Азат.",
+      "recovered": "В текущей публикации установлены компания, повод опровержения и то, что сведения о предложенной работе — утверждение компании.",
+      "remaining": "Pre-cutoff редакция не доказана. Одна компания и восстановление конкретных уволенных не равны всей GU05 и доступу всех местных жителей.",
+      "locator": "Текущая заметка: заголовок и три абзаца основного текста.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D17",
+      "document_version_id": "e92b6b89-4e75-5f64-ac26-7dd8005c3d56",
+      "basis": "CURRENT_PUBLISHER_CONTENT_ONLY_NOT_HISTORICAL_PROOF",
+      "witness_ids": [],
+      "source_url": "https://iphronline.org/wp-content/uploads/2011/10/eng_labor_protests_briefing_paper_oct_2011.pdf",
+      "speaker": "Авторский обзор KIBHR/IPHR; суммарное описание работников нескольких предприятий, включая Ersai Caspian Contractor.",
+      "recovered": "Текущий официальный PDF раскрывает работодателей и круг протестов; locator — page 1, Summary/Short Background. Требования переданы авторами обзора.",
+      "remaining": "Доступность редакции до cutoff не доказана. Упоминание Ersai не атрибутирует каждый общий тезис именно GU02. MONTH не устанавливает день 1 октября; майская Fact-link не получает подтверждения даты из октябрьского общего описания.",
+      "locator": "Текущий PDF, страница 1, Summary и Short Background.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D18",
+      "document_version_id": "17608513-7164-5d30-9d2e-521338e323d7",
+      "basis": "AUTHENTICATED_PRE_CUTOFF_WITNESS",
+      "witness_ids": [
+        "AW-D18-20111016234632"
+      ],
+      "source_url": "https://www.osce.org/files/f/documents/4/b/82126.pdf",
+      "speaker": "Миссия США при ОБСЕ; заявление посла Иэна Келли на Постоянном совете 1 сентября.",
+      "recovered": "Официальное зеркало IIP Digital сохранено 16 октября 2011; оба exact fragments и окружающий абзац аутентифицированы архивным digest.",
+      "remaining": "Это оценка миссии США. Историческая доступность не превращает её в собственный голос GU01/GU03 и не доказывает идентичность позднего CP3 capture.",
+      "locator": "Официальное зеркало: начальный содержательный абзац заявления.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D19",
+      "document_version_id": "e85d2031-f492-5e93-b0ac-a7e84f27c7c7",
+      "basis": "CURRENT_PUBLISHER_CONTENT_ONLY_NOT_HISTORICAL_PROOF",
+      "witness_ids": [],
+      "source_url": "https://www.osce.org/files/f/documents/4/8/82141.pdf",
+      "speaker": "Заявление Европейского союза в Постоянном совете ОБСЕ №878; выступление 1 сентября, регистрация 2 сентября.",
+      "recovered": "Текущий официальный PDF получен с проверкой TLS; контекст устанавливает, что призыв о справедливом суде относится к Соколовой и исходит от ЕС.",
+      "remaining": "Printed dates и современный PDF не доказывают pre-cutoff доступность. ЕС не является GU03.",
+      "locator": "Текущий PDF, страница 1, абзац о намерении обжаловать приговор.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D20",
+      "document_version_id": "26b9e671-5e1e-5460-a80c-2e803ca81ba6",
+      "basis": "CURRENT_PUBLISHER_CONTENT_ONLY_NOT_HISTORICAL_PROOF",
+      "witness_ids": [],
+      "source_url": "https://cdn.osce.org/sites/default/files/f/documents/3/b/85058.pdf",
+      "speaker": "Делегация Республики Казахстан при ОБСЕ; ответ ЕС, речь 3 ноября, регистрация 4 ноября.",
+      "recovered": "Текущий официальный PDF устанавливает делегацию и дату судебного события; различены дата выступления и регистрации.",
+      "remaining": "Историческая доступность не доказана. Делегация не подменяет группы работников или совокупность всех судебных/надзорных органов; мандат на такое обобщение отсутствует.",
+      "locator": "Текущий PDF, страница 3, абзац о Соколовой.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D21",
+      "document_version_id": "d2eefc78-82b0-5eb7-b1ae-533745cbbd79",
+      "basis": "CURRENT_PUBLISHER_CONTENT_ONLY_NOT_HISTORICAL_PROOF",
+      "witness_ids": [],
+      "source_url": "https://kase.kz/files/emitters/RDGZ/rdgz_reliz_141111_e.pdf",
+      "speaker": "Релиз JSC KazMunaiGas Exploration Production о финансовых результатах первых девяти месяцев 2011 года.",
+      "recovered": "Текущий официальный PDF KASE связывает утверждение о падении добычи/экспорта с объяснением компании; locator page 1, второй bullet.",
+      "remaining": "Pre-cutoff bytes не доказаны. Производственный эффект не устанавливает собственный приоритет и не расширяет компанию до всей GU05.",
+      "locator": "Текущий PDF, страница 1, второй пункт результатов.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D22",
+      "document_version_id": "53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "basis": "AUTHENTICATED_PRE_CUTOFF_WITNESS",
+      "witness_ids": [
+        "AW-D22-20111120030853"
+      ],
+      "source_url": "https://www.lada.kz/society/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+      "speaker": "Игорь Нестеров / Lada; авторский отчёт о встрече с Биржаном Нурымбетовым; часть сведений атрибутирована акимату.",
+      "recovered": "Snapshot 20 ноября 2011 подтверждает fragment и полный абзац: встреча 15 ноября, около 40 нефтяников, региональные чиновники и представитель РД КМГ. Дата согласуется с frozen Fact. Маркер ДОПОЛНЕНО уже присутствует в snapshot до cutoff.",
+      "remaining": "Присутствие вице-министра устанавливает участника центрального ведомства, но не самостоятельное групповое отношение всей GU07 к точному R. Обновление не датируется одним publication_date.",
+      "locator": "Основной текст после заголовка: первые три абзаца.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D23",
+      "document_version_id": "02248e81-d235-5306-aef3-5dec2af93ebb",
+      "basis": "CURRENT_PUBLISHER_CONTENT_ONLY_NOT_HISTORICAL_PROOF",
+      "witness_ids": [],
+      "source_url": "https://www.lada.kz/aktau_news/society/1209-bastuyuschim-neftyanikam-zhanaozeni-23-noyabrya-budet-predostavlena-poslednyaya-vozmozhnost-trudoustroitsya.html",
+      "speaker": "Игорь Нестеров / Lada пересказывает заместителя акима Амангельды Айткулова; Nomad воспроизводит заметку с атрибуцией.",
+      "recovered": "В текущем тексте восстановлены говорящий, знаменатель 989 и круг рабочих мест; найдена отдельная копия Nomad, но ближайший полученный capture относится к 2013 году.",
+      "remaining": "Ни publisher date 22 ноября, ни дата Nomad 23 ноября не доказывают pre-cutoff bytes. Это региональный чиновник, не голос жителей/работодателей/центральной власти целиком.",
+      "locator": "Текущая статья, первые два содержательных абзаца; Nomad — блок с кредитом Lada.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D24",
+      "document_version_id": "d3b8d52c-3dbb-5d07-84bd-e07acf35fbbb",
+      "basis": "CURRENT_PUBLISHER_CONTENT_ONLY_NOT_HISTORICAL_PROOF",
+      "witness_ids": [],
+      "source_url": "https://www.lada.kz/aktau_news/society/1264-bastuyuschie-neftyaniki-zhanaozenya-razocharovany-primiritelnaya-komissiya-okazalas-razyasnitelnoy.html",
+      "speaker": "Игорь Нестеров / Lada, перечисление сторон встречи; далее комментарий Айжангуль Амировой.",
+      "recovered": "Текущий основной текст восстанавливает компании, бастующих, министерство и региональный акимат. Lead и body имеют различающиеся написания названия города; exact frozen phrase найдена в body.",
+      "remaining": "Pre-cutoff редакция не доказана. Участие этих сторон не устанавливает представительство жителей GU04 вне трудовых групп.",
+      "locator": "Текущий body, первый абзац; отдельно от lead и комментариев читателей.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D25",
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "basis": "AUTHENTICATED_PRE_CUTOFF_WITNESS",
+      "witness_ids": [
+        "AW-D25-20111016060958",
+        "AW-D25-20111116125247"
+      ],
+      "source_url": "https://eurasianet.org/kazakhstan-labor-dispute-dragging-energy-production-down",
+      "speaker": "Джоанна Лиллис / EurasiaNet; отдельно переданы утверждения KMG EP и требования группы уволенных работников.",
+      "recovered": "Архив старого URL /node/64310 подтверждает все три exact fragments. Контекст связывает справедливую оплату и шесть повышений с KMG EP, а восстановление и пересмотр оплаты — с уволенными работниками компании.",
+      "remaining": "Компания не получает мандат на всю GU05; конкретная подгруппа уволенных не представляет автоматически бывших работников и всех местных соискателей GU03. Два голоса сохраняются раздельно.",
+      "locator": "Основной текст: абзацы об утверждении компании и затем о требованиях группы уволенных в Жанаозене.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    },
+    {
+      "label": "D29",
+      "document_version_id": "9b1dfe95-b290-533c-9414-d8f18d880b1d",
+      "basis": "CURRENT_PUBLISHER_CONTENT_ONLY_NOT_HISTORICAL_PROOF",
+      "witness_ids": [],
+      "source_url": "https://tengrinews.kz/kazakhstan_news/vitse-ministr-truda-sotszaschityi-naseleniya-vstretilsya-201539/",
+      "speaker": "Текущая заметка Tengrinews о встрече с вице-министром; фраза о трудоустройстве — ожидаемая повестка следующей встречи.",
+      "recovered": "Восстановлена модальность ожидания: предполагается последующее обсуждение, а не состоявшееся решение. Найденный ближайший snapshot короткого URL — 26 января 2012, после cutoff.",
+      "remaining": "Pre-cutoff текст не доказан; сообщение о повестке не устанавливает собственную позицию всей GU07.",
+      "locator": "Текущий основной текст, предложение о завтрашней встрече.",
+      "group_coverage": "NOT_ESTABLISHED_FOR_FULL_FROZEN_GROUP",
+      "new_text_inserted_into_H1_H2": false
+    }
+  ],
+  "fragment_language_translation_reviews": [
+    {
+      "fragment_id": "04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+      "document_version_id": "3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "label": "D05",
+      "original_language": "en",
+      "original_text": "At least 37 protesters were detained.",
+      "original_sha256": "ab4dc3c216b97bcee60d18ae1d4baaef37cb57874ca34ee2b3f15144387784d0",
+      "translation_ru_candidate": "Не менее 37 протестующих были задержаны.",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "150704f4-c65a-50f4-b758-b9b456f909ff",
+      "document_version_id": "26b9e671-5e1e-5460-a80c-2e803ca81ba6",
+      "label": "D20",
+      "original_language": "en",
+      "original_text": "Natalya Sokolova was sentenced to six years of imprisonment",
+      "original_sha256": "20167c0443bca4fe1ca09d3851f8e0cec3d3c9eb9d009796e0842abda2a3a937",
+      "translation_ru_candidate": "Наталья Соколова была приговорена к шести годам лишения свободы",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": false,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "15e6b7e7-98f3-5830-8d5d-ae44862e445a",
+      "document_version_id": "e92b6b89-4e75-5f64-ac26-7dd8005c3d56",
+      "label": "D17",
+      "original_language": "en",
+      "original_text": "demanding fair pay and work conditions",
+      "original_sha256": "086dcc0d8d259aeddb5dc4abbb43dbecfdc2f2474675aa881fe00d2a2f6dadd6",
+      "translation_ru_candidate": "требуя справедливой оплаты и условий труда",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": false,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "2c47a771-1301-55be-a2ab-9b2ef1f82510",
+      "document_version_id": "f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "label": "D09",
+      "original_language": "en",
+      "original_text": "barred from performing legal or social activities",
+      "original_sha256": "18eb28e3682e26881c00f5ad81dbdc60ded9be207f68e3f6b21b2e7da960a980",
+      "translation_ru_candidate": "запрещено заниматься юридической или общественной деятельностью",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "33ce2949-0da2-5839-9b01-566ae7e4bbf4",
+      "document_version_id": "17608513-7164-5d30-9d2e-521338e323d7",
+      "label": "D18",
+      "original_language": "en",
+      "original_text": "trial appears to have been marred by violations of procedural due process",
+      "original_sha256": "adb59f91fd4d4ae7248581db6ff0d94ac88c9b1933c914af2065cd1254d7038a",
+      "translation_ru_candidate": "судебное разбирательство, по-видимому, сопровождалось нарушениями надлежащей правовой процедуры",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно.",
+        "Осторожная модальность appears и голос США сохранены; это не оценка работников."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "3832d42b-4806-56e6-8281-575100f9201b",
+      "document_version_id": "2d63f3f4-cb01-5b8c-b4ec-9bedb09b4363",
+      "label": "D15",
+      "original_language": "ru",
+      "original_text": "не намерен восстанавливать на работе уволенных нефтяников",
+      "original_sha256": "83cd82e69db496d805d45278f441ea0f7c6a25de5a6610b8fe8eab9d0f869be4",
+      "translation_ru_candidate": null,
+      "translation_status": "NOT_NEEDED_ORIGINAL_RUSSIAN",
+      "historical_original_proven": false,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "3c9cca86-6ba6-58ee-a6a1-b4c6aade6f54",
+      "document_version_id": "2d63f3f4-cb01-5b8c-b4ec-9bedb09b4363",
+      "label": "D15",
+      "original_language": "ru",
+      "original_text": "уволенным неоднократно предлагалась работа в сервисных компаниях",
+      "original_sha256": "912ca9dbbf869b23e885ab3855ecb4c0c36b8bb64ff6e98b3f314cc66923e64e",
+      "translation_ru_candidate": null,
+      "translation_status": "NOT_NEEDED_ORIGINAL_RUSSIAN",
+      "historical_original_proven": false,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "3ca46849-549e-544d-b72c-d62ef1706612",
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "label": "D25",
+      "original_language": "en",
+      "original_text": "company insists that its employees are fairly compensated",
+      "original_sha256": "f7760687e7aaae5d2ed74a264f94485465395efdc8c17afd5deb89c452a4d86c",
+      "translation_ru_candidate": "компания настаивает, что её работники получают справедливую оплату",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "49c356b3-3585-587c-9573-d4326e97de77",
+      "document_version_id": "3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "label": "D14",
+      "original_language": "en",
+      "original_text": "Some 410 of the workers have been fired since the strike began",
+      "original_sha256": "98437a034ea0d186a2958940f557068d943d9faa351a3aad6aa2c2014a7087da",
+      "translation_ru_candidate": "Около 410 работников были уволены с начала забастовки",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "51e5ac30-63a9-5433-8472-a22727f1db36",
+      "document_version_id": "e92b6b89-4e75-5f64-ac26-7dd8005c3d56",
+      "label": "D17",
+      "original_language": "en",
+      "original_text": "thousands of oil industry workers have been striking and protesting",
+      "original_sha256": "5e6796f746e563e5a6fddabab4019c9d76bc0029a29821d2fc9ad8421ff057c5",
+      "translation_ru_candidate": "тысячи работников нефтяной отрасли бастуют и участвуют в протестах",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": false,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "56d19d98-707a-5deb-9472-d355b3835d79",
+      "document_version_id": "00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "label": "D13",
+      "original_language": "en",
+      "original_text": "demanding payment of unfulfilled wage hikes and better labor conditions",
+      "original_sha256": "0f6e3a6f15d8d509f36975eb0e400f93343a910a52a9d44f1d1933c7d61e7828",
+      "translation_ru_candidate": "требуя выплат по нереализованным повышениям заработной платы и улучшения условий труда",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно.",
+        "Оборот unfulfilled wage hikes оставлен рядом с EN оригиналом; окончательный выбор русской формулировки требует языкового review."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "6295e487-c225-5445-ae8b-653d1691579a",
+      "document_version_id": "d2eefc78-82b0-5eb7-b1ae-533745cbbd79",
+      "label": "D21",
+      "original_language": "en",
+      "original_text": "production and export decline due to the illegal strike",
+      "original_sha256": "d4c41baf5312f53d2607b18887ca0edac2a7a387fbd2f767f2abbddf2f5b47f2",
+      "translation_ru_candidate": "снижение добычи и экспорта вследствие незаконной забастовки",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": false,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно.",
+        "Определение illegal сохранено как формулировка компании; аудит не делает собственного юридического вывода."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "7d82ddb5-b949-59af-90b3-3da2bc4691ad",
+      "document_version_id": "02248e81-d235-5306-aef3-5dec2af93ebb",
+      "label": "D23",
+      "original_language": "ru",
+      "original_text": "за трудоустройством обратилось всего шесть человек",
+      "original_sha256": "202a7d8190bc7f705cc8c450853308110a72f4fa2804f148eb9644e8b412924c",
+      "translation_ru_candidate": null,
+      "translation_status": "NOT_NEEDED_ORIGINAL_RUSSIAN",
+      "historical_original_proven": false,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "7f0b0752-387d-5def-ba3d-ab11c4f1414b",
+      "document_version_id": "adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "label": "D04",
+      "original_language": "en",
+      "original_text": "lifting of restrictions on the activities of independent trade unions",
+      "original_sha256": "ac6e8cc659989a1ad7641a8c281b51f933f1c71cec3ac21505f917005f7d11fe",
+      "translation_ru_candidate": "снятие ограничений на деятельность независимых профсоюзов",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94",
+      "document_version_id": "f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "label": "D09",
+      "original_language": "en",
+      "original_text": "sentenced to six years in jail",
+      "original_sha256": "801c305068af1eba96cc54ba1006f05bb94bc72ca2f18555a94eeacac2f722c8",
+      "translation_ru_candidate": "приговорена к шести годам лишения свободы",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно.",
+        "Женский род восстановлен по исторически названной Соколовой, а не из изолированной английской конструкции."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "a7869dd7-97d1-56de-86b4-aadf1e970c0a",
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "label": "D25",
+      "original_language": "en",
+      "original_text": "has raised salaries six times since 2008",
+      "original_sha256": "57481ba5d7b8f7cc36f5f4ab9281d1e9a35e6b4e931cc6d4f3c427403cbb23b8",
+      "translation_ru_candidate": "повышала заработную плату шесть раз с 2008 года",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "ab55c516-12dc-5533-9e87-a950a6e61b3e",
+      "document_version_id": "53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "label": "D22",
+      "original_language": "ru",
+      "original_text": "На встречу пришли около 40 нефтяников",
+      "original_sha256": "b148d270bcae31abceaffc93ac1b5fb9319a992ceed42faf19acac5a221cff59",
+      "translation_ru_candidate": null,
+      "translation_status": "NOT_NEEDED_ORIGINAL_RUSSIAN",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "b344006d-0950-57af-b0e7-60eb7b4f5217",
+      "document_version_id": "3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "label": "D05",
+      "original_language": "en",
+      "original_text": "police action in Aqtau was legal",
+      "original_sha256": "e90581178df54e8aa90d72fcbe9c488fa57139002797126a3014ebeff56c1340",
+      "translation_ru_candidate": "действия полиции в Актау были законными",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "b5fdecb6-2ac4-5f56-aae6-6aef4bb7b956",
+      "document_version_id": "17608513-7164-5d30-9d2e-521338e323d7",
+      "label": "D18",
+      "original_language": "en",
+      "original_text": "sentencing to six years imprisonment of Natalya Sokolova",
+      "original_sha256": "a4cd7f69647c69aac6ae7658e8bc3c7ecb7f1038ba3e427a139a5baf7f125c84",
+      "translation_ru_candidate": "осуждение Натальи Соколовой к шести годам лишения свободы",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно.",
+        "Осторожная модальность appears и голос США сохранены; это не оценка работников."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "b9981fe5-0c46-5bd0-91ad-1f2e8a1f2aff",
+      "document_version_id": "9b1dfe95-b290-533c-9414-d8f18d880b1d",
+      "label": "D29",
+      "original_language": "ru",
+      "original_text": "вопросы трудоустройства уволенных рабочих",
+      "original_sha256": "2ecc78bf75c2e118de5f158d0934f5fa66221aa7f687b1bdb83eb0fc554e233b",
+      "translation_ru_candidate": null,
+      "translation_status": "NOT_NEEDED_ORIGINAL_RUSSIAN",
+      "historical_original_proven": false,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "bbf0a151-afb1-57cd-9c19-cba3f5319e42",
+      "document_version_id": "d3b8d52c-3dbb-5d07-84bd-e07acf35fbbb",
+      "label": "D24",
+      "original_language": "ru",
+      "original_text": "Три дня в городе Жанаозен проходила трехсторонняя встреча",
+      "original_sha256": "3d3cac8c646df7fb27557676849d966a50ecb64ddccf01c8afb9768bb05f7808",
+      "translation_ru_candidate": null,
+      "translation_status": "NOT_NEEDED_ORIGINAL_RUSSIAN",
+      "historical_original_proven": false,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "cc839407-9eb7-5e05-acca-70f1577883d4",
+      "document_version_id": "ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "label": "D03",
+      "original_language": "en",
+      "original_text": "demanding the revision of the collective contract",
+      "original_sha256": "280cab66370750738b1f3e917eedf2c571038385e7cd6829763f6a3955de093c",
+      "translation_ru_candidate": "требуя пересмотра коллективного договора",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "d1067ad6-51d6-5a42-b6ea-8cf74c4fd71c",
+      "document_version_id": "bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "label": "D06",
+      "original_language": "kk",
+      "original_text": "мұнайшылар мен қала халқы бірнеше күн алаңда түнеді",
+      "original_sha256": "09c5ced1e64fcfd9a723ca63cba4eeca4827045e8da09294f02acf025e97cc81",
+      "translation_ru_candidate": "нефтяники и жители города в течение нескольких дней ночевали на площади",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно.",
+        "қала халқы не содержит исключения нефтегазовых трудовых групп; это исключение нельзя добавлять переводом."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "d3e6a365-8150-545b-8005-c18c4939142b",
+      "document_version_id": "64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "label": "D01",
+      "original_language": "en",
+      "original_text": "strikers are demanding a pay rise",
+      "original_sha256": "fc3fefbdcd67497c70405602e47bb7a3d29bcac9e8ea5faba2dc5cfd68734901",
+      "translation_ru_candidate": "бастующие требуют повышения заработной платы",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "d521033f-59ce-5518-9227-b5fe9cb7570f",
+      "document_version_id": "ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "label": "D03",
+      "original_language": "en",
+      "original_text": "Fourteen employees of the OzenMunaiGaz Oil Company",
+      "original_sha256": "258e18442bacd8552d907615438d8a4da4c405d4095ca13ee3a3f4051ad2f20a",
+      "translation_ru_candidate": "Четырнадцать работников нефтяной компании OzenMunaiGaz",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно.",
+        "Именная группа остаётся без действия: голодовка восстанавливается только из отдельного исторического контекста."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "ef7df23c-ba67-5903-9265-adbd1936ffa3",
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "label": "D25",
+      "original_language": "en",
+      "original_text": "demanding reinstatement and a review of salaries",
+      "original_sha256": "0a2f0dcd6186b9e872d21dabe4af51bf3e062ee1ff69970d0f89681271a9d84f",
+      "translation_ru_candidate": "требуя восстановления на работе и пересмотра заработной платы",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": true,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "f3130edc-588f-5f37-a88d-ffea7eca56c3",
+      "document_version_id": "02248e81-d235-5306-aef3-5dec2af93ebb",
+      "label": "D23",
+      "original_language": "ru",
+      "original_text": "создано около 3000 рабочих мест",
+      "original_sha256": "59b487b92e58938aed664ea051d6add28e06d31cdc891039654a3db77d175f47",
+      "translation_ru_candidate": null,
+      "translation_status": "NOT_NEEDED_ORIGINAL_RUSSIAN",
+      "historical_original_proven": false,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "facfa6e5-5707-5d1f-8a9e-a2386955211e",
+      "document_version_id": "3dcd5aa1-e2a9-5dd9-a2d9-992f9c80e835",
+      "label": "D07",
+      "original_language": "ru",
+      "original_text": "около 3400 резюме, поступивших от жителей региона",
+      "original_sha256": "1333917bcc2659c501abac889b49c63c9fb7fae365bb1990586f8d7ba7bcb56e",
+      "translation_ru_candidate": null,
+      "translation_status": "NOT_NEEDED_ORIGINAL_RUSSIAN",
+      "historical_original_proven": false,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно."
+      ],
+      "translation_used_for_factor_coding": false
+    },
+    {
+      "fragment_id": "fcd2397b-c4e9-5035-9ff9-45969f55ecf4",
+      "document_version_id": "e85d2031-f492-5e93-b0ac-a7e84f27c7c7",
+      "label": "D19",
+      "original_language": "en",
+      "original_text": "ensure her a free and fair trial",
+      "original_sha256": "cf0ef0ea07ec46b2fb4aa088be92933afd88a58083ec7780b74856bb321ea134",
+      "translation_ru_candidate": "обеспечить ей свободное и справедливое судебное разбирательство",
+      "translation_status": "AI_PREPARED_REVIEWED_DRAFT_NOT_HUMAN_CERTIFIED",
+      "historical_original_proven": false,
+      "reviewer": "PREPARATION_AGENT_NOT_INDEPENDENT_HUMAN",
+      "notes": [
+        "Перевод не расширяет scope исходного фрагмента и не заменяет Fact; атрибуция дана отдельно.",
+        "Местоимение her связано с Соколовой по текущему контексту; историческая доступность контекста не доказана."
+      ],
+      "translation_used_for_factor_coding": false
+    }
+  ],
+  "chain_recovery_deltas": [
+    {
+      "chain_id": "06771a8f-8172-51a4-aed0-806c820c328f",
+      "fact_id": "98d4666a-d2e2-5fa3-817b-5ee545d9eda9",
+      "fragment_id": "b5fdecb6-2ac4-5f56-aae6-6aef4bb7b956",
+      "frozen_document_version_id": "17608513-7164-5d30-9d2e-521338e323d7",
+      "source_id": "4cc51c34-2212-5ab5-b3f1-f6bbfe309c6c",
+      "source_label": "D18",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D18-20111016234632"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Официальное зеркало IIP Digital сохранено 16 октября 2011; оба exact fragments и окружающий абзац аутентифицированы архивным digest.",
+      "remaining_context_limit": "Это оценка миссии США. Историческая доступность не превращает её в собственный голос GU01/GU03 и не доказывает идентичность позднего CP3 capture.",
+      "prior_context_reason_retained_as_audit_trail": "Excerpt содержит упоминание приговора, но не выражение обеспокоенности и не субъекта США. Полный текущий PDF добавляет контекст, отсутствующий в frozen packet; он не подставляется туда.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "0a80d046-9dd0-58ac-b1df-41508cb34b5a",
+      "fact_id": "a0955cfa-c21d-574b-9af0-abe5376d40de",
+      "fragment_id": "33ce2949-0da2-5839-9b01-566ae7e4bbf4",
+      "frozen_document_version_id": "17608513-7164-5d30-9d2e-521338e323d7",
+      "source_id": "4cc51c34-2212-5ab5-b3f1-f6bbfe309c6c",
+      "source_label": "D18",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D18-20111016234632"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Официальное зеркало IIP Digital сохранено 16 октября 2011; оба exact fragments и окружающий абзац аутентифицированы архивным digest.",
+      "remaining_context_limit": "Это оценка миссии США. Историческая доступность не превращает её в собственный голос GU01/GU03 и не доказывает идентичность позднего CP3 capture.",
+      "prior_context_reason_retained_as_audit_trail": "Сохраняется осторожная модальность appears и оценка нарушений; субъект США, лицо Соколовой и полный контекст не включены. Это не собственная речь GU01/GU03.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "0fac41c8-4af0-5808-8d16-28ebf4ba1616",
+      "fact_id": "8591081b-af72-50fe-b017-c26625baacb1",
+      "fragment_id": "7d82ddb5-b949-59af-90b3-3da2bc4691ad",
+      "frozen_document_version_id": "02248e81-d235-5306-aef3-5dec2af93ebb",
+      "source_id": "52cc7e9f-cf60-5cee-8c87-740ee516d575",
+      "source_label": "D23",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "В текущем тексте восстановлены говорящий, знаменатель 989 и круг рабочих мест; найдена отдельная копия Nomad, но ближайший полученный capture относится к 2013 году.",
+      "remaining_context_limit": "Ни publisher date 22 ноября, ни дата Nomad 23 ноября не доказывают pre-cutoff bytes. Это региональный чиновник, не голос жителей/работодателей/центральной власти целиком.",
+      "prior_context_reason_retained_as_audit_trail": "Указаны шесть обращений; число 989, региональный говорящий, период и знаменатель в excerpt отсутствуют. Не является речью центральной власти или работодателей.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "1e7fec6b-118a-55ac-9b5e-cbfb14328c2e",
+      "fact_id": "b3f06151-26b2-5c65-bb42-17beab9f4ebf",
+      "fragment_id": "d3e6a365-8150-545b-8005-c18c4939142b",
+      "frozen_document_version_id": "64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "source_id": "fad22d7e-a495-55e7-85c3-25b774a3b87e",
+      "source_label": "D01",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D01-20110521181520",
+        "AW-D01-20110811165523"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Восстановлены говорящий, адресат требования и связь с работниками основного предприятия; доступен полный архивный абзац.",
+      "remaining_context_limit": "Не установлен мандат на всех работников основных предприятий GU01 и действие этого сообщения на cutoff. Demand fragment не равен полной оценке всего R.",
+      "prior_context_reason_retained_as_audit_trail": "D01 содержит требование роста оплаты, но не полную атрибуцию в excerpt. D17 говорит о справедливой оплате/условиях и имеет октябрьскую MONTH date; связь с майским Fact требует отдельного доказательства и не устанавливается этим link.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "2dcee05b-f6d2-5660-a752-0108800a4088",
+      "fact_id": "3a9fb283-1682-5dd5-9987-3efd5d5d95d7",
+      "fragment_id": "3832d42b-4806-56e6-8281-575100f9201b",
+      "frozen_document_version_id": "2d63f3f4-cb01-5b8c-b4ec-9bedb09b4363",
+      "source_id": "e83bc2ab-c6b3-5c89-b8b1-0720ae400d19",
+      "source_label": "D15",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "В текущей публикации установлены компания, повод опровержения и то, что сведения о предложенной работе — утверждение компании.",
+      "remaining_context_limit": "Pre-cutoff редакция не доказана. Одна компания и восстановление конкретных уволенных не равны всей GU05 и доступу всех местных жителей.",
+      "prior_context_reason_retained_as_audit_trail": "В excerpt нет субъекта РД КМГ, даты, области отказа и основания представительства всей GU05.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "3375e9a8-4315-5451-a505-e354314c36b3",
+      "fact_id": "6c268a9d-0b29-5274-98d2-6d3008ff459b",
+      "fragment_id": "b344006d-0950-57af-b0e7-60eb7b4f5217",
+      "frozen_document_version_id": "3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "source_id": "ddeaf877-0282-52a2-898a-311bd154a72b",
+      "source_label": "D05",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D05-20110629041259",
+        "AW-D05-20110918081249"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Восстановлены дата акции 5 июня, место Актау, участники Qarazhanbasmunai и субъект утверждения о законности.",
+      "remaining_context_limit": "Слова прокуратуры не являются словами работников GU01/GU03. Для GU08 установлен конкретный орган и эпизод, но не мандат на всю группу органов и весь R.",
+      "prior_context_reason_retained_as_audit_trail": "Содержится утверждение о законности конкретного действия в Актау; имя говорящего прокуратуры отсутствует в excerpt. Законность не является оценкой достаточности и соразмерности всего R.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "34c226d3-8e31-5734-ad74-cc42d758ee4f",
+      "fact_id": "a1aa979d-e0fe-51b3-8806-52d70351176b",
+      "fragment_id": "cc839407-9eb7-5e05-acca-70f1577883d4",
+      "frozen_document_version_id": "ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "source_id": "041d7f7c-ad6e-50ac-8322-fa21fd7e8ce4",
+      "source_label": "D03",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D03-20110527054702",
+        "AW-D03-20110916223846"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Архивная статья восстанавливает пропущенное действие начали голодовку, название компании, 26 мая и коллективный договор. Это сообщение пресс-секретаря о работниках, а не прямая коллективная декларация.",
+      "remaining_context_limit": "Широкий групповой мандат GU01 и собственное отношение всей группы к R не установлены. Frozen fragment и Fact не переписаны.",
+      "prior_context_reason_retained_as_audit_trail": "Сохраняется требование пересмотра договора, но не субъект, состав говорящих, конкретный договор и условия; полное R шире этого требования.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "47dd7a1c-a546-5108-b345-dcdc6c583a8c",
+      "fact_id": "94255747-5c61-51a9-892f-6a8d17cb3dee",
+      "fragment_id": "f3130edc-588f-5f37-a88d-ffea7eca56c3",
+      "frozen_document_version_id": "02248e81-d235-5306-aef3-5dec2af93ebb",
+      "source_id": "52cc7e9f-cf60-5cee-8c87-740ee516d575",
+      "source_label": "D23",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "В текущем тексте восстановлены говорящий, знаменатель 989 и круг рабочих мест; найдена отдельная копия Nomad, но ближайший полученный capture относится к 2013 году.",
+      "remaining_context_limit": "Ни publisher date 22 ноября, ни дата Nomad 23 ноября не доказывают pre-cutoff bytes. Это региональный чиновник, не голос жителей/работодателей/центральной власти целиком.",
+      "prior_context_reason_retained_as_audit_trail": "Есть приблизительное число рабочих мест; нет субъекта заявления, места, периода, вида занятости или отношения жителей к достаточности доступа.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "4b6e8cd6-dff4-5d12-9092-e86477fee8a4",
+      "fact_id": "ddd0115a-c248-5be6-af50-ecc9c3eb26d5",
+      "fragment_id": "56d19d98-707a-5deb-9472-d355b3835d79",
+      "frozen_document_version_id": "00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "source_id": "a31e3834-1227-5f14-acfe-2e43bee2fe47",
+      "source_label": "D13",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D13-20110918124424",
+        "AW-D13-20111024200546"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Архивный контекст связывает требование оплаты с Лесовым и указывает предприятие, профессию и участие с мая.",
+      "remaining_context_limit": "Это индивидуальное свидетельство; представительство всех GU01 или уволенных/соискателей GU03 не установлено. Факт увольнения именно Лесова из данного фрагмента не следует.",
+      "prior_context_reason_retained_as_audit_trail": "Фрагмент передаёт требования, но не личность/занятость говорящего, полномочия говорить от группы или его принадлежность к уволенным/соискателям GU03.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "4d016edb-801c-5b2f-a4b7-0a2211f03711",
+      "fact_id": "f1354988-add2-5149-938a-4f6a4221d4f1",
+      "fragment_id": "49c356b3-3585-587c-9573-d4326e97de77",
+      "frozen_document_version_id": "3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "source_id": "0d49d515-8eee-58d3-891a-45b906138ef9",
+      "source_label": "D14",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D14-20110927202906",
+        "AW-D14-20111106041751"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Исторический текст восстанавливает работодателей, начало забастовки и связь числа 410 с участниками.",
+      "remaining_context_limit": "Число уволенных не является представительной оценкой всего GU03; местные соискатели отдельно не охвачены.",
+      "prior_context_reason_retained_as_audit_trail": "Фрагмент передаёт приблизительное число увольнений, но не полный субъект/область времени; статистика увольнений не устанавливает отношение или приоритет GU03.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "4e0565a6-c170-51e9-9997-a7190eb2b8a0",
+      "fact_id": "a208b943-38f3-5cd6-ad35-1f1de17a00e4",
+      "fragment_id": "d521033f-59ce-5518-9227-b5fe9cb7570f",
+      "frozen_document_version_id": "ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "source_id": "041d7f7c-ad6e-50ac-8322-fa21fd7e8ce4",
+      "source_label": "D03",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D03-20110527054702",
+        "AW-D03-20110916223846"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Архивная статья восстанавливает пропущенное действие начали голодовку, название компании, 26 мая и коллективный договор. Это сообщение пресс-секретаря о работниках, а не прямая коллективная декларация.",
+      "remaining_context_limit": "Широкий групповой мандат GU01 и собственное отношение всей группы к R не установлены. Frozen fragment и Fact не переписаны.",
+      "prior_context_reason_retained_as_audit_trail": "Excerpt обрывается после наименования четырнадцати работников компании: действие начали голодовку, дата и контекст в нём отсутствуют. Совпадение subject phrase не доказывает полное Fact.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "6530b92f-e4d5-514d-a0e0-0640a25587a6",
+      "fact_id": "5f708929-3f45-50d7-820d-2a72b84f83de",
+      "fragment_id": "150704f4-c65a-50f4-b758-b9b456f909ff",
+      "frozen_document_version_id": "26b9e671-5e1e-5460-a80c-2e803ca81ba6",
+      "source_id": "7197119d-d545-5cf2-9b85-a5212d3436c9",
+      "source_label": "D20",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "Текущий официальный PDF устанавливает делегацию и дату судебного события; различены дата выступления и регистрации.",
+      "remaining_context_limit": "Историческая доступность не доказана. Делегация не подменяет группы работников или совокупность всех судебных/надзорных органов; мандат на такое обобщение отсутствует.",
+      "prior_context_reason_retained_as_audit_trail": "Короткий фрагмент D09 не называет осуждённую/дату; D20 называет её и наказание, но не включает дату события или полный правовой контекст. Сообщение ноября об августе не является post-cutoff только из-за разности дат; требуется отдельно доказать доступность конкретной редакции до общего cutoff.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "73866456-884b-5cac-9940-3eb5b47f51fc",
+      "fact_id": "fd69ed6e-d7ee-5dd2-a058-f10f0dac7429",
+      "fragment_id": "facfa6e5-5707-5d1f-8a9e-a2386955211e",
+      "frozen_document_version_id": "3dcd5aa1-e2a9-5dd9-a2d9-992f9c80e835",
+      "source_id": "ab02c333-f700-53c9-bf0e-e499b8152447",
+      "source_label": "D07",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "В текущем тексте найдены субъект статистики, назначение резюме и контекст замещения рабочих мест.",
+      "remaining_context_limit": "Историческая сохранность этого текста не доказана; статистика компании не является отношением жителей GU04 к достаточности доступа.",
+      "prior_context_reason_retained_as_audit_trail": "Количество резюме и происхождение жителей не сохраняют говорящего компании, период, статус вакансий и отделение жителей GU04 от нефтяных работников.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "904af249-41ef-5986-9bea-1a00f59d9f19",
+      "fact_id": "9c6e13cb-60e5-595e-95ad-38ea95dc9f6e",
+      "fragment_id": "a7869dd7-97d1-56de-86b4-aadf1e970c0a",
+      "frozen_document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "source_id": "93272924-00d5-527a-9ace-4ea593c021ad",
+      "source_label": "D25",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D25-20111016060958",
+        "AW-D25-20111116125247"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Архив старого URL /node/64310 подтверждает все три exact fragments. Контекст связывает справедливую оплату и шесть повышений с KMG EP, а восстановление и пересмотр оплаты — с уволенными работниками компании.",
+      "remaining_context_limit": "Компания не получает мандат на всю GU05; конкретная подгруппа уволенных не представляет автоматически бывших работников и всех местных соискателей GU03. Два голоса сохраняются раздельно.",
+      "prior_context_reason_retained_as_audit_trail": "Сохраняется шесть повышений с 2008 года, но субъект и контекст зарплат сотрудников конкретной компании вне excerpt. Число повышений не является отношением к целому R.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "9b2a572b-bf18-55ba-9de3-1dbb0b8f04f6",
+      "fact_id": "c73a9fc6-181f-5a5a-84b3-f6885b4e77ce",
+      "fragment_id": "15e6b7e7-98f3-5830-8d5d-ae44862e445a",
+      "frozen_document_version_id": "e92b6b89-4e75-5f64-ac26-7dd8005c3d56",
+      "source_id": "73b0f91b-778e-5238-89ee-636e22196efb",
+      "source_label": "D17",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "Текущий официальный PDF раскрывает работодателей и круг протестов; locator — page 1, Summary/Short Background. Требования переданы авторами обзора.",
+      "remaining_context_limit": "Доступность редакции до cutoff не доказана. Упоминание Ersai не атрибутирует каждый общий тезис именно GU02. MONTH не устанавливает день 1 октября; майская Fact-link не получает подтверждения даты из октябрьского общего описания.",
+      "prior_context_reason_retained_as_audit_trail": "Содержатся оплата и условия, но автор интерпретации/субъект требований и мандат GU02 вне excerpt. Дата Fact 01.10 точнее MONTH precision документа.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "a012a5b0-6790-513d-b274-d759b2c8b950",
+      "fact_id": "4e55576e-cc85-5c77-adc4-b0d571b83502",
+      "fragment_id": "51e5ac30-63a9-5433-8472-a22727f1db36",
+      "frozen_document_version_id": "e92b6b89-4e75-5f64-ac26-7dd8005c3d56",
+      "source_id": "73b0f91b-778e-5238-89ee-636e22196efb",
+      "source_label": "D17",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "Текущий официальный PDF раскрывает работодателей и круг протестов; locator — page 1, Summary/Short Background. Требования переданы авторами обзора.",
+      "remaining_context_limit": "Доступность редакции до cutoff не доказана. Упоминание Ersai не атрибутирует каждый общий тезис именно GU02. MONTH не устанавливает день 1 октября; майская Fact-link не получает подтверждения даты из октябрьского общего описания.",
+      "prior_context_reason_retained_as_audit_trail": "Фрагмент описывает действия тысяч работников; несколько месяцев и точная дата/состав группы не присутствуют в нём. MONTH publication не устанавливает Fact day 01.10.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "a2b5e54e-c200-5a27-8bfa-f55758794fe2",
+      "fact_id": "296ee01f-8379-5e8a-8cfb-d8b4b5e2deb0",
+      "fragment_id": "b9981fe5-0c46-5bd0-91ad-1f2e8a1f2aff",
+      "frozen_document_version_id": "9b1dfe95-b290-533c-9414-d8f18d880b1d",
+      "source_id": "55be8202-f086-55ce-87bd-a11b76f4d1f3",
+      "source_label": "D29",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "Восстановлена модальность ожидания: предполагается последующее обсуждение, а не состоявшееся решение. Найденный ближайший snapshot короткого URL — 26 января 2012, после cutoff.",
+      "remaining_context_limit": "Pre-cutoff текст не доказан; сообщение о повестке не устанавливает собственную позицию всей GU07.",
+      "prior_context_reason_retained_as_audit_trail": "Именная группа о трудоустройстве не содержит говорящего, модальности ожидания, последующей встречи или принятого решения.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "a6efe35a-1792-5574-9fed-1d9ce640561b",
+      "fact_id": "6f26acf1-03dd-5731-a626-2c2c558b58cd",
+      "fragment_id": "3ca46849-549e-544d-b72c-d62ef1706612",
+      "frozen_document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "source_id": "93272924-00d5-527a-9ace-4ea593c021ad",
+      "source_label": "D25",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D25-20111016060958",
+        "AW-D25-20111116125247"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Архив старого URL /node/64310 подтверждает все три exact fragments. Контекст связывает справедливую оплату и шесть повышений с KMG EP, а восстановление и пересмотр оплаты — с уволенными работниками компании.",
+      "remaining_context_limit": "Компания не получает мандат на всю GU05; конкретная подгруппа уволенных не представляет автоматически бывших работников и всех местных соискателей GU03. Два голоса сохраняются раздельно.",
+      "prior_context_reason_retained_as_audit_trail": "Есть сообщение о company и её employees; имя компании, статус пересказа и охват всей GU05 не устанавливаются самим коротким excerpt.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "b5751043-17fe-5475-bf3e-f2e16190d8ed",
+      "fact_id": "fa48d318-8754-5ee6-9880-b67273843e9a",
+      "fragment_id": "ab55c516-12dc-5533-9e87-a950a6e61b3e",
+      "frozen_document_version_id": "53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "source_id": "ae117c91-c49a-5022-abb1-4e39a4e8c38d",
+      "source_label": "D22",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D22-20111120030853"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Snapshot 20 ноября 2011 подтверждает fragment и полный абзац: встреча 15 ноября, около 40 нефтяников, региональные чиновники и представитель РД КМГ. Дата согласуется с frozen Fact. Маркер ДОПОЛНЕНО уже присутствует в snapshot до cutoff.",
+      "remaining_context_limit": "Присутствие вице-министра устанавливает участника центрального ведомства, но не самостоятельное групповое отношение всей GU07 к точному R. Обновление не датируется одним publication_date.",
+      "prior_context_reason_retained_as_audit_trail": "Фрагмент сохраняет лишь приблизительное число нефтяников. Вице-министр, региональные чиновники, дата/назначение встречи и их собственные высказывания находятся вне excerpt.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "b7c4c3a7-2f92-5f35-984c-9f6fc4c8c6db",
+      "fact_id": "e1bc2da7-5d64-5a43-b6ab-5ee9eea97b43",
+      "fragment_id": "150704f4-c65a-50f4-b758-b9b456f909ff",
+      "frozen_document_version_id": "26b9e671-5e1e-5460-a80c-2e803ca81ba6",
+      "source_id": "7197119d-d545-5cf2-9b85-a5212d3436c9",
+      "source_label": "D20",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "Текущий официальный PDF устанавливает делегацию и дату судебного события; различены дата выступления и регистрации.",
+      "remaining_context_limit": "Историческая доступность не доказана. Делегация не подменяет группы работников или совокупность всех судебных/надзорных органов; мандат на такое обобщение отсутствует.",
+      "prior_context_reason_retained_as_audit_trail": "Указаны лицо и наказание, но в excerpt нет делегации как говорящего, даты/условий события и её мандата для широкой GU08. D20 имеет отдельные speech/registration dates в текущем PDF.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "c17d0910-ff76-5f32-a278-fe97306b6ae8",
+      "fact_id": "daaf4605-8aa1-5463-876d-e32f561a0e1c",
+      "fragment_id": "bbf0a151-afb1-57cd-9c19-cba3f5319e42",
+      "frozen_document_version_id": "d3b8d52c-3dbb-5d07-84bd-e07acf35fbbb",
+      "source_id": "82043157-6a1a-5df4-9dd7-9ba42368d19b",
+      "source_label": "D24",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "Текущий основной текст восстанавливает компании, бастующих, министерство и региональный акимат. Lead и body имеют различающиеся написания названия города; exact frozen phrase найдена в body.",
+      "remaining_context_limit": "Pre-cutoff редакция не доказана. Участие этих сторон не устанавливает представительство жителей GU04 вне трудовых групп.",
+      "prior_context_reason_retained_as_audit_trail": "В excerpt есть длительность/город/встреча, но нет списка сторон и даты. Перечисленные в Fact стороны не подтверждают мандат жителей вне нефтегазовых групп.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "c9036ec1-6b3c-55d0-aa15-7f63bea91fa6",
+      "fact_id": "e00f9759-43f9-57a6-932c-412c24dc14ea",
+      "fragment_id": "6295e487-c225-5445-ae8b-653d1691579a",
+      "frozen_document_version_id": "d2eefc78-82b0-5eb7-b1ae-533745cbbd79",
+      "source_id": "f1f97296-d368-5605-a262-e57e0f489187",
+      "source_label": "D21",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "Текущий официальный PDF KASE связывает утверждение о падении добычи/экспорта с объяснением компании; locator page 1, второй bullet.",
+      "remaining_context_limit": "Pre-cutoff bytes не доказаны. Производственный эффект не устанавливает собственный приоритет и не расширяет компанию до всей GU05.",
+      "prior_context_reason_retained_as_audit_trail": "Короткая причинная конструкция о снижении производства/экспорта не содержит полного контекста заявления компании; последствия не показывают приоритет в повестке или отношение к R.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "cbcc9b78-9a8f-569d-b0be-738ec694d301",
+      "fact_id": "b3f06151-26b2-5c65-bb42-17beab9f4ebf",
+      "fragment_id": "15e6b7e7-98f3-5830-8d5d-ae44862e445a",
+      "frozen_document_version_id": "e92b6b89-4e75-5f64-ac26-7dd8005c3d56",
+      "source_id": "73b0f91b-778e-5238-89ee-636e22196efb",
+      "source_label": "D17",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "Текущий официальный PDF раскрывает работодателей и круг протестов; locator — page 1, Summary/Short Background. Требования переданы авторами обзора.",
+      "remaining_context_limit": "Доступность редакции до cutoff не доказана. Упоминание Ersai не атрибутирует каждый общий тезис именно GU02. MONTH не устанавливает день 1 октября; майская Fact-link не получает подтверждения даты из октябрьского общего описания.",
+      "prior_context_reason_retained_as_audit_trail": "D01 содержит требование роста оплаты, но не полную атрибуцию в excerpt. D17 говорит о справедливой оплате/условиях и имеет октябрьскую MONTH date; связь с майским Fact требует отдельного доказательства и не устанавливается этим link.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "cbf31553-ffdf-5d61-86ee-04e6dfe0b683",
+      "fact_id": "d206a449-91fa-558f-89ce-53eddd73be09",
+      "fragment_id": "fcd2397b-c4e9-5035-9ff9-45969f55ecf4",
+      "frozen_document_version_id": "e85d2031-f492-5e93-b0ac-a7e84f27c7c7",
+      "source_id": "8581b365-808a-560c-b869-ca2787e4a6d1",
+      "source_label": "D19",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "Текущий официальный PDF получен с проверкой TLS; контекст устанавливает, что призыв о справедливом суде относится к Соколовой и исходит от ЕС.",
+      "remaining_context_limit": "Printed dates и современный PDF не доказывают pre-cutoff доступность. ЕС не является GU03.",
+      "prior_context_reason_retained_as_audit_trail": "Местоимение her, адресат призыва, субъект ЕС и лицо, о котором речь, не раскрыты excerpt. Не устанавливает собственную позицию GU03.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "dadf11cf-66ca-594f-a7c3-30e4114b4a7a",
+      "fact_id": "9e287255-de7d-5c16-9a21-291261933514",
+      "fragment_id": "7f0b0752-387d-5def-ba3d-ab11c4f1414b",
+      "frozen_document_version_id": "adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "source_id": "4e46c56c-9f35-5dbd-b634-2b6796d90391",
+      "source_label": "D04",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D04-20110529132216"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Исторический контекст однозначно называет QarazhanbasMunai. Пробел названия работодателя закрыт.",
+      "remaining_context_limit": "Этот работодатель относится к основным предприятиям; материал не устанавливает принадлежность говорящих именно к подрядчикам GU02. Перенос на GU02 не обоснован.",
+      "prior_context_reason_retained_as_audit_trail": "Именная конструкция о снятии профсоюзных ограничений не называет говорящего/его принадлежность к подрядчикам и не сохраняет отношение к полному reference.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "e096e9bc-09b3-5cf7-a598-e1cff13ad4a7",
+      "fact_id": "5f708929-3f45-50d7-820d-2a72b84f83de",
+      "fragment_id": "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94",
+      "frozen_document_version_id": "f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "source_id": "bec0db84-f828-51e3-a57c-03b36e0655c5",
+      "source_label": "D09",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D09-20110809011049",
+        "AW-D09-20111022101958"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Архив восстанавливает имя, судью, дату 8 августа и условие запрета деятельности после освобождения.",
+      "remaining_context_limit": "Судебное событие не переносится на собственную оценку GU01/GU03. Один судебный акт не устанавливает общую позицию всех органов GU08.",
+      "prior_context_reason_retained_as_audit_trail": "Короткий фрагмент D09 не называет осуждённую/дату; D20 называет её и наказание, но не включает дату события или полный правовой контекст. Сообщение ноября об августе не является post-cutoff только из-за разности дат; требуется отдельно доказать доступность конкретной редакции до общего cutoff.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "e3286e30-8ddd-5598-a9c7-182ab890694f",
+      "fact_id": "abecfa8f-31bb-57f0-8a9e-2496e9416609",
+      "fragment_id": "3c9cca86-6ba6-58ee-a6a1-b4c6aade6f54",
+      "frozen_document_version_id": "2d63f3f4-cb01-5b8c-b4ec-9bedb09b4363",
+      "source_id": "e83bc2ab-c6b3-5c89-b8b1-0720ae400d19",
+      "source_label": "D15",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [],
+      "availability": "NOT_PROVEN",
+      "context_recovery": "В текущей публикации установлены компания, повод опровержения и то, что сведения о предложенной работе — утверждение компании.",
+      "remaining_context_limit": "Pre-cutoff редакция не доказана. Одна компания и восстановление конкретных уволенных не равны всей GU05 и доступу всех местных жителей.",
+      "prior_context_reason_retained_as_audit_trail": "Пассивное описание предложений работы не содержит говорящего/периода, полноты доступных альтернатив и собственного приоритета работодателей.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "f07fb0c1-2fea-5341-bdab-96681a75de89",
+      "fact_id": "f25ddd8f-0810-5fdc-97cb-647c9d38074f",
+      "fragment_id": "ef7df23c-ba67-5903-9265-adbd1936ffa3",
+      "frozen_document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "source_id": "93272924-00d5-527a-9ace-4ea593c021ad",
+      "source_label": "D25",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D25-20111016060958",
+        "AW-D25-20111116125247"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Архив старого URL /node/64310 подтверждает все три exact fragments. Контекст связывает справедливую оплату и шесть повышений с KMG EP, а восстановление и пересмотр оплаты — с уволенными работниками компании.",
+      "remaining_context_limit": "Компания не получает мандат на всю GU05; конкретная подгруппа уволенных не представляет автоматически бывших работников и всех местных соискателей GU03. Два голоса сохраняются раздельно.",
+      "prior_context_reason_retained_as_audit_trail": "Сохраняется требование восстановления/пересмотра оплаты, но личность/состав уволенных и мандат всей GU03 не заданы самим excerpt.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "f2d96bce-433e-559a-b187-adacac6238e4",
+      "fact_id": "064c967c-2147-5961-9bec-919fa695ef01",
+      "fragment_id": "2c47a771-1301-55be-a2ab-9b2ef1f82510",
+      "frozen_document_version_id": "f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "source_id": "bec0db84-f828-51e3-a57c-03b36e0655c5",
+      "source_label": "D09",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D09-20110809011049",
+        "AW-D09-20111022101958"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Архив восстанавливает имя, судью, дату 8 августа и условие запрета деятельности после освобождения.",
+      "remaining_context_limit": "Судебное событие не переносится на собственную оценку GU01/GU03. Один судебный акт не устанавливает общую позицию всех органов GU08.",
+      "prior_context_reason_retained_as_audit_trail": "Фрагмент содержит запрет деятельности, но не имя лица, суд, срок или условие после освобождения; эти связи добавлены в Fact и требуют полного контекста.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "fb265c9c-83c9-53b4-a2aa-3fbc6413a65a",
+      "fact_id": "136cb85c-abcb-5c65-a4ad-c118a560fca3",
+      "fragment_id": "04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+      "frozen_document_version_id": "3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "source_id": "ddeaf877-0282-52a2-898a-311bd154a72b",
+      "source_label": "D05",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D05-20110629041259",
+        "AW-D05-20110918081249"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Восстановлены дата акции 5 июня, место Актау, участники Qarazhanbasmunai и субъект утверждения о законности.",
+      "remaining_context_limit": "Слова прокуратуры не являются словами работников GU01/GU03. Для GU08 установлен конкретный орган и эпизод, но не мандат на всю группу органов и весь R.",
+      "prior_context_reason_retained_as_audit_trail": "В excerpt есть нижняя граница числа задержанных; нет Актау, даты 5 июня, связи с акцией и акторного представительства.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    },
+    {
+      "chain_id": "fc45dc13-eec5-5d41-8a2d-cf7568a5550e",
+      "fact_id": "db691c24-5aa1-56b2-bc8a-da33ad1370ba",
+      "fragment_id": "d1067ad6-51d6-5a42-b6ea-8cf74c4fd71c",
+      "frozen_document_version_id": "bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "source_id": "8872ed80-7dfe-5761-a8a7-5cb6a64dcec4",
+      "source_label": "D06",
+      "original_relation": "SUPPORTS",
+      "frozen_chain_preserved": true,
+      "separate_witness_ids": [
+        "AW-D06-20110716171000"
+      ],
+      "availability": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "context_recovery": "Архив восстанавливает место, ближайшие события июля и контекст семей участников; exact Kazakh fragment подтверждён.",
+      "remaining_context_limit": "Состав жителей вне нефтегазовых трудовых групп GU04 не выделен. Ночёвка на площади не является собственным высказыванием всех таких жителей. Предлагаемый перевод KK требует языковой проверки.",
+      "prior_context_reason_retained_as_audit_trail": "Казахский фрагмент упоминает нефтяников и городское население без отделения GU04 от трудовых групп, точной даты и заявленного отношения. Русский Fact — сводка, не закреплённый проверенный перевод.",
+      "scope": "Witness supplements this audit, does not establish every part of the Fact or reassign its original links."
+    }
+  ],
+  "current_pdf_probes_not_historical_proof": [
+    {
+      "label": "D19",
+      "sha256": "f21ffc04dd3546fc6715fbc4bef670c841abae9a4ecfa330325529a5cc425995",
+      "bytes": 43645,
+      "pages": 3,
+      "fragment_locators": [
+        {
+          "fragment_id": "fcd2397b-c4e9-5035-9ff9-45969f55ecf4",
+          "pages": [
+            1
+          ]
+        }
+      ],
+      "locator_extraction": "pypdf layout mode then whitespace normalization; current copies only, never temporal proof",
+      "pdf_metadata_not_temporal_proof": {
+        "/Author": "Elidarik",
+        "/CreationDate": "D:20110902082812+02'00'",
+        "/Creator": "PScript5.dll Version 5.2.2",
+        "/ModDate": "D:20110902082837+02'00'",
+        "/Producer": "Acrobat Distiller 9.3.0 (Windows)",
+        "/Title": "PC.DEL/824/11"
+      },
+      "admitted_as_pre_cutoff_witness": false
+    },
+    {
+      "label": "D20",
+      "sha256": "a555cefc93416312b8d84386a861ee9be36bea5ab3fb837aeee3ff86e638ed70",
+      "bytes": 115654,
+      "pages": 3,
+      "fragment_locators": [
+        {
+          "fragment_id": "150704f4-c65a-50f4-b758-b9b456f909ff",
+          "pages": [
+            3
+          ]
+        }
+      ],
+      "locator_extraction": "pypdf layout mode then whitespace normalization; current copies only, never temporal proof",
+      "pdf_metadata_not_temporal_proof": {
+        "/Author": "Mmiletic",
+        "/CreationDate": "D:20111104125310+01'00'",
+        "/Creator": "PScript5.dll Version 5.2.2",
+        "/ModDate": "D:20111104125403+01'00'",
+        "/Producer": "Acrobat Distiller 9.3.0 (Windows)",
+        "/Title": "PC.DEL/1045/11"
+      },
+      "admitted_as_pre_cutoff_witness": false
+    },
+    {
+      "label": "D21",
+      "sha256": "ce4ace9e1fbdebdb4d11e9eed417f0a9fc252133fa09c720e41d2821e04d363f",
+      "bytes": 308119,
+      "pages": 10,
+      "fragment_locators": [
+        {
+          "fragment_id": "6295e487-c225-5445-ae8b-653d1691579a",
+          "pages": [
+            1
+          ]
+        }
+      ],
+      "locator_extraction": "pypdf layout mode then whitespace normalization; current copies only, never temporal proof",
+      "pdf_metadata_not_temporal_proof": {
+        "/Author": "E.Yegay",
+        "/Creator": "Microsoft® Word 2010",
+        "/CreationDate": "D:20111114142528+06'00'",
+        "/ModDate": "D:20111114142528+06'00'",
+        "/Producer": "Microsoft® Word 2010"
+      },
+      "admitted_as_pre_cutoff_witness": false
+    }
+  ],
+  "human_language_review_performed": false,
+  "current_context_not_automatically_promoted_to_historical_input": true,
+  "factor_answers_created": false
+}
