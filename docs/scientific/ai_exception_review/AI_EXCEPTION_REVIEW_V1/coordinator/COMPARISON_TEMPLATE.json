@@ -1,0 +1,600 @@
+{
+  "review_id": "AI_EXCEPTION_REVIEW_V1",
+  "state": "WAITING_FOR_THREE_INDEPENDENT_RESPONSES",
+  "response_file_sha256": {
+    "EXPERT_A_CHATGPT_PRO": null,
+    "EXPERT_B_CHATGPT_PRO": null,
+    "EXPERT_C_CLAUDE_FABLE_5_1": null
+  },
+  "human_exception_queue": null,
+  "entries": [
+    {
+      "unit_id": "AV-D07",
+      "target_id": "3dcd5aa1-e2a9-5dd9-a2d9-992f9c80e835",
+      "kind": "AVAILABILITY",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "AV-D15",
+      "target_id": "2d63f3f4-cb01-5b8c-b4ec-9bedb09b4363",
+      "kind": "AVAILABILITY",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "AV-D17",
+      "target_id": "e92b6b89-4e75-5f64-ac26-7dd8005c3d56",
+      "kind": "AVAILABILITY",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "AV-D19",
+      "target_id": "e85d2031-f492-5e93-b0ac-a7e84f27c7c7",
+      "kind": "AVAILABILITY",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "AV-D20",
+      "target_id": "26b9e671-5e1e-5460-a80c-2e803ca81ba6",
+      "kind": "AVAILABILITY",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "AV-D21",
+      "target_id": "d2eefc78-82b0-5eb7-b1ae-533745cbbd79",
+      "kind": "AVAILABILITY",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "AV-D23",
+      "target_id": "02248e81-d235-5306-aef3-5dec2af93ebb",
+      "kind": "AVAILABILITY",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "AV-D24",
+      "target_id": "d3b8d52c-3dbb-5d07-84bd-e07acf35fbbb",
+      "kind": "AVAILABILITY",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "AV-D29",
+      "target_id": "9b1dfe95-b290-533c-9414-d8f18d880b1d",
+      "kind": "AVAILABILITY",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "MAP-GU01-E02",
+      "target_id": "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+      "kind": "MAPPING",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "MAP-GU01-E06",
+      "target_id": "951f300c-27d0-5a09-b312-e3fdad147f54",
+      "kind": "MAPPING",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "MAP-GU02-E05",
+      "target_id": "bc34ea72-a9ac-5e81-ab20-3f2efb729872",
+      "kind": "MAPPING",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "MAP-GU03-E02",
+      "target_id": "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+      "kind": "MAPPING",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "MAP-GU03-E06",
+      "target_id": "cd9eb952-6af0-5708-8703-49673415cbe7",
+      "kind": "MAPPING",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "MAP-GU04-E04",
+      "target_id": "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+      "kind": "MAPPING",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "MAP-GU04-E05",
+      "target_id": "3f4dc104-40c7-59db-ad5c-61f8a80232bc",
+      "kind": "MAPPING",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "MAP-GU05-E02",
+      "target_id": "2c58ce09-3654-5a87-89be-4b1953f467c7",
+      "kind": "MAPPING",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "MAP-GU05-E04",
+      "target_id": "5e3146aa-0dfd-5be2-8f8d-39b94edee3ff",
+      "kind": "MAPPING",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "MAP-GU07-E04",
+      "target_id": "a6f0883a-d5fc-521b-8662-1c160fded750",
+      "kind": "MAPPING",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "MAP-GU08-E05",
+      "target_id": "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+      "kind": "MAPPING",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "MAP-GU08-E06",
+      "target_id": "79748746-11e6-506c-82d5-bc5fe877beb0",
+      "kind": "MAPPING",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-d3e6a365-8150-545b-8005-c18c4939142b",
+      "target_id": "d3e6a365-8150-545b-8005-c18c4939142b",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-cc839407-9eb7-5e05-acca-70f1577883d4",
+      "target_id": "cc839407-9eb7-5e05-acca-70f1577883d4",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-d521033f-59ce-5518-9227-b5fe9cb7570f",
+      "target_id": "d521033f-59ce-5518-9227-b5fe9cb7570f",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-7f0b0752-387d-5def-ba3d-ab11c4f1414b",
+      "target_id": "7f0b0752-387d-5def-ba3d-ab11c4f1414b",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+      "target_id": "04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-b344006d-0950-57af-b0e7-60eb7b4f5217",
+      "target_id": "b344006d-0950-57af-b0e7-60eb7b4f5217",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-d1067ad6-51d6-5a42-b6ea-8cf74c4fd71c",
+      "target_id": "d1067ad6-51d6-5a42-b6ea-8cf74c4fd71c",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-2c47a771-1301-55be-a2ab-9b2ef1f82510",
+      "target_id": "2c47a771-1301-55be-a2ab-9b2ef1f82510",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94",
+      "target_id": "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-56d19d98-707a-5deb-9472-d355b3835d79",
+      "target_id": "56d19d98-707a-5deb-9472-d355b3835d79",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-49c356b3-3585-587c-9573-d4326e97de77",
+      "target_id": "49c356b3-3585-587c-9573-d4326e97de77",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-15e6b7e7-98f3-5830-8d5d-ae44862e445a",
+      "target_id": "15e6b7e7-98f3-5830-8d5d-ae44862e445a",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-51e5ac30-63a9-5433-8472-a22727f1db36",
+      "target_id": "51e5ac30-63a9-5433-8472-a22727f1db36",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-33ce2949-0da2-5839-9b01-566ae7e4bbf4",
+      "target_id": "33ce2949-0da2-5839-9b01-566ae7e4bbf4",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-b5fdecb6-2ac4-5f56-aae6-6aef4bb7b956",
+      "target_id": "b5fdecb6-2ac4-5f56-aae6-6aef4bb7b956",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-fcd2397b-c4e9-5035-9ff9-45969f55ecf4",
+      "target_id": "fcd2397b-c4e9-5035-9ff9-45969f55ecf4",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-150704f4-c65a-50f4-b758-b9b456f909ff",
+      "target_id": "150704f4-c65a-50f4-b758-b9b456f909ff",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-6295e487-c225-5445-ae8b-653d1691579a",
+      "target_id": "6295e487-c225-5445-ae8b-653d1691579a",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-3ca46849-549e-544d-b72c-d62ef1706612",
+      "target_id": "3ca46849-549e-544d-b72c-d62ef1706612",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-a7869dd7-97d1-56de-86b4-aadf1e970c0a",
+      "target_id": "a7869dd7-97d1-56de-86b4-aadf1e970c0a",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    },
+    {
+      "unit_id": "LANG-ef7df23c-ba67-5903-9265-adbd1936ffa3",
+      "target_id": "ef7df23c-ba67-5903-9265-adbd1936ffa3",
+      "kind": "TRANSLATION",
+      "expert_statuses": {
+        "EXPERT_A_CHATGPT_PRO": null,
+        "EXPERT_B_CHATGPT_PRO": null,
+        "EXPERT_C_CLAUDE_FABLE_5_1": null
+      },
+      "triage": null,
+      "reason_code": null,
+      "matching_proof": null,
+      "separate_check": null
+    }
+  ]
+}
