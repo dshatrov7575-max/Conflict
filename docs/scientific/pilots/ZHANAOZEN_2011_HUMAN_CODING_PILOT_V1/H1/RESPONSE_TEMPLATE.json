@@ -1,0 +1,622 @@
+{
+  "pilot_id": "ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1",
+  "coder_role": "H1",
+  "submission_state": "BLANK_TEMPLATE",
+  "coder_id": null,
+  "started_at_utc": null,
+  "submitted_at_utc": null,
+  "items": [
+    {
+      "packet_item_id": "H1-01",
+      "POS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      },
+      "KVS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      }
+    },
+    {
+      "packet_item_id": "H1-02",
+      "POS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      },
+      "KVS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      }
+    },
+    {
+      "packet_item_id": "H1-03",
+      "POS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      },
+      "KVS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      }
+    },
+    {
+      "packet_item_id": "H1-04",
+      "POS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      },
+      "KVS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      }
+    },
+    {
+      "packet_item_id": "H1-05",
+      "POS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      },
+      "KVS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      }
+    },
+    {
+      "packet_item_id": "H1-06",
+      "POS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      },
+      "KVS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      }
+    },
+    {
+      "packet_item_id": "H1-07",
+      "POS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      },
+      "KVS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      }
+    },
+    {
+      "packet_item_id": "H1-08",
+      "POS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      },
+      "KVS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      }
+    },
+    {
+      "packet_item_id": "H1-09",
+      "POS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      },
+      "KVS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      }
+    },
+    {
+      "packet_item_id": "H1-10",
+      "POS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      },
+      "KVS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      }
+    },
+    {
+      "packet_item_id": "H1-11",
+      "POS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      },
+      "KVS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      }
+    },
+    {
+      "packet_item_id": "H1-12",
+      "POS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      },
+      "KVS": {
+        "status": null,
+        "anchor": null,
+        "confidence": null,
+        "admission_checks": {
+          "G1": null,
+          "G2": null,
+          "G3": null,
+          "G4": null,
+          "G5": null,
+          "G6": null,
+          "G7": null
+        },
+        "reason_codes": [],
+        "evidence_references": [],
+        "verbatim_evidence": [],
+        "anchor_predicates": [],
+        "qualitative_observation": null,
+        "rationale": null,
+        "choice_context": null,
+        "alternatives_set": [],
+        "satisfaction_criterion": null,
+        "conflict_alternatives": []
+      }
+    }
+  ]
+}

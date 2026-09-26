@@ -1,0 +1,119 @@
+{
+  "pilot_id": "ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1",
+  "status": "FROZEN_PREREGISTRATION",
+  "human_coding": "NOT_STARTED",
+  "base_commit": "709eea6c3e3c270b368eea4495dbd6e93b1695b8",
+  "created_before_selection_at_utc": "2026-09-26T14:46:59.921916+00:00",
+  "information_cutoff": "2011-12-15T23:59:59Z",
+  "target_time": "2011-12-15T23:59:59Z",
+  "source_window_start": "2011-05-17",
+  "planned_items": 12,
+  "coders": [
+    "H1",
+    "H2"
+  ],
+  "coded_factors": [
+    "POS",
+    "KVS"
+  ],
+  "excluded_factors": [
+    "RGU",
+    "KVPTN"
+  ],
+  "strata": [
+    "E02",
+    "E04",
+    "E05",
+    "E06"
+  ],
+  "items_per_stratum": 3,
+  "sampling": "Rank existing UUIDs by HMAC-SHA256 within each stratum; take first three; no replacement/redraw.",
+  "frame_eligibility": "Complete existing ID chain; registered Fact and publication bounds no later than cutoff; not scientific admission.",
+  "human_evidence_admission": "G1-G7 unchanged; unknown availability/context cannot be presumed passed.",
+  "numeric_labels": {
+    "POS": [
+      -10,
+      -5,
+      0,
+      5,
+      10
+    ],
+    "KVS": [
+      0,
+      2,
+      5,
+      8,
+      10
+    ]
+  },
+  "status_labels": [
+    "NUMERIC",
+    "UNKNOWN",
+    "DISPUTED"
+  ],
+  "thresholds_each_factor": {
+    "planned_denominator": 12,
+    "complete_responses_each_coder": 12,
+    "status_exact_min": 0.9,
+    "status_exact_required_count": 11,
+    "paired_numeric_min": 8,
+    "min_distinct_anchors_each_coder": 2,
+    "numeric_exact_min": 0.8,
+    "linear_weighted_kappa_min": 0.7,
+    "max_severe_disagreements": 0,
+    "severe_rank_distance_min": 2,
+    "max_protocol_or_invalid_response_errors": 0
+  },
+  "weight_matrix": [
+    [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    [
+      0.25,
+      0.0,
+      0.25,
+      0.5,
+      0.75
+    ],
+    [
+      0.5,
+      0.25,
+      0.0,
+      0.25,
+      0.5
+    ],
+    [
+      0.75,
+      0.5,
+      0.25,
+      0.0,
+      0.25
+    ],
+    [
+      1.0,
+      0.75,
+      0.5,
+      0.25,
+      0.0
+    ]
+  ],
+  "kappa_formula": "1 - sum(D_ab * O_ab) / sum(D_ab * row_a * col_b / n)",
+  "undefined_kappa": "NOT_ESTIMABLE; never substitute 1 or treat as passed",
+  "unknown_disputed": "Retained in status denominator; excluded from numeric subset, never imputed.",
+  "missing": "Not UNKNOWN and not agreement; primary pilot BLOCKED.",
+  "decision_states_after_future_run": [
+    "PASS_PILOT_SCREEN",
+    "PARTIAL",
+    "BLOCKED"
+  ],
+  "current_results": "NOT_RUN",
+  "intended_answer_key": "NOT_CREATED",
+  "inference_limits": "Descriptive 12-item single-case feasibility pilot; dependent evidence/actors; no population CI or p-values.",
+  "adjudication": "Only after both primary submissions and primary comparison are hashed; no overwrite of primary metrics.",
+  "stop": "STOP_BEFORE_HUMAN_CODING",
+  "protocol_sha256": "019d852adeed3f2d5e6dcb5a94b7c9ebea170ae77e4a7f639e23848d71d84e2e"
+}

@@ -1,0 +1,135 @@
+{
+  "freeze_id": "ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1_PREREGISTRATION_FREEZE_V1",
+  "frozen_at_utc": "2026-09-26T14:52:34.490382+00:00",
+  "status": "FROZEN_PREREGISTRATION",
+  "base_pr": "https://github.com/dshatrov7575-max/Conflict/pull/120",
+  "base_commit": "709eea6c3e3c270b368eea4495dbd6e93b1695b8",
+  "branch": "codex/pr-11-human-coding-pilot-preregistration",
+  "planned_real_coding_items": 12,
+  "coder_roles": [
+    "H1",
+    "H2"
+  ],
+  "rubric": "POS/KVS v1.2, frozen rules inherited without substantive edits",
+  "coded_factors": [
+    "POS",
+    "KVS"
+  ],
+  "RGU_KVPTN": "EXOGENOUS_ANALYTIC_WEIGHTS_NOT_CODED",
+  "human_state": "NOT_STARTED",
+  "release_state": "HOLD_DO_NOT_DISTRIBUTE",
+  "reliability_state": "NOT_RUN",
+  "adjudication_state": "NOT_STARTED",
+  "UNO": "NOT_COMPUTED",
+  "intended_answer_key": "NOT_CREATED",
+  "provenance_admission": "NOT_ESTABLISHED; see coordinator/RELEASE_CHECKLIST.json",
+  "blinding": "Protocol only until separate isolated delivery and signed eligibility attestations; no case identity masking claim.",
+  "files": [
+    {
+      "path": "docs/scientific/MVP7_HUMAN_CODING_PILOT_PREREGISTRATION.md",
+      "sha256": "019d852adeed3f2d5e6dcb5a94b7c9ebea170ae77e4a7f639e23848d71d84e2e",
+      "bytes": 28288
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H1/ACCESS_ATTESTATION.json",
+      "sha256": "96c7cd26ada379bd726f03effd8cec4f9f7646a088efe2ebfb68da5f4abc926c",
+      "bytes": 711
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H1/CODER_PACKET.md",
+      "sha256": "0a7c091839450763eebdf3ed0c4f7aa9ab51831f4446b0202ebe5958d4464545",
+      "bytes": 73980
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H1/PACKET_MANIFEST.json",
+      "sha256": "c86e70cb698adc0dd584ea78960ae6ef4a52d1a6080351331a09e446c011147e",
+      "bytes": 1158
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H1/POS_KVS_V1_2_INSTRUCTIONS.md",
+      "sha256": "72823f5ae87f4a3de94fdef680c3d5e4250b79e50cc4d7d1aa65e80b6cf106e1",
+      "bytes": 59298
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H1/RESPONSE_TEMPLATE.json",
+      "sha256": "6b11c8a8338d5aae0547019a99951f2954e841204c49dd8bc387152998bfd27f",
+      "bytes": 15894
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H2/ACCESS_ATTESTATION.json",
+      "sha256": "236416d23fd13c6f233b0b02afa37271dc7ace46f2429c213910f6015c01443c",
+      "bytes": 711
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H2/CODER_PACKET.md",
+      "sha256": "5dcc9a28b3ad29ebda8c708beb53ce1fce3ee15a6a6e565565f7d89e2d9fa3e2",
+      "bytes": 73980
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H2/PACKET_MANIFEST.json",
+      "sha256": "dc6233a9d290deffb60590373815c2283c9b624b2b930cb220ddd6c7c6a5e600",
+      "bytes": 1158
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H2/POS_KVS_V1_2_INSTRUCTIONS.md",
+      "sha256": "72823f5ae87f4a3de94fdef680c3d5e4250b79e50cc4d7d1aa65e80b6cf106e1",
+      "bytes": 59298
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H2/RESPONSE_TEMPLATE.json",
+      "sha256": "c8b959f76de005ffc93ffde57a88a68647d68fb159790df78ef45413db1996ab",
+      "bytes": 15894
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/TECHNICAL_VALIDATION.json",
+      "sha256": "bc6f4e4e4cfd705cb32ebd6f5b46b916ab5b2566551b62b9296f02daaebdf159",
+      "bytes": 31205
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/EVIDENCE_SUBSET.json",
+      "sha256": "a5b461acae888bd5ac6a56789c827415076e94fac865065c55ad6b1d812788a0",
+      "bytes": 98054
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/RANDOMIZATION.json",
+      "sha256": "4b8ce81c309082dccd56c4df01caad6a42905274c5739f5de64648ff425d3068",
+      "bytes": 11244
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/RELEASE_CHECKLIST.json",
+      "sha256": "cd4638442676021b8594ebdbcfb39f3fb9b23ab0f1c51ad1bb7f683e5acd495d",
+      "bytes": 2059
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/RESPONSE_SCHEMA.json",
+      "sha256": "1fd7c6787c1870ffd7feabbf3589a02bbc39aa79684cc3edd6f3ebdbb05200e0",
+      "bytes": 23765
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/SELECTED_CODING_ITEMS.json",
+      "sha256": "4275e3f2580599bba0da0865f30e4b0b938d44d32793c497aa5df7f18394c1ec",
+      "bytes": 23447
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/SELECTION_FRAME.json",
+      "sha256": "0e61197f8c454c9231c9dfd37021fb06c4641596cdda618b12d0d7a359e7394b",
+      "bytes": 8606
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/SOURCE_MANIFEST.json",
+      "sha256": "0e4fe3a447d78eae4869c6340d1bf0e6f08a2ef7a642910923c291a54e014d15",
+      "bytes": 3388
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/STUDY_PLAN.json",
+      "sha256": "8772d3c2338cd25ed1c19ae95e4e6f999de5dfd1810d96f9e78e2cf447347f0e",
+      "bytes": 2914
+    }
+  ],
+  "self": {
+    "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/FREEZE_MANIFEST.json",
+    "sha256_location": "Commit/Draft PR description and external delivery receipt; no recursive self-hash."
+  },
+  "change_policy": "No overwrite; any amendment requires new version and freeze before human answers; stop current run if changed after start.",
+  "stop": "STOP_BEFORE_HUMAN_CODING"
+}
