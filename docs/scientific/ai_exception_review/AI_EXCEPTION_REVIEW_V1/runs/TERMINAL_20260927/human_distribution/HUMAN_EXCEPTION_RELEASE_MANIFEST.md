@@ -16,3 +16,16 @@ Distribution:
 - Release of frozen H1/H2 remains unchanged and is not authorized by this manifest.
 
 No human work is started merely by committing these files.
+
+## Frozen pre-release comparison protocol
+
+Before any E1/E2 response is collected, the following were frozen:
+- `HUMAN_EXCEPTION_UNIT_REGISTRY.json` — exact 42-unit registry;
+- `HUMAN_EXCEPTION_REVIEW_PROTOCOL_V1.md` — independence, routing, and scientific-boundary rules;
+- `HUMAN_EXCEPTION_RESPONSE_SCHEMA_V1.json` — response structure and attestations;
+- `compare_human_exception_results.py` — deterministic coordinator comparator.
+
+Comparator self-test was executed on the authorized Windows device on 2026-09-28 before human responses and returned PASS for the four routing cases RR / NN / RN / HN.
+
+The comparator never changes admission automatically and never computes inter-coder reliability. Any double-human RESOLVED result remains a coordinator-verification candidate.
+
