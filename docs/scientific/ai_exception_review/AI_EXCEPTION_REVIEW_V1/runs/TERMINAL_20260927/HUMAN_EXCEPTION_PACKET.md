@@ -1,5 +1,3 @@
-[Reading 900 lines from start (total: 4302 lines, 3402 remaining)]
-
 # AI_EXCEPTION_REVIEW_V1 — HUMAN_EXCEPTION_QUEUE
 
 Два сотрудника: E1 и E2; это проверка исключений Evidence, не HUMAN coding, не adjudication POS/KVS и не inter-coder reliability. Работу людей этот файл не запускает. Каждый работает отдельно с одинаковым материалом и не видит ответов другого. Применяется cutoff 15.12.2011 23:59:59 UTC; дата публикации не доказывает доступность редакции. Не использовать исход конфликта, не менять frozen chains/H1/H2. Проверять только перечисленные unit_id; приложение — их минимально связанный контекст.
@@ -900,10 +898,6 @@ Submitted witnesses в приложении — нейтральные мате�
       "fact_id": "6f26acf1-03dd-5731-a626-2c2c558b58cd",
       "statement": "Eurasianet передал позицию РД КМГ о том, что работники получают справедливую оплату.",
       "fact_type": "ACTOR_CLAIM",
-
-[executed on device: DShatrov2 (0c10415f-3040-40fd-be55-dbd17bd7a38a)]
-[Reading 900 lines from line 900 (total: 4302 lines, 2502 remaining)]
-
       "time_start": "2011-10-13",
       "time_end": "2011-10-13",
       "geography": "KMG EP / Mangistau",
@@ -1804,10 +1798,6 @@ Submitted witnesses в приложении — нейтральные мате�
       "content_hash": "778d61386dbfd8044eab009c204df0e0744bf90781898c4484d79d284fbadaa6",
       "content_type": "text/x-evidence-capture; charset=utf-8",
       "local_or_archive_locator": "zhanaozen_v4_2011_evidence_captures/D07_d8d0cc9f_capture.txt",
-
-[executed on device: DShatrov2 (0c10415f-3040-40fd-be55-dbd17bd7a38a)]
-[Reading 900 lines from line 1800 (total: 4302 lines, 1602 remaining)]
-
       "language": "ru",
       "label": "D07"
     },
@@ -2708,10 +2698,6 @@ Submitted witnesses в приложении — нейтральные мате�
       "payload_bytes": 56599,
       "retrieved_at_utc": "2026-09-26T15:45:23.205176+00:00",
       "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
-
-[executed on device: DShatrov2 (0c10415f-3040-40fd-be55-dbd17bd7a38a)]
-[Reading 900 lines from line 2700 (total: 4302 lines, 702 remaining)]
-
       "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
       "matched_fragments": [
         {
@@ -3612,10 +3598,6 @@ Submitted witnesses в приложении — нейтральные мате�
       "status": null,
       "exact_evidence": null,
       "evidence_reference": null,
-
-[executed on device: DShatrov2 (0c10415f-3040-40fd-be55-dbd17bd7a38a)]
-[Reading 702 lines from line 3600 (total: 4302 lines, 0 remaining)]
-
       "reason": null,
       "confidence": null,
       "remaining_unknowns": null
@@ -4318,5 +4300,3 @@ Submitted witnesses в приложении — нейтральные мате�
   ]
 }
 ```
-
-[executed on device: DShatrov2 (0c10415f-3040-40fd-be55-dbd17bd7a38a)]
