@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:conflict:AI_EXCEPTION_REVIEW_V1:human_exception_response_v1",
+  "type": "object",
+  "properties": {
+    "review_id": {
+      "enum": [
+        "AI_EXCEPTION_REVIEW_V1"
+      ]
+    },
+    "reviewer_id": {
+      "enum": [
+        "HUMAN_EXCEPTION_E1",
+        "HUMAN_EXCEPTION_E2"
+      ]
+    },
+    "completed_at_utc": {
+      "type": "string",
+      "minLength": 1
+    },
+    "material_sha256": {
+      "enum": [
+        "767da0d3f4fc189e587efd9084ea20ecb546f4f102c85e11f0153bc9d40a04fa"
+      ]
+    },
+    "attestation": {
+      "type": "object",
+      "properties": {
+        "no_other_reviewer_answers_seen": {
+          "enum": [
+            true
+          ]
+        },
+        "no_ai_answers_seen": {
+          "enum": [
+            true
+          ]
+        },
+        "no_outcome_used": {
+          "enum": [
+            true
+          ]
+        },
+        "no_factor_scoring_or_uno": {
+          "enum": [
+            true
+          ]
+        }
+      },
+      "required": [
+        "no_other_reviewer_answers_seen",
+        "no_ai_answers_seen",
+        "no_outcome_used",
+        "no_factor_scoring_or_uno"
+      ],
+      "additionalProperties": false
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 42,
+      "maxItems": 42,
+      "items": {
+        "type": "object",
+        "properties": {
+          "unit_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "RESOLVED",
+              "NOT_RESOLVED",
+              "NEED_HUMAN"
+            ]
+          },
+          "exact_evidence": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "evidence_reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "remaining_unknowns": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "unit_id",
+          "status",
+          "exact_evidence",
+          "evidence_reference",
+          "reason",
+          "confidence",
+          "remaining_unknowns"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "review_id",
+    "reviewer_id",
+    "completed_at_utc",
+    "material_sha256",
+    "attestation",
+    "entries"
+  ],
+  "additionalProperties": false
+}
