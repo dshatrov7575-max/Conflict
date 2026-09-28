@@ -1,0 +1,37 @@
+{
+  "protocol_id": "AI_ONLY_RESEARCH_BETA_V1",
+  "protocol_patch": "PATCH_1",
+  "run": "PRIMARY_20260928",
+  "normalization_scope": "mechanical_only_no_factor_semantics_changed",
+  "source_fingerprints": {
+    "AI1": {
+      "actual_model_label": "GPT-6 Astra Pro",
+      "run_id": "AI1_PRIMARY_20260928T105855Z",
+      "packet_commit": "0959f88e482753ea65b015eb6d1da4572d9eafe1",
+      "raw_paste_sha256": "dec770f5a39c94fa4d7eea5ca027cae789d9ce81a4cdf7fd969c58ae06af09c0",
+      "normalized_sha256": "6f4e0917febe41bbac8283d88012426d8db1e78ed2abb66020d09019c4f6fffa"
+    },
+    "AI2": {
+      "actual_model_label": "GPT-5.6 Sol Pro",
+      "run_id": "e635e10e-701b-4c15-80b6-9c36bbf18620",
+      "packet_commit": "0959f88e482753ea65b015eb6d1da4572d9eafe1",
+      "raw_file_sha256": "d83f84ce8fa99f92bcee8f6c47d44aac4a8f56503828f42dbe1a2dec02f2bfc3",
+      "normalized_sha256": "709325862bd78d400757b781a6abb567e8a9015e4355a7ae53843209c16c2336"
+    }
+  },
+  "transformations": {
+    "AI1": {
+      "coding_item_id_from_frozen_crosswalk": 24,
+      "rubric_rule_ref_array_joined": 24,
+      "required_null_or_empty_placeholders_added": 60
+    },
+    "AI2": {
+      "coding_item_id_from_frozen_crosswalk": 24,
+      "verbatim_objects_projected_to_text": 24,
+      "required_null_or_empty_placeholders_added": 60
+    }
+  },
+  "frozen_crosswalk": "ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/RANDOMIZATION.json orders H1/H2",
+  "originals_immutable": true,
+  "note": "AI2 requested Claude but self-reported GPT-5.6 Sol Pro; label preserved, not relabeled."
+}
