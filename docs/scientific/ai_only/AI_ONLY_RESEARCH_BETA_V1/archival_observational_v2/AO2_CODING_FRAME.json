@@ -1,0 +1,84 @@
+{
+  "route_id": "AI_ARCHIVAL_OBSERVATIONAL_V2",
+  "version": "2.0.0-draft1",
+  "status": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+  "target_time_utc": "2011-12-15T23:59:59Z",
+  "case_id": "ZHANAOZEN_2011",
+  "items": [
+    {
+      "item_id": "AO2-01",
+      "actor_key": "AOV2_OMG_STRIKERS",
+      "actor_name": "Workers explicitly identified with OzenMunaiGaz in admitted pre-cutoff material",
+      "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+      "element_code": "E02",
+      "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+      "evidence_ids": [
+        "C03-CACI-20110817",
+        "D13-F56"
+      ],
+      "scope_note": "No extrapolation to all GU01 or other companies."
+    },
+    {
+      "item_id": "AO2-02",
+      "actor_key": "AOV2_OMG_STRIKERS",
+      "actor_name": "Workers explicitly identified with OzenMunaiGaz in admitted pre-cutoff material",
+      "ptn_id": "728c8406-ba99-5787-9557-933b5670be7c",
+      "element_code": "E05",
+      "reference_statement": "Существующие механизмы представительства, переговоров и коллективных действий обеспечивают достаточный доступ к выражению и согласованию интересов.",
+      "evidence_ids": [
+        "C03-CACI-20110817",
+        "D03-FCC"
+      ],
+      "scope_note": "No extrapolation to all workers or contractors."
+    },
+    {
+      "item_id": "AO2-03",
+      "actor_key": "AOV2_KBM_STRIKERS",
+      "actor_name": "Workers explicitly identified with QarazhanbasMunai in admitted pre-cutoff material",
+      "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+      "element_code": "E02",
+      "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+      "evidence_ids": [
+        "D01-FPAY"
+      ],
+      "scope_note": "Company-specific worker actor only."
+    },
+    {
+      "item_id": "AO2-04",
+      "actor_key": "AOV2_KBM_STRIKERS",
+      "actor_name": "Workers explicitly identified with QarazhanbasMunai in admitted pre-cutoff material",
+      "ptn_id": "728c8406-ba99-5787-9557-933b5670be7c",
+      "element_code": "E05",
+      "reference_statement": "Существующие механизмы представительства, переговоров и коллективных действий обеспечивают достаточный доступ к выражению и согласованию интересов.",
+      "evidence_ids": [
+        "D04-FUNION"
+      ],
+      "scope_note": "Company-specific worker actor only."
+    },
+    {
+      "item_id": "AO2-05",
+      "actor_key": "AOV2_DISMISSED_KMG_EP_WORKERS_D25",
+      "actor_name": "Dismissed workers explicitly described in the admitted D25 source",
+      "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+      "element_code": "E02",
+      "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+      "evidence_ids": [
+        "D25-FREINSTATE"
+      ],
+      "scope_note": "Only the dismissed-worker group explicitly described in D25; not all GU03/job seekers."
+    },
+    {
+      "item_id": "AO2-06",
+      "actor_key": "AOV2_KMG_EP_MANAGEMENT",
+      "actor_name": "KMG EP management/company position as explicitly attributed in admitted D25 material",
+      "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+      "element_code": "E02",
+      "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+      "evidence_ids": [
+        "D25-FFAIR",
+        "D25-FRAISES"
+      ],
+      "scope_note": "Company position only; not all GU05/employers."
+    }
+  ]
+}
