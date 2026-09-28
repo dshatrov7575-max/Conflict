@@ -1,0 +1,23 @@
+{
+  "protocol_id": "AI_ONLY_RESEARCH_BETA_V1",
+  "input_version": "EFFECTIVE_INPUT_V2",
+  "assessment": "STRICT_V1_NUMERIC_FEASIBILITY",
+  "selected_coding_items": 12,
+  "factor_entries": 24,
+  "selected_unique_fragments": 29,
+  "anchor_scan": {
+    "pos_degree_predicate_hits_in_selected_fragments": 0,
+    "kvs_priority_predicate_hits_in_selected_fragments": 0,
+    "note": "Mechanical scan for explicit closed-rubric degree/priority/compromise/non-negotiability language. Absence is not proof that no fuller source context could contain such language."
+  },
+  "current_gate_effect": {
+    "G1": "REPAIRABLE_BY_V2_BINDING",
+    "G2": "PARTIAL_BY_DOCUMENT; authenticated context exists for 11 source versions, current-context-only remains for 9",
+    "G3": "PARTIAL; 17 selected exact fragments across 11 document labels have pre-cutoff fragment witnesses; 9 document labels remain NOT_PROVEN",
+    "G4": "NOT_ESTABLISHED for full frozen actor groups in all 12 selected CodingItems; one GU02 scope mismatch is explicitly confirmed",
+    "G5": "NUMERIC_PREDICATE_NOT_ESTABLISHED for all 24 entries under strict v1 on the currently selected corpus",
+    "G6": "requires provenance/counterevidence review per item; not the decisive blocker while G4/G5 fail",
+    "G7": "PASS under PATCH_1 AI-only frozen-run protocol"
+  },
+  "conclusion": "EFFECTIVE_INPUT_V2 can repair the identifier/PTN binding defect without changing Core. It cannot by itself produce a point POS/KVS value under strict v1. The critical path is source expansion for group/time/whole-reference evidence or a separately versioned archival measurement route; no amount of model rerunning repairs missing predicates."
+}
