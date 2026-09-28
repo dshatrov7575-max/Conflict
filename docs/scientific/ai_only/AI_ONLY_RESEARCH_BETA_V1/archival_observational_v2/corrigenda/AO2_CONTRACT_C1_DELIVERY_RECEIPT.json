@@ -1,0 +1,81 @@
+{
+  "corrigendum_id": "AO2_CONTRACT_C1",
+  "status": "POST_RUN_CORRIGENDUM_PROSPECTIVE_ONLY",
+  "original_packet_commit": "89504d14f5ebe285f1144ba12acd6f926e5cd972",
+  "original_pair_review_commit": "aac1d2f59e93204d76703ff9420d7bb5fea163ab",
+  "control_doc_commit": "71d5c9fd1b52238ce1bd7833d08fcf2bec9b95fc",
+  "delivery": {
+    "archive_filename": "MVP7_AO2_CONTRACT_C1_20260928.zip",
+    "bytes": 27352,
+    "sha256": "98f721b8222b02977bed63f3e343aec0079e3592320a179ee153bcea6f663809",
+    "files_count": 10,
+    "zip_crc": "PASS",
+    "fresh_extraction_replay": "35_TESTS_AND_9_HASHES_PASS",
+    "location": "Downloadable attachment in coordinating conversation",
+    "archive_uploaded_to_git": false,
+    "raw_html_included": false
+  },
+  "files": [
+    {"name":"00_REPORT_RU.md","bytes":4952,"sha256":"c6d30fd9e9fde3f5752ca7ad01a675c8157c4cbf2dff8185dd68f3238544f441"},
+    {"name":"01_CORRIGENDUM_RU.md","bytes":10900,"sha256":"ddbfc30cc6c5c8ac8552d7836a30df545f793622d253a949946e42e6ff932e3c"},
+    {"name":"02_RESPONSE_SCHEMA_C1.json","bytes":5771,"sha256":"1bd81c4171ba09e80331a8d1fa944742f0a2aa3cda01549de4457d8b34e377bf"},
+    {"name":"03_TEMPORAL_BINDINGS_C1.json","bytes":5351,"sha256":"63eff453e4c4c3a8dcbe57c08e1d40a8932def8a9fd97aa7760fecc0fc43f5ba"},
+    {"name":"04_CONTEXT_RECEIPTS_C1.json","bytes":10524,"sha256":"94f6336f867c1396e27f4856f3607eafe11457625c40553de5873935851071ce"},
+    {"name":"05_LEGACY_INTAKE_C1.json","bytes":44932,"sha256":"09897054964ce23ccb60c9ae6605c89e9abcd2cdcbf4b33043d40515745e1555"},
+    {"name":"06_validate_ao2_c1.py","bytes":9729,"sha256":"3c11c53adcb87124c61bb993cbcfb0f9d3bc8b7b762a90efb43d101327169846"},
+    {"name":"07_test_ao2_c1.py","bytes":6514,"sha256":"9bf64fcc98a6aedc26e292133f5e25a197c60507352106b1292fdc1b50d49177"},
+    {"name":"08_CHECKS.json","bytes":1671,"sha256":"223e2375dd811e1310eaf02b059f0da8f5b483399b08991304ec9dde63cccefb"}
+  ],
+  "preservation": {
+    "AI1_original_sha256": "2c98982c77d3b86cca61c9057fe152f7548d5ef98bc4553c4850a64edbf56171",
+    "AI2_original_sha256": "9b70db8111b202d91fdb2d6f408d974325a7eafde9453cb743ef1fa70fcc5c00",
+    "original_bytes_rechecked": true,
+    "source_responses_in_legacy_envelope": "UNCHANGED_JSON_CONTENT_WITH_ORIGINAL_BYTE_HASHES",
+    "old_comparator": "UNCHANGED; reproduced exit 1, ValueError: unknown confidence",
+    "retroactive_pass": false,
+    "confidence_conversion": "NONE",
+    "new_coder_runs": 0,
+    "additional_targeted_critique_rounds": 0
+  },
+  "cache_verification": {
+    "method": "Read and rehash existing authorized Windows cache; no new HTTP retrieval",
+    "labels": ["D01","D03","D04","D13","D25"],
+    "sha256_size_sha1_matches": 5,
+    "context_sentence_matches": 5,
+    "archive_timestamps_and_headers": "INHERITED_FROM_PRIOR_ACQUISITION_LEDGER",
+    "payload_sha256": {
+      "D01":"5b171ee61f7e202da0b00899aef7659237e01ed6000c2626e4834f265ef66907",
+      "D03":"00fb548b56d73a1088aec39a202c8fa3df7d0295e3d56a55535ccae254030aee",
+      "D04":"c294d06169104785025a0c564b8f7e4fb34dc5b4ead7a3104c9655b1e4d262a1",
+      "D13":"3ccbc77c868072e6b5d15daef180355467ddc4d25f828f052b241f44aafab51e",
+      "D25":"c6ae02c231a18cf574743016e307a1b2d302edbc6fe7386c8dc636c679395005"
+    },
+    "date_field_corrections": [
+      {"label":"D01","old_ao2_date":"2011-05-21","visible_publication_date":"2011-05-17","old_date_is_archive_capture_day":true},
+      {"label":"D03","old_ao2_date":"2011-05-27","visible_publication_date":"2011-05-26","old_date_is_archive_capture_day":true},
+      {"label":"D04","old_ao2_date":"2011-05-29","visible_publication_date":"2011-05-27","old_date_is_archive_capture_day":true}
+    ],
+    "D04_full_context": "Explicit striking-workers demand predicate recovered; R2 supplement only, not a retroactive R1 answer change",
+    "C03_CACI_new_pdf_receipt": "NOT_OBTAINED_IN_THIS_STEP"
+  },
+  "future_contract": {
+    "confidence": "QUALITATIVE_UNCALIBRATED object; category independent of result status; no probability or weight interpretation",
+    "evaluation_mode": "SOURCE_STATEMENT_ONLY",
+    "new_unit_ids": "AO2S-C1-01 through AO2S-C1-06",
+    "as_of_time_utc": null,
+    "carry_forward_policy": "NONE",
+    "december_snapshot": "SEPARATE_NOT_ESTABLISHED",
+    "format_pass_is_source_authentication": false
+  },
+  "release": {
+    "state":"HOLD_NO_CORE_EXPORT",
+    "previous_conditional_numeric_candidates":8,
+    "previous_unknown":4,
+    "calculation_eligible":0,
+    "uno":"NOT_COMPUTED",
+    "human_validation":"NOT_PERFORMED",
+    "core_changed":false,
+    "weights_changed":false,
+    "strict_v1_and_H1_H2_changed":false
+  }
+}
