@@ -1,0 +1,80 @@
+{
+  "delivery_id": "MVP7_R2_ENGINEERING_READY_20260928",
+  "state": "OFFLINE_ENGINEERING_READY_WAITING_R2_AI2",
+  "source_head": "26e6f2ca81004d6fa3fe0f183127d2eeb2829b1e",
+  "checked_at_utc": "2026-09-28T18:43:40.672548+00:00",
+  "scope": "Read-only coordinator utility and focused synthetic tests; not installed in the application. No new measurement rules or primary coder inputs.",
+  "delivery": {
+    "zip_name": "MVP7_R2_ENGINEERING_READY_20260928.zip",
+    "zip_bytes": 72826,
+    "zip_sha256": "1c0ae60ff7692240535f5d04f5f1b39979f2cd730d1548d2c5a80e8b42bd314a",
+    "physical_file_count": 10,
+    "manifest_sha256": "b6bd500dfe6f48c21f8d26404cd63fa1afb3f853c50615dfd3922da1ad45b292",
+    "results_sha256": "d7360dc037f4f4d0454ba5d43f8d4f7303480d374d7677bb1712bab5f7aa2a59",
+    "intake_script_sha256": "20ee27e89d02501abd9eb1228c0fa146d78f0f4ea206e13ce0fbe7f14bf95c86",
+    "location": "Downloadable coordinating-conversation attachment; full payload not uploaded to Git in this step",
+    "zip_crc": "PASS",
+    "fresh_extraction_replay": "91_TESTS_AND_9_MANIFEST_HASHES_PASS; live intake JSON exactly reproduced"
+  },
+  "checks": {
+    "frozen_R2_contract_tests": 40,
+    "new_intake_tests": 20,
+    "new_exact_pure_core_synthetic_tests": 31,
+    "total_distinct_test_methods_per_run": 91,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "python": "3.13.5",
+    "platform": "Linux",
+    "full_application_suite": "NOT_RUN",
+    "foundation_database_adapter": "NOT_RUN",
+    "UI_HTTP_E2E": "NOT_RUN",
+    "PostgreSQL_concurrency": "NOT_RUN",
+    "remote_CI": "NOT_RUN",
+    "scientific_validation": "NOT_CLAIMED"
+  },
+  "exact_core_blobs_executed": {
+    "software/conflict_analysis/calculation/contracts.py": "5eaad9022804b192911f5fab498e56c788017d73",
+    "software/conflict_analysis/calculation/strategy.py": "434aafd8044410049ae14a76a88b66df5b0da658",
+    "software/conflict_analysis/calculation/__init__.py": "669e9162fbc4ea348cef7cb6d81a73a07f95cf0b"
+  },
+  "boundary_findings": [
+    {
+      "id": "INCOMPLETE_COUNTERPARTY_ZERO",
+      "input_kind": "SYNTHETIC_ONLY",
+      "observation": "Exact Core returns UNO=0 and PARTIAL with 1/2 eligible rows if the only positive-position counterparty has UNKNOWN KVS. Its missing row and warning remain in trace.",
+      "interpretation": "Expected frozen Core arithmetic, not proof of absence of tension. The R2 intake utility never releases real SOURCE_STATEMENT data as a historical snapshot."
+    },
+    {
+      "id": "DISPUTED_STATUS_BOUNDARY",
+      "observation": "R2 DISPUTED stores null with alternatives; Core DISPUTED requires one numeric value and rejects null.",
+      "action": "No direct status copy, alternative selection, normalization or real-data adapter implemented."
+    }
+  ],
+  "live_intake": {
+    "AI1_role": "AO2S_R2_AI1",
+    "AI1_sha256": "e8a44650da48590bf3ad54c0654548a53cf6d55f7c9883560f5fa77a8eefb842",
+    "AI1_bytes": 67213,
+    "AI1_status": "VALIDATED_NOT_RELEASED",
+    "AI1_entries": 12,
+    "AI1_numeric": 6,
+    "AI1_unknown": 6,
+    "AI2_status": "PENDING_NOT_SUPPLIED",
+    "legacy_AO2_AI2_not_accepted_as_R2": true,
+    "legacy_attachment_sha256": "9b70db8111b202d91fdb2d6f408d974325a7eafde9453cb743ef1fa70fcc5c00",
+    "real_pair_comparison_performed": false,
+    "R2_semantic_review_rounds_used": 0
+  },
+  "preservation": {
+    "R2_AI1_original_unchanged": true,
+    "both_R2_standalone_bytes_unchanged": true,
+    "frozen_R2_validator_and_rules_unchanged": true,
+    "Core_formula_unchanged": true,
+    "new_primary_model_runs": 0,
+    "real_R2_records_sent_to_Core": 0,
+    "weights_assigned": false,
+    "historical_uno": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "background_automation_created": false
+  }
+}
