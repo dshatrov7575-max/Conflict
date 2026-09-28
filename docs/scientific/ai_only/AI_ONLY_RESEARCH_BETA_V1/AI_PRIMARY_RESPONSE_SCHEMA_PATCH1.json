@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:conflict:AI_ONLY_RESEARCH_BETA_V1:primary_response_patch1",
+  "title": "MVP7 AI-only primary factor coder response",
+  "type": "object",
+  "properties": {
+    "protocol_id": {
+      "const": "AI_ONLY_RESEARCH_BETA_V1"
+    },
+    "protocol_patch": {
+      "const": "PATCH_1"
+    },
+    "coder_role": {
+      "enum": [
+        "AI1",
+        "AI2"
+      ]
+    },
+    "actual_model_label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_label_source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "completed_at_utc": {
+      "type": "string",
+      "minLength": 1
+    },
+    "packet_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "attestation": {
+      "type": "object",
+      "properties": {
+        "other_coder_output_seen": {
+          "const": false
+        },
+        "prior_factor_outputs_seen": {
+          "const": false
+        },
+        "outcome_used_as_evidence": {
+          "const": false
+        },
+        "background_memory_present": {
+          "type": "boolean"
+        },
+        "known_case_from_training": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "other_coder_output_seen",
+        "prior_factor_outputs_seen",
+        "outcome_used_as_evidence",
+        "background_memory_present",
+        "known_case_from_training"
+      ],
+      "additionalProperties": false
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 24,
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "properties": {
+          "coding_item_id": {
+            "enum": [
+              "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+              "951f300c-27d0-5a09-b312-e3fdad147f54",
+              "bc34ea72-a9ac-5e81-ab20-3f2efb729872",
+              "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+              "cd9eb952-6af0-5708-8703-49673415cbe7",
+              "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+              "3f4dc104-40c7-59db-ad5c-61f8a80232bc",
+              "2c58ce09-3654-5a87-89be-4b1953f467c7",
+              "5e3146aa-0dfd-5be2-8f8d-39b94edee3ff",
+              "a6f0883a-d5fc-521b-8662-1c160fded750",
+              "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+              "79748746-11e6-506c-82d5-bc5fe877beb0"
+            ]
+          },
+          "local_item_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "factor": {
+            "enum": [
+              "POS",
+              "KVS"
+            ]
+          },
+          "status": {
+            "enum": [
+              "NUMERIC",
+              "UNKNOWN",
+              "DISPUTED"
+            ]
+          },
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "admission_checks": {
+            "type": "object",
+            "properties": {
+              "G1": {
+                "type": "boolean"
+              },
+              "G2": {
+                "type": "boolean"
+              },
+              "G3": {
+                "type": "boolean"
+              },
+              "G4": {
+                "type": "boolean"
+              },
+              "G5": {
+                "type": "boolean"
+              },
+              "G6": {
+                "type": "boolean"
+              },
+              "G7": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "G1",
+              "G2",
+              "G3",
+              "G4",
+              "G5",
+              "G6",
+              "G7"
+            ],
+            "additionalProperties": false
+          },
+          "reason_codes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "evidence_references": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "verbatim_evidence": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "rubric_rule_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1
+          },
+          "confidence": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "choice_context": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "alternatives_set": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "satisfaction_criterion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "conflict_alternatives": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "coding_item_id",
+          "local_item_id",
+          "factor",
+          "status",
+          "value",
+          "admission_checks",
+          "reason_codes",
+          "evidence_references",
+          "verbatim_evidence",
+          "rubric_rule_ref",
+          "rationale",
+          "confidence",
+          "choice_context",
+          "alternatives_set",
+          "satisfaction_criterion",
+          "conflict_alternatives"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "protocol_id",
+    "protocol_patch",
+    "coder_role",
+    "actual_model_label",
+    "model_label_source",
+    "run_id",
+    "completed_at_utc",
+    "packet_commit",
+    "attestation",
+    "entries"
+  ],
+  "additionalProperties": false
+}
