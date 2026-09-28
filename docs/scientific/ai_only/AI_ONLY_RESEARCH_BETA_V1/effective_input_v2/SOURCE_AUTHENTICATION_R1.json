@@ -1,0 +1,110 @@
+{
+  "protocol_id": "AI_ONLY_RESEARCH_BETA_V1",
+  "input_version": "EFFECTIVE_INPUT_V2",
+  "authentication_run": "SOURCE_AUTHENTICATION_R1",
+  "performed_at_utc": "2026-09-28T12:42:00Z",
+  "rule": "Publication date/current page alone does not satisfy historical G3. A contemporaneous independent republication may prove the reproduced content existed pre-cutoff, but does not prove full byte identity of the original page.",
+  "candidates": [
+    {
+      "id": "C01_RFERL_2011_06_02",
+      "url": "https://www.rferl.org/a/kazakhstan_striking_oil_workers/24213680.html",
+      "title": "Striking Kazakh Oil Workers Picket Governor's Office",
+      "current_page_date": "2011-06-02",
+      "status": "CURRENT_PAGE_ONLY_NOT_G3",
+      "pre_cutoff_content_witness": null,
+      "note": "Current page contains hundreds of Qarazhanbasmunai employees and collective wage/union demands. No independent pre-cutoff content witness established in R1."
+    },
+    {
+      "id": "C02_RFERL_2011_06_24",
+      "url": "https://www.rferl.org/a/striking_kazakh_oil_workers_appeal_president/24245972.html",
+      "title": "Striking Kazakh Oil Workers Appeal To President",
+      "current_page_date": "2011-06-24",
+      "status": "CURRENT_PAGE_ONLY_NOT_G3",
+      "pre_cutoff_content_witness": null,
+      "note": "Current page attributes an official letter and reinstatement/wage/release demands to a recently fired worker speaking about protesters. No independent pre-cutoff content witness established in R1."
+    },
+    {
+      "id": "C03_RFERL_2011_08_11",
+      "url": "https://www.rferl.org/a/striking_kazakh_oil_workers_quit_ruling_party/24294248.html",
+      "title": "Striking Kazakh Oil Workers Quit Ruling Party",
+      "current_page_date": "2011-08-11",
+      "status": "PRE_CUTOFF_CONTENT_CORROBORATED",
+      "pre_cutoff_content_witness": {
+        "witness_url": "https://www.cacianalyst.org/resources/pdf/issues/20110817Analyst.pdf",
+        "witness_date": "2011-08-17",
+        "witness_title": "Central Asia-Caucasus Analyst, Vol. 13 No. 16",
+        "locator": "p.23, News Digest, lines corresponding to 11 August item",
+        "reproduced_content": [
+          "RFE/RL attribution",
+          "OzenMunaiGaz worker Roza Toretaeva",
+          "nearly 3,000 workers filed papers to quit Nur-Otan",
+          "workers said none of their strike demands had been met",
+          "demands: equal rights with foreign workers, pay raise, no restrictions on independent labor unions, release of Natalya Sokolova"
+        ]
+      },
+      "note": "This establishes pre-cutoff existence of the reproduced content, not byte identity of the full RFE/RL page."
+    },
+    {
+      "id": "C04_RFERL_2011_09_14",
+      "url": "https://www.rferl.org/a/striking_kazakh_oil_workers_say_fight_will_go_on/24328725.html",
+      "title": "Tired, Angry, But Determined, Striking Kazakh Oil Workers Say Fight Will Go On",
+      "current_page_date": "2011-09-14",
+      "status": "CURRENT_PAGE_ONLY_NOT_G3",
+      "pre_cutoff_content_witness": null,
+      "note": "Current page has direct worker/group statements and continuation conditions, but located secondary citations are post-cutoff."
+    },
+    {
+      "id": "C05_RFERL_2011_10_10",
+      "url": "https://www.rferl.org/a/striking_kazakh_oil_worker_attacked/24355310.html",
+      "title": "Striking Kazakh Oil Worker Attacked",
+      "current_page_date": "2011-10-10",
+      "status": "CURRENT_PAGE_ONLY_NOT_G3",
+      "pre_cutoff_content_witness": null,
+      "note": "Current page repeats thousands at Qarazhanbasmunai/OzenMunaiGaz and wage/equal-rights/union demands. No independent pre-cutoff witness established in R1."
+    },
+    {
+      "id": "C06_EURASIANET_2011_10_13",
+      "url": "https://eurasianet.org/kazakhstan-labor-dispute-dragging-energy-production-down",
+      "title": "Kazakhstan: Labor Dispute Dragging Energy Production Down",
+      "current_page_date": "2011-10-13",
+      "status": "CURRENT_PAGE_ONLY_NOT_G3",
+      "pre_cutoff_content_witness": null,
+      "note": "Useful company-side context; current page alone is not historical preservation proof."
+    },
+    {
+      "id": "C07_RFERL_2011_11_03",
+      "url": "https://www.rferl.org/a/man_arrested_in_killing_of_striking_kazakh_oil_workers_daughter/24380757.html",
+      "title": "Man Arrested In Killing Of Striking Kazakh Oil Worker's Daughter",
+      "current_page_date": "2011-11-03",
+      "status": "CURRENT_PAGE_ONLY_NOT_G3",
+      "pre_cutoff_content_witness": null,
+      "note": "Current page repeats thousands at the two firms and the same demand set. No independent pre-cutoff witness established in R1."
+    },
+    {
+      "id": "C08_LADA_2011_11_24",
+      "url": "https://www.lada.kz/aktau_news/society/1244-v-zhanaozene-vtoroy-den-idet-trehstoronnyaya-vstrecha-bastuyuschih-ih-byvshih-rabotateley-i-vlasti.html",
+      "title": "Three-party meeting, second day",
+      "current_page_date": "2011-11-24",
+      "status": "POST_CUTOFF_CITATION_ONLY_NOT_G3",
+      "pre_cutoff_content_witness": null,
+      "note": "HRW later cites the article and says it accessed it in August 2012; that is after the 2011-12-15 cutoff."
+    },
+    {
+      "id": "C09_LADA_2011_11_27",
+      "url": "https://www.lada.kz/aktau_news/society/1264-bastuyuschie-neftyaniki-zhanaozenya-razocharovany-primiritelnaya-komissiya-okazalas-razyasnitelnoy.html",
+      "title": "Representatives of striking oil workers refused to sign the three-party protocol",
+      "current_page_date": "2011-11-27",
+      "status": "POST_CUTOFF_CITATION_ONLY_NOT_G3",
+      "pre_cutoff_content_witness": null,
+      "note": "HRW later cites the article; located citation is after cutoff and cannot establish G3."
+    }
+  ],
+  "summary": {
+    "total_candidates": 9,
+    "pre_cutoff_content_corroborated": 1,
+    "current_page_only_not_g3": 6,
+    "post_cutoff_citation_only_not_g3": 2,
+    "newly_admitted_content_scope": "C03 reproduced content only",
+    "full_original_page_identity_proven": 0
+  }
+}
