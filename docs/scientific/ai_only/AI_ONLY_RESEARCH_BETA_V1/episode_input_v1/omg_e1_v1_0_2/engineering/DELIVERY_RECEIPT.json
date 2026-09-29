@@ -1,0 +1,31 @@
+{
+  "package_id": "MVP7_OMG_COMPANY_V102_POST_RUN_ENGINEERING_20260930",
+  "status": "PREPARED_BEFORE_PRIMARY_RESPONSES",
+  "source_route": "AI_ONLY_DYAD_OMG_E1_V102",
+  "evidence_input_sha256": "34a70bb18664a8ccf5fb5713dd90bbebe32a1a60d17303603e4cb7d84d961f42",
+  "implementation": {
+    "primary_validator": true,
+    "deterministic_comparator": true,
+    "read_only_scenario_runner": true,
+    "coordinator_substitution": false,
+    "targeted_content_review_rounds": 0
+  },
+  "tests": {
+    "comparator_cases": 8,
+    "scenario_cases": 4,
+    "total": 12,
+    "failures": 0,
+    "errors": 0,
+    "result": "PASS"
+  },
+  "release_gate": {
+    "required": "CONSENSUS_NUMERIC for both company POS_AO2 and KVS_AO2 with identical C1-C8",
+    "otherwise": "HOLD_FACTOR_INCOMPLETE_OR_HOLD_DISAGREEMENT"
+  },
+  "scientific_boundary": {
+    "simultaneous_snapshot": false,
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  }
+}
