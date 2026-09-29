@@ -1,0 +1,23 @@
+{
+  "package_id": "MVP7_OMG_E1_V1_0_1_BLIND_REPLICATION",
+  "status": "FROZEN_BEFORE_NEW_PRIMARY_RESPONSES",
+  "zip_name": "MVP7_OMG_E1_V1_0_1_BLIND_REPLICATION_10_FILES_20260929.zip",
+  "zip_bytes": 18153,
+  "zip_sha256": "91384d913cbede475d970139b8c89554aa927e14b6bc38ed56bcfbbb64dd1a59",
+  "files": 10,
+  "payload_hashes": "9/9 PASS",
+  "zip_crc": "PASS",
+  "material_sha256": "1be297fa1d71040066789c74fe0e6178bf07044e8567f1285bac69533ef90c9f",
+  "validator_synthetic_replay": "PASS",
+  "new_primary_outputs": "NOT_RUN",
+  "old_primary_agreement": "0/4_UNCHANGED",
+  "human_validation": "NOT_PERFORMED",
+  "historical_area_UNO": "NOT_COMPUTED",
+  "corrective_scope": [
+    "correct D03 full-context hash",
+    "embed KASE official dated-index evidence",
+    "freeze prospective reactive-actor KVS rule",
+    "replace hidden carry-forward with non-simultaneous dyad contract",
+    "require common material SHA in both new outputs"
+  ]
+}
