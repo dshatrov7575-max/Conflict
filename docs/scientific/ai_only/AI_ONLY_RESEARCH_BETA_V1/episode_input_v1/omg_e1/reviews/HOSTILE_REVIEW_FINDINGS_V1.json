@@ -1,0 +1,42 @@
+{
+  "review_id": "OMG_E1_HOSTILE_REVIEW_V1",
+  "object": "AI_ONLY_SINGLE_PTN_EPISODE_SCENARIO",
+  "final_verdict": "HOLD_EXTERNAL_SCIENTIFIC_RELEASE",
+  "internal_technical_status": "PASS_INTERNAL_TECHNICAL_DEMO_ONLY",
+  "dimensions": {
+    "integrity": "PASS",
+    "worker_P1_provenance": "PARTIAL_PASS_SOURCE_STATEMENT_ONLY",
+    "company_P2_provenance": "PARTIAL_CONTENT_LEVEL_ONLY",
+    "primary_independence": "PASS",
+    "primary_agreement": "FAIL_0_OF_4",
+    "targeted_review_provenance_legitimacy": "PARTIAL_PASS",
+    "targeted_review_reproducibility": "NOT_PROVEN",
+    "temporal_episode_boundary": "PASS",
+    "temporal_simultaneity": "NOT_PROVEN",
+    "core_arithmetic": "PASS",
+    "weight_sensitivity": "MAJOR_LIMITATION",
+    "construct_validity": "NOT_PROVEN",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  },
+  "factor_audit": {
+    "OMG_WORKERS_INITIAL_STRIKE.POS_AO2": "PASS_BOUNDED_SOURCE_STATEMENT",
+    "OMG_WORKERS_INITIAL_STRIKE.KVS_AO2": "PARTIAL",
+    "KMG_EP_MANAGEMENT_FORMAL_RESPONSE.POS_AO2": "PARTIAL_PASS",
+    "KMG_EP_MANAGEMENT_FORMAL_RESPONSE.KVS_AO2": "PARTIAL_REPRODUCIBILITY_NOT_PROVEN"
+  },
+  "calculation": {
+    "baseline": {"P": 25, "N": 25, "A": 50, "B": 0, "Pol": 50},
+    "positive_RGU_envelope": {"Pol_min": "9.09090909", "Pol_max": "50.00000000"},
+    "equal_weight_baseline_role": "ANALYTIC_NORMALIZATION_AND_GRID_MAXIMUM_NOT_EMPIRICAL_CENTRAL_ESTIMATE",
+    "historical_area_UNO": "NOT_COMPUTED"
+  },
+  "required_patches": [
+    "SCIENTIFIC_RELEASE_HOLD",
+    "MEASUREMENT_STATUS_COORDINATOR_ADJUDICATED_PROVISIONAL",
+    "TEMPORAL_LABEL_INTERVAL_ASSEMBLED",
+    "DISCLOSE_PRIMARY_AGREEMENT_0_OF_4",
+    "DISCLOSE_EQUAL_WEIGHT_BASELINE_IS_POL_MAXIMUM_IN_GRID",
+    "FORBID_DECEMBER_AREA_UNO_AND_PREDICTIVE_CLAIMS"
+  ]
+}
