@@ -1,0 +1,15 @@
+{
+  "validator": "07_VALIDATE_COMPARE.py from frozen replication package",
+  "validator_self_test": {"status": "PASS", "cases": 5},
+  "AI1_validation": "PASS",
+  "AI2_validation": "PASS",
+  "entry_count_each": 4,
+  "input_sha_match": true,
+  "different_run_ids": true,
+  "attestations_eligible": true,
+  "factor_sensitivity_protocol": "PASS",
+  "AI1_sha256": "5f9d613026779ed83954c1221e808bf38878e5cc66515027b57d4e4badc91e5a",
+  "AI2_sha256": "692c51dc49c958e8da91bd5e69c175f5b771d8c14c887caa0da487ab8a202a28",
+  "comparison_sha256": "ef81259ac158d516c786e03ba70f4e827194ffd9e3423256e50175f7378cd985",
+  "note": "AI2 states that the full input hash was copied rather than independently recomputed; exact-context hashes were recomputed. This does not alter the identical declared frozen input identity."
+}
