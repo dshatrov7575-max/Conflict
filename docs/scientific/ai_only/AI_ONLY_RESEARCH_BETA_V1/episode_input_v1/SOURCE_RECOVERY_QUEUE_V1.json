@@ -1,0 +1,75 @@
+{
+  "queue_id": "EPISODE_SOURCE_RECOVERY_V1",
+  "status": "OPEN",
+  "purpose": "Repair missing episode-level actor POS/KVS without HUMAN participation and without converting absence into zero.",
+  "priorities": [
+    {
+      "rank": 1,
+      "target": "OMG company position and decision salience in the initial wage dispute",
+      "candidate_sources": [
+        {
+          "date": "2011-06-16",
+          "url": "https://www.azattyqasia.org/a/zhanaozen_hunger_strike_workers_court/24237905.html",
+          "content_target": "Company says claims are unfounded and offers legal dialogue only after complete cessation and return to work."
+        },
+        {
+          "date": "2011-06-28",
+          "url": "https://kase.kz/ru/information/news/show/1139999/",
+          "content_target": "Official KMG EP press release conditions consideration of the labor dispute on full cessation and return to work."
+        },
+        {
+          "date": "2011-06-28",
+          "url": "https://diapazon.kz/news/22056-iz-za-zabastovki-rabotnikov-ozenmunajjgaz-terjaet",
+          "content_target": "Contemporaneous republication of the same company condition."
+        }
+      ],
+      "required_admission": "Pre-cutoff capture or equivalent content-level historical witness; current page and publication date alone remain insufficient.",
+      "potential_use": "Prospective OMG wage-dispute episode; company POS/KVS only if exact actor/reference predicates are satisfied."
+    },
+    {
+      "rank": 2,
+      "target": "Dismissed-worker directional salary position on 2011-10-13",
+      "candidate_sources": [
+        {
+          "date": "2011-10-13",
+          "url": "https://eurasianet.org/kazakhstan-labor-dispute-dragging-energy-production-down",
+          "content_target": "Direct worker wording that resolves whether salary review means a directional pay change."
+        }
+      ],
+      "required_admission": "Direct actor wording; journalist framing is insufficient.",
+      "potential_use": "Repair AO2S-C1-05 POS."
+    },
+    {
+      "rank": 3,
+      "target": "Company KVS for pay on 2011-10-13",
+      "candidate_sources": [
+        {
+          "date": "2011-10-13",
+          "url": "https://eurasianet.org/kazakhstan-labor-dispute-dragging-energy-production-down",
+          "content_target": "Company-authored decision/ranking; not the journalist phrase 'uncompromising over the key demand'."
+        }
+      ],
+      "required_admission": "Company statement explicitly placing pay in a decision set or condition.",
+      "potential_use": "Repair AO2S-C1-06 KVS."
+    },
+    {
+      "rank": 4,
+      "target": "E05 matched counterparty episode",
+      "candidate_sources": [],
+      "required_admission": "Same prospectively bounded episode, explicit company/authority stance on independent-union or representation mechanisms, and complete actor universe.",
+      "potential_use": "Make E05 polarization computable without pooling dates."
+    }
+  ],
+  "retrospective_discovery_only": [
+    {
+      "url": "https://www.hrw.org/report/2012/09/10/striking-oil-striking-workers/violations-labor-rights-kazakhstans-oil-sector",
+      "rule": "May locate original 2011 letters and statements, but the 2012 report itself is not admitted as pre-cutoff historical input."
+    }
+  ],
+  "stop_rules": [
+    "No rerun of R2 models on unchanged evidence.",
+    "No episode snapshot until actor universe and both POS/KVS are complete.",
+    "No exogenous weight may repair missing factor evidence.",
+    "No source is admitted only because a current page displays a 2011 publication date."
+  ]
+}
