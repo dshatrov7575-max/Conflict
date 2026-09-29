@@ -1,0 +1,14 @@
+{
+  "status": "PREDECLARED_DIAGNOSTIC_PROTOCOL",
+  "measured_release_rule": "Any UNKNOWN or substantive disagreement blocks measured calculation.",
+  "equal_weight_baseline_previous_demo": "50",
+  "previous_weight_only_envelope": {"min": "9.09090909", "max": "50.00000000"},
+  "post_hoc_prior_factor_plus_weight_diagnostic": {
+    "min": "5.88235294",
+    "max": "100.00000000",
+    "claim_boundary": "Diagnostic only; prior alternatives are not V1.0.1 coder input."
+  },
+  "V1_0_1_company_KVS": "SHARED_UNKNOWN",
+  "V1_0_1_measured_calculation": "NOT_COMPUTABLE",
+  "tests": "PASS"
+}
