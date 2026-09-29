@@ -1,0 +1,42 @@
+{
+  "contract_id": "OMG_DYAD_V102_INHERITANCE_AND_TEMPORAL_CONTRACT",
+  "object_label": "AI_ONLY_DEMAND_TO_FORMAL_RESPONSE_DYAD_V102",
+  "temporal_object": {
+    "t0": {
+      "date": "2011-05-26",
+      "actor": "OMG_WORKERS_INITIAL_STRIKE",
+      "kind": "INITIATING_DEMAND_SOURCE_STATEMENT"
+    },
+    "t1": {
+      "date": "2011-08-12",
+      "actor": "RD_KMG_MANAGEMENT_FORMAL_RESPONSE_20110812",
+      "kind": "FORMAL_CORPORATE_RESPONSE_SOURCE_STATEMENT"
+    },
+    "simultaneous_snapshot": false,
+    "carry_forward": "NONE",
+    "interpretation": "Comparison of two dated statements in a demand-to-formal-response sequence; not a state estimate for any single date."
+  },
+  "inherited_worker_record": {
+    "source_version": "OMG_DYAD_E1_V101",
+    "basis": "Two independent primary coders agreed 2/2 on the unchanged worker statement under the unchanged initiating-actor rubric.",
+    "values": {
+      "POS_AO2": -5,
+      "KVS_AO2": 5
+    },
+    "status": "INHERITED_REPLICATED_SOURCE_STATEMENT",
+    "not_recomputed_in_v102": true
+  },
+  "company_release_gate": {
+    "required": "Both new independent coders must agree on status, value and C1-C8 for both company factors.",
+    "coordinator_substitution": "FORBIDDEN",
+    "targeted_content_review_rounds": 0,
+    "if_any_unknown_or_disagreement": "HOLD_FACTOR_INCOMPLETE",
+    "if_both_numeric_consensus": "ELIGIBLE_FOR_READ_ONLY_DYAD_SCENARIO_REPLAY_WITH_PREVIOUSLY_FROZEN_WEIGHT_DESIGN"
+  },
+  "claims": {
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  }
+}
