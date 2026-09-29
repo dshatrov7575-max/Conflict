@@ -1,0 +1,91 @@
+{
+  "run_id": "MVP7_OMG_EPISODE_E1_FINAL_20260929",
+  "created_at_utc": "2026-09-29T10:48:49.899923+00:00",
+  "route_id": "AI_ONLY_EPISODE_OMG_E1_V1",
+  "contract_version": "1.0.0",
+  "state": "RELEASED_AS_AI_ONLY_EPISODE_SCENARIO",
+  "primary_runs": {
+    "AI1": {
+      "model": "GPT-6 Astra Pro",
+      "run_id": "OMG_EP1_AI1_20260929T101348Z_821dfdbfdf04",
+      "sha256": "c2ad5844211e99f5a2417488db663aebfd01230746a320a24c6320598538ec51"
+    },
+    "AI2": {
+      "model": "Claude Fable 5.1",
+      "run_id": "9f4c2d7e-6b1a-4e0c-9a3d-5c8e1f7b2a64",
+      "sha256": "aba15cc29d869e5bd29ec7a4214d81442eeb694edde72b9a9eb6a0e580661c1d"
+    }
+  },
+  "formal_comparison": {
+    "counts": {
+      "NUMERIC_CONSENSUS_CANDIDATE": 0,
+      "SHARED_UNKNOWN": 0,
+      "DISPUTED": 0,
+      "TARGETED_REVIEW": 4
+    },
+    "sha256": "14b407c55c2dcd98ae1b19aeb3a38dadcc4c7d41080f7bbcc78d19619d8c24f9"
+  },
+  "targeted_review": {
+    "rounds_used": 1,
+    "rounds_remaining": 0,
+    "sha256": "c1e93619e4e7f5c6dda1917a16cc22795e13646fed6ed7524f9fd98fd9abdf39"
+  },
+  "final_factors": {
+    "OMG_WORKERS_INITIAL_STRIKE": {
+      "POS_AO2": -5,
+      "KVS_AO2": 5
+    },
+    "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": {
+      "POS_AO2": 5,
+      "KVS_AO2": 5
+    }
+  },
+  "provenance": {
+    "worker_P1": "PASS_AFTER_COORDINATOR_REPLAY_VERIFICATION",
+    "company_P2": "PASS_AFTER_COORDINATOR_INDEX_AND_REPRODUCTION_VERIFICATION",
+    "worker_context_hash_label_defect": true,
+    "source_content_changed": false,
+    "primary_outputs_changed": false
+  },
+  "calculation": {
+    "weight_design": "EXOGENOUS_WEIGHT_DESIGN_V1",
+    "baseline_RGU": {
+      "workers": 1,
+      "company": 1
+    },
+    "baseline_KVPTN": 1,
+    "core_strategy": "POLARIZATION_V1_BETA/1.0.0",
+    "snapshot_digest": "93cab3e59f8f9cebb1e0dc5bae5111b2d6c40825bf028b6220fe38f2762e6410",
+    "result_digest": "0e699e3cc4ebd8c0a8381d75909a7496b6ab3227a442de02e91cc2191e66d47c",
+    "baseline": {
+      "P": 25,
+      "N": 25,
+      "A": 50,
+      "B": 0,
+      "Pol": 50,
+      "Core_UNO_field": 50,
+      "status": "COMPLETE"
+    },
+    "sensitivity": {
+      "positive_RGU_Pol_min": "9.09090909",
+      "positive_RGU_Pol_max": "50.00000000",
+      "positive_q_invariance": true
+    }
+  },
+  "claims": {
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED",
+    "historical_december_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "prediction_probability_risk_validation": "NOT_CLAIMED",
+    "released_label": "AI_ONLY_SINGLE_PTN_EPISODE_SCENARIO"
+  },
+  "delivery": {
+    "zip_name": "MVP7_OMG_EPISODE_E1_FINAL_20260929.zip",
+    "zip_bytes": 15708,
+    "zip_sha256": "1fdb0a3f3f8f428cfe6f63c4a9b755c4d429a4400d0fbe0c407d69d3328dfbc3",
+    "files": 10,
+    "zip_crc": "PASS",
+    "manifest_sha256": "d04a5d9a0a70162a4b5390589bdf17007f13e8187004cd54839a3d0bfbb9283a"
+  }
+}
