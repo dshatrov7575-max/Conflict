@@ -1,0 +1,35 @@
+{
+  "test_id": "OMG_V102_POST_RUN_ENGINEERING_TESTS_20260930",
+  "status": "PASS",
+  "performed_before_primary_responses": true,
+  "scripts": {
+    "compare_v102_primary.py": {
+      "git_blob_sha": "f4d8970e008671f5501ad7bbf137b2326c1343fe",
+      "self_test_cases": 8,
+      "result": "PASS"
+    },
+    "read_only_dyad_scenario_v102.py": {
+      "git_blob_sha": "632a6727013222e6cc4d386b5388bf9b60cd1e2a",
+      "self_test_cases": 4,
+      "result": "PASS"
+    }
+  },
+  "total_self_test_cases": 12,
+  "tested_boundaries": [
+    "two numeric consensus entries release the read-only replay gate",
+    "shared company KVS UNKNOWN preserves HOLD_FACTOR_INCOMPLETE",
+    "status, value or C1-C8 mismatch preserves HOLD",
+    "contaminated attestation is rejected",
+    "NUMERIC with a failed gate is rejected",
+    "role mismatch is rejected",
+    "baseline POS=-5/+5 and KVS=5/5 yields Pol=50.00000000",
+    "company KVS=8 yields baseline Pol=38.46153846",
+    "company POS=0 yields baseline Pol=0.00000000",
+    "ineligible comparison never enters scenario calculation"
+  ],
+  "core_changed": false,
+  "primary_outputs_included": false,
+  "coordinator_substitution": "FORBIDDEN",
+  "historical_area_UNO": "NOT_COMPUTED",
+  "scientific_validation": "NOT_CLAIMED"
+}
