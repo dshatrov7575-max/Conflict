@@ -1,0 +1,53 @@
+{
+  "run_id": "MVP7_OMG_DYAD_V101_FINAL_20260929",
+  "route_id": "AI_ONLY_DYAD_OMG_E1_V101",
+  "contract_version": "1.0.1",
+  "rubric_version": "2.1.0",
+  "state": "HOLD_FACTOR_INCOMPLETE",
+  "input_sha256": "7a2b901748155a7313582c7eef9462dbcf5ced2edc5a35857af6b996da6491b4",
+  "primary_runs": {
+    "AI1": {
+      "actual_model_label": "GPT-5.6 Sol Pro",
+      "run_id": "OMG_DYAD_E1_V101_AI1_3a5d958d-3078-4d8c-9d4b-ce818d45f355",
+      "completed_at_utc": "2026-09-29T16:46:24Z",
+      "sha256": "5f9d613026779ed83954c1221e808bf38878e5cc66515027b57d4e4badc91e5a"
+    },
+    "AI2": {
+      "actual_model_label": "Claude Opus 5.5 (model id: claude-opus-5-5)",
+      "run_id": "OMG_DYAD_E1_V101_AI2_6ca1e0a6-a728-467a-9c70-8d6dbc9d9a43",
+      "completed_at_utc": "2026-09-29T16:47:28Z",
+      "sha256": "692c51dc49c958e8da91bd5e69c175f5b771d8c14c887caa0da487ab8a202a28"
+    }
+  },
+  "comparison": {
+    "status_value_agreement": "4/4",
+    "numeric_consensus": 3,
+    "shared_unknown": 1,
+    "content_disagreement": 0,
+    "targeted_review_used": 0,
+    "comparison_sha256": "ef81259ac158d516c786e03ba70f4e827194ffd9e3423256e50175f7378cd985"
+  },
+  "final_factors": {
+    "OMG_WORKERS_INITIAL_STRIKE": {"POS_AO2": -5, "KVS_AO2": 5},
+    "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": {"POS_AO2": 5, "KVS_AO2": null}
+  },
+  "calculation": {
+    "release": false,
+    "state": "NOT_COMPUTABLE_FACTOR_INCOMPLETE",
+    "reason": "Company KVS_AO2 is shared UNKNOWN; UNKNOWN is not zero and cannot be imputed.",
+    "historical_area_UNO": "NOT_COMPUTED"
+  },
+  "supersession": {
+    "earlier_company_KVS_5": "NOT_REPLICATED_AS_MEASUREMENT",
+    "earlier_Pol_50": "INTERNAL_TECHNICAL_DEMO_ONLY",
+    "old_records_modified": false
+  },
+  "claims": {
+    "object_label": "AI_ONLY_DEMAND_RESPONSE_DYAD_CODING_RESULT",
+    "simultaneous_snapshot": false,
+    "carry_forward": "NONE",
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  }
+}
