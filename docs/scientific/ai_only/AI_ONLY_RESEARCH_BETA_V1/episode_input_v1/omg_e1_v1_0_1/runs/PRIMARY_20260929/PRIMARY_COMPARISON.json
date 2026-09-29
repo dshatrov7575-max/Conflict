@@ -1,0 +1,55 @@
+{
+  "route_id": "AI_ONLY_DYAD_OMG_E1_V101",
+  "contract_version": "1.0.1",
+  "state": "V101_PRIMARY_COMPARISON",
+  "entries": [
+    {
+      "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+      "factor": "POS_AO2",
+      "ai1_status": "NUMERIC",
+      "ai1_value": -5,
+      "ai2_status": "NUMERIC",
+      "ai2_value": -5,
+      "triage": "NUMERIC_CONSENSUS_CANDIDATE",
+      "final_value": -5,
+      "calculation_eligible": true
+    },
+    {
+      "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+      "factor": "KVS_AO2",
+      "ai1_status": "NUMERIC",
+      "ai1_value": 5,
+      "ai2_status": "NUMERIC",
+      "ai2_value": 5,
+      "triage": "NUMERIC_CONSENSUS_CANDIDATE",
+      "final_value": 5,
+      "calculation_eligible": true
+    },
+    {
+      "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+      "factor": "POS_AO2",
+      "ai1_status": "NUMERIC",
+      "ai1_value": 5,
+      "ai2_status": "NUMERIC",
+      "ai2_value": 5,
+      "triage": "NUMERIC_CONSENSUS_CANDIDATE",
+      "final_value": 5,
+      "calculation_eligible": true
+    },
+    {
+      "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+      "factor": "KVS_AO2",
+      "ai1_status": "UNKNOWN",
+      "ai1_value": null,
+      "ai2_status": "UNKNOWN",
+      "ai2_value": null,
+      "triage": "SHARED_UNKNOWN",
+      "final_value": null,
+      "calculation_eligible": false
+    }
+  ],
+  "complete_numeric_consensus_set": false,
+  "calculation_release": false,
+  "targeted_review_rule": "Mechanical/source-receipt errors may be corrected prospectively. A substantive C5 disagreement cannot be converted to numeric by coordinator substitution.",
+  "next_state": "HOLD_FACTOR_INCOMPLETE_OR_DISPUTED"
+}
