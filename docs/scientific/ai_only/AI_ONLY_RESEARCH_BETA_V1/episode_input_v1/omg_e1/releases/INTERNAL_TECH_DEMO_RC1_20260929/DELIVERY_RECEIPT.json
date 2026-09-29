@@ -1,0 +1,18 @@
+{
+  "package_id": "MVP7_OMG_E1_INTERNAL_TECH_DEMO_RC1_20260929",
+  "status": "PASS_INTERNAL_TECH_DEMO_ONLY",
+  "external_scientific_release": "HOLD_EXTERNAL_SCIENTIFIC_RELEASE",
+  "zip_name": "MVP7_OMG_E1_INTERNAL_TECH_DEMO_RC1_10_FILES_20260929.zip",
+  "zip_bytes": 21498,
+  "zip_sha256": "bf5cf4710e811f668a9697d196403e957230952d361f2b0d20264d1b4db4d4a9",
+  "files": 10,
+  "zip_crc": "PASS",
+  "offline_verifier": "PASS_INTERNAL_TECH_DEMO_RC1",
+  "primary_agreement": "0/4",
+  "technical_baseline": {"P": 25, "N": 25, "A": 50, "B": 0, "Pol": 50},
+  "positive_RGU_envelope": {"Pol_min": "9.09090909", "Pol_max": "50.00000000"},
+  "corrected_label": "AI_ONLY_INTERVAL_ASSEMBLED_SINGLE_PTN_SOURCE_STATEMENT_SCENARIO",
+  "human_validation": "NOT_PERFORMED",
+  "predictive_validation": "NOT_CLAIMED",
+  "historical_area_UNO": "NOT_COMPUTED"
+}
