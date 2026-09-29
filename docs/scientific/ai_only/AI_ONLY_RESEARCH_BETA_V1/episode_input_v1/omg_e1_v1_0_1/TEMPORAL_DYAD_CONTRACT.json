@@ -1,0 +1,12 @@
+{
+  "contract_id": "OMG_E1_TEMPORAL_DYAD_V1_0_1",
+  "status": "FROZEN_BEFORE_NEW_PRIMARY_RUNS",
+  "object_type": "NON_SIMULTANEOUS_DEMAND_RESPONSE_DYAD",
+  "t0": "2011-05-26",
+  "t1": "2011-06-28",
+  "gap_days": 33,
+  "carry_forward": "NONE",
+  "state_snapshot_claim": "FORBIDDEN",
+  "permitted_claim": "Contrast between a reported worker demand at t0 and a formal company response at t1.",
+  "calculation_label_if_all_factors_numeric": "CONDITIONAL_DYADIC_SINGLE_PTN_SCENARIO"
+}
