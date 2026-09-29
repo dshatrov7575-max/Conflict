@@ -1,0 +1,51 @@
+{
+  "claims_matrix_id": "OMG_E1_CLAIMS_MATRIX_V1",
+  "status": "POST_HOSTILE_REVIEW",
+  "object_label": "AI_ONLY_SINGLE_PTN_EPISODE_SCENARIO",
+  "permitted_claims": [
+    {
+      "claim": "The exact pinned Calculation Core reproducibly returned P=25, N=25, A=50, B=0 and Pol=50 for the frozen equal-positive baseline.",
+      "conditions": ["Mention provisional AI-coded factors", "Mention exogenous weights", "Mention bounded episode and one PTN"]
+    },
+    {
+      "claim": "Across the frozen strictly positive relative-RGU grid, Pol ranged from 9.09090909 to 50.00000000.",
+      "conditions": ["Do not call the range a confidence interval or probability distribution", "Do not call the result robust"]
+    },
+    {
+      "claim": "The package is a deterministic technical demonstration of the calculation pipeline on a bounded historical episode.",
+      "conditions": ["HUMAN validation and predictive validation are explicitly NOT_PERFORMED"]
+    },
+    {
+      "claim": "The coordinator verified source provenance and adjudicated four primary disagreements under the frozen one-round workflow.",
+      "conditions": ["Do not describe this as independent model consensus"]
+    }
+  ],
+  "required_qualifiers": [
+    "The result is not a 15 December 2011 snapshot.",
+    "The result is not area-level historical UNO.",
+    "The Core UNO field is numerically equal to Pol only because the topology contains one PTN.",
+    "RGU and KVPTN are exogenous analytic design parameters, not measured power or objective importance.",
+    "The primary coders agreed on 0 of 4 factor entries before targeted review.",
+    "The equal-positive baseline is the maximum-Pol point for the verified symmetric opposite positions within the positive RGU ratio family.",
+    "The company KVS=5 adjudication is the most fragile released factor."
+  ],
+  "forbidden_claims": [
+    "The true polarization of Zhanaozen was 50.",
+    "Historical area-level UNO was 50.",
+    "The model predicted the violence or conflict outcome.",
+    "The model has been scientifically validated.",
+    "Two frontier models independently agreed on the four factor values.",
+    "Equal RGU means the actors had equal real-world power.",
+    "KVPTN=1 means pay was objectively the most important or equally important issue.",
+    "The result is robust.",
+    "The episode result generalizes to other periods, actors, PTNs or conflicts.",
+    "A complete Core status means the historical evidence or constructs are complete."
+  ],
+  "external_release_gate": {
+    "technical_demo": "PASS",
+    "bounded_research_scenario": "PASS_WITH_MAJOR_LIMITATIONS",
+    "historical_area_claim": "BLOCKED",
+    "predictive_claim": "BLOCKED",
+    "construct_validity_claim": "BLOCKED"
+  }
+}
