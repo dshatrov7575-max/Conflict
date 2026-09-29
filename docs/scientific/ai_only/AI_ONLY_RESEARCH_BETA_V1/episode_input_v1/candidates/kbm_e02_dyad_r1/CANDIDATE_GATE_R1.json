@@ -1,0 +1,60 @@
+{
+  "candidate_id": "KBM_E02_DYAD_CANDIDATE_R1",
+  "status": "PROMISING_NOT_READY_FOR_PRIMARY_FREEZE",
+  "route": "AI_ONLY_RESEARCH_BETA_V1",
+  "target_ptn": {
+    "element_code": "E02",
+    "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения."
+  },
+  "proposed_temporal_object": {
+    "t0": {
+      "date": "2011-05-21",
+      "actor": "AOV2_KBM_STRIKERS",
+      "source": "D01-FPAY",
+      "kind": "INITIATING_PAY_DEMAND_SOURCE_STATEMENT"
+    },
+    "t1": {
+      "date": "2011-05-26",
+      "actor": "KBM_MANAGEMENT_FORMAL_RESPONSE",
+      "source": "KAZINFORM_KBM_PRESS_RELEASE_20110526",
+      "kind": "FORMAL_COMPANY_RESPONSE_SOURCE_STATEMENT"
+    },
+    "simultaneous_snapshot": false,
+    "carry_forward": "NONE",
+    "frozen": false
+  },
+  "worker_side": {
+    "r2_source_statement_status": "NUMERIC",
+    "r2_POS_AO2": -5,
+    "r2_KVS_AO2": 5,
+    "inheritance_status": "CONDITIONAL_ON_EXACT_SCOPE_AND_IDENTITY_EQUIVALENCE"
+  },
+  "company_side": {
+    "content_recovery": "MULTIPLE_CONTEMPORANEOUS_PUBLISHER_ARCHIVES",
+    "company_own_pay_action_evidence": true,
+    "company_own_negotiation_action_evidence": true,
+    "historical_byte_authentication": "PENDING",
+    "factor_values_preassigned": false
+  },
+  "gates": {
+    "source_authentication": "PENDING",
+    "actor_scope_alignment": "PENDING",
+    "temporal_contract": "PENDING_FREEZE",
+    "two_blind_primary_packets": "NOT_CREATED",
+    "calculation_release": false
+  },
+  "forbidden": [
+    "reuse OMG V1.0.0 company KVS=5",
+    "UNKNOWN to zero",
+    "coordinator substitution",
+    "rerun until numeric",
+    "derive RGU/KVPTN from evidence strength",
+    "call a non-simultaneous dyad a historical snapshot"
+  ],
+  "source_urls": [
+    "https://www.inform.kz/ru/zavershena-akciya-protesta-chlenov-profsoyuza-rabotnikov-ao-karazhanbasmunay_a2380062",
+    "https://www.kt.kz/rus/society/bolee_700_rabotnikov_kbm_ats_i_tms_prekratili_rabotu_i_prinjali_uchastie_v_nesankcionirovannoj_zabastovke_1153538413.html",
+    "https://time.kz/news/archive/2011/05/24/ayda-bastovat%21",
+    "https://www.inform.kz/ru/resheniem-rayonnogo-suda-zabastovka-rabotnikov-ao-karazhanbasmunay-too-argymaktransservis-i-too-tulparmunayservis-priznana-nezakonnoy_a2382946"
+  ]
+}
