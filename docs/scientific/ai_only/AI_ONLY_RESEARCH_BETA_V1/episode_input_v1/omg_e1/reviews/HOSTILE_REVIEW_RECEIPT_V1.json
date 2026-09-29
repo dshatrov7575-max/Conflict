@@ -1,0 +1,12 @@
+{
+  "review_id": "OMG_E1_HOSTILE_REVIEW_V1",
+  "input_pack": "MVP7_OMG_E1_HOSTILE_REVIEW_PACK_10_FILES_20260929.zip",
+  "input_pack_sha256": "1c90956c24a7fd2945ec34f683eb55840b5885d3cc93c6055f18e17c8ea1a6c7",
+  "files_reviewed": 10,
+  "external_search_used": false,
+  "known_outcome_used": false,
+  "code_or_core_modified": false,
+  "primary_outputs_modified": false,
+  "final_verdict": "HOLD_EXTERNAL_SCIENTIFIC_RELEASE",
+  "internal_status": "PASS_INTERNAL_TECHNICAL_DEMO_ONLY"
+}
