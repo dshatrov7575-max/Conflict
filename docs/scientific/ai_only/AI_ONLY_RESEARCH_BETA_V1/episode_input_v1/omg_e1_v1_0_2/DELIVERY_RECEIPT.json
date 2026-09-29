@@ -1,0 +1,22 @@
+{
+  "package_id": "MVP7_OMG_COMPANY_DECISION_V102_20260929",
+  "status": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+  "zip_name": "MVP7_OMG_COMPANY_DECISION_V102_10_FILES_20260929.zip",
+  "zip_bytes": 21164,
+  "zip_sha256": "0c49038129f070c730d27ea4a095d849d4ef943ae2582fcfed00d86ea6520a7f",
+  "files": 10,
+  "zip_crc": "PASS",
+  "evidence_input_sha256": "34a70bb18664a8ccf5fb5713dd90bbebe32a1a60d17303603e4cb7d84d961f42",
+  "validator_self_test": "PASS_6_CASES",
+  "primary_roles": [
+    "OMG_COMPANY_E1_V102_AI1",
+    "OMG_COMPANY_E1_V102_AI2"
+  ],
+  "entries_per_role": 2,
+  "worker_values_inherited": true,
+  "targeted_content_review_rounds": 0,
+  "coordinator_substitution": "FORBIDDEN",
+  "calculation_release": false,
+  "historical_area_UNO": "NOT_COMPUTED",
+  "human_validation": "NOT_PERFORMED"
+}
