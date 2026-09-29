@@ -1,0 +1,38 @@
+{
+  "package_id": "MVP7_OMG_E1_HOSTILE_REVIEW_PACK_20260929",
+  "status": "PREPARED_FOR_TWO_INDEPENDENT_VIRTUAL_REVIEWS",
+  "object": "AI_ONLY_SINGLE_PTN_EPISODE_SCENARIO",
+  "delivery": {
+    "zip_name": "MVP7_OMG_E1_HOSTILE_REVIEW_PACK_10_FILES_20260929.zip",
+    "zip_bytes": 17374,
+    "zip_sha256": "1c90956c24a7fd2945ec34f683eb55840b5885d3cc93c6055f18e17c8ea1a6c7",
+    "file_count": 10,
+    "zip_crc": "PASS",
+    "location": "downloadable attachment in coordinating conversation"
+  },
+  "included_files": [
+    "00_REVIEW_PROMPT_RU.md",
+    "01_AI1_PRIMARY.json",
+    "02_AI2_PRIMARY.json",
+    "03_PRIMARY_COMPARISON.json",
+    "04_PROVENANCE_VERIFICATION.json",
+    "05_TARGETED_REVIEW_1.md",
+    "06_VERIFIED_FACTOR_RECORD.json",
+    "07_CORE_REPLAY.json",
+    "08_SENSITIVITY_RESULTS.json",
+    "09_CORE_WEIGHT_CLAIMS_CONTRACT.md"
+  ],
+  "review_isolation": {
+    "same_pack_for_both_reviewers": true,
+    "reviewers_do_not_see_each_other": true,
+    "internal_hostile_review_excluded_to_avoid_anchoring": true,
+    "external_search_forbidden": true,
+    "known_outcome_forbidden": true
+  },
+  "recommended_reviewers": [
+    "ChatGPT strongest available Pro reasoning model",
+    "Claude strongest available Opus/Fable model"
+  ],
+  "human_validation": "NOT_PERFORMED",
+  "current_run_mutated": false
+}
