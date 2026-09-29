@@ -1,0 +1,53 @@
+{
+  "package_id": "MVP7_R2_FINAL_COMPARISON_20260929",
+  "status": "R2_SOURCE_STATEMENT_CONTENT_COMPLETE_WITH_PROTOCOL_DEVIATION",
+  "branch": "review/ai-only-research-beta-v1",
+  "source_head_before_delivery": "da0ec1c298ebfd4e761a8dbacd2daf09a61be1fd",
+  "delivery": {
+    "zip_name": "MVP7_R2_FINAL_COMPARISON_20260929.zip",
+    "bytes": 33564,
+    "sha256": "56013b6a0480f41a7654c25c41f3a87f4b5b422bed269faf82634d7016ae7779",
+    "files": 10,
+    "zip_crc": "PASS",
+    "manifest_payload_hashes": "9/9 PASS",
+    "location": "Downloadable attachment in coordinating conversation",
+    "full_payload_uploaded_to_git": false
+  },
+  "primary_runs": {
+    "AI1": {
+      "role": "AO2S_R2_AI1",
+      "model": "GPT-6 Astra Pro",
+      "run_id": "AO2S_R2_AI1_20260928T174110Z_aabbd592f4f6",
+      "sha256": "e8a44650da48590bf3ad54c0654548a53cf6d55f7c9883560f5fa77a8eefb842",
+      "semantic_validator": "PASS"
+    },
+    "AI2": {
+      "role": "AO2S_R2_AI2",
+      "model": "Claude Opus 5.5 (claude-opus-5-5)",
+      "run_id": "AO2S_R2_AI2-20260929T073114Z-dbe5138a",
+      "sha256": "426c904a23560e4f7099806a2dddfaf20468c17ad404976c05b3e0ab5566cd66",
+      "embedded_schema": "PASS",
+      "semantic_validator": "FAIL_CONFLICT_ALTERNATIVES",
+      "validator_projection_sha256": "393f790fce4b0669a4c1cfef27e42793e7d8d026dd09b58e6d5cbca35b714458",
+      "projection_validator": "PASS"
+    }
+  },
+  "comparison": {
+    "numeric_consensus_candidates": 6,
+    "shared_unknown": 1,
+    "targeted_review": 5
+  },
+  "targeted_review": {
+    "rounds_used": 1,
+    "new_evidence": false,
+    "new_model_run": false
+  },
+  "final": {
+    "numeric_source_statement_records": 6,
+    "unknown_records": 6,
+    "calculation_release": false,
+    "historical_snapshot_2011_12_15": "NOT_ESTABLISHED",
+    "uno": "NOT_COMPUTED"
+  },
+  "next": "AI_ONLY_EPISODE_INPUT_V1 requires matched-time complete actor rows; current feasibility is NOT_READY."
+}
