@@ -1,0 +1,71 @@
+{
+  "package_id": "MVP7_OMG_EPISODE_E1_WEIGHT_SENSITIVITY_V1",
+  "status": "FROZEN_BEFORE_EPISODE_PRIMARY_RESPONSES",
+  "frozen_at_utc": "2026-09-29T10:17:53Z",
+  "branch": "review/ai-only-research-beta-v1",
+  "base_head": "7ee816f07b492a97134e2a8dae67b9d04667ec00",
+  "episode_id": "OMG_INITIAL_WAGE_DISPUTE_2011_05_26_2011_06_28",
+  "ptn_id": "E02_PAY",
+  "actors": [
+    "OMG_WORKERS_INITIAL_STRIKE",
+    "KMG_EP_MANAGEMENT_FORMAL_RESPONSE"
+  ],
+  "baseline": {
+    "RGU": {
+      "OMG_WORKERS_INITIAL_STRIKE": "1",
+      "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "1"
+    },
+    "KVPTN": {
+      "E02_PAY": "1"
+    }
+  },
+  "main_positive_RGU_scenarios": 7,
+  "positive_q_scale_checks": 3,
+  "zero_weight_stresses": 4,
+  "max_targeted_review_rounds": 1,
+  "calculation_release_requires_all_four_factor_entries_numeric": true,
+  "historical_december_snapshot": "NOT_ESTABLISHED",
+  "historical_area_UNO": "NOT_COMPUTED",
+  "human_validation": "NOT_PERFORMED",
+  "human_reliability": "NOT_PERFORMED",
+  "core_changed": false,
+  "files": [
+    {
+      "name": "EXOGENOUS_WEIGHT_DESIGN_V1.md",
+      "bytes": 4795,
+      "sha256": "c8653ff752a11540b5ff0127d949e9038a54c992391045c7321b47aa72483536"
+    },
+    {
+      "name": "SENSITIVITY_GRID_V1.json",
+      "bytes": 1769,
+      "sha256": "6c086b7f4a0c0bbd084f47b3059ba03176ff2d4fd2f143d8472e8d4f9051f37a"
+    },
+    {
+      "name": "SENSITIVITY_DECISION_RULES_V1.md",
+      "bytes": 1862,
+      "sha256": "fd93e925cc7c48aaab6f517da1e4def5ce5290b06b0af5f93fe8c1dfffd82a6a"
+    },
+    {
+      "name": "weight_sensitivity.py",
+      "bytes": 10057,
+      "sha256": "aa9fcb4b84bea5d71807878f2b456511e32bf485905decfd0e54e2c89f9486a8"
+    },
+    {
+      "name": "test_weight_sensitivity.py",
+      "bytes": 4877,
+      "sha256": "51a2d5ab1a695cec5eb34e1516859f56163d871a6e3f4167f2635a971c5a195c"
+    },
+    {
+      "name": "EPISODE_CALCULATION_RELEASE_GATE_V1.md",
+      "bytes": 1663,
+      "sha256": "b79f1b82a3e3791a9a40e6ba220fec2b82e150e05479fd15239d1e901e9968a7"
+    }
+  ],
+  "tests": {
+    "test_methods": 12,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "scope": "standalone synthetic weight-sensitivity utility only"
+  }
+}
