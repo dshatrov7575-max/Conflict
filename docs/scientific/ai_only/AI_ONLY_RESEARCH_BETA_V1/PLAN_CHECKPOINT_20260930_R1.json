@@ -1,0 +1,82 @@
+{
+  "checkpoint_id": "AI_ONLY_RESEARCH_BETA_V1_PLAN_20260930_R1",
+  "date": "2026-09-30",
+  "canonical_completed_scientific_state": {
+    "route": "OMG_DYAD_E1_V101",
+    "state": "HOLD_FACTOR_INCOMPLETE",
+    "calculation_state": "NOT_COMPUTABLE_FACTOR_INCOMPLETE",
+    "company_KVS": "UNKNOWN",
+    "old_company_KVS_5_reactivated": false,
+    "old_Pol_50_reactivated": false
+  },
+  "active_lanes": [
+    {
+      "priority": 1,
+      "route": "AI_ONLY_DYAD_OMG_E1_V102",
+      "state": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+      "next_gate": "TWO_BLIND_COMPANY_PRIMARY_OUTPUTS",
+      "calculation_release": false
+    },
+    {
+      "priority": 2,
+      "route": "AI_ONLY_DYAD_KBM_E02_V100",
+      "state": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+      "next_gate": "TWO_BLIND_COMPANY_PRIMARY_OUTPUTS",
+      "input_sha256": "d0fb1f4a87f1cf64380f99167d77ecd63fd37b2827c48d044679b6abf027bf42",
+      "calculation_release": false
+    },
+    {
+      "priority": 3,
+      "route": "AI_ONLY_DYAD_OMG_NOV24_V100",
+      "state": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+      "next_gate": "TWO_BLIND_FOUR_ENTRY_PRIMARY_OUTPUTS",
+      "input_sha256": "72b061d6999b596052adc34df493cd2f9687979589ddd17a83ae21f375a0a9a4",
+      "comparator_self_test": "PASS_8_OF_8",
+      "calculation_release": false
+    },
+    {
+      "priority": 4,
+      "route": "KBM_E05_REPRESENTATION_CANDIDATE_R1",
+      "state": "COMPANY_PROVENANCE_PENDING_NOT_FROZEN",
+      "next_gate": "PRE_CUTOFF_AUTHENTICATED_COMPANY_E05_STATEMENT",
+      "calculation_release": false
+    }
+  ],
+  "schedule": [
+    {
+      "window": "2026-09-30..2026-10-01",
+      "work": "Blind primary intake when independently produced; deterministic comparison; continue E05 evidence recovery; keep read-only tooling independent."
+    },
+    {
+      "window": "2026-10-01..2026-10-03",
+      "work": "For any COMPLETE numeric dyad only: freeze exogenous RGU/KVPTN sensitivity before replay, run unchanged Core read-only scenario; incomplete dyads remain HOLD and do not block other episodes."
+    },
+    {
+      "window": "2026-10-03..2026-10-04",
+      "work": "Virtual hostile review on completed AI-only episode records and one bounded corrective patch cycle; no retrospective rewrite of frozen primary outputs."
+    },
+    {
+      "window": "2026-10-05",
+      "work": "Assemble AI_ONLY_RESEARCH_BETA_V1 release candidate if claim boundaries and reproducibility gates pass; otherwise explicit HOLD candidate."
+    },
+    {
+      "window": "2026-10-06..2026-10-07",
+      "work": "Buffer for blockers, deterministic checks and CI/read-only integration."
+    },
+    {
+      "window": "2026-10-08",
+      "work": "Demo checkpoint and owner decision: Scientific Beta versus HOLD."
+    }
+  ],
+  "invariants": [
+    "UNKNOWN != 0",
+    "no rerun-until-number",
+    "no model shopping",
+    "no coordinator substitution where forbidden",
+    "AI consensus != HUMAN validation/reliability",
+    "source-statement/dyad != historical snapshot",
+    "historical area UNO requires broader completeness",
+    "RGU/KVPTN remain exogenous analytic weights",
+    "PR #123 stays Draft; no auto-merge"
+  ]
+}
