@@ -1,0 +1,81 @@
+{
+  "design_id": "AI_ONLY_COMMON_EXOGENOUS_WEIGHT_DESIGN_V2",
+  "status": "FROZEN_BEFORE_NEW_PRIMARY_RESULTS",
+  "frozen_date": "2026-09-30",
+  "baseline": {
+    "r_actor_a": "1",
+    "r_actor_b": "1",
+    "q": "1"
+  },
+  "positive_rgu_scenarios": [
+    {
+      "scenario_id": "A_DOMINANT_10_1",
+      "r_actor_a": "10",
+      "r_actor_b": "1"
+    },
+    {
+      "scenario_id": "A_DOMINANT_4_1",
+      "r_actor_a": "4",
+      "r_actor_b": "1"
+    },
+    {
+      "scenario_id": "A_DOMINANT_2_1",
+      "r_actor_a": "2",
+      "r_actor_b": "1"
+    },
+    {
+      "scenario_id": "EQUAL_1_1",
+      "r_actor_a": "1",
+      "r_actor_b": "1"
+    },
+    {
+      "scenario_id": "B_DOMINANT_1_2",
+      "r_actor_a": "1",
+      "r_actor_b": "2"
+    },
+    {
+      "scenario_id": "B_DOMINANT_1_4",
+      "r_actor_a": "1",
+      "r_actor_b": "4"
+    },
+    {
+      "scenario_id": "B_DOMINANT_1_10",
+      "r_actor_a": "1",
+      "r_actor_b": "10"
+    }
+  ],
+  "positive_q_scale_checks": [
+    "0.1",
+    "1",
+    "10"
+  ],
+  "zero_weight_stress": [
+    {
+      "scenario_id": "R_ACTOR_A_ZERO",
+      "r_actor_a": "0",
+      "r_actor_b": "1",
+      "q": "1"
+    },
+    {
+      "scenario_id": "R_ACTOR_B_ZERO",
+      "r_actor_a": "1",
+      "r_actor_b": "0",
+      "q": "1"
+    },
+    {
+      "scenario_id": "R_ALL_ZERO",
+      "r_actor_a": "0",
+      "r_actor_b": "0",
+      "q": "1"
+    },
+    {
+      "scenario_id": "Q_ZERO_EXCLUSION",
+      "r_actor_a": "1",
+      "r_actor_b": "1",
+      "q": "0"
+    }
+  ],
+  "scenario_distribution": null,
+  "empirical_power_interpretation": false,
+  "post_result_tuning": "FORBIDDEN"
+}
