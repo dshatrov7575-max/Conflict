@@ -1,6 +1,6 @@
 {
   "candidate_id": "KBM_E05_REPRESENTATION_CANDIDATE_R1",
-  "status": "PROMISING_COMPANY_PROVENANCE_PENDING_NOT_FROZEN_FOR_PRIMARY",
+  "status": "SUPERSEDED_BY_FROZEN_KBM_E05_V100",
   "route": "AI_ONLY_RESEARCH_BETA_V1",
   "target_ptn": {
     "element_code": "E05",
@@ -23,8 +23,11 @@
     "source": "Azattyq 2011-05-27",
     "url": "https://www.azattyqasia.org/a/24206843.html",
     "target_content": "Company negotiation condition after strike cessation and exclusion of Natalia Sokolova from participation.",
-    "pre_cutoff_authentication": "PENDING_NO_CAPTURE_FOUND_IN_TESTED_URL_FORMS",
-    "factor_values": null
+    "pre_cutoff_authentication": "P1_ARCHIVE_REPLAY_AUTHENTICATED",
+    "factor_values": null,
+    "archive_capture_utc": "2011-05-15T05:47:06Z",
+    "payload_bytes": 58775,
+    "payload_sha256": "8c88985bf55e2cfa149395cb8e98de6d87798edcb9f18e614f58279935a8f63b"
   },
   "retrospective_locator": {
     "source": "Human Rights Watch 2012",
@@ -32,10 +35,10 @@
     "admissible_as_2011_primary": false
   },
   "gates": {
-    "company_pre_cutoff_authentication": "PENDING",
-    "company_actor_attribution": "PENDING",
-    "temporal_object": "PENDING_FREEZE",
-    "primary_packets": "NOT_CREATED",
+    "company_pre_cutoff_authentication": "CLOSED",
+    "company_actor_attribution": "FROZEN_NARROW",
+    "temporal_object": "FROZEN_NON_SIMULTANEOUS",
+    "primary_packets": "READY",
     "calculation_release": false
   },
   "forbidden": [
@@ -44,5 +47,13 @@
     "coordinator substitution",
     "rerun until numeric",
     "retrospective source as 2011 primary"
-  ]
+  ],
+  "frozen_successor": {
+    "path": "episode_input_v1/kbm_e05_v1_0_0/",
+    "route_id": "AI_ONLY_PAIR_KBM_E05_V100",
+    "input_sha256": "51f1a805986f7550828d8b05e0a1aa7aa2c80d43410540cd0f72a82448660f95",
+    "files": 10,
+    "frozen_before_primary_responses": true,
+    "comparator_self_test": "PASS_8_OF_8"
+  }
 }
