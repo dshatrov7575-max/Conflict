@@ -1,0 +1,35 @@
+{
+  "gate_id": "AI_ONLY_RESEARCH_BETA_V1_RELEASE_GATE_R1",
+  "status": "FROZEN_BEFORE_ANY_COHORT_PRIMARY_RESULT",
+  "research_beta_pass_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+  "research_beta_hold_state": "AI_ONLY_RESEARCH_BETA_RC_HOLD",
+  "mandatory_gates": [
+    "G1",
+    "G2",
+    "G3",
+    "G4",
+    "G5",
+    "G6",
+    "G7",
+    "G8"
+  ],
+  "lane_hold_is_beta_failure": false,
+  "zero_eligible_lanes_allowed": true,
+  "g7_if_zero_eligible": "PASS_NOT_TRIGGERED",
+  "separate_release_states": {
+    "external_substantive_historical_measurement": "HOLD",
+    "historical_area_UNO": "BLOCKED",
+    "human_validated_scientific_release": "NOT_PERFORMED",
+    "predictive_probability_risk_validation": "BLOCKED_NOT_CLAIMED"
+  },
+  "required_label": "AI-кодирование; человеческая проверка не проводилась; исследовательская версия; прогнозная точность не установлена.",
+  "forbidden": [
+    "treat lane UNKNOWN/NOT_COMPUTABLE as missing failure and replace the model",
+    "change cohort after results",
+    "change weight grid after results",
+    "drop disagreements from cohort denominator",
+    "claim beta RC as historical area UNO",
+    "claim AI agreement as HUMAN reliability",
+    "claim scenario output as prediction/probability/risk validation"
+  ]
+}
