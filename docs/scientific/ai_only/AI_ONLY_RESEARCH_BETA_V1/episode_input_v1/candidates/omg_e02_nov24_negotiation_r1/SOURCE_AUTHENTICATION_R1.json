@@ -1,0 +1,30 @@
+{
+  "source_authentication_id": "OMG_NOV24_CONTUR_R1",
+  "status": "P1_ARCHIVE_REPLAY_AUTHENTICATED",
+  "source_id": "CONTUR_1822_20111130",
+  "title": "Проклятый коэффициент",
+  "publisher": "contur.kz",
+  "publication_date": "2011-11-30",
+  "original_url": "http://contur.kz/node/1822",
+  "wayback": {
+    "timestamp": "20111203222742",
+    "capture_utc": "2011-12-03T22:27:42Z",
+    "archive_url": "https://web.archive.org/web/20111203222742id_/http://www.contur.kz:80/node/1822",
+    "payload_bytes": 156307,
+    "payload_sha256": "d6bd3102d40bc51dde3847ffe1fe9d6abb5c3d63492ecf9ad2b96e9ae4fcd90c",
+    "retrieved_and_rehashed_on": "2026-09-30"
+  },
+  "content_scope": [
+    "describes the 23-24 November meeting",
+    "attributes employer/government offers and compromise discussion",
+    "states that coefficients 1.7 and 1.8 were at issue",
+    "includes post-meeting comment attributed to Aizhagul Amirova"
+  ],
+  "limitations": [
+    "strong editorial framing and openly adversarial rhetoric",
+    "worker pay-demand specifics are largely journalist narration rather than a formal worker document",
+    "therefore this witness is admitted for meeting/counterparty context but is not sufficient by itself to freeze worker POS/KVS coding"
+  ],
+  "worker_factor_values": null,
+  "counterparty_factor_values": null
+}
