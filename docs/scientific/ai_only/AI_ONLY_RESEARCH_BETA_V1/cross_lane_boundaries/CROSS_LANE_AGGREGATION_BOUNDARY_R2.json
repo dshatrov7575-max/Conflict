@@ -1,0 +1,54 @@
+{
+  "contract_id": "CROSS_LANE_AGGREGATION_BOUNDARY_20260930_R2",
+  "status": "FROZEN_BEFORE_D25_PRIMARY_RESULTS",
+  "supersedes": "CROSS_LANE_AGGREGATION_BOUNDARY_20260930_R1",
+  "frozen_date": "2026-09-30",
+  "lanes": [
+    {
+      "route_id": "AI_ONLY_DYAD_KBM_E02_V100",
+      "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+      "temporal_object": "2011-05-17 worker source statement -> 2011-05-27 company source statement",
+      "simultaneous_snapshot": false,
+      "carry_forward": "NONE"
+    },
+    {
+      "route_id": "AI_ONLY_PAIR_KBM_E05_V100",
+      "ptn_id": "728c8406-ba99-5787-9557-933b5670be7c",
+      "temporal_object": "2011-05-14 company source statement -> 2011-05-27 worker source statement",
+      "simultaneous_snapshot": false,
+      "carry_forward": "NONE"
+    },
+    {
+      "route_id": "AI_ONLY_DYAD_OMG_NOV24_V100",
+      "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+      "temporal_object": "2011-11-23..2011-11-24 meeting episode, report 2011-11-30",
+      "simultaneous_snapshot": false,
+      "carry_forward": "NONE"
+    },
+    {
+      "route_id": "AI_ONLY_DYAD_D25_E02_V100",
+      "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+      "temporal_object": "two actor positions in one source report dated 2011-10-13",
+      "simultaneous_snapshot": false,
+      "carry_forward": "NONE"
+    }
+  ],
+  "prohibited": [
+    "historical multi-PTN snapshot from current lanes",
+    "cross-date contemporaneous pooling",
+    "carry-forward to 2011-12-15 without a new prospective persistence protocol",
+    "historical area-level UNO from current lanes",
+    "cross-lane repair of UNKNOWN or DISPUTED factors",
+    "averaging factors across source objects",
+    "using D25 same-report date as proof of exact same-time actor state"
+  ],
+  "permitted": [
+    "descriptive comparison of lane computability",
+    "descriptive comparison of primary agreement/reproducibility",
+    "comparison of independently eligible sensitivity envelopes",
+    "provenance-quality comparison"
+  ],
+  "future_aggregation_requires_new_prospective_protocol": true,
+  "historical_area_UNO": "BLOCKED",
+  "calculation_release": false
+}
