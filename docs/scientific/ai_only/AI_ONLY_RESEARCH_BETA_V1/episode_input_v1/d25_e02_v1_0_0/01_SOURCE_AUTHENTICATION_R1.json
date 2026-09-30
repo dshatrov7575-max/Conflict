@@ -1,0 +1,19 @@
+{
+  "source_authentication_id": "D25_E02_V100_SOURCE_AUTH_R1",
+  "status": "R2_ARCHIVE_PAYLOAD_REHASHED_WITH_INHERITED_ACQUISITION_RECEIPT",
+  "source_id": "D25_EURASIANET_20111013",
+  "publisher": "EurasiaNet",
+  "publication_date": "2011-10-13",
+  "original_url": "http://www.eurasianet.org/node/64310",
+  "archive": {
+    "capture_utc": "2011-10-16T06:09:58Z",
+    "archive_url": "https://web.archive.org/web/20111016060958id_/http://www.eurasianet.org:80/node/64310",
+    "witness_id": "AW-D25-20111016060958",
+    "payload_bytes": 56719,
+    "payload_sha256": "c6ae02c231a18cf574743016e307a1b2d302edbc6fe7386c8dc636c679395005",
+    "sha1_base32": "XR7PYY6TK4LJPBKR4GRR75RSBY5STQT4"
+  },
+  "provenance_note": "Payload SHA/size/SHA1 were rechecked in the frozen R2 acquisition context; archive timestamp/receipt are inherited from the acquisition ledger. This V1.0.0 freeze does not claim a new network acquisition.",
+  "actor_voice_boundary": "Journalist characterizations are not direct actor statements unless explicitly attributed.",
+  "factor_values": null
+}
