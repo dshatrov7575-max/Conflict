@@ -1,0 +1,60 @@
+{
+  "receipt_id": "PRIMARY_TASK_DISPATCH_20260930_R2",
+  "date": "2026-09-30",
+  "destination": "Google Drive / Конфликтология / Почта",
+  "delivery_mode": "NATIVE_GOOGLE_DOC_TASKS",
+  "tasks": [
+    {
+      "title": "TASK_KBM_E02_V100_AI1",
+      "route": "AI_ONLY_DYAD_KBM_E02_V100",
+      "role": "KBM_COMPANY_E02_V100_AI1",
+      "state": "DISPATCHED_READY_TO_RUN"
+    },
+    {
+      "title": "TASK_KBM_E02_V100_AI2",
+      "route": "AI_ONLY_DYAD_KBM_E02_V100",
+      "role": "KBM_COMPANY_E02_V100_AI2",
+      "state": "DISPATCHED_READY_TO_RUN"
+    },
+    {
+      "title": "TASK_OMG_NOV24_V100_AI1",
+      "route": "AI_ONLY_DYAD_OMG_NOV24_V100",
+      "role": "OMG_NOV24_V100_AI1",
+      "state": "DISPATCHED_READY_TO_RUN"
+    },
+    {
+      "title": "TASK_OMG_NOV24_V100_AI2",
+      "route": "AI_ONLY_DYAD_OMG_NOV24_V100",
+      "role": "OMG_NOV24_V100_AI2",
+      "state": "DISPATCHED_READY_TO_RUN"
+    },
+    {
+      "title": "TASK_KBM_E05_V100_AI1",
+      "route": "AI_ONLY_PAIR_KBM_E05_V100",
+      "role": "KBM_E05_V100_AI1",
+      "state": "DISPATCHED_READY_TO_RUN"
+    },
+    {
+      "title": "TASK_KBM_E05_V100_AI2",
+      "route": "AI_ONLY_PAIR_KBM_E05_V100",
+      "role": "KBM_E05_V100_AI2",
+      "state": "DISPATCHED_READY_TO_RUN"
+    },
+    {
+      "title": "BLOCKER_OMG_V102_RECOVER_FROZEN_ARTIFACT",
+      "route": "AI_ONLY_DYAD_OMG_E1_V102",
+      "state": "DISPATCHED_RECOVERY_ONLY"
+    }
+  ],
+  "privacy_note": "Drive file IDs and URLs intentionally not committed.",
+  "expected_primary_outputs": [
+    "KBM_E02_V100_AI1_COMPLETED.json",
+    "KBM_E02_V100_AI2_COMPLETED.json",
+    "OMG_NOV24_V100_AI1_COMPLETED.json",
+    "OMG_NOV24_V100_AI2_COMPLETED.json",
+    "KBM_E05_V100_AI1_COMPLETED.json",
+    "KBM_E05_V100_AI2_COMPLETED.json"
+  ],
+  "v102_rule": "EXACT_FROZEN_ARTIFACT_RECOVERY_ONLY_NO_RECONSTRUCTION",
+  "calculation_release": false
+}
