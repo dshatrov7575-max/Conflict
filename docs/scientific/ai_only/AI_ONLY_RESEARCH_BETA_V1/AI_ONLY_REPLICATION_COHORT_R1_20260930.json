@@ -1,0 +1,82 @@
+{
+  "cohort_id": "AI_ONLY_REPLICATION_COHORT_R1_20260930",
+  "status": "FROZEN_BEFORE_ANY_COHORT_PRIMARY_RESULT",
+  "frozen_date": "2026-09-30",
+  "canonical_completed_state_at_freeze": {
+    "route": "OMG_DYAD_E1_V101",
+    "state": "HOLD_FACTOR_INCOMPLETE",
+    "calculation_state": "NOT_COMPUTABLE_FACTOR_INCOMPLETE"
+  },
+  "lanes": [
+    {
+      "route_id": "AI_ONLY_DYAD_KBM_E02_V100",
+      "selection_basis": "R2 worker E02 had two-primary numeric agreement and a prospectively recovered/authenticated company response with own pay actions.",
+      "coding_design": "company-only fresh replication with exact worker-record inheritance after company comparison",
+      "expected_primary_outputs": 2
+    },
+    {
+      "route_id": "AI_ONLY_DYAD_OMG_NOV24_V100",
+      "selection_basis": "pre-cutoff authenticated same-event mediated source contains both worker and employer-side E02 positions in a bounded Nov23-24 negotiation episode.",
+      "coding_design": "fresh four-entry two-actor replication",
+      "expected_primary_outputs": 2
+    },
+    {
+      "route_id": "AI_ONLY_PAIR_KBM_E05_V100",
+      "selection_basis": "R2 worker E05 had two-primary numeric agreement and a pre-cutoff authenticated company representation/negotiation stance was recovered prospectively.",
+      "coding_design": "company-only fresh replication with exact worker-record inheritance after company comparison",
+      "expected_primary_outputs": 2
+    },
+    {
+      "route_id": "AI_ONLY_DYAD_D25_E02_V100",
+      "selection_basis": "single authenticated D25 report provides both actor positions and R2 showed genuine reproducibility ambiguity, making it a prospectively frozen replication case.",
+      "coding_design": "fresh four-entry replication with no R2 factor inheritance",
+      "expected_primary_outputs": 2
+    }
+  ],
+  "cohort_size": 4,
+  "primary_run_count_expected": 8,
+  "stop_rule": {
+    "no_new_lane_until_cohort_resolved": true,
+    "cohort_resolved_when": "Every one of the eight primary roles has either a valid frozen-protocol output or a documented external execution failure/unavailability that is not replaced by model shopping.",
+    "no_success_based_stopping": true,
+    "no_additional_episode_after_numeric_success": true,
+    "no_additional_episode_after_hold_to_seek_success": true,
+    "no_replacement_model_for_unfavorable_result": true
+  },
+  "endpoints": {
+    "primary": "Per actor×factor reproducibility under the frozen protocol: status/value/C1-C8 agreement.",
+    "secondary": "Per-lane deterministic state: ELIGIBLE_FOR_READ_ONLY_SCENARIO_REPLAY, HOLD_FACTOR_INCOMPLETE, HOLD_DISAGREEMENT, or REJECT_INVALID_PRIMARY_RUN.",
+    "exploratory": "Sensitivity envelope only for lanes that prospectively satisfy all-numeric consensus; not used to decide cohort membership.",
+    "prohibited_endpoint": "At least one computable lane is not a success criterion."
+  },
+  "reporting": {
+    "report_all_four_lanes": true,
+    "report_all_missing_or_failed_runs": true,
+    "report_all_unknown_disputed_and_disagreements": true,
+    "report_invalid_runs_without_replacement": true,
+    "no_exclusion_after_results": true
+  },
+  "sampling_claims": {
+    "random_sample": false,
+    "representative_sample": false,
+    "population_inference": false,
+    "description": "Purposeful provenance-feasible replication cohort selected before its new primary outputs."
+  },
+  "exclusions": {
+    "AI_ONLY_DYAD_OMG_E1_V102": "Excluded from this executable cohort because the exact frozen delivery artifact is unavailable. It remains separately frozen/recovery-only and is not replaced or reconstructed.",
+    "AO2S-C1-01": "Not promoted: unresolved primary source content/historical provenance.",
+    "AO2S-C1-02": "Not promoted: unresolved primary source content/historical provenance."
+  },
+  "invariants": [
+    "UNKNOWN != 0",
+    "no coordinator substitution",
+    "no targeted content review",
+    "no rerun-until-number",
+    "no model shopping",
+    "no cross-lane factor repair",
+    "no cross-lane historical aggregation",
+    "RGU/KVPTN grid frozen before results",
+    "AI agreement is not HUMAN validation"
+  ],
+  "calculation_release": false
+}
