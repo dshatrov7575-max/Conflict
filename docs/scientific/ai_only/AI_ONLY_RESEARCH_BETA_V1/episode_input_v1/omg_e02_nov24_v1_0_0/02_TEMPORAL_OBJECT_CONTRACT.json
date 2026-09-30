@@ -1,0 +1,36 @@
+{
+  "contract_id": "OMG_E02_NOV24_V100_TEMPORAL_OBJECT",
+  "status": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+  "object_label": "AI_ONLY_SAME_EVENT_MEDIATED_SOURCE_STATEMENT_DYAD",
+  "event_window": {
+    "start_date": "2011-11-23",
+    "end_date": "2011-11-24",
+    "source_report_date": "2011-11-30",
+    "archive_capture_utc": "2011-12-03T22:27:42Z"
+  },
+  "actors": [
+    {
+      "actor_id": "OMG_DISMISSED_WORKERS_NOV23_24_AS_REPORTED_CONTUR",
+      "scope": "Dismissed/former OzenMunaiGaz workers and their representatives participating in or represented at the 23-24 November negotiation episode, only as attributed by the frozen source."
+    },
+    {
+      "actor_id": "RD_KMG_OMG_EMPLOYER_SIDE_NOV23_24_AS_REPORTED_CONTUR",
+      "scope": "RD KMG / OzenMunaiGaz employer-side position and actions in the 23-24 November negotiation episode, only where the frozen source attributes them to the employer side; government-only actions are not automatically employer actions."
+    }
+  ],
+  "ptn": {
+    "element_code": "E02",
+    "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+    "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+    "reference_sha256": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172"
+  },
+  "simultaneous_snapshot": false,
+  "carry_forward": "NONE",
+  "interpretation": "Two actor positions reconstructed from one authenticated contemporaneous article about the same bounded negotiation event; not a same-time state measurement.",
+  "claims": {
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  }
+}
