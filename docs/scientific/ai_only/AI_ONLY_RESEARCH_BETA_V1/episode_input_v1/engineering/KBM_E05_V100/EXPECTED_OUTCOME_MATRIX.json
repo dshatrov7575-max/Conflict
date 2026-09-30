@@ -1,0 +1,49 @@
+{
+  "route_id": "AI_ONLY_PAIR_KBM_E05_V100",
+  "input_sha256": "51f1a805986f7550828d8b05e0a1aa7aa2c80d43410540cd0f72a82448660f95",
+  "inherited_worker_record": {
+    "unit_id": "AO2S-C1-04",
+    "POS_AO2": -5,
+    "KVS_AO2": 5,
+    "source_report_date": "2011-05-27"
+  },
+  "conditions": [
+    {
+      "condition": "ANY INVALID PRIMARY IDENTITY OR ATTESTATION",
+      "state": "REJECT_INVALID_PRIMARY_RUN",
+      "calculation_release": false
+    },
+    {
+      "condition": "ANY STATUS/VALUE/C1-C8 MISMATCH",
+      "state": "HOLD_DISAGREEMENT",
+      "calculation_release": false
+    },
+    {
+      "condition": "NO MISMATCH AND ANY SHARED_UNKNOWN OR SHARED_DISPUTED",
+      "state": "HOLD_FACTOR_INCOMPLETE",
+      "calculation_release": false
+    },
+    {
+      "condition": "BOTH COMPANY ENTRIES CONSENSUS_NUMERIC",
+      "state": "ELIGIBLE_FOR_READ_ONLY_PAIR_SCENARIO_REPLAY",
+      "calculation_release": true
+    }
+  ],
+  "forbidden_repairs": [
+    "coordinator substitution",
+    "targeted content review",
+    "averaging",
+    "majority vote",
+    "rerun-until-number",
+    "replacement-model shopping",
+    "UNKNOWN to zero",
+    "RGU/KVPTN adjustment to bypass missing factors"
+  ],
+  "claim_boundary": {
+    "simultaneous_snapshot": false,
+    "carry_forward": "NONE",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  }
+}
