@@ -1,0 +1,25 @@
+{
+  "test_receipt_id": "COHORT_AGGREGATOR_R1_TEST_20260930",
+  "status": "PASS",
+  "date": "2026-09-30",
+  "cohort_id": "AI_ONLY_REPLICATION_COHORT_R1_20260930",
+  "script": "aggregate_cohort_r1.py",
+  "git_blob_sha": "47b3fc0fc3828066b8cb68450114d4f7f8b69790",
+  "self_test": {
+    "result": "PASS",
+    "cases": 5,
+    "exact_github_blob_match": true
+  },
+  "cases": [
+    "all 12 decisions exact numeric consensus",
+    "one HOLD_DISAGREEMENT",
+    "one SHARED_UNKNOWN",
+    "one missing four-decision lane",
+    "one corrupted input hash"
+  ],
+  "denominator_rule": "DENOMINATOR_RULE_R1.json",
+  "expected_decisions": 12,
+  "population_inference": false,
+  "human_validation": "NOT_PERFORMED",
+  "calculation_release": false
+}
