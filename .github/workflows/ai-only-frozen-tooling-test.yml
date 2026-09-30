@@ -57,6 +57,16 @@ jobs:
           --repo-root .
           --self-test
 
+      - name: Validate credential-gated executor workflow syntax and pins
+        run: |
+          set -euo pipefail
+          test ! -e .github/ai-only-primary-executor-trigger.txt
+          ruby -e 'require "yaml"; YAML.load_file(".github/workflows/ai-only-primary-executor-r1.yml")'
+          grep -F 'model: gpt-5.6-sol' .github/workflows/ai-only-primary-executor-r1.yml
+          grep -F 'model: claude-fable-5-1' .github/workflows/ai-only-primary-executor-r1.yml
+          grep -F 'c5c234ccba6fae2b7a9eae462caf628e86c21b5e6240ec2e885727fc148a1dcc' .github/workflows/ai-only-primary-executor-r1.yml
+          test "$(git hash-object .github/workflows/ai-only-primary-executor-r1.yml)" = '4b222e521ecd081aeddfb0108a1b978211cb91b5'
+
       - name: Scientific boundary
         run: |
           echo "No model APIs called."
