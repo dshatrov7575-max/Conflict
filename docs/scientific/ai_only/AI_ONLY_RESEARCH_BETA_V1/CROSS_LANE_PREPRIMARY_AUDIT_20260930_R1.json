@@ -1,0 +1,82 @@
+{
+  "audit_id": "CROSS_LANE_PREPRIMARY_AUDIT_20260930_R1",
+  "date": "2026-09-30",
+  "status": "PASS",
+  "scope": "Three GitHub-reproducible blind lanes before receipt of any new primary outputs.",
+  "canonical_completed_state": {
+    "route": "OMG_DYAD_E1_V101",
+    "state": "HOLD_FACTOR_INCOMPLETE",
+    "calculation_state": "NOT_COMPUTABLE_FACTOR_INCOMPLETE"
+  },
+  "lanes": [
+    {
+      "route": "AI_ONLY_DYAD_KBM_E02_V100",
+      "evidence_input_path": "episode_input_v1/kbm_e02_v1_0_0/03_EVIDENCE_INPUT_V100.json",
+      "evidence_input_bytes": 5383,
+      "frozen_sha256": "d0fb1f4a87f1cf64380f99167d77ecd63fd37b2827c48d044679b6abf027bf42",
+      "raw_github_rehash": "MATCH",
+      "frozen_files": 10,
+      "manifest_files": 10,
+      "schema_standalone_comparator_hash_alignment": "PASS",
+      "primary_roles": [
+        "KBM_COMPANY_E02_V100_AI1",
+        "KBM_COMPANY_E02_V100_AI2"
+      ],
+      "comparator_self_test": "PASS_8_OF_8",
+      "drive_tasks": "DISPATCHED"
+    },
+    {
+      "route": "AI_ONLY_DYAD_OMG_NOV24_V100",
+      "evidence_input_path": "episode_input_v1/omg_e02_nov24_v1_0_0/03_EVIDENCE_INPUT_V100.json",
+      "evidence_input_bytes": 4615,
+      "frozen_sha256": "72b061d6999b596052adc34df493cd2f9687979589ddd17a83ae21f375a0a9a4",
+      "raw_github_rehash": "MATCH",
+      "frozen_files": 10,
+      "manifest_files": 10,
+      "schema_standalone_comparator_hash_alignment": "PASS",
+      "primary_roles": [
+        "OMG_NOV24_V100_AI1",
+        "OMG_NOV24_V100_AI2"
+      ],
+      "comparator_self_test": "PASS_8_OF_8",
+      "drive_tasks": "DISPATCHED"
+    },
+    {
+      "route": "AI_ONLY_PAIR_KBM_E05_V100",
+      "evidence_input_path": "episode_input_v1/kbm_e05_v1_0_0/03_EVIDENCE_INPUT_V100.json",
+      "evidence_input_bytes": 4708,
+      "frozen_sha256": "51f1a805986f7550828d8b05e0a1aa7aa2c80d43410540cd0f72a82448660f95",
+      "raw_github_rehash": "MATCH",
+      "frozen_files": 10,
+      "manifest_files": 10,
+      "schema_standalone_comparator_hash_alignment": "PASS",
+      "primary_roles": [
+        "KBM_E05_V100_AI1",
+        "KBM_E05_V100_AI2"
+      ],
+      "comparator_self_test": "PASS_8_OF_8",
+      "drive_tasks": "DISPATCHED"
+    }
+  ],
+  "blocked_lane": {
+    "route": "AI_ONLY_DYAD_OMG_E1_V102",
+    "state": "FROZEN_BUT_EXACT_DELIVERY_ARTIFACT_UNAVAILABLE",
+    "expected_zip": "MVP7_OMG_COMPANY_DECISION_V102_10_FILES_20260929.zip",
+    "expected_zip_sha256": "0c49038129f070c730d27ea4a095d849d4ef943ae2582fcfed00d86ea6520a7f",
+    "recovery_task": "DISPATCHED",
+    "reconstruction": "FORBIDDEN"
+  },
+  "invariants": [
+    "UNKNOWN != 0",
+    "no rerun-until-number",
+    "no model shopping",
+    "no coordinator substitution",
+    "no targeted content review in these frozen lanes",
+    "AI consensus != HUMAN validation/reliability",
+    "source-statement pair/dyad != historical snapshot",
+    "RGU/KVPTN remain exogenous analytic weights",
+    "old OMG V1.0.0 company KVS=5 and Pol=50 remain superseded"
+  ],
+  "primary_outputs_observed_at_audit_time": 0,
+  "calculation_release": false
+}
