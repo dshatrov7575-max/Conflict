@@ -1,14 +1,14 @@
-# MANUAL_DUAL_MODEL_R1 — pre-output executor plan
+# MANUAL_DUAL_MODEL_R1 — frozen manual executor plan
 
-Status: PREOUTPUT_DRAFT
+Status: FROZEN_BEFORE_RESPONSES
 Date: 2026-10-01
-Scope: executor-only supersession candidate for AI_ONLY_REPLICATION_COHORT_R1_20260930
+Scope: executor-only supersession for AI_ONLY_REPLICATION_COHORT_R1_20260930
 
 ## Reason
 
-Copilot CLI path is operational, but the frozen model pins `gpt-6-astra` and `claude-opus-5.5` are unavailable under the current Copilot Free account. Run 36781002777 produced zero-byte outputs for all eight roles and therefore no scientific primary result.
+Copilot CLI path is operational, but the previously pinned Copilot CLI models `gpt-6-astra` and `claude-opus-5.5` are unavailable under the current Copilot Free account. Run `36781002777` produced zero-byte outputs for all eight roles and therefore no scientific primary result.
 
-The owner has authorized a manual multi-chat route instead of purchasing a paid Copilot plan.
+The owner authorized a manual multi-chat route instead of purchasing a paid Copilot plan.
 
 ## Scientific invariants preserved
 
@@ -28,11 +28,25 @@ Unchanged:
 - old OMG company KVS=5 / Pol=50 remain superseded;
 - PR remains Draft; no auto-merge.
 
+## Frozen manual model binding
+
+Frozen prospectively before any manual primary response:
+
+- MODEL_A service: ChatGPT
+- MODEL_A exact UI-visible model identity: `GPT-5.6 Sol Pro`
+- MODEL_A role allocation: all four AI1 standalones
+
+- MODEL_B service: Claude
+- MODEL_B exact UI-visible model identity: `Claude Opus 5.5 High`
+- MODEL_B role allocation: all four AI2 standalones
+
+Substitution is forbidden. A different model label, fallback, Auto mode, or silent model replacement makes that primary output inadmissible.
+
 ## Manual executor design
 
 Eight fresh chats:
-- four independent MODEL_A chats, one per AI1 standalone;
-- four independent MODEL_B chats, one per AI2 standalone.
+- four independent ChatGPT / GPT-5.6 Sol Pro chats, one per AI1 standalone;
+- four independent Claude / Claude Opus 5.5 High chats, one per AI2 standalone.
 
 Each chat must:
 1. be newly created before receiving its standalone;
@@ -45,16 +59,11 @@ Each chat must:
 
 The coordinator chat is not eligible to act as a blind primary.
 
-## Model-binding gate
-
-Manual execution is FORBIDDEN until both exact UI-visible model identities are prospectively frozen here.
-
-Required fields before first primary output:
-- MODEL_A service + exact model name: TO_BE_FROZEN
-- MODEL_B service + exact model name: TO_BE_FROZEN
-
-No primary prompt may be issued before these fields are replaced by exact model identities and the status becomes `FROZEN_BEFORE_RESPONSES`.
-
 ## Acceptance
 
-A manual primary output is admissible only if its chat/model identity matches the frozen binding, the correct frozen standalone was used once, and the raw returned JSON is captured unchanged.
+A manual primary output is admissible only if:
+- its chat/service/model identity exactly matches the frozen binding above;
+- the correct frozen standalone was used once;
+- the chat was fresh before the standalone was pasted;
+- the raw returned JSON is captured unchanged;
+- no retry, repair, sibling exposure, coordinator substitution, external outcome lookup, or post-result prompt modification occurred.
