@@ -1,4 +1,8 @@
 AI_ONLY_PRIMARY_EXECUTOR_R2_TRIGGER
-created_utc=2026-09-30T18:05:00Z
+attempt=2
+created_utc=2026-09-30T18:12:00Z
 cohort=AI_ONLY_REPLICATION_COHORT_R1_20260930
 expected_primary_roles=8
+reason=retry_after_premodel_infrastructure_fix
+previous_run=36756121174
+repair_commit=d3f1acb2e4291ce1f91144b471403ff66bef0cda
