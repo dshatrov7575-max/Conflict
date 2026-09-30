@@ -1,6 +1,6 @@
 {
   "candidate_id": "OMG_E02_NOV24_NEGOTIATION_CANDIDATE_R1",
-  "status": "PROMISING_AUTHENTICATION_PENDING_NOT_FROZEN_FOR_PRIMARY",
+  "status": "PROMISING_COUNTERPARTY_AUTHENTICATED_WORKER_GATE_PENDING",
   "route": "AI_ONLY_RESEARCH_BETA_V1",
   "target_ptn": {
     "element_code": "E02",
@@ -21,20 +21,30 @@
       "url": "https://yvision.kz/post/v-zhanaozene-vchera-nachalis-peregovory-208295",
       "publication_date": "2011-11-24",
       "role": "CONTEMPORANEOUS_WORKER_SIDE_MEETING_CONTEXT",
-      "historical_byte_authentication": "PENDING"
+      "historical_byte_authentication": "NO_PRE_CUTOFF_WAYBACK_FOUND"
     },
     {
       "url": "https://nomad.su/?a=3-201112060023",
       "publication_date": "2011-12-06",
       "role": "NEGOTIATION_AGENDA_AND_EMPLOYER_RESPONSE_REPORT",
-      "historical_byte_authentication": "PENDING"
+      "historical_byte_authentication": "NO_PRE_CUTOFF_WAYBACK_FOUND_CLOSEST_2012"
     },
     {
       "url": "https://nomad.su/?a=3-201111300026",
       "publication_date": "2011-11-30",
       "role": "ADDITIONAL_CONTEMPORANEOUS_ACCOUNT",
-      "historical_byte_authentication": "PENDING",
+      "historical_byte_authentication": "NO_PRE_CUTOFF_WAYBACK_FOUND_CLOSEST_2012",
       "dependency_status": "PENDING"
+    },
+    {
+      "url": "http://contur.kz/node/1822",
+      "publication_date": "2011-11-30",
+      "role": "AUTHENTICATED_MEETING_AND_COUNTERPARTY_CONTEXT",
+      "historical_byte_authentication": "P1_ARCHIVE_REPLAY_AUTHENTICATED",
+      "archive_capture_utc": "2011-12-03T22:27:42Z",
+      "payload_bytes": 156307,
+      "payload_sha256": "d6bd3102d40bc51dde3847ffe1fe9d6abb5c3d63492ecf9ad2b96e9ae4fcd90c",
+      "worker_decisive_use": "NOT_ADMITTED_ALONE_DUE_EDITORIAL_ATTRIBUTION_LIMIT"
     }
   ],
   "promising_predicates": {
@@ -44,9 +54,9 @@
     "worker_factor_values_preassigned": false
   },
   "gates": {
-    "source_authentication": "PENDING",
+    "source_authentication": "COUNTERPARTY_CONTEXT_CLOSED_WORKER_DECISIVE_WITNESS_PENDING",
     "source_dependency": "PENDING",
-    "actor_scope_alignment": "PENDING",
+    "actor_scope_alignment": "PARTIAL",
     "temporal_object": "PENDING_FREEZE",
     "primary_packets": "NOT_CREATED",
     "calculation_release": false
