@@ -1,0 +1,73 @@
+{
+  "route_id": "AI_ONLY_DYAD_KBM_E02_V100",
+  "contract_version": "1.0.0",
+  "rubric_version": "2.1.0",
+  "input_sha256": "d0fb1f4a87f1cf64380f99167d77ecd63fd37b2827c48d044679b6abf027bf42",
+  "coder_role": "KBM_COMPANY_E02_V100_AI1",
+  "actual_model_label": "GPT-5.6 Sol Pro",
+  "model_label_source": "System-provided model identity",
+  "run_id": "e489e8e0-97d8-4b06-a949-00e742970df9",
+  "completed_at_utc": "2026-09-30T22:09:27Z",
+  "attestation": {
+    "other_coder_output_seen": false,
+    "prior_episode_outputs_seen": false,
+    "outcome_used_as_evidence": false,
+    "external_sources_used": false
+  },
+  "entries": [
+    {
+      "actor_id": "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527",
+      "factor": "POS_AO2",
+      "status": "NUMERIC",
+      "value": 5,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": true,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "KBM_NOMAD_PRESS_RESPONSE_20110527"
+      ],
+      "rationale": "KBM explicitly defends the existing pay position by rejecting the requested pay coefficients as unfounded and by citing its own wage and tariff increases. This satisfies preservation of at least one status-quo component, but the frozen evidence does not defend every essential component of the full reference, including social guarantees, so +5 rather than +10.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "The authenticated frozen evidence directly attributes the pay-position defence to KBM and cleanly matches the +5 anchor without requiring outcome or worker-side inference."
+      },
+      "calculation_release": false
+    },
+    {
+      "actor_id": "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527",
+      "factor": "KVS_AO2",
+      "status": "NUMERIC",
+      "value": 5,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": true,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "KBM_NOMAD_PRESS_RESPONSE_20110527"
+      ],
+      "rationale": "Beyond rebutting the workers' demand, KBM links pay to its own declared actions and policy decisions: recurring wage increases, the stated cumulative increase range, and current tariff figures. This satisfies KVS=5, while no pay-specific consequential action is explicitly conditioned on resolution of the issue and no non-negotiable settlement condition is stated.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "The frozen evidence expressly supplies the additional own-action link required by the reactive-actor rule and does not support the stronger KVS=8 or KVS=10 anchors."
+      },
+      "calculation_release": false
+    }
+  ]
+}
