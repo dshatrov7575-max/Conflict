@@ -1,0 +1,49 @@
+{
+  "package_id": "MVP7_KBM_E05_V100_20260930",
+  "status": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+  "route_id": "AI_ONLY_PAIR_KBM_E05_V100",
+  "contract_version": "1.0.0",
+  "rubric_version": "2.1.0",
+  "evidence_input_sha256": "51f1a805986f7550828d8b05e0a1aa7aa2c80d43410540cd0f72a82448660f95",
+  "evidence_input_bytes": 4708,
+  "files_expected": 10,
+  "files": [
+    "00_README.md",
+    "01_SOURCE_AUTHENTICATION_R1.json",
+    "02_TEMPORAL_INHERITANCE_CONTRACT.json",
+    "03_EVIDENCE_INPUT_V100.json",
+    "04_RUBRIC_2_1_0.md",
+    "05_PRIMARY_RESPONSE_SCHEMA.json",
+    "06_AI1_STANDALONE_RU.md",
+    "07_AI2_STANDALONE_RU.md",
+    "08_COMPARISON_RELEASE_GATE.md",
+    "09_FREEZE_MANIFEST.json"
+  ],
+  "company_source_payload": {
+    "source_id": "AKTAU_BUSINESS_KBM_RELEASE_20110514",
+    "archive_capture_utc": "2011-05-15T05:47:06Z",
+    "bytes": 58775,
+    "sha256": "8c88985bf55e2cfa149395cb8e98de6d87798edcb9f18e614f58279935a8f63b"
+  },
+  "worker_source_identity": {
+    "unit_id": "AO2S-C1-04",
+    "source_id": "D04-FUNION",
+    "source_report_date": "2011-05-27",
+    "archive_capture_utc": "2011-05-29T13:22:16Z",
+    "payload_sha256": "c294d06169104785025a0c564b8f7e4fb34dc5b4ead7a3104c9655b1e4d262a1"
+  },
+  "primary_roles": [
+    "KBM_E05_V100_AI1",
+    "KBM_E05_V100_AI2"
+  ],
+  "entries_per_primary": 2,
+  "company_values_preassigned": false,
+  "worker_values_visible_to_company_primary": false,
+  "targeted_content_review_rounds": 0,
+  "coordinator_substitution": "FORBIDDEN",
+  "calculation_release": false,
+  "simultaneous_snapshot": false,
+  "carry_forward": "NONE",
+  "historical_area_UNO": "NOT_COMPUTED",
+  "human_validation": "NOT_PERFORMED"
+}
