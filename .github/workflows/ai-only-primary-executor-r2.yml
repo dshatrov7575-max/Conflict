@@ -145,6 +145,9 @@ jobs:
           python - "$RUNNER_TEMP/EXECUTION_RECEIPT.json" <<'PY'
           import json, os, pathlib, sys
           p=pathlib.Path(sys.argv[1])
+          output=pathlib.Path(os.environ["RUNNER_TEMP"]) / os.environ["OUTPUT_FILE"]
+          payload_bytes=output.read_bytes() if output.is_file() else b""
+          import hashlib
           p.write_text(json.dumps({
             "schema":"COPILOT_CLI_PRIMARY_EXECUTION_RECEIPT_R2",
             "role_id":os.environ["ROLE_ID"],
@@ -157,6 +160,11 @@ jobs:
             "github_run_attempt":os.environ["GITHUB_RUN_ATTEMPT"],
             "copilot_version":os.environ["COPILOT_VERSION"],
             "copilot_asset_sha256":os.environ["COPILOT_LINUX_X64_SHA256"],
+            "primary_output":{
+              "present":output.is_file(),
+              "bytes":len(payload_bytes),
+              "sha256":hashlib.sha256(payload_bytes).hexdigest() if payload_bytes else None
+            },
             "isolation":{
               "fresh_github_hosted_vm":True,
               "fresh_copilot_home":True,
