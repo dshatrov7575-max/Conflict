@@ -1,0 +1,62 @@
+{
+  "candidate_id": "OMG_E02_NOV24_NEGOTIATION_CANDIDATE_R1",
+  "status": "PROMISING_AUTHENTICATION_PENDING_NOT_FROZEN_FOR_PRIMARY",
+  "route": "AI_ONLY_RESEARCH_BETA_V1",
+  "target_ptn": {
+    "element_code": "E02",
+    "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+    "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+    "reference_sha256": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172"
+  },
+  "proposed_episode": {
+    "event_start": "2011-11-23",
+    "event_end": "2011-11-24",
+    "worker_actor": "DISMISSED_OMG_WORKER_REPRESENTATIVES_NOV2011",
+    "counterparty_actor": "OMG_EMPLOYER_NEGOTIATION_RESPONSE_NOV2011",
+    "carry_forward": "NONE",
+    "same_event_multi_actor_record": "PENDING_PROVENANCE_REVIEW"
+  },
+  "evidence": [
+    {
+      "url": "https://yvision.kz/post/v-zhanaozene-vchera-nachalis-peregovory-208295",
+      "publication_date": "2011-11-24",
+      "role": "CONTEMPORANEOUS_WORKER_SIDE_MEETING_CONTEXT",
+      "historical_byte_authentication": "PENDING"
+    },
+    {
+      "url": "https://nomad.su/?a=3-201112060023",
+      "publication_date": "2011-12-06",
+      "role": "NEGOTIATION_AGENDA_AND_EMPLOYER_RESPONSE_REPORT",
+      "historical_byte_authentication": "PENDING"
+    },
+    {
+      "url": "https://nomad.su/?a=3-201111300026",
+      "publication_date": "2011-11-30",
+      "role": "ADDITIONAL_CONTEMPORANEOUS_ACCOUNT",
+      "historical_byte_authentication": "PENDING",
+      "dependency_status": "PENDING"
+    }
+  ],
+  "promising_predicates": {
+    "worker_pay_issue_in_formal_agenda": true,
+    "employer_own_pay_implementation_action_reported": true,
+    "company_factor_values_preassigned": false,
+    "worker_factor_values_preassigned": false
+  },
+  "gates": {
+    "source_authentication": "PENDING",
+    "source_dependency": "PENDING",
+    "actor_scope_alignment": "PENDING",
+    "temporal_object": "PENDING_FREEZE",
+    "primary_packets": "NOT_CREATED",
+    "calculation_release": false
+  },
+  "forbidden": [
+    "reuse OMG V1.0.0 company KVS=5",
+    "reuse V1.0.1 or V1.0.2 company factor values",
+    "UNKNOWN to zero",
+    "coordinator substitution",
+    "rerun until numeric",
+    "treat repeated republication as independent corroboration without dependency proof"
+  ]
+}
