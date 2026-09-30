@@ -1,0 +1,21 @@
+{
+  "engineering_id": "OMG_NOV24_V100_READ_ONLY_COMPARATOR",
+  "route_id": "AI_ONLY_DYAD_OMG_NOV24_V100",
+  "input_sha256": "72b061d6999b596052adc34df493cd2f9687979589ddd17a83ae21f375a0a9a4",
+  "status": "READY_BEFORE_PRIMARY_RESPONSES",
+  "comparator_path": "compare_primary.py",
+  "self_test": {
+    "command": "python compare_primary.py --self-test",
+    "result": "PASS",
+    "cases": 8,
+    "executed_from_fresh_raw_github_download": true,
+    "date": "2026-09-30"
+  },
+  "outcome_matrix": "EXPECTED_OUTCOME_MATRIX.json",
+  "writes_to_core": false,
+  "changes_core": false,
+  "coordinator_substitution": "FORBIDDEN",
+  "targeted_content_review_rounds": 0,
+  "human_validation": "NOT_PERFORMED",
+  "historical_area_UNO": "NOT_COMPUTED"
+}
