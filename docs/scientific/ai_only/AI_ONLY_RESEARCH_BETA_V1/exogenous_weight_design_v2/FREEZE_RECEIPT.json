@@ -1,0 +1,15 @@
+{
+  "freeze_id": "AI_ONLY_COMMON_EXOGENOUS_WEIGHT_DESIGN_V2_20260930",
+  "status": "FROZEN_BEFORE_NEW_PRIMARY_RESULTS",
+  "basis": "Substantive reuse of the previously preregistered OMG Episode E1 V1 positive-weight family before observation of new lane outputs.",
+  "primary_outputs_observed_before_freeze": 0,
+  "files": [
+    "EXOGENOUS_WEIGHT_DESIGN_V2.md",
+    "SENSITIVITY_GRID_V2.json",
+    "LANE_BINDINGS.json",
+    "FREEZE_RECEIPT.json"
+  ],
+  "calculation_release": false,
+  "post_result_tuning": "FORBIDDEN",
+  "core_change": false
+}
