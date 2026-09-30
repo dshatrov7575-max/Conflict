@@ -1,0 +1,33 @@
+{
+  "source_authentication_id": "OMG_E02_NOV24_V100_CONTUR_AUTH_R1",
+  "status": "P1_ARCHIVE_REPLAY_AUTHENTICATED",
+  "source_id": "CONTUR_1822_20111130",
+  "title": "Проклятый коэффициент",
+  "publisher": "contur.kz",
+  "publication_date": "2011-11-30",
+  "publication_time_local": "04:21",
+  "original_url": "http://contur.kz/node/1822",
+  "wayback": {
+    "timestamp": "20111203222742",
+    "capture_utc": "2011-12-03T22:27:42Z",
+    "archive_url": "https://web.archive.org/web/20111203222742id_/http://www.contur.kz:80/node/1822",
+    "payload_bytes": 156307,
+    "payload_sha256": "d6bd3102d40bc51dde3847ffe1fe9d6abb5c3d63492ecf9ad2b96e9ae4fcd90c",
+    "retrieved_and_rehashed_on": "2026-09-30"
+  },
+  "verified_content": {
+    "article_date_present_in_archived_payload": true,
+    "meeting_23_24_november_present": true,
+    "worker_pay_coefficient_demand_present": true,
+    "employer_government_compromise_context_present": true,
+    "collective_agreement_change_context_present": true,
+    "post_meeting_amirova_comment_present": true
+  },
+  "source_quality_limits": [
+    "The article uses openly adversarial and loaded language about the dismissed workers.",
+    "Worker and employer positions are mediated by the journalist; the source is not a signed meeting protocol.",
+    "Only concrete attributed demands, actions, offers, refusals and pay-treatment claims may be used. Editorial judgments and motive claims are inadmissible as factor evidence.",
+    "The source authenticates what the archived article reported, not the historical truth of every assertion in it."
+  ],
+  "factor_values": null
+}
