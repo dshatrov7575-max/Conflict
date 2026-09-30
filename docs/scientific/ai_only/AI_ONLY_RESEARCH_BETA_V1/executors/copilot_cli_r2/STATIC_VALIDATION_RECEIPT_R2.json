@@ -1,0 +1,45 @@
+{
+  "receipt_id": "COPILOT_CLI_PRIMARY_EXECUTOR_R2_STATIC_VALIDATION_20260930",
+  "date": "2026-09-30",
+  "executor_id": "COPILOT_CLI_PRIMARY_EXECUTOR_R2",
+  "status": "PASS_CREDENTIAL_ONLY_BLOCKED",
+  "executor_workflow": ".github/workflows/ai-only-primary-executor-r2.yml",
+  "executor_head_sha": "8a9004af9eb8768051c7417148d3483639feb6b9",
+  "validator_workflow": ".github/workflows/ai-only-primary-executor-r2-validate.yml",
+  "validator_run_id": 36717680583,
+  "validator_conclusion": "success",
+  "validator_job_id": 109894568661,
+  "checks": {
+    "yaml_parse": "PASS",
+    "matrix_roles_exactly_8": "PASS",
+    "frozen_prompt_paths_exist": "PASS",
+    "frozen_prompt_git_blob_sha_match": "PASS",
+    "restricted_tools_view_only": "PASS",
+    "builtin_mcps_disabled": "PASS",
+    "pinned_cli_asset_sha_present": "PASS",
+    "invalid_workflow_semantic_run_after_fix": false
+  },
+  "pinned_runtime": {
+    "copilot_cli_version": "1.0.89",
+    "linux_x64_sha256": "c5c234ccba6fae2b7a9eae462caf628e86c21b5e6240ec2e885727fc148a1dcc",
+    "AI1_model": "gpt-6-astra",
+    "AI2_model": "claude-opus-5.5"
+  },
+  "credential_preflight": {
+    "workflow_run_id": 36715770075,
+    "conclusion": "success",
+    "COPILOT_GITHUB_TOKEN": "ABSENT",
+    "OPENAI_API_KEY": "ABSENT",
+    "ANTHROPIC_API_KEY": "ABSENT",
+    "OPENROUTER_API_KEY": "ABSENT",
+    "PERSONAL_ACCESS_TOKEN": "ABSENT"
+  },
+  "remaining_blocker": "Create repository Actions secret COPILOT_GITHUB_TOKEN containing a user-owned fine-grained PAT with Copilot Requests account permission.",
+  "trigger_file": ".github/ai-only-primary-executor-trigger-r2.txt",
+  "trigger_file_must_remain_absent_until_secret_present": true,
+  "primary_outputs_generated": 0,
+  "scientific_inputs_modified": false,
+  "cohort_modified": false,
+  "weight_grid_modified": false,
+  "auto_merge": false
+}
