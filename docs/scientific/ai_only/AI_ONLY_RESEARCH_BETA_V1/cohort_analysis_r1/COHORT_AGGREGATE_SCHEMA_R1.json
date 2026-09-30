@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:conflict:AI_ONLY_REPLICATION_COHORT_R1:aggregate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cohort_id",
+    "state",
+    "expected_lanes",
+    "expected_decisions",
+    "observed_decisions",
+    "overall",
+    "by_factor",
+    "lane_states",
+    "eligible_replay_lanes",
+    "claims"
+  ],
+  "properties": {
+    "cohort_id": {
+      "const": "AI_ONLY_REPLICATION_COHORT_R1_20260930"
+    },
+    "state": {
+      "enum": [
+        "COMPLETE",
+        "PARTIAL"
+      ]
+    },
+    "expected_lanes": {
+      "const": 4
+    },
+    "expected_decisions": {
+      "const": 12
+    },
+    "observed_decisions": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 12
+    },
+    "overall": {
+      "type": "object"
+    },
+    "by_factor": {
+      "type": "object"
+    },
+    "lane_states": {
+      "type": "object"
+    },
+    "eligible_replay_lanes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "claims": {
+      "type": "object"
+    }
+  }
+}
