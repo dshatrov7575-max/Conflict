@@ -1,0 +1,58 @@
+name: AI-only primary executor preflight
+
+on:
+  push:
+    branches:
+      - review/ai-only-research-beta-v1
+    paths:
+      - ".github/workflows/ai-only-primary-executor-preflight.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  secret-presence-preflight:
+    name: Check model API secret availability without exposing values
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    steps:
+      - name: Record preflight contract
+        run: |
+          set -euo pipefail
+          echo "No external API calls are made."
+          echo "No secret values are printed."
+          echo "This run only tests whether standard secret names are non-empty."
+
+      - name: OPENAI_API_KEY present
+        if: ${{ env.OPENAI_API_KEY != '' }}
+        run: echo "OPENAI_API_KEY_PRESENT=true"
+
+      - name: OPENAI_API_KEY absent
+        if: ${{ env.OPENAI_API_KEY == '' }}
+        run: echo "OPENAI_API_KEY_PRESENT=false"
+
+      - name: ANTHROPIC_API_KEY present
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        run: echo "ANTHROPIC_API_KEY_PRESENT=true"
+
+      - name: ANTHROPIC_API_KEY absent
+        if: ${{ env.ANTHROPIC_API_KEY == '' }}
+        run: echo "ANTHROPIC_API_KEY_PRESENT=false"
+
+      - name: OPENROUTER_API_KEY present
+        if: ${{ env.OPENROUTER_API_KEY != '' }}
+        run: echo "OPENROUTER_API_KEY_PRESENT=true"
+
+      - name: OPENROUTER_API_KEY absent
+        if: ${{ env.OPENROUTER_API_KEY == '' }}
+        run: echo "OPENROUTER_API_KEY_PRESENT=false"
+
+      - name: Preserve scientific boundary
+        run: |
+          echo "This preflight does not execute primary coding."
+          echo "It does not change frozen packets, cohort, weights, or release gates."
