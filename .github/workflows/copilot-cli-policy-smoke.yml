@@ -1,0 +1,64 @@
+name: Copilot CLI policy smoke test
+
+on:
+  push:
+    branches:
+      - review/ai-only-research-beta-v1
+    paths:
+      - ".github/workflows/copilot-cli-policy-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Non-scientific Copilot CLI access smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+      COPILOT_HOME: /tmp/copilot-policy-smoke-home
+      COPILOT_VERSION: "1.0.89"
+      COPILOT_LINUX_X64_SHA256: c5c234ccba6fae2b7a9eae462caf628e86c21b5e6240ec2e885727fc148a1dcc
+    steps:
+      - name: Require credential presence
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$COPILOT_GITHUB_TOKEN"
+
+      - name: Install exact pinned Copilot CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset="$RUNNER_TEMP/copilot-linux-x64.tar.gz"
+          curl --fail --location --silent --show-error \
+            "https://github.com/github/copilot-cli/releases/download/v$COPILOT_VERSION/copilot-linux-x64.tar.gz" \
+            --output "$asset"
+          echo "$COPILOT_LINUX_X64_SHA256  $asset" | sha256sum --check -
+          mkdir -p "$RUNNER_TEMP/copilot-bin"
+          tar -xzf "$asset" -C "$RUNNER_TEMP/copilot-bin"
+          bin="$(find "$RUNNER_TEMP/copilot-bin" -type f -name copilot -perm -u+x -print -quit)"
+          test -n "$bin"
+          echo "COPILOT_BIN=$bin" >> "$GITHUB_ENV"
+
+      - name: Run non-scientific access probe
+        shell: bash
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          rm -rf "$COPILOT_HOME"
+          mkdir -p "$COPILOT_HOME"
+          "$COPILOT_BIN" -p 'Reply with exactly: COPILOT_POLICY_SMOKE_PASS' -s \
+            --no-ask-user --available-tools='view' --disable-builtin-mcps \
+            > "$RUNNER_TEMP/smoke.txt"
+          grep -Fx 'COPILOT_POLICY_SMOKE_PASS' "$RUNNER_TEMP/smoke.txt"
+
+      - name: Scientific boundary
+        if: always()
+        shell: bash
+        run: |
+          echo "NON_SCIENTIFIC_SMOKE_TEST=true"
+          echo "No frozen standalone prompt was read."
+          echo "No cohort primary role was invoked."
+          echo "No scientific output was generated."
