@@ -1,0 +1,81 @@
+{
+  "schema": "MANUAL_DUAL_MODEL_DISPATCH_R1",
+  "status": "FROZEN_BEFORE_RESPONSES",
+  "frozen_commit": "c949d592150f079a9013fc77e9ad1b03f622d19b",
+  "cohort": "AI_ONLY_REPLICATION_COHORT_R1_20260930",
+  "substitutions_forbidden": true,
+  "chats": [
+    {
+      "chat_name": "MVP7 KBM E02 AI1 — GPT-5.6 Sol Pro",
+      "service": "ChatGPT",
+      "model": "GPT-5.6 Sol Pro",
+      "role": "KBM_COMPANY_E02_V100_AI1",
+      "prompt_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/kbm_e02_v1_0_0/06_AI1_STANDALONE_RU.md",
+      "prompt_blob": "4d894bf841912788ec534904c05f53a3076bee3b",
+      "output_file": "KBM_E02_V100_AI1_COMPLETED.json"
+    },
+    {
+      "chat_name": "MVP7 KBM E02 AI2 — Claude Opus 5.5 High",
+      "service": "Claude",
+      "model": "Claude Opus 5.5 High",
+      "role": "KBM_COMPANY_E02_V100_AI2",
+      "prompt_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/kbm_e02_v1_0_0/07_AI2_STANDALONE_RU.md",
+      "prompt_blob": "64d02513711034941da014bd40024e506a68b020",
+      "output_file": "KBM_E02_V100_AI2_COMPLETED.json"
+    },
+    {
+      "chat_name": "MVP7 OMG Nov24 AI1 — GPT-5.6 Sol Pro",
+      "service": "ChatGPT",
+      "model": "GPT-5.6 Sol Pro",
+      "role": "OMG_NOV24_V100_AI1",
+      "prompt_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/omg_e02_nov24_v1_0_0/06_AI1_STANDALONE_RU.md",
+      "prompt_blob": "83473066a90daf00bc2a9413cb0175d25f54b60a",
+      "output_file": "OMG_NOV24_V100_AI1_COMPLETED.json"
+    },
+    {
+      "chat_name": "MVP7 OMG Nov24 AI2 — Claude Opus 5.5 High",
+      "service": "Claude",
+      "model": "Claude Opus 5.5 High",
+      "role": "OMG_NOV24_V100_AI2",
+      "prompt_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/omg_e02_nov24_v1_0_0/07_AI2_STANDALONE_RU.md",
+      "prompt_blob": "b8a18c8a553e1e6f1efee2bfbe4d348619795d59",
+      "output_file": "OMG_NOV24_V100_AI2_COMPLETED.json"
+    },
+    {
+      "chat_name": "MVP7 KBM E05 AI1 — GPT-5.6 Sol Pro",
+      "service": "ChatGPT",
+      "model": "GPT-5.6 Sol Pro",
+      "role": "KBM_E05_V100_AI1",
+      "prompt_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/kbm_e05_v1_0_0/06_AI1_STANDALONE_RU.md",
+      "prompt_blob": "bd1d89ac5b0aa046e8d4498cb3b19031dd2c60af",
+      "output_file": "KBM_E05_V100_AI1_COMPLETED.json"
+    },
+    {
+      "chat_name": "MVP7 KBM E05 AI2 — Claude Opus 5.5 High",
+      "service": "Claude",
+      "model": "Claude Opus 5.5 High",
+      "role": "KBM_E05_V100_AI2",
+      "prompt_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/kbm_e05_v1_0_0/07_AI2_STANDALONE_RU.md",
+      "prompt_blob": "0a39088aaa78bbf3c1a5e7300e1f3fe23e25438c",
+      "output_file": "KBM_E05_V100_AI2_COMPLETED.json"
+    },
+    {
+      "chat_name": "MVP7 D25 E02 AI1 — GPT-5.6 Sol Pro",
+      "service": "ChatGPT",
+      "model": "GPT-5.6 Sol Pro",
+      "role": "D25_E02_V100_AI1",
+      "prompt_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/d25_e02_v1_0_0/06_AI1_STANDALONE_RU.md",
+      "prompt_blob": "2b0dcd8ee954f68d74b11b8bcbf299dfb9e2da33",
+      "output_file": "D25_E02_V100_AI1_COMPLETED.json"
+    },
+    {
+      "chat_name": "MVP7 D25 E02 AI2 — Claude Opus 5.5 High",
+      "service": "Claude",
+      "model": "Claude Opus 5.5 High",
+      "role": "D25_E02_V100_AI2",
+      "prompt_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/d25_e02_v1_0_0/07_AI2_STANDALONE_RU.md",
+      "prompt_blob": "2911bd6975184b9d9f1faf2aa235d6322eae7152",
+      "output_file": "D25_E02_V100_AI2_COMPLETED.json"
+    }
+  ]
+}
