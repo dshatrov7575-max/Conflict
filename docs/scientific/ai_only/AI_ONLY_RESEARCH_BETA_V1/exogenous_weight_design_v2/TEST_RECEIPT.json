@@ -3,7 +3,7 @@
   "date": "2026-09-30",
   "runner": "read_only_sensitivity_runner_v2.py",
   "design_id": "AI_ONLY_COMMON_EXOGENOUS_WEIGHT_DESIGN_V2",
-  "status": "PARTIAL_TEST_RAW_EXECUTION_PENDING",
+  "status": "SUPERSEDED_BY_V2_1_PASS",
   "checks_completed": {
     "formula_replay_in_current_reasoning_environment": {
       "result": "PASS",
@@ -26,5 +26,7 @@
   },
   "calculation_release": false,
   "core_change": false,
-  "post_result_tuning": "FORBIDDEN"
+  "post_result_tuning": "FORBIDDEN",
+  "superseded_by": "TEST_RECEIPT_V2_1.json",
+  "note": "The V2 runner did not consume the separately frozen D25 binding. V2.1 fixes binding ingestion without changing the frozen weight grid."
 }
