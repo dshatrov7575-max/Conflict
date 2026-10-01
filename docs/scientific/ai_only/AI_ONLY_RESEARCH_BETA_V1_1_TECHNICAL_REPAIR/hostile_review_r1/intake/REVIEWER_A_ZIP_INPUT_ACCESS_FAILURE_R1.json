@@ -1,0 +1,11 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEWER_A_TECHNICAL_FAILURE_R1",
+  "reviewer_role": "V1_1_HOSTILE_REVIEWER_A",
+  "state": "NON_EXECUTED_INPUT_ACCESS_FAILURE",
+  "substantive_review_started": false,
+  "transport": "ZIP",
+  "response_status": "error",
+  "response_message": "Невозможно прочитать бинарные данные ZIP-архива в виде текста. Инструкции из README_DISPATCH_RU.md и START_HERE.md недоступны. Предоставьте их содержимое в открытом текстовом виде.",
+  "scientific_effect": "NONE",
+  "counts_as_substantive_attempt": false
+}
