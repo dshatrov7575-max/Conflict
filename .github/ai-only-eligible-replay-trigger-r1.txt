@@ -1,0 +1,5 @@
+AI_ONLY_ELIGIBLE_REPLAY_R1_TRIGGER
+created_utc=2026-10-01T09:42:00Z
+eligible_routes=AI_ONLY_DYAD_KBM_E02_V100,AI_ONLY_PAIR_KBM_E05_V100
+ineligible_routes_not_executed=AI_ONLY_DYAD_OMG_NOV24_V100,AI_ONLY_DYAD_D25_E02_V100
+reason=frozen_lane_eligibility_reached_and_core_replay_required
