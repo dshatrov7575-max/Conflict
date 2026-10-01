@@ -1,0 +1,31 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_ARTIFACT_REVIEW_R1",
+  "state": "PASS",
+  "github_run_id": "36885038106",
+  "github_run_conclusion": "success",
+  "github_head_sha": "b099f4fb023c9e262ac95889301ff6ddc66e8716",
+  "artifact": {
+    "id": "11174645764",
+    "name": "ai-only-v1-1-evaluation-r3",
+    "digest": "sha256:ff8c6cf0d6a4cc43e9ca4ab9a3fe54539fcb8fe9b5e31576cc1e33e7a0087ed6",
+    "expired": false,
+    "files_reviewed": [
+      "COHORT_AGGREGATE_V1_1_R1.json",
+      "OMG_NOV24_V101_PRIMARY_COMPARISON.json",
+      "RELEASE_GATE_INPUT_V1_1_R1.json",
+      "RELEASE_GATE_OUTPUT_V1_1_R1.json",
+      "V1_1_EVALUATION_RECEIPT_R1.json"
+    ]
+  },
+  "verified": {
+    "omg_state": "HOLD_DISAGREEMENT",
+    "cohort_state": "COMPLETE",
+    "observed_decisions": 12,
+    "expected_decisions": 12,
+    "release_gate_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+    "all_gates_pass": true,
+    "old_omg_kvs5_pol50_restored": false,
+    "historical_area_UNO_computed": false,
+    "human_validation_performed": false
+  }
+}
