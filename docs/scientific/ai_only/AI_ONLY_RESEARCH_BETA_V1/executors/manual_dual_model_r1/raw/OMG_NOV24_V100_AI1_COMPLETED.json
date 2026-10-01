@@ -1,0 +1,140 @@
+{
+  "result_filename": "OMG_NOV24_V100_AI1_COMPLETED.json",
+  "route_id": "AI_ONLY_DYAD_OMG_NOV24_V100",
+  "contract_version": "1.0.0",
+  "rubric_version": "2.1.0",
+  "coder_role": "OMG_NOV24_V100_AI1",
+  "input_sha256": "72b061d6999b596052adc34df493cd2f9687979589ddd17a83ae21f375a0a9a4",
+  "event": "2011-11-23..2011-11-24",
+  "source_report_date": "2011-11-30",
+  "carry_forward": "NONE",
+  "simultaneous_snapshot": false,
+  "PTN": "E02",
+  "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+  "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+  "reference_sha256": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172",
+  "entries": [
+    {
+      "actor_id": "OMG_DISMISSED_WORKERS_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "POS_AO2",
+      "status": "NUMERIC",
+      "value": -5,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": true,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "Frozen input, Actor A coder-visible evidence: dismissed workers sought return to OMG and higher pay treatment using coefficients 1.7 and 1.8.",
+        "Frozen input, Actor A limited exact fragment concerning return to OMG and multiplication of former salaries by 1.7 and 1.8.",
+        "Frozen input, Actor A coder-visible evidence: removal of the OMG director was also demanded, so pay was not the only issue."
+      ],
+      "rationale": "Требование повысить оплату через коэффициенты 1,7 и 1,8 прямо направлено на изменение как минимум одного существенного компонента статус-кво. Оно не охватывает доказанно весь порядок оплаты и социальных гарантий, поэтому полностью поддержан только якорь POS_AO2=-5, а не -10.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "Направление и предмет требования прямо атрибутированы узкому актору; враждебная редакционная риторика не использована как доказательство."
+      },
+      "calculation_release": false
+    },
+    {
+      "actor_id": "OMG_DISMISSED_WORKERS_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "KVS_AO2",
+      "status": "NUMERIC",
+      "value": 5,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": true,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "Frozen input, Actor A coder-visible evidence: higher pay treatment through coefficients 1.7 and 1.8 was part of the dismissed workers' own demands.",
+        "Frozen input, Actor A coder-visible evidence: the workers rejected the proposed settlement and did not sign the reconciliation document.",
+        "Frozen input, Actor A coder-visible evidence: removal of the OMG director was another demand, so the settlement refusal is not explicitly conditioned on the pay issue alone."
+      ],
+      "rationale": "Вопрос оплаты явно включён в собственный набор требований актора, что полностью удовлетворяет KVS_AO2=5. Отказ от компромисса не доказан как прямо обусловленный именно оплатой, а среди требований был и неплатёжный пункт, поэтому якоря 8 и 10 не лицензированы.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "Принадлежность платёжного требования актору ясна; более высокие якоря исключены из-за отсутствия pay-specific условия отказа."
+      },
+      "calculation_release": false
+    },
+    {
+      "actor_id": "RD_KMG_OMG_EMPLOYER_SIDE_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "POS_AO2",
+      "status": "NUMERIC",
+      "value": 5,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": true,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "Frozen input, Actor B coder-visible evidence: the employer-side position was that the disputed coefficients had already been incorporated in pay calculations.",
+        "Frozen input, Actor B coder-visible evidence: additional reimbursement or a further salary increase on that basis was not accepted.",
+        "Frozen input, Actor B coder-visible evidence: the employer/administrative side defended the legality and correctness of the existing coefficient treatment."
+      ],
+      "rationale": "Работодательская сторона прямо защищала сохранение действующей обработки спорных коэффициентов и не принимала дополнительное повышение на этом основании. Это поддерживает сохранение одного существенного компонента статус-кво, то есть POS_AO2=+5. Защита всего референтного положения, включая все элементы оплаты и социальных гарантий, не установлена, поэтому +10 не поддержан.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "Позиция по конкретному платёжному компоненту явно описана; контекст альтернативной занятости и редакционные оценки не использованы для усиления величины."
+      },
+      "calculation_release": false
+    },
+    {
+      "actor_id": "RD_KMG_OMG_EMPLOYER_SIDE_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "KVS_AO2",
+      "status": "UNKNOWN",
+      "value": null,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": false,
+        "C5": false,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "Frozen input, Actor B coder-visible evidence: the employer side rebutted the demand by stating that the coefficients were already incorporated and did not accept additional reimbursement or a further increase.",
+        "Frozen input, Actor B coder-visible evidence: the contractor-position arrangement concerned alternative employment and is explicitly non-pay-specific for KVS.",
+        "Frozen input, Actor B coder-visible evidence: possible revision of collective-agreement provisions is described with merged government/employer attribution."
+      ],
+      "rationale": "Доказана реактивная позиция по платёжному требованию, но по reactive-actor rule одного опровержения или отклонения требования недостаточно для KVS_AO2=5. Единственное возможное дополнительное действие — готовность пересмотреть отдельные положения коллективного договора — в пакете описано со смешанной атрибуцией правительства и работодателя и не связано однозначно именно с оплатой; поэтому решающий предикат нельзя уверенно отнести к узкому актору (C4=false). Отдельная полностью поддержанная связь вопроса оплаты с собственным формализованным действием, решением, урегулированием, распределением ресурсов или платёжным критерием работодателя отсутствует (C5=false). Условия для якорей 8 и 10 также не установлены. Статус — UNKNOWN.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "Неопределённость следует непосредственно из специального правила для реактивного актора и отсутствия дополнительного pay-specific предиката; она не означает нулевую значимость вопроса."
+      },
+      "calculation_release": false
+    }
+  ],
+  "attestation": {
+    "other_coder_output_seen": false,
+    "prior_episode_outputs_seen": false,
+    "outcome_used_as_evidence": false,
+    "external_sources_used": false
+  }
+}
