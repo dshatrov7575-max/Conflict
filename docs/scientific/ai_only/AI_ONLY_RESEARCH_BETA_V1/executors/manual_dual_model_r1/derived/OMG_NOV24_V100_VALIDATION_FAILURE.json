@@ -1,0 +1,68 @@
+{
+  "schema": "OMG_NOV24_V100_FROZEN_VALIDATION_FAILURE_R1",
+  "route_id": "AI_ONLY_DYAD_OMG_NOV24_V100",
+  "input_sha256": "72b061d6999b596052adc34df493cd2f9687979589ddd17a83ae21f375a0a9a4",
+  "state": "INVALID_PRIMARY_OUTPUT_TECHNICAL_MISMATCH",
+  "frozen_comparator_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/engineering/OMG_NOV24_V100/compare_primary.py",
+  "frozen_comparator_git_blob_sha": "687a7cb78f5a2aab0f93138d1d9ead9e52b4c425",
+  "raw_inputs": [
+    {
+      "role": "OMG_NOV24_V100_AI1",
+      "path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/OMG_NOV24_V100_AI1_COMPLETED.json",
+      "capture_commit": "1cb2fa3a046284e69bb4ce7788349b2d57666a05",
+      "run_id_present": false
+    },
+    {
+      "role": "OMG_NOV24_V100_AI2",
+      "path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/OMG_NOV24_V100_AI2_COMPLETED.json",
+      "capture_commit": "51be523ca303194435cd8d5be795adaa35f8e54c",
+      "run_id_present": false
+    }
+  ],
+  "exact_comparator_error": "run_id must differ",
+  "root_cause": "Both raw primary outputs omit the non-empty run_id field required by the frozen comparator; both therefore resolve to null before individual validation.",
+  "contract_mismatch": {
+    "present": true,
+    "description": "The frozen standalone instructions enumerate required entry fields and top-level attestation but do not instruct either coder to emit run_id, while the frozen comparator requires a non-empty distinct run_id for each primary.",
+    "discovered_after_primary_outputs": true
+  },
+  "substantive_values_observed_but_not_admitted": [
+    {
+      "actor_id": "OMG_DISMISSED_WORKERS_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "POS_AO2",
+      "ai1": -5,
+      "ai2": -5
+    },
+    {
+      "actor_id": "OMG_DISMISSED_WORKERS_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "KVS_AO2",
+      "ai1": 5,
+      "ai2": 5
+    },
+    {
+      "actor_id": "RD_KMG_OMG_EMPLOYER_SIDE_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "POS_AO2",
+      "ai1": 5,
+      "ai2": 5
+    },
+    {
+      "actor_id": "RD_KMG_OMG_EMPLOYER_SIDE_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "KVS_AO2",
+      "ai1": "UNKNOWN",
+      "ai2": "UNKNOWN"
+    }
+  ],
+  "repair_performed": false,
+  "retry_performed": false,
+  "coordinator_substitution": "FORBIDDEN",
+  "targeted_content_review_rounds": 0,
+  "calculation_release": false,
+  "lane_comparator_state": "NOT_PRODUCED",
+  "release_gate_effect": {
+    "G2_primary_execution_completeness": "BLOCKED_INVALID_PROTOCOL_OUTPUTS",
+    "G4_deterministic_comparison": "BLOCKED_FROZEN_COMPARATOR_REJECTED_INPUTS"
+  },
+  "historical_snapshot": "NOT_ESTABLISHED",
+  "historical_area_UNO": "NOT_COMPUTED",
+  "human_validation": "NOT_PERFORMED"
+}
