@@ -1,0 +1,45 @@
+{
+  "schema": "OMG_NOV24_V101_PACKAGE_FREEZE_MANIFEST_R1",
+  "status": "FROZEN_BEFORE_RESPONSES",
+  "route_id": "AI_ONLY_DYAD_OMG_NOV24_V101",
+  "contract_version": "1.0.1",
+  "rubric_version": "2.1.0",
+  "source_input_sha256": "72b061d6999b596052adc34df493cd2f9687979589ddd17a83ae21f375a0a9a4",
+  "frozen_files": [
+    {
+      "role": "OMG_NOV24_V101_AI1",
+      "path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/omg_nov24_v1_0_1/06_AI1_STANDALONE_RU.md",
+      "git_blob_sha": "225bf43b4e90b1c049f136c77e7f2ce1c53aa0e3",
+      "service": "ChatGPT",
+      "model": "GPT-5.6 Sol Pro",
+      "attempt_limit": 1,
+      "output_file": "OMG_NOV24_V101_AI1_COMPLETED.json"
+    },
+    {
+      "role": "OMG_NOV24_V101_AI2",
+      "path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/omg_nov24_v1_0_1/07_AI2_STANDALONE_RU.md",
+      "git_blob_sha": "9a5f103db14541c7379444886bc83b386224cacf",
+      "service": "Claude",
+      "model": "Claude Opus 5.5 High",
+      "attempt_limit": 1,
+      "output_file": "OMG_NOV24_V101_AI2_COMPLETED.json"
+    },
+    {
+      "path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/omg_nov24_v1_0_1/compare_primary_v101.py",
+      "git_blob_sha": "3f62d8e164c48d1e0802f6a880000e927c7f7955"
+    }
+  ],
+  "required_contract_fields": [
+    "actual_model_label",
+    "model_label_source",
+    "run_id",
+    "completed_at_utc"
+  ],
+  "scientific_input_changed": false,
+  "response_contract_changed": true,
+  "old_OMG_outputs_visible_to_new_primaries": false,
+  "coordinator_substitution": "FORBIDDEN",
+  "targeted_adjudication": "FORBIDDEN",
+  "rerun_until_favorable": "FORBIDDEN",
+  "old_OMG_company_KVS5_Pol50": "SUPERSEDED_NOT_RESTORED"
+}
