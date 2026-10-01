@@ -1,0 +1,70 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_FREEZE_MANIFEST_R1",
+  "frozen_at_date": "2026-10-01",
+  "state": "FROZEN_BEFORE_REVIEW_OUTPUTS",
+  "target": {
+    "manifest_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json",
+    "manifest_git_blob": "abca1f71455dc2c63d7f52736fb1004724cb90ce",
+    "release_candidate_state_under_review": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+    "source_evaluation_run_id": "36885038106",
+    "source_evaluation_artifact_id": "11174645764",
+    "source_evaluation_artifact_digest": "sha256:ff8c6cf0d6a4cc43e9ca4ab9a3fe54539fcb8fe9b5e31576cc1e33e7a0087ed6",
+    "demo_preflight_run_id": "36888617846",
+    "demo_preflight_artifact_id": "11176395011",
+    "demo_preflight_artifact_digest": "sha256:0741d01501ffbede5b6dbb29f819d40908d913a72ee3f9a800292e1f0b12daf7"
+  },
+  "review_package_files": {
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/HOSTILE_REVIEW_PROTOCOL_R1.md": "9d520d61b726812253cdc9d7784890493d14d22c",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/HOSTILE_REVIEW_RESPONSE_SCHEMA_R1.json": "3cfb0f47759e241364b479685dd283307bf81e81",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/REVIEWER_A_STANDALONE_RU.md": "177bbc132b8c6da128140419e9c3c6cb70f354b4",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/REVIEWER_B_STANDALONE_RU.md": "47d2acaf78d38f47dc30ac25520ffea2feacaed4"
+  },
+  "reviewers": {
+    "V1_1_HOSTILE_REVIEWER_A": {
+      "attempt_limit": 1,
+      "output_filename": "V1_1_HOSTILE_REVIEW_A_COMPLETED.json",
+      "other_reviewer_output_access": "FORBIDDEN",
+      "model_binding": "TO_BE_RECORDED_BEFORE_DISPATCH_BASED_ON_AVAILABILITY_ONLY"
+    },
+    "V1_1_HOSTILE_REVIEWER_B": {
+      "attempt_limit": 1,
+      "output_filename": "V1_1_HOSTILE_REVIEW_B_COMPLETED.json",
+      "other_reviewer_output_access": "FORBIDDEN",
+      "model_binding": "TO_BE_RECORDED_BEFORE_DISPATCH_BASED_ON_AVAILABILITY_ONLY"
+    }
+  },
+  "required_domains": [
+    "D01_PROSPECTIVE_TECHNICAL_REPAIR",
+    "D02_IMMUTABLE_CARRY_FORWARD",
+    "D03_FRESH_PRIMARY_INDEPENDENCE",
+    "D04_MODEL_B_SUBSTITUTION",
+    "D05_COMPARATOR_FAIL_CLOSED",
+    "D06_COHORT_AGGREGATION",
+    "D07_ELIGIBLE_ONLY_CORE_REPLAY",
+    "D08_RELEASE_GATE_LOGIC",
+    "D09_PROVENANCE_AND_RECEIPTS",
+    "D10_DEMO_ACCURACY",
+    "D11_OLD_OMG_SUPERSESSION",
+    "D12_CLAIM_BOUNDARIES",
+    "D13_FAILED_WORKFLOW_ATTEMPTS",
+    "D14_SELECTIVE_RERUN_AND_BIAS_RISK"
+  ],
+  "allowed_verdicts": [
+    "PASS",
+    "PASS_WITH_P1",
+    "HOLD_P0",
+    "NOT_PROVEN"
+  ],
+  "forbidden": [
+    "SHOW_REVIEWER_A_OUTPUT_TO_REVIEWER_B",
+    "SHOW_REVIEWER_B_OUTPUT_TO_REVIEWER_A",
+    "USE_PRIOR_AUDITS",
+    "USE_KNOWN_CONFLICT_OUTCOME",
+    "USE_EXTERNAL_SEARCH",
+    "MODIFY_PRIMARY_OUTPUTS",
+    "ADJUDICATE_EMPLOYER_KVS",
+    "RERUN_UNTIL_FAVORABLE",
+    "CHANGE_TARGET_MANIFEST_AFTER_FIRST_OUTPUT",
+    "AUTO_MERGE"
+  ]
+}
