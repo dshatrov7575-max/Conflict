@@ -1,0 +1,34 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_PREFLIGHT_ARTIFACT_REVIEW_R1",
+  "state": "PASS",
+  "github_run_id": "36889483154",
+  "github_run_conclusion": "success",
+  "github_head_sha": "403976e4aa9587291d6869310d5dd5e3a6d2c68f",
+  "artifact": {
+    "id": "11176356291",
+    "name": "ai-only-v1-1-hostile-review-preflight-r1",
+    "digest": "sha256:e5ea95e41792668b24afd4b4ef69ebc44f849dcc3bf5d71ac0485ebabce2b1f4",
+    "expired": false,
+    "files_reviewed": {
+      "HOSTILE_REVIEW_PREFLIGHT_RECEIPT_R1.json": {
+        "bytes": 1617,
+        "sha256": "a5f00bf2f703ab57fd2cfbce28cd22632d2edb682518df48b717367c0a692dd0"
+      }
+    }
+  },
+  "verified": {
+    "freeze_manifest_git_blob": "53c00fb58a88ad75bbeb1410bce1a79a3f50677c",
+    "target_manifest_git_blob": "abca1f71455dc2c63d7f52736fb1004724cb90ce",
+    "frozen_before_review_outputs": true,
+    "review_outputs_present": false,
+    "reviewer_prompts_equivalent_except_identity": true,
+    "required_domains_count": 14,
+    "target_evaluation_and_demo_artifacts_pinned": true,
+    "other_reviewer_output_access": "FORBIDDEN",
+    "attempt_limit_each": 1,
+    "external_search": "FORBIDDEN",
+    "coordinator_adjudication": "FORBIDDEN",
+    "rerun_until_favorable": "FORBIDDEN",
+    "auto_merge": false
+  }
+}
