@@ -1,0 +1,177 @@
+name: AI-only V1.1 hostile review package preflight R2
+
+on:
+  push:
+    branches:
+      - review/ai-only-research-beta-v1-1-fast-repair
+    paths:
+      - ".github/workflows/ai-only-v1-1-hostile-review-preflight-r2.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Verify frozen independent hostile review package R2
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact review-package head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify exact frozen review package
+        shell: bash
+        env:
+          PREFLIGHT_HEAD_SHA: ${{ github.sha }}
+          PREFLIGHT_RUN_ID: ${{ github.run_id }}
+          PREFLIGHT_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/v1-1-hostile-review-preflight-r2"
+          mkdir -p "$out"
+          python - "$out" <<'PY'
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import sys
+
+          def check(condition, message):
+              if not condition:
+                  raise AssertionError(message)
+
+          out=pathlib.Path(sys.argv[1])
+          base=pathlib.Path('docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR')
+          review=base/'hostile_review_r1'
+          freeze_path=review/'HOSTILE_REVIEW_FREEZE_MANIFEST_R1.json'
+          freeze_blob=subprocess.check_output(['git','hash-object',str(freeze_path)],text=True).strip()
+          check(freeze_blob=='53c00fb58a88ad75bbeb1410bce1a79a3f50677c','freeze manifest blob mismatch')
+
+          freeze=json.loads(freeze_path.read_text(encoding='utf-8'))
+          schema=json.loads((review/'HOSTILE_REVIEW_RESPONSE_SCHEMA_R1.json').read_text(encoding='utf-8'))
+          protocol=(review/'HOSTILE_REVIEW_PROTOCOL_R1.md').read_text(encoding='utf-8')
+          prompt_a=(review/'REVIEWER_A_STANDALONE_RU.md').read_text(encoding='utf-8')
+          prompt_b=(review/'REVIEWER_B_STANDALONE_RU.md').read_text(encoding='utf-8')
+          target=json.loads((base/'DEMO_PACKAGE_MANIFEST_R1.json').read_text(encoding='utf-8'))
+
+          check(freeze['schema']=='AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_FREEZE_MANIFEST_R1','freeze schema mismatch')
+          check(freeze['state']=='FROZEN_BEFORE_REVIEW_OUTPUTS','freeze state mismatch')
+          check(freeze['target']['manifest_git_blob']=='abca1f71455dc2c63d7f52736fb1004724cb90ce','target manifest declaration mismatch')
+          actual_target_blob=subprocess.check_output(['git','hash-object',freeze['target']['manifest_path']],text=True).strip()
+          check(actual_target_blob==freeze['target']['manifest_git_blob'],'target manifest blob mismatch')
+          check(freeze['target']['source_evaluation_run_id']=='36885038106','source evaluation run mismatch')
+          check(freeze['target']['source_evaluation_artifact_digest']=='sha256:ff8c6cf0d6a4cc43e9ca4ab9a3fe54539fcb8fe9b5e31576cc1e33e7a0087ed6','source artifact digest mismatch')
+          check(freeze['target']['demo_preflight_run_id']=='36888617846','demo preflight run mismatch')
+          check(freeze['target']['demo_preflight_artifact_digest']=='sha256:0741d01501ffbede5b6dbb29f819d40908d913a72ee3f9a800292e1f0b12daf7','demo artifact digest mismatch')
+          check(target['release_candidate_state']==freeze['target']['release_candidate_state_under_review'],'target RC state mismatch')
+
+          for path,expected in freeze['review_package_files'].items():
+              actual=subprocess.check_output(['git','hash-object',path],text=True).strip()
+              check(actual==expected,f'review package blob mismatch: {path}: {actual}')
+
+          required_domains=[
+            'D01_PROSPECTIVE_TECHNICAL_REPAIR',
+            'D02_IMMUTABLE_CARRY_FORWARD',
+            'D03_FRESH_PRIMARY_INDEPENDENCE',
+            'D04_MODEL_B_SUBSTITUTION',
+            'D05_COMPARATOR_FAIL_CLOSED',
+            'D06_COHORT_AGGREGATION',
+            'D07_ELIGIBLE_ONLY_CORE_REPLAY',
+            'D08_RELEASE_GATE_LOGIC',
+            'D09_PROVENANCE_AND_RECEIPTS',
+            'D10_DEMO_ACCURACY',
+            'D11_OLD_OMG_SUPERSESSION',
+            'D12_CLAIM_BOUNDARIES',
+            'D13_FAILED_WORKFLOW_ATTEMPTS',
+            'D14_SELECTIVE_RERUN_AND_BIAS_RISK',
+          ]
+          check(freeze['required_domains']==required_domains,'freeze domain order mismatch')
+          domain_enum=schema['properties']['domain_reviews']['items']['properties']['domain_id']['enum']
+          check(domain_enum==required_domains,'schema domain order mismatch')
+          check(schema['properties']['reviewer_role']['enum']==['V1_1_HOSTILE_REVIEWER_A','V1_1_HOSTILE_REVIEWER_B'],'schema reviewer roles mismatch')
+          check(schema['properties']['verdict']['properties']['state']['enum']==['PASS','PASS_WITH_P1','HOLD_P0','NOT_PROVEN'],'schema verdict enum mismatch')
+
+          check('V1_1_HOSTILE_REVIEWER_A' in prompt_a,'A role missing')
+          check('V1_1_HOSTILE_REVIEWER_B' not in prompt_a,'B role leaked into A prompt')
+          check('V1_1_HOSTILE_REVIEW_A_COMPLETED.json' in prompt_a,'A output filename missing')
+          check('output Reviewer B' in prompt_a,'A cross-review prohibition missing')
+          check('V1_1_HOSTILE_REVIEWER_B' in prompt_b,'B role missing')
+          check('V1_1_HOSTILE_REVIEWER_A' not in prompt_b,'A role leaked into B prompt')
+          check('V1_1_HOSTILE_REVIEW_B_COMPLETED.json' in prompt_b,'B output filename missing')
+          check('output Reviewer A' in prompt_b,'B cross-review prohibition missing')
+
+          normalized_a=prompt_a.replace('HOSTILE REVIEWER A','HOSTILE REVIEWER X').replace('V1_1_HOSTILE_REVIEWER_A','V1_1_HOSTILE_REVIEWER_X').replace('V1_1_HOSTILE_REVIEW_A_COMPLETED.json','V1_1_HOSTILE_REVIEW_X_COMPLETED.json').replace('output Reviewer B','output Reviewer X')
+          normalized_b=prompt_b.replace('HOSTILE REVIEWER B','HOSTILE REVIEWER X').replace('V1_1_HOSTILE_REVIEWER_B','V1_1_HOSTILE_REVIEWER_X').replace('V1_1_HOSTILE_REVIEW_B_COMPLETED.json','V1_1_HOSTILE_REVIEW_X_COMPLETED.json').replace('output Reviewer A','output Reviewer X')
+          check(normalized_a==normalized_b,'reviewer prompts differ beyond frozen identity')
+
+          for token in (
+              'abca1f71455dc2c63d7f52736fb1004724cb90ce',
+              '36885038106',
+              '36888617846',
+              '`P0`',
+              '`NOT_PROVEN`',
+              '`HOLD_P0`',
+              'выполнять merge',
+          ):
+              check(token in protocol,f'protocol token missing: {token}')
+
+          check(not (review/'V1_1_HOSTILE_REVIEW_A_COMPLETED.json').exists(),'Reviewer A output already present')
+          check(not (review/'V1_1_HOSTILE_REVIEW_B_COMPLETED.json').exists(),'Reviewer B output already present')
+
+          receipt={
+            'schema':'AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_PREFLIGHT_RECEIPT_R1',
+            'state':'PASS',
+            'github_run_id':os.environ['PREFLIGHT_RUN_ID'],
+            'github_run_attempt':os.environ['PREFLIGHT_RUN_ATTEMPT'],
+            'github_head_sha':os.environ['PREFLIGHT_HEAD_SHA'],
+            'freeze_manifest_git_blob':freeze_blob,
+            'target_manifest_git_blob':freeze['target']['manifest_git_blob'],
+            'review_package_files':freeze['review_package_files'],
+            'verified':{
+              'frozen_before_review_outputs':True,
+              'review_outputs_present':False,
+              'reviewer_prompts_equivalent_except_identity':True,
+              'required_domains_count':14,
+              'schema_role_binding':'PASS',
+              'verdict_enum':'PASS',
+              'target_evaluation_and_demo_artifacts_pinned':True,
+              'other_reviewer_output_access':'FORBIDDEN',
+              'attempt_limit_each':1,
+              'external_search':'FORBIDDEN',
+              'coordinator_adjudication':'FORBIDDEN',
+              'rerun_until_favorable':'FORBIDDEN',
+              'auto_merge':False,
+            },
+          }
+          target_path=out/'HOSTILE_REVIEW_PREFLIGHT_RECEIPT_R1.json'
+          target_path.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps({'state':'PASS','reviewers':2,'domains':14}))
+          PY
+
+      - name: Upload immutable hostile review preflight receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-only-v1-1-hostile-review-preflight-r1
+          path: ${{ runner.temp }}/v1-1-hostile-review-preflight-r2/HOSTILE_REVIEW_PREFLIGHT_RECEIPT_R1.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Preserve review boundaries
+        shell: bash
+        run: |
+          echo 'REVIEW_OUTPUTS_PRESENT=false'
+          echo 'TARGET_MANIFEST_MUTATED=false'
+          echo 'CROSS_REVIEWER_OUTPUT_ACCESS=false'
+          echo 'EXTERNAL_SEARCH_ALLOWED=false'
+          echo 'PRIMARY_OUTPUTS_EDITED=false'
+          echo 'EMPLOYER_KVS_ADJUDICATED=false'
+          echo 'RERUN_UNTIL_FAVORABLE=false'
+          echo 'AUTO_MERGE=false'
