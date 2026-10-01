@@ -1,0 +1,130 @@
+{
+  "route_id": "AI_ONLY_DYAD_D25_E02_V100",
+  "contract_version": "1.0.0",
+  "rubric_version": "2.1.0",
+  "input_sha256": "aa256f3c1822eea2494b4267a15f5b65707a86896b457531762b2066387872aa",
+  "coder_role": "D25_E02_V100_AI1",
+  "actual_model_label": "GPT-5.6 Sol Pro",
+  "model_label_source": "SYSTEM_MODEL_IDENTITY",
+  "run_id": "2fb81e47-b5df-44c0-9e44-6450b9a39a5c",
+  "completed_at_utc": "2026-10-01T08:31:57Z",
+  "attestation": {
+    "other_coder_output_seen": false,
+    "prior_episode_outputs_seen": false,
+    "prior_r2_outputs_seen": false,
+    "outcome_used_as_evidence": false,
+    "external_sources_used": false
+  },
+  "entries": [
+    {
+      "actor_id": "D25_DISMISSED_KMG_EP_WORKERS_20111013",
+      "factor": "POS_AO2",
+      "status": "UNKNOWN",
+      "value": null,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": false,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "D25-FREINSTATE"
+      ],
+      "rationale": "Источник прямо относит к узкой группе уволенных работников требование о восстановлении и пересмотре зарплат. Однако формулировка «review of salaries» сама по себе не устанавливает направленное требование изменить действующий порядок оплаты, повысить зарплату либо отвергнуть приемлемость статус-кво. Ни один разрешённый якорь POS не удовлетворён полностью, поэтому значение остаётся UNKNOWN.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "Решение непосредственно следует из ограничительной prospective rule: нейтральный пересмотр зарплат без подтверждённого направления изменения недостаточен для POS=-5."
+      },
+      "calculation_release": false
+    },
+    {
+      "actor_id": "D25_DISMISSED_KMG_EP_WORKERS_20111013",
+      "factor": "KVS_AO2",
+      "status": "NUMERIC",
+      "value": 5,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": true,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "D25-FREINSTATE"
+      ],
+      "rationale": "Пересмотр зарплат прямо включён в набор требований уволенных работников наряду с восстановлением на работе, что полностью соответствует KVS=5. Продолжение протеста и палаточный лагерь не устанавливают, что участие, прекращение протеста или урегулирование были явно обусловлены разрешением именно зарплатного вопроса, поэтому основания для KVS=8 или KVS=10 отсутствуют.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "Фраза «demanding ... a review of salaries» прямо и однозначно включает фактор в собственный набор требований актёра."
+      },
+      "calculation_release": false
+    },
+    {
+      "actor_id": "D25_KMG_EP_MANAGEMENT_20111013",
+      "factor": "POS_AO2",
+      "status": "NUMERIC",
+      "value": 5,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": true,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "D25-FFAIR",
+        "D25-FRAISES"
+      ],
+      "rationale": "Приписанное компании утверждение, что работники получают справедливую компенсацию, является прямой защитой существующего компонента оплаты труда и удовлетворяет POS=+5. Упоминание шести повышений зарплаты с 2008 года служит обоснованием этой позиции. POS=+10 не поддержан, поскольку компания не защищает явно всю референсную формулировку, включая социальные гарантии, и не отвергает существенные изменения по всем её компонентам.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "Формулировка «company insists that its employees are fairly compensated» прямо выражает сохранительную позицию по оплате и надёжно соответствует якорю +5."
+      },
+      "calculation_release": false
+    },
+    {
+      "actor_id": "D25_KMG_EP_MANAGEMENT_20111013",
+      "factor": "KVS_AO2",
+      "status": "UNKNOWN",
+      "value": null,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": false,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "D25-FFAIR",
+        "D25-FRAISES"
+      ],
+      "rationale": "Компания защищает уровень компенсации и ссылается на прошлые повышения зарплат, но источник не связывает данный фактор с её текущим собственным объявленным действием, решением, соглашением либо формальным критерием политики в релевантном объекте. Исторические повышения сами по себе не удовлетворяют KVS=5. Журналистская характеристика компании как непримиримой не используется для установления отказа, условности или неуступаемости; поэтому KVS=8 и KVS=10 также не поддержаны, а якоря 0 и 2 отсутствуют.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "Prospective KVS rule прямо запрещает автоматически выводить KVS=5 из прошлых повышений, а допустимое атрибутированное содержание не содержит требуемого текущего решения или условия."
+      },
+      "calculation_release": false
+    }
+  ]
+}
