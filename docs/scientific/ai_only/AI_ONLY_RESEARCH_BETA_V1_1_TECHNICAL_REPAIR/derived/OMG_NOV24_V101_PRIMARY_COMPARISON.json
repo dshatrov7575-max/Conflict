@@ -1,0 +1,57 @@
+{
+  "route_id": "AI_ONLY_DYAD_OMG_NOV24_V101",
+  "contract_version": "1.0.1",
+  "input_sha256": "72b061d6999b596052adc34df493cd2f9687979589ddd17a83ae21f375a0a9a4",
+  "state": "HOLD_DISAGREEMENT",
+  "entries": [
+    {
+      "actor_id": "OMG_DISMISSED_WORKERS_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "POS_AO2",
+      "ai1_status": "NUMERIC",
+      "ai1_value": -5,
+      "ai2_status": "NUMERIC",
+      "ai2_value": -5,
+      "same_C1_C8": true,
+      "triage": "CONSENSUS_NUMERIC"
+    },
+    {
+      "actor_id": "OMG_DISMISSED_WORKERS_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "KVS_AO2",
+      "ai1_status": "NUMERIC",
+      "ai1_value": 5,
+      "ai2_status": "NUMERIC",
+      "ai2_value": 5,
+      "same_C1_C8": true,
+      "triage": "CONSENSUS_NUMERIC"
+    },
+    {
+      "actor_id": "RD_KMG_OMG_EMPLOYER_SIDE_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "POS_AO2",
+      "ai1_status": "NUMERIC",
+      "ai1_value": 5,
+      "ai2_status": "NUMERIC",
+      "ai2_value": 5,
+      "same_C1_C8": true,
+      "triage": "CONSENSUS_NUMERIC"
+    },
+    {
+      "actor_id": "RD_KMG_OMG_EMPLOYER_SIDE_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "KVS_AO2",
+      "ai1_status": "UNKNOWN",
+      "ai1_value": null,
+      "ai2_status": "NUMERIC",
+      "ai2_value": 5,
+      "same_C1_C8": false,
+      "triage": "HOLD_DISAGREEMENT"
+    }
+  ],
+  "coordinator_substitution": "FORBIDDEN",
+  "targeted_content_review_rounds": 0,
+  "calculation_release": false,
+  "simultaneous_snapshot": false,
+  "carry_forward": "NONE",
+  "historical_snapshot": "NOT_ESTABLISHED",
+  "historical_area_UNO": "NOT_COMPUTED",
+  "human_validation": "NOT_PERFORMED",
+  "technical_repair_route": "AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR"
+}
