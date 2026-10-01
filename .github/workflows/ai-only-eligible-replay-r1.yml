@@ -1,0 +1,179 @@
+name: AI-only eligible lanes read-only replay R1
+
+on:
+  push:
+    branches:
+      - review/ai-only-research-beta-v1
+    paths:
+      - ".github/ai-only-eligible-replay-trigger-r1.txt"
+
+permissions:
+  contents: read
+
+jobs:
+  eligible-replay:
+    name: Frozen sensitivity and Calculation Core parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact replay head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify exact frozen inputs and pinned executables
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_blob() {
+            path="$1"
+            expected="$2"
+            actual="$(git hash-object "$path")"
+            test "$actual" = "$expected" || {
+              echo "Blob mismatch for $path: expected=$expected actual=$actual" >&2
+              exit 21
+            }
+          }
+
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/read_only_sensitivity_runner_v2_1.py 04ed2c062d35e04cd073a001f81523a0342283ab
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/SENSITIVITY_GRID_V2.json f59628b850749f2032b2df35422e9a0da5b11589
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/LANE_BINDINGS_R2.json 6492a799309f91cda6644d2195dad8a76e6291d6
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E02_V100_PRIMARY_COMPARISON.json 2ea59f263ac83f34e458272d10202dc0b2829131
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E05_V100_PRIMARY_COMPARISON.json 056e3bbda09afc2738fba82cce354a8a5f4a0a1e
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/verify_sensitivity_against_core_r1.py bbf2539a21edb4551e1dbe6cdeeb854e50c1b3a6
+          check_blob software/conflict_analysis/calculation/__init__.py 669e9162fbc4ea348cef7cb6d81a73a07f95cf0b
+          check_blob software/conflict_analysis/calculation/contracts.py 5eaad9022804b192911f5fab498e56c788017d73
+          check_blob software/conflict_analysis/calculation/strategy.py 434aafd8044410049ae14a76a88b66df5b0da658
+
+      - name: Frozen sensitivity runner self-test 11 of 11
+        shell: bash
+        run: >-
+          python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/read_only_sensitivity_runner_v2_1.py
+          --grid docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/SENSITIVITY_GRID_V2.json
+          --bindings docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/LANE_BINDINGS_R2.json
+          --self-test
+
+      - name: Run frozen read-only sensitivity for eligible lanes
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/eligible-replay-r1"
+          mkdir -p "$out"
+          runner=docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/read_only_sensitivity_runner_v2_1.py
+          grid=docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/SENSITIVITY_GRID_V2.json
+          bindings=docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/LANE_BINDINGS_R2.json
+
+          python "$runner" \
+            --comparison docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E02_V100_PRIMARY_COMPARISON.json \
+            --grid "$grid" --bindings "$bindings" \
+            --out "$out/KBM_E02_V100_READ_ONLY_SENSITIVITY_R1.json"
+
+          python "$runner" \
+            --comparison docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E05_V100_PRIMARY_COMPARISON.json \
+            --grid "$grid" --bindings "$bindings" \
+            --out "$out/KBM_E05_V100_READ_ONLY_SENSITIVITY_R1.json"
+
+      - name: Replay every frozen scenario through pinned Calculation Core
+        shell: bash
+        env:
+          PYTHONPATH: software/conflict_analysis
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/eligible-replay-r1"
+          verifier=docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/verify_sensitivity_against_core_r1.py
+          grid=docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/SENSITIVITY_GRID_V2.json
+
+          python "$verifier" \
+            --sensitivity "$out/KBM_E02_V100_READ_ONLY_SENSITIVITY_R1.json" \
+            --grid "$grid" --repo-root . \
+            --out "$out/KBM_E02_V100_CORE_REPLAY_RECEIPT_R1.json"
+
+          python "$verifier" \
+            --sensitivity "$out/KBM_E05_V100_READ_ONLY_SENSITIVITY_R1.json" \
+            --grid "$grid" --repo-root . \
+            --out "$out/KBM_E05_V100_CORE_REPLAY_RECEIPT_R1.json"
+
+      - name: Write immutable replay manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/eligible-replay-r1"
+          python - "$out/ELIGIBLE_REPLAY_MANIFEST_R1.json" "$out" <<'PY'
+          import hashlib, json, os, pathlib, subprocess, sys
+          manifest_path = pathlib.Path(sys.argv[1])
+          out = pathlib.Path(sys.argv[2])
+          files = {}
+          for path in sorted(out.glob("*.json")):
+              if path == manifest_path:
+                  continue
+              payload = path.read_bytes()
+              files[path.name] = {
+                  "bytes": len(payload),
+                  "sha256": hashlib.sha256(payload).hexdigest(),
+              }
+          tracked = [
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/read_only_sensitivity_runner_v2_1.py",
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/SENSITIVITY_GRID_V2.json",
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/LANE_BINDINGS_R2.json",
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E02_V100_PRIMARY_COMPARISON.json",
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E05_V100_PRIMARY_COMPARISON.json",
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/verify_sensitivity_against_core_r1.py",
+              "software/conflict_analysis/calculation/__init__.py",
+              "software/conflict_analysis/calculation/contracts.py",
+              "software/conflict_analysis/calculation/strategy.py",
+          ]
+          blobs = {
+              path: subprocess.check_output(["git", "hash-object", path], text=True).strip()
+              for path in tracked
+          }
+          payload = {
+              "schema": "AI_ONLY_ELIGIBLE_REPLAY_MANIFEST_R1",
+              "github_run_id": os.environ["GITHUB_RUN_ID"],
+              "github_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "github_sha": os.environ["GITHUB_SHA"],
+              "workflow": os.environ["GITHUB_WORKFLOW"],
+              "state": "PASS_PENDING_ARTIFACT_REVIEW",
+              "eligible_routes_executed": [
+                  "AI_ONLY_DYAD_KBM_E02_V100",
+                  "AI_ONLY_PAIR_KBM_E05_V100",
+              ],
+              "ineligible_routes_not_executed": [
+                  "AI_ONLY_DYAD_OMG_NOV24_V100",
+                  "AI_ONLY_DYAD_D25_E02_V100",
+              ],
+              "git_blobs": blobs,
+              "artifact_files": files,
+              "scientific_boundaries": {
+                  "factor_or_weight_mutation": False,
+                  "coordinator_substitution": False,
+                  "historical_snapshot": "NOT_ESTABLISHED",
+                  "historical_area_UNO": "NOT_COMPUTED",
+                  "human_validation": "NOT_PERFORMED",
+                  "predictive_validation": "NOT_CLAIMED",
+                  "auto_merge": False,
+              },
+          }
+          manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Upload immutable read-only replay artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: eligible-replay-r1
+          path: ${{ runner.temp }}/eligible-replay-r1
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Preserve release boundary
+        shell: bash
+        run: |
+          echo "No factor, primary output, cohort, denominator, or weight was modified."
+          echo "Only KBM E02 and KBM E05 eligible lanes were executed."
+          echo "Outputs are single-PTN read-only research scenarios, not historical area UNO."
+          echo "No result is committed or merged automatically."
