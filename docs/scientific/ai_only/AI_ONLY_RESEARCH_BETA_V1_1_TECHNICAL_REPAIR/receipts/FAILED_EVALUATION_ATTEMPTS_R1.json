@@ -1,0 +1,44 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_FAILED_EVALUATION_ATTEMPTS_R1",
+  "scope": "GITHUB_ACTIONS_ORCHESTRATION_ONLY",
+  "attempts": [
+    {
+      "github_run_id": "36884457411",
+      "head_sha": "0db7e200b0442b6922564916a0c83733d3298290",
+      "workflow": "AI-only V1.1 technical repair evaluation",
+      "conclusion": "failure",
+      "failed_step": "Verify exact frozen and retained blobs",
+      "failure_kind": "INCORRECT_EXPECTED_GIT_BLOB_LITERAL",
+      "detail": "MODEL_B_SUBSTITUTION_GEMINI31PRO_R2.md expected aa70161069c191470ace343861f4784185c424b but actual e54564a21d9100e847fda50ca32b127182d6cb9c",
+      "scientific_steps_executed": false,
+      "comparator_executed": false,
+      "cohort_aggregation_executed": false,
+      "release_gate_executed": false,
+      "scientific_output_generated": false
+    },
+    {
+      "github_run_id": "36884812670",
+      "head_sha": "d7fc19ea4fbfb1a937f5ca8992d3c7590d71e1b9",
+      "workflow": "AI-only V1.1 technical repair evaluation R2",
+      "conclusion": "failure",
+      "failed_step": "Verify exact frozen inputs and evaluators",
+      "failure_kind": "INCORRECT_EXPECTED_GIT_BLOB_LITERAL",
+      "detail": "OMG_NOV24_V101_AI1_COMPLETED.json expected 2c8c0576ec85ce6934e6c6605932f082fac03ca4 but actual 2c8c9091e3164d08041749c9502062f57b3cb6e3",
+      "scientific_steps_executed": false,
+      "comparator_executed": false,
+      "cohort_aggregation_executed": false,
+      "release_gate_executed": false,
+      "scientific_output_generated": false
+    }
+  ],
+  "successful_replacement": {
+    "github_run_id": "36885038106",
+    "head_sha": "b099f4fb023c9e262ac95889301ff6ddc66e8716",
+    "conclusion": "success"
+  },
+  "boundary": {
+    "primary_outputs_modified_by_failed_runs": false,
+    "derived_scientific_outputs_from_failed_runs": "NONE",
+    "failed_runs_used_for_release_claims": false
+  }
+}
