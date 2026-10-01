@@ -4,10 +4,10 @@
 <p><strong>{{ experiment.assessment_set.kind }}</strong> · {{ experiment.status }} · {{ experiment.expert_profile.display_name }}</p>
 <p>Эксперимент: <code>{{ snapshot.experiment_id }}</code><br>
 Временной срез: <code>{{ snapshot.time_slice_id }}</code> · {{ snapshot.cutoff_date }} · {{ snapshot.time_slice_version }}</p>
-<p>POS и SAL будут прочитаны из существующих оценок при нажатии «Рассчитать».</p>
+
+<section class="ui-panel" data-panel-help="weights">
 <h2>Веса этого расчёта</h2>
-<p>Для известного веса укажите число 0…10, числовой статус, источник и его версию.
-  Для отсутствующего веса оставьте UNKNOWN и пустые поля. Веса действуют только для выбранного эксперимента и среза.</p>
+
 <form method="post" autocomplete="off">
   {% csrf_token %}{{ form.experiment_id }}{{ form.time_slice_id }}
   {{ form.non_field_errors }}{{ form.experiment_id.errors }}{{ form.time_slice_id.errors }}
@@ -19,6 +19,7 @@
       {% for field in row.fields %}<td>{{ field.errors }}<label class="visually-hidden" for="{{ field.id_for_label }}">{{ row.group }} {{ row.identity }} {{ field.label }}</label>{{ field }}</td>{% endfor %}
     </tr>{% endfor %}</tbody>
   </table></div>
-  <button type="submit">Рассчитать</button>
+  <button type="submit" data-ui-icon="refresh" data-ui-kind="primary" data-ui-label="Рассчитать">Рассчитать</button>
 </form>
+</section>
 {% endblock %}

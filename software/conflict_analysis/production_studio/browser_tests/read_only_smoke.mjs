@@ -137,7 +137,7 @@ try {
       rowCount: document.querySelectorAll("#manifest-window [data-manifest-row]").length,
       totalDomNodes: document.getElementsByTagName("*").length,
       crossCells: document.querySelectorAll("[data-actor-id][data-element-id]").length,
-      permanentClaims: [...document.querySelectorAll("#studio-limitations [data-claim-code]")].map(
+      permanentClaims: [...document.querySelectorAll("#ui-help-topic-bounds [data-claim-code]")].map(
         (node) => node.dataset.claimCode,
       ),
       hasBanner: Boolean(document.querySelector("#studio-boundary-banner")),

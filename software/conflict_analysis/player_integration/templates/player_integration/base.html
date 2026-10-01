@@ -6,15 +6,12 @@
   <title>{% block title %}Расчёт эксперимента{% endblock %} · Player</title>
   <link rel="stylesheet" href="{% static 'player_integration/result.css' %}">
   {% block extra_head %}{% endblock %}
+  <link rel="stylesheet" href="{% static 'production_studio/panel_ui.css' %}">
+  <script src="{% static 'production_studio/panel_ui.js' %}" defer></script>
 </head>
-<body><main>
-  <nav><a href="{% url 'player_integration:start' %}">Расчёт эксперимента</a> · <a href="/player/">Player</a></nav>
+<body><main class="ui-result-main">
+  <nav><a href="{% url 'player_integration:start' %}">Расчёт эксперимента</a> · <a href="/player/">Player</a>{% include 'production_studio/ui_help_button.html' %}</nav>
   {% block content %}{% endblock %}
-  <aside aria-label="Границы интерпретации">
-    <strong>POLARIZATION_V1_BETA / 1.0.0</strong>
-    <p>Бета-индекс поляризации. Это не прогноз, вероятность, риск или научно подтверждённая
-      общая интенсивность конфликта. Зависимость KVS и KVPTN не проверена.</p>
-    <p>Расчёт использует один эксперимент HUMAN или AI. Результат и веса не записываются
-      в ParameterValue. Отсутствующее значение не заменяется нулём.</p>
-  </aside>
-</main></body></html>
+  <aside class="ui-warning" data-panel-help="warnings" aria-label="Границы интерпретации"><strong>POLARIZATION_V1_BETA / 1.0.0</strong><a href="#ui-help-topic-warnings" data-help-open="warnings">Бета · не прогноз · KVS/KVPTN не проверены</a></aside>
+</main>{% include 'production_studio/ui_help.html' %}
+</body></html>

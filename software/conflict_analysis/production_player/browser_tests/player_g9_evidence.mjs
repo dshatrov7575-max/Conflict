@@ -106,7 +106,7 @@ try {
     await client.send("Network.deleteCookies", {name: cookieName, url: base + "/"}, sessionId);
     await evaluate("document.querySelector('#g9-related').click();true");
     await client.waitForExpression("document.querySelector('#g9-state')?.textContent.includes('недоступны')", sessionId, timeout);
-    revokedCleared = await evaluate("document.querySelectorAll('#g9-fact-list [role=option],#g9-evidence-list [role=option]').length===0 && !document.querySelector('#g9-detail').textContent");
+    revokedCleared = await evaluate("(()=>{const detail=document.querySelector('#g9-detail').cloneNode(true);detail.querySelectorAll('.panel-help').forEach(node=>node.remove());return document.querySelectorAll('#g9-fact-list [role=option],#g9-evidence-list [role=option]').length===0 && !detail.textContent})()");
   } else {
     await evaluate("(()=>{const item=document.querySelector('#g9-fact-list [role=option]');item.focus();item.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));return true})()");
     keyboard = await evaluate("document.querySelector('#g9-open-fact').disabled===false");

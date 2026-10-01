@@ -1249,6 +1249,9 @@
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.action = action;
+    button.dataset.uiKind = "utility";
+    button.dataset.uiIcon = { rename: "edit", "move-up": "up", "move-down": "down", delete: "trash" }[action] || "edit";
+    if (action === "delete") button.dataset.uiDanger = "true";
     button.textContent = label;
     button.disabled = disabled;
     return button;

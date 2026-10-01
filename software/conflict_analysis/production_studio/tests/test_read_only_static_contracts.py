@@ -124,14 +124,16 @@ class ProductionStudioReadOnlyStaticContractTests(SimpleTestCase):
         for path in forbidden:
             self.assertFalse(path.exists(), str(path.relative_to(PROJECT_ROOT)))
 
-    def test_templates_have_permanent_spoken_and_visual_boundaries(self):
+    def test_templates_have_compact_visible_boundaries_and_anchored_details(self):
         entry = ENTRY_TEMPLATE.read_text(encoding="utf-8")
         definition = DEFINITION_TEMPLATE.read_text(encoding="utf-8")
         for name, source in (("entry", entry), ("definition", definition)):
             with self.subTest(template=name):
                 self.assertIn('<html lang="ru">', source)
                 self.assertIn('id="studio-boundary-banner"', source)
-                self.assertIn('id="studio-limitations"', source)
+                self.assertIn('data-help-open="bounds"', source)
+                self.assertIn("Научная валидность не подтверждена", source)
+                self.assertIn("production_studio/ui_help.html", source)
                 self.assertIn("<noscript>", source)
                 self.assertIn("claim_statements", source)
                 self.assertIn("claim_sha256", source)
@@ -168,16 +170,13 @@ class ProductionStudioReadOnlyStaticContractTests(SimpleTestCase):
             entry,
         )
 
-        visibility = _HiddenAncestorParser(
-            {"studio-boundary-banner", "definition-content", "studio-limitations"}
-        )
+        visibility = _HiddenAncestorParser({"studio-boundary-banner", "definition-content"})
         visibility.feed(definition)
         self.assertEqual(
             visibility.hidden_by_id,
             {
                 "studio-boundary-banner": False,
                 "definition-content": True,
-                "studio-limitations": False,
             },
         )
 

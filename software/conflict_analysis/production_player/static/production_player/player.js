@@ -253,10 +253,6 @@
     const ready = app.dataset.state === "ready" && !memory.loading && !blocked();
     const enabled = {"CMD-WORKSPACE-CREATE": ready && !!memory.definition && !!memory.project && app.dataset.playerPage !== "workspace", "CMD-WORKSPACE-OPEN": ready && !!$("workspace-select").value, "CMD-WORKSPACE-SWITCH": ready && memory.workspaces.length > 0, "CMD-SLICE-CREATE": ready && complete(), "CMD-SLICE-OPEN": ready && complete() && !!$("slice-select").value, "CMD-SLICE-SWITCH": ready && complete() && memory.slices.length > 0, "CMD-SLICE-REFRESH": ready && complete() && !!memory.slice};
     document.querySelectorAll("[data-command-id]").forEach(button => button.setAttribute("aria-disabled", String(!enabled[button.dataset.commandId])));
-    const workspaceLabel = document.querySelector('[data-command-id="CMD-WORKSPACE-CREATE"] .primary-label');
-    const sliceLabel = document.querySelector('[data-command-id="CMD-SLICE-CREATE"] .primary-label');
-    workspaceLabel.hidden = !!memory.workspace;
-    sliceLabel.hidden = !complete() || memory.slices.length > 0;
     $("definition-select").disabled = blocked() || memory.loading || app.dataset.playerPage === "workspace";
     $("workspace-select").disabled = blocked() || memory.loading;
     $("slice-select").disabled = blocked() || memory.loading || !complete();

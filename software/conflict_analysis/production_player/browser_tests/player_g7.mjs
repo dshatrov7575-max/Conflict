@@ -94,6 +94,10 @@ try {
     client.send("Network.enable", { maxTotalBufferSize: 50_000_000 }, sessionId),
   ]);
   await client.send("Browser.setDownloadBehavior", { behavior: "deny" });
+  // Splitters belong to the desktop layout; narrow layouts stack the panels.
+  await client.send("Emulation.setDeviceMetricsOverride", {
+    width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+  }, sessionId);
 
   client.on("Network.requestWillBeSent", (event, eventSessionId) => {
     if (eventSessionId !== sessionId || !/^https?:/.test(event.request.url)) return;

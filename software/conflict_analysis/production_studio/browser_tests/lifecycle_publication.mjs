@@ -222,7 +222,7 @@ async function createHarness() {
     unavailableControls: [
       "lifecycle-package-control", "lifecycle-document-control", "lifecycle-chat-control",
       "lifecycle-science-control", "lifecycle-prediction-control", "lifecycle-recommendation-control",
-    ].every((id) => document.getElementById(id)?.disabled === true),
+    ].every((id) => document.getElementById(id) === null) && Boolean(document.querySelector("#ui-help-topic-bounds")),
     localStorage: Object.fromEntries(Object.entries(localStorage)),
     sessionStorage: Object.fromEntries(Object.entries(sessionStorage)),
     indexedDbNames: typeof indexedDB.databases === "function"

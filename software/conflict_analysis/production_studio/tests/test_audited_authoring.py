@@ -392,7 +392,7 @@ class ProductionStudioAuditedAuthoringContractTests(
             "bootstrap-project-name",
             "bootstrap-project-description",
             "bootstrap-project-primary-language",
-            "bootstrap-project-primary-language-help",
+            "ui-help-topic-bootstrap-project",
             "bootstrap-definition-id",
             "bootstrap-definition-code",
             "bootstrap-definition-version",
@@ -698,14 +698,14 @@ class ProductionStudioAuditedAuthoringContractTests(
         for selector in (
             "document-control",
             "chat-control",
-            "scientific-control",
-            "prediction-control",
-            "recommendation-control",
         ):
             self.assertRegex(
                 html,
                 rf'<[^>]+id="{re.escape(selector)}"[^>]+disabled',
             )
+        for selector in ("scientific-control", "prediction-control", "recommendation-control"):
+            self.assertNotIn(f'id="{selector}"', html)
+        self.assertIn('id="ui-help-topic-bounds"', html)
         self.assertIn(AUTHORING_CLAIM_BOUNDARY_CONTRACT_ID, html)
 
         script = AUTHORING_SCRIPT.read_text(encoding="utf-8")
@@ -809,7 +809,7 @@ class ProductionStudioAuditedAuthoringBrowserTests(
             stderr=subprocess.PIPE,
             text=True,
             encoding="utf-8",
-            timeout=300,
+            timeout=int(environment.get("STUDIO_BROWSER_TIMEOUT_SECONDS", "300")),
         )
         self.assertEqual(
             completed.returncode,

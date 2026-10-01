@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { appendFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
 
 import { launchChromium } from "./cdp_client.mjs";
@@ -725,6 +726,11 @@ const losslessBigintKey = requiredEnvironment("STUDIO_LOSSLESS_BIGINT_KEY");
 const losslessExponentKey = requiredEnvironment("STUDIO_LOSSLESS_EXPONENT_KEY");
 const losslessExponentToken = requiredEnvironment("STUDIO_LOSSLESS_EXPONENT_TOKEN");
 const timeoutMs = Number(process.env.STUDIO_CDP_TIMEOUT_MS || "60000");
+const trace = stage => {
+  if (process.env.STUDIO_BROWSER_TRACE_PATH) {
+    appendFileSync(process.env.STUDIO_BROWSER_TRACE_PATH, `${new Date().toISOString()} ${stage}\n`);
+  }
+};
 const definitionUrl = `${baseUrl}/studio/drafts/definitions/${definitionId}/`;
 const entryUrl = `${baseUrl}/studio/drafts/`;
 const bootstrapPath = "/api/foundation/projects/bootstrap-first-draft/";
@@ -761,6 +767,14 @@ try {
     client.send("Network.enable", { maxTotalBufferSize: 50_000_000 }, sessionId),
   ]);
   await client.send("Page.setLifecycleEventsEnabled", { enabled: true }, sessionId);
+  let reloadDiscardPending = false;
+  let discardConfirmations = 0;
+  client.on("Page.javascriptDialogOpening", (event, eventSessionId) => {
+    if (eventSessionId !== sessionId || event.type !== "beforeunload" || !reloadDiscardPending) return;
+    trace("confirm discard on requested reload");
+    discardConfirmations += 1;
+    void client.send("Page.handleJavaScriptDialog", { accept: true }, sessionId);
+  });
   const executionContexts = new Map();
   client.on("Runtime.executionContextCreated", (event, eventSessionId) => {
     if (eventSessionId !== sessionId || !event.context?.auxData?.frameId) return;
@@ -856,6 +870,7 @@ try {
     sessionId,
   );
   const waitForEvent = async (name) => {
+    trace(`waiting ${name}`);
     await client.waitForExpression(
       `window.__studioContractEvents?.some((item) => item.name === ${JSON.stringify(name)})`,
       sessionId,
@@ -900,20 +915,29 @@ try {
     });
   };
   const navigateAndWait = async ({ reload = false } = {}) => {
+    trace(reload ? "reload authoring" : "open authoring");
     let removeListener;
-    const loaded = new Promise((resolve) => {
+    let timer;
+    const loaded = new Promise((resolve, reject) => {
+      timer = setTimeout(() => {
+        removeListener?.();
+        reject(new Error("Authoring page load timed out"));
+      }, timeoutMs);
       removeListener = client.on("Page.loadEventFired", (_event, eventSessionId) => {
         if (eventSessionId !== sessionId) return;
+        clearTimeout(timer);
         removeListener();
         resolve();
       });
     });
     if (reload) {
+      reloadDiscardPending = true;
       await client.send("Page.reload", { ignoreCache: true }, sessionId);
     } else {
       await client.send("Page.navigate", { url: definitionUrl }, sessionId);
     }
     await loaded;
+    reloadDiscardPending = false;
     return waitForEvent("studio:authoring-ready");
   };
   const inspectPage = () => client.evaluate(`(async () => {
@@ -936,10 +960,9 @@ try {
       disabled: [
         "document-control",
         "chat-control",
-        "scientific-control",
-        "prediction-control",
-        "recommendation-control",
-      ].every((id) => document.querySelector("#" + id)?.disabled === true),
+      ].every((id) => document.querySelector("#" + id)?.disabled === true) &&
+        ["scientific-control", "prediction-control", "recommendation-control"].every(id => !document.getElementById(id)) &&
+        Boolean(document.querySelector("#ui-help-topic-bounds")),
       boundaryVisible: Boolean(document.querySelector("#audited-draft-boundary-banner")),
       projectName: document.querySelector("#project-name")?.value,
       projectDescription: document.querySelector("#project-description")?.value,
@@ -1001,6 +1024,7 @@ try {
     );
   });
   await client.send("Page.navigate", { url: entryUrl }, sessionId);
+  trace("open bootstrap");
   await entryLoaded;
   await client.waitForExpression(
     `document.querySelector("#entry-state-code")?.textContent === "READY" && !document.querySelector("#bootstrap-draft")?.disabled`,
@@ -1292,6 +1316,7 @@ try {
   );
 
   const ready = await navigateAndWait();
+  trace("authoring ready");
   assert.deepEqual(ready, {
     definitionId,
     projectId: ready.projectId,
@@ -1353,6 +1378,7 @@ try {
   assert.equal(page.layoutRaw.includes(definitionId), false);
 
   await client.evaluate(`document.querySelector("#load-help").click()`, sessionId);
+  trace("load Foundation help");
   await client.waitForExpression(
     `(document.querySelector("#help-frame")?.getAttribute("srcdoc") || document.querySelector("#help-frame")?.contentDocument?.body?.textContent || "").includes("Точная справка Foundation")`,
     sessionId,
@@ -1621,6 +1647,7 @@ try {
 
   console.log(JSON.stringify({
     browser_result: "PASS",
+    discard_confirmations: discardConfirmations,
     browser: browser.version.Browser,
     definition_id: definitionId,
     bootstrap_project_id: bootstrap.projectId,

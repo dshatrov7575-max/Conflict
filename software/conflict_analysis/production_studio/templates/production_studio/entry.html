@@ -8,16 +8,11 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="{% static 'production_studio/studio.css' %}">
   <script src="{% static 'production_studio/studio.js' %}" defer></script>
+  <link rel="stylesheet" href="{% static 'production_studio/panel_ui.css' %}">
+  <script src="{% static 'production_studio/panel_ui.js' %}" defer></script>
 </head>
 <body data-studio-page="entry">
-  <header id="studio-boundary-banner" class="claim-banner" data-claim-contract="{{ claim_contract }}" data-claim-sha256="{{ claim_sha256 }}">
-    <p><strong>{{ claim_by_code.STATUS }}</strong></p>
-    <p>{{ claim_by_code.TRACEABILITY }}</p>
-    <a href="{% url 'production_studio:claim_boundaries_read_only_v1' %}" download="read_only_claim_boundaries_v1.ru.json">
-      Скачать проверенный контракт ограничений
-    </a>
-    <code>SHA-256 {{ claim_sha256 }}</code>
-  </header>
+  <header data-panel-help="bounds" id="studio-boundary-banner" class="claim-banner" data-claim-contract="{{ claim_contract }}" data-claim-sha256="{{ claim_sha256 }}"><a href="#ui-help-topic-bounds" data-help-open="bounds">C0 · Только чтение</a><span>Научная валидность не подтверждена</span>{% include 'production_studio/ui_help_button.html' %}</header>
 
   <main
     id="studio-entry"
@@ -25,11 +20,11 @@
     data-authenticated="{{ studio_authenticated|yesno:'true,false' }}"
     data-definition-base="{% url 'production_studio:entry' %}definitions/"
   >
-    <section class="entry-card" aria-labelledby="entry-title">
-      <p class="eyebrow">Pre-authenticated · read-only</p>
+    <section class="entry-card" aria-labelledby="entry-title" data-panel-help="entry">
+
       <h1 id="entry-title">Production Studio C</h1>
       {% if studio_authenticated %}
-        <p>Откройте точную версию определения по UUID. Список проектов и поиск не входят в C0.</p>
+
         <form id="definition-entry-form" novalidate>
           <label for="definition-entry-id">UUID версии определения</label>
           <div class="entry-controls">
@@ -41,29 +36,22 @@
               spellcheck="false"
               required
               pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-              aria-describedby="definition-entry-help definition-entry-error"
+              aria-describedby="definition-entry-error"
             >
-            <button type="submit">Открыть только для чтения</button>
+            <button type="submit" data-ui-icon="open" data-ui-kind="primary" data-ui-label="Открыть">Открыть только для чтения</button>
           </div>
-          <p id="definition-entry-help" class="field-note">UUID попадёт только в адрес страницы и не сохраняется в браузерном хранилище.</p>
+
           <p id="definition-entry-error" class="error-text" role="alert" hidden>Укажите корректный UUID версии определения.</p>
         </form>
       {% else %}
-        <section class="state-card state-card--attention" role="status" data-state="AUTHENTICATION_REQUIRED">
-          <h2>Требуется заранее выданная сессия</h2>
-          <p>Сессия должна быть выдана средой развёртывания до входа в Studio. В C0 нет формы входа, выхода или сбора учётных данных.</p>
+        <section class="state-card state-card--attention" role="status" data-state="AUTHENTICATION_REQUIRED" data-panel-help="state">
+          <h2>Требуется сессия</h2>
+          <p>Нет доступа к Studio.</p>
         </section>
       {% endif %}
     </section>
 
-    <aside id="studio-limitations" class="limitations-card" aria-labelledby="entry-limitations-title">
-      <h2 id="entry-limitations-title">Постоянные ограничения</h2>
-      <ul>
-        {% for statement in claim_statements %}
-          <li data-claim-code="{{ statement.code }}">{{ statement.text }}</li>
-        {% endfor %}
-      </ul>
-    </aside>
+
   </main>
 
   <noscript>
@@ -73,5 +61,6 @@
       {% for statement in claim_statements %}<p>{{ statement.text }}</p>{% endfor %}
     </section>
   </noscript>
+{% include 'production_studio/ui_help.html' %}
 </body>
 </html>

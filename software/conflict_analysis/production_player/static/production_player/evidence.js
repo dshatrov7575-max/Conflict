@@ -19,6 +19,7 @@
     pendingHistory: !!history.state?.g9,
   };
   panel.replaceChildren(template.content.cloneNode(true));
+  panel.removeAttribute("data-panel-help"); // The evidence block owns contextual help.
   tab.textContent = "Доказательства";
   tab.title = "Связанные факты и точные доказательства";
   tab.setAttribute("aria-disabled", "false");
