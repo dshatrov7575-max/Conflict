@@ -1,0 +1,137 @@
+{
+  "route_id": "AI_ONLY_DYAD_OMG_NOV24_V101",
+  "contract_version": "1.0.1",
+  "rubric_version": "2.1.0",
+  "input_sha256": "72b061d6999b596052adc34df493cd2f9687979589ddd17a83ae21f375a0a9a4",
+  "coder_role": "OMG_NOV24_V101_AI1",
+  "actual_model_label": "GPT-5.6 Sol Pro",
+  "model_label_source": "System-provided model identity for this run.",
+  "run_id": "a679f5c4-c3fc-4669-b19a-efa10ed3144a",
+  "completed_at_utc": "2026-10-01T14:17:12Z",
+  "attestation": {
+    "other_coder_output_seen": false,
+    "prior_episode_outputs_seen": false,
+    "outcome_used_as_evidence": false,
+    "external_sources_used": false
+  },
+  "entries": [
+    {
+      "actor_id": "OMG_DISMISSED_WORKERS_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "POS_AO2",
+      "status": "NUMERIC",
+      "value": -5,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": true,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "Actor A coder-visible evidence: dismissed workers sought return to OMG and higher pay treatment using the 1.7 and 1.8 coefficients.",
+        "Actor A limited exact fragment: «Они желают… ну, вы уже догадались – вернуться в ОМГ и умножить свои бывшие оклады на 1.7. и 1.8.»"
+      ],
+      "rationale": "The narrow actor is explicitly attributed a demand to alter an essential pay component of the reference arrangement by applying the 1.7 and 1.8 coefficients to former salaries. This fully satisfies POS_AO2=-5. The evidence does not establish rejection of every essential component of the whole reference, so -10 is not licensed.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "The directional pay demand is concrete, actor-specific, and directly traceable to the frozen input; hostile editorial framing was excluded."
+      },
+      "calculation_release": false
+    },
+    {
+      "actor_id": "OMG_DISMISSED_WORKERS_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "KVS_AO2",
+      "status": "NUMERIC",
+      "value": 5,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": true,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "Actor A coder-visible evidence: higher pay treatment involving the 1.7 and 1.8 coefficients was among the dismissed workers' demands.",
+        "Actor A coder-visible evidence: removal of the OMG director was also demanded, so pay was not the only issue.",
+        "Actor A coder-visible evidence: the dismissed workers rejected the proposed settlement and did not sign the reconciliation document.",
+        "KVS_AO2 anchors and mandatory reactive-actor rule."
+      ],
+      "rationale": "Pay treatment is explicitly included in the actor's own demand set, fully satisfying KVS_AO2=5. The frozen input does not establish that rejection of the settlement was explicitly conditioned on resolution of this pay issue specifically, because another demand was also present; therefore KVS=8 or 10 is not licensed.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "The formal-demand-set predicate is explicit, while the rubric clearly blocks escalation from a dispute-wide refusal to a pay-specific conditionality score."
+      },
+      "calculation_release": false
+    },
+    {
+      "actor_id": "RD_KMG_OMG_EMPLOYER_SIDE_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "POS_AO2",
+      "status": "NUMERIC",
+      "value": 5,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": true,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "Actor B coder-visible evidence: the employer side maintained that the disputed coefficients had already been incorporated into pay calculations.",
+        "Actor B coder-visible evidence: additional reimbursement or a further salary increase on that basis was not accepted.",
+        "Actor B coder-visible evidence: the employer/administrative side defended the legality and correctness of the existing coefficient treatment.",
+        "POS_AO2 anchors."
+      ],
+      "rationale": "The employer side explicitly defends preservation of the existing coefficient treatment, which is one essential status-quo pay component, fully satisfying POS_AO2=+5. The input does not establish defence of the whole reference across all pay and social-guarantee components, so +10 is not licensed.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "The status-quo defence is concrete and attributable to the narrow employer side; broader article rhetoric and non-pay context were excluded."
+      },
+      "calculation_release": false
+    },
+    {
+      "actor_id": "RD_KMG_OMG_EMPLOYER_SIDE_NOV23_24_AS_REPORTED_CONTUR",
+      "factor": "KVS_AO2",
+      "status": "UNKNOWN",
+      "value": null,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": false,
+        "C5": false,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        "Actor B coder-visible evidence: the employer side rejected additional reimbursement or a further salary increase based on the disputed coefficients.",
+        "Mandatory reactive-actor rule: rebuttal or rejection of the opponent's demand does not by itself satisfy KVS=5.",
+        "Actor B coder-visible evidence: willingness to revisit some collective-agreement provisions is reported, but government and employer actions are often merged and decisive employer attribution may be unclear.",
+        "Actor B coder-visible evidence: contractor-position measures are employment context and are not pay-specific KVS evidence."
+      ],
+      "rationale": "The frozen input supports a reactive defence of the existing pay treatment, but it does not clearly attribute an additional employer-owned pay-specific action, decision, settlement, resource allocation, or policy criterion that satisfies a licensed KVS anchor. The potentially relevant collective-agreement conduct is not decisively attributable to the narrow employer actor, and the contractor-job measures are not pay-specific. Therefore C4 and C5 fail and the factor is UNKNOWN rather than 0.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "The UNKNOWN decision follows directly from the mandatory reactive-actor rule and the explicit attribution warning in the frozen input."
+      },
+      "calculation_release": false
+    }
+  ]
+}
