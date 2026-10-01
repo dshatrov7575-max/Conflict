@@ -1,0 +1,78 @@
+name: AI-only V1.1 Grok 4.7 binding preflight
+
+on:
+  push:
+    branches:
+      - review/ai-only-research-beta-v1-1-fast-repair
+    paths:
+      - ".github/workflows/ai-only-v1-1-grok47-binding-preflight.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Verify Grok 4.7 AI2 substitution freeze
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out exact substitution head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify exact frozen blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_blob() {
+            path="$1"
+            expected="$2"
+            actual="$(git hash-object "$path")"
+            test "$actual" = "$expected" || {
+              echo "Blob mismatch: $path expected=$expected actual=$actual" >&2
+              exit 21
+            }
+          }
+          root=docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR
+          check_blob "$root/MODEL_B_SUBSTITUTION_GROK47_R1.md" 6e24ee0bb77d2431b2f5233b00ed5c86001ef11c
+          check_blob "$root/omg_nov24_v1_0_1/07_AI2_STANDALONE_RU.md" 9a5f103db14541c7379444886bc83b386224cacf
+          check_blob "$root/omg_nov24_v1_0_1/compare_primary_v101.py" 3f62d8e164c48d1e0802f6a880000e927c7f7955
+
+      - name: Verify executor-only amendment
+        shell: bash
+        run: |
+          set -euo pipefail
+          amendment=docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/MODEL_B_SUBSTITUTION_GROK47_R1.md
+          grep -F 'FROZEN_BEFORE_AI2_RESPONSE' "$amendment"
+          grep -F 'Grok 4.7' "$amendment"
+          grep -F 'The substitution is not based on any observed coding value.' "$amendment"
+          grep -F 'UNKNOWN != 0' "$amendment"
+
+      - name: Re-run frozen comparator self-test
+        shell: bash
+        run: |
+          set -euo pipefail
+          python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/omg_nov24_v1_0_1/compare_primary_v101.py --self-test | tee /tmp/self-test.json
+          python - <<'PY'
+          import json
+          x=json.load(open('/tmp/self-test.json', encoding='utf-8'))
+          assert x == {'self_test':'PASS','cases':10}, x
+          PY
+
+      - name: Preserve scientific boundary
+        shell: bash
+        run: |
+          echo 'AI2_SERVICE_SUBSTITUTED_FOR_AVAILABILITY=true'
+          echo 'AI1_OUTPUT_USED_FOR_SELECTION=false'
+          echo 'SCIENTIFIC_INPUT_CHANGED=false'
+          echo 'PROMPT_CONTENT_CHANGED=false'
+          echo 'R1_RAW_OUTPUTS_EDITED=false'
+          echo 'OLD_OMG_KVS5_POL50_RESTORED=false'
+          echo 'READY_FOR_ONE_GROK47_AI2_DISPATCH=true'
