@@ -1,0 +1,37 @@
+{
+  "schema": "MANUAL_DUAL_MODEL_EXECUTION_RECEIPT_R1",
+  "route_id": "AI_ONLY_DYAD_OMG_NOV24_V100",
+  "status": "CAPTURED_BUT_INVALID_FOR_FROZEN_COMPARATOR",
+  "binding_commit": "c949d592150f079a9013fc77e9ad1b03f622d19b",
+  "dispatch_commit": "63940f52f97cdf039ebd3d38cd70adbc68e0a064",
+  "ai1": {
+    "service": "ChatGPT",
+    "frozen_selection": "GPT-5.6 Sol Pro",
+    "role": "OMG_NOV24_V100_AI1",
+    "raw_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/OMG_NOV24_V100_AI1_COMPLETED.json",
+    "raw_capture_commit": "1cb2fa3a046284e69bb4ce7788349b2d57666a05",
+    "raw_run_id": null,
+    "capture_mode": "Owner pasted raw JSON into coordinator chat"
+  },
+  "ai2": {
+    "service": "Claude",
+    "frozen_selection": "Claude Opus 5.5 High",
+    "role": "OMG_NOV24_V100_AI2",
+    "raw_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/OMG_NOV24_V100_AI2_COMPLETED.json",
+    "raw_capture_commit": "51be523ca303194435cd8d5be795adaa35f8e54c",
+    "raw_run_id": null,
+    "capture_mode": "Owner pasted raw JSON into coordinator chat"
+  },
+  "operator_attestation_from_raw_outputs": {
+    "other_coder_output_seen": false,
+    "prior_episode_outputs_seen": false,
+    "outcome_used_as_evidence": false,
+    "external_sources_used": false
+  },
+  "repair_or_normalization": false,
+  "retry": false,
+  "sibling_exposure": false,
+  "coordinator_substitution": false,
+  "acceptance_result": "REJECTED_BY_FROZEN_COMPARATOR_METADATA_GATE",
+  "reason": "Both outputs omit distinct non-empty run_id values required by the frozen comparator. Raw outputs remain unchanged."
+}
