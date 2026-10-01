@@ -1,0 +1,30 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_DEMO_PREFLIGHT_RECEIPT_R1",
+  "state": "PASS",
+  "github_run_id": "36888617846",
+  "github_run_attempt": "1",
+  "github_head_sha": "4f93d5d659a3fcf303285c03e2c2e9d3ba59b074",
+  "manifest_git_blob": "abca1f71455dc2c63d7f52736fb1004724cb90ce",
+  "source_evaluation_run_id": "36885038106",
+  "source_evaluation_artifact_digest": "sha256:ff8c6cf0d6a4cc43e9ca4ab9a3fe54539fcb8fe9b5e31576cc1e33e7a0087ed6",
+  "verified": {
+    "required_label_present": true,
+    "raw_primary_identity_and_attestations": "PASS",
+    "omg_v101_state": "HOLD_DISAGREEMENT",
+    "omg_v101_core_replay_executed": false,
+    "cohort_complete": "12/12",
+    "exact_agreement": "11/12",
+    "eligible_core_replay_lanes": [
+      "AI_ONLY_DYAD_KBM_E02_V100",
+      "AI_ONLY_PAIR_KBM_E05_V100"
+    ],
+    "eligible_lane_core_parity": "PASS_15_OF_15_EACH",
+    "release_gate": "G1_G8_ALL_PASS",
+    "release_candidate_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "human_validation": "NOT_PERFORMED",
+    "old_omg_company_kvs5_pol50_restored": false,
+    "pr_expected_state": "DRAFT_OPEN_NOT_MERGED",
+    "auto_merge": false
+  }
+}
