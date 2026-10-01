@@ -1,0 +1,56 @@
+{
+  "route_id": "AI_ONLY_DYAD_D25_E02_V100",
+  "contract_version": "1.0.0",
+  "input_sha256": "aa256f3c1822eea2494b4267a15f5b65707a86896b457531762b2066387872aa",
+  "state": "HOLD_FACTOR_INCOMPLETE",
+  "entries": [
+    {
+      "actor_id": "D25_DISMISSED_KMG_EP_WORKERS_20111013",
+      "factor": "POS_AO2",
+      "ai1_status": "UNKNOWN",
+      "ai1_value": null,
+      "ai2_status": "UNKNOWN",
+      "ai2_value": null,
+      "same_C1_C8": true,
+      "triage": "SHARED_UNKNOWN"
+    },
+    {
+      "actor_id": "D25_DISMISSED_KMG_EP_WORKERS_20111013",
+      "factor": "KVS_AO2",
+      "ai1_status": "NUMERIC",
+      "ai1_value": 5,
+      "ai2_status": "NUMERIC",
+      "ai2_value": 5,
+      "same_C1_C8": true,
+      "triage": "CONSENSUS_NUMERIC"
+    },
+    {
+      "actor_id": "D25_KMG_EP_MANAGEMENT_20111013",
+      "factor": "POS_AO2",
+      "ai1_status": "NUMERIC",
+      "ai1_value": 5,
+      "ai2_status": "NUMERIC",
+      "ai2_value": 5,
+      "same_C1_C8": true,
+      "triage": "CONSENSUS_NUMERIC"
+    },
+    {
+      "actor_id": "D25_KMG_EP_MANAGEMENT_20111013",
+      "factor": "KVS_AO2",
+      "ai1_status": "UNKNOWN",
+      "ai1_value": null,
+      "ai2_status": "UNKNOWN",
+      "ai2_value": null,
+      "same_C1_C8": true,
+      "triage": "SHARED_UNKNOWN"
+    }
+  ],
+  "coordinator_substitution": "FORBIDDEN",
+  "targeted_content_review_rounds": 0,
+  "calculation_release": false,
+  "simultaneous_snapshot": false,
+  "carry_forward": "NONE",
+  "historical_snapshot": "NOT_ESTABLISHED",
+  "historical_area_UNO": "NOT_COMPUTED",
+  "human_validation": "NOT_PERFORMED"
+}
