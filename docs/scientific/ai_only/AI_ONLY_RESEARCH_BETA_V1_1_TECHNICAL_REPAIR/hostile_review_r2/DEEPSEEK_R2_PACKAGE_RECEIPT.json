@@ -1,0 +1,17 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_R2_DEEPSEEK_PACKAGE_RECEIPT",
+  "state": "PASS",
+  "github_run_id": "36902293290",
+  "github_head_sha": "acee354d3f35f8eed75b45801ecc6268b35e1745",
+  "target_manifest_blob": "4b27f7eb0a393de53dde4ff737e9f2a606b16611",
+  "reviewer_role": "V1_1_HOSTILE_REVIEWER_D_R2",
+  "service": "DeepSeek Web",
+  "ui_reasoning_mode": "Глубокое мышление",
+  "backend_model_identity": "NOT_UI_DISCLOSED",
+  "smart_search": "OFF",
+  "transport_files": 1,
+  "package_filename": "V1_1_HOSTILE_REVIEWER_D_DEEPSEEK_R2_SINGLE.md",
+  "package_sha256": "6a01feeb6dd81e51a147f823b8702fd627c1eb08c7e3f301d3fddb81c5259ac9",
+  "source_object_count": 41,
+  "prior_hostile_reviews_included": false
+}
