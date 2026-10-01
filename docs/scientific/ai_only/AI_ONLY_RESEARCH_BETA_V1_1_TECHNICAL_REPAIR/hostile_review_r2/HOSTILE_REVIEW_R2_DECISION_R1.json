@@ -1,0 +1,57 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_R2_DECISION_R1",
+  "target_manifest_blob": "4b27f7eb0a393de53dde4ff737e9f2a606b16611",
+  "review_pair": {
+    "reviewer_c": "Qwen 3.8-Max",
+    "reviewer_c_verdict": "PASS",
+    "reviewer_d": "DeepSeek Web — Глубокое мышление (backend model not UI-disclosed)",
+    "reviewer_d_verdict": "PASS_WITH_P1",
+    "exact_domain_agreement": "9/14",
+    "domain_disagreement": "5/14",
+    "confirmed_p0_union": 0,
+    "rc_state_supported_by_both": true,
+    "demo_allowed_by_both": true
+  },
+  "conservative_pair_verdict": "PASS_WITH_P1",
+  "scientific_release_candidate_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+  "scientific_state_changed": false,
+  "p1_limitations": [
+    "Gemini AI2 model identity is supported by the frozen UI binding and self-report, not by an independent provider receipt.",
+    "AI1 non-access before Model B selection is protocol-declared and Git-timestamped, not independently service-audited.",
+    "Repository evidence does not prove the absence of every hidden external attempt outside the preserved project record."
+  ],
+  "p2_clarification": "The 12-decision cohort denominator covers repair-route triage rows and excludes inherited KBM worker records from KBM E02/E05 lanes.",
+  "review_output_metadata_warnings": [
+    "Qwen completed_at_utc is future-dated relative to intake and is not used as chronology evidence.",
+    "DeepSeek completed_at_utc predates package readiness and is not used as chronology evidence.",
+    "Qwen output was supplied as chat-pasted JSON and is semantically normalized; byte-for-byte raw preservation is not established.",
+    "DeepSeek output was supplied as an uploaded text file and is byte-preserved."
+  ],
+  "demo_state": "READY_FOR_LIMITED_DEMO_WITH_P1_DISCLOSURES",
+  "required_demo_disclosures": [
+    "AI-кодирование; человеческая проверка не проводилась; исследовательская версия; прогнозная точность не установлена.",
+    "Historical snapshot NOT_ESTABLISHED.",
+    "Historical area UNO NOT_COMPUTED/BLOCKED.",
+    "HUMAN validation/reliability NOT_PERFORMED.",
+    "Predictive/probability/risk validation NOT_CLAIMED.",
+    "AI1 non-access is protocol-declared and Git-timestamped, not independently service-audited.",
+    "Absence of hidden external attempts is NOT_PROVEN.",
+    "Gemini AI2 model identity is not provider-authenticated.",
+    "The 12-decision denominator excludes inherited KBM worker records."
+  ],
+  "forbidden": [
+    "CONVERT_UNKNOWN_TO_ZERO",
+    "FORCE_HOLD_LANE_THROUGH_CORE",
+    "RESTORE_OLD_OMG_COMPANY_KVS5_POL50",
+    "CLAIM_PROVIDER_AUTHENTICATED_GEMINI_IDENTITY",
+    "CLAIM_SERVICE_AUDITED_AI1_NON_ACCESS",
+    "CLAIM_ABSENCE_OF_ALL_HIDDEN_EXTERNAL_ATTEMPTS",
+    "CLAIM_HISTORICAL_AREA_UNO",
+    "CLAIM_HUMAN_VALIDATION",
+    "CLAIM_PREDICTIVE_VALIDATION",
+    "AUTO_MERGE"
+  ],
+  "coordinator_adjudication": false,
+  "primary_recoding": false,
+  "auto_merge": false
+}
