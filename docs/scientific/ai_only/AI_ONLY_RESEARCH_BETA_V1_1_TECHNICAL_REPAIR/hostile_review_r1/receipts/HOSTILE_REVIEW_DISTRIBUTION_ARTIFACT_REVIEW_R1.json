@@ -1,0 +1,51 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_DISTRIBUTION_ARTIFACT_REVIEW_R1",
+  "state": "PASS",
+  "github_run_id": "36889872071",
+  "github_run_conclusion": "success",
+  "github_head_sha": "ded5acb5ed4a8c10375bb3c488e0b8fcd41ec2ef",
+  "artifacts": {
+    "V1_1_HOSTILE_REVIEWER_A": {
+      "artifact_id": "11176226606",
+      "artifact_name": "v1-1-hostile-reviewer-a-package-r1",
+      "artifact_digest": "sha256:8f09bd5e653b9da082661386eb42f25c1ac450c0776e31d1a4ff3f69dbbf03dd",
+      "inner_filename": "V1_1_HOSTILE_REVIEWER_A_PACKAGE_R1.zip",
+      "inner_bytes": 38391,
+      "inner_sha256": "b30284242da68d64d221aeda7a2ce80109580dd97a542e1c5d0c445c0dad1201",
+      "file_count": 22,
+      "other_reviewer_prompt_included": false
+    },
+    "V1_1_HOSTILE_REVIEWER_B": {
+      "artifact_id": "11176466475",
+      "artifact_name": "v1-1-hostile-reviewer-b-package-r1",
+      "artifact_digest": "sha256:346e1eea78dc5d4e2ba6c5faf1ef1fe34defea8305242206789ecd8e87c8dc7b",
+      "inner_filename": "V1_1_HOSTILE_REVIEWER_B_PACKAGE_R1.zip",
+      "inner_bytes": 38391,
+      "inner_sha256": "a252c84bae0539f48af11de9fae4d603ca9326bced153670cb99d1d6705d8f40",
+      "file_count": 22,
+      "other_reviewer_prompt_included": false
+    },
+    "DISTRIBUTION_RECEIPT": {
+      "artifact_id": "11176376510",
+      "artifact_name": "v1-1-hostile-review-distribution-receipt-r1",
+      "artifact_digest": "sha256:908348eb2fcb67b129575818b31f64df0af7e8d1fd4de251dacbf21a76504fc9",
+      "inner_filename": "HOSTILE_REVIEW_DISTRIBUTION_RECEIPT_R1.json",
+      "inner_bytes": 1342,
+      "inner_sha256": "ff6f9a8f3fab7fb74fc3ec10007bd6eef830ca142eb258610ff5b2a4dca91f31"
+    }
+  },
+  "verified": {
+    "target_manifest_git_blob": "abca1f71455dc2c63d7f52736fb1004724cb90ce",
+    "freeze_manifest_git_blob": "53c00fb58a88ad75bbeb1410bce1a79a3f50677c",
+    "reviewer_packages_role_separated": true,
+    "reviewer_prompts_equivalent_except_identity": true,
+    "review_outputs_present_at_packaging": false,
+    "cross_reviewer_prompt_included": false,
+    "exact_source_files_in_each_package": 19,
+    "package_control_files_in_each_package": 3,
+    "total_files_in_each_package": 22,
+    "external_search": "FORBIDDEN",
+    "attempt_limit_each": 1,
+    "auto_merge": false
+  }
+}
