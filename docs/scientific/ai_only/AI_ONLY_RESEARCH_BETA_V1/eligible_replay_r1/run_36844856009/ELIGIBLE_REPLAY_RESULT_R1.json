@@ -1,0 +1,146 @@
+{
+  "schema": "AI_ONLY_ELIGIBLE_REPLAY_RESULT_R1",
+  "state": "PASS",
+  "github_run_id": "36844856009",
+  "github_head_sha": "83e9704d481aec96ddab09bb94351265c73467ce",
+  "artifact_id": "11153425007",
+  "artifact_zip_digest": "sha256:1b31f30ffd5f435c1f0dd48a014e7c0fe5fbbb2829d8ffc506c736175a181580",
+  "artifact_files": {
+    "KBM_E02_V100_CORE_REPLAY_RECEIPT_R1.json": {
+      "bytes": 16501,
+      "sha256": "ef975c4671f0c2c1f9ea52ea6f72d0118e276455636fe416555dad42514e0d6d"
+    },
+    "KBM_E02_V100_READ_ONLY_SENSITIVITY_R1.json": {
+      "bytes": 14417,
+      "sha256": "24ec099fd6d5cc7b0fa17c8458d1b2e1ddec3ab6e438ad4ae3e881cb41590a1b"
+    },
+    "KBM_E05_V100_CORE_REPLAY_RECEIPT_R1.json": {
+      "bytes": 16573,
+      "sha256": "b76d29f33033c14a8cbf17d14876050e6017cce49ccba29fb0e9b511c681c988"
+    },
+    "KBM_E05_V100_READ_ONLY_SENSITIVITY_R1.json": {
+      "bytes": 14573,
+      "sha256": "3cc0298e1f1998a9a06364ac7f3dd1ce6822ec3d82200cfed675be069d5b2b40"
+    }
+  },
+  "pinned_git_blobs": {
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/verify_sensitivity_against_core_r1.py": "bbf2539a21edb4551e1dbe6cdeeb854e50c1b3a6",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E02_V100_PRIMARY_COMPARISON.json": "2ea59f263ac83f34e458272d10202dc0b2829131",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E05_V100_PRIMARY_COMPARISON.json": "056e3bbda09afc2738fba82cce354a8a5f4a0a1e",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/LANE_BINDINGS_R2.json": "6492a799309f91cda6644d2195dad8a76e6291d6",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/SENSITIVITY_GRID_V2.json": "f59628b850749f2032b2df35422e9a0da5b11589",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/read_only_sensitivity_runner_v2_1.py": "04ed2c062d35e04cd073a001f81523a0342283ab",
+    "software/conflict_analysis/calculation/__init__.py": "669e9162fbc4ea348cef7cb6d81a73a07f95cf0b",
+    "software/conflict_analysis/calculation/contracts.py": "5eaad9022804b192911f5fab498e56c788017d73",
+    "software/conflict_analysis/calculation/strategy.py": "434aafd8044410049ae14a76a88b66df5b0da658"
+  },
+  "lanes": {
+    "AI_ONLY_DYAD_KBM_E02_V100": {
+      "input_sha256": "d0fb1f4a87f1cf64380f99167d77ecd63fd37b2827c48d044679b6abf027bf42",
+      "actor_binding": {
+        "actor_a": "AOV2_KBM_STRIKERS",
+        "actor_b": "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527",
+        "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c"
+      },
+      "factor_record": {
+        "AOV2_KBM_STRIKERS": {"POS_AO2": -5, "KVS_AO2": 5},
+        "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527": {"POS_AO2": 5, "KVS_AO2": 5}
+      },
+      "baseline": {
+        "status": "COMPLETE",
+        "W": "10.00000000",
+        "P": "25.00000000",
+        "N": "25.00000000",
+        "A": "50.00000000",
+        "B": "0.00000000",
+        "Pol": "50.00000000",
+        "single_ptn_uno_field": "50.00000000",
+        "q": "1.00000000"
+      },
+      "positive_RGU_scenarios": [
+        {"scenario_id": "A_DOMINANT_10_1", "RGU": {"AOV2_KBM_STRIKERS": "10", "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527": "1"}, "status": "COMPLETE", "B": "-40.90909091", "Pol": "9.09090909"},
+        {"scenario_id": "A_DOMINANT_4_1", "RGU": {"AOV2_KBM_STRIKERS": "4", "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527": "1"}, "status": "COMPLETE", "B": "-30.00000000", "Pol": "20.00000000"},
+        {"scenario_id": "A_DOMINANT_2_1", "RGU": {"AOV2_KBM_STRIKERS": "2", "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527": "1"}, "status": "COMPLETE", "B": "-16.66666667", "Pol": "33.33333333"},
+        {"scenario_id": "EQUAL_1_1", "RGU": {"AOV2_KBM_STRIKERS": "1", "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527": "1"}, "status": "COMPLETE", "B": "0.00000000", "Pol": "50.00000000"},
+        {"scenario_id": "B_DOMINANT_1_2", "RGU": {"AOV2_KBM_STRIKERS": "1", "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527": "2"}, "status": "COMPLETE", "B": "16.66666667", "Pol": "33.33333333"},
+        {"scenario_id": "B_DOMINANT_1_4", "RGU": {"AOV2_KBM_STRIKERS": "1", "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527": "4"}, "status": "COMPLETE", "B": "30.00000000", "Pol": "20.00000000"},
+        {"scenario_id": "B_DOMINANT_1_10", "RGU": {"AOV2_KBM_STRIKERS": "1", "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527": "10"}, "status": "COMPLETE", "B": "40.90909091", "Pol": "9.09090909"}
+      ],
+      "positive_q_invariance": {
+        "passed": true,
+        "values_checked": ["0.1", "1", "10"],
+        "observed_Pol_values": ["50.00000000"],
+        "interpretation": "Expected one-PTN q-scale invariance; not substantive KVPTN sensitivity."
+      },
+      "zero_weight_stress": [
+        {"scenario_id": "R_ACTOR_A_ZERO", "status": "COMPLETE", "W": "5.00000000", "Pol": "0.00000000", "single_ptn_uno_field": "0.00000000"},
+        {"scenario_id": "R_ACTOR_B_ZERO", "status": "COMPLETE", "W": "5.00000000", "Pol": "0.00000000", "single_ptn_uno_field": "0.00000000"},
+        {"scenario_id": "R_ALL_ZERO", "status": "NOT_COMPUTABLE", "W": "0.00000000", "Pol": null, "single_ptn_uno_field": null},
+        {"scenario_id": "Q_ZERO_EXCLUSION", "status": "COMPLETE", "W": "10.00000000", "Pol": "50.00000000", "single_ptn_uno_field": null}
+      ],
+      "envelope": {"Pol_min": "9.09090909", "Pol_max": "50.00000000", "baseline_Pol": "50.00000000", "robustness_label": "NOT_ASSIGNED_BY_PROTOCOL"},
+      "metric_label": "SINGLE_PTN_PAIR_DYAD_SCENARIO_NOT_AREA_UNO",
+      "core_replay": {"state": "PASS_CORE_PARITY", "scenario_count": 15, "all_snapshot_json_replays": "PASS", "all_core_result_digests_stable": true}
+    },
+    "AI_ONLY_PAIR_KBM_E05_V100": {
+      "input_sha256": "51f1a805986f7550828d8b05e0a1aa7aa2c80d43410540cd0f72a82448660f95",
+      "actor_binding": {
+        "actor_a": "AOV2_KBM_STRIKERS",
+        "actor_b": "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514",
+        "ptn_id": "728c8406-ba99-5787-9557-933b5670be7c"
+      },
+      "factor_record": {
+        "AOV2_KBM_STRIKERS": {"POS_AO2": -5, "KVS_AO2": 5},
+        "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514": {"POS_AO2": 5, "KVS_AO2": 5}
+      },
+      "baseline": {
+        "status": "COMPLETE",
+        "W": "10.00000000",
+        "P": "25.00000000",
+        "N": "25.00000000",
+        "A": "50.00000000",
+        "B": "0.00000000",
+        "Pol": "50.00000000",
+        "single_ptn_uno_field": "50.00000000",
+        "q": "1.00000000"
+      },
+      "positive_RGU_scenarios": [
+        {"scenario_id": "A_DOMINANT_10_1", "RGU": {"AOV2_KBM_STRIKERS": "10", "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514": "1"}, "status": "COMPLETE", "B": "-40.90909091", "Pol": "9.09090909"},
+        {"scenario_id": "A_DOMINANT_4_1", "RGU": {"AOV2_KBM_STRIKERS": "4", "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514": "1"}, "status": "COMPLETE", "B": "-30.00000000", "Pol": "20.00000000"},
+        {"scenario_id": "A_DOMINANT_2_1", "RGU": {"AOV2_KBM_STRIKERS": "2", "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514": "1"}, "status": "COMPLETE", "B": "-16.66666667", "Pol": "33.33333333"},
+        {"scenario_id": "EQUAL_1_1", "RGU": {"AOV2_KBM_STRIKERS": "1", "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514": "1"}, "status": "COMPLETE", "B": "0.00000000", "Pol": "50.00000000"},
+        {"scenario_id": "B_DOMINANT_1_2", "RGU": {"AOV2_KBM_STRIKERS": "1", "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514": "2"}, "status": "COMPLETE", "B": "16.66666667", "Pol": "33.33333333"},
+        {"scenario_id": "B_DOMINANT_1_4", "RGU": {"AOV2_KBM_STRIKERS": "1", "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514": "4"}, "status": "COMPLETE", "B": "30.00000000", "Pol": "20.00000000"},
+        {"scenario_id": "B_DOMINANT_1_10", "RGU": {"AOV2_KBM_STRIKERS": "1", "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514": "10"}, "status": "COMPLETE", "B": "40.90909091", "Pol": "9.09090909"}
+      ],
+      "positive_q_invariance": {
+        "passed": true,
+        "values_checked": ["0.1", "1", "10"],
+        "observed_Pol_values": ["50.00000000"],
+        "interpretation": "Expected one-PTN q-scale invariance; not substantive KVPTN sensitivity."
+      },
+      "zero_weight_stress": [
+        {"scenario_id": "R_ACTOR_A_ZERO", "status": "COMPLETE", "W": "5.00000000", "Pol": "0.00000000", "single_ptn_uno_field": "0.00000000"},
+        {"scenario_id": "R_ACTOR_B_ZERO", "status": "COMPLETE", "W": "5.00000000", "Pol": "0.00000000", "single_ptn_uno_field": "0.00000000"},
+        {"scenario_id": "R_ALL_ZERO", "status": "NOT_COMPUTABLE", "W": "0.00000000", "Pol": null, "single_ptn_uno_field": null},
+        {"scenario_id": "Q_ZERO_EXCLUSION", "status": "COMPLETE", "W": "10.00000000", "Pol": "50.00000000", "single_ptn_uno_field": null}
+      ],
+      "envelope": {"Pol_min": "9.09090909", "Pol_max": "50.00000000", "baseline_Pol": "50.00000000", "robustness_label": "NOT_ASSIGNED_BY_PROTOCOL"},
+      "metric_label": "SINGLE_PTN_PAIR_DYAD_SCENARIO_NOT_AREA_UNO",
+      "core_replay": {"state": "PASS_CORE_PARITY", "scenario_count": 15, "all_snapshot_json_replays": "PASS", "all_core_result_digests_stable": true}
+    }
+  },
+  "ineligible_routes_not_executed": [
+    "AI_ONLY_DYAD_OMG_NOV24_V100",
+    "AI_ONLY_DYAD_D25_E02_V100"
+  ],
+  "scientific_boundaries": {
+    "auto_merge": false,
+    "coordinator_substitution": false,
+    "factor_or_weight_mutation": false,
+    "historical_area_UNO": "NOT_COMPUTED",
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  }
+}
