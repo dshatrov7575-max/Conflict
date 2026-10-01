@@ -270,7 +270,8 @@ try {
   assert.deepEqual(page.localStorageKeys, [storageKey]);
   assert.equal(page.left, 300);
   assert.equal(page.right, 400);
-  assert.equal(page.activeRightTab, "help");
+  assert.equal(page.activeRightTab, "document");
+  assert(await client.evaluate("document.querySelector('#panel-help').hidden && !document.querySelector('#ui-help-dialog').open && !document.activeElement.matches('.panel-help')", sessionId));
   assert.equal(page.sessionStorageLength, 0);
   assert.deepEqual(page.indexedDbNames, []);
   assert.deepEqual(page.cacheNames, []);

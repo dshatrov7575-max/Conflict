@@ -77,7 +77,7 @@
     state.controller = null;
   }
 
-  function clearConfidential(message = "Выберите значение или оценку в рабочей области.", keepEntry = false) {
+  function clearConfidential(message = "", keepEntry = false) {
     abortRead();
     state.facts = [];
     state.fact = null;
@@ -93,6 +93,7 @@
     $("g9-evidence-list").replaceChildren();
     $("g9-detail").replaceChildren();
     $("g9-state").textContent = message;
+    $("g9-state").hidden = !message;
     syncCommands();
   }
 

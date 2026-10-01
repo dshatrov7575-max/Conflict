@@ -59,7 +59,20 @@
     node.replaceChildren(svg, text);
   }
 
+  const fullValueSelector = ".ui-title, .ui-result-main h1, .ui-truncate, .identity-grid dd, .identity-list dd, .ui-data dd, .context-title > span, .projection-badge, .g8-status, .tree-label, .experiment-tabs [data-experiment-id], #workspace-name, #experiment-name, #project-name:not(input), #definition-label, #authoring-operation-key, #last-receipt-sha, #help-identity";
+  function exposeFullValues(root) {
+    const nodes = root.matches?.(fullValueSelector) ? [root] : [];
+    const parent = root.closest?.(fullValueSelector);
+    if (parent && parent !== root) nodes.push(parent);
+    nodes.push(...root.querySelectorAll(fullValueSelector));
+    for (const node of nodes) {
+      const value = node.textContent.trim();
+      if (value) { node.title = value; node.dataset.fullValue = value; }
+    }
+  }
+
   function enhance(root) {
+    exposeFullValues(root);
     const candidates = root.matches?.("[data-ui-icon], [data-panel-help]") ? [root] : [];
     candidates.push(...root.querySelectorAll("[data-ui-icon], [data-panel-help]"));
     for (const node of candidates) {
@@ -97,6 +110,20 @@
       const content = document.createElement("div");
       content.className = "ui-help-detail";
       content.append(detail.content.cloneNode(true));
+      topic.append(content);
+    }
+    const values = source?.closest("[data-panel-help]")?.querySelectorAll("[data-full-value]");
+    if (topic && values?.length) {
+      const content = dialog.querySelector(".ui-help-detail") || document.createElement("div");
+      content.className = "ui-help-detail";
+      const title = document.createElement("h3");
+      title.textContent = "Полные значения";
+      content.append(title);
+      for (const value of new Set([...values].map(node => node.dataset.fullValue))) {
+        const row = document.createElement("p");
+        row.textContent = value;
+        content.append(row);
+      }
       topic.append(content);
     }
     document.getElementById("ui-help-all").hidden = !topic;
@@ -140,10 +167,12 @@
   new MutationObserver(records => {
     for (const record of records) {
       if (record.target.closest?.("#ui-help-dialog")) continue;
+      exposeFullValues(record.target);
       if (record.target.matches?.("[data-ui-icon]")) decorateAction(record.target);
       if (record.target.matches?.("[data-panel-help]")) enhance(record.target);
       for (const node of record.addedNodes) if (node.nodeType === Node.ELEMENT_NODE) enhance(node);
     }
   }).observe(document.body, { childList: true, subtree: true });
-  openHash();
+  // Loading/reloading a work page never opens Help or takes keyboard focus.
+  // Help links still resolve through the click/hashchange handlers above.
 })();

@@ -582,7 +582,11 @@ try {
     current = await assertReloadDisclosure(invalidShapeReloadPosts);
     assert.equal(current.storageRaw, null);
     assert.deepEqual(current.storageKeys, []);
+    assert(await client.evaluate("document.querySelector('[data-right-tab=document]').getAttribute('aria-selected') === 'true' && document.querySelector('#panel-help').hidden && !document.activeElement.matches('.panel-help')", sessionId));
     await click("#context-help");
+    assert(await client.evaluate("document.querySelector('#ui-help-dialog').open && document.querySelector('#panel-help').hidden", sessionId));
+    await click("#ui-help-close");
+    await click("#tab-help");
     await fill("#help-key", "player.workspace");
     await client.waitForExpression(
       "!document.querySelector('#help-topic')?.hidden"

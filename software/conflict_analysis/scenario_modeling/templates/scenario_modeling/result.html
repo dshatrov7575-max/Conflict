@@ -7,12 +7,12 @@
 {% endblock %}
 {% block content %}
 <h1>Сценарное моделирование</h1>
-<p>{{ experiment.name }} · <strong data-testid="assessment-kind">{{ experiment.assessment_set.kind }}</strong> · {{ experiment.expert_profile.display_name }}</p>
+<div class="ui-context"><div class="ui-title" title="{{ experiment.name }}">{{ experiment.name }}</div><p><strong data-testid="assessment-kind">{{ experiment.assessment_set.kind }}</strong> · <span class="ui-truncate" title="{{ experiment.expert_profile.display_name }}">{{ experiment.expert_profile.display_name }}</span></p></div>
 
 <div class="scenario-metrics" aria-label="Сравнение UNO">
-  <section data-panel-help="baseline"><h2>Baseline UNO</h2><strong data-testid="baseline-uno">{{ baseline.UNO|default_if_none:'Недостаточно данных' }}</strong><p>{{ baseline.status }}</p></section>
-  <section data-panel-help="scenario"><h2>Scenario UNO</h2><strong data-testid="scenario-uno">{{ scenario.UNO|default_if_none:'Недостаточно данных' }}</strong><p data-testid="scenario-status">{{ scenario.status }}</p></section>
-  <section data-panel-help="delta"><h2>Delta UNO</h2><strong data-testid="delta-uno">{{ delta_uno|default_if_none:'Недостаточно данных' }}</strong></section>
+  <section data-panel-help="baseline"><h2>Базовый UNO</h2><strong data-testid="baseline-uno">{{ baseline.UNO|default_if_none:'Недостаточно данных' }}</strong><p>{{ baseline.status }}</p></section>
+  <section data-panel-help="scenario"><h2>Сценарный UNO</h2><strong data-testid="scenario-uno">{{ scenario.UNO|default_if_none:'Недостаточно данных' }}</strong><p data-testid="scenario-status">{{ scenario.status }}</p></section>
+  <section data-panel-help="delta"><h2>Δ UNO</h2><strong data-testid="delta-uno">{{ delta_uno|default_if_none:'Недостаточно данных' }}</strong></section>
 </div>
 <section class="ui-panel" data-panel-help="override">
 <h2>Изменить параметр</h2>
@@ -41,7 +41,7 @@
 {% csrf_token %}<input type="hidden" name="scenario_token" value="{{ scenario_token }}">
 <input type="hidden" name="action" value="remove">
 <div class="table-scroll"><table data-testid="changes">
-  <thead><tr><th scope="col">Параметр</th><th scope="col">Baseline</th><th scope="col">Сценарий</th><th scope="col">Действие</th></tr></thead>
+  <thead><tr><th scope="col">Параметр</th><th scope="col">Базовый</th><th scope="col">Сценарий</th><th scope="col">Действие</th></tr></thead>
   <tbody>{% for change in changes %}<tr>
     <th scope="row">{{ change.label }}</th><td>{{ change.baseline_value }} · {{ change.baseline_status }}</td><td>{{ change.value }}</td>
     <td><button type="submit" name="parameter" value="{{ change.parameter }}" data-ui-icon="trash" data-ui-kind="utility" data-ui-danger="true">Убрать изменение</button></td>
@@ -49,11 +49,11 @@
 </table></div></form>
 <h2>Влияние параметров</h2>
 
-{% for change in changes %}<details open data-panel-help="sensitivity">
+{% for change in changes %}<details data-panel-help="sensitivity">
   <summary>{{ change.label }}</summary><template class="ui-panel-detail"><p>{{ change.explanation }}</p></template>
   <p>UNO только с этим изменением: <strong>{{ change.isolated_uno|default_if_none:'Недостаточно данных' }}</strong>.
-    Delta к baseline: <strong>{{ change.isolated_delta|default_if_none:'Недостаточно данных' }}</strong>.</p>
-  <p>Источник baseline: <code>{{ change.baseline_source_id }}</code>, версия {{ change.baseline_source_version }}.</p>
+    Δ UNO к базовому: <strong>{{ change.isolated_delta|default_if_none:'Недостаточно данных' }}</strong>.</p>
+  <p>Базовый источник: <code>{{ change.baseline_source_id }}</code>, версия {{ change.baseline_source_version }}.</p>
 </details>{% endfor %}
 {% else %}<p data-testid="no-changes">Изменений нет.</p>{% endif %}
 <form method="post" action="{% url 'scenario_modeling:update' %}">
@@ -71,7 +71,7 @@
     <td>{{ ptn.Pol|default_if_none:'—' }}</td><td>{{ ptn.UNO_contribution|default_if_none:'—' }}</td><td>{{ ptn.status }}</td></tr>{% endfor %}</tbody>
 </table></div>
 </section><section class="ui-panel" data-panel-help="warnings"><h2>Предупреждения Core</h2>
-<h3>Baseline</h3><ul class="ui-warning-list">{% for warning in baseline.warnings %}<li><a href="#ui-help-topic-warnings" data-help-open="warnings">{{ warning }}</a></li>{% endfor %}</ul>
+<h3>Базовый</h3><ul class="ui-warning-list">{% for warning in baseline.warnings %}<li><a href="#ui-help-topic-warnings" data-help-open="warnings">{{ warning }}</a></li>{% endfor %}</ul>
 <h3>Сценарий</h3><ul class="ui-warning-list">{% for warning in scenario.warnings %}<li><a href="#ui-help-topic-warnings" data-help-open="warnings">{{ warning }}</a></li>{% endfor %}</ul>
 </section><details data-panel-help="scenario-save"><summary>Идентичность и воспроизведение</summary>
   <dl><dt>Сценарий</dt><dd>{{ scenario_id }}</dd>
@@ -86,5 +86,5 @@
   <label for="scenario-snapshot-json">Производный snapshot сценария</label><textarea id="scenario-snapshot-json" readonly rows="6">{{ scenario_snapshot_json }}</textarea>
   <label for="scenario-run-json">Scenario CalculationRun</label><textarea id="scenario-run-json" readonly rows="6">{{ scenario_run_json }}</textarea>
 </details>
-<p><a data-ui-icon="refresh" data-ui-kind="primary" data-ui-label="Новый baseline" href="{% url 'player_integration:result' model.baseline.experiment_id model.baseline.time_slice_id %}">Подготовить новый baseline из текущих оценок</a></p>
+<p><a data-ui-icon="refresh" data-ui-kind="primary" data-ui-label="Новая база" href="{% url 'player_integration:result' model.baseline.experiment_id model.baseline.time_slice_id %}">Подготовить новый baseline из текущих оценок</a></p>
 {% endblock %}

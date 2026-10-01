@@ -958,7 +958,6 @@ try {
       totalDomNodes: document.getElementsByTagName("*").length,
       crossCells: document.querySelectorAll("[data-actor-id][data-element-id]").length,
       disabled: [
-        "document-control",
         "chat-control",
       ].every((id) => document.querySelector("#" + id)?.disabled === true) &&
         ["scientific-control", "prediction-control", "recommendation-control"].every(id => !document.getElementById(id)) &&
@@ -1027,7 +1026,7 @@ try {
   trace("open bootstrap");
   await entryLoaded;
   await client.waitForExpression(
-    `document.querySelector("#entry-state-code")?.textContent === "READY" && !document.querySelector("#bootstrap-draft")?.disabled`,
+    `document.querySelector("#entry-state")?.dataset.state === "READY" && !document.querySelector("#bootstrap-draft")?.disabled`,
     sessionId,
     timeoutMs,
   );
@@ -1332,11 +1331,12 @@ try {
   assert.equal(page.etag, `"${expectedManifestSha256}"`);
   assert.equal(page.left, 272);
   assert.equal(page.right, 360);
-  assert.equal(page.activeRightTab, "help");
+  assert.equal(page.activeRightTab, "document");
+  assert(await client.evaluate("document.querySelector('#help-panel').hidden && !document.querySelector('#ui-help-dialog').open && !document.activeElement.matches('.panel-help')", sessionId));
   assert.ok(
     page.layoutRaw === null ||
       page.layoutRaw ===
-        '{"version":"STUDIO_AUDITED_DRAFT_LAYOUT_V1","left":272,"right":360,"activeRightTab":"help"}',
+        '{"version":"STUDIO_AUDITED_DRAFT_LAYOUT_V1","left":272,"right":360,"activeRightTab":"document"}',
     `poisoned layout survived as ${page.layoutRaw}`,
   );
   assert.equal(page.layoutRaw?.includes(definitionId) || false, false);

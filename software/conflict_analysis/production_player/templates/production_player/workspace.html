@@ -6,9 +6,10 @@
   <div id="workspace-content" hidden data-g8-shell="{{ g8_shell|yesno:'true,false' }}" data-g8-claim-contract="{{ experiment_claim_contract }}" data-g8-claim-sha256="{{ experiment_claim_sha256 }}" data-initial-experiment-id="{{ experiment_id }}">
     <div class="workspace-heading"><h1 id="workspace-name">—</h1><span id="projection-badge" class="projection-badge">NOT_PROVEN</span></div>
     <div id="experiment-tabs" class="experiment-tabs" role="tablist" aria-label="Общее и эксперименты"><button id="experiment-general" type="button" role="tab" aria-selected="true" data-experiment-id="general">Общее</button><button data-ui-icon="plus" data-ui-kind="utility" aria-label="Создать эксперимент оценивания" id="experiment-plus" type="button" role="tab" aria-disabled="true" aria-selected="false" title="{% if g8_shell %}Создать независимый эксперимент{% else %}Доступно после этапа экспериментов{% endif %}">+<span class="sr-only"> Создать эксперимент оценивания</span></button></div>
-    <section id="general-panel" role="tabpanel" aria-labelledby="experiment-general" data-panel-help="comparison">
+    <section id="general-panel" role="tabpanel" aria-labelledby="experiment-general">
       <dl class="identity-grid"><dt>Рабочее пространство</dt><dd id="workspace-identity">—</dd><dt>Версия определения</dt><dd id="definition-identity">—</dd><dt>Manifest SHA-256</dt><dd id="definition-hash">—</dd><dt>Проекция</dt><dd id="projection-status">—</dd><dt>Projection SHA-256</dt><dd id="projection-hash">—</dd><dt>Временной срез</dt><dd id="slice-identity">Не выбран</dd><dt>Дата среза</dt><dd id="slice-date">—</dd><dt>Состояние среза</dt><dd id="slice-immutability">—</dd></dl>
-      <div class="g8-heading"><h2>Сырые ряды сравнения</h2><button id="g8-comparison-refresh" type="button" data-ui-icon="refresh" data-ui-kind="utility">Обновить</button></div>
+      <div class="g8-heading" data-panel-help="comparison"><h2>Сырые ряды сравнения</h2><button id="g8-comparison-refresh" type="button" data-ui-icon="refresh" data-ui-kind="utility">Обновить</button></div>
+      <p class="ui-empty" id="comparison-empty">Нет значений для сравнения.</p>
       <div class="g8-table-wrap"><table id="g8-comparison"><thead><tr><th>Эксперимент</th><th>Актор</th><th>Элемент</th><th>Параметр</th><th>Значение</th><th>Статус</th><th>Категория уверенности</th><th>Неразрешённая проверка</th></tr></thead><tbody></tbody></table></div>
     </section>
     <section id="experiment-panel" role="tabpanel" hidden data-focus-context="experiment" data-panel-help="experiment">
@@ -25,7 +26,7 @@
   <template id="g9-evidence-template" data-g9-claim-contract="PLAYER_G9_EVIDENCE_CLAIM_BOUNDARIES_V1" data-g9-claim-sha256="6883dbb22b85f45404d5c6e1b338fe3e844486dadddc32e207cf3f369f3ccdc3">
     <section class="g9-evidence" aria-labelledby="g9-evidence-title" data-panel-help="evidence">
       <h2 id="g9-evidence-title">Доказательства</h2>
-      <p id="g9-state" class="g9-notice" role="status" aria-live="polite">Выберите значение или оценку в рабочей области.</p>
+      <p id="g9-state" class="g9-notice" role="status" aria-live="polite" hidden></p>
       <nav class="g9-command-bar" aria-label="Команды доказательств">
         <button id="g9-related" type="button" disabled data-ui-icon="link" data-ui-kind="utility">Связанные факты</button>
         <button id="g9-open-fact" type="button" disabled data-ui-icon="document" data-ui-kind="utility">Открыть факт</button>

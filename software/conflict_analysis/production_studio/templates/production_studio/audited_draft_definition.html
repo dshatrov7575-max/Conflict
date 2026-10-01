@@ -35,10 +35,10 @@
     {% if studio_authenticated %}
       <section class="authoring-toolbar" aria-label="Операции черновика" data-panel-help="draft-actions">
         <a class="button-link" href="{% url 'production_studio:audited_draft_entry' %}" data-ui-icon="left" data-ui-kind="utility">Другой проект</a>
-        <label for="left-width-control">Проект <output id="left-width-output">272</output> px</label>
+        <details class="ui-layout-settings"><summary>Панели</summary><div><label for="left-width-control">Проект <output id="left-width-output">272</output> px</label>
         <input id="left-width-control" type="range" min="220" max="420" step="4" value="272">
-        <label for="right-width-control">Справка <output id="right-width-output">360</output> px</label>
-        <input id="right-width-control" type="range" min="300" max="500" step="4" value="360">
+        <label for="right-width-control">Справа <output id="right-width-output">360</output> px</label>
+        <input id="right-width-control" type="range" min="300" max="500" step="4" value="360"></div></details>
         <button id="preview-validation" type="button" disabled data-ui-icon="check" data-ui-kind="utility">Проверить без записи</button>
         <button id="save-draft" type="button" disabled data-ui-icon="save" data-ui-kind="primary" data-ui-label="Сохранить">Сохранить DRAFT</button>
         <button id="manual-reconcile" type="button" hidden disabled data-ui-icon="refresh" data-ui-kind="utility">Ручная сверка тем же запросом</button>
@@ -53,13 +53,12 @@
       </section>
 
       <section id="authoring-state" class="authoring-state" role="status" aria-live="polite" data-panel-help="state">
-        <strong id="authoring-state-code">LOADING</strong>
+        <strong id="authoring-state-code" title="LOADING">Загрузка</strong>
         <span id="authoring-state-message">Проверка определения…</span>
       </section>
 
       <section id="lifecycle-navigation-guard" class="authoring-state authoring-state--attention" hidden aria-live="polite" data-panel-help="dirty">
-        <strong>DIRTY_NAVIGATION_REQUIRES_HUMAN_DECISION</strong>
-        <span>Сначала явно сохраните DRAFT либо явно отбросьте изменения этой вкладки.</span>
+        <strong title="DIRTY_NAVIGATION_REQUIRES_HUMAN_DECISION">Есть несохранённые изменения</strong>
         <button id="lifecycle-save-before-navigation" type="button" data-ui-icon="save" data-ui-kind="primary" data-ui-label="Сохранить">Явно сохранить DRAFT</button>
         <button id="lifecycle-discard-and-open" type="button" data-ui-icon="trash" data-ui-kind="utility" data-ui-danger="true">Явно отбросить и открыть C2A</button>
         <button id="lifecycle-cancel-navigation" type="button" data-ui-icon="close" data-ui-kind="utility">Остаться в редакторе</button>
@@ -69,17 +68,17 @@
         <aside id="authoring-left-panel" class="authoring-panel authoring-panel--left" aria-labelledby="project-snapshot-title" data-panel-help="project">
           <h1 id="project-snapshot-title">Проект</h1>
           <dl class="identity-list">
-            <dt>Project UUID</dt><dd><code id="project-id">—</code></dd>
+            <dt>ID проекта</dt><dd><code id="project-id">—</code></dd>
             <dt>Код</dt><dd><code id="project-code">—</code></dd>
             <dt>Версия</dt><dd><code id="project-version">—</code></dd>
-            <dt>Definition UUID</dt><dd><code id="definition-id">{{ definition_id }}</code></dd>
+            <dt>ID версии</dt><dd><code id="definition-id">{{ definition_id }}</code></dd>
             <dt>Статус</dt><dd><code id="definition-status">—</code></dd>
             <dt>ETag</dt><dd><code id="definition-etag">—</code></dd>
           </dl>
           <label for="project-name">Название проекта</label>
           <input id="project-name" type="text" maxlength="255" disabled>
           <label for="project-description">Описание</label>
-          <textarea id="project-description" rows="5" disabled></textarea>
+          <textarea id="project-description" rows="3" disabled></textarea>
 
 
           <nav aria-label="Разделы определения">
@@ -138,14 +137,15 @@
         <aside id="authoring-right-panel" class="authoring-panel authoring-panel--right" aria-label="Вспомогательная панель" data-panel-help="auxiliary">
 
           <div class="right-tabs" role="tablist" aria-label="Вспомогательная панель">
-            <button id="document-control" type="button" role="tab" data-right-tab="document" disabled aria-disabled="true">Документ</button>
+            <button id="document-control" type="button" role="tab" data-right-tab="document" aria-controls="document-panel" aria-selected="true">Документ</button>
             <button id="chat-control" type="button" role="tab" data-right-tab="chat" disabled aria-disabled="true">Чат</button>
-            <button id="help-control" type="button" role="tab" data-right-tab="help" aria-selected="true">Справка</button>
+            <button id="help-control" type="button" role="tab" data-right-tab="help" aria-controls="help-panel" aria-selected="false" tabindex="-1">Справка</button>
           </div>
 
 
-          <section id="help-panel" aria-labelledby="help-title" data-panel-help="foundation-help">
-            <h3 id="help-title">Точная Foundation Help</h3>
+          <section id="document-panel" role="tabpanel" aria-labelledby="document-control"><p class="ui-empty">Документы недоступны в C1.</p></section>
+          <section hidden role="tabpanel" id="help-panel" aria-labelledby="help-title" data-panel-help="foundation-help">
+            <h3 id="help-title">Справка Foundation</h3>
             <label for="help-binding-select">Привязка из manifest</label>
             <select id="help-binding-select" disabled></select>
             <button id="load-help" type="button" disabled data-ui-icon="book" data-ui-kind="utility">Загрузить точную версию</button>

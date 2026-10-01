@@ -146,6 +146,6 @@ class PanelUIContractTests(SimpleTestCase):
             self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
             report = json.loads(completed.stdout.strip().splitlines()[-1])
             self.assertEqual(report["screens"], len(SCREENS))
-            self.assertEqual(report["viewports"], [360, 768, 1280, 1440])
+            self.assertEqual(report["viewports"], [320, 360, 768, 1440])
             self.assertGreater(report["panel_help_checks"], 80)
             self.assertTrue(report["keyboard_and_accessibility"])

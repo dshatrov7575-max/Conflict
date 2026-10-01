@@ -696,7 +696,6 @@ class ProductionStudioAuditedAuthoringContractTests(
         ):
             self.assertIn(f'id="{selector}"', html)
         for selector in (
-            "document-control",
             "chat-control",
         ):
             self.assertRegex(

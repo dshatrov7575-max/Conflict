@@ -41,7 +41,7 @@
       <div class="toolbar-group" aria-label="Контекстные команды">
         <button id="experiment-create" type="button" aria-disabled="true" data-boundary="experiments" title="{{ claim_by_code.EXPERIMENTS }}" data-ui-icon="plus" data-ui-kind="utility"><svg><use href="#icon-lock"/></svg><span>Эксперимент</span></button>
         <button id="structure-mutation" type="button" aria-disabled="true" data-boundary="structure" title="Структура опубликованного определения доступна только для чтения" data-ui-icon="lock" data-ui-kind="utility"><svg><use href="#icon-lock"/></svg><span class="sr-only">Изменить структуру недоступно</span></button>
-        <button id="context-help" type="button" title="Контекстная справка" data-ui-icon="help" data-ui-kind="utility"><svg><use href="#icon-help"/></svg><span class="sr-only">Контекстная справка</span></button>
+        <button id="context-help" type="button" data-help-open="workspace" title="Контекстная справка" data-ui-icon="help" data-ui-kind="utility"><svg><use href="#icon-help"/></svg><span class="sr-only">Контекстная справка</span></button>
       </div>
       <span id="toolbar-context" class="toolbar-context">Контекст: рабочее пространство</span>
       <button id="operation-replay" type="button" hidden data-ui-icon="refresh" data-ui-kind="utility">Проверить тем же запросом</button>
@@ -78,13 +78,13 @@
       <div id="right-divider" class="splitter" role="separator" aria-label="Ширина правой панели" aria-orientation="vertical" aria-valuemin="280" aria-valuemax="480" aria-valuenow="320" tabindex="0"></div>
       <aside id="right-panel" class="panel right-panel" tabindex="0" data-focus-context="help" aria-label="Документ, Чат и Справка" data-panel-help="auxiliary">
         <div class="right-tabs" role="tablist" aria-label="Правая панель">
-          <button id="tab-document" type="button" role="tab" data-right-tab="document" aria-controls="panel-document" aria-disabled="true" title="Доступно после этапа доказательств" aria-selected="false" tabindex="-1">Документ</button>
+          <button id="tab-document" type="button" role="tab" data-right-tab="document" aria-controls="panel-document" aria-disabled="true" title="Доступно после этапа доказательств" aria-selected="true">Документ</button>
           <button id="tab-chat" type="button" role="tab" data-right-tab="chat" aria-controls="panel-chat" aria-disabled="true" title="Доступно после этапа чата" aria-selected="false" tabindex="-1">Чат</button>
-          <button id="tab-help" type="button" role="tab" data-right-tab="help" aria-controls="panel-help" aria-selected="true">Справка</button>
+          <button id="tab-help" type="button" role="tab" data-right-tab="help" aria-controls="panel-help" aria-selected="false" tabindex="-1">Справка</button>
         </div>
-        <section id="panel-document" class="right-content" role="tabpanel" aria-labelledby="tab-document" hidden data-panel-help="document"><svg class="locked-mark" aria-hidden="true"><use href="#icon-lock"/></svg><p data-boundary="document">Документ недоступен.</p></section>
+        <section id="panel-document" class="right-content" role="tabpanel" aria-labelledby="tab-document" data-panel-help="document"><svg class="locked-mark" aria-hidden="true"><use href="#icon-lock"/></svg><p data-boundary="document">Документ недоступен.</p></section>
         <section id="panel-chat" class="right-content" role="tabpanel" aria-labelledby="tab-chat" hidden data-panel-help="chat"><svg class="locked-mark" aria-hidden="true"><use href="#icon-lock"/></svg><p data-boundary="chat">Чат недоступен.</p></section>
-        <section id="panel-help" class="right-content" role="tabpanel" aria-labelledby="tab-help" data-panel-help="foundation-help">
+        <section id="panel-help" class="right-content" role="tabpanel" aria-labelledby="tab-help" hidden data-panel-help="foundation-help">
           <label for="help-key">Раздел справки</label><select id="help-key"><option value="player.welcome">Начало работы</option><option value="player.published_definition">Опубликованное определение</option><option value="player.workspace">Рабочее пространство</option><option value="player.time_slice">Временной срез</option><option value="player.experiments_locked">Эксперименты</option><option value="player.document_locked">Документ</option><option value="player.chat_locked">Чат</option><option value="player.method_unavailable">Методика</option></select>
           <p id="help-state" role="status">Локальное пояснение · полные термины</p>
           <article id="local-help"><h2>Рабочее пространство</h2><h3>Временной срез</h3></article>
