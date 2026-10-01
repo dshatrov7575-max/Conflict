@@ -1,0 +1,49 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_FREEZE_MANIFEST_R2",
+  "frozen_at_date": "2026-10-01",
+  "state": "FROZEN_BEFORE_R2_REVIEW_OUTPUTS",
+  "target": {
+    "path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2/EXPANDED_REVIEW_TARGET_MANIFEST_R2.json",
+    "git_blob": "4b27f7eb0a393de53dde4ff737e9f2a606b16611",
+    "release_candidate_state_under_review": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS"
+  },
+  "package_files": {
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2/HOSTILE_REVIEW_PROTOCOL_R2.md": "344f89f33d153042a74279c2f3690fc702ae59d0",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2/HOSTILE_REVIEW_RESPONSE_SCHEMA_R2.json": "7c2f8be4256ecb83b4fe7daad168d5f159faaeca",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2/REVIEWER_C_QWEN_STANDALONE_RU.md": "2af06cddac05e68873282834a1e22850181a038e",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2/REVIEWER_D_DEEPSEEK_STANDALONE_RU.md": "d4dabacb0a64c5c6842d706f130d2e2c6735c2fb",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2/HOSTILE_REVIEW_MODEL_BINDING_R2.md": "c9c051a004e4a37e8e5bab144bfc903a7a4920ff"
+  },
+  "reviewers": {
+    "V1_1_HOSTILE_REVIEWER_C_R2": {
+      "provider": "Qwen",
+      "exact_ui_model": "Qwen 3.8-Max",
+      "dispatch_state": "READY",
+      "attempt_limit": 1,
+      "output_filename": "V1_1_HOSTILE_REVIEW_C_R2_COMPLETED.json"
+    },
+    "V1_1_HOSTILE_REVIEWER_D_R2": {
+      "provider": "DeepSeek",
+      "exact_ui_model": "PENDING_PRE_DISPATCH_FREEZE",
+      "dispatch_state": "BLOCKED_PENDING_EXACT_UI_LABEL",
+      "attempt_limit": 1,
+      "output_filename": "V1_1_HOSTILE_REVIEW_D_R2_COMPLETED.json"
+    }
+  },
+  "isolation": {
+    "reviewer_c_must_not_see_reviewer_d_output": true,
+    "reviewer_d_must_not_see_reviewer_c_output": true,
+    "both_must_not_see_r1_hostile_reviews": true,
+    "external_search": false,
+    "known_outcome": false,
+    "coordinator_adjudication": false
+  },
+  "forbidden": [
+    "DISPATCH_DEEPSEEK_BEFORE_EXACT_MODEL_FREEZE",
+    "SHOW_R1_HOSTILE_REVIEW_OUTPUTS",
+    "SHOW_OTHER_R2_REVIEWER_OUTPUT",
+    "RERUN_UNTIL_FAVORABLE",
+    "MODIFY_PRIMARY_OUTPUTS",
+    "AUTO_MERGE"
+  ]
+}
