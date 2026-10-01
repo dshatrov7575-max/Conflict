@@ -1,0 +1,7 @@
+AI_ONLY_RESEARCH_BETA_LIVE_RELEASE_GATE_R1_TRIGGER
+created_utc=2026-10-01T09:49:00Z
+release_input=docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/live/RELEASE_GATE_INPUT_20261001_R1.json
+expected_state=AI_ONLY_RESEARCH_BETA_RC_HOLD
+expected_failed_gates=G2,G4
+expected_passed_g7=true
+reason=eligible_lane_core_replay_completed_and_frozen_release_gate_now_evaluable
