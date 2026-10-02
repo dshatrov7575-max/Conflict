@@ -1,0 +1,53 @@
+{
+  "schema": "CONFLICT_ANALYSIS_PRE_MERGE_DRY_RUN_RECEIPT_R1",
+  "created_at_utc": "2026-10-02T14:36:06.759155+00:00",
+  "repository": "dshatrov7575-max/Conflict",
+  "required_order": [
+    124,
+    125
+  ],
+  "auto_merge": false,
+  "owner_visual_acceptance": "PENDING_OWNER_DECISION",
+  "merge_release_authorized": false,
+  "pr124": {
+    "base_branch": "review/ai-only-research-beta-v1",
+    "base_sha": "aa92137af751e758240b9cfb9d68e2bf76dab4ce",
+    "head_branch": "review/ai-only-research-beta-v1-1-fast-repair",
+    "head_sha": "7262eaa992a130660485c03e26b615facc8e0e84",
+    "merge_tree_sha": "0794be894f9ce54c863fbcd00c95185e9c0439f0",
+    "merge_tree_exit": 0,
+    "conflicts": "NONE"
+  },
+  "pr125": {
+    "current_base_branch": "review/ai-only-research-beta-v1-1-fast-repair",
+    "current_base_sha": "7262eaa992a130660485c03e26b615facc8e0e84",
+    "head_branch": "codex/conflict-ui-tightening-20261001",
+    "head_sha": "c76fb72f9529f4e4597087fc580d4d931956fa46",
+    "scientific_head_is_ancestor": true,
+    "merge_tree_after_pr124_sha": "53fdcedf7b93527b6d13bf97a26d025f23066404",
+    "merge_tree_exit": 0,
+    "conflicts": "NONE",
+    "post_pr124_action": "RETARGET_TO_INTEGRATED_SCIENTIFIC_BASE_OR_MERGE_SECOND_WITH_EQUIVALENT_PROVENANCE_CHECK"
+  },
+  "product_identity": {
+    "accepted_ui_source_commit": "eb22b479946b7f1a7d7188e0fd1c7c2a01c69f06",
+    "software_conflict_analysis_diff_vs_current_ui_head": "NONE",
+    "technical_acceptance": "PASS",
+    "local_runtime_source_head": "eb22b479946b7f1a7d7188e0fd1c7c2a01c69f06",
+    "passwordless_roles": true
+  },
+  "external_package": {
+    "flat_file_count": 10,
+    "zip_sha256": "c89643b1f8b137f157fccc2a79d46688f560e21ef63a37b8c194b7f9dfb12d22"
+  },
+  "scientific_boundaries": {
+    "scientific_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+    "independent_review_state": "PASS_WITH_P1",
+    "confirmed_p0": 0,
+    "unknown_not_zero": true,
+    "old_omg_company_kvs5_pol50_restored": false,
+    "human_validation_reliability": "NOT_PERFORMED",
+    "predictive_validity": "NOT_CLAIMED"
+  },
+  "interpretation": "Both merges are conflict-free in the required order, and the current UI stack contains the exact scientific head. This is a pre-merge technical receipt only; owner visual acceptance, retargeting after PR #124, merge, publication, and release remain explicit future decisions."
+}
