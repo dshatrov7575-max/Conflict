@@ -195,7 +195,22 @@
 
   function setText(id, value) {
     const node = byId(id);
-    if (node) node.textContent = String(value);
+    if (!node) return;
+    const detail = String(value);
+    const compact = {
+      "preview-result": detail.startsWith("VALID ·") ? "VALID" : detail.startsWith("INVALID ·") ? "INVALID" : "Ошибка",
+      "ticket-retention-state": detail.includes("разблокирован") ? "Готово" : detail.includes("не совпала") ? "Ошибка" : "HUMAN · Подтверждение",
+      "unknown-outcome-message": "UNKNOWN",
+      "operation-result-summary": "Готово",
+      "readiness-next-action": {NONE: "Недоступно", PREVIEW_OR_INITIAL_PUBLISH: "Публикация", VALIDATE: "Проверка", SUCCESSOR_PUBLISH: "Публикация"}[detail],
+    }[id];
+    node.textContent = compact || detail;
+    if (compact) {
+      node.title = detail;
+      node.setAttribute("aria-label", detail);
+      node.dataset.fullValue = detail;
+    }
+    if (id === "preview-result") node.hidden = !detail;
   }
 
   function emit(name, detail = {}) {
@@ -474,10 +489,17 @@
   }
 
   function setState(code, message, kind = "attention") {
-    setText("lifecycle-state-code", code);
-    setText("lifecycle-state-message", message);
+    const label = code === "LOADING" ? "Загрузка" : code === "UNKNOWN_TRANSPORT_OUTCOME" ? "UNKNOWN" : kind === "error" ? "Ошибка" : kind === "success" ? "Готово" : "Внимание";
+    setText("lifecycle-state-code", label);
+    setText("lifecycle-state-message", "");
+    const status = byId("lifecycle-state-code");
+    if (status) {
+      status.title = `${code}: ${message}`;
+      status.dataset.fullValue = status.title;
+      status.setAttribute("aria-label", status.title);
+    }
     const node = byId("lifecycle-state");
-    if (node) node.dataset.kind = kind;
+    if (node) { node.dataset.kind = kind; node.dataset.state = code; }
   }
 
   function normalizedVary(response) {
@@ -719,7 +741,14 @@
     setText("readiness-publication-count", readiness.project_publication_count);
     setText("readiness-workspace-count", readiness.project_workspace_count);
     setText("readiness-current-definition", readiness.current_definition_id ?? "null");
-    setText("readiness-blockers", readiness.blocker_codes.length ? readiness.blocker_codes.join(", ") : "NONE");
+    const blockers = byId("readiness-blockers");
+    if (blockers) {
+      blockers.hidden = !readiness.blocker_codes.length;
+      blockers.textContent = readiness.blocker_codes.length ? `Блокировки · ${readiness.blocker_codes.length}` : "";
+      blockers.title = readiness.blocker_codes.join(", ");
+      blockers.setAttribute("aria-label", blockers.title);
+      blockers.dataset.fullValue = blockers.title;
+    }
     const warning = byId("persisted-validation-warning");
     if (warning) warning.hidden = definition.publication_status !== "VALIDATED";
     const initial = byId("initial-workspace-controls");

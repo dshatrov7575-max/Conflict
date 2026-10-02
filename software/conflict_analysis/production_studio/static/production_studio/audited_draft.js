@@ -423,17 +423,19 @@
     const compact = {
       LOADING: ["Загрузка", ""],
       READY: ["Готово", ""],
-      AUTHORING_READY: ["Черновик открыт", ""],
-      DRAFT_IN_MEMORY: ["Не сохранено", "Сохраните изменения"],
-      DRAFT_OPENED: ["Черновик открыт", ""],
+      AUTHORING_READY: ["Черновик", ""],
+      DRAFT_IN_MEMORY: ["Не сохранено", ""],
+      DRAFT_OPENED: ["Черновик", ""],
       DRAFT_SAVED: ["Сохранено", ""],
-      DIRTY_NAVIGATION_REQUIRES_HUMAN_DECISION: ["Не сохранено", "Сохраните или отбросьте изменения"],
-      DRAFT_SAVED_NAVIGATION_NOT_AUTOMATIC: ["Сохранено", "Нажмите C2A для перехода"],
+      DIRTY_NAVIGATION_REQUIRES_HUMAN_DECISION: ["Не сохранено", ""],
+      DRAFT_SAVED_NAVIGATION_NOT_AUTOMATIC: ["Сохранено", ""],
+      UNKNOWN_TRANSPORT_OUTCOME: ["UNKNOWN", ""],
+      WRITE_RECEIPT_IDENTITY_MISMATCH: ["UNKNOWN", ""],
     }[code];
-    setText(`${prefix}-state-code`, compact?.[0] || code);
-    setText(`${prefix}-state-message`, compact?.[1] ?? message);
+    setText(`${prefix}-state-code`, compact?.[0] || (kind === "error" ? "Ошибка" : kind === "success" ? "Готово" : "Внимание"));
+    setText(`${prefix}-state-message`, "");
     const label = byId(`${prefix}-state-code`);
-    if (label) { label.title = code; label.dataset.fullValue = `${code}: ${message}`; }
+    if (label) { label.title = `${code}: ${message}`; label.setAttribute("aria-label", label.title); label.dataset.fullValue = label.title; }
     const description = byId(`${prefix}-state-message`);
     if (description) description.title = message;
     const node = byId(`${prefix}-state`);
@@ -601,7 +603,7 @@
     for (const tab of document.querySelectorAll("[data-right-tab]:not(:disabled)")) {
       const selected = tab.dataset.rightTab === name;
       tab.setAttribute("aria-selected", String(selected));
-      tab.tabIndex = selected ? 0 : -1;
+      tab.tabIndex = selected || name === "document" ? 0 : -1;
       byId(tab.getAttribute("aria-controls")).hidden = !selected;
     }
   }

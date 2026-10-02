@@ -1331,7 +1331,8 @@ try {
   assert.equal(page.etag, `"${expectedManifestSha256}"`);
   assert.equal(page.left, 272);
   assert.equal(page.right, 360);
-  assert.equal(page.activeRightTab, "document");
+  assert.equal(page.activeRightTab, undefined);
+  assert.equal(await client.evaluate("document.querySelector('#document-control').disabled && document.querySelector('#document-control').title === 'Документы недоступны в C1.' && document.querySelector('#help-control').tabIndex === 0", sessionId), true);
   assert(await client.evaluate("document.querySelector('#help-panel').hidden && !document.querySelector('#ui-help-dialog').open && !document.activeElement.matches('.panel-help')", sessionId));
   assert.ok(
     page.layoutRaw === null ||
@@ -1501,7 +1502,7 @@ try {
   assert.equal(invalidPreview.valid, false);
   assert.equal(invalidPreview.status, 200);
   const invalidPreviewUi = await client.evaluate(`(() => ({
-    stateCode: document.querySelector("#authoring-state-code")?.textContent,
+    stateCode: document.querySelector("#authoring-state")?.dataset.state,
     validationState: document.querySelector("#validation-state")?.textContent,
     diagnosticCodes: [...document.querySelectorAll("#validation-diagnostics [data-code]")]
       .map((item) => item.dataset.code),

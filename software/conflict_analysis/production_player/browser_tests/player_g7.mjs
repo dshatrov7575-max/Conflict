@@ -59,7 +59,7 @@ const pageStateExpression = "(() => {"
   + "return {"
   + "page:app?.dataset.playerPage,state:app?.dataset.state,projectId:app?.dataset.projectId,"
   + "workspaceId:app?.dataset.workspaceId||null,projectionStatus:app?.dataset.projectionStatus,"
-  + "reloadNotice:app?.dataset.reloadNotice||'',stateMessage:document.querySelector('#player-state-message')?.textContent||'',"
+  + "reloadNotice:app?.dataset.reloadNotice||'',stateMessage:document.querySelector('#player-state-message')?.title||'',"
   + "playerStateHidden:document.querySelector('#player-state')?.hidden===true,"
   + "claimSha256:app?.dataset.claimSha256,commandIds:toolbar.map(n=>n.dataset.commandId),"
   + "sliceId:document.querySelector('#slice-select')?.value||null,sliceDate:document.querySelector('#slice-date')?.textContent||null,"
@@ -312,6 +312,7 @@ try {
       afterReload.stateMessage,
       /^После перезагрузки ключи прежних операций не восстанавливаются/,
     );
+    assert(await client.evaluate("(() => {const n = document.querySelector('#player-state-message'); return n.textContent === 'UNKNOWN' && n.title === n.getAttribute('aria-label') && n.title === n.dataset.fullValue;})()", sessionId), 'Compact reload warning preserves the complete accessible disclosure');
     await delay(300);
     assert.equal(allPostRequestCount(), postCountBeforeReload);
     return afterReload;

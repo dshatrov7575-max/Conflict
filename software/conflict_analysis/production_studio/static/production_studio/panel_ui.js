@@ -35,6 +35,8 @@
     switch: "M4 7h15l-4-4 M20 17H5l4 4 M19 7l-4 4 M5 17l4-4",
     quote: "M4 5h6v7H7c0 3-1 5-3 6 M14 5h6v7h-3c0 3-1 5-3 6",
     book: "M12 5v16 M12 5C9 3 6 3 3 4v15c3-1 6-1 9 2 M12 5c3-2 6-2 9-1v15c-3-1-6-1-9 2",
+    warning: "M12 3L2 21h20z M12 9v5 M12 17v1",
+    panels: "M3 4h18v16H3z M8 4v16 M16 4v16",
   };
 
   function decorateAction(node) {
@@ -66,12 +68,15 @@
     if (parent && parent !== root) nodes.push(parent);
     nodes.push(...root.querySelectorAll(fullValueSelector));
     for (const node of nodes) {
+      if (node.hasAttribute('data-ui-message')) continue;
       const value = node.textContent.trim();
       if (value) { node.title = value; node.dataset.fullValue = value; }
     }
   }
 
   function enhance(root) {
+    compactMetadata(root);
+    compactMessages(root);
     exposeFullValues(root);
     const candidates = root.matches?.("[data-ui-icon], [data-panel-help]") ? [root] : [];
     candidates.push(...root.querySelectorAll("[data-ui-icon], [data-panel-help]"));
@@ -91,6 +96,51 @@
       button.setAttribute("aria-controls", dialog.id);
       // Keep help visible when details is collapsed, without replacing its summary.
       (node.tagName === "DETAILS" ? node.querySelector(":scope > summary") : node).append(button);
+    }
+  }
+
+  // App writers keep their exact messages; only explicitly marked UI notices are shortened.
+  // Never apply this to assessment values, scientific statuses, or confirmation inputs.
+  function compactMessages(root) {
+    const selector = '[data-ui-message]';
+    const nodes = [...root.querySelectorAll(selector)];
+    const parent = root.closest?.(selector);
+    if (parent) nodes.push(parent);
+    for (const node of nodes) {
+      const message = node.textContent.trim();
+      if (node.dataset.uiRendered === message) continue;
+      const empty = !message || (node.dataset.uiEmpty || '').split('|').includes(message);
+      let label = node.dataset.uiMessage;
+      if (!label) {
+        if (/^(Нет контекста|Недоступно)$/.test(message)) label = message;
+        else if (/UNKNOWN|неизвестен|неопределён/i.test(message)) label = 'UNKNOWN';
+        else if (/ошиб|FAILED|INVALID|ERROR|DENIED/i.test(message)) label = 'Ошибка';
+        else if (/Проверяем|Ожидаем|выполняется/.test(message)) label = 'Загрузка';
+        else if (/подтвердите|Сохраните точный ticket/.test(message)) label = 'Подтверждение';
+        else if (/^Готово\.?$|Импорт завершён|Сохранено|Квитанция подтверждена/.test(message)) label = 'Готово';
+        else if (/^Коррекция/.test(message)) label = 'Не сохранено';
+        else label = 'Внимание';
+      }
+      node.title = message;
+      node.setAttribute('aria-label', message);
+      node.dataset.fullValue = message;
+      node.dataset.uiRendered = empty ? '' : label;
+      node.textContent = node.dataset.uiRendered;
+      // Respect application-owned hidden state except explicitly declared empty notices.
+      if (node.hasAttribute('data-ui-empty')) node.hidden = empty;
+    }
+  }
+
+  // Only explicitly marked metadata is optional. Numeric zero and UNKNOWN stay visible.
+  function compactMetadata(root) {
+    const selector = '[data-ui-optional], [data-ui-optional-list] dd';
+    const nodes = [...root.querySelectorAll(selector)];
+    const parent = root.closest?.(selector);
+    if (parent) nodes.push(parent);
+    for (const node of nodes) {
+      const empty = /^(?:|—|null|NONE)$/.test(node.textContent.trim());
+      node.hidden = empty;
+      if (node.tagName === 'DD' && node.previousElementSibling?.tagName === 'DT') node.previousElementSibling.hidden = empty;
     }
   }
 
@@ -167,6 +217,8 @@
   new MutationObserver(records => {
     for (const record of records) {
       if (record.target.closest?.("#ui-help-dialog")) continue;
+      compactMetadata(record.target);
+      compactMessages(record.target);
       exposeFullValues(record.target);
       if (record.target.matches?.("[data-ui-icon]")) decorateAction(record.target);
       if (record.target.matches?.("[data-panel-help]")) enhance(record.target);

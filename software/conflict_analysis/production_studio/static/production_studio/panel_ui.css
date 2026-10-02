@@ -2,13 +2,17 @@
 [hidden] { display: none !important; }
 [data-panel-help] { position: relative; min-width: 0; }
 [data-panel-help] > .panel-help, [data-panel-help] > summary > .panel-help {
-  position: absolute; inset: 8px 8px auto auto; z-index: 3;
-  display: inline-grid; place-items: center; width: 24px; height: 24px;
-  min-width: 24px; min-height: 24px; padding: 0; margin: 0;
+  position: absolute; inset: 10px 10px auto auto; z-index: 3;
+  display: inline-grid; place-items: center; width: 12px; height: 12px;
+  min-width: 12px; min-height: 12px; padding: 0; margin: 0;
   border: 1px solid #8293a5; border-radius: 50%; background: #fff;
-  color: #23445f; font: 600 13px/1 system-ui, sans-serif; cursor: pointer;
+  color: #23445f; font: 700 8px/1 system-ui, sans-serif; cursor: pointer;
 }
-.panel-help::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; }
+.panel-help::after { content: ""; position: absolute; inset: -11px; border-radius: 50%; }
+fieldset[data-panel-help] > .panel-help { inset-block-start: -7px; inset-inline-end: 10px; }
+[data-panel-help] > label:first-of-type + :is(input, select, textarea) {
+  width: calc(100% - 36px); justify-self: start;
+}
 [data-panel-help] > :is(h1, h2, h3, h4, summary, .workspace-heading, .section-heading, .panel-heading, .right-tabs):first-child { padding-inline-end: 30px; }
 :is(.toolbar, .selection-bar, .authoring-toolbar, .authoring-state, .claim-banner, .authoring-boundary, .boundary-banner, .ui-warning)[data-panel-help] { padding-inline-end: 40px; }
 .panel-help:hover { background: #e9f1f8; }
@@ -145,6 +149,22 @@ details[data-panel-help] > summary { min-height: 32px; }
 .ui-result-main .table-scroll { min-width: 0; }
 .ui-result-main td > *, .ui-result-main th > * { max-width: 100%; }
 .ui-status-link { font-size: .8rem; }
+.ui-technical { margin-block: .5rem; font-size: .85rem; }
+.ui-technical > summary { cursor: pointer; color: #52606d; }
+.ui-layout-settings > summary::marker { content: ""; }
+.ui-layout-settings > summary::-webkit-details-marker { display: none; }
+.ui-compact-state.authoring-state, .ui-compact-state.state-card {
+  display: inline-flex; align-items: center; flex: none; gap: .4rem;
+  margin: 0; padding: .4rem 40px .4rem .6rem; min-height: 40px;
+  border-radius: 5px; box-shadow: none; font-size: .85rem;
+}
+.ui-compact-state > span:empty { display: none; }
+.ui-status-badge { display: inline-block; width: fit-content; max-width: 100%; padding: .25rem .5rem; border-radius: 4px; background: #edf2f7; font-size: .85rem; }
+.ui-boundary-icon[data-ui-icon] { color: #865600; background: #fff5da; border-color: #c6ab75; }
+.status-bar:has(.ui-boundary-icon) { min-height: 40px; height: auto; overflow: visible; gap: .5rem; }
+.status-bar > .ui-truncate { flex: 0 1 auto; }
+.status-bar > .ui-boundary-icon { flex: none; }
+.authoring-panel .right-tabs [data-ui-icon] { flex: none; width: 36px; }
 @media (max-width: 1100px) {
   body { min-width: 0; }
   #player-app { height: auto; min-height: 100dvh; min-width: 0; }

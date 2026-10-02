@@ -20,7 +20,7 @@
     data-claim-sha256="{{ lifecycle_claim_sha256 }}"
     data-claim-bytes="{{ lifecycle_claim_payload_bytes }}"
     data-claim-url="{% url 'production_studio:claim_boundaries_lifecycle_publication_v1' %}"
-  ><a href="#ui-help-topic-bounds" data-help-open="bounds">C2A · Публикация</a><span>Научная валидность не подтверждена</span>{% include 'production_studio/ui_help_button.html' %}</header>
+  ><a href="#ui-help-topic-bounds" data-help-open="bounds">C2A · Публикация</a><a class="ui-boundary-icon" href="#ui-help-topic-bounds" data-help-open="bounds" data-ui-icon="warning" data-ui-kind="utility" title="Научная валидность не подтверждена" aria-label="Научная валидность не подтверждена">Научная валидность не подтверждена</a>{% include 'production_studio/ui_help_button.html' %}</header>
 
   <main
     id="lifecycle-publication-app"
@@ -42,45 +42,54 @@
   >
     {% if studio_authenticated %}
       <nav class="top-actions" aria-label="Навигация Production Studio">
+        <div id="lifecycle-state" class="state-card ui-compact-state" role="status" aria-live="polite" data-kind="attention" data-panel-help="state">
+        <strong id="lifecycle-state-code" title="LOADING">Загрузка</strong>
+        <span id="lifecycle-state-message"></span>
+      </div>
         <a data-ui-icon="left" data-ui-kind="utility" href="{% url 'production_studio:audited_draft_definition' definition_id %}">Вернуться в DRAFT-редактор</a>
         <button id="refresh-lifecycle" type="button" data-ui-icon="refresh" data-ui-kind="utility">Перечитать FD03 + FD07</button>
       </nav>
 
-      <section id="lifecycle-state" class="state-card" role="status" aria-live="polite" data-kind="attention" data-panel-help="state">
-        <strong id="lifecycle-state-code">LOADING</strong>
-        <span id="lifecycle-state-message">Проверка статуса…</span>
-      </section>
-
       <div class="lifecycle-grid">
         <section class="card" aria-labelledby="truth-title" data-panel-help="lifecycle">
           <h1 id="truth-title">Жизненный цикл</h1>
-          <dl class="identity-list">
-            <dt>Project UUID</dt><dd><code id="lifecycle-project-id">—</code></dd>
-            <dt>Definition UUID</dt><dd><code id="lifecycle-definition-id">{{ definition_id }}</code></dd>
-            <dt>Manifest SHA-256</dt><dd><code id="lifecycle-manifest-hash">—</code></dd>
-            <dt>Статус</dt><dd><code id="lifecycle-publication-status">—</code></dd>
-            <dt>Текущая</dt><dd><code id="lifecycle-is-current">—</code></dd>
-            <dt>Предшественник</dt><dd><code id="lifecycle-supersedes-id">—</code></dd>
-            <dt>Validated at</dt><dd><code id="lifecycle-validated-at">—</code></dd>
-            <dt>Published at</dt><dd><code id="lifecycle-published-at">—</code></dd>
-          </dl>
+          <dl class="identity-list" data-ui-optional-list>
+              <dt>Статус</dt><dd><code id="lifecycle-publication-status">—</code></dd>
+            </dl>
+          <details class="ui-technical">
+            <summary>Технические данные</summary>
+            <dl class="identity-list" data-ui-optional-list>
+              <dt>Project UUID</dt><dd><code id="lifecycle-project-id">—</code></dd>
+              <dt>Definition UUID</dt><dd><code id="lifecycle-definition-id">{{ definition_id }}</code></dd>
+              <dt>Manifest SHA-256</dt><dd><code id="lifecycle-manifest-hash">—</code></dd>
+              <dt>Текущая</dt><dd><code id="lifecycle-is-current">—</code></dd>
+              <dt>Предшественник</dt><dd><code id="lifecycle-supersedes-id">—</code></dd>
+              <dt>Validated at</dt><dd><code id="lifecycle-validated-at">—</code></dd>
+              <dt>Published at</dt><dd><code id="lifecycle-published-at">—</code></dd>
+            </dl>
+          </details>
           <p id="persisted-validation-warning" class="warning" hidden>
-            VALIDATED: исход HUMAN-запроса не подтверждён.
+            <span title="VALIDATED: исход HUMAN-запроса не подтверждён." aria-label="VALIDATED: исход HUMAN-запроса не подтверждён." data-full-value="VALIDATED: исход HUMAN-запроса не подтверждён.">HUMAN · UNKNOWN</span>
           </p>
         </section>
 
         <section class="card" aria-labelledby="readiness-title" data-panel-help="readiness">
           <h2 id="readiness-title">Готовность публикации</h2>
 
-          <dl class="identity-list">
-            <dt>Candidate</dt><dd><code id="readiness-candidate-kind">—</code></dd>
-            <dt>Следующее действие</dt><dd><code id="readiness-next-action">—</code></dd>
-            <dt>Readiness SHA-256</dt><dd><code id="readiness-sha256">—</code></dd>
-            <dt>Публикации</dt><dd><code id="readiness-publication-count">—</code></dd>
-            <dt>Рабочие пространства</dt><dd><code id="readiness-workspace-count">—</code></dd>
-            <dt>Текущее определение</dt><dd><code id="readiness-current-definition">—</code></dd>
-          </dl>
-          <p>Блокировки: <code id="readiness-blockers">—</code></p>
+          <dl class="identity-list" data-ui-optional-list>
+              <dt>Следующее действие</dt><dd><code id="readiness-next-action">—</code></dd>
+            </dl>
+          <details class="ui-technical">
+            <summary>Технические данные</summary>
+            <dl class="identity-list" data-ui-optional-list>
+              <dt>Candidate</dt><dd><code id="readiness-candidate-kind">—</code></dd>
+              <dt>Readiness SHA-256</dt><dd><code id="readiness-sha256">—</code></dd>
+              <dt>Публикации</dt><dd><code id="readiness-publication-count">—</code></dd>
+              <dt>Рабочие пространства</dt><dd><code id="readiness-workspace-count">—</code></dd>
+              <dt>Текущее определение</dt><dd><code id="readiness-current-definition">—</code></dd>
+            </dl>
+          </details>
+          <p id="readiness-blockers" class="ui-status-badge" hidden></p>
         </section>
       </div>
 
@@ -91,7 +100,7 @@
           <button id="prepare-lifecycle-attempt" type="button" disabled data-ui-icon="plus" data-ui-kind="primary" data-ui-label="Подготовить">Подготовить sealed attempt</button>
           <button id="cancel-lifecycle-attempt" type="button" hidden disabled data-ui-icon="close" data-ui-kind="utility">Отменить неподанный attempt</button>
         </div>
-        <p id="preview-result">Preview ещё не выполнялся.</p>
+        <p id="preview-result" class="ui-status-badge" hidden></p>
 
         <fieldset id="publication-inputs" data-panel-help="publication">
           <legend>Параметры публикации</legend>
@@ -114,15 +123,20 @@
         </fieldset>
 
         <section id="sealed-attempt-panel" class="attempt-panel" hidden aria-labelledby="attempt-title" data-panel-help="ticket">
-          <h3 id="attempt-title">Sealed attempt</h3>
-          <dl class="identity-list">
-            <dt>Тип</dt><dd><code id="attempt-kind">—</code></dd>
-            <dt>Operation UUIDv4</dt><dd><code id="attempt-operation-id">—</code></dd>
-            <dt>Route</dt><dd><code id="attempt-route">—</code></dd>
-            <dt>If-Match</dt><dd><code id="attempt-if-match">—</code></dd>
-            <dt>Body SHA-256</dt><dd><code id="attempt-body-sha256">—</code></dd>
-            <dt>Body bytes</dt><dd><code id="attempt-body-length">—</code></dd>
-          </dl>
+          <h3 id="attempt-title">Подтверждение</h3>
+          <dl class="identity-list" data-ui-optional-list>
+              <dt>Тип</dt><dd><code id="attempt-kind">—</code></dd>
+            </dl>
+          <details class="ui-technical">
+            <summary>Технические данные</summary>
+            <dl class="identity-list" data-ui-optional-list>
+              <dt>Operation UUIDv4</dt><dd><code id="attempt-operation-id">—</code></dd>
+              <dt>Route</dt><dd><code id="attempt-route">—</code></dd>
+              <dt>If-Match</dt><dd><code id="attempt-if-match">—</code></dd>
+              <dt>Body SHA-256</dt><dd><code id="attempt-body-sha256">—</code></dd>
+              <dt>Body bytes</dt><dd><code id="attempt-body-length">—</code></dd>
+            </dl>
+          </details>
           <label for="recovery-ticket">Квитанция восстановления</label>
           <textarea id="recovery-ticket" rows="13" readonly spellcheck="false"></textarea>
           <div class="controls">
@@ -136,24 +150,26 @@
         </section>
 
         <section id="unknown-outcome-panel" class="attempt-panel warning" hidden aria-labelledby="unknown-title" data-panel-help="unknown-outcome">
-          <h3 id="unknown-title">Неопределённый транспортный исход</h3>
+          <h3 id="unknown-title">UNKNOWN</h3>
           <p id="unknown-outcome-message"></p>
           <button id="replay-validation-attempt" type="button" hidden disabled data-ui-icon="refresh" data-ui-kind="utility">Явно повторить тот же FD05-запрос</button>
           <button id="recover-publication-operation" type="button" hidden disabled data-ui-icon="check" data-ui-kind="utility">Проверить exact FD06 operation GET</button>
         </section>
 
-        <section class="attempt-panel" aria-labelledby="import-title" data-panel-help="recover">
-          <h3 id="import-title">Восстановление после потери вкладки/процесса</h3>
+        <details class="attempt-panel" data-panel-help="recover"><summary id="import-title">Восстановление</summary>
 
           <label for="import-recovery-ticket">Вставьте сохранённый validation ticket</label>
           <textarea id="import-recovery-ticket" rows="8" spellcheck="false" autocomplete="off"></textarea>
           <button id="import-validation-ticket" type="button" data-ui-icon="check" data-ui-kind="primary" data-ui-label="Восстановить">Проверить и восстановить точный FD05 attempt</button>
-        </section>
+        </details>
 
         <section id="operation-result" class="attempt-panel" hidden aria-labelledby="result-title" data-panel-help="receipt">
           <h3 id="result-title">Проверенный результат Foundation</h3>
           <p id="operation-result-summary"></p>
-          <pre id="operation-result-json"></pre>
+          <details class="ui-technical">
+            <summary>Технические данные</summary>
+            <pre id="operation-result-json"></pre>
+          </details>
         </section>
       </section>
 

@@ -43,7 +43,7 @@
         <button id="structure-mutation" type="button" aria-disabled="true" data-boundary="structure" title="Структура опубликованного определения доступна только для чтения" data-ui-icon="lock" data-ui-kind="utility"><svg><use href="#icon-lock"/></svg><span class="sr-only">Изменить структуру недоступно</span></button>
         <button id="context-help" type="button" data-help-open="workspace" title="Контекстная справка" data-ui-icon="help" data-ui-kind="utility"><svg><use href="#icon-help"/></svg><span class="sr-only">Контекстная справка</span></button>
       </div>
-      <span id="toolbar-context" class="toolbar-context">Контекст: рабочее пространство</span>
+
       <button id="operation-replay" type="button" hidden data-ui-icon="refresh" data-ui-kind="utility">Проверить тем же запросом</button>
     </nav>
     <div class="selection-bar" aria-label="Точный выбор контекста" data-panel-help="player-context">
@@ -62,8 +62,8 @@
         <div id="structure-window" class="tree-window" aria-live="polite">0–0</div>
       </aside>
       <div id="left-divider" class="splitter" role="separator" aria-label="Ширина левой панели" aria-orientation="vertical" aria-valuemin="220" aria-valuemax="420" aria-valuenow="272" tabindex="0"></div>
-      <section id="center-panel" class="panel center-panel" tabindex="0" data-focus-context="workspace" aria-label="Рабочее пространство" data-panel-help="workspace">
-        <div id="player-state" role="status" aria-live="polite"><span id="player-state-message">Проверяем Foundation…</span></div>
+      <section id="center-panel" class="panel center-panel" tabindex="0" data-focus-context="workspace" aria-label="Рабочее пространство">
+        <div id="player-state" role="status" aria-live="polite"><span id="player-state-message" data-ui-message="">Проверяем Foundation…</span></div>
         {% block main_content %}
         <section id="onboarding" class="onboarding" data-panel-help="player-entry">
 
@@ -76,7 +76,7 @@
         {% endblock %}
       </section>
       <div id="right-divider" class="splitter" role="separator" aria-label="Ширина правой панели" aria-orientation="vertical" aria-valuemin="280" aria-valuemax="480" aria-valuenow="320" tabindex="0"></div>
-      <aside id="right-panel" class="panel right-panel" tabindex="0" data-focus-context="help" aria-label="Документ, Чат и Справка" data-panel-help="auxiliary">
+      <aside id="right-panel" class="panel right-panel" tabindex="0" data-focus-context="help" aria-label="Документ, Чат и Справка">
         <div class="right-tabs" role="tablist" aria-label="Правая панель">
           <button id="tab-document" type="button" role="tab" data-right-tab="document" aria-controls="panel-document" aria-disabled="true" title="Доступно после этапа доказательств" aria-selected="true">Документ</button>
           <button id="tab-chat" type="button" role="tab" data-right-tab="chat" aria-controls="panel-chat" aria-disabled="true" title="Доступно после этапа чата" aria-selected="false" tabindex="-1">Чат</button>
@@ -93,7 +93,7 @@
         </section>
       </aside>
     </main>
-    <footer id="player-status-bar" class="status-bar"><span id="status-state">Нет контекста</span><span id="status-definition">Определение: —</span><span id="status-slice">Срез: —</span><span id="status-focus">Фокус: пространство</span><a href="#ui-help-topic-bounds" data-help-open="bounds">Научная валидность не подтверждена</a><span id="status-method">Методика не подключена</span></footer>
+    <footer id="player-status-bar" class="status-bar"><span id="status-state" data-ui-message="">Нет контекста</span><span id="status-definition" class="ui-truncate" data-ui-optional></span><span id="status-slice" class="ui-truncate" data-ui-optional></span><a class="ui-boundary-icon" href="#ui-help-topic-bounds" data-help-open="bounds" data-ui-icon="warning" data-ui-kind="utility" title="Научная валидность не подтверждена" aria-label="Научная валидность не подтверждена">Научная валидность не подтверждена</a><a id="status-method" class="ui-boundary-icon" href="#ui-help-topic-bounds" data-help-open="bounds" data-ui-icon="lock" data-ui-kind="utility" title="Методика не подключена" aria-label="Методика не подключена">Методика не подключена</a></footer>
     <dialog id="operation-dialog" aria-labelledby="operation-title" data-panel-help="player-actions">
       <form id="operation-form"><h2 id="operation-title">Создать</h2><p id="operation-intent"></p>
         <label for="operation-id">UUID новой записи</label><input id="operation-id" readonly autocomplete="off">

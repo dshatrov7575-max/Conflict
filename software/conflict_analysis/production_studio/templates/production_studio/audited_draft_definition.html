@@ -20,7 +20,7 @@
     data-claim-sha256="{{ authoring_claim_sha256 }}"
     data-claim-bytes="{{ authoring_claim_payload_bytes }}"
     data-claim-url="{% url 'production_studio:claim_boundaries_audited_draft_v1' %}"
-  ><a href="#ui-help-topic-bounds" data-help-open="bounds">C1 · Черновик</a><span>Научная валидность не подтверждена</span>{% include 'production_studio/ui_help_button.html' %}</header>
+  ><a href="#ui-help-topic-bounds" data-help-open="bounds">C1 · Черновик</a><a class="ui-boundary-icon" href="#ui-help-topic-bounds" data-help-open="bounds" data-ui-icon="warning" data-ui-kind="utility" title="Научная валидность не подтверждена" aria-label="Научная валидность не подтверждена">Научная валидность не подтверждена</a>{% include 'production_studio/ui_help_button.html' %}</header>
 
   <main
     id="audited-draft-app"
@@ -34,8 +34,12 @@
   >
     {% if studio_authenticated %}
       <section class="authoring-toolbar" aria-label="Операции черновика" data-panel-help="draft-actions">
+        <div id="authoring-state" class="authoring-state ui-compact-state" role="status" aria-live="polite" data-panel-help="state">
+        <strong id="authoring-state-code" title="LOADING">Загрузка</strong>
+        <span id="authoring-state-message"></span>
+      </div>
         <a class="button-link" href="{% url 'production_studio:audited_draft_entry' %}" data-ui-icon="left" data-ui-kind="utility">Другой проект</a>
-        <details class="ui-layout-settings"><summary>Панели</summary><div><label for="left-width-control">Проект <output id="left-width-output">272</output> px</label>
+        <details class="ui-layout-settings"><summary data-ui-icon="panels" data-ui-kind="utility">Панели</summary><div><label for="left-width-control">Проект <output id="left-width-output">272</output> px</label>
         <input id="left-width-control" type="range" min="220" max="420" step="4" value="272">
         <label for="right-width-control">Справа <output id="right-width-output">360</output> px</label>
         <input id="right-width-control" type="range" min="300" max="500" step="4" value="360"></div></details>
@@ -48,17 +52,12 @@
           data-target-url="{% url 'production_studio:lifecycle_publication_definition' definition_id %}"
           disabled
          data-ui-icon="open" data-ui-kind="utility">Жизненный цикл и публикация C2A</button>
-        <span>Ключ: <code id="authoring-operation-key">—</code></span>
-        <span>Квитанция: <code id="last-receipt-sha">—</code></span>
+
       </section>
 
-      <section id="authoring-state" class="authoring-state" role="status" aria-live="polite" data-panel-help="state">
-        <strong id="authoring-state-code" title="LOADING">Загрузка</strong>
-        <span id="authoring-state-message">Проверка определения…</span>
-      </section>
 
       <section id="lifecycle-navigation-guard" class="authoring-state authoring-state--attention" hidden aria-live="polite" data-panel-help="dirty">
-        <strong title="DIRTY_NAVIGATION_REQUIRES_HUMAN_DECISION">Есть несохранённые изменения</strong>
+        <strong title="DIRTY_NAVIGATION_REQUIRES_HUMAN_DECISION">Не сохранено</strong>
         <button id="lifecycle-save-before-navigation" type="button" data-ui-icon="save" data-ui-kind="primary" data-ui-label="Сохранить">Явно сохранить DRAFT</button>
         <button id="lifecycle-discard-and-open" type="button" data-ui-icon="trash" data-ui-kind="utility" data-ui-danger="true">Явно отбросить и открыть C2A</button>
         <button id="lifecycle-cancel-navigation" type="button" data-ui-icon="close" data-ui-kind="utility">Остаться в редакторе</button>
@@ -67,14 +66,19 @@
       <div class="authoring-panels">
         <aside id="authoring-left-panel" class="authoring-panel authoring-panel--left" aria-labelledby="project-snapshot-title" data-panel-help="project">
           <h1 id="project-snapshot-title">Проект</h1>
-          <dl class="identity-list">
+<details class="ui-technical">
+            <summary>Технические данные</summary>
+            <dl class="identity-list" data-ui-optional-list>
             <dt>ID проекта</dt><dd><code id="project-id">—</code></dd>
             <dt>Код</dt><dd><code id="project-code">—</code></dd>
             <dt>Версия</dt><dd><code id="project-version">—</code></dd>
             <dt>ID версии</dt><dd><code id="definition-id">{{ definition_id }}</code></dd>
             <dt>Статус</dt><dd><code id="definition-status">—</code></dd>
             <dt>ETag</dt><dd><code id="definition-etag">—</code></dd>
-          </dl>
+          <dt>Ключ</dt><dd><code id="authoring-operation-key"></code></dd>
+<dt>Квитанция</dt><dd><code id="last-receipt-sha"></code></dd>
+            </dl>
+          </details>
           <label for="project-name">Название проекта</label>
           <input id="project-name" type="text" maxlength="255" disabled>
           <label for="project-description">Описание</label>
@@ -137,13 +141,13 @@
         <aside id="authoring-right-panel" class="authoring-panel authoring-panel--right" aria-label="Вспомогательная панель" data-panel-help="auxiliary">
 
           <div class="right-tabs" role="tablist" aria-label="Вспомогательная панель">
-            <button id="document-control" type="button" role="tab" data-right-tab="document" aria-controls="document-panel" aria-selected="true">Документ</button>
-            <button id="chat-control" type="button" role="tab" data-right-tab="chat" disabled aria-disabled="true">Чат</button>
+            <button id="document-control" type="button" role="tab" data-right-tab="document" aria-controls="document-panel" aria-selected="false" aria-disabled="true" title="Документы недоступны в C1." data-ui-icon="document" data-ui-kind="utility" disabled>Документы недоступны в C1.</button>
+            <button id="chat-control" type="button" role="tab" data-right-tab="chat" disabled aria-disabled="true" data-ui-icon="send" data-ui-kind="utility">Чат недоступен в C1.</button>
             <button id="help-control" type="button" role="tab" data-right-tab="help" aria-controls="help-panel" aria-selected="false" tabindex="-1">Справка</button>
           </div>
 
 
-          <section id="document-panel" role="tabpanel" aria-labelledby="document-control"><p class="ui-empty">Документы недоступны в C1.</p></section>
+          <section id="document-panel" role="tabpanel" aria-labelledby="document-control" hidden></section>
           <section hidden role="tabpanel" id="help-panel" aria-labelledby="help-title" data-panel-help="foundation-help">
             <h3 id="help-title">Справка Foundation</h3>
             <label for="help-binding-select">Привязка из manifest</label>
