@@ -1,0 +1,73 @@
+{
+  "schema": "CONFLICT_ANALYSIS_DEMO_TECHNICAL_ACCEPTANCE_R1",
+  "created_at_utc": "2026-10-02T14:05:15.068633+00:00",
+  "project": "Conflict Analysis / MVP7",
+  "scientific_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+  "independent_review_state": "PASS_WITH_P1",
+  "confirmed_p0": 0,
+  "source_identity": {
+    "scientific_commit": "2549daba4f96cb61db7be0441881e8cc33a5fde6",
+    "scientific_pr": 124,
+    "product_ui_commit": "eb22b479946b7f1a7d7188e0fd1c7c2a01c69f06",
+    "product_ui_tree": "85a0d0ea1c07ab6f5f9aab4044e5bff2a175b5c5",
+    "ui_pr": 125,
+    "tracked_worktree_clean_before_receipt": true
+  },
+  "runtime": {
+    "root": "C:\\ConflictPartnerDemo_UI125",
+    "url": "http://127.0.0.1:8775/",
+    "source_head": "eb22b479946b7f1a7d7188e0fd1c7c2a01c69f06",
+    "passwordless_role_launcher": true,
+    "partner_demo_only": true,
+    "listener_pid": 28392
+  },
+  "technical_acceptance": {
+    "state": "PASS",
+    "owner_visual_acceptance": "PENDING_OWNER_DECISION",
+    "merge_or_release_decision": "PENDING_OWNER_DECISION",
+    "targeted_studio_player_tests": "42/42 PASS",
+    "javascript_syntax_checks": "9/9 PASS",
+    "git_diff_check": "PASS",
+    "full_browser_rehearsal": "PASS",
+    "latest_role_smoke": "PASS",
+    "editor_save_receipt_present": true,
+    "editor_fresh_readback": true,
+    "publisher_readiness_sha_stable": true,
+    "publisher_blockers": "",
+    "assessor_human_zero_visible": true,
+    "assessor_ai_unknown_visible": true,
+    "unknown_not_converted_to_zero": true,
+    "help_visible_size_px": 12,
+    "help_hit_target_px": 32,
+    "help_overlap_with_interactive_controls": "NONE",
+    "page_horizontal_overflow_1440": "NONE",
+    "page_horizontal_overflow_360": "NONE",
+    "browser_errors": "NONE"
+  },
+  "claim_boundaries": {
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "human_validation_reliability": "NOT_PERFORMED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED",
+    "gemini_model_identity": "FROZEN_UI_BINDING_PLUS_SELF_REPORT_NOT_PROVIDER_RECEIPT",
+    "ai1_non_access": "PROTOCOL_DECLARED_AND_GIT_TIMESTAMPED_NOT_SERVICE_AUDITED",
+    "absence_of_all_hidden_external_attempts": "NOT_PROVEN"
+  },
+  "demo_limits": {
+    "publication_attempt_executed": false,
+    "production_ready": false,
+    "final_acceptance": false,
+    "auto_merge": false,
+    "old_omg_company_kvs5_pol50_restored": false
+  },
+  "evidence": {
+    "full_rehearsal": "C:/ConflictPartnerDemo_UI125/state/UI125_REHEARSAL_RESULT.json",
+    "role_smoke": "C:/ConflictPartnerDemo_UI125/state/UI125_EB22_SMOKE_RESULT.json",
+    "partner_demo_report": "C:/ConflictPartnerDemo_UI125/PARTNER_DEMO_REPORT.json",
+    "editor_screenshot": "C:/ConflictPartnerDemo_UI125/state/rehearsal-ui125/editor-1440.png",
+    "publisher_screenshot": "C:/ConflictPartnerDemo_UI125/state/rehearsal-ui125/publisher-lifecycle-1440.png",
+    "assessor_screenshot": "C:/ConflictPartnerDemo_UI125/state/rehearsal-ui125/assessor-ai-1440.png"
+  },
+  "canonical_interpretation": "Technical demo readiness is PASS. Scientific Beta publication, merge, release, and owner visual acceptance remain separate explicit owner decisions.",
+  "partner_report_source_head": "eb22b479946b7f1a7d7188e0fd1c7c2a01c69f06"
+}
