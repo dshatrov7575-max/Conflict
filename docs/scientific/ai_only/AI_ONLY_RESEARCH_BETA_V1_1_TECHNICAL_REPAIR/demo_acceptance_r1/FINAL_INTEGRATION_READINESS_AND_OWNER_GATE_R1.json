@@ -1,0 +1,58 @@
+{
+  "schema": "CONFLICT_ANALYSIS_FINAL_INTEGRATION_READINESS_AND_OWNER_GATE_R1",
+  "created_at_msk": "2026-10-02T18:13:15+03:00",
+  "project": "Conflict Analysis / MVP7",
+  "owner_demo_decision": "ACCEPT_UI_FOR_LIMITED_DEMO",
+  "owner_visual_acceptance": "ACCEPTED",
+  "accepted_scope": "LIMITED_DEMO_ONLY",
+  "scientific_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+  "independent_review_state": "PASS_WITH_P1",
+  "confirmed_p0": 0,
+  "required_merge_order": [124, 125],
+  "pr124": {
+    "base_sha": "aa92137af751e758240b9cfb9d68e2bf76dab4ce",
+    "head_sha": "7262eaa992a130660485c03e26b615facc8e0e84",
+    "merge_tree_sha": "0794be894f9ce54c863fbcd00c95185e9c0439f0",
+    "conflicts": "NONE"
+  },
+  "pr125": {
+    "evaluated_head_sha": "57a8e84384941465e974caef909836cc8322187d",
+    "scientific_head_is_ancestor": true,
+    "post_pr124_merge_tree_sha": "84cbf2ebf9c68dc16130f9fbfa0e4d8b90320b74",
+    "conflicts": "NONE",
+    "software_conflict_analysis_diff_from_accepted_ui_commit": "NONE"
+  },
+  "accepted_product_identity": {
+    "ui_commit": "eb22b479946b7f1a7d7188e0fd1c7c2a01c69f06",
+    "ui_tree": "85a0d0ea1c07ab6f5f9aab4044e5bff2a175b5c5",
+    "technical_acceptance": "PASS",
+    "owner_visual_acceptance": "ACCEPTED"
+  },
+  "external_demo_package_r2": {
+    "flat_file_count": 10,
+    "zip_sha256": "eff637c151c6a43e2f1fe5bd0f6890e29c6826bbfb305277dce4371adc932151",
+    "integrity_test": "PASS"
+  },
+  "merge_release_gate": {
+    "merge_authorized": false,
+    "publication_authorized": false,
+    "release_authorized": false,
+    "auto_merge": false,
+    "next_owner_decision_required": true,
+    "allowed_owner_decisions": [
+      "MERGE_ONLY_NO_PUBLICATION_OR_RELEASE",
+      "MERGE_AND_PUBLISH_LIMITED_SCIENTIFIC_BETA",
+      "HOLD_INTEGRATION_WITH_EXACT_BLOCKERS"
+    ]
+  },
+  "mandatory_boundaries": {
+    "unknown_not_equal_zero": true,
+    "old_omg_company_kvs5_pol50_restored": false,
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "human_validation_reliability": "NOT_PERFORMED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED",
+    "deepseek_identity": "DeepSeek Web — Глубокое мышление; backend model not UI-disclosed"
+  },
+  "interpretation": "The accepted limited demo and both pull requests are technically ready for conflict-free integration in the order PR #124 then PR #125. Demo acceptance does not authorize merge, publication, or release. A separate explicit owner decision is required."
+}
