@@ -655,7 +655,9 @@ class ProductionStudioLifecyclePublicationTests(
         prepare = script[script.index("async function prepareAttempt()"):script.index("function renderAttempt")]
         self.assertIn("readFreshSnapshot({ rejectDrift: true })", prepare)
         self.assertLess(prepare.index("readFreshSnapshot({ rejectDrift: true })"), prepare.index("randomUUIDv4()"))
-        self.assertIn("FD07 не является полномочием", LIFECYCLE_TEMPLATE.read_text(encoding="utf-8"))
+        help_template = LIFECYCLE_TEMPLATE.with_name("ui_help.html").read_text(encoding="utf-8")
+        self.assertIn("FD07 не является полномочием", help_template)
+        self.assertIn('data-panel-help="readiness"', LIFECYCLE_TEMPLATE.read_text(encoding="utf-8"))
 
     def test_successor_draft_validates_then_fd07_allows_only_exact_successor_publication(self):
         predecessor = self._publish_predecessor()
@@ -927,7 +929,8 @@ class ProductionStudioLifecyclePublicationTests(
             "lifecycle-prediction-control",
             "lifecycle-recommendation-control",
         ):
-            self.assertRegex(html, rf'<button id="{selector}"[^>]*disabled')
+            self.assertNotIn(f'id="{selector}"', html)
+        self.assertIn('id="ui-help-topic-bounds"', html)
         combined = html + LIFECYCLE_SCRIPT.read_text(encoding="utf-8")
         self.assertNotIn("/api/studio", combined)
         self.assertNotIn("WebSocket", combined)

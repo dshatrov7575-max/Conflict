@@ -32,7 +32,7 @@ def _secure(response):
     response["X-Content-Type-Options"] = "nosniff"
     response["Referrer-Policy"] = "same-origin"
     response["Content-Security-Policy"] = (
-        "default-src 'none'; style-src 'self'; form-action 'self'; "
+        "default-src 'none'; style-src 'self'; script-src 'self'; form-action 'self'; "
         "base-uri 'none'; frame-ancestors 'none'"
     )
     patch_vary_headers(response, ("Cookie",))

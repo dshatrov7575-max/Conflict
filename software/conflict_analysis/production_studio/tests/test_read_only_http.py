@@ -197,7 +197,7 @@ class ProductionStudioReadOnlyHttpTests(TestCase):
         self.assertFalse(entry.cookies)
         self.assertFalse(shell.cookies)
         self.assertNotIn("Location", entry)
-        self.assertContains(entry, "Требуется заранее выданная сессия", status_code=401)
+        self.assertContains(entry, "Требуется сессия", status_code=401)
         combined = (entry.content + shell.content).decode("utf-8").lower()
         self.assertNotIn('type="password"', combined)
         self.assertNotIn("/login", combined)

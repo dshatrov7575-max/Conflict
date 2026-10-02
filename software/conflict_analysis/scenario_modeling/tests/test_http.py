@@ -179,4 +179,4 @@ class ScenarioHTTPTests(ScenarioHTTPFixture, TestCase):
             baseline = self.baseline_response()
         self.assertIsNone(baseline.context["scenario_token"])
         self.assertEqual(baseline.context["run"]["UNO"], "100")
-        self.assertContains(baseline, "Snapshot превышает лимит")
+        self.assertContains(baseline, "Сценарий недоступен: превышен лимит snapshot.")

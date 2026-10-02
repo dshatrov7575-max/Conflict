@@ -6,7 +6,7 @@
   const API = "/api/foundation/player/";
   const STORAGE_KEY = "conflict-analysis-player:layout:v1";
   const LAYOUT_VERSION = "PLAYER_LAYOUT_V1";
-  const DEFAULT_LAYOUT = Object.freeze({version: LAYOUT_VERSION, left: 272, right: 320, activeRightTab: "help"});
+  const DEFAULT_LAYOUT = Object.freeze({version: LAYOUT_VERSION, left: 272, right: 320, activeRightTab: "document"});
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   const SHA = /^[0-9a-f]{64}$/;
   const WINDOW_SIZE = 100;
@@ -253,10 +253,6 @@
     const ready = app.dataset.state === "ready" && !memory.loading && !blocked();
     const enabled = {"CMD-WORKSPACE-CREATE": ready && !!memory.definition && !!memory.project && app.dataset.playerPage !== "workspace", "CMD-WORKSPACE-OPEN": ready && !!$("workspace-select").value, "CMD-WORKSPACE-SWITCH": ready && memory.workspaces.length > 0, "CMD-SLICE-CREATE": ready && complete(), "CMD-SLICE-OPEN": ready && complete() && !!$("slice-select").value, "CMD-SLICE-SWITCH": ready && complete() && memory.slices.length > 0, "CMD-SLICE-REFRESH": ready && complete() && !!memory.slice};
     document.querySelectorAll("[data-command-id]").forEach(button => button.setAttribute("aria-disabled", String(!enabled[button.dataset.commandId])));
-    const workspaceLabel = document.querySelector('[data-command-id="CMD-WORKSPACE-CREATE"] .primary-label');
-    const sliceLabel = document.querySelector('[data-command-id="CMD-SLICE-CREATE"] .primary-label');
-    workspaceLabel.hidden = !!memory.workspace;
-    sliceLabel.hidden = !complete() || memory.slices.length > 0;
     $("definition-select").disabled = blocked() || memory.loading || app.dataset.playerPage === "workspace";
     $("workspace-select").disabled = blocked() || memory.loading;
     $("slice-select").disabled = blocked() || memory.loading || !complete();
@@ -333,7 +329,7 @@
   function loadLayout() {
     try {const raw = localStorage.getItem(STORAGE_KEY); if (raw !== null) {if (encoder.encode(raw).length > 256) throw new Error("layout"); const value = JSON.parse(raw); if (!value || Object.keys(value).sort().join(",") !== "activeRightTab,left,right,version" || value.version !== LAYOUT_VERSION || !Number.isInteger(value.left) || value.left < 220 || value.left > 420 || !Number.isInteger(value.right) || value.right < 280 || value.right > 480 || !["document", "chat", "help"].includes(value.activeRightTab)) throw new Error("layout"); memory.layout = {...value};}}
     catch (_) {memory.layout = {...DEFAULT_LAYOUT}; try {localStorage.removeItem(STORAGE_KEY);} catch (_) { /* Storage may be unavailable; never touch another key. */ }}
-    applyLayout(); selectRightTab(memory.layout.activeRightTab, false);
+    applyLayout(); selectRightTab("document", false);
   }
   function selectRightTab(name, persist = true) {
     if (!["document", "chat", "help"].includes(name)) return;
@@ -392,7 +388,7 @@
     $("structure-tree").addEventListener("keydown", event => {const count = memory.treeRows.length; if (!count || !["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End"].includes(event.key)) return; event.preventDefault(); const delta = {ArrowDown: 1, ArrowUp: -1, PageDown: WINDOW_SIZE, PageUp: -WINDOW_SIZE}[event.key] || 0; memory.treeSelection = event.key === "Home" ? 0 : event.key === "End" ? count - 1 : Math.max(0, Math.min(count - 1, memory.treeSelection + delta)); memory.treeOffset = Math.floor(memory.treeSelection / WINDOW_SIZE) * WINDOW_SIZE; renderTree(); $("structure-tree").scrollTop = event.key === "End" ? $("structure-tree").scrollHeight : 0;});
     $("structure-tree").addEventListener("wheel", event => {const tree = $("structure-tree"); if (event.deltaY > 0 && tree.scrollTop + tree.clientHeight >= tree.scrollHeight - 2 && memory.treeOffset + WINDOW_SIZE < memory.treeRows.length) {event.preventDefault(); memory.treeOffset += WINDOW_SIZE; memory.treeSelection = memory.treeOffset; renderTree(); tree.scrollTop = 0;} else if (event.deltaY < 0 && tree.scrollTop <= 0 && memory.treeOffset > 0) {event.preventDefault(); memory.treeOffset -= WINDOW_SIZE; memory.treeSelection = memory.treeOffset; renderTree(); tree.scrollTop = tree.scrollHeight;}}, {passive: false});
     document.querySelectorAll("[data-right-tab]").forEach(tab => tab.addEventListener("click", () => selectRightTab(tab.dataset.rightTab)));
-    $("context-help").addEventListener("click", () => {selectRightTab("help"); $("help-key").value = memory.focus === "structure" ? "player.published_definition" : "player.workspace"; loadHelp();}); $("help-key").addEventListener("change", loadHelp);
+    $("context-help").addEventListener("click", () => {$("context-help").dataset.helpOpen = memory.focus === "structure" ? "structure" : "workspace";}); $("help-key").addEventListener("change", loadHelp);
     $("experiment-general")?.addEventListener("click", () => activateExperiment("general"));
     document.querySelectorAll("[role=tablist]").forEach(list => list.addEventListener("keydown", event => {if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return; const tabs = Array.from(list.querySelectorAll("[role=tab]")); const index = tabs.indexOf(document.activeElement); if (index < 0) return; event.preventDefault(); const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length; tabs[next].focus();}));
     splitters();

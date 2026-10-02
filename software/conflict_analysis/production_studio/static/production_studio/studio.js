@@ -470,7 +470,7 @@
   function bindLayout() {
     memory.layout = parseLayout();
     applyLayout();
-    selectRightTab(memory.layout.activeRightTab, false);
+    selectRightTab("document", false);
 
     const leftControl = document.getElementById("left-width-control");
     const rightControl = document.getElementById("right-width-control");

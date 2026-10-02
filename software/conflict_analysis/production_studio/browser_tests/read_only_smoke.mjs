@@ -137,7 +137,7 @@ try {
       rowCount: document.querySelectorAll("#manifest-window [data-manifest-row]").length,
       totalDomNodes: document.getElementsByTagName("*").length,
       crossCells: document.querySelectorAll("[data-actor-id][data-element-id]").length,
-      permanentClaims: [...document.querySelectorAll("#studio-limitations [data-claim-code]")].map(
+      permanentClaims: [...document.querySelectorAll("#ui-help-topic-bounds [data-claim-code]")].map(
         (node) => node.dataset.claimCode,
       ),
       hasBanner: Boolean(document.querySelector("#studio-boundary-banner")),
@@ -270,7 +270,8 @@ try {
   assert.deepEqual(page.localStorageKeys, [storageKey]);
   assert.equal(page.left, 300);
   assert.equal(page.right, 400);
-  assert.equal(page.activeRightTab, "help");
+  assert.equal(page.activeRightTab, "document");
+  assert(await client.evaluate("document.querySelector('#panel-help').hidden && !document.querySelector('#ui-help-dialog').open && !document.activeElement.matches('.panel-help')", sessionId));
   assert.equal(page.sessionStorageLength, 0);
   assert.deepEqual(page.indexedDbNames, []);
   assert.deepEqual(page.cacheNames, []);

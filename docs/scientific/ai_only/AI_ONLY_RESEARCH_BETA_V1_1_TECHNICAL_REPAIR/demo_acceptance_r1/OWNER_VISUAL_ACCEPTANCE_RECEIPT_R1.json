@@ -1,0 +1,31 @@
+{
+  "schema": "CONFLICT_ANALYSIS_OWNER_VISUAL_ACCEPTANCE_RECEIPT_R1",
+  "recorded_at_msk": "2026-10-02T17:48:51+03:00",
+  "project": "Conflict Analysis / MVP7",
+  "owner_statement_verbatim": "ПРИНИМАЮ ДЕМО",
+  "owner_decision": "ACCEPT_UI_FOR_LIMITED_DEMO",
+  "owner_visual_acceptance": "ACCEPTED",
+  "accepted_scope": "LIMITED_DEMO_ONLY",
+  "scientific_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+  "independent_review_state": "PASS_WITH_P1",
+  "confirmed_p0": 0,
+  "technical_demo_acceptance": "PASS",
+  "product_ui_commit": "eb22b479946b7f1a7d7188e0fd1c7c2a01c69f06",
+  "ui_pr": 125,
+  "scientific_pr": 124,
+  "accepted_visual_conditions": {
+    "context_help_visible_size_px": 12,
+    "context_help_hit_target_px": 32,
+    "context_help_overlap_with_interactive_controls": "NONE",
+    "passwordless_editor_publisher_assessor_launch": "PASS",
+    "page_horizontal_overflow_360_1440": "NONE",
+    "human_zero_distinct_from_ai_unknown": true
+  },
+  "mandatory_demo_boundaries_remain_active": true,
+  "merge_authorized": false,
+  "release_authorized": false,
+  "publication_authorized": false,
+  "auto_merge": false,
+  "next_owner_gate": "SEPARATE_EXPLICIT_MERGE_AND_RELEASE_DECISION",
+  "interpretation": "The owner explicitly accepted the current demo for limited demonstration. This does not authorize merge, scientific publication, production release, or expansion of scientific claims."
+}

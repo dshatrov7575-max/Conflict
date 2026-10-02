@@ -128,18 +128,28 @@ async function createHarness() {
     await loaded;
     await client.waitForExpression(
       `window.__studioLifecycleEvents?.some((item) => item.name === "studio:lifecycle-ready") ||
-        !["", "LOADING"].includes(document.querySelector("#lifecycle-state-code")?.textContent || "")`,
+        !["", "LOADING"].includes(document.querySelector("#lifecycle-state")?.dataset.state || "")`,
       page.sessionId,
       env.timeoutMs,
     );
     const ready = await lastEvent(page, "studio:lifecycle-ready");
     if (!ready) {
       const failure = await client.evaluate(`({
-        code: document.querySelector("#lifecycle-state-code")?.textContent,
-        message: document.querySelector("#lifecycle-state-message")?.textContent,
+        code: document.querySelector("#lifecycle-state")?.dataset.state,
+        message: document.querySelector("#lifecycle-state-code")?.title,
       })`, page.sessionId);
       throw new Error(`Lifecycle bootstrap failed: ${JSON.stringify(failure)}`);
     }
+    const status = await client.evaluate(`(() => {
+      const n = document.querySelector('#lifecycle-state-code');
+      return {text:n.textContent, title:n.title, label:n.getAttribute('aria-label'), detail:n.dataset.fullValue,
+        code:document.querySelector('#lifecycle-state').dataset.state, previewHidden:document.querySelector('#preview-result').hidden};
+    })()`, page.sessionId);
+    assert.equal(status.label, status.title);
+    assert.equal(status.detail, status.title);
+    assert(status.title.startsWith(status.code + ':'));
+    if (status.code === 'LIFECYCLE_READY') assert.equal(status.text, 'Готово');
+    assert(status.previewHidden, 'No empty preview notice on load');
     return ready;
   };
 
@@ -165,15 +175,15 @@ async function createHarness() {
   const waitPublicationRecovery = async (page) => {
     await client.waitForExpression(
       `window.__studioLifecycleEvents?.some((item) => item.name === "studio:lifecycle-publication-recovery-complete") ||
-        document.querySelector("#lifecycle-state-code")?.textContent === "PUBLICATION_RECOVERY_UNVERIFIED"`,
+        document.querySelector("#lifecycle-state")?.dataset.state === "PUBLICATION_RECOVERY_UNVERIFIED"`,
       page.sessionId,
       env.timeoutMs,
     );
     const recovered = await lastEvent(page, "studio:lifecycle-publication-recovery-complete");
     if (recovered) return recovered;
     const failure = await client.evaluate(`({
-      code: document.querySelector("#lifecycle-state-code")?.textContent,
-      message: document.querySelector("#lifecycle-state-message")?.textContent,
+      code: document.querySelector("#lifecycle-state")?.dataset.state,
+      message: document.querySelector("#lifecycle-state-code")?.title,
     })`, page.sessionId);
     throw new Error(`Publication recovery failed: ${JSON.stringify(failure)}`);
   };
@@ -188,8 +198,8 @@ async function createHarness() {
     const completed = await lastEvent(page, "studio:lifecycle-validation-complete");
     if (completed) return completed;
     const failure = await client.evaluate(`({
-      code: document.querySelector("#lifecycle-state-code")?.textContent,
-      message: document.querySelector("#lifecycle-state-message")?.textContent,
+      code: document.querySelector("#lifecycle-state")?.dataset.state,
+      message: document.querySelector("#lifecycle-state-code")?.title,
     })`, page.sessionId);
     throw new Error(`Validation reconciliation failed: ${JSON.stringify(failure)}`);
   };
@@ -209,11 +219,11 @@ async function createHarness() {
   );
 
   const inspect = (page) => client.evaluate(`(async () => ({
-    state: document.querySelector("#lifecycle-state-code")?.textContent,
+    state: document.querySelector("#lifecycle-state")?.dataset.state,
     status: document.querySelector("#lifecycle-publication-status")?.textContent,
     isCurrent: document.querySelector("#lifecycle-is-current")?.textContent,
     candidateKind: document.querySelector("#readiness-candidate-kind")?.textContent,
-    nextAction: document.querySelector("#readiness-next-action")?.textContent,
+    nextAction: document.querySelector("#readiness-next-action")?.title,
     prepareText: document.querySelector("#prepare-lifecycle-attempt")?.textContent,
     prepareDisabled: document.querySelector("#prepare-lifecycle-attempt")?.disabled,
     executeDisabled: document.querySelector("#execute-sealed-attempt")?.disabled,
@@ -222,7 +232,7 @@ async function createHarness() {
     unavailableControls: [
       "lifecycle-package-control", "lifecycle-document-control", "lifecycle-chat-control",
       "lifecycle-science-control", "lifecycle-prediction-control", "lifecycle-recommendation-control",
-    ].every((id) => document.getElementById(id)?.disabled === true),
+    ].every((id) => document.getElementById(id) === null) && Boolean(document.querySelector("#ui-help-topic-bounds")),
     localStorage: Object.fromEntries(Object.entries(localStorage)),
     sessionStorage: Object.fromEntries(Object.entries(sessionStorage)),
     indexedDbNames: typeof indexedDB.databases === "function"
