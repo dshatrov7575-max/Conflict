@@ -1,0 +1,10 @@
+{
+  "schema": "CONFLICT_ANALYSIS_EXTERNAL_DEMO_PACKAGE_RECEIPT_R3",
+  "created_at_msk": "2026-10-03T00:03:30.904166+03:00",
+  "desktop_filename": "Conflict_Analysis_Demo_Package_R3.zip",
+  "flat_file_count": 10,
+  "zip_sha256": "c51e0c8ca98d9bf0b2552bdbea913bbd2922b835340443b089a31dcb5adfc368",
+  "zip_integrity_test": "PASS",
+  "integrated_head": "d72e03b1be0748df0dc461b5aa72a7fe21872474",
+  "publication_release_deployment": "NOT_EXECUTED"
+}
