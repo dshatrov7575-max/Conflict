@@ -1,22 +1,22 @@
 {
   "schema": "CONFLICT_ANALYSIS_OWNER_DECISION_GATE_R1",
   "created_at_utc": "2026-10-02T14:15:00Z",
+  "decision_recorded_at_msk": "2026-10-02T17:48:51+03:00",
   "project": "Conflict Analysis / MVP7",
   "scientific_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
   "independent_review_state": "PASS_WITH_P1",
   "confirmed_p0": 0,
   "technical_demo_acceptance": "PASS",
-  "owner_visual_acceptance": "PENDING_OWNER_DECISION",
-  "merge_release_decision": "PENDING_OWNER_DECISION",
+  "owner_statement_verbatim": "ПРИНИМАЮ ДЕМО",
+  "owner_decision": "ACCEPT_UI_FOR_LIMITED_DEMO",
+  "owner_visual_acceptance": "ACCEPTED",
+  "accepted_scope": "LIMITED_DEMO_ONLY",
+  "merge_release_decision": "PENDING_SEPARATE_OWNER_DECISION",
   "product_ui_commit": "eb22b479946b7f1a7d7188e0fd1c7c2a01c69f06",
   "technical_acceptance_commit": "de579a8674b10fb1f6cc0fbe2385bd6489ae78a5",
+  "owner_acceptance_receipt": "OWNER_VISUAL_ACCEPTANCE_RECEIPT_R1.json",
   "scientific_pr": 124,
   "ui_pr": 125,
-  "allowed_owner_decisions": [
-    "ACCEPT_UI_FOR_LIMITED_DEMO",
-    "REQUEST_TARGETED_UI_PATCH_WITH_EXACT_BLOCKERS",
-    "HOLD_DEMO_WITH_EXACT_BLOCKERS"
-  ],
   "decision_rules": {
     "no_silent_acceptance": true,
     "no_auto_merge": true,
@@ -25,7 +25,7 @@
     "no_primary_recoding": true,
     "no_formula_weight_or_core_change": true
   },
-  "required_visual_checks": [
+  "visual_checks_accepted": [
     "Editor primary actions are understandable and no helper prose occupies the work surface.",
     "Publisher controls and safeguards are understandable without login or documentation.",
     "Assessor preserves visible HUMAN 0 versus AI UNKNOWN and does not convert UNKNOWN to zero.",
@@ -43,5 +43,8 @@
     "Gemini AI2 model identity is frozen-UI-binding plus self-report, not provider-authenticated.",
     "UNKNOWN != 0 and HOLD lanes are not forced through Core replay."
   ],
-  "current_state": "AWAITING_EXPLICIT_OWNER_VISUAL_DECISION"
+  "merge_authorized": false,
+  "release_authorized": false,
+  "publication_authorized": false,
+  "current_state": "OWNER_ACCEPTED_LIMITED_DEMO_MERGE_RELEASE_PENDING"
 }
