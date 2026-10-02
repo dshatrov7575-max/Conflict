@@ -1,0 +1,21 @@
+{
+  "contract_id": "D25_E02_V100_TEMPORAL_OBJECT",
+  "status": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+  "object_label": "AI_ONLY_SAME_REPORT_TWO_ACTOR_E02_SOURCE_STATEMENT_DYAD",
+  "source_report_date": "2011-10-13",
+  "actors": [
+    "D25_DISMISSED_KMG_EP_WORKERS_20111013",
+    "D25_KMG_EP_MANAGEMENT_20111013"
+  ],
+  "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+  "simultaneous_snapshot": false,
+  "carry_forward": "NONE",
+  "interpretation": "Two actor positions reported in one authenticated contemporaneous article; report-date co-location does not establish exact event-time simultaneity.",
+  "prior_r2_values_visible_to_primary": false,
+  "claims": {
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  }
+}

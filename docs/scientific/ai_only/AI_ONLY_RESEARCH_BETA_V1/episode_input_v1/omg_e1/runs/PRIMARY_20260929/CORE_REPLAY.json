@@ -1,0 +1,39 @@
+{
+  "strategy_id": "POLARIZATION_V1_BETA",
+  "strategy_version": "1.0.0",
+  "core_blobs": {
+    "contracts.py": "5eaad9022804b192911f5fab498e56c788017d73",
+    "strategy.py": "434aafd8044410049ae14a76a88b66df5b0da658",
+    "__init__.py": "669e9162fbc4ea348cef7cb6d81a73a07f95cf0b"
+  },
+  "snapshot_input_digest": "93cab3e59f8f9cebb1e0dc5bae5111b2d6c40825bf028b6220fe38f2762e6410",
+  "snapshot_id": "sha256:93cab3e59f8f9cebb1e0dc5bae5111b2d6c40825bf028b6220fe38f2762e6410",
+  "result_digest": "0e699e3cc4ebd8c0a8381d75909a7496b6ab3227a442de02e91cc2191e66d47c",
+  "baseline": {
+    "status": "COMPLETE",
+    "expected_rows": 2,
+    "eligible_rows": 2,
+    "P": "25",
+    "N": "25",
+    "A": "50",
+    "B": "0",
+    "Pol": "50",
+    "Core_UNO_field": "50",
+    "W": "10",
+    "RGU": {
+      "workers": "1",
+      "company": "1"
+    },
+    "KVPTN": "1"
+  },
+  "standalone_baseline_match": true,
+  "warnings": [
+    "BETA_POLARIZATION_INDEX",
+    "KVS_KVPTN_DEPENDENCE_NOT_VALIDATED"
+  ],
+  "interpretation": {
+    "released_label": "AI_ONLY_SINGLE_PTN_EPISODE_SCENARIO",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "december_2011_snapshot": "NOT_ESTABLISHED"
+  }
+}

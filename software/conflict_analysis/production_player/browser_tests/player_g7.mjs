@@ -59,7 +59,7 @@ const pageStateExpression = "(() => {"
   + "return {"
   + "page:app?.dataset.playerPage,state:app?.dataset.state,projectId:app?.dataset.projectId,"
   + "workspaceId:app?.dataset.workspaceId||null,projectionStatus:app?.dataset.projectionStatus,"
-  + "reloadNotice:app?.dataset.reloadNotice||'',stateMessage:document.querySelector('#player-state-message')?.textContent||'',"
+  + "reloadNotice:app?.dataset.reloadNotice||'',stateMessage:document.querySelector('#player-state-message')?.title||'',"
   + "playerStateHidden:document.querySelector('#player-state')?.hidden===true,"
   + "claimSha256:app?.dataset.claimSha256,commandIds:toolbar.map(n=>n.dataset.commandId),"
   + "sliceId:document.querySelector('#slice-select')?.value||null,sliceDate:document.querySelector('#slice-date')?.textContent||null,"
@@ -94,6 +94,10 @@ try {
     client.send("Network.enable", { maxTotalBufferSize: 50_000_000 }, sessionId),
   ]);
   await client.send("Browser.setDownloadBehavior", { behavior: "deny" });
+  // Splitters belong to the desktop layout; narrow layouts stack the panels.
+  await client.send("Emulation.setDeviceMetricsOverride", {
+    width: 1440, height: 900, deviceScaleFactor: 1, mobile: false,
+  }, sessionId);
 
   client.on("Network.requestWillBeSent", (event, eventSessionId) => {
     if (eventSessionId !== sessionId || !/^https?:/.test(event.request.url)) return;
@@ -308,6 +312,7 @@ try {
       afterReload.stateMessage,
       /^После перезагрузки ключи прежних операций не восстанавливаются/,
     );
+    assert(await client.evaluate("(() => {const n = document.querySelector('#player-state-message'); return n.textContent === 'UNKNOWN' && n.title === n.getAttribute('aria-label') && n.title === n.dataset.fullValue;})()", sessionId), 'Compact reload warning preserves the complete accessible disclosure');
     await delay(300);
     assert.equal(allPostRequestCount(), postCountBeforeReload);
     return afterReload;
@@ -578,7 +583,11 @@ try {
     current = await assertReloadDisclosure(invalidShapeReloadPosts);
     assert.equal(current.storageRaw, null);
     assert.deepEqual(current.storageKeys, []);
+    assert(await client.evaluate("document.querySelector('[data-right-tab=document]').getAttribute('aria-selected') === 'true' && document.querySelector('#panel-help').hidden && !document.activeElement.matches('.panel-help')", sessionId));
     await click("#context-help");
+    assert(await client.evaluate("document.querySelector('#ui-help-dialog').open && document.querySelector('#panel-help').hidden", sessionId));
+    await click("#ui-help-close");
+    await click("#tab-help");
     await fill("#help-key", "player.workspace");
     await client.waitForExpression(
       "!document.querySelector('#help-topic')?.hidden"

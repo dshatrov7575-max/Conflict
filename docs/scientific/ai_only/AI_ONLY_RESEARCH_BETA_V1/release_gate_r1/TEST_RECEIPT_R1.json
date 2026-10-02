@@ -1,0 +1,24 @@
+{
+  "test_receipt_id": "AI_ONLY_RESEARCH_BETA_RELEASE_EVALUATOR_R1_TEST_20260930",
+  "status": "PASS",
+  "date": "2026-09-30",
+  "script": "evaluate_release_gate_r1.py",
+  "git_blob_sha": "71bcfd8dd259364df6140be358ad265ce653443d",
+  "self_test": {
+    "result": "PASS",
+    "cases": 6,
+    "exact_github_blob_match": true
+  },
+  "tested_cases": [
+    "zero eligible lanes -> beta RC PASS_NOT_TRIGGERED for G7",
+    "eligible lane with Core replay PASS",
+    "missing primary role blocks G2",
+    "eligible lane Core mismatch blocks G7",
+    "coordinator substitution blocks G4",
+    "missing mandatory claim label blocks G8"
+  ],
+  "lane_unknown_or_hold_is_automatic_beta_failure": false,
+  "external_historical_measurement_remains": "HOLD",
+  "historical_area_UNO_remains": "BLOCKED",
+  "human_validation": "NOT_PERFORMED"
+}

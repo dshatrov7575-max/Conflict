@@ -8,26 +8,19 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="{% static 'production_studio/lifecycle_publication.css' %}">
   <script src="{% static 'production_studio/lifecycle_publication.js' %}" defer></script>
+  <link rel="stylesheet" href="{% static 'production_studio/panel_ui.css' %}">
+  <script src="{% static 'production_studio/panel_ui.js' %}" defer></script>
 </head>
 <body data-studio-page="lifecycle-publication-definition">
   <header
-    id="lifecycle-boundary-banner"
+    data-panel-help="bounds" id="lifecycle-boundary-banner"
     class="boundary-banner"
     data-claim-contract="{{ lifecycle_claim_contract }}"
     data-claim-version="{{ lifecycle_claim_contract_version }}"
     data-claim-sha256="{{ lifecycle_claim_sha256 }}"
     data-claim-bytes="{{ lifecycle_claim_payload_bytes }}"
     data-claim-url="{% url 'production_studio:claim_boundaries_lifecycle_publication_v1' %}"
-  >
-    <p><strong>{{ lifecycle_claim_by_code.STATUS }}</strong></p>
-    <p>{{ lifecycle_claim_by_code.AUTHORITY }}</p>
-    <p>{{ lifecycle_claim_by_code.PUBLICATION_RECOVERY }}</p>
-    <a
-      href="{% url 'production_studio:claim_boundaries_lifecycle_publication_v1' %}"
-      download="lifecycle_publication_claim_boundaries_v1.ru.json"
-    >Скачать проверенный контракт ограничений</a>
-    <code>SHA-256 {{ lifecycle_claim_sha256 }}</code>
-  </header>
+  ><a href="#ui-help-topic-bounds" data-help-open="bounds">C2A · Публикация</a><a class="ui-boundary-icon" href="#ui-help-topic-bounds" data-help-open="bounds" data-ui-icon="warning" data-ui-kind="utility" title="Научная валидность не подтверждена" aria-label="Научная валидность не подтверждена">Научная валидность не подтверждена</a>{% include 'production_studio/ui_help_button.html' %}</header>
 
   <main
     id="lifecycle-publication-app"
@@ -49,58 +42,67 @@
   >
     {% if studio_authenticated %}
       <nav class="top-actions" aria-label="Навигация Production Studio">
-        <a href="{% url 'production_studio:audited_draft_definition' definition_id %}">Вернуться в DRAFT-редактор</a>
-        <button id="refresh-lifecycle" type="button">Перечитать FD03 + FD07</button>
+        <div id="lifecycle-state" class="state-card ui-compact-state" role="status" aria-live="polite" data-kind="attention" data-panel-help="state">
+        <strong id="lifecycle-state-code" title="LOADING">Загрузка</strong>
+        <span id="lifecycle-state-message"></span>
+      </div>
+        <a data-ui-icon="left" data-ui-kind="utility" href="{% url 'production_studio:audited_draft_definition' definition_id %}">Вернуться в DRAFT-редактор</a>
+        <button id="refresh-lifecycle" type="button" data-ui-icon="refresh" data-ui-kind="utility">Перечитать FD03 + FD07</button>
       </nav>
 
-      <section id="lifecycle-state" class="state-card" role="status" aria-live="polite" data-kind="attention">
-        <strong id="lifecycle-state-code">LOADING</strong>
-        <span id="lifecycle-state-message">Проверяется контракт и загружается свежая истина Foundation.</span>
-      </section>
-
       <div class="lifecycle-grid">
-        <section class="card" aria-labelledby="truth-title">
-          <h1 id="truth-title">Истина жизненного цикла FD03</h1>
-          <dl class="identity-list">
-            <dt>Project UUID</dt><dd><code id="lifecycle-project-id">—</code></dd>
-            <dt>Definition UUID</dt><dd><code id="lifecycle-definition-id">{{ definition_id }}</code></dd>
-            <dt>Manifest SHA-256</dt><dd><code id="lifecycle-manifest-hash">—</code></dd>
-            <dt>Статус</dt><dd><code id="lifecycle-publication-status">—</code></dd>
-            <dt>Текущая</dt><dd><code id="lifecycle-is-current">—</code></dd>
-            <dt>Предшественник</dt><dd><code id="lifecycle-supersedes-id">—</code></dd>
-            <dt>Validated at</dt><dd><code id="lifecycle-validated-at">—</code></dd>
-            <dt>Published at</dt><dd><code id="lifecycle-published-at">—</code></dd>
-          </dl>
+        <section class="card" aria-labelledby="truth-title" data-panel-help="lifecycle">
+          <h1 id="truth-title">Жизненный цикл</h1>
+          <dl class="identity-list" data-ui-optional-list>
+              <dt>Статус</dt><dd><code id="lifecycle-publication-status">—</code></dd>
+            </dl>
+          <details class="ui-technical">
+            <summary>Технические данные</summary>
+            <dl class="identity-list" data-ui-optional-list>
+              <dt>Project UUID</dt><dd><code id="lifecycle-project-id">—</code></dd>
+              <dt>Definition UUID</dt><dd><code id="lifecycle-definition-id">{{ definition_id }}</code></dd>
+              <dt>Manifest SHA-256</dt><dd><code id="lifecycle-manifest-hash">—</code></dd>
+              <dt>Текущая</dt><dd><code id="lifecycle-is-current">—</code></dd>
+              <dt>Предшественник</dt><dd><code id="lifecycle-supersedes-id">—</code></dd>
+              <dt>Validated at</dt><dd><code id="lifecycle-validated-at">—</code></dd>
+              <dt>Published at</dt><dd><code id="lifecycle-published-at">—</code></dd>
+            </dl>
+          </details>
           <p id="persisted-validation-warning" class="warning" hidden>
-            VALIDATED — сохранённая истина жизненного цикла. Она сама по себе не доказывает исход отсутствующего HUMAN-запроса.
+            <span title="VALIDATED: исход HUMAN-запроса не подтверждён." aria-label="VALIDATED: исход HUMAN-запроса не подтверждён." data-full-value="VALIDATED: исход HUMAN-запроса не подтверждён.">HUMAN · UNKNOWN</span>
           </p>
         </section>
 
-        <section class="card" aria-labelledby="readiness-title">
-          <h2 id="readiness-title">Свежий advisory snapshot FD07</h2>
-          <p>FD07 не является полномочием, резервированием или If-Match.</p>
-          <dl class="identity-list">
-            <dt>Candidate</dt><dd><code id="readiness-candidate-kind">—</code></dd>
-            <dt>Следующее действие</dt><dd><code id="readiness-next-action">—</code></dd>
-            <dt>Readiness SHA-256</dt><dd><code id="readiness-sha256">—</code></dd>
-            <dt>Публикации</dt><dd><code id="readiness-publication-count">—</code></dd>
-            <dt>Рабочие пространства</dt><dd><code id="readiness-workspace-count">—</code></dd>
-            <dt>Текущее определение</dt><dd><code id="readiness-current-definition">—</code></dd>
-          </dl>
-          <p>Блокировки: <code id="readiness-blockers">—</code></p>
+        <section class="card" aria-labelledby="readiness-title" data-panel-help="readiness">
+          <h2 id="readiness-title">Готовность публикации</h2>
+
+          <dl class="identity-list" data-ui-optional-list>
+              <dt>Следующее действие</dt><dd><code id="readiness-next-action">—</code></dd>
+            </dl>
+          <details class="ui-technical">
+            <summary>Технические данные</summary>
+            <dl class="identity-list" data-ui-optional-list>
+              <dt>Candidate</dt><dd><code id="readiness-candidate-kind">—</code></dd>
+              <dt>Readiness SHA-256</dt><dd><code id="readiness-sha256">—</code></dd>
+              <dt>Публикации</dt><dd><code id="readiness-publication-count">—</code></dd>
+              <dt>Рабочие пространства</dt><dd><code id="readiness-workspace-count">—</code></dd>
+              <dt>Текущее определение</dt><dd><code id="readiness-current-definition">—</code></dd>
+            </dl>
+          </details>
+          <p id="readiness-blockers" class="ui-status-badge" hidden></p>
         </section>
       </div>
 
-      <section class="card" aria-labelledby="action-title">
-        <h2 id="action-title">Явное HUMAN-действие</h2>
+      <section class="card" aria-labelledby="action-title" data-panel-help="publication">
+        <h2 id="action-title">Действие</h2>
         <div class="controls">
-          <button id="preview-lifecycle" type="button" disabled>Неизменяющий preview FD01 (роль C1)</button>
-          <button id="prepare-lifecycle-attempt" type="button" disabled>Подготовить sealed attempt</button>
-          <button id="cancel-lifecycle-attempt" type="button" hidden disabled>Отменить неподанный attempt</button>
+          <button id="preview-lifecycle" type="button" disabled data-ui-icon="open" data-ui-kind="utility">Неизменяющий preview FD01 (роль C1)</button>
+          <button id="prepare-lifecycle-attempt" type="button" disabled data-ui-icon="plus" data-ui-kind="primary" data-ui-label="Подготовить">Подготовить sealed attempt</button>
+          <button id="cancel-lifecycle-attempt" type="button" hidden disabled data-ui-icon="close" data-ui-kind="utility">Отменить неподанный attempt</button>
         </div>
-        <p id="preview-result">Preview ещё не выполнялся.</p>
+        <p id="preview-result" class="ui-status-badge" hidden></p>
 
-        <fieldset id="publication-inputs">
+        <fieldset id="publication-inputs" data-panel-help="publication">
           <legend>Параметры публикации</legend>
           <label for="publication-locale">Locale</label>
           <input id="publication-locale" type="text" maxlength="32" value="ru" autocomplete="off">
@@ -120,72 +122,64 @@
           </div>
         </fieldset>
 
-        <section id="sealed-attempt-panel" class="attempt-panel" hidden aria-labelledby="attempt-title">
-          <h3 id="attempt-title">Sealed attempt</h3>
-          <dl class="identity-list">
-            <dt>Тип</dt><dd><code id="attempt-kind">—</code></dd>
-            <dt>Operation UUIDv4</dt><dd><code id="attempt-operation-id">—</code></dd>
-            <dt>Route</dt><dd><code id="attempt-route">—</code></dd>
-            <dt>If-Match</dt><dd><code id="attempt-if-match">—</code></dd>
-            <dt>Body SHA-256</dt><dd><code id="attempt-body-sha256">—</code></dd>
-            <dt>Body bytes</dt><dd><code id="attempt-body-length">—</code></dd>
-          </dl>
-          <label for="recovery-ticket">FOUNDATION_HUMAN_WRITE_RECOVERY_TICKET_V1</label>
+        <section id="sealed-attempt-panel" class="attempt-panel" hidden aria-labelledby="attempt-title" data-panel-help="ticket">
+          <h3 id="attempt-title">Подтверждение</h3>
+          <dl class="identity-list" data-ui-optional-list>
+              <dt>Тип</dt><dd><code id="attempt-kind">—</code></dd>
+            </dl>
+          <details class="ui-technical">
+            <summary>Технические данные</summary>
+            <dl class="identity-list" data-ui-optional-list>
+              <dt>Operation UUIDv4</dt><dd><code id="attempt-operation-id">—</code></dd>
+              <dt>Route</dt><dd><code id="attempt-route">—</code></dd>
+              <dt>If-Match</dt><dd><code id="attempt-if-match">—</code></dd>
+              <dt>Body SHA-256</dt><dd><code id="attempt-body-sha256">—</code></dd>
+              <dt>Body bytes</dt><dd><code id="attempt-body-length">—</code></dd>
+            </dl>
+          </details>
+          <label for="recovery-ticket">Квитанция восстановления</label>
           <textarea id="recovery-ticket" rows="13" readonly spellcheck="false"></textarea>
           <div class="controls">
-            <button id="download-recovery-ticket" type="button">Скачать HUMAN-ticket</button>
+            <button id="download-recovery-ticket" type="button" data-ui-icon="download" data-ui-kind="utility">Скачать HUMAN-ticket</button>
             <label for="ticket-copy-proof">Или вставьте точный скопированный ticket</label>
             <textarea id="ticket-copy-proof" rows="4" spellcheck="false" autocomplete="off"></textarea>
-            <button id="acknowledge-ticket-copy" type="button">Подтвердить точную копию</button>
+            <button id="acknowledge-ticket-copy" type="button" data-ui-icon="copy" data-ui-kind="utility">Подтвердить точную копию</button>
           </div>
           <p id="ticket-retention-state">POST заблокирован до HUMAN-retention ticket.</p>
-          <button id="execute-sealed-attempt" type="button" disabled>Выполнить sealed POST</button>
+          <button id="execute-sealed-attempt" type="button" disabled data-ui-icon="check" data-ui-kind="primary" data-ui-label="Отправить">Выполнить sealed POST</button>
         </section>
 
-        <section id="unknown-outcome-panel" class="attempt-panel warning" hidden aria-labelledby="unknown-title">
-          <h3 id="unknown-title">Неопределённый транспортный исход</h3>
+        <section id="unknown-outcome-panel" class="attempt-panel warning" hidden aria-labelledby="unknown-title" data-panel-help="unknown-outcome">
+          <h3 id="unknown-title">UNKNOWN</h3>
           <p id="unknown-outcome-message"></p>
-          <button id="replay-validation-attempt" type="button" hidden disabled>Явно повторить тот же FD05-запрос</button>
-          <button id="recover-publication-operation" type="button" hidden disabled>Проверить exact FD06 operation GET</button>
+          <button id="replay-validation-attempt" type="button" hidden disabled data-ui-icon="refresh" data-ui-kind="utility">Явно повторить тот же FD05-запрос</button>
+          <button id="recover-publication-operation" type="button" hidden disabled data-ui-icon="check" data-ui-kind="utility">Проверить exact FD06 operation GET</button>
         </section>
 
-        <section class="attempt-panel" aria-labelledby="import-title">
-          <h3 id="import-title">Восстановление после потери вкладки/процесса</h3>
-          <p>Ticket не даёт полномочий. Перед предложением точного FD05 replay Studio заново читает FD03, FD07 и серверные presentation-факты.</p>
+        <details class="attempt-panel" data-panel-help="recover"><summary id="import-title">Восстановление</summary>
+
           <label for="import-recovery-ticket">Вставьте сохранённый validation ticket</label>
           <textarea id="import-recovery-ticket" rows="8" spellcheck="false" autocomplete="off"></textarea>
-          <button id="import-validation-ticket" type="button">Проверить и восстановить точный FD05 attempt</button>
-        </section>
+          <button id="import-validation-ticket" type="button" data-ui-icon="check" data-ui-kind="primary" data-ui-label="Восстановить">Проверить и восстановить точный FD05 attempt</button>
+        </details>
 
-        <section id="operation-result" class="attempt-panel" hidden aria-labelledby="result-title">
+        <section id="operation-result" class="attempt-panel" hidden aria-labelledby="result-title" data-panel-help="receipt">
           <h3 id="result-title">Проверенный результат Foundation</h3>
           <p id="operation-result-summary"></p>
-          <pre id="operation-result-json"></pre>
+          <details class="ui-technical">
+            <summary>Технические данные</summary>
+            <pre id="operation-result-json"></pre>
+          </details>
         </section>
       </section>
 
-      <section class="card unavailable" aria-labelledby="unavailable-title">
-        <h2 id="unavailable-title">За пределами C2A</h2>
-        <button id="lifecycle-package-control" type="button" disabled>Package</button>
-        <button id="lifecycle-document-control" type="button" disabled>Документ</button>
-        <button id="lifecycle-chat-control" type="button" disabled>Чат</button>
-        <button id="lifecycle-science-control" type="button" disabled>Формулы / scalar Power</button>
-        <button id="lifecycle-prediction-control" type="button" disabled>Прогноз / риск</button>
-        <button id="lifecycle-recommendation-control" type="button" disabled>Рекомендации / ранжирование</button>
-      </section>
 
-      <details class="card">
-        <summary>Все ограничения C2A</summary>
-        <ul>
-          {% for statement in lifecycle_claim_statements %}
-            <li data-claim-code="{{ statement.code }}">{{ statement.text }}</li>
-          {% endfor %}
-        </ul>
-      </details>
+
+
     {% else %}
-      <section class="card state-card" role="status" data-kind="error">
-        <h1>Требуется заранее выданная сессия</h1>
-        <p>Studio не выдаёт сессию и не принимает учётные данные. Foundation не вызван.</p>
+      <section class="card state-card" role="status" data-kind="error" data-panel-help="state">
+        <h1>Требуется сессия</h1>
+        <p>Нет доступа. Запросы не выполнены.</p>
       </section>
     {% endif %}
   </main>
@@ -196,5 +190,6 @@
       <p>Жизненный цикл не загружен и Foundation не изменён.</p>
     </section>
   </noscript>
+{% include 'production_studio/ui_help.html' %}
 </body>
 </html>

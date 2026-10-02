@@ -1,0 +1,47 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_PRIMARY_ATTEMPT_LEDGER_R2",
+  "target_route": "AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR",
+  "created_after_primary_results": true,
+  "purpose": "RETROSPECTIVE_AUDIT_LEDGER_ONLY_NOT_NEW_PRIMARY_EVIDENCE",
+  "primary_roles": {
+    "OMG_NOV24_V101_AI1": {
+      "provider": "ChatGPT",
+      "intended_model": "GPT-5.6 Sol Pro",
+      "substantive_attempts_preserved": 1,
+      "completed_at_utc": "2026-10-01T14:17:12Z",
+      "run_id": "a679f5c4-c3fc-4669-b19a-efa10ed3144a",
+      "raw_blob": "2c8c9091e3164d08041749c9502062f57b3cb6e3"
+    },
+    "OMG_NOV24_V101_AI2": {
+      "original_provider": "Claude",
+      "original_dispatch_state": "NOT_DISPATCHED_SERVICE_UNAVAILABLE",
+      "grok_candidate": {
+        "binding_commit": "ae9bc74c78183e584bdbbe0f0a1e2b4c0191f649",
+        "binding_commit_time_utc": "2026-10-01T14:18:55Z",
+        "frozen_label": "Grok 4.7",
+        "actual_ui_observation": "Grok 4.6",
+        "substantive_attempts": 0,
+        "disposition": "NOT_DISPATCHED_LABEL_MISMATCH"
+      },
+      "gemini_candidate": {
+        "provider": "Google Gemini",
+        "binding_commit": "e36985f7e7f608deb039225f8d39d458db5ccc09",
+        "binding_commit_time_utc": "2026-10-01T15:10:43Z",
+        "frozen_ui_label": "3.1 Pro",
+        "reasoning_option": "Расширенные способности к размышлению",
+        "substantive_attempts_preserved": 1,
+        "completed_at_utc": "2026-10-01T15:11:56Z",
+        "run_id": "b3620f3a-d68a-442c-a2b1-5e8cd1d4a0fc",
+        "raw_blob": "3960a46c1bedba2ca15576523f6727a185563744",
+        "prospective_order_supported_by_git_commit_timestamp": true
+      }
+    }
+  },
+  "protocol_claims": {
+    "no_rerun_until_favorable": "DECLARED_AND_NO_ADDITIONAL_PRESERVED_SUBSTANTIVE_PRIMARY_RUNS_OBSERVED_IN_PROJECT_RECORD",
+    "ai1_output_sealed_from_model_b": "DECLARED_IN_PROSPECTIVE_BINDING_NOT_INDEPENDENTLY_SERVICE_AUDITED",
+    "service_level_hidden_attempt_exclusion": "NOT_PROVEN",
+    "model_identity_service_receipt": "NOT_AVAILABLE_FOR_GEMINI_PRIMARY"
+  },
+  "interpretation": "This ledger narrows what is documented versus what remains not independently service-audited. It must not be used to claim impossible proof of absence of hidden external attempts."
+}

@@ -1,0 +1,36 @@
+{
+  "blocking_gates": [
+    "G2",
+    "G4"
+  ],
+  "expected_state": "AI_ONLY_RESEARCH_BETA_RC_HOLD",
+  "git_blobs": {
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_ARTIFACT_REVIEW_R1.json": "f3f1c681d3abcfe4573129fd2a08fd98ad83343f",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_RESULT_R1.json": "1eb6d50e8ae8ba2e579ae3048cc622f59e1641a9",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/COHORT_AGGREGATE_R1.json": "6f7fcdbe9901dccdfb11813c5c8e4a16e499192d",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/OMG_NOV24_V100_VALIDATION_FAILURE.json": "84f80c3e83708e6061ff7009e81ea1c3b8845287",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/RELEASE_DECISION_MATRIX_R1.json": "0c2354d8355773d626b545231503784950848571",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/RELEASE_GATE_R1.md": "9b127097ec7e21fab003ea27bf95bad310c09af8",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/evaluate_release_gate_r1.py": "71bcfd8dd259364df6140be358ad265ce653443d",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/live/RELEASE_GATE_INPUT_20261001_R1.json": "4b84e8a35161366cb2ceeeebc51fab4f35daacbb"
+  },
+  "github_run_attempt": "1",
+  "github_run_id": "36845373815",
+  "github_sha": "3c0edadf720b751b1b62c8b223b75e1d614b47da",
+  "passed_eligible_replay_gate": "G7",
+  "release_output": {
+    "bytes": 617,
+    "file": "RELEASE_GATE_OUTPUT_20261001_R1.json",
+    "sha256": "56cbf69c8af06c06e0c0601a31785fa4c9a826c317dc478757be8ada5bd8c2c0"
+  },
+  "schema": "AI_ONLY_RESEARCH_BETA_LIVE_RELEASE_RECEIPT_R1",
+  "scientific_boundaries": {
+    "auto_merge": false,
+    "coordinator_substitution": false,
+    "historical_area_UNO": "NOT_COMPUTED",
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  },
+  "workflow": "AI-only research beta live release gate R1"
+}

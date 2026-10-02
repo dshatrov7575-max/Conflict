@@ -1,0 +1,208 @@
+name: AI-only V1.1 demo package preflight
+
+on:
+  push:
+    branches:
+      - review/ai-only-research-beta-v1-1-fast-repair
+    paths:
+      - ".github/workflows/ai-only-v1-1-demo-preflight.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Verify frozen V1.1 demo package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact demo-package head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify manifest and all pinned demo blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR
+          test "$(git hash-object "$root/DEMO_PACKAGE_MANIFEST_R1.json")" = "abca1f71455dc2c63d7f52736fb1004724cb90ce"
+          python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          manifest_path=Path('docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json')
+          manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
+          assert manifest['schema']=='AI_ONLY_RESEARCH_BETA_V1_1_DEMO_PACKAGE_MANIFEST_R1'
+          assert manifest['state']=='READY_FOR_REHEARSAL_PREFLIGHT'
+          assert manifest['target_demo_date']=='2026-10-02'
+          assert manifest['release_candidate_state']=='AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS'
+          assert manifest['source_evaluation']['github_run_id']=='36885038106'
+          assert manifest['source_evaluation']['github_run_conclusion']=='success'
+          assert manifest['source_evaluation']['artifact_digest']=='sha256:ff8c6cf0d6a4cc43e9ca4ab9a3fe54539fcb8fe9b5e31576cc1e33e7a0087ed6'
+
+          groups=('presentation_files','fresh_v1_1_primary_files','derived_v1_1_files','retained_r1_demo_files')
+          for group in groups:
+              for path,expected in manifest[group].items():
+                  actual=subprocess.check_output(['git','hash-object',path],text=True).strip()
+                  assert actual==expected,(group,path,expected,actual)
+          PY
+
+      - name: Verify scientific states and claim boundary
+        shell: bash
+        env:
+          DEMO_HEAD_SHA: ${{ github.sha }}
+          DEMO_RUN_ID: ${{ github.run_id }}
+          DEMO_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/v1-1-demo-preflight"
+          mkdir -p "$out"
+          python - "$out" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import sys
+
+          out=pathlib.Path(sys.argv[1])
+          root=pathlib.Path('docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR')
+          r1=pathlib.Path('docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1')
+          load=lambda p: json.loads(pathlib.Path(p).read_text(encoding='utf-8'))
+
+          manifest=load(root/'DEMO_PACKAGE_MANIFEST_R1.json')
+          current=load(root/'CURRENT_STATE_20261001_R1.json')
+          ai1=load(root/'raw/OMG_NOV24_V101_AI1_COMPLETED.json')
+          ai2=load(root/'raw/OMG_NOV24_V101_AI2_COMPLETED.json')
+          comparison=load(root/'derived/OMG_NOV24_V101_PRIMARY_COMPARISON.json')
+          aggregate=load(root/'derived/COHORT_AGGREGATE_V1_1_R1.json')
+          gate=load(root/'release_gate/RELEASE_GATE_OUTPUT_V1_1_R1.json')
+          replay=load(r1/'eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_RESULT_R1.json')
+          eval_receipt=load(root/'receipts/V1_1_EVALUATION_RECEIPT_R1.json')
+          artifact_review=load(root/'receipts/V1_1_ARTIFACT_REVIEW_R1.json')
+          script=(root/'DEMO_SCRIPT_15_MIN_R2.md').read_text(encoding='utf-8')
+          checklist=(root/'DEMO_REHEARSAL_CHECKLIST_R1.md').read_text(encoding='utf-8')
+
+          required_label=manifest['required_label']
+          assert required_label in script
+          assert required_label in checklist
+          assert 'HOLD_DISAGREEMENT' in script
+          assert 'AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS' in script
+          assert 'UNKNOWN != 0' in script
+
+          assert current['pr_state']=='DRAFT_OPEN_NOT_MERGED'
+          assert current['release_candidate']['state']=='AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS'
+          assert current['release_candidate']['github_run_id']=='36885038106'
+          assert set(current['release_candidate']['gates'].values())=={'PASS'}
+          assert current['omg_v101']['state']=='HOLD_DISAGREEMENT'
+          assert current['omg_v101']['calculation_release'] is False
+          assert current['demo']['state']=='READY'
+          assert current['demo']['required_label']==required_label
+
+          assert ai1['actual_model_label']=='GPT-5.6 Sol Pro'
+          assert ai2['actual_model_label']=='Gemini 3.1 Pro'
+          assert ai1['run_id']!=ai2['run_id']
+          assert all(v is False for v in ai1['attestation'].values())
+          assert all(v is False for v in ai2['attestation'].values())
+
+          expected_triage=['CONSENSUS_NUMERIC','CONSENSUS_NUMERIC','CONSENSUS_NUMERIC','HOLD_DISAGREEMENT']
+          assert comparison['state']=='HOLD_DISAGREEMENT'
+          assert comparison['calculation_release'] is False
+          assert [row['triage'] for row in comparison['entries']]==expected_triage
+          assert comparison['entries'][3]['ai1_status']=='UNKNOWN'
+          assert comparison['entries'][3]['ai1_value'] is None
+          assert comparison['entries'][3]['ai2_status']=='NUMERIC'
+          assert comparison['entries'][3]['ai2_value']==5
+
+          assert aggregate['state']=='COMPLETE'
+          assert aggregate['expected_decisions']==12
+          assert aggregate['observed_decisions']==12
+          assert aggregate['overall']['exact_agreement_count']==11
+          assert aggregate['overall']['numeric_consensus_count']==9
+          assert aggregate['overall']['shared_unknown_count']==2
+          assert aggregate['overall']['disagreement_count']==1
+          assert aggregate['overall']['unresolved_count']==0
+          assert aggregate['eligible_replay_lanes']==[
+              'AI_ONLY_DYAD_KBM_E02_V100',
+              'AI_ONLY_PAIR_KBM_E05_V100',
+          ]
+
+          assert gate['state']=='AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS'
+          assert set(gate['gates'].values())=={'PASS'}
+          assert gate['eligible_lanes']==aggregate['eligible_replay_lanes']
+          assert gate['separate_release_states']['historical_area_UNO']=='BLOCKED'
+          assert gate['separate_release_states']['human_validated_scientific_release']=='NOT_PERFORMED'
+
+          assert replay['state']=='PASS'
+          assert list(replay['lanes'])==aggregate['eligible_replay_lanes']
+          for lane in aggregate['eligible_replay_lanes']:
+              assert replay['lanes'][lane]['core_replay']['state']=='PASS_CORE_PARITY'
+              assert replay['lanes'][lane]['core_replay']['scenario_count']==15
+              assert replay['lanes'][lane]['core_replay']['all_snapshot_json_replays']=='PASS'
+              assert replay['lanes'][lane]['core_replay']['all_core_result_digests_stable'] is True
+
+          assert eval_receipt['derived_states']['omg_v101']=='HOLD_DISAGREEMENT'
+          assert artifact_review['state']=='PASS'
+          assert artifact_review['verified']['old_omg_kvs5_pol50_restored'] is False
+          assert artifact_review['verified']['historical_area_UNO_computed'] is False
+          assert artifact_review['verified']['human_validation_performed'] is False
+
+          receipt={
+              'schema':'AI_ONLY_RESEARCH_BETA_V1_1_DEMO_PREFLIGHT_RECEIPT_R1',
+              'state':'PASS',
+              'github_run_id':os.environ['DEMO_RUN_ID'],
+              'github_run_attempt':os.environ['DEMO_RUN_ATTEMPT'],
+              'github_head_sha':os.environ['DEMO_HEAD_SHA'],
+              'manifest_git_blob':'abca1f71455dc2c63d7f52736fb1004724cb90ce',
+              'source_evaluation_run_id':'36885038106',
+              'source_evaluation_artifact_digest':manifest['source_evaluation']['artifact_digest'],
+              'verified':{
+                  'required_label_present':True,
+                  'raw_primary_identity_and_attestations':'PASS',
+                  'omg_v101_state':'HOLD_DISAGREEMENT',
+                  'omg_v101_core_replay_executed':False,
+                  'cohort_complete':'12/12',
+                  'exact_agreement':'11/12',
+                  'eligible_core_replay_lanes':aggregate['eligible_replay_lanes'],
+                  'eligible_lane_core_parity':'PASS_15_OF_15_EACH',
+                  'release_gate':'G1_G8_ALL_PASS',
+                  'release_candidate_state':gate['state'],
+                  'historical_area_UNO':'NOT_COMPUTED_BLOCKED',
+                  'human_validation':'NOT_PERFORMED',
+                  'old_omg_company_kvs5_pol50_restored':False,
+                  'pr_expected_state':'DRAFT_OPEN_NOT_MERGED',
+                  'auto_merge':False,
+              },
+          }
+          target=out/'DEMO_PREFLIGHT_RECEIPT_R1.json'
+          target.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps({'state':'PASS','release_candidate_state':gate['state'],'eligible_lanes':aggregate['eligible_replay_lanes']}))
+          PY
+
+      - name: Upload immutable demo preflight receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-only-v1-1-demo-preflight-r1
+          path: ${{ runner.temp }}/v1-1-demo-preflight/DEMO_PREFLIGHT_RECEIPT_R1.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Preserve demo and scientific boundaries
+        shell: bash
+        run: |
+          echo 'DEMO_PACKAGE_MUTATED_AFTER_PREFLIGHT=false'
+          echo 'RAW_PRIMARY_OUTPUTS_EDITED=false'
+          echo 'EMPLOYER_KVS_ADJUDICATED=false'
+          echo 'UNKNOWN_CONVERTED_TO_ZERO=false'
+          echo 'OMG_V101_CORE_REPLAY_EXECUTED=false'
+          echo 'OLD_OMG_COMPANY_KVS5_POL50_RESTORED=false'
+          echo 'HISTORICAL_AREA_UNO_COMPUTED=false'
+          echo 'HUMAN_VALIDATION_PERFORMED=false'
+          echo 'AUTO_MERGE=false'

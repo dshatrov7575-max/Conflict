@@ -1,0 +1,36 @@
+{
+  "blocker_id": "PRIMARY_EXECUTION_BLOCKER_20260930_R1",
+  "date": "2026-09-30",
+  "status": "OPEN",
+  "scope": "AI_ONLY_REPLICATION_COHORT_R1_20260930",
+  "finding": "Google Drive task documents are present, but no connected executor currently consumes them.",
+  "evidence": {
+    "drive_tasks_present": 8,
+    "completed_outputs_present": 0,
+    "repository_mail_worker_found": false,
+    "repository_model_runner_found": false,
+    "github_actions_model_executor_found": false,
+    "claude_openrouter_plugin_found": false,
+    "desktop_commander_status": "MONTHLY_USAGE_EXHAUSTED",
+    "current_chat_blind_primary_eligible": false
+  },
+  "reason_current_chat_not_primary": "This coordinator chat has seen prior R2/V1.0.1 findings, source-recovery decisions, and lane design information, so using it as a blind primary would violate the frozen independence attestations.",
+  "allowed_resolution_paths": [
+    "fresh independent ChatGPT chats/models receive only their exact standalone packets",
+    "fresh independent Claude chats/models receive only their exact standalone packets",
+    "future connected executor/agent that can prove fresh context and preserve exact role/input identity",
+    "local automation after Desktop Commander or Conflictology Agent becomes available"
+  ],
+  "forbidden": [
+    "have the coordinator chat answer the blind primary packet",
+    "reuse prior R2 outputs as cohort outputs",
+    "substitute a second model after seeing the first model's result",
+    "pretend Drive task creation is equivalent to model execution",
+    "change cohort/stop rule because execution is delayed"
+  ],
+  "release_impact": {
+    "G2_primary_execution_completeness": "BLOCKED_UNTIL_8_VALID_OUTPUTS",
+    "cohort_state": "FROZEN_WAITING_EXECUTION",
+    "calculation_release": false
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "package_id": "MVP7_OMG_E02_NOV24_V100_20260930",
+  "status": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+  "route_id": "AI_ONLY_DYAD_OMG_NOV24_V100",
+  "contract_version": "1.0.0",
+  "rubric_version": "2.1.0",
+  "evidence_input_sha256": "72b061d6999b596052adc34df493cd2f9687979589ddd17a83ae21f375a0a9a4",
+  "evidence_input_bytes": 4615,
+  "files_expected": 10,
+  "files": [
+    "00_README.md",
+    "01_SOURCE_AUTHENTICATION_R1.json",
+    "02_TEMPORAL_OBJECT_CONTRACT.json",
+    "03_EVIDENCE_INPUT_V100.json",
+    "04_RUBRIC_2_1_0.md",
+    "05_PRIMARY_RESPONSE_SCHEMA.json",
+    "06_AI1_STANDALONE_RU.md",
+    "07_AI2_STANDALONE_RU.md",
+    "08_COMPARISON_RELEASE_GATE.md",
+    "09_FREEZE_MANIFEST.json"
+  ],
+  "source_payload": {
+    "source_id": "CONTUR_1822_20111130",
+    "archive_capture_utc": "2011-12-03T22:27:42Z",
+    "bytes": 156307,
+    "sha256": "d6bd3102d40bc51dde3847ffe1fe9d6abb5c3d63492ecf9ad2b96e9ae4fcd90c"
+  },
+  "actors": [
+    "OMG_DISMISSED_WORKERS_NOV23_24_AS_REPORTED_CONTUR",
+    "RD_KMG_OMG_EMPLOYER_SIDE_NOV23_24_AS_REPORTED_CONTUR"
+  ],
+  "entries_per_primary": 4,
+  "primary_roles": [
+    "OMG_NOV24_V100_AI1",
+    "OMG_NOV24_V100_AI2"
+  ],
+  "factor_values_preassigned": false,
+  "targeted_content_review_rounds": 0,
+  "coordinator_substitution": "FORBIDDEN",
+  "calculation_release": false,
+  "source_bias_rule": "FROZEN_HOSTILE_EDITORIAL_LANGUAGE_NOT_FACTOR_EVIDENCE",
+  "simultaneous_snapshot": false,
+  "carry_forward": "NONE",
+  "historical_area_UNO": "NOT_COMPUTED",
+  "human_validation": "NOT_PERFORMED",
+  "old_omg_company_kvs_5_reused": false,
+  "old_omg_pol_50_reused": false
+}

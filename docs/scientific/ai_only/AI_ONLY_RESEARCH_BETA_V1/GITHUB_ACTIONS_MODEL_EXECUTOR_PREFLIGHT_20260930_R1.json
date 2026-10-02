@@ -1,0 +1,37 @@
+{
+  "preflight_id": "GITHUB_ACTIONS_MODEL_EXECUTOR_PREFLIGHT_20260930_R1",
+  "date": "2026-09-30",
+  "workflow": ".github/workflows/ai-only-primary-executor-preflight.yml",
+  "workflow_run_id": 36715106066,
+  "head_sha": "4edf04a0b3930ba4b2bdcc3cabe205cf36359bea",
+  "status": "COMPLETED_NO_USABLE_MODEL_CREDENTIAL",
+  "conclusion": "success",
+  "external_api_calls_made": false,
+  "secret_values_exposed": false,
+  "standard_secret_presence": {
+    "OPENAI_API_KEY": false,
+    "ANTHROPIC_API_KEY": false,
+    "OPENROUTER_API_KEY": false,
+    "COPILOT_GITHUB_TOKEN": false,
+    "PERSONAL_ACCESS_TOKEN": false
+  },
+  "executor_state": "BLOCKED_NO_MODEL_CREDENTIAL",
+  "scientific_effect": {
+    "cohort_unchanged": true,
+    "primary_outputs_created": 0,
+    "calculation_release": false
+  },
+  "runs": [
+    {
+      "workflow_run_id": 36715106066,
+      "head_sha": "4edf04a0b3930ba4b2bdcc3cabe205cf36359bea",
+      "conclusion": "success"
+    },
+    {
+      "workflow_run_id": 36715770075,
+      "head_sha": "f39fbb96183eba094e0c9c93b0164f0383dd9ddd",
+      "conclusion": "success"
+    }
+  ],
+  "note": "For this personally owned repository, the prepared Copilot CLI executor requires COPILOT_GITHUB_TOKEN. The executor workflow is frozen but intentionally untriggered."
+}

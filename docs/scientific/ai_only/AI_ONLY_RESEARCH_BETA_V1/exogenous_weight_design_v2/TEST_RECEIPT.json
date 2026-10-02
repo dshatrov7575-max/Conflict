@@ -1,0 +1,32 @@
+{
+  "test_receipt_id": "COMMON_WEIGHT_RUNNER_V2_TEST_20260930_R1",
+  "date": "2026-09-30",
+  "runner": "read_only_sensitivity_runner_v2.py",
+  "design_id": "AI_ONLY_COMMON_EXOGENOUS_WEIGHT_DESIGN_V2",
+  "status": "SUPERSEDED_BY_V2_1_PASS",
+  "checks_completed": {
+    "formula_replay_in_current_reasoning_environment": {
+      "result": "PASS",
+      "checks": [
+        "equal -5/5 vs +5/5 baseline Pol = 50.00000000",
+        "positive RGU envelope = 9.09090909..50.00000000",
+        "positive q scale 0.1/1/10 leaves Pol invariant",
+        "actor-A zero weight produces Pol = 0.00000000 coverage stress",
+        "all actor RGUs zero is not computable",
+        "company KVS=8 synthetic baseline Pol = 38.46153846"
+      ]
+    },
+    "frozen_grid_structure": "PASS",
+    "frozen_lane_bindings_structure": "PASS"
+  },
+  "checks_pending": {
+    "fresh_raw_github_runner_execution": "PENDING",
+    "reason": "Desktop Commander monthly usage exhausted; raw GitHub execution was not falsely claimed.",
+    "required_before_any_scientific_scenario_release": true
+  },
+  "calculation_release": false,
+  "core_change": false,
+  "post_result_tuning": "FORBIDDEN",
+  "superseded_by": "TEST_RECEIPT_V2_1.json",
+  "note": "The V2 runner did not consume the separately frozen D25 binding. V2.1 fixes binding ingestion without changing the frozen weight grid."
+}

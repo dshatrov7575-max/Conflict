@@ -1,0 +1,24 @@
+{
+  "engineering_id": "KBM_E05_V100_READ_ONLY_COMPARATOR",
+  "route_id": "AI_ONLY_PAIR_KBM_E05_V100",
+  "input_sha256": "51f1a805986f7550828d8b05e0a1aa7aa2c80d43410540cd0f72a82448660f95",
+  "status": "READY_BEFORE_PRIMARY_RESPONSES",
+  "self_test": {
+    "result": "PASS",
+    "cases": 8,
+    "executed_from_fresh_raw_github_download": true,
+    "date": "2026-09-30"
+  },
+  "inherited_worker_record": {
+    "unit_id": "AO2S-C1-04",
+    "POS_AO2": -5,
+    "KVS_AO2": 5,
+    "source_report_date": "2011-05-27"
+  },
+  "writes_to_core": false,
+  "changes_core": false,
+  "coordinator_substitution": "FORBIDDEN",
+  "targeted_content_review_rounds": 0,
+  "human_validation": "NOT_PERFORMED",
+  "historical_area_UNO": "NOT_COMPUTED"
+}

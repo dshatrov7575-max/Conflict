@@ -1,0 +1,56 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEWER_A_INTAKE_RECORD_R1",
+  "reviewer_role": "V1_1_HOSTILE_REVIEWER_A",
+  "source": "USER_CHAT_PASTE",
+  "raw_byte_preservation": "NOT_ESTABLISHED",
+  "declared_model": {
+    "actual_model_label": "Gemini 1.5 Pro",
+    "model_label_source": "Системный контекст AI"
+  },
+  "dispatch_context": {
+    "user_selected_ui_model": "Gemini 3.1 Pro",
+    "reasoning_mode": "Расширенные способности к размышлению",
+    "replacement_after_zip_input_failure": true,
+    "original_frozen_binding": "ANTHROPIC_CLAUDE_STANDARD_CHAT",
+    "prospective_git_amendment_before_replacement_output": false
+  },
+  "declared_verdict": {
+    "state": "PASS",
+    "rc_state_supported": true,
+    "demo_allowed": true,
+    "confirmed_p0": 0,
+    "confirmed_p1": 0,
+    "confirmed_p2": 0,
+    "not_proven": 0
+  },
+  "domain_statuses": {
+    "D01_PROSPECTIVE_TECHNICAL_REPAIR": "PASS",
+    "D02_IMMUTABLE_CARRY_FORWARD": "PASS",
+    "D03_FRESH_PRIMARY_INDEPENDENCE": "PASS",
+    "D04_MODEL_B_SUBSTITUTION": "PASS",
+    "D05_COMPARATOR_FAIL_CLOSED": "PASS",
+    "D06_COHORT_AGGREGATION": "PASS",
+    "D07_ELIGIBLE_ONLY_CORE_REPLAY": "PASS",
+    "D08_RELEASE_GATE_LOGIC": "PASS",
+    "D09_PROVENANCE_AND_RECEIPTS": "PASS",
+    "D10_DEMO_ACCURACY": "PASS",
+    "D11_OLD_OMG_SUPERSESSION": "PASS",
+    "D12_CLAIM_BOUNDARIES": "PASS",
+    "D13_FAILED_WORKFLOW_ATTEMPTS": "PASS",
+    "D14_SELECTIVE_RERUN_AND_BIAS_RISK": "PASS"
+  },
+  "protocol_intake": {
+    "schema_shape": "APPARENTLY_CONFORMING_FROM_CHAT_PASTE",
+    "target_identity": "MATCHES_FROZEN_TARGET",
+    "attestations": "ALL_FALSE_AS_DECLARED",
+    "eligibility": "HOLD_PROTOCOL_IDENTITY",
+    "reasons": [
+      "HOSTILE_REVIEW_MODEL_BINDING_R1 requires a new prospective amendment frozen before a replacement output after a technical failure; no such Git freeze existed before this replacement output.",
+      "Declared actual_model_label 'Gemini 1.5 Pro' conflicts with the user-selected UI model 'Gemini 3.1 Pro'.",
+      "Replacement single-file transport was not prospectively frozen as the Reviewer A package identity before the substantive output.",
+      "Raw byte-for-byte preservation cannot be established from a chat paste."
+    ]
+  },
+  "canonical_use": "DO_NOT_USE_TO_SUPPORT_RC_STATE",
+  "allowed_use": "NONCANONICAL_INFORMATIONAL_REVIEW_ONLY"
+}

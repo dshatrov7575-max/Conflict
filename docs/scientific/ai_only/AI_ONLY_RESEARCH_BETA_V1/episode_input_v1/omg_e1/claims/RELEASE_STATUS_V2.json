@@ -1,0 +1,24 @@
+{
+  "object_id": "MVP7_OMG_EPISODE_E1",
+  "release_status_version": "2.0",
+  "technical_object_status": "PASS_INTERNAL_TECHNICAL_DEMO_ONLY",
+  "external_scientific_release": "HOLD_EXTERNAL_SCIENTIFIC_RELEASE",
+  "corrected_label": "AI_ONLY_INTERVAL_ASSEMBLED_SINGLE_PTN_SOURCE_STATEMENT_SCENARIO",
+  "factor_status": "COORDINATOR_ADJUDICATED_PROVISIONAL_AFTER_PRIMARY_DISAGREEMENT",
+  "primary_agreement": {"agreed_entries": 0, "total_entries": 4},
+  "baseline": {
+    "RGU": [1, 1],
+    "KVPTN": 1,
+    "Pol": 50,
+    "interpretation": "ANALYTIC_NORMALIZATION_AND_MAXIMUM_WITHIN_FROZEN_POSITIVE_RGU_GRID"
+  },
+  "sensitivity": {"Pol_min": "9.09090909", "Pol_max": "50.00000000"},
+  "claims": {
+    "historical_december_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED",
+    "construct_validity": "NOT_PROVEN"
+  }
+}

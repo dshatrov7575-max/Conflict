@@ -1,0 +1,231 @@
+name: AI-only V1.1 hostile review distribution packages
+
+on:
+  push:
+    branches:
+      - review/ai-only-research-beta-v1-1-fast-repair
+    paths:
+      - ".github/workflows/ai-only-v1-1-hostile-review-distribution.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Build frozen role-separated hostile review packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact packaging head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build and verify role-separated ZIP packages
+        shell: bash
+        env:
+          PACKAGE_HEAD_SHA: ${{ github.sha }}
+          PACKAGE_RUN_ID: ${{ github.run_id }}
+          PACKAGE_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/v1-1-hostile-review-distribution"
+          mkdir -p "$out"
+          python - "$out" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import shutil
+          import subprocess
+          import sys
+          import zipfile
+
+          repo=pathlib.Path.cwd()
+          out=pathlib.Path(sys.argv[1])
+          base=pathlib.Path('docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR')
+          review=base/'hostile_review_r1'
+          target_path=base/'DEMO_PACKAGE_MANIFEST_R1.json'
+          freeze_path=review/'HOSTILE_REVIEW_FREEZE_MANIFEST_R1.json'
+
+          def git_blob(path):
+              return subprocess.check_output(['git','hash-object',str(path)],text=True).strip()
+
+          def sha256(path):
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          assert git_blob(target_path)=='abca1f71455dc2c63d7f52736fb1004724cb90ce'
+          assert git_blob(freeze_path)=='53c00fb58a88ad75bbeb1410bce1a79a3f50677c'
+
+          target=json.loads(target_path.read_text(encoding='utf-8'))
+          freeze=json.loads(freeze_path.read_text(encoding='utf-8'))
+          assert freeze['state']=='FROZEN_BEFORE_REVIEW_OUTPUTS'
+          assert freeze['target']['manifest_git_blob']==git_blob(target_path)
+
+          source_paths=[]
+          expected_blobs={}
+          for group in ('presentation_files','fresh_v1_1_primary_files','derived_v1_1_files','retained_r1_demo_files'):
+              for path,blob in target[group].items():
+                  source_paths.append(path)
+                  expected_blobs[path]=blob
+          shared={
+              str(target_path):git_blob(target_path),
+              str(freeze_path):git_blob(freeze_path),
+              str(review/'HOSTILE_REVIEW_PROTOCOL_R1.md'):freeze['review_package_files'][str(review/'HOSTILE_REVIEW_PROTOCOL_R1.md')],
+              str(review/'HOSTILE_REVIEW_RESPONSE_SCHEMA_R1.json'):freeze['review_package_files'][str(review/'HOSTILE_REVIEW_RESPONSE_SCHEMA_R1.json')],
+          }
+          expected_blobs.update(shared)
+
+          for path,expected in expected_blobs.items():
+              actual=git_blob(path)
+              assert actual==expected,(path,expected,actual)
+
+          roles={
+              'A':{
+                  'role':'V1_1_HOSTILE_REVIEWER_A',
+                  'prompt':str(review/'REVIEWER_A_STANDALONE_RU.md'),
+                  'prompt_blob':freeze['review_package_files'][str(review/'REVIEWER_A_STANDALONE_RU.md')],
+                  'output':'V1_1_HOSTILE_REVIEW_A_COMPLETED.json',
+                  'zip':'V1_1_HOSTILE_REVIEWER_A_PACKAGE_R1.zip',
+              },
+              'B':{
+                  'role':'V1_1_HOSTILE_REVIEWER_B',
+                  'prompt':str(review/'REVIEWER_B_STANDALONE_RU.md'),
+                  'prompt_blob':freeze['review_package_files'][str(review/'REVIEWER_B_STANDALONE_RU.md')],
+                  'output':'V1_1_HOSTILE_REVIEW_B_COMPLETED.json',
+                  'zip':'V1_1_HOSTILE_REVIEWER_B_PACKAGE_R1.zip',
+              },
+          }
+
+          receipt={
+              'schema':'AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_DISTRIBUTION_RECEIPT_R1',
+              'state':'PASS',
+              'github_run_id':os.environ['PACKAGE_RUN_ID'],
+              'github_run_attempt':os.environ['PACKAGE_RUN_ATTEMPT'],
+              'github_head_sha':os.environ['PACKAGE_HEAD_SHA'],
+              'target_manifest_git_blob':git_blob(target_path),
+              'freeze_manifest_git_blob':git_blob(freeze_path),
+              'packages':{},
+              'boundaries':{
+                  'target_manifest_mutated':False,
+                  'review_outputs_present_at_packaging':False,
+                  'cross_reviewer_prompt_included':False,
+                  'attempt_limit_each':1,
+                  'external_search':'FORBIDDEN',
+                  'auto_merge':False,
+              },
+          }
+
+          assert not (review/'V1_1_HOSTILE_REVIEW_A_COMPLETED.json').exists()
+          assert not (review/'V1_1_HOSTILE_REVIEW_B_COMPLETED.json').exists()
+
+          for key,cfg in roles.items():
+              root=out/f'reviewer_{key.lower()}'
+              files_root=root/'FILES'
+              files_root.mkdir(parents=True)
+
+              prompt_src=repo/cfg['prompt']
+              assert git_blob(prompt_src)==cfg['prompt_blob']
+              shutil.copy2(prompt_src,root/'START_HERE.md')
+
+              all_paths=source_paths+list(shared)
+              file_index={}
+              for rel in all_paths:
+                  src=repo/rel
+                  dst=files_root/rel
+                  dst.parent.mkdir(parents=True,exist_ok=True)
+                  shutil.copy2(src,dst)
+                  file_index[rel]={
+                      'git_blob':git_blob(src),
+                      'bytes':src.stat().st_size,
+                      'sha256':sha256(src),
+                  }
+
+              dispatch=(
+                  f"# {cfg['role']} — запуск hostile review\n\n"
+                  "1. Откройте `START_HERE.md` и выполните его полностью.\n"
+                  "2. Используйте только файлы внутри папки `FILES`; внешний поиск запрещён.\n"
+                  f"3. Верните только JSON и сохраните его как `{cfg['output']}`.\n"
+                  "4. Не открывайте пакет второго reviewer и не выполняйте повторный запуск.\n"
+              )
+              (root/'README_DISPATCH_RU.md').write_text(dispatch,encoding='utf-8')
+              index={
+                  'schema':'AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_DISTRIBUTION_INDEX_R1',
+                  'reviewer_role':cfg['role'],
+                  'output_filename':cfg['output'],
+                  'target_manifest_git_blob':git_blob(target_path),
+                  'freeze_manifest_git_blob':git_blob(freeze_path),
+                  'start_here_source_path':cfg['prompt'],
+                  'start_here_git_blob':cfg['prompt_blob'],
+                  'files':file_index,
+                  'forbidden':freeze['forbidden'],
+              }
+              (root/'PACKAGE_INDEX.json').write_text(json.dumps(index,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+
+              zip_path=out/cfg['zip']
+              with zipfile.ZipFile(zip_path,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
+                  for path in sorted(root.rglob('*')):
+                      if path.is_file():
+                          z.write(path,path.relative_to(root))
+
+              with zipfile.ZipFile(zip_path) as z:
+                  names=set(z.namelist())
+                  assert 'START_HERE.md' in names
+                  assert 'PACKAGE_INDEX.json' in names
+                  assert 'README_DISPATCH_RU.md' in names
+                  other='REVIEWER_B_STANDALONE_RU.md' if key=='A' else 'REVIEWER_A_STANDALONE_RU.md'
+                  assert all(other not in name for name in names)
+
+              receipt['packages'][cfg['role']]={
+                  'filename':cfg['zip'],
+                  'bytes':zip_path.stat().st_size,
+                  'sha256':sha256(zip_path),
+                  'start_here_git_blob':cfg['prompt_blob'],
+                  'file_count':sum(1 for p in root.rglob('*') if p.is_file()),
+                  'other_reviewer_prompt_included':False,
+              }
+
+          receipt_path=out/'HOSTILE_REVIEW_DISTRIBUTION_RECEIPT_R1.json'
+          receipt_path.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps({'state':'PASS','packages':list(receipt['packages'])}))
+          PY
+
+      - name: Upload Reviewer A package
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1-1-hostile-reviewer-a-package-r1
+          path: ${{ runner.temp }}/v1-1-hostile-review-distribution/V1_1_HOSTILE_REVIEWER_A_PACKAGE_R1.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload Reviewer B package
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1-1-hostile-reviewer-b-package-r1
+          path: ${{ runner.temp }}/v1-1-hostile-review-distribution/V1_1_HOSTILE_REVIEWER_B_PACKAGE_R1.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload distribution receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1-1-hostile-review-distribution-receipt-r1
+          path: ${{ runner.temp }}/v1-1-hostile-review-distribution/HOSTILE_REVIEW_DISTRIBUTION_RECEIPT_R1.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Preserve distribution boundaries
+        shell: bash
+        run: |
+          echo 'TARGET_MANIFEST_MUTATED=false'
+          echo 'REVIEW_OUTPUTS_PRESENT=false'
+          echo 'CROSS_REVIEWER_PROMPT_INCLUDED=false'
+          echo 'EXTERNAL_SEARCH_ALLOWED=false'
+          echo 'RERUN_UNTIL_FAVORABLE=false'
+          echo 'AUTO_MERGE=false'

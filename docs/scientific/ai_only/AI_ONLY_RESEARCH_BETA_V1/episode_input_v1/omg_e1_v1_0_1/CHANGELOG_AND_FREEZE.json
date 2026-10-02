@@ -1,0 +1,32 @@
+{
+  "package_id": "MVP7_OMG_E1_V1_0_1_BLIND_REPLICATION",
+  "status": "FROZEN_BEFORE_NEW_PRIMARY_RESPONSES",
+  "supersedes_for_future_runs": "MVP7_OMG_EPISODE_E1_V1_20260929",
+  "does_not_modify": [
+    "original AI1 output",
+    "original AI2 output",
+    "original comparison",
+    "original targeted review",
+    "original Core replay"
+  ],
+  "material_sha256": "1be297fa1d71040066789c74fe0e6178bf07044e8567f1285bac69533ef90c9f",
+  "changes": [
+    {
+      "id": "D03_CONTEXT_HASH",
+      "old": "431f482... (final sentence only)",
+      "new": "7219f92326b0fa0fa5ec4c842726f9de8f496d3a357f998a04458d97dc32b3dd"
+    },
+    {
+      "id": "KASE_INDEX_VISIBLE",
+      "new": "Official dated index URL, date, excerpt, and English link target embedded."
+    },
+    {
+      "id": "KVS_REACTIVE_ACTOR",
+      "new": "Reactive mention/rebuttal alone is insufficient for KVS=5."
+    },
+    {
+      "id": "TEMPORAL_OBJECT",
+      "new": "Non-simultaneous demand→response dyad; carry-forward NONE."
+    }
+  ]
+}

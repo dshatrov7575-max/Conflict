@@ -1,0 +1,89 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR_CARRY_FORWARD_R1",
+  "status": "FROZEN_BEFORE_NEW_V1_1_RESPONSES",
+  "source_route": "AI_ONLY_RESEARCH_BETA_V1",
+  "source_head": "aa92137af751e758240b9cfb9d68e2bf76dab4ce",
+  "selection_rule": "IMPORT_ONLY_R1_PRIMARY_OUTPUTS_THAT_PASSED_THEIR_FROZEN_VALIDATORS; RERUN_ONLY_OBJECTIVELY_INVALID_OMG_ROLES",
+  "valid_primary_carry_forward": [
+    {
+      "role": "KBM_COMPANY_E02_V100_AI1",
+      "path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/KBM_E02_V100_AI1_COMPLETED.json",
+      "git_blob_sha": "9021d7419f6b1e5a03c6da7853786c94403e63be"
+    },
+    {
+      "role": "KBM_COMPANY_E02_V100_AI2",
+      "path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/KBM_E02_V100_AI2_COMPLETED.json",
+      "git_blob_sha": "0182c954e6df38ee69b4f97f48a68d949beb0108"
+    },
+    {
+      "role": "KBM_E05_V100_AI1",
+      "path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/KBM_E05_V100_AI1_COMPLETED.json",
+      "git_blob_sha": "278c5c1b1ecfeee07bebbdc92e68524d831cdf61"
+    },
+    {
+      "role": "KBM_E05_V100_AI2",
+      "path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/KBM_E05_V100_AI2_COMPLETED.json",
+      "git_blob_sha": "af6cda3140f3da343078006641201b7f64eb19e0"
+    },
+    {
+      "role": "D25_E02_V100_AI1",
+      "path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/D25_E02_V100_AI1_COMPLETED.json",
+      "git_blob_sha": "4232f8ddff68107ce1f5255b745758571d633a69"
+    },
+    {
+      "role": "D25_E02_V100_AI2",
+      "path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/D25_E02_V100_AI2_COMPLETED.json",
+      "git_blob_sha": "0078744100df6728c5a2ce88ee2c71511effdb86"
+    }
+  ],
+  "fresh_primary_required": [
+    {
+      "role": "OMG_NOV24_V101_AI1",
+      "service": "ChatGPT",
+      "model": "GPT-5.6 Sol Pro",
+      "attempt_limit": 1
+    },
+    {
+      "role": "OMG_NOV24_V101_AI2",
+      "service": "Claude",
+      "model": "Claude Opus 5.5 High",
+      "attempt_limit": 1
+    }
+  ],
+  "quarantined_invalid_r1_outputs": [
+    {
+      "role": "OMG_NOV24_V100_AI1",
+      "git_blob_sha": "d7110b98391f99f42a8eb237ac4b303f4694cc09",
+      "reason": "MISSING_REQUIRED_RUN_ID"
+    },
+    {
+      "role": "OMG_NOV24_V100_AI2",
+      "git_blob_sha": "ad880daf7751caf8cc68282ddb50332264cc8bef",
+      "reason": "MISSING_REQUIRED_RUN_ID"
+    }
+  ],
+  "immutable_valid_comparisons": [
+    {
+      "route_id": "AI_ONLY_DYAD_KBM_E02_V100",
+      "git_blob_sha": "2ea59f263ac83f34e458272d10202dc0b2829131"
+    },
+    {
+      "route_id": "AI_ONLY_PAIR_KBM_E05_V100",
+      "git_blob_sha": "056e3bbda09afc2738fba82cce354a8a5f4a0a1e"
+    },
+    {
+      "route_id": "AI_ONLY_DYAD_D25_E02_V100",
+      "git_blob_sha": "e6dd3b0eca82496278417ddd7af91f0f8b9b7e3a"
+    }
+  ],
+  "forbidden": [
+    "EDIT_R1_RAW_OUTPUT",
+    "COORDINATOR_ADD_RUN_ID",
+    "R1_COMPARATOR_RELAXATION",
+    "SHOW_OLD_OMG_OUTPUT_TO_NEW_PRIMARY",
+    "TARGETED_ADJUDICATION",
+    "RERUN_UNTIL_FAVORABLE",
+    "POST_RESULT_WEIGHT_TUNING",
+    "RESTORE_OLD_OMG_KVS5_POL50"
+  ]
+}

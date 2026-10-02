@@ -1,6 +1,8 @@
 {% extends 'player_integration/base.html' %}
 {% block content %}
+<section class="ui-panel" data-panel-help="calc-entry">
 <h1>Расчёт эксперимента</h1>
-<p>Укажите точный идентификатор оценочного эксперимента из Player.</p>
-<form method="get">{{ form.as_p }}<button type="submit">Открыть эксперимент</button></form>
+
+<form method="get">{{ form.as_p }}<button type="submit" data-ui-icon="open" data-ui-kind="primary" data-ui-label="Открыть">Открыть эксперимент</button></form>
+</section>
 {% endblock %}

@@ -1,0 +1,218 @@
+name: AI-only research beta live release gate R1
+
+on:
+  push:
+    branches:
+      - review/ai-only-research-beta-v1
+    paths:
+      - ".github/ai-only-release-gate-trigger-r1.txt"
+
+permissions:
+  contents: read
+
+jobs:
+  release-gate:
+    name: Evaluate frozen AI-only research beta release gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact release head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify exact frozen evaluator and live evidence blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_blob() {
+            path="$1"
+            expected="$2"
+            actual="$(git hash-object "$path")"
+            test "$actual" = "$expected" || {
+              echo "Blob mismatch for $path: expected=$expected actual=$actual" >&2
+              exit 21
+            }
+          }
+
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/evaluate_release_gate_r1.py 71bcfd8dd259364df6140be358ad265ce653443d
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/RELEASE_DECISION_MATRIX_R1.json 0c2354d8355773d626b545231503784950848571
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/RELEASE_GATE_R1.md 9b127097ec7e21fab003ea27bf95bad310c09af8
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/live/RELEASE_GATE_INPUT_20261001_R1.json 4b84e8a35161366cb2ceeeebc51fab4f35daacbb
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/cohort_analysis_r1/aggregate_cohort_r1.py 47b3fc0fc3828066b8cb68450114d4f7f8b69790
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/COHORT_AGGREGATE_R1.json 6f7fcdbe9901dccdfb11813c5c8e4a16e499192d
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/OMG_NOV24_V100_VALIDATION_FAILURE.json 84f80c3e83708e6061ff7009e81ea1c3b8845287
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/read_only_sensitivity_runner_v2_1.py 04ed2c062d35e04cd073a001f81523a0342283ab
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/SENSITIVITY_GRID_V2.json f59628b850749f2032b2df35422e9a0da5b11589
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_RESULT_R1.json 1eb6d50e8ae8ba2e579ae3048cc622f59e1641a9
+          check_blob docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_ARTIFACT_REVIEW_R1.json f3f1c681d3abcfe4573129fd2a08fd98ad83343f
+
+      - name: Re-run frozen prerequisite self-tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/cohort_analysis_r1/aggregate_cohort_r1.py --self-test
+          python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/read_only_sensitivity_runner_v2_1.py \
+            --grid docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/SENSITIVITY_GRID_V2.json \
+            --bindings docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/LANE_BINDINGS_R2.json \
+            --self-test
+          python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/evaluate_release_gate_r1.py --self-test
+
+      - name: Validate live gate input against retained evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1")
+          inp = json.loads((root / "release_gate_r1/live/RELEASE_GATE_INPUT_20261001_R1.json").read_text(encoding="utf-8"))
+          agg = json.loads((root / "executors/manual_dual_model_r1/derived/COHORT_AGGREGATE_R1.json").read_text(encoding="utf-8"))
+          omg = json.loads((root / "executors/manual_dual_model_r1/derived/OMG_NOV24_V100_VALIDATION_FAILURE.json").read_text(encoding="utf-8"))
+          replay = json.loads((root / "eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_RESULT_R1.json").read_text(encoding="utf-8"))
+          review = json.loads((root / "eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_ARTIFACT_REVIEW_R1.json").read_text(encoding="utf-8"))
+
+          assert agg["cohort_id"] == "AI_ONLY_REPLICATION_COHORT_R1_20260930"
+          assert agg["state"] == "PARTIAL"
+          assert agg["expected_decisions"] == 12
+          assert agg["observed_decisions"] == 8
+          assert agg["overall"]["numeric_consensus_count"] == 6
+          assert agg["overall"]["shared_unknown_count"] == 2
+          assert agg["overall"]["unresolved_count"] == 4
+          assert agg["lane_states"]["AI_ONLY_DYAD_OMG_NOV24_V100"] == "REJECT_INVALID_PRIMARY_RUN"
+          assert set(agg["eligible_replay_lanes"]) == {
+              "AI_ONLY_DYAD_KBM_E02_V100",
+              "AI_ONLY_PAIR_KBM_E05_V100",
+          }
+
+          assert omg["state"] == "INVALID_PRIMARY_OUTPUT_TECHNICAL_MISMATCH"
+          assert omg["exact_comparator_error"] == "run_id must differ"
+          assert omg["repair_performed"] is False
+          assert omg["retry_performed"] is False
+          assert omg["calculation_release"] is False
+
+          assert replay["state"] == "PASS"
+          assert review["state"] == "PASS"
+          assert replay["github_run_id"] == review["github_run_id"] == "36844856009"
+          assert replay["artifact_zip_digest"] == review["artifact_zip_digest"]
+          for route in inp["eligible_lanes"]:
+              assert replay["lanes"][route]["core_replay"]["state"] == "PASS_CORE_PARITY"
+              assert replay["lanes"][route]["core_replay"]["scenario_count"] == 15
+              assert replay["lanes"][route]["core_replay"]["all_snapshot_json_replays"] == "PASS"
+              assert replay["lanes"][route]["core_replay"]["all_core_result_digests_stable"] is True
+
+          roles = inp["primary_roles"]
+          assert len(roles) == 8
+          assert roles["OMG_NOV24_V100_AI1"] == "INVALID_TECHNICAL_MISMATCH"
+          assert roles["OMG_NOV24_V100_AI2"] == "INVALID_TECHNICAL_MISMATCH"
+          assert sum(value == "VALID" for value in roles.values()) == 6
+          assert inp["all_lane_comparators_executed"] is False
+          assert inp["coordinator_substitution_used"] is False
+          assert inp["targeted_content_review_used"] is False
+          assert inp["all_lane_outcomes_retained"] is True
+          print(json.dumps({"live_input_evidence_validation": "PASS"}))
+          PY
+
+      - name: Evaluate frozen live release gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/release-gate-live-r1"
+          mkdir -p "$out"
+          python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/evaluate_release_gate_r1.py \
+            --input docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/live/RELEASE_GATE_INPUT_20261001_R1.json \
+            --out "$out/RELEASE_GATE_OUTPUT_20261001_R1.json"
+
+          python - "$out/RELEASE_GATE_OUTPUT_20261001_R1.json" <<'PY'
+          import json, pathlib, sys
+          result = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert result["state"] == "AI_ONLY_RESEARCH_BETA_RC_HOLD"
+          assert result["gates"] == {
+              "G1": "PASS",
+              "G2": "FAIL",
+              "G3": "PASS",
+              "G4": "FAIL",
+              "G5": "PASS",
+              "G6": "PASS",
+              "G7": "PASS",
+              "G8": "PASS",
+          }
+          assert set(result["eligible_lanes"]) == {
+              "AI_ONLY_DYAD_KBM_E02_V100",
+              "AI_ONLY_PAIR_KBM_E05_V100",
+          }
+          print(json.dumps({"frozen_live_release_gate_assertion": "PASS"}))
+          PY
+
+      - name: Write immutable live release receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/release-gate-live-r1"
+          python - "$out/RELEASE_GATE_LIVE_RECEIPT_20261001_R1.json" "$out/RELEASE_GATE_OUTPUT_20261001_R1.json" <<'PY'
+          import hashlib, json, os, pathlib, subprocess, sys
+          receipt_path = pathlib.Path(sys.argv[1])
+          output_path = pathlib.Path(sys.argv[2])
+          output_bytes = output_path.read_bytes()
+          paths = [
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/evaluate_release_gate_r1.py",
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/RELEASE_DECISION_MATRIX_R1.json",
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/RELEASE_GATE_R1.md",
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/live/RELEASE_GATE_INPUT_20261001_R1.json",
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/COHORT_AGGREGATE_R1.json",
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/OMG_NOV24_V100_VALIDATION_FAILURE.json",
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_RESULT_R1.json",
+              "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_ARTIFACT_REVIEW_R1.json",
+          ]
+          payload = {
+              "schema": "AI_ONLY_RESEARCH_BETA_LIVE_RELEASE_RECEIPT_R1",
+              "github_run_id": os.environ["GITHUB_RUN_ID"],
+              "github_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "github_sha": os.environ["GITHUB_SHA"],
+              "workflow": os.environ["GITHUB_WORKFLOW"],
+              "release_output": {
+                  "file": output_path.name,
+                  "bytes": len(output_bytes),
+                  "sha256": hashlib.sha256(output_bytes).hexdigest(),
+              },
+              "git_blobs": {
+                  path: subprocess.check_output(["git", "hash-object", path], text=True).strip()
+                  for path in paths
+              },
+              "expected_state": "AI_ONLY_RESEARCH_BETA_RC_HOLD",
+              "blocking_gates": ["G2", "G4"],
+              "passed_eligible_replay_gate": "G7",
+              "scientific_boundaries": {
+                  "historical_snapshot": "NOT_ESTABLISHED",
+                  "historical_area_UNO": "NOT_COMPUTED",
+                  "human_validation": "NOT_PERFORMED",
+                  "predictive_validation": "NOT_CLAIMED",
+                  "coordinator_substitution": False,
+                  "auto_merge": False,
+              },
+          }
+          receipt_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+
+      - name: Upload immutable live release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-only-release-gate-live-r1
+          path: ${{ runner.temp }}/release-gate-live-r1
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Preserve release boundary
+        shell: bash
+        run: |
+          echo "Release state is HOLD; no merge or scientific claim expansion is authorized."
+          echo "G7 PASS does not override G2/G4 FAIL."
+          echo "Historical area UNO remains NOT_COMPUTED/BLOCKED."
+          echo "Old OMG company KVS=5 and Pol=50 remain superseded and are not restored."

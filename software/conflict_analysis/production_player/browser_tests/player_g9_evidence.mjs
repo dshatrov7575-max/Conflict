@@ -64,7 +64,7 @@ try {
     await evaluate("document.querySelector('#tab-document').click();document.querySelector('#g9-related').click();true");
     await client.waitForExpression(expectedCount
       ? `document.querySelectorAll('#g9-fact-list [role=option]').length===${expectedCount}`
-      : "document.querySelector('#g9-state')?.textContent==='Доступных связанных фактов нет.'",
+      : "document.querySelector('#g9-state')?.title==='Доступных связанных фактов нет.'",
     sessionId, timeout);
   };
   const openFirstFact = async () => {
@@ -95,7 +95,7 @@ try {
     await selectExperiment(hiddenExperiment);
     await selectFocus("parameter-value", hiddenValue);
     await related(0);
-    hiddenNeutral = await evaluate("document.querySelector('#g9-state').textContent==='Доступных связанных фактов нет.' && !document.body.textContent.includes('Скрытое утверждение')");
+    hiddenNeutral = await evaluate("document.querySelector('#g9-state').title==='Доступных связанных фактов нет.' && !document.body.textContent.includes('Скрытое утверждение')");
     await selectExperiment(visibleExperiment);
     await selectFocus("parameter-value", visibleValue);
     await evaluate(`(()=>{const original=window.fetch;window.fetch=(...args)=>String(args[0]).includes(${JSON.stringify(visibleValue)})?new Promise((resolve,reject)=>setTimeout(()=>original(...args).then(resolve,reject),300)):original(...args);document.querySelector('#g9-related').click();return true})()`);
@@ -105,8 +105,8 @@ try {
     lateResponseCleared = await evaluate("document.querySelectorAll('#g9-fact-list [role=option]').length===0");
     await client.send("Network.deleteCookies", {name: cookieName, url: base + "/"}, sessionId);
     await evaluate("document.querySelector('#g9-related').click();true");
-    await client.waitForExpression("document.querySelector('#g9-state')?.textContent.includes('недоступны')", sessionId, timeout);
-    revokedCleared = await evaluate("document.querySelectorAll('#g9-fact-list [role=option],#g9-evidence-list [role=option]').length===0 && !document.querySelector('#g9-detail').textContent");
+    await client.waitForExpression("document.querySelector('#g9-state')?.title.includes('недоступны')", sessionId, timeout);
+    revokedCleared = await evaluate("(()=>{const detail=document.querySelector('#g9-detail').cloneNode(true);detail.querySelectorAll('.panel-help').forEach(node=>node.remove());return document.querySelectorAll('#g9-fact-list [role=option],#g9-evidence-list [role=option]').length===0 && !detail.textContent})()");
   } else {
     await evaluate("(()=>{const item=document.querySelector('#g9-fact-list [role=option]');item.focus();item.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));return true})()");
     keyboard = await evaluate("document.querySelector('#g9-open-fact').disabled===false");
@@ -180,7 +180,7 @@ try {
     await evaluate(`(()=>{const original=window.fetch;window.fetch=async(...args)=>{const response=await original(...args);if(!String(args[0]).includes("/evidence/"))return response;const payload=await response.json();payload.evidence[0].project_primary.text_sha256="0".repeat(64);return new Response(JSON.stringify(payload),{status:response.status,headers:{"Content-Type":"application/json","Cache-Control":"no-store"}})};return true})()`);
     await openFirstFact();
     await evaluate("document.querySelector('#g9-evidence-list [role=option]').click();document.querySelector('#g9-open-fragment').click();true");
-    await client.waitForExpression("document.querySelector('#g9-state')?.textContent==='Точный фрагмент недоступен.'", sessionId, timeout);
+    await client.waitForExpression("document.querySelector('#g9-state')?.title==='Точный фрагмент недоступен.'", sessionId, timeout);
     fragmentMismatchClosed = await evaluate("document.querySelectorAll('#g9-detail blockquote,#g9-evidence-list [role=option],#g9-fact-list [role=option]').length===0");
   }
   const storage = await evaluate("Object.keys(localStorage).sort()");

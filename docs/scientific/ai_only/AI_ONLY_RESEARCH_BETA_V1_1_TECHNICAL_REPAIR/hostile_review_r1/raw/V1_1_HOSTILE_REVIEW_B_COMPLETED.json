@@ -1,0 +1,313 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_RESPONSE_R1",
+  "review_id": "V1_1_HOSTILE_REVIEW_B_2cee265a-54a9-4ecf-879b-e136ce5fc9ad",
+  "reviewer_role": "V1_1_HOSTILE_REVIEWER_B",
+  "actual_model_label": "GPT-5.6 Sol Pro",
+  "model_label_source": "System-provided model identity for this ChatGPT run.",
+  "run_id": "b12fa597-b0f4-4c98-a271-4cde0779ba3f",
+  "completed_at_utc": "2026-10-01T16:33:47Z",
+  "attestation": {
+    "other_reviewer_output_seen": false,
+    "prior_audits_seen": false,
+    "known_conflict_outcome_used": false,
+    "external_sources_used": false,
+    "primary_outputs_modified": false,
+    "coordinator_adjudication_used": false
+  },
+  "target_identity": {
+    "manifest_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json",
+    "manifest_git_blob": "abca1f71455dc2c63d7f52736fb1004724cb90ce",
+    "source_evaluation_run_id": "36885038106",
+    "source_evaluation_artifact_digest": "sha256:ff8c6cf0d6a4cc43e9ca4ab9a3fe54539fcb8fe9b5e31576cc1e33e7a0087ed6",
+    "demo_preflight_run_id": "36888617846",
+    "demo_preflight_artifact_digest": "sha256:0741d01501ffbede5b6dbb29f819d40908d913a72ee3f9a800292e1f0b12daf7"
+  },
+  "domain_reviews": [
+    {
+      "domain_id": "D01_PROSPECTIVE_TECHNICAL_REPAIR",
+      "status": "NOT_PROVEN",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/OMG_NOV24_V100_VALIDATION_FAILURE.json @ 84f80c3e83708e6061ff7009e81ea1c3b8845287",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json @ 524ee9a5d0b744e1b15e2c94fa37b75edf3663f0",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json @ abca1f71455dc2c63d7f52736fb1004724cb90ce"
+      ],
+      "analysis": "R1 фиксирует объективную техническую причину отказа: оба прежних OMG output не содержали обязательный run_id, comparator отказал fail-closed, repair/retry в R1 не выполнялся. V1.1 использует тот же input_sha256 и новые различающиеся run_id. Однако PROTOCOL_FREEZE_R1, оба standalone prompt и исходный comparator repair, на которые ссылается receipt, отсутствуют в frozen target/package; поэтому нельзя проверить, что дизайн ремонта был заморожен до новых результатов и что изменения действительно ограничились техническим контрактом."
+    },
+    {
+      "domain_id": "D02_IMMUTABLE_CARRY_FORWARD",
+      "status": "NOT_PROVEN",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/HOSTILE_REVIEW_PROTOCOL_R1.md @ 9d520d61b726812253cdc9d7784890493d14d22c",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json @ 524ee9a5d0b744e1b15e2c94fa37b75edf3663f0",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json @ abca1f71455dc2c63d7f52736fb1004724cb90ce"
+      ],
+      "analysis": "Protocol требует проверить immutable carry-forward шести R1 primary outputs по exact Git blobs. Frozen target содержит только три derived comparison-файла KBM E02, KBM E05 и D25; сами шесть raw outputs и CARRY_FORWARD_MANIFEST_R1 отсутствуют. Receipt утверждает r1_raw_outputs_edited=false и pin-ит manifest, но без его содержимого и raw blobs неизменность независимо не проверяется."
+    },
+    {
+      "domain_id": "D03_FRESH_PRIMARY_INDEPENDENCE",
+      "status": "PARTIAL",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI1_COMPLETED.json @ 2c8c9091e3164d08041749c9502062f57b3cb6e3",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI2_COMPLETED.json @ 3960a46c1bedba2ca15576523f6727a185563744",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/derived/OMG_NOV24_V101_PRIMARY_COMPARISON.json @ 2b6754aab5db9f503d6f2d4c7e77891668b8a86a"
+      ],
+      "analysis": "Два raw output имеют одинаковые route/input/contract, разные coder_role, UUID run_id и timestamps; все attestations false, а raw значения корректно перенесены в comparison. Это подтверждает artifact-level separation. Но отдельные dispatch/session records отсутствуют, а AI2 сообщает model_label_source='System prompt header specification', что не является независимой аутентификацией фактически использованной модели; реальная изоляция запусков подтверждена только самоаттестацией."
+    },
+    {
+      "domain_id": "D04_MODEL_B_SUBSTITUTION",
+      "status": "NOT_PROVEN",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json @ 524ee9a5d0b744e1b15e2c94fa37b75edf3663f0",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI1_COMPLETED.json @ 2c8c9091e3164d08041749c9502062f57b3cb6e3",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI2_COMPLETED.json @ 3960a46c1bedba2ca15576523f6727a185563744"
+      ],
+      "analysis": "Receipt pin-ит MODEL_B_SUBSTITUTION_GEMINI31PRO_R2.md, но этот документ не включён. AI1 завершён раньше AI2; пакет не содержит датированного pre-AI2 решения, записи о выборе только по доступности, доказательства отсутствия доступа к AI1 output при выборе либо независимого service/model receipt. Поэтому требуемая prospective substitution boundary не доказана."
+    },
+    {
+      "domain_id": "D05_COMPARATOR_FAIL_CLOSED",
+      "status": "PARTIAL",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI1_COMPLETED.json @ 2c8c9091e3164d08041749c9502062f57b3cb6e3",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI2_COMPLETED.json @ 3960a46c1bedba2ca15576523f6727a185563744",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/derived/OMG_NOV24_V101_PRIMARY_COMPARISON.json @ 2b6754aab5db9f503d6f2d4c7e77891668b8a86a",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json @ 524ee9a5d0b744e1b15e2c94fa37b75edf3663f0"
+      ],
+      "analysis": "Для данного экземпляра comparison воспроизводится из raw: три CONSENSUS_NUMERIC, затем UNKNOWN против 5 с same_C1_C8=false, HOLD_DISAGREEMENT и calculation_release=false. Coordinator substitution отсутствует. Но compare_primary_v101.py и полная schema/admission implementation не включены, поэтому замороженность и детерминизм comparator за пределами этого ручного пересчёта не доказаны."
+    },
+    {
+      "domain_id": "D06_COHORT_AGGREGATION",
+      "status": "PASS",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/derived/COHORT_AGGREGATE_V1_1_R1.json @ 1825425c7d756a3944acf3e615f8242c0d11aecf",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/derived/OMG_NOV24_V101_PRIMARY_COMPARISON.json @ 2b6754aab5db9f503d6f2d4c7e77891668b8a86a",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E02_V100_PRIMARY_COMPARISON.json @ 2ea59f263ac83f34e458272d10202dc0b2829131",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E05_V100_PRIMARY_COMPARISON.json @ 056e3bbda09afc2738fba82cce354a8a5f4a0a1e",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/D25_E02_V100_PRIMARY_COMPARISON.json @ e6dd3b0eca82496278417ddd7af91f0f8b9b7e3a"
+      ],
+      "analysis": "Четыре comparison-файла дают ровно 12 решений. Независимый арифметический пересчёт подтверждает exact agreement=11, numeric consensus=9, shared UNKNOWN=2, disagreement=1, unresolved=0; POS и KVS breakdown и все доли на frozen denominator 12 корректны. HOLD/UNKNOWN не преобразованы в числа."
+    },
+    {
+      "domain_id": "D07_ELIGIBLE_ONLY_CORE_REPLAY",
+      "status": "PASS",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_RESULT_R1.json @ 1eb6d50e8ae8ba2e579ae3048cc622f59e1641a9",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E02_V100_PRIMARY_COMPARISON.json @ 2ea59f263ac83f34e458272d10202dc0b2829131",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E05_V100_PRIMARY_COMPARISON.json @ 056e3bbda09afc2738fba82cce354a8a5f4a0a1e",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/release_gate/RELEASE_GATE_OUTPUT_V1_1_R1.json @ 5e35b95dbd3bbac68302da64a859273f6eec9b94"
+      ],
+      "analysis": "Replay result содержит ровно KBM E02 и KBM E05, а factor records совпадают с двумя eligible comparisons. Для каждой lane указаны 15 scenarios, PASS_CORE_PARITY, стабильные digests и JSON replay PASS. D25 и OMG V100 перечислены как неисполненные; V1.1 release gate также допускает только две KBM lane. Метрика явно помечена как single-PTN scenario, не historical area UNO."
+    },
+    {
+      "domain_id": "D08_RELEASE_GATE_LOGIC",
+      "status": "PARTIAL",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/release_gate/RELEASE_GATE_OUTPUT_V1_1_R1.json @ 5e35b95dbd3bbac68302da64a859273f6eec9b94",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/derived/COHORT_AGGREGATE_V1_1_R1.json @ 1825425c7d756a3944acf3e615f8242c0d11aecf",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/CURRENT_STATE_20261001_R1.json @ c3211c099b9a07118c6242150f9f9e9648af5af0",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json @ 524ee9a5d0b744e1b15e2c94fa37b75edf3663f0"
+      ],
+      "analysis": "На уровне заявленной семантики RC PASS совместим с OMG HOLD_DISAGREEMENT, D25 HOLD_FACTOR_INCOMPLETE и replay только двух KBM lane: state прямо содержит visible incompleteness, а historical/HUMAN/predictive release states отделены и заблокированы. Однако RELEASE_GATE_INPUT_V1_1_R1.json, определения G1–G8 и evaluate_release_gate_r1.py не включены; поэтому корректность каждого PASS и отсутствие скрытого условия независимо не проверяются."
+    },
+    {
+      "domain_id": "D09_PROVENANCE_AND_RECEIPTS",
+      "status": "PARTIAL",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json @ abca1f71455dc2c63d7f52736fb1004724cb90ce",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/HOSTILE_REVIEW_FREEZE_MANIFEST_R1.json @ 53c00fb58a88ad75bbeb1410bce1a79a3f50677c",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json @ 524ee9a5d0b744e1b15e2c94fa37b75edf3663f0",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_ARTIFACT_REVIEW_R1.json @ ac15f4049a8c8f17577f9e83f45564a8e9c7c9f1"
+      ],
+      "analysis": "Все 15 файлов, перечисленных target manifest, присутствуют и их вычисленные Git blob IDs совпадают с manifest; source evaluation run/artifact/digest согласованы между manifest, freeze manifest и receipts. Но provenance chain обрывается на декларациях receipt для отсутствующих source artifacts, release-gate input/code и demo-preflight artifact contents; preflight run/digest указан только как frozen identity, без проверяемого receipt."
+    },
+    {
+      "domain_id": "D10_DEMO_ACCURACY",
+      "status": "FAIL",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_SCRIPT_15_MIN_R2.md @ 82b9491e00e357cb1132356b14cef557bb7290ee",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_REHEARSAL_CHECKLIST_R1.md @ c15a2106ea03852c0352342bda985bf5c36ea5c0",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json @ abca1f71455dc2c63d7f52736fb1004724cb90ce",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json @ 524ee9a5d0b744e1b15e2c94fa37b75edf3663f0"
+      ],
+      "analysis": "Числа, HOLD states и claim boundaries в script/checklist соответствуют включённым artifacts. Но обязательная вкладка 'KBM E02 frozen packet и два raw primary output R1' отсутствует в target manifest; также script предлагает как установленные факты prospective freeze, exact carry-forward шести raw outputs, pre-response Model B substitution, неизменность prompt/comparator/Core/formula/weights и детерминизм gate, хотя подтверждающие файлы не включены. Кроме того, script маркирован READY_FOR_DEMO, тогда как frozen target manifest имеет state READY_FOR_REHEARSAL_PREFLIGHT. В текущем виде demo выходит за доказательную границу пакета."
+    },
+    {
+      "domain_id": "D11_OLD_OMG_SUPERSESSION",
+      "status": "PASS",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/OMG_NOV24_V100_VALIDATION_FAILURE.json @ 84f80c3e83708e6061ff7009e81ea1c3b8845287",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/derived/OMG_NOV24_V101_PRIMARY_COMPARISON.json @ 2b6754aab5db9f503d6f2d4c7e77891668b8a86a",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_RESULT_R1.json @ 1eb6d50e8ae8ba2e579ae3048cc622f59e1641a9",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/CURRENT_STATE_20261001_R1.json @ c3211c099b9a07118c6242150f9f9e9648af5af0"
+      ],
+      "analysis": "R1 OMG остаётся INVALID_PRIMARY_OUTPUT_TECHNICAL_MISMATCH без comparator state и calculation release. V1.1 employer KVS сохраняется как UNKNOWN против 5, lane остаётся HOLD_DISAGREEMENT и не входит в Core replay. Старый условный company KVS=5 / Pol=50 не восстановлен."
+    },
+    {
+      "domain_id": "D12_CLAIM_BOUNDARIES",
+      "status": "PASS",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json @ abca1f71455dc2c63d7f52736fb1004724cb90ce",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/CURRENT_STATE_20261001_R1.json @ c3211c099b9a07118c6242150f9f9e9648af5af0",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/derived/COHORT_AGGREGATE_V1_1_R1.json @ 1825425c7d756a3944acf3e615f8242c0d11aecf",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_RESULT_R1.json @ 1eb6d50e8ae8ba2e579ae3048cc622f59e1641a9",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_REHEARSAL_CHECKLIST_R1.md @ c15a2106ea03852c0352342bda985bf5c36ea5c0"
+      ],
+      "analysis": "Границы последовательно и явно разделены: historical snapshot не установлен, historical area UNO не вычислен/заблокирован, HUMAN validation и reliability не выполнялись, predictive/probability/risk validation не заявляется. Replay metric прямо обозначена как single-PTN scenario, а обязательный banner и запрещённые формулировки повторяют эти ограничения."
+    },
+    {
+      "domain_id": "D13_FAILED_WORKFLOW_ATTEMPTS",
+      "status": "NOT_PROVEN",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/HOSTILE_REVIEW_PROTOCOL_R1.md @ 9d520d61b726812253cdc9d7784890493d14d22c",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json @ abca1f71455dc2c63d7f52736fb1004724cb90ce",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json @ 524ee9a5d0b744e1b15e2c94fa37b75edf3663f0"
+      ],
+      "analysis": "Protocol требует проверить два ранних failed workflow attempts и утверждение, что они затронули только orchestration expected-blob literals. В frozen target нет run IDs, logs, failed receipts, head SHAs, diff либо описания этих двух попыток. Их связь с scientific outputs объективно не устанавливается."
+    },
+    {
+      "domain_id": "D14_SELECTIVE_RERUN_AND_BIAS_RISK",
+      "status": "NOT_PROVEN",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/OMG_NOV24_V100_VALIDATION_FAILURE.json @ 84f80c3e83708e6061ff7009e81ea1c3b8845287",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI1_COMPLETED.json @ 2c8c9091e3164d08041749c9502062f57b3cb6e3",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI2_COMPLETED.json @ 3960a46c1bedba2ca15576523f6727a185563744",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/derived/OMG_NOV24_V101_PRIMARY_COMPARISON.json @ 2b6754aab5db9f503d6f2d4c7e77891668b8a86a",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/HOSTILE_REVIEW_FREEZE_MANIFEST_R1.json @ 53c00fb58a88ad75bbeb1410bce1a79a3f50677c"
+      ],
+      "analysis": "Объективная schema failure R1 и сохранение неблагоприятного V1.1 disagreement без повторного согласования являются положительными fail-closed признаками. Однако пакет не показывает pre-result selective-rerun rule, полный attempt ledger, неизменный carry-forward, pre-AI2 model-choice record или механизм, исключающий скрытые/отброшенные попытки. Сам запрет RERUN_UNTIL_FAVORABLE в freeze manifest не доказывает его соблюдение; degrees of freedom, outcome leakage и publication-bias risk остаются недоказанно закрытыми."
+    }
+  ],
+  "findings": [
+    {
+      "finding_id": "F01",
+      "severity": "P1",
+      "category": "FROZEN_REVIEW_PACKAGE_COMPLETENESS",
+      "status": "CONFIRMED",
+      "claim": "Frozen review target не содержит критические source artifacts, необходимые для проверки обязательных domains.",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json @ abca1f71455dc2c63d7f52736fb1004724cb90ce",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json @ 524ee9a5d0b744e1b15e2c94fa37b75edf3663f0",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/HOSTILE_REVIEW_PROTOCOL_R1.md @ 9d520d61b726812253cdc9d7784890493d14d22c"
+      ],
+      "reasoning": "Receipt ссылается на PROTOCOL_FREEZE_R1.md, CARRY_FORWARD_MANIFEST_R1.json, MODEL_B_SUBSTITUTION_GEMINI31PRO_R2.md, два standalone prompt, compare_primary_v101.py, aggregate_cohort_v101.py, evaluate_route_v101.py и evaluate_release_gate_r1.py, а artifact receipt — на RELEASE_GATE_INPUT_V1_1_R1.json. Ни один из этих объектов не перечислен в target manifest и не доступен для content review. Это подтверждённый дефект упаковки доказательств, а не подтверждённый научный дефект самих отсутствующих файлов.",
+      "required_action": "Расширить новый frozen target точными path/Git blobs и включить содержимое всех перечисленных source artifacts, release-gate input/code и demo-preflight receipt; затем провести независимый review новой freeze.",
+      "release_effect": "BLOCK_RC_ALLOW_LIMITED_DEMO"
+    },
+    {
+      "finding_id": "F02",
+      "severity": "P1",
+      "category": "DEMO_EVIDENCE_OVERREACH",
+      "status": "CONFIRMED",
+      "claim": "Demo script/checklist требуют недоступные frozen tabs и представляют несколько недоказанных workflow controls как установленные факты.",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_SCRIPT_15_MIN_R2.md @ 82b9491e00e357cb1132356b14cef557bb7290ee",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_REHEARSAL_CHECKLIST_R1.md @ c15a2106ea03852c0352342bda985bf5c36ea5c0",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json @ abca1f71455dc2c63d7f52736fb1004724cb90ce",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json @ 524ee9a5d0b744e1b15e2c94fa37b75edf3663f0"
+      ],
+      "reasoning": "Checklist объявляет обязательными KBM E02 frozen packet и два raw R1 primary output, которых нет в target manifest. Script без оговорки утверждает prospective freeze, exact carry-forward шести raw outputs, pre-response Model B substitution, неизменность prompt/comparator/Core/formula/weights и детерминизм gate; подтверждающие документы/код отсутствуют. При этом числовые результаты, HOLD states и HUMAN/historical/predictive boundaries изложены корректно.",
+      "required_action": "До демонстрации либо добавить exact frozen evidence и обязательные вкладки, либо удалить эти утверждения/сегменты и явно обозначить их как не проверенные данным review; выполнить новый rehearsal preflight на исправленном script.",
+      "release_effect": "BLOCK_RC_ALLOW_LIMITED_DEMO"
+    },
+    {
+      "finding_id": "F03",
+      "severity": "P2",
+      "category": "DEMO_READINESS_LABEL_CONSISTENCY",
+      "status": "CONFIRMED",
+      "claim": "Readiness labels внутри frozen package не унифицированы.",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json @ abca1f71455dc2c63d7f52736fb1004724cb90ce",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_SCRIPT_15_MIN_R2.md @ 82b9491e00e357cb1132356b14cef557bb7290ee",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/CURRENT_STATE_20261001_R1.json @ c3211c099b9a07118c6242150f9f9e9648af5af0"
+      ],
+      "reasoning": "Target manifest имеет state READY_FOR_REHEARSAL_PREFLIGHT, demo script — READY_FOR_DEMO_2026-10-02, а CURRENT_STATE — demo.state READY. Это не меняет scientific data, но создаёт неоднозначность, завершена ли именно репетиция и какой gate разрешает публичный показ.",
+      "required_action": "Ввести одно каноническое readiness state и связать его с конкретным preflight/rehearsal receipt; синхронизировать manifest, current state и script.",
+      "release_effect": "NO_RELEASE_EFFECT"
+    },
+    {
+      "finding_id": "F04",
+      "severity": "P1",
+      "category": "IMMUTABLE_CARRY_FORWARD",
+      "status": "NOT_PROVEN",
+      "claim": "Immutable carry-forward шести R1 raw primary outputs по exact Git blobs не доказан доступным пакетом.",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json @ 524ee9a5d0b744e1b15e2c94fa37b75edf3663f0",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json @ abca1f71455dc2c63d7f52736fb1004724cb90ce"
+      ],
+      "reasoning": "Доступны только три derived comparisons. Receipt даёт общую границу r1_raw_outputs_edited=false и blob отсутствующего carry-forward manifest, но не раскрывает шесть raw paths/blobs и не позволяет сравнить содержимое. Поэтому риск незаявленного редактирования или замены не подтверждён, но и не закрыт.",
+      "required_action": "Включить CARRY_FORWARD_MANIFEST_R1.json и все шесть raw R1 outputs с exact path, Git blob, capture commit и checksum; показать детерминированную сверку с retained comparisons.",
+      "release_effect": "BLOCK_RC_ALLOW_LIMITED_DEMO"
+    },
+    {
+      "finding_id": "F05",
+      "severity": "P1",
+      "category": "MODEL_SUBSTITUTION_AND_SELECTIVE_RERUN",
+      "status": "NOT_PROVEN",
+      "claim": "Prospective выбор Model B и защита от AI1-informed substitution/rerun-until-favorable не доказаны.",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json @ 524ee9a5d0b744e1b15e2c94fa37b75edf3663f0",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI1_COMPLETED.json @ 2c8c9091e3164d08041749c9502062f57b3cb6e3",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI2_COMPLETED.json @ 3960a46c1bedba2ca15576523f6727a185563744",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/HOSTILE_REVIEW_FREEZE_MANIFEST_R1.json @ 53c00fb58a88ad75bbeb1410bce1a79a3f50677c"
+      ],
+      "reasoning": "Отсутствуют substitution document, dispatch timestamp/availability evidence, service receipt и полный attempt ledger. AI2 model label основан на prompt header, а не на независимой service identity. Наличие одного сохранённого disagreement и запрет в freeze manifest уменьшают подозрение, но не исключают скрытые/отброшенные попытки или выбор модели после просмотра AI1.",
+      "required_action": "Добавить датированный pre-AI2 substitution record, критерий availability-only, независимый model/service receipt, access boundary и полный attempt ledger для обеих ролей; формально запретить и технически обнаруживать повторные primary runs.",
+      "release_effect": "BLOCK_RC_ALLOW_LIMITED_DEMO"
+    },
+    {
+      "finding_id": "F06",
+      "severity": "P1",
+      "category": "FAILED_WORKFLOW_ATTEMPTS",
+      "status": "NOT_PROVEN",
+      "claim": "Не доказано, что два ранних failed workflow attempts затронули только orchestration expected-blob literals и не изменили scientific output.",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/HOSTILE_REVIEW_PROTOCOL_R1.md @ 9d520d61b726812253cdc9d7784890493d14d22c",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json @ abca1f71455dc2c63d7f52736fb1004724cb90ce"
+      ],
+      "reasoning": "Пакет не содержит идентичности двух failed runs, логов, artifact digests, commit/head SHA, diff expected-blob literals или доказательства, что primary/derived files не создавались и не переиспользовались. Требуемое protocol утверждение невозможно проверить.",
+      "required_action": "Включить оба failed-run receipts/logs, точные head SHA и diff, перечень созданных/не созданных artifacts и доказательство, что успешный run использовал неизменные scientific inputs/outputs.",
+      "release_effect": "BLOCK_RC_ALLOW_LIMITED_DEMO"
+    },
+    {
+      "finding_id": "F07",
+      "severity": "P1",
+      "category": "RELEASE_GATE_AUDITABILITY",
+      "status": "NOT_PROVEN",
+      "claim": "G1–G8 ALL PASS и детерминизм release gate не могут быть независимо проверены по frozen target.",
+      "evidence_references": [
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/release_gate/RELEASE_GATE_OUTPUT_V1_1_R1.json @ 5e35b95dbd3bbac68302da64a859273f6eec9b94",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json @ 524ee9a5d0b744e1b15e2c94fa37b75edf3663f0",
+        "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_PACKAGE_MANIFEST_R1.json @ abca1f71455dc2c63d7f52736fb1004724cb90ce"
+      ],
+      "reasoning": "Output перечисляет PASS по G1–G8 и логически согласуется с visible incompleteness, но gate definitions, RELEASE_GATE_INPUT_V1_1_R1.json и evaluate_release_gate_r1.py отсутствуют. Поэтому невозможно установить, какие predicates проверялись, соответствовал ли input frozen artifacts и не был ли PASS получен неполным набором условий.",
+      "required_action": "Включить frozen gate specification, exact input, evaluator source/blob, execution command/log и independently reproducible output digest; явно определить, что COMPLETE означает coverage, а не numeric/scientific completion.",
+      "release_effect": "BLOCK_RC_ALLOW_LIMITED_DEMO"
+    }
+  ],
+  "counts": {
+    "confirmed_p0": 0,
+    "confirmed_p1": 2,
+    "confirmed_p2": 1,
+    "not_proven": 4
+  },
+  "verdict": {
+    "state": "NOT_PROVEN",
+    "rc_state_supported": false,
+    "demo_allowed": true,
+    "required_demo_limitations": [
+      "Сохранить обязательный banner и прямо сообщить, что hostile review не подтвердил полный prospective/provenance chain; verdict этого пакета — NOT_PROVEN.",
+      "Показывать как проверенные только включённые raw OMG V1.1 outputs, их comparison, арифметику cohort, две eligible KBM replay lane и явные claim boundaries.",
+      "Не утверждать как проверенные prospective freeze, неизменный carry-forward шести raw R1 outputs, pre-response Model B selection, отсутствие скрытых reruns, безвредность двух failed workflow attempts или детерминированную корректность G1–G8.",
+      "Убрать сегмент с KBM E02 frozen packet и двумя raw R1 outputs либо добавить эти exact frozen files/blobs до показа.",
+      "Объяснить, что cohort COMPLETE и 12/12 означают полное классификационное покрытие frozen denominator, а не numeric completion, historical truth, HUMAN validation или predictive validity.",
+      "Не представлять READY_FOR_DEMO как завершённую репетицию без отдельного проверяемого rehearsal/preflight receipt."
+    ],
+    "required_prepublication_actions": [
+      "Заморозить расширенный manifest, включающий PROTOCOL_FREEZE_R1, CARRY_FORWARD_MANIFEST_R1, шесть R1 raw outputs, Model B substitution record, standalone prompts, comparator/aggregator/evaluator/gate source, RELEASE_GATE_INPUT и demo-preflight receipt.",
+      "Предоставить полный attempt ledger и доказательства временной последовательности selective rerun и Model B substitution, включая отсутствие доступа к AI1 output при выборе AI2 и отсутствие rerun-until-favorable.",
+      "Предоставить оба failed workflow run records и diff, доказывающий orchestration-only nature и неизменность scientific artifacts.",
+      "Синхронизировать readiness states и исправить demo script/checklist так, чтобы каждое обязательное утверждение и вкладка имели exact frozen evidence reference.",
+      "Провести новый независимый hostile-review cycle на новом immutable target; текущий verdict не переносить автоматически."
+    ],
+    "rationale": "Пакет внутренне согласован по включённым числам: OMG comparison fail-closed, cohort arithmetic корректна, eligible replay ограничен двумя KBM lane, старый OMG KVS/Pol не восстановлен, а historical/HUMAN/predictive boundaries видимы. Подтверждённых P0 нет. Однако обязательные prospective, carry-forward, Model B, failed-run и release-gate controls опираются на отсутствующие source artifacts/receipts, а demo script выходит за доступную evidence boundary. Поэтому статус RC независимо не обоснован; разрешён только ограниченный показ непосредственно включённых artifacts с перечисленными оговорками."
+  }
+}

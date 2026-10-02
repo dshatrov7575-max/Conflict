@@ -1,0 +1,52 @@
+{
+  "package_id": "MVP7_OMG_EPISODE_E1_ENGINEERING_READY_20260929",
+  "status": "PREPARED_BEFORE_PRIMARY_RESPONSES",
+  "source_episode_package": "MVP7_OMG_EPISODE_E1_V1_20260929",
+  "source_head_before_engineering": "76d32a396db5c01302a72aeeaec01de3d32dcad1",
+  "delivery": {
+    "zip_name": "MVP7_OMG_EPISODE_E1_ENGINEERING_READY_20260929.zip",
+    "zip_bytes": 9663,
+    "zip_sha256": "e6eb748455e5f76abe97d01038280f62175818d656114ab9e434641a038f791e",
+    "files": 10,
+    "zip_crc": "PASS",
+    "manifest_hashes": "9/9 PASS",
+    "fresh_extraction_replay": "17/17 TESTS PASS"
+  },
+  "implementation": {
+    "response_validator": true,
+    "deterministic_primary_comparator": true,
+    "max_targeted_review_rounds": 1,
+    "read_only_single_ptn_scenario_formula": true,
+    "application_integration": false,
+    "calculation_core_changed": false
+  },
+  "synthetic_vectors": {
+    "worker_POS_minus5_KVS5_company_POS_plus5_KVS5_equal_RGU": {
+      "P": "25.00000000",
+      "N": "25.00000000",
+      "Pol": "50.00000000"
+    },
+    "company_KVS8_otherwise_same": {
+      "Pol": "38.46153846"
+    },
+    "missing_company_KVS": {
+      "status": "NOT_COMPUTABLE"
+    },
+    "equal_KVS_company_RGU10_worker_RGU1": {
+      "Pol": "9.09090909"
+    }
+  },
+  "release_boundary": {
+    "real_factor_answers_included": false,
+    "calculation_release": false,
+    "RGU_KVPTN_assigned": false,
+    "historical_december_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED"
+  },
+  "next_required_inputs": [
+    "OMG_EP1_AI1_COMPLETED.json",
+    "OMG_EP1_AI2_COMPLETED.json"
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "package_id": "MVP7_OMG_EPISODE_E1_V1_20260929",
+  "status": "FROZEN_READY_FOR_TWO_PRIMARY_AI_RUNS",
+  "base_head": "fd0550d623845d7b296483b12310bf75cca3eb24",
+  "episode": {
+    "episode_id": "OMG_INITIAL_WAGE_DISPUTE_2011_05_26_2011_06_28",
+    "start_date": "2011-05-26",
+    "end_date": "2011-06-28",
+    "ptn": "E02_PAY",
+    "actor_universe": [
+      "OMG_WORKERS_INITIAL_STRIKE",
+      "KMG_EP_MANAGEMENT_FORMAL_RESPONSE"
+    ],
+    "carry_forward_policy": "NONE_BEYOND_EPISODE"
+  },
+  "evidence": {
+    "worker_source": {
+      "source": "RFE/RL D03",
+      "archive_witness": "AW-D03-20110527054702",
+      "payload_sha256": "00fb548b56d73a1088aec39a202c8fa3df7d0295e3d56a55535ccae254030aee",
+      "provenance_class": "P1_ARCHIVE_REPLAY"
+    },
+    "company_source": {
+      "source": "KMG EP press release, 28 June 2011",
+      "official_url": "https://www.kase.kz/files/emitters/RDGZ/rdgz_reliz_280611_e.pdf",
+      "downloaded_bytes": 30512,
+      "sha256": "ef9a80718026fea6c76cfd8357cc3c12c0da62ef264ef28175fd286577b1b839",
+      "server_last_modified": "Tue, 28 Jun 2011 08:23:33 GMT",
+      "pdf_creation_date": "D:20110628141614+06'00'",
+      "pdf_modification_date": "D:20110628141614+06'00'",
+      "provenance_class": "P2_OFFICIAL_STATIC_PDF_TRIANGULATED",
+      "byte_identity_as_served_in_2011": "NOT_PROVEN"
+    }
+  },
+  "primary_runs": {
+    "roles": ["OMG_EP1_AI1", "OMG_EP1_AI2"],
+    "entries_per_role": 4,
+    "max_targeted_review_rounds": 1,
+    "external_search_during_coding": false,
+    "human_required": false
+  },
+  "delivery": {
+    "zip_name": "MVP7_OMG_EPISODE_E1_V1_20260929.zip",
+    "zip_bytes": 15609,
+    "zip_sha256": "c30fe78667054a52e5805df5c62cdf815f894580704afcac5a4c07387180d7f9",
+    "files": 11,
+    "zip_crc": "PASS",
+    "manifest_hashes": "10/10 PASS"
+  },
+  "scientific_boundary": {
+    "historical_december_snapshot": "NOT_ESTABLISHED",
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED",
+    "RGU_KVPTN": "NOT_ASSIGNED",
+    "calculation_release": false,
+    "uno": "NOT_COMPUTED"
+  }
+}

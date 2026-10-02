@@ -1,0 +1,70 @@
+{
+  "route_id": "AI_ONLY_DYAD_OMG_NOV24_V100",
+  "contract_version": "1.0.0",
+  "rubric_version": "2.1.0",
+  "status": "FROZEN_EVIDENCE_INPUT_BEFORE_PRIMARY_RESPONSES",
+  "source": {
+    "source_id": "CONTUR_1822_20111130",
+    "title": "Проклятый коэффициент",
+    "publisher": "contur.kz",
+    "publication_date": "2011-11-30",
+    "archive_capture_utc": "2011-12-03T22:27:42Z",
+    "archive_url": "https://web.archive.org/web/20111203222742id_/http://www.contur.kz:80/node/1822",
+    "payload_bytes": 156307,
+    "payload_sha256": "d6bd3102d40bc51dde3847ffe1fe9d6abb5c3d63492ecf9ad2b96e9ae4fcd90c"
+  },
+  "ptn": {
+    "element_code": "E02",
+    "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+    "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+    "reference_sha256": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172"
+  },
+  "event": {
+    "start_date": "2011-11-23",
+    "end_date": "2011-11-24",
+    "source_report_date": "2011-11-30",
+    "simultaneous_snapshot": false,
+    "carry_forward": "NONE"
+  },
+  "source_bias_warning": "The source is openly hostile toward the dismissed workers. Loaded descriptions, insults, motive claims, and the author's normative judgments are not evidence of actor POS/KVS. Only specific attributed demands, actions, offers, refusals and pay-treatment statements may be coded.",
+  "actors": [
+    {
+      "actor_id": "OMG_DISMISSED_WORKERS_NOV23_24_AS_REPORTED_CONTUR",
+      "actor_scope": "Dismissed/former OMG workers and their representatives in the 23-24 November negotiation episode as attributed in the archived article.",
+      "coder_visible_evidence": [
+        "The source states that the dismissed workers wanted to return to OMG and sought higher pay treatment involving the 1.7 and 1.8 coefficients.",
+        "The article says a subsequent meeting took place on 23-24 November with invited worker-side representatives and experts.",
+        "It reports that the dismissed workers rejected the proposed settlement/compromise and did not sign the reconciliation document.",
+        "It reports that removal of the OMG director was also among the demands, so pay was not the only issue."
+      ],
+      "limited_exact_fragment": "Они желают… ну, вы уже догадались – вернуться в ОМГ и умножить свои бывшие оклады на 1.7. и 1.8.",
+      "limited_exact_fragment_sha256": "33284da212d1b81a04b8cef2e46501435ff56565998385301159cab38279a97f",
+      "factor_values": null
+    },
+    {
+      "actor_id": "RD_KMG_OMG_EMPLOYER_SIDE_NOV23_24_AS_REPORTED_CONTUR",
+      "actor_scope": "RD KMG / OMG employer-side position and actions in the same meeting episode, excluding actions attributable only to government authorities.",
+      "coder_visible_evidence": [
+        "The source describes the employer-side position that the disputed coefficients had already been incorporated in pay calculations and that additional reimbursement or a further salary increase on that basis was not accepted.",
+        "The article reports that RD KMG had revised its contractor-use plan to support alternative jobs and had a multi-year arrangement creating additional contractor positions; this employment offer is context and must not be treated as pay-specific KVS unless the rubric predicate is met.",
+        "The article reports willingness in the negotiation context to revisit some collective-agreement provisions, but the source often merges government and employer actions. If employer attribution for a decisive predicate is not clear, C4 must fail.",
+        "The source states that the employer/administrative side defended the legality/correctness of the existing coefficient treatment."
+      ],
+      "factor_values": null
+    }
+  ],
+  "dependency_limits": [
+    "Both actor rows come from the same archived article and are not independent corroboration.",
+    "No current-only later republication is decisive evidence in this input.",
+    "The article is a mediated report of the meeting, not the meeting protocol itself."
+  ],
+  "coding_scope": {
+    "entries_per_coder": 4,
+    "factors_per_actor": ["POS_AO2", "KVS_AO2"],
+    "external_search": "FORBIDDEN",
+    "prior_episode_outputs": "FORBIDDEN",
+    "other_coder_output": "FORBIDDEN",
+    "known_outcome": "FORBIDDEN",
+    "factor_values_preassigned": false
+  }
+}

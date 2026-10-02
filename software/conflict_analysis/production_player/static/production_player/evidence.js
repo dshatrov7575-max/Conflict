@@ -19,6 +19,7 @@
     pendingHistory: !!history.state?.g9,
   };
   panel.replaceChildren(template.content.cloneNode(true));
+  panel.removeAttribute("data-panel-help"); // The evidence block owns contextual help.
   tab.textContent = "Доказательства";
   tab.title = "Связанные факты и точные доказательства";
   tab.setAttribute("aria-disabled", "false");
@@ -76,7 +77,7 @@
     state.controller = null;
   }
 
-  function clearConfidential(message = "Выберите значение или оценку в рабочей области.", keepEntry = false) {
+  function clearConfidential(message = "", keepEntry = false) {
     abortRead();
     state.facts = [];
     state.fact = null;
@@ -92,6 +93,7 @@
     $("g9-evidence-list").replaceChildren();
     $("g9-detail").replaceChildren();
     $("g9-state").textContent = message;
+    $("g9-state").hidden = !message;
     syncCommands();
   }
 

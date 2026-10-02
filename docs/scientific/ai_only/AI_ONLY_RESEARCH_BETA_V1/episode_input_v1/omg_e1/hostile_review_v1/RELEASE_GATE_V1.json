@@ -1,0 +1,46 @@
+{
+  "gate_id": "OMG_E1_HOSTILE_REVIEW_RELEASE_GATE_V1",
+  "status": "COMPLETED",
+  "review_type": "INTERNAL_COORDINATOR_HOSTILE_REVIEW",
+  "independent_external_review": "NOT_PERFORMED",
+  "verdicts": {
+    "deterministic_core_replay": "PASS",
+    "narrow_source_provenance": "PARTIAL_PASS",
+    "primary_coder_reproducibility": "FAIL_0_OF_4_AGREEMENT",
+    "coordinator_adjudication_independence": "PARTIAL_HIGH_RISK",
+    "within_episode_temporal_construct": "PARTIAL_NOT_SYNCHRONOUSLY_PROVEN",
+    "weight_design_transparency": "PASS",
+    "weight_robustness_claim": "FAIL_NOT_JUSTIFIED",
+    "generalization": "NOT_PROVEN",
+    "prediction": "NOT_PROVEN",
+    "human_validation": "NOT_PERFORMED"
+  },
+  "release_states": {
+    "internal_technical_demo": "PASS",
+    "bounded_ai_only_episode_scenario": "PASS_WITH_MAJOR_LIMITATIONS",
+    "external_substantive_historical_measurement": "HOLD",
+    "area_level_historical_UNO": "BLOCKED",
+    "predictive_or_probability_claim": "BLOCKED",
+    "model_validation_claim": "BLOCKED"
+  },
+  "critical_reasons": [
+    "All four final factors depend on coordinator targeted review rather than primary consensus.",
+    "The episode combines statements dated 26 May and 28 June without a frozen within-episode persistence rule.",
+    "Company KVS=5 is semantically fragile and computation-enabling.",
+    "The equal-positive baseline maximizes Pol for the verified symmetric opposite positions.",
+    "The positive-RGU sensitivity range is 9.09090909 to 50.00000000 and no robustness threshold was frozen.",
+    "One PTN and two actors cannot support an area-level or general conflict-system claim."
+  ],
+  "current_object_label": "AI_ONLY_SINGLE_PTN_EPISODE_SCENARIO",
+  "label_change_required": false,
+  "current_run_mutation_allowed": false,
+  "next_required_version": "PROSPECTIVE_EPISODE_CONTRACT_C2",
+  "next_required_actions": [
+    "complete coder-visible provenance",
+    "explicit within-episode time semantics",
+    "clarified defensive-response KVS rule",
+    "third blinded virtual tie-breaker when primary agreement is absent",
+    "predeclared factor-measurement sensitivity",
+    "negative-control or holdout episode"
+  ]
+}

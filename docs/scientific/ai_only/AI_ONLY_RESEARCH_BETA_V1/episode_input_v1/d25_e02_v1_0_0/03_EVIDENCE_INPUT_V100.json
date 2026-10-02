@@ -1,0 +1,93 @@
+{
+  "route_id": "AI_ONLY_DYAD_D25_E02_V100",
+  "contract_version": "1.0.0",
+  "rubric_version": "2.1.0",
+  "status": "FROZEN_EVIDENCE_INPUT_BEFORE_PRIMARY_RESPONSES",
+  "ptn": {
+    "element_code": "E02",
+    "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+    "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+    "reference_sha256": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172"
+  },
+  "source": {
+    "source_id": "D25_EURASIANET_20111013",
+    "publisher": "EurasiaNet",
+    "publication_date": "2011-10-13",
+    "original_url": "http://www.eurasianet.org/node/64310",
+    "archive_capture_utc": "2011-10-16T06:09:58Z",
+    "archive_url": "https://web.archive.org/web/20111016060958id_/http://www.eurasianet.org:80/node/64310",
+    "payload_bytes": 56719,
+    "payload_sha256": "c6ae02c231a18cf574743016e307a1b2d302edbc6fe7386c8dc636c679395005",
+    "witness_id": "AW-D25-20111016060958",
+    "provenance_status": "INHERITED_R2_ARCHIVE_PAYLOAD_REHASHED_WITH_ACQUISITION_RECEIPT"
+  },
+  "temporal_object": {
+    "source_report_date": "2011-10-13",
+    "actor_a": "D25_DISMISSED_KMG_EP_WORKERS_20111013",
+    "actor_b": "D25_KMG_EP_MANAGEMENT_20111013",
+    "simultaneous_snapshot": false,
+    "carry_forward": "NONE",
+    "interpretation": "Two actor positions reported in one authenticated contemporaneous article; same report date does not establish an exact same-time historical snapshot."
+  },
+  "actors": [
+    {
+      "actor_id": "D25_DISMISSED_KMG_EP_WORKERS_20111013",
+      "scope": "The large group of dismissed KMG EP workers described as maintaining the tent-city protest in D25; not all KMG EP workers or the oil sector.",
+      "evidence_ids": [
+        "D25-FREINSTATE"
+      ],
+      "exact_fragment": "demanding reinstatement and a review of salaries",
+      "fragment_sha256": "0a2f0dcd6186b9e872d21dabe4af51bf3e062ee1ff69970d0f89681271a9d84f",
+      "context": "The workers fired by KMG EP have not faded away. A large group has set up a tent city in the center of Zhanaozen, a dusty town three hours’ drive from the regional administrative center of Aktau. From there, they have kept up their protest, demanding reinstatement and a review of salaries.",
+      "context_sha256": "fbfe1dcfe612d1ef161a2c0a30679984e85254be31a16963da684d673346fb60",
+      "factor_values": null
+    },
+    {
+      "actor_id": "D25_KMG_EP_MANAGEMENT_20111013",
+      "scope": "The company/KMG EP position explicitly attributed by D25; journalist characterizations must not be converted into company statements.",
+      "evidence_ids": [
+        "D25-FFAIR",
+        "D25-FRAISES"
+      ],
+      "exact_fragments": [
+        {
+          "text": "company insists that its employees are fairly compensated",
+          "sha256": "f7760687e7aaae5d2ed74a264f94485465395efdc8c17afd5deb89c452a4d86c"
+        },
+        {
+          "text": "has raised salaries six times since 2008",
+          "sha256": "57481ba5d7b8f7cc36f5f4ab9281d1e9a35e6b4e931cc6d4f3c427403cbb23b8"
+        }
+      ],
+      "context": "Thus far, KMG EP has been uncompromising over the key demand of higher take-home pay. The company insists that its employees are fairly compensated, noting that it has raised salaries six times since 2008 and that it offered strikers the chance to return to work.",
+      "context_sha256": "adc880ee25feb414eb158daa16e0b043ce8d94b57bfe3eb830a8c065a32e80d3",
+      "attribution_caution": "The first sentence about being uncompromising over the key demand is the journalist's characterization. Do not use it as a direct company KVS statement. The following fair-compensation / past-raise / return-to-work content is attributed to the company.",
+      "factor_values": null
+    }
+  ],
+  "prospective_interpretation_rules": {
+    "worker_review_of_salaries": "The phrase 'review of salaries' does not automatically equal 'pay rise'. POS=-5 requires the coder to find that the admitted wording itself demands change to the current pay arrangement, not merely a neutral review procedure. If that directional predicate is not fully supported, C5 fails and POS is UNKNOWN.",
+    "company_past_pay_actions": "Past salary increases may establish company action history, but do not automatically satisfy KVS=5 for the current reported dispute. KVS=5 requires that the admitted source explicitly links the pay issue to the company's own declared action/decision/settlement/policy criterion in the relevant source object.",
+    "journalist_voice": "Journalist labels such as 'key demand' or 'uncompromising' are inadmissible as direct actor priority statements unless the article explicitly attributes them to the actor."
+  },
+  "coding_scope": {
+    "entries_per_coder": 4,
+    "factors_per_actor": [
+      "POS_AO2",
+      "KVS_AO2"
+    ],
+    "factor_values_preassigned": false,
+    "external_search": "FORBIDDEN",
+    "prior_episode_outputs": "FORBIDDEN",
+    "prior_r2_outputs": "FORBIDDEN",
+    "other_coder_output": "FORBIDDEN",
+    "known_outcome": "FORBIDDEN"
+  },
+  "scientific_boundaries": {
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED",
+    "unknown_is_zero": false
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "package_id": "MVP7_OMG_EPISODE_E1_WEIGHT_SENSITIVITY_V1",
+  "status": "FROZEN_BEFORE_EPISODE_PRIMARY_RESPONSES",
+  "frozen_at_utc": "2026-09-29T10:17:53Z",
+  "manifest_corrected_at_utc": "2026-09-29T10:25:00Z",
+  "manifest_correction": "Corrected byte counts and SHA-256 values to the exact GitHub contents; scientific rules and scenario grid unchanged.",
+  "branch": "review/ai-only-research-beta-v1",
+  "base_head": "7ee816f07b492a97134e2a8dae67b9d04667ec00",
+  "episode_id": "OMG_INITIAL_WAGE_DISPUTE_2011_05_26_2011_06_28",
+  "ptn_id": "E02_PAY",
+  "actors": [
+    "OMG_WORKERS_INITIAL_STRIKE",
+    "KMG_EP_MANAGEMENT_FORMAL_RESPONSE"
+  ],
+  "baseline": {
+    "RGU": {
+      "OMG_WORKERS_INITIAL_STRIKE": "1",
+      "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "1"
+    },
+    "KVPTN": {
+      "E02_PAY": "1"
+    }
+  },
+  "main_positive_RGU_scenarios": 7,
+  "positive_q_scale_checks": 3,
+  "zero_weight_stresses": 4,
+  "max_targeted_review_rounds": 1,
+  "calculation_release_requires_all_four_factor_entries_numeric": true,
+  "historical_december_snapshot": "NOT_ESTABLISHED",
+  "historical_area_UNO": "NOT_COMPUTED",
+  "human_validation": "NOT_PERFORMED",
+  "human_reliability": "NOT_PERFORMED",
+  "core_changed": false,
+  "files": [
+    {
+      "name": "EXOGENOUS_WEIGHT_DESIGN_V1.md",
+      "bytes": 4868,
+      "sha256": "ad0dcf95303b4afc74d9e984bc1c1c1e101b4109529548654c005089aae57ecb",
+      "git_blob_sha1": "8273811ce69177ace46975c2227c63ef565fc882"
+    },
+    {
+      "name": "SENSITIVITY_GRID_V1.json",
+      "bytes": 1618,
+      "sha256": "6c086b7f4a0c0bbd084f47b3059ba03176ff2d4fd2f143d8472e8d4f9051f37a",
+      "git_blob_sha1": "ae2430980626134761f16bb896fb33256a72e145"
+    },
+    {
+      "name": "SENSITIVITY_DECISION_RULES_V1.md",
+      "bytes": 2223,
+      "sha256": "20b0e0930e14ccfa71b1c592273af19272be6eccfc214f6432819ad1bf10dce6",
+      "git_blob_sha1": "c385a04a31523e06b71cb6cd69a4014ffeb35835"
+    },
+    {
+      "name": "weight_sensitivity.py",
+      "bytes": 9765,
+      "sha256": "aa9fcb4b84bea5d71807878f2b456511e32bf485905decfd0e54e2c89f9486a8",
+      "git_blob_sha1": "2bcacd7fb9efa3e2d5814157056fc3e38a14dccc"
+    },
+    {
+      "name": "test_weight_sensitivity.py",
+      "bytes": 4706,
+      "sha256": "e93ed40ffccb32d3f15ed00517f7accadd254a5238f86934e1620e453ef28aa7",
+      "git_blob_sha1": "c19f0eed90b7ea5483f5f3b568532ad6162c1e9b"
+    },
+    {
+      "name": "EPISODE_CALCULATION_RELEASE_GATE_V1.md",
+      "bytes": 1789,
+      "sha256": "d73ab45c0df6c1bd0d0eff5c8b58cc52b4efedb21f316e374dca83787525adbe",
+      "git_blob_sha1": "6a509a025a32dd6e34e7685752ddf0236af5266d"
+    },
+    {
+      "name": "TEST_RECEIPT.json",
+      "bytes": 670,
+      "sha256": "e717f8740a03cb22516a251d93f4e766e1b86094e636af57778fc1654873653f",
+      "git_blob_sha1": "d311de2d977a2b642fdfee50f992e548bc289b52"
+    }
+  ],
+  "tests": {
+    "test_methods": 12,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "scope": "standalone synthetic weight-sensitivity utility only"
+  }
+}

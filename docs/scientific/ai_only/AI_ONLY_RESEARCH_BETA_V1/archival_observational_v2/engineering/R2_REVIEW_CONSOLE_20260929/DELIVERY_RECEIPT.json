@@ -1,0 +1,66 @@
+{
+  "record_id": "R2_REVIEW_CONSOLE_DELIVERY_20260929",
+  "base_commit": "9c157d7dc175516c208200113399643f778266bf",
+  "delivery": {
+    "zip_name": "MVP7_R2_REVIEW_CONSOLE_20260929.zip",
+    "bytes": 122804,
+    "sha256": "9af3b7955ffd894c20d7482919980c47bcbe5a0e177e1d3c30e9103b358c4609",
+    "file_count": 10,
+    "location": "Downloadable conversation attachment",
+    "full_payload_published_to_git": false,
+    "html_sha256": "ee4d09462e15ccfc9caade5453ce77f298b488b1fb5387d34b436b901aedb565"
+  },
+  "checks": {
+    "new_view_unit_tests": 24,
+    "previous_frozen_contract_intake_core_tests": 91,
+    "total_unit_test_methods_per_run": 115,
+    "unit_failures": 0,
+    "unit_errors": 0,
+    "unit_skips": 0,
+    "browser_checks": 8,
+    "browser_checks_passed": 8,
+    "browser_scope": "System Chromium, generated HTML injected in memory; direct file URL blocked by container policy",
+    "desktop_and_mobile_visual_inspection": true,
+    "fresh_extraction_manifest_hashes": 9,
+    "zip_crc": "PASS",
+    "fresh_extraction_view_tests": 24,
+    "fresh_extraction_html_and_json_replay": "EXACT_BYTE_MATCH"
+  },
+  "live_state": {
+    "state": "WAITING_FOR_INDEPENDENT_RESPONSE",
+    "AI1_records": 12,
+    "AI1_NUMERIC": 6,
+    "AI1_UNKNOWN": 6,
+    "AI1_sha256": "e8a44650da48590bf3ad54c0654548a53cf6d55f7c9883560f5fa77a8eefb842",
+    "AI2_R2": "NOT_FOUND_IN_AVAILABLE_CONVERSATION_AND_LIBRARY",
+    "legacy_AI2_role": "AO2_AI2",
+    "legacy_AI2_used_as_R2": false
+  },
+  "implementation": {
+    "new_features": [
+      "Read-only offline HTML for all 12 records",
+      "Search and expandable original rationales",
+      "Publication dates, reference statements and evidence contexts",
+      "Self-reported model labels and immutable original hashes",
+      "Absent/invalid response displayed explicitly, never as zeros"
+    ],
+    "frozen_validator_and_comparator_changed": false,
+    "core_changed": false,
+    "primary_packets_changed": false,
+    "originals_changed": false,
+    "application_deployment": "NOT_PERFORMED"
+  },
+  "boundaries": {
+    "evaluation_mode": "SOURCE_STATEMENT",
+    "as_of_time_utc": null,
+    "carry_forward_policy": "NONE",
+    "new_primary_runs": 0,
+    "real_pair_comparison_performed": false,
+    "real_targeted_review_rounds_used": 0,
+    "real_r2_records_passed_to_core": 0,
+    "historical_UNO": "NOT_COMPUTED",
+    "HUMAN_validation": "NOT_PERFORMED",
+    "full_application_DB_HTTP_CI_suite": "NOT_RUN"
+  },
+  "audience": "COORDINATOR_ONLY; do not give the review page or bundle to pending independent AI2"
+}

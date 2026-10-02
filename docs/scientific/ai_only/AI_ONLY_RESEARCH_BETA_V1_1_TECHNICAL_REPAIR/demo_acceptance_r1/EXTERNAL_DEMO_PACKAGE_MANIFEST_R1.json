@@ -1,0 +1,63 @@
+{
+  "schema": "CONFLICT_ANALYSIS_EXTERNAL_DEMO_PACKAGE_MANIFEST_R1",
+  "created_at_utc": "2026-10-02T14:05:15.243310+00:00",
+  "package_name": "CONFLICT_ANALYSIS_SCIENTIFIC_BETA_DEMO_R1",
+  "flat_file_count": 10,
+  "product_ui_commit": "eb22b479946b7f1a7d7188e0fd1c7c2a01c69f06",
+  "product_ui_tree": "85a0d0ea1c07ab6f5f9aab4044e5bff2a175b5c5",
+  "scientific_commit": "2549daba4f96cb61db7be0441881e8cc33a5fde6",
+  "scientific_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+  "independent_review_state": "PASS_WITH_P1",
+  "technical_demo_acceptance": "PASS",
+  "owner_visual_acceptance": "PENDING_OWNER_DECISION",
+  "files": {
+    "01_README_DISPATCH_RU.md": {
+      "bytes": 989,
+      "sha256": "c3054fac4576711c079d35dd16c3995fcd443e923e8b2e6cba81d349cb859929"
+    },
+    "03_DEMO_TECHNICAL_ACCEPTANCE_RECEIPT_R1.json": {
+      "bytes": 3365,
+      "sha256": "a5cd59af32de891ef4e6e61d1839982997581d8b19b5ea901dd18f6a5b4ec62b"
+    },
+    "04_DEMO_SCRIPT_15_MIN_R5.md": {
+      "bytes": 1740,
+      "sha256": "6425ea55f49e46d6ef34a590bc92cd31ea44de441b654621640cf41b5950ddc1"
+    },
+    "05_DEMO_REHEARSAL_CHECKLIST_R4.md": {
+      "bytes": 1291,
+      "sha256": "e8b383b867133c592ddd0648d45120f7b22de2444fdbbeb3c17c51b18b24dbab"
+    },
+    "06_RELEASE_GATE_OUTPUT_V1_1_R1.json": {
+      "bytes": 645,
+      "sha256": "d8ffc7a6a00d65da51fc555b99c07824f1f10553268b1f51d9b79e2208029e0d"
+    },
+    "07_HOSTILE_REVIEW_R2_DECISION_R1.json": {
+      "bytes": 3073,
+      "sha256": "dfd05eb20827e21da73cecadfe4ed96029b9aa107e280c6415fd26ba106ec866"
+    },
+    "08_EDITOR_1440.png": {
+      "bytes": 32499,
+      "sha256": "2a01e082440d1a0f0b1a31b726e7e2c9fecf2d2edb553531a02306bfb539ba88"
+    },
+    "09_PUBLISHER_1440.png": {
+      "bytes": 42745,
+      "sha256": "13aa9ecf4ee80b26ab9181ac63ba5f5c13e9b791bc08d010ca4a18cb6360d966"
+    },
+    "10_ASSESSOR_1440.png": {
+      "bytes": 64831,
+      "sha256": "694c1115f118b6b77165f57cf69673fe0a22f83dd0d0e28b1356cdfb06068013"
+    }
+  },
+  "self_entry": {
+    "name": "02_PACKAGE_MANIFEST_R1.json",
+    "sha256": "SELF_NOT_HASHED_TO_AVOID_RECURSION"
+  },
+  "boundaries": [
+    "PARTNER_DEMO_ONLY",
+    "FINAL_ACCEPTANCE_FALSE",
+    "PRODUCTION_READY_FALSE",
+    "MERGE_OR_RELEASE_FALSE",
+    "UNKNOWN_NOT_EQUAL_ZERO",
+    "NO_HUMAN_OR_PREDICTIVE_VALIDATION_CLAIM"
+  ]
+}

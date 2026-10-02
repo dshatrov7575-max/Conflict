@@ -1,0 +1,47 @@
+{
+  "package_id": "MVP7_KBM_E02_DYAD_V100_20260930",
+  "status": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+  "route_id": "AI_ONLY_DYAD_KBM_E02_V100",
+  "contract_version": "1.0.0",
+  "rubric_version": "2.1.0",
+  "input_sha256": "d0fb1f4a87f1cf64380f99167d77ecd63fd37b2827c48d044679b6abf027bf42",
+  "manifest_hash_scope": "FROZEN_EVIDENCE_INPUT_AND_IDENTITIES",
+  "files_expected": 10,
+  "files": [
+    "00_README.md",
+    "01_SOURCE_AUTHENTICATION_R1.json",
+    "02_TEMPORAL_INHERITANCE_CONTRACT.json",
+    "03_EVIDENCE_INPUT_V100.json",
+    "04_KVS_REACTIVE_ACTOR_RUBRIC_2_1_0.md",
+    "05_PRIMARY_RESPONSE_SCHEMA.json",
+    "06_AI1_STANDALONE_RU.md",
+    "07_AI2_STANDALONE_RU.md",
+    "08_COMPARISON_RELEASE_GATE.md",
+    "09_FREEZE_MANIFEST.json"
+  ],
+  "company_source_payload": {
+    "bytes": 30312,
+    "sha256": "4280ad5774d94cae7efc788943301852550080c69c28a02fb99ddbadb4b9f06a",
+    "archive_capture_utc": "2011-05-28T15:32:27Z"
+  },
+  "worker_source_identity": {
+    "source_id": "D01-FPAY",
+    "source_report_date": "2011-05-17",
+    "archive_capture_utc": "2011-05-21T18:15:20Z",
+    "payload_sha256": "5b171ee61f7e202da0b00899aef7659237e01ed6000c2626e4834f265ef66907"
+  },
+  "primary_roles": [
+    "KBM_COMPANY_E02_V100_AI1",
+    "KBM_COMPANY_E02_V100_AI2"
+  ],
+  "entries_per_primary": 2,
+  "company_values_preassigned": false,
+  "worker_values_visible_to_company_primary": false,
+  "targeted_content_review_rounds": 0,
+  "coordinator_substitution": "FORBIDDEN",
+  "calculation_release": false,
+  "historical_area_UNO": "NOT_COMPUTED",
+  "human_validation": "NOT_PERFORMED",
+  "old_omg_company_kvs_5_reused": false,
+  "old_omg_pol_50_reused": false
+}

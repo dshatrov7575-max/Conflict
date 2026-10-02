@@ -1,0 +1,24 @@
+{
+  "extension_id": "AI_ONLY_COMMON_EXOGENOUS_WEIGHT_DESIGN_V2_D25_EXTENSION_R1",
+  "status": "FROZEN_BEFORE_D25_PRIMARY_RESULTS",
+  "frozen_date": "2026-09-30",
+  "design_id": "AI_ONLY_COMMON_EXOGENOUS_WEIGHT_DESIGN_V2",
+  "grid_file": "SENSITIVITY_GRID_V2.json",
+  "grid_change": false,
+  "lane": {
+    "route_id": "AI_ONLY_DYAD_D25_E02_V100",
+    "input_sha256": "aa256f3c1822eea2494b4267a15f5b65707a86896b457531762b2066387872aa",
+    "actor_a": "D25_DISMISSED_KMG_EP_WORKERS_20111013",
+    "actor_b": "D25_KMG_EP_MANAGEMENT_20111013",
+    "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+    "eligibility_state": "ELIGIBLE_FOR_READ_ONLY_DYAD_SCENARIO_REPLAY"
+  },
+  "weight_semantics": {
+    "rgu": "EXOGENOUS_ANALYTIC_DESIGN",
+    "kvptn": "EXOGENOUS_ANALYTIC_DESIGN",
+    "empirical_power_interpretation": false,
+    "post_result_tuning": "FORBIDDEN"
+  },
+  "calculation_release": false,
+  "historical_area_UNO": "NOT_COMPUTED"
+}

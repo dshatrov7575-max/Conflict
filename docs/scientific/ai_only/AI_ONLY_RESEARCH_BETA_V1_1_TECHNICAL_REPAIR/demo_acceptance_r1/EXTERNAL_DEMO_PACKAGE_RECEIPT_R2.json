@@ -1,0 +1,31 @@
+{
+  "schema": "CONFLICT_ANALYSIS_EXTERNAL_DEMO_PACKAGE_RECEIPT_R2",
+  "created_at_msk": "2026-10-02T17:48:51+03:00",
+  "package_name": "CONFLICT_ANALYSIS_SCIENTIFIC_BETA_DEMO_R2",
+  "desktop_filename": "Conflict_Analysis_Demo_Package_R2.zip",
+  "flat_file_count": 10,
+  "zip_sha256": "eff637c151c6a43e2f1fe5bd0f6890e29c6826bbfb305277dce4371adc932151",
+  "zip_integrity_test": "PASS",
+  "owner_visual_acceptance": "ACCEPTED_FOR_LIMITED_DEMO",
+  "owner_statement_verbatim": "ПРИНИМАЮ ДЕМО",
+  "technical_demo_acceptance": "PASS",
+  "product_ui_commit": "eb22b479946b7f1a7d7188e0fd1c7c2a01c69f06",
+  "scientific_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+  "independent_review_state": "PASS_WITH_P1",
+  "files": [
+    "01_README_DISPATCH_RU.md",
+    "02_PACKAGE_MANIFEST_R2.json",
+    "03_DEMO_ACCEPTANCE_RECEIPT_R2.json",
+    "04_DEMO_SCRIPT_15_MIN_R5.md",
+    "05_DEMO_REHEARSAL_CHECKLIST_R4.md",
+    "06_RELEASE_GATE_OUTPUT_V1_1_R1.json",
+    "07_HOSTILE_REVIEW_R2_DECISION_R1.json",
+    "08_EDITOR_1440.png",
+    "09_PUBLISHER_1440.png",
+    "10_ASSESSOR_1440.png"
+  ],
+  "merge_authorized": false,
+  "release_authorized": false,
+  "publication_authorized": false,
+  "auto_merge": false
+}

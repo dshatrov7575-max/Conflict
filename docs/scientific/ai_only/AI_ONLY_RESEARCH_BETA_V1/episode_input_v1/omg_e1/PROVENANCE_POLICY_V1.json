@@ -1,0 +1,32 @@
+{
+  "policy_id": "EPISODE_SOURCE_PROVENANCE_V1",
+  "status": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+  "cutoff": "2011-12-15T23:59:59Z",
+  "classes": {
+    "P1_ARCHIVE_REPLAY": {
+      "requirements": [
+        "third-party replay timestamp before cutoff",
+        "payload hash",
+        "literal quote and context match"
+      ],
+      "use": "historical source-statement coding"
+    },
+    "P2_OFFICIAL_STATIC_PDF_TRIANGULATED": {
+      "requirements": [
+        "official static source URL",
+        "server Last-Modified before cutoff",
+        "embedded PDF creation and modification before cutoff",
+        "publication date and title inside PDF before cutoff",
+        "official dated index links to the file",
+        "at least one contemporaneous reproduction of distinctive content"
+      ],
+      "use": "content-level historical source-statement coding only",
+      "limits": [
+        "does not prove byte identity of the file as served in 2011",
+        "confidence may not exceed MEDIUM solely on provenance",
+        "not sufficient for strict frozen-edition identity"
+      ]
+    }
+  },
+  "non_retroactivity": "This policy does not upgrade or rewrite earlier R1/R2 records. It applies only to prospectively versioned episode inputs."
+}

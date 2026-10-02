@@ -1,0 +1,93 @@
+{
+  "route_id": "AI_ARCHIVAL_OBSERVATIONAL_V2",
+  "rubric_version": "2.0.0-draft1",
+  "receipt_stage": "POST_RESPONSE_COORDINATOR_AUDIT_NOT_PREREGISTRATION",
+  "source_packet_commit": "89504d14f5ebe285f1144ba12acd6f926e5cd972",
+  "originals": {
+    "AO2_AI1": {
+      "filename": "MVP7_AO2_AI1_PRIMARY.json",
+      "sha256": "2c98982c77d3b86cca61c9057fe152f7548d5ef98bc4553c4850a64edbf56171",
+      "bytes": 17396,
+      "reported_model_label": "GPT-6 Astra Pro",
+      "run_id": "AO2_AI1_PRIMARY_20260928T140947Z_904bfbd9b084",
+      "status_counts": {"NUMERIC": 8, "UNKNOWN": 4, "DISPUTED": 0},
+      "confidence_incompatibilities_with_frozen_validator": 4
+    },
+    "AO2_AI2": {
+      "filename": "MVP7_AO2_AI2_PRIMARY.json",
+      "sha256": "9b70db8111b202d91fdb2d6f408d974325a7eafde9453cb743ef1fa70fcc5c00",
+      "bytes": 13286,
+      "reported_model_label": "claude-opus-5-5",
+      "run_id": "MVP7_AO2_AI2_PRIMARY_4d968372-8b55-4e07-985e-5db9908f11c3",
+      "status_counts": {"NUMERIC": 11, "UNKNOWN": 1, "DISPUTED": 0},
+      "confidence_incompatibilities_with_frozen_validator": 12
+    }
+  },
+  "runtime_identities_independently_verified": false,
+  "originals_modified": false,
+  "confidence_conversions_applied": false,
+  "formal_validation": {
+    "frozen_comparator_git_blob_sha1": "71e513bf46834c3c4fa95d93f83181b150be0abc",
+    "local_comparator_bytes_match_git_blob": true,
+    "self_test": "PASS_5_CASES",
+    "actual_comparator_exit_code": 1,
+    "actual_comparator_error": "ValueError: unknown confidence",
+    "official_comparison_output_created": false,
+    "result": "FAIL_CONFIDENCE_CONTRACT",
+    "packet_defect": "Standalone templates leave confidence null without defining its allowed type, categories, or meaning. The separate frozen script imposes categories that were not supplied to the coders. No numeric-to-category thresholds were invented after observing results."
+  },
+  "diagnostic_comparison_not_formal_acceptance": {
+    "pairs": 12,
+    "same_status_and_value": 9,
+    "same_evidence_id_set": 10,
+    "numeric_consensus_routes": 6,
+    "shared_unknown_routes": 1,
+    "targeted_routes": 5,
+    "method": "Invoke the unmodified frozen route() on raw entries only after separately recording the failed validate(). This does not bypass the release gate or count as formal acceptance."
+  },
+  "bounded_coordinator_content_review": {
+    "rounds_performed": 1,
+    "new_evidence_used": false,
+    "conditional_numeric_candidates": 8,
+    "unknown": 4,
+    "conditional_results": [
+      {"item_id": "AO2-01", "POS_AO2_candidate": -5, "KVS_AO2_candidate": 5},
+      {"item_id": "AO2-02", "POS_AO2_candidate": -5, "KVS_AO2_candidate": 5},
+      {"item_id": "AO2-03", "POS_AO2_candidate": -5, "KVS_AO2_candidate": 5},
+      {"item_id": "AO2-04", "POS_AO2_candidate": null, "KVS_AO2_candidate": null},
+      {"item_id": "AO2-05", "POS_AO2_candidate": null, "KVS_AO2_candidate": 5},
+      {"item_id": "AO2-06", "POS_AO2_candidate": 5, "KVS_AO2_candidate": null}
+    ],
+    "scope": "Conditional interpretation of the same frozen excerpts and their stated metadata; not independent source authentication or a point-in-time reconstruction.",
+    "rationale": "AO2-02 has the same decisive C03 evidence despite a difference in supplementary D03 citations. AO2-04 lacks an explicit demand predicate in the supplied fragment. For AO2-05, a review of salaries does not unambiguously establish the direction of salary change. Company KVS in AO2-06 remains unestablished."
+  },
+  "release": {
+    "calculation_eligible": 0,
+    "state": "HOLD",
+    "reasons": [
+      "CONFIDENCE_CONTRACT_NOT_SUPPLIED_IN_STANDALONE",
+      "FRAME_TARGET_2011_12_15_VERSUS_UNSPECIFIED_EPISODE_SCOPE",
+      "SOURCE_AUTHENTICATION_IS_NOT_ESTABLISHED_BY_MODEL_AGREEMENT"
+    ],
+    "time_issue": "The coordinator frame specifies 2011-12-15T23:59:59Z; coder packets describe historical episodes and provide source dates without a shared as-of/carry-forward rule. Do not silently turn statement coding into the December snapshot.",
+    "counterparty_issue": "KMG EP has positive POS but UNKNOWN KVS. Do not silently exclude it and interpret a one-sided zero polarization as absence of tension.",
+    "uno": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED",
+    "strict_v1_overwritten": false,
+    "core_changed": false
+  },
+  "conversation_delivery": {
+    "archive_filename": "MVP7_AO2_PAIR_REVIEW_20260928.zip",
+    "archive_bytes": 31560,
+    "archive_sha256": "d7c9031828a0e8c0a7ad235930d4dab47c1828753e8ff8370e2e0feb7bc2d2c6",
+    "files_count": 10,
+    "report_sha256": "04671f0a2b2f1892e904da5f7975d47b91c3acfc8c3bd69763d8a4c72996a215",
+    "zip_crc": "PASS",
+    "manifest_hashes": "9_OF_9_PASS",
+    "offline_replay": "EXACT_MATCH_OF_BOTH_DIAGNOSTIC_JSON_FILES",
+    "contains": "Both unmodified original responses, exact frozen comparator, reproducible audit script, validation, diagnostic comparison, bounded critique, source-contract extracts, Russian report and manifest.",
+    "archive_uploaded_to_git": false
+  },
+  "next_scope": "Repair the packet/validator confidence contract and explicitly settle episode versus snapshot semantics in a prospective corrigendum; attach already-preserved source receipts and missing D04 context separately. Do not re-run models merely to reformat original answers or overwrite this audit."
+}

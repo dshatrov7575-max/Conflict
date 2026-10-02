@@ -1,0 +1,75 @@
+name: AI-only frozen tooling exact-head test
+
+on:
+  push:
+    branches:
+      - review/ai-only-research-beta-v1
+    paths:
+      - ".github/workflows/ai-only-frozen-tooling-test.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-tooling:
+    name: Run frozen AI-only scientific tooling self-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: KBM E02 comparator 8/8
+        run: python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/engineering/KBM_E02_V100/compare_primary.py --self-test
+
+      - name: OMG Nov24 comparator 8/8
+        run: python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/engineering/OMG_NOV24_V100/compare_primary.py --self-test
+
+      - name: KBM E05 comparator 8/8
+        run: python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/engineering/KBM_E05_V100/compare_primary.py --self-test
+
+      - name: D25 E02 comparator 8/8
+        run: python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/engineering/D25_E02_V100/compare_primary.py --self-test
+
+      - name: Common sensitivity runner V2.1 11/11
+        run: >-
+          python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/read_only_sensitivity_runner_v2_1.py
+          --grid docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/SENSITIVITY_GRID_V2.json
+          --bindings docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/LANE_BINDINGS_R2.json
+          --self-test
+
+      - name: Cohort aggregator R1 5/5
+        run: python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/cohort_analysis_r1/aggregate_cohort_r1.py --self-test
+
+      - name: Release evaluator R1 6/6
+        run: python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/evaluate_release_gate_r1.py --self-test
+
+      - name: Cohort intake orchestrator R1 3/3
+        run: >-
+          python docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/cohort_execution_r1/intake_and_compare_r1.py
+          --repo-root .
+          --self-test
+
+      - name: Validate credential-gated executor workflow syntax and pins
+        run: |
+          set -euo pipefail
+          test ! -e .github/ai-only-primary-executor-trigger.txt
+          ruby -e 'require "yaml"; YAML.load_file(".github/workflows/ai-only-primary-executor-r1.yml")'
+          grep -F 'model: gpt-5.6-sol' .github/workflows/ai-only-primary-executor-r1.yml
+          grep -F 'model: claude-fable-5-1' .github/workflows/ai-only-primary-executor-r1.yml
+          grep -F 'c5c234ccba6fae2b7a9eae462caf628e86c21b5e6240ec2e885727fc148a1dcc' .github/workflows/ai-only-primary-executor-r1.yml
+          test "$(git hash-object .github/workflows/ai-only-primary-executor-r1.yml)" = '4b222e521ecd081aeddfb0108a1b978211cb91b5'
+
+      - name: Scientific boundary
+        run: |
+          echo "No model APIs called."
+          echo "No primary output generated."
+          echo "No Core historical replay performed."
+          echo "No cohort, weights, or frozen inputs modified by this test."

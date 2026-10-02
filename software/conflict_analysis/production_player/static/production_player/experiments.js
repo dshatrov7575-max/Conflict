@@ -224,6 +224,7 @@
     state.correcting = null;
     $("g8-manual-form").reset();
     $("g8-manual-submit").textContent = "Добавить первое значение";
+    $("g8-manual-submit").dataset.uiLabel = "Добавить";
     $("g8-manual-cancel").hidden = true;
     $("g8-manual-state").textContent = message;
     syncControls();
@@ -281,6 +282,7 @@
     $("g8-manual-rationale").value = item.rationale;
     $("g8-manual-note").value = item.note;
     $("g8-manual-submit").textContent = "Создать неизменяемого преемника";
+    $("g8-manual-submit").dataset.uiLabel = "Сохранить";
     $("g8-manual-cancel").hidden = false;
     $("g8-manual-state").textContent = `Коррекция ${item.code}; исходная строка не изменяется.`;
     syncControls();
@@ -299,6 +301,8 @@
       const button = document.createElement("button"); button.type = "button";
       bindFocus(button, item.focus);
       button.textContent = "Создать преемника";
+      button.dataset.uiIcon = "edit";
+      button.dataset.uiKind = "utility";
       button.disabled = state.selected.status !== "DRAFT" || successors.has(item.id);
       button.title = state.selected.status !== "DRAFT"
         ? "FROZEN и ARCHIVED не принимают значения."

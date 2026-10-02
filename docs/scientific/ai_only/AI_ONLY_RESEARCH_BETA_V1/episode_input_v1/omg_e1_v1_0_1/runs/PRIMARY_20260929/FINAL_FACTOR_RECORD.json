@@ -1,0 +1,48 @@
+{
+  "route_id": "AI_ONLY_DYAD_OMG_E1_V101",
+  "contract_version": "1.0.1",
+  "rubric_version": "2.1.0",
+  "state": "BLIND_REPLICATION_COMPLETE_FACTOR_INCOMPLETE",
+  "input_sha256": "7a2b901748155a7313582c7eef9462dbcf5ced2edc5a35857af6b996da6491b4",
+  "agreement": {
+    "status_value_agreement": "4/4",
+    "admission_check_agreement": "4/4",
+    "numeric_consensus": 3,
+    "shared_unknown": 1,
+    "content_disagreement": 0,
+    "targeted_review_used": 0
+  },
+  "factors": {
+    "OMG_WORKERS_INITIAL_STRIKE": {
+      "statement_date": "2011-05-26",
+      "POS_AO2": {"status": "NUMERIC_CONSENSUS", "value": -5},
+      "KVS_AO2": {"status": "NUMERIC_CONSENSUS", "value": 5}
+    },
+    "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": {
+      "statement_date": "2011-06-28",
+      "POS_AO2": {"status": "NUMERIC_CONSENSUS", "value": 5},
+      "KVS_AO2": {
+        "status": "SHARED_UNKNOWN",
+        "value": null,
+        "failed_gate": "C5",
+        "reason": "The company response does not explicitly use pay as a criterion in its own proposal, refusal, concession, allocation or other pay-specific decision."
+      }
+    }
+  },
+  "calculation": {
+    "release": false,
+    "state": "NOT_COMPUTABLE_FACTOR_INCOMPLETE",
+    "reason": "Company KVS_AO2 is UNKNOWN; UNKNOWN is not zero and cannot be imputed.",
+    "RGU_KVPTN": "NOT_ASSIGNED_FOR_MEASURED_RUN",
+    "Pol": null,
+    "historical_area_UNO": "NOT_COMPUTED"
+  },
+  "claims": {
+    "object_label": "AI_ONLY_DEMAND_RESPONSE_DYAD_CODING_RESULT",
+    "simultaneous_snapshot": false,
+    "carry_forward": "NONE",
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  }
+}

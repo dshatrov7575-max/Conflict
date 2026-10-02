@@ -1,0 +1,57 @@
+{
+  "executor_id": "COPILOT_CLI_PRIMARY_EXECUTOR_R1",
+  "status": "FROZEN_READY_CREDENTIAL_BLOCKED",
+  "frozen_date": "2026-09-30",
+  "cohort_id": "AI_ONLY_REPLICATION_COHORT_R1_20260930",
+  "authentication": {
+    "repository_owner_type": "PERSONAL",
+    "required_secret_name": "COPILOT_GITHUB_TOKEN",
+    "secret_present_at_freeze": false,
+    "github_token_only_sufficient": false
+  },
+  "cli": {
+    "repository": "github/copilot-cli",
+    "version": "1.0.89",
+    "linux_x64_asset": "copilot-linux-x64.tar.gz",
+    "linux_x64_sha256": "c5c234ccba6fae2b7a9eae462caf628e86c21b5e6240ec2e885727fc148a1dcc"
+  },
+  "model_pins": {
+    "AI1": "gpt-5.6-sol",
+    "AI2": "claude-fable-5-1",
+    "substitution": "FORBIDDEN"
+  },
+  "isolation": {
+    "one_matrix_job_per_primary_role": true,
+    "fresh_github_hosted_vm": true,
+    "fresh_copilot_home_per_role": true,
+    "working_directory": "EMPTY_RUNNER_TEMP_OUTSIDE_REPOSITORY",
+    "prompt_source": "EXACT_FROZEN_STANDALONE_FILE_CONTENT_ONLY",
+    "available_tools": [
+      "read"
+    ],
+    "repository_files_visible_via_working_directory": false,
+    "external_search": "UNAVAILABLE_BY_TOOL_RESTRICTION",
+    "sibling_output_visible": false,
+    "prior_r2_episode_outputs_visible": false,
+    "coordinator_notes_visible": false
+  },
+  "output_policy": {
+    "preserve_stdout_as_primary_output_unchanged": true,
+    "no_json_repair": true,
+    "no_retry_on_unknown_disagreement_or_malformed_output": true,
+    "failed_executor_call": "MISSING_EXTERNAL_RUN_NO_MODEL_SUBSTITUTION",
+    "successful_stdout_filename": "FROZEN_ROLE_EXPECTED_FILENAME",
+    "derived_processing": "FROZEN_COMPARATOR_AND_COHORT_INTAKE_ONLY"
+  },
+  "execution_trigger": {
+    "workflow": ".github/workflows/ai-only-primary-executor-r1.yml",
+    "push_trigger_file": ".github/ai-only-primary-executor-trigger.txt",
+    "trigger_file_absent_at_freeze": true
+  },
+  "scientific_boundaries": {
+    "no_core_replay_in_primary_jobs": true,
+    "no_weights_in_primary_jobs": true,
+    "no_cross_lane_aggregation_in_primary_jobs": true,
+    "calculation_release": false
+  }
+}

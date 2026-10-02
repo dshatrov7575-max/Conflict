@@ -1,0 +1,7 @@
+AI_ONLY_PRIMARY_EXECUTOR_R2_TRIGGER
+attempt=3
+created_utc=2026-10-01T00:40:00+03:00
+cohort=AI_ONLY_REPLICATION_COHORT_R1_20260930
+expected_primary_roles=8
+reason=post_policy_smoke_pass
+smoke_run=36770663813

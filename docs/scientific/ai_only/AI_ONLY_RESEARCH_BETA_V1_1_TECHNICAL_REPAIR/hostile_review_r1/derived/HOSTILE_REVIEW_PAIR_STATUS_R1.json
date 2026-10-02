@@ -1,0 +1,118 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_PAIR_STATUS_R1",
+  "target_manifest_git_blob": "abca1f71455dc2c63d7f52736fb1004724cb90ce",
+  "reviewer_a": {
+    "intake_state": "HOLD_PROTOCOL_IDENTITY",
+    "declared_verdict": "PASS",
+    "canonical": false,
+    "model_label_declared": "Gemini 1.5 Pro",
+    "user_selected_ui_model": "Gemini 3.1 Pro"
+  },
+  "reviewer_b": {
+    "intake_state": "VALID",
+    "declared_verdict": "NOT_PROVEN",
+    "canonical": true,
+    "actual_model_label": "GPT-5.6 Sol Pro",
+    "confirmed_p0": 0,
+    "confirmed_p1": 2,
+    "confirmed_p2": 1,
+    "not_proven": 4
+  },
+  "domain_matrix": [
+    {
+      "domain_id": "D01_PROSPECTIVE_TECHNICAL_REPAIR",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "NOT_PROVEN",
+      "agreement": false
+    },
+    {
+      "domain_id": "D02_IMMUTABLE_CARRY_FORWARD",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "NOT_PROVEN",
+      "agreement": false
+    },
+    {
+      "domain_id": "D03_FRESH_PRIMARY_INDEPENDENCE",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "PARTIAL",
+      "agreement": false
+    },
+    {
+      "domain_id": "D04_MODEL_B_SUBSTITUTION",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "NOT_PROVEN",
+      "agreement": false
+    },
+    {
+      "domain_id": "D05_COMPARATOR_FAIL_CLOSED",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "PARTIAL",
+      "agreement": false
+    },
+    {
+      "domain_id": "D06_COHORT_AGGREGATION",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "PASS",
+      "agreement": true
+    },
+    {
+      "domain_id": "D07_ELIGIBLE_ONLY_CORE_REPLAY",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "PASS",
+      "agreement": true
+    },
+    {
+      "domain_id": "D08_RELEASE_GATE_LOGIC",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "PARTIAL",
+      "agreement": false
+    },
+    {
+      "domain_id": "D09_PROVENANCE_AND_RECEIPTS",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "PARTIAL",
+      "agreement": false
+    },
+    {
+      "domain_id": "D10_DEMO_ACCURACY",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "FAIL",
+      "agreement": false
+    },
+    {
+      "domain_id": "D11_OLD_OMG_SUPERSESSION",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "PASS",
+      "agreement": true
+    },
+    {
+      "domain_id": "D12_CLAIM_BOUNDARIES",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "PASS",
+      "agreement": true
+    },
+    {
+      "domain_id": "D13_FAILED_WORKFLOW_ATTEMPTS",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "NOT_PROVEN",
+      "agreement": false
+    },
+    {
+      "domain_id": "D14_SELECTIVE_RERUN_AND_BIAS_RISK",
+      "reviewer_a_declared": "PASS",
+      "reviewer_b": "NOT_PROVEN",
+      "agreement": false
+    }
+  ],
+  "declared_domain_agreement_count": 4,
+  "declared_domain_disagreement_count": 10,
+  "pair_state": "INCOMPLETE_REVIEW_PAIR_REVIEWER_A_PROTOCOL_IDENTITY_HOLD",
+  "rc_independent_hostile_review_support": "NOT_ESTABLISHED",
+  "demo_status": {
+    "reviewer_b_demo_allowed": true,
+    "effective": "LIMITED_DEMO_ONLY_PENDING_REMEDIATION",
+    "basis": "VALID_REVIEWER_B_PLUS_EXISTING_MANDATORY_CLAIM_BOUNDARY"
+  },
+  "coordinator_adjudication": false,
+  "auto_merge": false
+}

@@ -1,0 +1,42 @@
+{
+  "route_id": "AI_ONLY_DYAD_OMG_NOV24_V100",
+  "input_sha256": "72b061d6999b596052adc34df493cd2f9687979589ddd17a83ae21f375a0a9a4",
+  "conditions": [
+    {
+      "condition": "ANY INVALID PRIMARY IDENTITY OR ATTESTATION",
+      "state": "REJECT_INVALID_PRIMARY_RUN",
+      "calculation_release": false
+    },
+    {
+      "condition": "ANY STATUS/VALUE/C1-C8 MISMATCH",
+      "state": "HOLD_DISAGREEMENT",
+      "calculation_release": false
+    },
+    {
+      "condition": "NO MISMATCH AND ANY SHARED_UNKNOWN OR SHARED_DISPUTED",
+      "state": "HOLD_FACTOR_INCOMPLETE",
+      "calculation_release": false
+    },
+    {
+      "condition": "ALL FOUR ENTRIES CONSENSUS_NUMERIC",
+      "state": "ELIGIBLE_FOR_READ_ONLY_DYAD_SCENARIO_REPLAY",
+      "calculation_release": true
+    }
+  ],
+  "forbidden_repairs": [
+    "coordinator substitution",
+    "targeted content review",
+    "averaging",
+    "majority vote",
+    "rerun-until-number",
+    "replacement-model shopping",
+    "UNKNOWN to zero",
+    "RGU/KVPTN adjustment to bypass missing factors"
+  ],
+  "claim_boundary": {
+    "simultaneous_snapshot": false,
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  }
+}

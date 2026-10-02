@@ -1,0 +1,68 @@
+name: AI-only primary executor R2 static validation
+
+on:
+  push:
+    branches:
+      - review/ai-only-research-beta-v1
+    paths:
+      - ".github/workflows/ai-only-primary-executor-r2-validate.yml"
+      - ".github/workflows/ai-only-primary-executor-r2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Parse executor YAML
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby -e 'require "yaml"; YAML.load_file(".github/workflows/ai-only-primary-executor-r2.yml"); puts "YAML_PARSE=PASS"'
+
+      - name: Validate frozen matrix identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib, re, subprocess, sys
+          p=pathlib.Path(".github/workflows/ai-only-primary-executor-r2.yml")
+          t=p.read_text(encoding="utf-8")
+          expected=[
+            ("KBM_COMPANY_E02_V100_AI1","gpt-6-astra","docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/kbm_e02_v1_0_0/06_AI1_STANDALONE_RU.md","4d894bf841912788ec534904c05f53a3076bee3b"),
+            ("KBM_COMPANY_E02_V100_AI2","claude-opus-5.5","docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/kbm_e02_v1_0_0/07_AI2_STANDALONE_RU.md","64d02513711034941da014bd40024e506a68b020"),
+            ("OMG_NOV24_V100_AI1","gpt-6-astra","docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/omg_e02_nov24_v1_0_0/06_AI1_STANDALONE_RU.md","83473066a90daf00bc2a9413cb0175d25f54b60a"),
+            ("OMG_NOV24_V100_AI2","claude-opus-5.5","docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/omg_e02_nov24_v1_0_0/07_AI2_STANDALONE_RU.md","b8a18c8a553e1e6f1efee2bfbe4d348619795d59"),
+            ("KBM_E05_V100_AI1","gpt-6-astra","docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/kbm_e05_v1_0_0/06_AI1_STANDALONE_RU.md","bd1d89ac5b0aa046e8d4498cb3b19031dd2c60af"),
+            ("KBM_E05_V100_AI2","claude-opus-5.5","docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/kbm_e05_v1_0_0/07_AI2_STANDALONE_RU.md","0a39088aaa78bbf3c1a5e7300e1f3fe23e25438c"),
+            ("D25_E02_V100_AI1","gpt-6-astra","docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/d25_e02_v1_0_0/06_AI1_STANDALONE_RU.md","2b0dcd8ee954f68d74b11b8bcbf299dfb9e2da33"),
+            ("D25_E02_V100_AI2","claude-opus-5.5","docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/episode_input_v1/d25_e02_v1_0_0/07_AI2_STANDALONE_RU.md","2911bd6975184b9d9f1faf2aa235d6322eae7152"),
+          ]
+          for role,model,path,sha in expected:
+            assert role in t and model in t and path in t and sha in t
+            fp=pathlib.Path(path)
+            assert fp.is_file(), path
+            actual=subprocess.check_output(["git","hash-object",path],text=True).strip()
+            assert actual==sha,(path,actual,sha)
+          assert t.count("          - role: ")==8, t.count("          - role: ")
+          assert "--available-tools='view'" in t
+          assert "--disable-builtin-mcps" in t
+          assert "COPILOT_GITHUB_TOKEN" in t
+          assert "c5c234ccba6fae2b7a9eae462caf628e86c21b5e6240ec2e885727fc148a1dcc" in t
+          print("EXECUTOR_STATIC_VALIDATION=PASS")
+          print("MATRIX_ROLES=8")
+          PY
+
+      - name: Scientific boundary
+        run: |
+          echo "No model call made."
+          echo "No primary output generated."
+          echo "No frozen scientific input modified."

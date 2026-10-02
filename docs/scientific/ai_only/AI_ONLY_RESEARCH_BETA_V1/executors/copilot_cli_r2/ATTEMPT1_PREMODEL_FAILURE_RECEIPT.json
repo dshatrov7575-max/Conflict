@@ -1,0 +1,31 @@
+{
+  "receipt_id": "COPILOT_CLI_PRIMARY_EXECUTOR_R2_ATTEMPT1_PREMODEL_FAILURE",
+  "date": "2026-09-30",
+  "workflow_run_id": 36756121174,
+  "execution_head": "8ac30a83eced3600b9033bc25a9b6da9349d7a41",
+  "status": "PREMODEL_INFRASTRUCTURE_FAILURE_NO_PRIMARY_OUTPUT",
+  "credential_gate": "PASS",
+  "root_cause": "COPILOT_HOME was undefined in the prepare step.",
+  "primary_roles_expected": 8,
+  "primary_jobs_failed": 8,
+  "model_invocation_steps_executed": 0,
+  "model_invocation_steps_skipped": 8,
+  "raw_primary_outputs_generated": 0,
+  "raw_primary_artifacts_generated": 0,
+  "role_receipts_generated": 8,
+  "scientific_interpretation": "NOT_A_PRIMARY_RUN_RESULT",
+  "retry_policy": {
+    "allowed": true,
+    "reason": "No model invocation occurred for any role. Retrying the same frozen role/model/prompt after repairing executor plumbing is not rerun-until-number or model shopping.",
+    "same_roles_required": true,
+    "same_models_required": true,
+    "same_prompt_blob_shas_required": true
+  },
+  "repair_commit": "d3f1acb2e4291ce1f91144b471403ff66bef0cda",
+  "repair_validation_run_id": 36756786359,
+  "repair_validation_conclusion": "success",
+  "cohort_modified": false,
+  "frozen_inputs_modified": false,
+  "weight_grid_modified": false,
+  "calculation_release": false
+}

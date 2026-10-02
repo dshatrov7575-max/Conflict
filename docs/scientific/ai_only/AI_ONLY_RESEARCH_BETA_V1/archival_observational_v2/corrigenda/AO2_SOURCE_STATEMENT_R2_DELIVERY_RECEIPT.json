@@ -1,0 +1,82 @@
+{
+  "package_id": "MVP7_AO2_SOURCE_STATEMENT_R2_20260928",
+  "input_version": "AO2_SOURCE_STATEMENT_R2_20260928",
+  "contract_id": "AO2_CONTRACT_C1",
+  "status": "FROZEN_PREPARED_NOT_RELEASED",
+  "base_commit": "83cb41f997c41e5430198ebd7534730d1f1ec11a",
+  "original_packet_commit": "89504d14f5ebe285f1144ba12acd6f926e5cd972",
+  "delivery": {
+    "zip_name": "MVP7_AO2_SOURCE_STATEMENT_R2_20260928.zip",
+    "zip_bytes": 51266,
+    "zip_sha256": "f2b391d69f7121bac7a43fd795c7add2da41a56637a73e8b8ed941f0e94af8cf",
+    "input_sha256": "316d34b7d81e30678f3a96376abfd80bc437d358560915ebd1b64300e7cb0a56",
+    "file_count": 10,
+    "location": "Downloadable attachment in coordinating conversation",
+    "archive_uploaded_to_git": false,
+    "files": ["00_REPORT_RU.md", "01_R2_SOURCE_INPUT.json", "02_AO2S_AI1_STANDALONE_RU.md", "03_AO2S_AI2_STANDALONE_RU.md", "04_R2_RESPONSE_SCHEMA.json", "05_R2_COMPARISON_RULES_RU.md", "06_validate_r2.py", "07_test_r2.py", "08_SOURCE_AUDIT.json", "09_MANIFEST.json"]
+  },
+  "scope": {
+    "units_retained": 6,
+    "primary_source_material_ready_for_statement_review": 4,
+    "primary_historical_provenance_unresolved": 2,
+    "ready_units": ["AO2S-C1-03", "AO2S-C1-04", "AO2S-C1-05", "AO2S-C1-06"],
+    "unresolved_units": ["AO2S-C1-01", "AO2S-C1-02"],
+    "readiness_is_not_numeric_admission": true,
+    "evaluation_mode": "SOURCE_STATEMENT",
+    "as_of_time_utc": null,
+    "carry_forward_policy": "NONE",
+    "new_primary_runs": 0,
+    "new_targeted_critique_rounds": 0
+  },
+  "source_work": {
+    "cached_html_rehashed": 5,
+    "sha256_size_sha1_matches": 5,
+    "expanded_contexts": 4,
+    "cached_labels": ["D01", "D03", "D04", "D13", "D25"],
+    "new_downloads_of_these_cached_html": 0,
+    "archive_timestamps": "INHERITED_ACQUISITION_RECEIPTS_NOT_NEW_HTTP_OBSERVATIONS",
+    "caci_current_pdf_http_status": 200,
+    "caci_current_pdf_bytes": 448354,
+    "caci_current_pdf_sha256": "f6ba02ffe67fdfc1e74912a96fcec7c9e2b6a378b386a6c24c8aabe16a31de2d",
+    "caci_pdf_page_index": 23,
+    "caci_pdf_physical_page": 24,
+    "caci_printed_page": "22",
+    "caci_visual_page_inspection": true,
+    "caci_counterstatement_restored": "The report includes both a worker's estimate near 3000 and a party official's statement that 1089 applications were registered. Neither is used as a factor or weight.",
+    "caci_historical_provenance": "NOT_ESTABLISHED_IN_THIS_CHECK",
+    "archival_discovery_requests": 3,
+    "archival_discovery_http_results": [429, 429, 429],
+    "retries_after_rate_limit": 0,
+    "absence_of_historical_copy_claimed": false,
+    "publication_or_last_modified_is_temporal_proof": false
+  },
+  "technical_checks": {
+    "new_R2_contract_tests_passed": 40,
+    "C1_regression_tests_passed": 35,
+    "C1_manifest_hashes_passed": 9,
+    "R2_manifest_hashes_passed": 9,
+    "zip_crc": "PASS",
+    "fresh_extraction_replay": "PASS",
+    "standalone_common_input_and_schema_match": true,
+    "blank_template_entries": 24,
+    "scientific_validation": "NOT_CLAIMED"
+  },
+  "preservation": {
+    "AI1_raw_sha256": "2c98982c77d3b86cca61c9057fe152f7548d5ef98bc4553c4850a64edbf56171",
+    "AI2_raw_sha256": "9b70db8111b202d91fdb2d6f408d974325a7eafde9453cb743ef1fa70fcc5c00",
+    "original_responses_unchanged": true,
+    "old_formal_failures_retained": true,
+    "AO2_anchor_meanings_unchanged": true,
+    "core_changed": false,
+    "weights_changed": false,
+    "H1_H2_changed": false,
+    "strict_v1_changed": false
+  },
+  "release": {
+    "calculation_release": false,
+    "uno": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "historical_december_snapshot": "NOT_ESTABLISHED",
+    "note_ru": "Четыре подготовленных основных источника не означают четыре числовых ответа. Два проблемных item не исключены. Подготовка R2 не разрешает менять R1, усреднять confidence, переносить сообщения на декабрь или скрывать неизвестный KVS компании."
+  }
+}

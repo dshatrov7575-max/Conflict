@@ -1,0 +1,41 @@
+{
+  "receipt_id": "PRIMARY_TASK_DISPATCH_20260930_R4",
+  "date": "2026-09-30",
+  "destination": "Google Drive / Конфликтология / Почта",
+  "cohort_id": "AI_ONLY_REPLICATION_COHORT_R1_20260930",
+  "primary_task_count": 8,
+  "completed_outputs_observed": 0,
+  "execution_state": "QUEUED_AWAITING_EXTERNAL_EXECUTOR",
+  "tasks": [
+    "TASK_KBM_E02_V100_AI1",
+    "TASK_KBM_E02_V100_AI2",
+    "TASK_OMG_NOV24_V100_AI1",
+    "TASK_OMG_NOV24_V100_AI2",
+    "TASK_KBM_E05_V100_AI1",
+    "TASK_KBM_E05_V100_AI2",
+    "TASK_D25_E02_V100_AI1",
+    "TASK_D25_E02_V100_AI2"
+  ],
+  "blocker_task": "BLOCKER_OMG_V102_RECOVER_FROZEN_ARTIFACT",
+  "connected_execution_capabilities_checked": {
+    "github_repository_access": true,
+    "github_actions_existing_model_executor": false,
+    "repository_mail_worker": false,
+    "direct_claude_or_openrouter_plugin": false,
+    "direct_codex_task_executor": false,
+    "desktop_commander": "PAUSED_MONTHLY_USAGE_EXHAUSTED"
+  },
+  "drive_task_annotation": "All 8 primary task documents explicitly marked AWAITING_EXTERNAL_EXECUTOR.",
+  "scientific_effect": {
+    "G2_primary_execution_completeness": "BLOCKED",
+    "cohort_membership_frozen": true,
+    "no_new_lanes": true,
+    "calculation_release": false
+  },
+  "forbidden": [
+    "treat task dispatch as completed execution",
+    "use coordinator chat as blind primary",
+    "replace missing executor with post-result model shopping",
+    "change cohort or weights while waiting"
+  ]
+}

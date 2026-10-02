@@ -1,0 +1,35 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_DISTRIBUTION_RECEIPT_R1",
+  "state": "PASS",
+  "github_run_id": "36889872071",
+  "github_run_attempt": "1",
+  "github_head_sha": "ded5acb5ed4a8c10375bb3c488e0b8fcd41ec2ef",
+  "target_manifest_git_blob": "abca1f71455dc2c63d7f52736fb1004724cb90ce",
+  "freeze_manifest_git_blob": "53c00fb58a88ad75bbeb1410bce1a79a3f50677c",
+  "packages": {
+    "V1_1_HOSTILE_REVIEWER_A": {
+      "filename": "V1_1_HOSTILE_REVIEWER_A_PACKAGE_R1.zip",
+      "bytes": 38391,
+      "sha256": "b30284242da68d64d221aeda7a2ce80109580dd97a542e1c5d0c445c0dad1201",
+      "start_here_git_blob": "177bbc132b8c6da128140419e9c3c6cb70f354b4",
+      "file_count": 22,
+      "other_reviewer_prompt_included": false
+    },
+    "V1_1_HOSTILE_REVIEWER_B": {
+      "filename": "V1_1_HOSTILE_REVIEWER_B_PACKAGE_R1.zip",
+      "bytes": 38391,
+      "sha256": "a252c84bae0539f48af11de9fae4d603ca9326bced153670cb99d1d6705d8f40",
+      "start_here_git_blob": "47d2acaf78d38f47dc30ac25520ffea2feacaed4",
+      "file_count": 22,
+      "other_reviewer_prompt_included": false
+    }
+  },
+  "boundaries": {
+    "target_manifest_mutated": false,
+    "review_outputs_present_at_packaging": false,
+    "cross_reviewer_prompt_included": false,
+    "attempt_limit_each": 1,
+    "external_search": "FORBIDDEN",
+    "auto_merge": false
+  }
+}

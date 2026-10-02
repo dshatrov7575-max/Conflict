@@ -1,0 +1,36 @@
+{
+  "source_id": "OMG_E1_COMPANY_LADA_20110812_V102",
+  "status": "P1_ARCHIVE_REPLAY_AUTHENTICATED",
+  "title": "Хроника забастовки и справка по ситуации в ПФ «Озенмунайгаз» и АО «Каражнабасмунай»",
+  "publisher": "Lada.kz",
+  "publication_date": "2011-08-12",
+  "publication_time_local": "11:33",
+  "actor_attribution": "Lada states that it requested a detailed response from KMG press services and publishes the received response; the article closes with attribution to the KMG press service.",
+  "original_url": "http://lada.kz/in_details/138-hronika-zabastovki-i-spravka-po-situacii-v-pf-ozenmunaygaz-i-ao-karazhnabasmunay.html",
+  "wayback": {
+    "timestamp": "20111016184901",
+    "memento_datetime": "Sun, 16 Oct 2011 18:49:01 GMT",
+    "archive_url": "https://web.archive.org/web/20111016184901id_/http://lada.kz/in_details/138-hronika-zabastovki-i-spravka-po-situacii-v-pf-ozenmunaygaz-i-ao-karazhnabasmunay.html",
+    "cdx_digest_sha1_base32": "YV5DK3PZVE4CT7SQOJZ62S6LW7BUS2SX",
+    "http_status": 200,
+    "payload_bytes": 86995,
+    "payload_sha256": "be8232abb347a77b6e7226d3ec053a59ed8a4ebdd1714008fb83c18ac7d347f4",
+    "original_last_modified": "Fri, 12 Aug 2011 11:34:07 +0500 GMT"
+  },
+  "normalized_visible_text": {
+    "bytes_utf8": 48159,
+    "sha256": "998d2e35d35728742176645e33493503726fd1a3292d2307e5089a82bcc69699",
+    "rule": "HTML scripts/styles/tags removed; entities unescaped; non-empty lines stripped and joined with LF"
+  },
+  "substantive_scope": [
+    "company concessions to strikers",
+    "six company wage increases since 2008",
+    "two-to-threefold wage demands reviewed in a conciliation commission and rejected as unfounded",
+    "company willingness to settle only within the legal framework"
+  ],
+  "limits": [
+    "formal corporate position, not independent proof that pay was fair",
+    "dated 2011-08-12 and not simultaneous with the worker statement of 2011-05-26",
+    "does not establish a 2011-12-15 snapshot"
+  ]
+}

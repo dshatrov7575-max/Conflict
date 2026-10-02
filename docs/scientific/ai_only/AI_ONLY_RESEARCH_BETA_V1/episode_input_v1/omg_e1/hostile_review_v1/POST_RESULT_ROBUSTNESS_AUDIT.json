@@ -1,0 +1,46 @@
+{
+  "review_id": "OMG_E1_POST_RESULT_ROBUSTNESS_AUDIT_V1",
+  "status": "EXPLORATORY_POST_RESULT_DIAGNOSTIC",
+  "not_preregistered": true,
+  "not_a_replacement_for_verified_factors": true,
+  "base_factor_record": {
+    "worker_POS": -5,
+    "worker_KVS": 5,
+    "company_POS": 5,
+    "company_KVS": 5,
+    "baseline_RGU": {
+      "worker": 1,
+      "company": 1
+    },
+    "KVPTN": 1
+  },
+  "closed_form_for_fixed_POS_minus5_plus5_and_KVS_5_5": {
+    "formula": "Pol = 100 * min(r_worker, r_company) / (r_worker + r_company)",
+    "implication": "The equal-positive RGU baseline maximizes Pol at 50 for this factor configuration."
+  },
+  "company_KVS_stress_equal_RGU_worker_KVS_5": [
+    {"company_KVS": 0, "P": 0.0, "N": 50.0, "A": 50.0, "B": -50.0, "Pol": 0.0},
+    {"company_KVS": 2, "P": 14.28571429, "N": 35.71428571, "A": 50.0, "B": -21.42857143, "Pol": 28.57142857},
+    {"company_KVS": 5, "P": 25.0, "N": 25.0, "A": 50.0, "B": 0.0, "Pol": 50.0},
+    {"company_KVS": 8, "P": 30.76923077, "N": 19.23076923, "A": 50.0, "B": 11.53846154, "Pol": 38.46153846},
+    {"company_KVS": 10, "P": 33.33333333, "N": 16.66666667, "A": 50.0, "B": 16.66666667, "Pol": 33.33333333}
+  ],
+  "company_POS_stress_equal_effective_weights": [
+    {"company_POS": 0, "P": 0.0, "N": 25.0, "A": 25.0, "B": -25.0, "Pol": 0.0},
+    {"company_POS": 5, "P": 25.0, "N": 25.0, "A": 50.0, "B": 0.0, "Pol": 50.0},
+    {"company_POS": 10, "P": 50.0, "N": 25.0, "A": 75.0, "B": 25.0, "Pol": 50.0}
+  ],
+  "worker_POS_stress_equal_effective_weights": [
+    {"worker_POS": -10, "P": 25.0, "N": 50.0, "A": 75.0, "B": -25.0, "Pol": 50.0},
+    {"worker_POS": -5, "P": 25.0, "N": 25.0, "A": 50.0, "B": 0.0, "Pol": 50.0},
+    {"worker_POS": 0, "P": 25.0, "N": 0.0, "A": 25.0, "B": 25.0, "Pol": 0.0}
+  ],
+  "findings": [
+    "Equal RGU is a symmetry-maximizing design for the verified opposite positions, not a substantively neutral estimate.",
+    "The disputed company KVS anchor materially controls Pol and calculation eligibility.",
+    "With the coarse POS anchors, strengthening only one already-opposed side from magnitude 5 to 10 changes A and B but not Pol.",
+    "The verified run is not robust in any formally justified sense; the preregistered positive-RGU envelope is wide and no robustness threshold was frozen.",
+    "These diagnostics are post-result and may only inform future protocol design."
+  ],
+  "release_effect": "NO_CHANGE_TO_VERIFIED_FACTOR_RECORD_OR_CORE_REPLAY"
+}

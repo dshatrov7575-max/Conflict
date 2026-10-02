@@ -1,0 +1,60 @@
+{
+  "contract_id": "PRIMARY_EXTERNAL_EXECUTOR_ACCEPTANCE_R1_20260930",
+  "status": "FROZEN_BEFORE_ANY_COHORT_PRIMARY_RESULT",
+  "cohort_id": "AI_ONLY_REPLICATION_COHORT_R1_20260930",
+  "purpose": "Define executor-side conditions under which an externally produced primary JSON is admissible into the frozen cohort.",
+  "required_per_run": {
+    "fresh_context": true,
+    "exact_standalone_only": true,
+    "exact_role_identity": true,
+    "exact_input_sha256": true,
+    "no_sibling_output": true,
+    "no_prior_r2_or_episode_outputs": true,
+    "no_known_outcome": true,
+    "no_external_search": true,
+    "no_coordinator_notes": true,
+    "preserve_returned_json_unchanged": true,
+    "unique_run_id": true,
+    "actual_model_label_required": true,
+    "model_label_source_required": true,
+    "completed_at_utc_required": true
+  },
+  "accepted_executor_classes": [
+    {
+      "class": "FRESH_CHATGPT_PRIMARY",
+      "condition": "A newly opened independent ChatGPT chat/model receives only the frozen standalone for that role; no project memory or prior project material is supplied as evidence/context."
+    },
+    {
+      "class": "FRESH_CLAUDE_PRIMARY",
+      "condition": "A newly opened independent Claude chat/model receives only the frozen standalone for that role; no prior project conversation/output is supplied."
+    },
+    {
+      "class": "AUTOMATED_MODEL_EXECUTOR",
+      "condition": "Automation can prove exact packet bytes/hash, fresh isolated model context, target role/model identity, no sibling/prior outputs, and immutable return capture."
+    }
+  ],
+  "not_accepted": [
+    "this coordinator chat",
+    "a chat that has seen R2/V1.0.1/V1.0.2 factor outputs",
+    "a run that uses web search or extra project context",
+    "a rerun initiated because the first result was UNKNOWN/disagreement",
+    "a replacement model chosen after seeing a result",
+    "a manually edited JSON",
+    "a model output missing required attestation or identity"
+  ],
+  "intake_actions": [
+    "preserve exact returned JSON before any parsing",
+    "record origin/executor class",
+    "validate against frozen schema and role",
+    "do not expose sibling output until both primary files are preserved",
+    "run only frozen comparator after both valid sibling outputs exist"
+  ],
+  "failure_policy": {
+    "contaminated_run": "REJECT_INVALID_PRIMARY_RUN",
+    "missing_run": "UNRESOLVED_NO_REPLACEMENT_UNLESS_ORIGINAL_ROLE_EXECUTOR_BECOMES_AVAILABLE",
+    "malformed_json": "REJECT_INVALID_PRIMARY_RUN",
+    "identity_or_hash_mismatch": "REJECT_INVALID_PRIMARY_RUN",
+    "unfavorable_numeric_unknown_or_disagreement": "VALID_RESULT_NO_RERUN"
+  },
+  "calculation_release": false
+}

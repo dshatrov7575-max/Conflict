@@ -1,0 +1,516 @@
+{
+  "episode_id": "OMG_INITIAL_WAGE_DISPUTE_2011_05_26_2011_06_28",
+  "ptn_id": "E02_PAY",
+  "state": "COMPUTED_RESEARCH_SCENARIOS",
+  "baseline": {
+    "scenario_id": "BASELINE_EQUAL_POSITIVE",
+    "family": "BASELINE",
+    "weights": {
+      "RGU": {
+        "OMG_WORKERS_INITIAL_STRIKE": "1",
+        "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "1"
+      },
+      "KVPTN": {
+        "E02_PAY": "1"
+      }
+    },
+    "result": {
+      "ptn_status": "COMPLETE",
+      "W": "10.00000000",
+      "P": "25.00000000",
+      "N": "25.00000000",
+      "A": "50.00000000",
+      "B": "0.00000000",
+      "Pol": "50.00000000",
+      "single_ptn_uno_field": "50.00000000",
+      "q": "1.00000000",
+      "trace": [
+        {
+          "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+          "POS": "-5.00000000",
+          "KVS": "5.00000000",
+          "RGU": "1.00000000",
+          "effective_weight": "5.00000000"
+        },
+        {
+          "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+          "POS": "5.00000000",
+          "KVS": "5.00000000",
+          "RGU": "1.00000000",
+          "effective_weight": "5.00000000"
+        }
+      ]
+    }
+  },
+  "main_positive_scenarios": [
+    {
+      "scenario_id": "WORKER_DOMINANT_10_1",
+      "family": "RGU_ONLY",
+      "weights": {
+        "RGU": {
+          "OMG_WORKERS_INITIAL_STRIKE": "10",
+          "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "1"
+        },
+        "KVPTN": {
+          "E02_PAY": "1"
+        }
+      },
+      "result": {
+        "ptn_status": "COMPLETE",
+        "W": "55.00000000",
+        "P": "4.54545455",
+        "N": "45.45454545",
+        "A": "50.00000000",
+        "B": "-40.90909091",
+        "Pol": "9.09090909",
+        "single_ptn_uno_field": "9.09090909",
+        "q": "1.00000000",
+        "trace": [
+          {
+            "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+            "POS": "-5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "10.00000000",
+            "effective_weight": "50.00000000"
+          },
+          {
+            "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+            "POS": "5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          }
+        ]
+      }
+    },
+    {
+      "scenario_id": "WORKER_DOMINANT_4_1",
+      "family": "RGU_ONLY",
+      "weights": {
+        "RGU": {
+          "OMG_WORKERS_INITIAL_STRIKE": "4",
+          "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "1"
+        },
+        "KVPTN": {
+          "E02_PAY": "1"
+        }
+      },
+      "result": {
+        "ptn_status": "COMPLETE",
+        "W": "25.00000000",
+        "P": "10.00000000",
+        "N": "40.00000000",
+        "A": "50.00000000",
+        "B": "-30.00000000",
+        "Pol": "20.00000000",
+        "single_ptn_uno_field": "20.00000000",
+        "q": "1.00000000",
+        "trace": [
+          {
+            "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+            "POS": "-5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "4.00000000",
+            "effective_weight": "20.00000000"
+          },
+          {
+            "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+            "POS": "5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          }
+        ]
+      }
+    },
+    {
+      "scenario_id": "WORKER_DOMINANT_2_1",
+      "family": "RGU_ONLY",
+      "weights": {
+        "RGU": {
+          "OMG_WORKERS_INITIAL_STRIKE": "2",
+          "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "1"
+        },
+        "KVPTN": {
+          "E02_PAY": "1"
+        }
+      },
+      "result": {
+        "ptn_status": "COMPLETE",
+        "W": "15.00000000",
+        "P": "16.66666667",
+        "N": "33.33333333",
+        "A": "50.00000000",
+        "B": "-16.66666667",
+        "Pol": "33.33333333",
+        "single_ptn_uno_field": "33.33333333",
+        "q": "1.00000000",
+        "trace": [
+          {
+            "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+            "POS": "-5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "2.00000000",
+            "effective_weight": "10.00000000"
+          },
+          {
+            "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+            "POS": "5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          }
+        ]
+      }
+    },
+    {
+      "scenario_id": "EQUAL_1_1",
+      "family": "RGU_ONLY",
+      "weights": {
+        "RGU": {
+          "OMG_WORKERS_INITIAL_STRIKE": "1",
+          "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "1"
+        },
+        "KVPTN": {
+          "E02_PAY": "1"
+        }
+      },
+      "result": {
+        "ptn_status": "COMPLETE",
+        "W": "10.00000000",
+        "P": "25.00000000",
+        "N": "25.00000000",
+        "A": "50.00000000",
+        "B": "0.00000000",
+        "Pol": "50.00000000",
+        "single_ptn_uno_field": "50.00000000",
+        "q": "1.00000000",
+        "trace": [
+          {
+            "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+            "POS": "-5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          },
+          {
+            "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+            "POS": "5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          }
+        ]
+      }
+    },
+    {
+      "scenario_id": "COMPANY_DOMINANT_1_2",
+      "family": "RGU_ONLY",
+      "weights": {
+        "RGU": {
+          "OMG_WORKERS_INITIAL_STRIKE": "1",
+          "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "2"
+        },
+        "KVPTN": {
+          "E02_PAY": "1"
+        }
+      },
+      "result": {
+        "ptn_status": "COMPLETE",
+        "W": "15.00000000",
+        "P": "33.33333333",
+        "N": "16.66666667",
+        "A": "50.00000000",
+        "B": "16.66666667",
+        "Pol": "33.33333333",
+        "single_ptn_uno_field": "33.33333333",
+        "q": "1.00000000",
+        "trace": [
+          {
+            "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+            "POS": "-5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          },
+          {
+            "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+            "POS": "5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "2.00000000",
+            "effective_weight": "10.00000000"
+          }
+        ]
+      }
+    },
+    {
+      "scenario_id": "COMPANY_DOMINANT_1_4",
+      "family": "RGU_ONLY",
+      "weights": {
+        "RGU": {
+          "OMG_WORKERS_INITIAL_STRIKE": "1",
+          "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "4"
+        },
+        "KVPTN": {
+          "E02_PAY": "1"
+        }
+      },
+      "result": {
+        "ptn_status": "COMPLETE",
+        "W": "25.00000000",
+        "P": "40.00000000",
+        "N": "10.00000000",
+        "A": "50.00000000",
+        "B": "30.00000000",
+        "Pol": "20.00000000",
+        "single_ptn_uno_field": "20.00000000",
+        "q": "1.00000000",
+        "trace": [
+          {
+            "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+            "POS": "-5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          },
+          {
+            "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+            "POS": "5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "4.00000000",
+            "effective_weight": "20.00000000"
+          }
+        ]
+      }
+    },
+    {
+      "scenario_id": "COMPANY_DOMINANT_1_10",
+      "family": "RGU_ONLY",
+      "weights": {
+        "RGU": {
+          "OMG_WORKERS_INITIAL_STRIKE": "1",
+          "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "10"
+        },
+        "KVPTN": {
+          "E02_PAY": "1"
+        }
+      },
+      "result": {
+        "ptn_status": "COMPLETE",
+        "W": "55.00000000",
+        "P": "45.45454545",
+        "N": "4.54545455",
+        "A": "50.00000000",
+        "B": "40.90909091",
+        "Pol": "9.09090909",
+        "single_ptn_uno_field": "9.09090909",
+        "q": "1.00000000",
+        "trace": [
+          {
+            "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+            "POS": "-5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          },
+          {
+            "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+            "POS": "5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "10.00000000",
+            "effective_weight": "50.00000000"
+          }
+        ]
+      }
+    }
+  ],
+  "positive_q_invariance": {
+    "passed": true,
+    "values_checked": [
+      "0.1",
+      "1",
+      "10"
+    ],
+    "observed_Pol_values": [
+      "50.00000000"
+    ],
+    "interpretation": "Expected algebraic invariance for a one-PTN topology; not substantive KVPTN sensitivity."
+  },
+  "zero_weight_stress": [
+    {
+      "scenario_id": "R_WORKER_ZERO",
+      "family": "ZERO_WEIGHT_COVERAGE_STRESS",
+      "weights": {
+        "RGU": {
+          "OMG_WORKERS_INITIAL_STRIKE": "0",
+          "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "1"
+        },
+        "KVPTN": {
+          "E02_PAY": "1"
+        }
+      },
+      "result": {
+        "ptn_status": "COMPLETE",
+        "W": "5.00000000",
+        "P": "50.00000000",
+        "N": "0.00000000",
+        "A": "50.00000000",
+        "B": "50.00000000",
+        "Pol": "0.00000000",
+        "single_ptn_uno_field": "0.00000000",
+        "q": "1.00000000",
+        "trace": [
+          {
+            "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+            "POS": "-5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "0.00000000",
+            "effective_weight": "0.00000000"
+          },
+          {
+            "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+            "POS": "5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          }
+        ]
+      }
+    },
+    {
+      "scenario_id": "R_COMPANY_ZERO",
+      "family": "ZERO_WEIGHT_COVERAGE_STRESS",
+      "weights": {
+        "RGU": {
+          "OMG_WORKERS_INITIAL_STRIKE": "1",
+          "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "0"
+        },
+        "KVPTN": {
+          "E02_PAY": "1"
+        }
+      },
+      "result": {
+        "ptn_status": "COMPLETE",
+        "W": "5.00000000",
+        "P": "0.00000000",
+        "N": "50.00000000",
+        "A": "50.00000000",
+        "B": "-50.00000000",
+        "Pol": "0.00000000",
+        "single_ptn_uno_field": "0.00000000",
+        "q": "1.00000000",
+        "trace": [
+          {
+            "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+            "POS": "-5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          },
+          {
+            "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+            "POS": "5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "0.00000000",
+            "effective_weight": "0.00000000"
+          }
+        ]
+      }
+    },
+    {
+      "scenario_id": "R_ALL_ZERO",
+      "family": "ZERO_WEIGHT_COVERAGE_STRESS",
+      "weights": {
+        "RGU": {
+          "OMG_WORKERS_INITIAL_STRIKE": "0",
+          "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "0"
+        },
+        "KVPTN": {
+          "E02_PAY": "1"
+        }
+      },
+      "result": {
+        "ptn_status": "NOT_COMPUTABLE",
+        "W": "0.00000000",
+        "P": null,
+        "N": null,
+        "A": null,
+        "B": null,
+        "Pol": null,
+        "single_ptn_uno_field": null,
+        "q": "1.00000000",
+        "trace": [
+          {
+            "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+            "POS": "-5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "0.00000000",
+            "effective_weight": "0.00000000"
+          },
+          {
+            "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+            "POS": "5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "0.00000000",
+            "effective_weight": "0.00000000"
+          }
+        ]
+      }
+    },
+    {
+      "scenario_id": "Q_ZERO_EXCLUSION",
+      "family": "ZERO_WEIGHT_COVERAGE_STRESS",
+      "weights": {
+        "RGU": {
+          "OMG_WORKERS_INITIAL_STRIKE": "1",
+          "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "1"
+        },
+        "KVPTN": {
+          "E02_PAY": "0"
+        }
+      },
+      "result": {
+        "ptn_status": "COMPLETE",
+        "W": "10.00000000",
+        "P": "25.00000000",
+        "N": "25.00000000",
+        "A": "50.00000000",
+        "B": "0.00000000",
+        "Pol": "50.00000000",
+        "single_ptn_uno_field": null,
+        "q": "0.00000000",
+        "trace": [
+          {
+            "actor_id": "OMG_WORKERS_INITIAL_STRIKE",
+            "POS": "-5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          },
+          {
+            "actor_id": "KMG_EP_MANAGEMENT_FORMAL_RESPONSE",
+            "POS": "5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          }
+        ]
+      }
+    }
+  ],
+  "envelope": {
+    "main_positive_scenarios": 7,
+    "Pol_min": "9.09090909",
+    "Pol_max": "50.00000000",
+    "baseline_Pol": "50.00000000",
+    "robustness_label": "NOT_ASSIGNED_BY_PROTOCOL"
+  },
+  "claims": {
+    "historical_area_UNO": "NOT_COMPUTED",
+    "single_ptn_uno_field": "Numerically equal to Pol when q>0, but not reported as an area-level historical UNO.",
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED",
+    "weight_values": "EXOGENOUS_ANALYTIC_DESIGN",
+    "strict_v1_overwritten": false
+  }
+}

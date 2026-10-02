@@ -1,0 +1,129 @@
+name: AI-only V1.1 hostile review R2 DeepSeek package
+
+on:
+  push:
+    branches:
+      - review/ai-only-research-beta-v1-1-fast-repair
+    paths:
+      - ".github/workflows/ai-only-v1-1-hostile-review-r2-deepseek.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify DeepSeek R2.1 binding and build one-file package
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+
+          base=pathlib.Path('docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2')
+          freeze_path=base/'HOSTILE_REVIEW_FREEZE_MANIFEST_R2_1.json'
+          assert subprocess.check_output(['git','hash-object',str(freeze_path)],text=True).strip()=='60d50439851dc9ef259b5e815741c8b6147c30d0'
+          freeze=json.loads(freeze_path.read_text(encoding='utf-8'))
+          assert freeze['state']=='FROZEN_BEFORE_REVIEWER_D_OUTPUT'
+          assert freeze['reviewer_d']['dispatch_state']=='READY'
+          assert freeze['reviewer_d']['service']=='DeepSeek Web'
+          assert freeze['reviewer_d']['ui_reasoning_mode']=='Глубокое мышление'
+          assert freeze['reviewer_d']['backend_model_identity']=='NOT_UI_DISCLOSED'
+          assert freeze['reviewer_d']['smart_search']=='OFF'
+
+          amend=pathlib.Path(freeze['reviewer_d']['binding_amendment_path'])
+          assert subprocess.check_output(['git','hash-object',str(amend)],text=True).strip()==freeze['reviewer_d']['binding_amendment_blob']
+
+          target_path=pathlib.Path(freeze['target']['path'])
+          assert subprocess.check_output(['git','hash-object',str(target_path)],text=True).strip()==freeze['target']['git_blob']
+          target=json.loads(target_path.read_text(encoding='utf-8'))
+          assert target['review_rules']['prior_r1_hostile_review_outputs_excluded'] is True
+
+          evidence=[]
+          for group,items in target['evidence_files'].items():
+              for path,expected in items.items():
+                  actual=subprocess.check_output(['git','hash-object',path],text=True).strip()
+                  assert actual==expected,(group,path,expected,actual)
+                  evidence.append(path)
+
+          protocol=base/'HOSTILE_REVIEW_PROTOCOL_R2.md'
+          schema=base/'HOSTILE_REVIEW_RESPONSE_SCHEMA_R2.json'
+          prompt=base/'REVIEWER_D_DEEPSEEK_STANDALONE_RU.md'
+
+          order=[prompt, amend, freeze_path, protocol, schema, target_path]
+          order += [pathlib.Path(p) for p in evidence]
+
+          forbidden=[
+              'hostile_review_r1/raw/V1_1_HOSTILE_REVIEW_B_COMPLETED.json',
+              'REVIEWER_A_CHAT_INTAKE_RECORD_R1.json',
+              'HOSTILE_REVIEW_PAIR_STATUS_R1.json',
+              'V1_1_HOSTILE_REVIEW_C_R2_COMPLETED.json'
+          ]
+          packed='\n'.join(p.as_posix() for p in order)
+          assert not any(x in packed for x in forbidden)
+
+          outdir=pathlib.Path('/tmp/hostile-r2-deepseek')
+          outdir.mkdir(parents=True,exist_ok=True)
+          out=outdir/'V1_1_HOSTILE_REVIEWER_D_DEEPSEEK_R2_SINGLE.md'
+          with out.open('w',encoding='utf-8',newline='\n') as f:
+              f.write('# V1.1 HOSTILE REVIEW R2 — REVIEWER D / DEEPSEEK WEB — SINGLE FILE\n\n')
+              f.write('Transport wrapper only. Backend model version is NOT UI-disclosed. Use DeepSeek Web with Глубокое мышление ON and Умный поиск OFF. Follow REVIEWER_D_DEEPSEEK_STANDALONE_RU.md. Use no external search. Return exactly one JSON.\n\n')
+              for p in order:
+                  data=p.read_text(encoding='utf-8')
+                  blob=subprocess.check_output(['git','hash-object',str(p)],text=True).strip()
+                  f.write(f'===== FILE BEGIN: {p.as_posix()} @ GIT_BLOB {blob} =====\n')
+                  f.write(data)
+                  if not data.endswith('\n'): f.write('\n')
+                  f.write(f'===== FILE END: {p.as_posix()} =====\n\n')
+
+          digest=hashlib.sha256(out.read_bytes()).hexdigest()
+          receipt={
+              'schema':'AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_R2_DEEPSEEK_PACKAGE_RECEIPT',
+              'state':'PASS',
+              'github_run_id':os.environ['RUN_ID'],
+              'github_head_sha':os.environ['HEAD_SHA'],
+              'target_manifest_blob':freeze['target']['git_blob'],
+              'reviewer_role':'V1_1_HOSTILE_REVIEWER_D_R2',
+              'service':'DeepSeek Web',
+              'ui_reasoning_mode':'Глубокое мышление',
+              'backend_model_identity':'NOT_UI_DISCLOSED',
+              'smart_search':'OFF',
+              'transport_files':1,
+              'package_filename':out.name,
+              'package_sha256':digest,
+              'source_object_count':len(order),
+              'prior_hostile_reviews_included':False,
+          }
+          (outdir/'DEEPSEEK_R2_PACKAGE_RECEIPT.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps(receipt,ensure_ascii=False))
+          PY
+
+      - name: Upload DeepSeek R2 single-file package
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1-1-hostile-reviewer-d-deepseek-r2
+          path: /tmp/hostile-r2-deepseek/*
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Preserve boundary
+        run: |
+          echo 'R1_HOSTILE_REVIEWS_INCLUDED=false'
+          echo 'QWEN_REVIEW_OUTPUT_INCLUDED=false'
+          echo 'DEEPSEEK_SUBSTANTIVE_ATTEMPT_STARTED=false'
+          echo 'DEEPSEEK_SMART_SEARCH=false'
+          echo 'PRIMARY_OUTPUTS_MODIFIED=false'
+          echo 'AUTO_MERGE=false'

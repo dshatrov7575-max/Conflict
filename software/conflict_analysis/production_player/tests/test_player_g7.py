@@ -258,8 +258,9 @@ class ProductionPlayerG7Tests(FoundationPlayerFixture, TestCase):
         self.assertIn('id="experiment-general"', template)
         self.assertIn('id="experiment-plus"', template)
         self.assertIn("Доступно после этапа экспериментов", template)
+        work_markup = re.sub(r'\sdata-panel-help="[^"]+"', "", template)
         for forbidden in ("value", "average", "winner", "ranking", "chart", "modeling"):
-            self.assertNotIn(forbidden, template.lower())
+            self.assertNotIn(forbidden, work_markup.lower())
 
     def test_focus_aware_icon_toolbar_has_no_in_panel_commands_and_exposes_exact_disabled_boundaries(self):
         entry = (PLAYER_PACKAGE_ROOT / "templates" / "production_player" / "entry.html").read_text(encoding="utf-8")

@@ -1,0 +1,33 @@
+{
+  "route_id": "AI_ARCHIVAL_OBSERVATIONAL_V2",
+  "rubric_version": "2.0.0-draft1",
+  "status": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+  "frozen_at_utc": "2026-09-28T13:00:00Z",
+  "item_count": 6,
+  "response_entries_per_coder": 12,
+  "primary_roles": [
+    "AO2_AI1",
+    "AO2_AI2"
+  ],
+  "ai1_order": [
+    "AO2-01",
+    "AO2-02",
+    "AO2-03",
+    "AO2-04",
+    "AO2-05",
+    "AO2-06"
+  ],
+  "ai2_order": [
+    "AO2-04",
+    "AO2-01",
+    "AO2-06",
+    "AO2-03",
+    "AO2-02",
+    "AO2-05"
+  ],
+  "no_external_sources_during_coding": true,
+  "max_targeted_critique_rounds": 1,
+  "calculation_core_changed": false,
+  "strict_v1_overwritten": false,
+  "human_validation": "NOT_PERFORMED"
+}

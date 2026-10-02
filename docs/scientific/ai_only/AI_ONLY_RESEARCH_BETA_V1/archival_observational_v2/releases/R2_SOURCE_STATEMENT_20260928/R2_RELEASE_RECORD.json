@@ -1,0 +1,55 @@
+{
+  "release_id": "AO2S_R2_DISTRIBUTION_20260928",
+  "status": "RELEASE_READY_NOT_RUN",
+  "created_at_utc": "2026-09-28T17:30:22.207704+00:00",
+  "route_id": "AI_ARCHIVAL_OBSERVATIONAL_V2",
+  "contract_id": "AO2_CONTRACT_C1",
+  "input_version": "AO2_SOURCE_STATEMENT_R2_20260928",
+  "source_head_before_release": "a4dc5cedf7ee88400f3fff1f17e7963af619c422",
+  "payload_delivery": "CONVERSATION_ATTACHMENTS; GitHub release record only; full payload not uploaded to Git in this step",
+  "zip_sha256": "f2b391d69f7121bac7a43fd795c7add2da41a56637a73e8b8ed941f0e94af8cf",
+  "input_sha256": "316d34b7d81e30678f3a96376abfd80bc437d358560915ebd1b64300e7cb0a56",
+  "manifest_sha256": "a48aa5ab493503f77c6f4b23d69a6ba288aeda01652ea9bd92e27a43cef6533b",
+  "distribution": [
+    {
+      "coder_role": "AO2S_R2_AI1",
+      "destination": "ChatGPT — новый отдельный чат «MVP7 R2 — AI1 PRIMARY» вне проекта",
+      "attachment": "02_AO2S_AI1_STANDALONE_RU.md",
+      "bytes": 61615,
+      "sha256": "3acc244c7803fc0031e6abc4a95ebe8009132d0bc08c60a305c0a68e82b5b613",
+      "return_file": "AO2S_R2_AI1_COMPLETED.json"
+    },
+    {
+      "coder_role": "AO2S_R2_AI2",
+      "destination": "Claude — новый отдельный чат «MVP7 R2 — AI2 PRIMARY» вне проекта",
+      "attachment": "03_AO2S_AI2_STANDALONE_RU.md",
+      "bytes": 61615,
+      "sha256": "f7e66fbe9a044b625eea81bc03103b93513b8083ea3090483192beb11563c021",
+      "return_file": "AO2S_R2_AI2_COMPLETED.json"
+    }
+  ],
+  "checks": {
+    "zip_crc": "PASS",
+    "frozen_manifest_hashes": "9/9 PASS",
+    "fresh_extraction_contract_tests": "40/40 PASS",
+    "standalone_input_schema_equal": true,
+    "blank_template_entries": 24,
+    "payload_files_unchanged": true,
+    "source_reauthentication_performed": false,
+    "application_core_tests_performed": false
+  },
+  "scope": {
+    "units": 6,
+    "entries_per_role": 12,
+    "evaluation_mode": "SOURCE_STATEMENT",
+    "as_of_time_utc": null,
+    "carry_forward_policy": "NONE",
+    "numeric_release_automatic": false,
+    "max_targeted_review_rounds": 1,
+    "human_required": false,
+    "human_validation": "NOT_PERFORMED",
+    "uno": "NOT_COMPUTED"
+  },
+  "state_caveat": "Release-ready means files may be provided to independent coders. No model execution, completion, numeric admission or historical snapshot is claimed.",
+  "preservation": "R1 answers, C1, original R2 ZIP/manifest and Core unchanged; release record does not rewrite preparation status in frozen source files."
+}

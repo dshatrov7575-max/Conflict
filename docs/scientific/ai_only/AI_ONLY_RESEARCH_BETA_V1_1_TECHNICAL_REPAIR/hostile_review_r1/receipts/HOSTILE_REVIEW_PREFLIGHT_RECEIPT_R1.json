@@ -1,0 +1,30 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_PREFLIGHT_RECEIPT_R1",
+  "state": "PASS",
+  "github_run_id": "36889483154",
+  "github_run_attempt": "1",
+  "github_head_sha": "403976e4aa9587291d6869310d5dd5e3a6d2c68f",
+  "freeze_manifest_git_blob": "53c00fb58a88ad75bbeb1410bce1a79a3f50677c",
+  "target_manifest_git_blob": "abca1f71455dc2c63d7f52736fb1004724cb90ce",
+  "review_package_files": {
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/HOSTILE_REVIEW_PROTOCOL_R1.md": "9d520d61b726812253cdc9d7784890493d14d22c",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/HOSTILE_REVIEW_RESPONSE_SCHEMA_R1.json": "3cfb0f47759e241364b479685dd283307bf81e81",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/REVIEWER_A_STANDALONE_RU.md": "177bbc132b8c6da128140419e9c3c6cb70f354b4",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/REVIEWER_B_STANDALONE_RU.md": "47d2acaf78d38f47dc30ac25520ffea2feacaed4"
+  },
+  "verified": {
+    "frozen_before_review_outputs": true,
+    "review_outputs_present": false,
+    "reviewer_prompts_equivalent_except_identity": true,
+    "required_domains_count": 14,
+    "schema_role_binding": "PASS",
+    "verdict_enum": "PASS",
+    "target_evaluation_and_demo_artifacts_pinned": true,
+    "other_reviewer_output_access": "FORBIDDEN",
+    "attempt_limit_each": 1,
+    "external_search": "FORBIDDEN",
+    "coordinator_adjudication": "FORBIDDEN",
+    "rerun_until_favorable": "FORBIDDEN",
+    "auto_merge": false
+  }
+}

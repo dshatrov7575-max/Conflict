@@ -1,0 +1,73 @@
+{
+  "route_id": "AI_ARCHIVAL_OBSERVATIONAL_V2",
+  "status": "DRAFT_BEFORE_PRIMARY_CODING",
+  "principle": "Use the narrowest actor identity actually supported by contemporaneous evidence. Do not inherit broad GU group mandate from the frozen strict-v1 pilot.",
+  "actors": [
+    {
+      "actor_key": "AOV2_OMG_STRIKERS",
+      "name": "Bastuyushchie rabotniki OzenMunaiGaz",
+      "basis": [
+        "D03",
+        "D13",
+        "D14",
+        "C03_RFERL_2011_08_11"
+      ],
+      "scope": "Workers explicitly tied to OzenMunaiGaz; not all GU01."
+    },
+    {
+      "actor_key": "AOV2_KBM_STRIKERS",
+      "name": "Bastuyushchie rabotniki QarazhanbasMunai",
+      "basis": [
+        "D01",
+        "D04",
+        "D05",
+        "D14"
+      ],
+      "scope": "Workers explicitly tied to QarazhanbasMunai; not contractors unless separately established."
+    },
+    {
+      "actor_key": "AOV2_FIRED_OIL_WORKERS",
+      "name": "Uvolennye bastuyushchie neftyaniki, where explicitly identified",
+      "basis": [
+        "D14",
+        "D25"
+      ],
+      "scope": "Only explicitly fired/terminated workers; not all job seekers."
+    },
+    {
+      "actor_key": "AOV2_KMG_EP",
+      "name": "KMG EP / RD KMG corporate management statements",
+      "basis": [
+        "D25",
+        "D21_CURRENT_ONLY"
+      ],
+      "scope": "Company-side position only; not all employers/contractors."
+    },
+    {
+      "actor_key": "AOV2_PROSECUTOR_GENERAL",
+      "name": "General Prosecutor's Office of Kazakhstan",
+      "basis": [
+        "D05"
+      ],
+      "scope": "Specific organ and episode; not all GU08."
+    },
+    {
+      "actor_key": "AOV2_CENTRAL_LABOR_OFFICIAL",
+      "name": "Central labor ministry/vice-minister statements in documented meeting",
+      "basis": [
+        "D22"
+      ],
+      "scope": "Specific central official/office in the employment meeting; not all central government."
+    }
+  ],
+  "excluded_as_current_only": [
+    "D15 company employment/reinstatement context",
+    "D17 multi-company IPHR/KIBHR briefing",
+    "D19 EU OSCE statement",
+    "D20 Kazakhstan OSCE delegation",
+    "D23 regional deputy akim statistics",
+    "D24 three-party meeting page",
+    "D29 anticipated employment meeting"
+  ],
+  "note": "Current-only material may guide source discovery but is not admitted as historical input until G3 is repaired."
+}

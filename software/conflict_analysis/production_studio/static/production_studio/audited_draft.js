@@ -8,7 +8,7 @@
     version: LAYOUT_VERSION,
     left: 272,
     right: 360,
-    activeRightTab: "help",
+    activeRightTab: "document",
   });
   const LEFT_MIN = 220;
   const LEFT_MAX = 420;
@@ -420,10 +420,26 @@
   }
 
   function setState(prefix, code, message, kind = "attention") {
-    setText(`${prefix}-state-code`, code);
-    setText(`${prefix}-state-message`, message);
+    const compact = {
+      LOADING: ["Загрузка", ""],
+      READY: ["Готово", ""],
+      AUTHORING_READY: ["Черновик", ""],
+      DRAFT_IN_MEMORY: ["Не сохранено", ""],
+      DRAFT_OPENED: ["Черновик", ""],
+      DRAFT_SAVED: ["Сохранено", ""],
+      DIRTY_NAVIGATION_REQUIRES_HUMAN_DECISION: ["Не сохранено", ""],
+      DRAFT_SAVED_NAVIGATION_NOT_AUTOMATIC: ["Сохранено", ""],
+      UNKNOWN_TRANSPORT_OUTCOME: ["UNKNOWN", ""],
+      WRITE_RECEIPT_IDENTITY_MISMATCH: ["UNKNOWN", ""],
+    }[code];
+    setText(`${prefix}-state-code`, compact?.[0] || (kind === "error" ? "Ошибка" : kind === "success" ? "Готово" : "Внимание"));
+    setText(`${prefix}-state-message`, "");
+    const label = byId(`${prefix}-state-code`);
+    if (label) { label.title = `${code}: ${message}`; label.setAttribute("aria-label", label.title); label.dataset.fullValue = label.title; }
+    const description = byId(`${prefix}-state-message`);
+    if (description) description.title = message;
     const node = byId(`${prefix}-state`);
-    if (node) node.dataset.kind = kind;
+    if (node) { node.dataset.kind = kind; node.dataset.state = code; }
   }
 
   async function verifyClaimContract() {
@@ -491,11 +507,11 @@
         !Number.isInteger(parsed.right) ||
         parsed.right < RIGHT_MIN ||
         parsed.right > RIGHT_MAX ||
-        parsed.activeRightTab !== "help"
+        !["document", "help"].includes(parsed.activeRightTab)
       ) {
         throw new TypeError("invalid layout");
       }
-      return parsed;
+      return { ...parsed, activeRightTab: "document" };
     } catch (_error) {
       try {
         window.localStorage.removeItem(STORAGE_KEY);
@@ -511,7 +527,7 @@
       version: LAYOUT_VERSION,
       left: memory.layout.left,
       right: memory.layout.right,
-      activeRightTab: "help",
+      activeRightTab: memory.layout.activeRightTab,
     };
     const serialized = JSON.stringify(exact);
     if (utf8Length(serialized) > LAYOUT_BYTE_LIMIT) return;
@@ -581,8 +597,31 @@
     });
   }
 
+  function selectRightTab(name) {
+    if (!["document", "help"].includes(name)) return;
+    memory.layout.activeRightTab = name;
+    for (const tab of document.querySelectorAll("[data-right-tab]:not(:disabled)")) {
+      const selected = tab.dataset.rightTab === name;
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected || name === "document" ? 0 : -1;
+      byId(tab.getAttribute("aria-controls")).hidden = !selected;
+    }
+  }
+
   function bindLayout() {
     memory.layout = parseLayout();
+    selectRightTab("document");
+    const tabs = [...document.querySelectorAll("[data-right-tab]:not(:disabled)")];
+    tabs.forEach((tab, index) => {
+      tab.addEventListener("click", () => { selectRightTab(tab.dataset.rightTab); persistLayout(); });
+      tab.addEventListener("keydown", event => {
+        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+        event.preventDefault();
+        const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 :
+          (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+        tabs[next].click(); tabs[next].focus();
+      });
+    });
     applyLayout();
     const left = byId("left-width-control");
     const right = byId("right-width-control");
@@ -1249,6 +1288,9 @@
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.action = action;
+    button.dataset.uiKind = "utility";
+    button.dataset.uiIcon = { rename: "edit", "move-up": "up", "move-down": "down", delete: "trash" }[action] || "edit";
+    if (action === "delete") button.dataset.uiDanger = "true";
     button.textContent = label;
     button.disabled = disabled;
     return button;

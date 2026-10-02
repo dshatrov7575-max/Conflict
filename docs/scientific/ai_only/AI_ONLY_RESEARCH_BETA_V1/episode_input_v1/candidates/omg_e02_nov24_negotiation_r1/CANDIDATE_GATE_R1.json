@@ -1,0 +1,45 @@
+{
+  "candidate_id": "OMG_E02_NOV24_NEGOTIATION_CANDIDATE_R1",
+  "status": "SUPERSEDED_BY_FROZEN_OMG_E02_NOV24_V100",
+  "route": "AI_ONLY_RESEARCH_BETA_V1",
+  "frozen_successor": {
+    "path": "episode_input_v1/omg_e02_nov24_v1_0_0/",
+    "route_id": "AI_ONLY_DYAD_OMG_NOV24_V100",
+    "contract_version": "1.0.0",
+    "evidence_input_sha256": "72b061d6999b596052adc34df493cd2f9687979589ddd17a83ae21f375a0a9a4",
+    "files": 10,
+    "frozen_before_primary_responses": true
+  },
+  "target_ptn": {
+    "element_code": "E02",
+    "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+    "reference_sha256": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172"
+  },
+  "decisive_authenticated_source": {
+    "source_id": "CONTUR_1822_20111130",
+    "original_url": "http://contur.kz/node/1822",
+    "publication_date": "2011-11-30",
+    "archive_capture_utc": "2011-12-03T22:27:42Z",
+    "payload_bytes": 156307,
+    "payload_sha256": "d6bd3102d40bc51dde3847ffe1fe9d6abb5c3d63492ecf9ad2b96e9ae4fcd90c",
+    "use_boundary": "MEDIATED_SOURCE_STATEMENT_ONLY_EDITORIAL_JUDGMENTS_EXCLUDED"
+  },
+  "non_decisive_sources": [
+    {
+      "url": "https://yvision.kz/post/v-zhanaozene-vchera-nachalis-peregovory-208295",
+      "reason": "NO_PRE_CUTOFF_WAYBACK_FOUND"
+    },
+    {
+      "url": "https://nomad.su/?a=3-201112060023",
+      "reason": "NO_PRE_CUTOFF_WAYBACK_FOUND_CLOSEST_2012"
+    },
+    {
+      "url": "https://nomad.su/?a=3-201111300026",
+      "reason": "NO_PRE_CUTOFF_WAYBACK_FOUND_CLOSEST_2012"
+    }
+  ],
+  "factor_values_preassigned": false,
+  "calculation_release": false,
+  "old_omg_company_kvs_5_reused": false,
+  "old_omg_pol_50_reused": false
+}
