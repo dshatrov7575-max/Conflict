@@ -1,0 +1,143 @@
+{
+  "artifact_kind": "MAPPING_SCOPE_FREEZE_MANIFEST",
+  "assessor_type": "AI_PREPARATION",
+  "base_commit": "cb77ddbbc5cae3115f90a1512494d09be12c54d4",
+  "base_tree": "085f34ec2912669c1fccf6022e3858132ba0e5fc",
+  "inputs": [
+    {
+      "path": "docs/scientific/CASE_MAPPING_SCHEMA.json",
+      "bytes": 6675,
+      "sha256": "b9da37273f37540a9f8d72dfea03a4542ec6b128acbbc570af6d2de2d801abfd",
+      "git_blob_sha1": "ac4315bd15e31d49f6097188e09d61dae7d69470"
+    },
+    {
+      "path": "docs/scientific/EMPIRICAL_VALIDATION_SCHEMA.json",
+      "bytes": 4005,
+      "sha256": "72167ad0096894d0993f72f4ce8ebfd9bbc0ff1c2fd80e4ad6915e827be2da9b",
+      "git_blob_sha1": "1c044cf3c73430c5900f5215895a3ae70200a873"
+    },
+    {
+      "path": "docs/scientific/HISTORICAL_ASSESSMENT_SCHEMA.json",
+      "bytes": 5204,
+      "sha256": "0293337a12129097f3da28d7488e87aede0c7463e45048ebc11fd83a2ae42fb0",
+      "git_blob_sha1": "4fb33702a299cf5718a6a066bb64ff60db51fd04"
+    },
+    {
+      "path": "docs/scientific/MVP7_METHODOLOGY_RUBRIC_FREEZE_MANIFEST.json",
+      "bytes": 24604,
+      "sha256": "73bd19fc02b66a834d8bd291d47579b875cbdba4de44eefec8ece781b5e99162",
+      "git_blob_sha1": "f1a2af559b970f33733821eecb2c16036e4fadd0"
+    },
+    {
+      "path": "docs/scientific/ZHANAOZEN_2011_ASSESSMENT_TEMPLATE.json",
+      "bytes": 2608,
+      "sha256": "6fd648fb109c8297707afd7973c441a30946d2d2bfaf30559f1dce3f62de6ede",
+      "git_blob_sha1": "a802a856b08e62ab6af3ddcee4248f7b404e6860"
+    },
+    {
+      "path": "docs/scientific/ZHANAOZEN_2011_EXAMPLE.json",
+      "bytes": 2043,
+      "sha256": "997ab230a4ca8ce21e49fef21ddfaab8f8f0d255fde4dfe49758cb91246b8152",
+      "git_blob_sha1": "d58b22dab3d52463c2cb533b5eb3a537f5cc32ca"
+    },
+    {
+      "path": "docs/scientific/ZHANAOZEN_2011_VALIDATION_TEMPLATE.json",
+      "bytes": 2192,
+      "sha256": "0ff0830c99e93e7cfaedc3f76157445ab828f37b33601c0c8204b946285d0c5d",
+      "git_blob_sha1": "b93e25b6d500299273604dfe2604bf65eeef0734"
+    },
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/ADMISSION_REASSESSMENT.json",
+      "bytes": 46874,
+      "sha256": "7cf35cd083b899aaa9635daa4292a2a63f6a004e02232c3711b38f6f2ede9199",
+      "git_blob_sha1": "1f1ae7badd6f5230216776ecf08539b85aae08ca"
+    },
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+      "bytes": 82780,
+      "sha256": "24638c284ca258f0aec9fab5166260471b6b4f662f5747de0c2da5f3e17aa4da",
+      "git_blob_sha1": "7324bcdb008164939171c5b1ae6ac112d09212a6"
+    },
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/FREEZE_MANIFEST.json",
+      "bytes": 2935,
+      "sha256": "ce1d51e15777ef201d41256d965e464dec4f9351e1d1d31254d0678bd69be89b",
+      "git_blob_sha1": "e11c9dce7b364aaf87ebcae208974e356efcfdd0"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/FREEZE_MANIFEST.json",
+      "bytes": 5918,
+      "sha256": "fbf2fe0540738a8e356162d4dbe715c6141719a8224204f360dbdc8022241d6e",
+      "git_blob_sha1": "a8a579294c23c2f9b4145fd35281c99e4671f6bd"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/EVIDENCE_SUBSET.json",
+      "bytes": 98054,
+      "sha256": "a5b461acae888bd5ac6a56789c827415076e94fac865065c55ad6b1d812788a0",
+      "git_blob_sha1": "fa2419da560001a915dd61fea68e35ef2d5b5e8a"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/STUDY_PLAN.json",
+      "bytes": 2914,
+      "sha256": "8772d3c2338cd25ed1c19ae95e4e6f999de5dfd1810d96f9e78e2cf447347f0e",
+      "git_blob_sha1": "9dcc620d056cf64695dbe7582f01b3259d8f80b8"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/CODING_ITEM_COVERAGE.csv",
+      "bytes": 13574,
+      "sha256": "1669e092532d594c13fa340f51fa83435e84150aeea3df1d881fc72eeadabee9",
+      "git_blob_sha1": "384261812996540a29a752a99bedbf0808390705"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/EVIDENCE_TRACE_INDEX.csv",
+      "bytes": 53666,
+      "sha256": "9d3757c9318696a606f942f374a363bd9c904605cc802bab81e4206097fac679",
+      "git_blob_sha1": "b1874033d136a75ea567d3c340a2d20b0ad0363f"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/INPUT_MANIFEST.json",
+      "bytes": 3500,
+      "sha256": "548b9d24f5e6b7439799f164a964ecc5eb33dcd514dd8463561b336385ca5836",
+      "git_blob_sha1": "88c86ce9e0af7cf99d7214f5ea7435b782efa17b"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/PACKET_AUDIT.json",
+      "bytes": 8705,
+      "sha256": "a71473f11b4329cf0f5c05b759d605538583df3648aceb25a0499b86bc156104",
+      "git_blob_sha1": "185c28d9fd81c431d9662d9552bca4de4065da67"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_SCOPE_V1/CASE_IDENTITY_AND_EPISODE_SCOPE.json",
+      "bytes": 2628,
+      "sha256": "f83c776255f375fe8bc67af912e1c383e1434123a4c7116fa6fba3443d45dbd3",
+      "git_blob_sha1": "4dc2782fd5d048d44c2e6ecff24fe1cf6424ea52"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_SCOPE_V1/FACTOR_MAPPING_PREPARATION.json",
+      "bytes": 115272,
+      "sha256": "3baf4f6b5660aa6696d500989d8dd294ed1019c96596ad7baddf55a07dbaea2b",
+      "git_blob_sha1": "d047d61df96aa60073999c2e26232e56d3ec71e5"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_SCOPE_V1/README.md",
+      "bytes": 6274,
+      "sha256": "0c5c291617c8f77f8aac1b45fcf322a28c99bdd17375c1ba90ab2cc1dd50e8ec",
+      "git_blob_sha1": "3fa176342fdaeb17069fe608f365aa7007e5faa3"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_SCOPE_V1/SCOPE_AND_MAPPING_CHECKS.json",
+      "bytes": 2014,
+      "sha256": "7026a35d466056d9a162cf3131e8a631f29cb73d6ed42838922d384d7c1b4af8",
+      "git_blob_sha1": "7b06d30272a51f6c3137b7754a15e19ae81e5c94"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_SCOPE_V1/validate_scope.py",
+      "bytes": 23143,
+      "sha256": "24c333c7c648f061d2b236fc9da6e4cc04a0b20ed30bb3cbc5239b027ecc076f",
+      "git_blob_sha1": "44d41957711ebf9cc27c9e0814d05baa15f8a3f7"
+    }
+  ],
+  "self_binding": "No recursive self-hash. Manifest will be bound by the coordinator delivery commit and separate receipt hashes."
+}
