@@ -1,0 +1,74 @@
+{
+  "cohort_id": "AI_ONLY_REPLICATION_COHORT_V1_1_20261001",
+  "state": "COMPLETE",
+  "expected_lanes": 4,
+  "expected_decisions": 12,
+  "observed_decisions": 12,
+  "overall": {
+    "exact_agreement_count": 11,
+    "numeric_consensus_count": 9,
+    "shared_unknown_count": 2,
+    "shared_disputed_count": 0,
+    "disagreement_count": 1,
+    "unresolved_count": 0,
+    "exact_agreement_fraction_expected_denominator": "0.91666667",
+    "numeric_consensus_fraction_expected_denominator": "0.75000000",
+    "shared_unknown_fraction_expected_denominator": "0.16666667",
+    "shared_disputed_fraction_expected_denominator": "0.00000000",
+    "disagreement_fraction_expected_denominator": "0.08333333",
+    "unresolved_fraction_expected_denominator": "0.00000000"
+  },
+  "by_factor": {
+    "POS_AO2": {
+      "expected": 6,
+      "exact_agreement_count": 6,
+      "numeric_consensus_count": 5,
+      "shared_unknown_count": 1,
+      "shared_disputed_count": 0,
+      "disagreement_count": 0,
+      "unresolved_count": 0,
+      "exact_agreement_fraction": "1.00000000",
+      "numeric_consensus_fraction": "0.83333333",
+      "shared_unknown_fraction": "0.16666667",
+      "shared_disputed_fraction": "0.00000000",
+      "disagreement_fraction": "0.00000000",
+      "unresolved_fraction": "0.00000000"
+    },
+    "KVS_AO2": {
+      "expected": 6,
+      "exact_agreement_count": 5,
+      "numeric_consensus_count": 4,
+      "shared_unknown_count": 1,
+      "shared_disputed_count": 0,
+      "disagreement_count": 1,
+      "unresolved_count": 0,
+      "exact_agreement_fraction": "0.83333333",
+      "numeric_consensus_fraction": "0.66666667",
+      "shared_unknown_fraction": "0.16666667",
+      "shared_disputed_fraction": "0.00000000",
+      "disagreement_fraction": "0.16666667",
+      "unresolved_fraction": "0.00000000"
+    }
+  },
+  "lane_states": {
+    "AI_ONLY_DYAD_KBM_E02_V100": "ELIGIBLE_FOR_READ_ONLY_DYAD_SCENARIO_REPLAY",
+    "AI_ONLY_DYAD_OMG_NOV24_V101": "HOLD_DISAGREEMENT",
+    "AI_ONLY_PAIR_KBM_E05_V100": "ELIGIBLE_FOR_READ_ONLY_PAIR_SCENARIO_REPLAY",
+    "AI_ONLY_DYAD_D25_E02_V100": "HOLD_FACTOR_INCOMPLETE"
+  },
+  "eligible_replay_lanes": [
+    "AI_ONLY_DYAD_KBM_E02_V100",
+    "AI_ONLY_PAIR_KBM_E05_V100"
+  ],
+  "claims": {
+    "representative_sample": false,
+    "population_inference": false,
+    "human_validation": "NOT_PERFORMED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "fraction_denominator": "FROZEN_EXPECTED_DECISIONS"
+  },
+  "tooling_provenance": {
+    "parent_aggregator_blob": "47b3fc0fc3828066b8cb68450114d4f7f8b69790",
+    "adaptation": "ROUTE_IDENTITY_ONLY_V100_TO_V101; COUNTING_ALGORITHM_AND_DENOMINATORS_UNCHANGED"
+  }
+}

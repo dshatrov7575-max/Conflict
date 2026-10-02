@@ -1,0 +1,49 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_DISPATCH_R1",
+  "state": "READY_FOR_OWNER_DISPATCH",
+  "frozen_before_review_outputs": true,
+  "target_manifest_git_blob": "abca1f71455dc2c63d7f52736fb1004724cb90ce",
+  "review_freeze_manifest_git_blob": "53c00fb58a88ad75bbeb1410bce1a79a3f50677c",
+  "model_binding_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r1/HOSTILE_REVIEW_MODEL_BINDING_R1.md",
+  "model_binding_git_blob": "c899d11b26da40c00e641bb21d50406183c81d45",
+  "distribution_run": {
+    "github_run_id": "36889872071",
+    "github_run_conclusion": "success",
+    "github_head_sha": "ded5acb5ed4a8c10375bb3c488e0b8fcd41ec2ef"
+  },
+  "reviewers": {
+    "V1_1_HOSTILE_REVIEWER_A": {
+      "provider_slot": "ANTHROPIC_CLAUDE_STANDARD_CHAT",
+      "destination": "NEW_SEPARATE_CLAUDE_CHAT_NOT_COWORK",
+      "package_filename": "V1_1_HOSTILE_REVIEWER_A_PACKAGE_R1.zip",
+      "package_sha256": "b30284242da68d64d221aeda7a2ce80109580dd97a542e1c5d0c445c0dad1201",
+      "artifact_id": "11176226606",
+      "artifact_digest": "sha256:8f09bd5e653b9da082661386eb42f25c1ac450c0776e31d1a4ff3f69dbbf03dd",
+      "output_filename": "V1_1_HOSTILE_REVIEW_A_COMPLETED.json",
+      "attempt_limit": 1,
+      "dispatch_status": "NOT_YET_DISPATCHED"
+    },
+    "V1_1_HOSTILE_REVIEWER_B": {
+      "provider_slot": "OPENAI_CHATGPT_TEMPORARY_CHAT",
+      "destination": "NEW_CHATGPT_TEMPORARY_CHAT_OUTSIDE_CONFLICTOLOGY_PROJECT",
+      "requested_model": "GPT-5.6 Sol Pro",
+      "package_filename": "V1_1_HOSTILE_REVIEWER_B_PACKAGE_R1.zip",
+      "package_sha256": "a252c84bae0539f48af11de9fae4d603ca9326bced153670cb99d1d6705d8f40",
+      "artifact_id": "11176466475",
+      "artifact_digest": "sha256:346e1eea78dc5d4e2ba6c5faf1ef1fe34defea8305242206789ecd8e87c8dc7b",
+      "output_filename": "V1_1_HOSTILE_REVIEW_B_COMPLETED.json",
+      "attempt_limit": 1,
+      "dispatch_status": "NOT_YET_DISPATCHED"
+    }
+  },
+  "isolation": {
+    "cross_reviewer_package_access": false,
+    "cross_reviewer_output_access": false,
+    "prior_audits_access": false,
+    "known_outcome_access": false,
+    "external_search": false,
+    "coordinator_adjudication": false
+  },
+  "next_state_after_owner_dispatch": "AWAITING_TWO_RAW_REVIEW_OUTPUTS",
+  "auto_merge": false
+}

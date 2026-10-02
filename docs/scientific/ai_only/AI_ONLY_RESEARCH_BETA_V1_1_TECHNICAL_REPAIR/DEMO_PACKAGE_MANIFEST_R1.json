@@ -1,0 +1,87 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_DEMO_PACKAGE_MANIFEST_R1",
+  "date": "2026-10-01",
+  "target_demo_date": "2026-10-02",
+  "state": "READY_FOR_REHEARSAL_PREFLIGHT",
+  "pr": 124,
+  "branch": "review/ai-only-research-beta-v1-1-fast-repair",
+  "release_candidate_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+  "required_label": "AI-кодирование; человеческая проверка не проводилась; исследовательская версия; прогнозная точность не установлена.",
+  "source_evaluation": {
+    "github_run_id": "36885038106",
+    "github_run_conclusion": "success",
+    "github_head_sha": "b099f4fb023c9e262ac95889301ff6ddc66e8716",
+    "artifact_id": "11174645764",
+    "artifact_name": "ai-only-v1-1-evaluation-r3",
+    "artifact_digest": "sha256:ff8c6cf0d6a4cc43e9ca4ab9a3fe54539fcb8fe9b5e31576cc1e33e7a0087ed6"
+  },
+  "presentation_files": {
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_SCRIPT_15_MIN_R2.md": "82b9491e00e357cb1132356b14cef557bb7290ee",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/DEMO_REHEARSAL_CHECKLIST_R1.md": "c15a2106ea03852c0352342bda985bf5c36ea5c0",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/CURRENT_STATE_20261001_R1.json": "c3211c099b9a07118c6242150f9f9e9648af5af0"
+  },
+  "fresh_v1_1_primary_files": {
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI1_COMPLETED.json": "2c8c9091e3164d08041749c9502062f57b3cb6e3",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI2_COMPLETED.json": "3960a46c1bedba2ca15576523f6727a185563744"
+  },
+  "derived_v1_1_files": {
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/derived/OMG_NOV24_V101_PRIMARY_COMPARISON.json": "2b6754aab5db9f503d6f2d4c7e77891668b8a86a",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/derived/COHORT_AGGREGATE_V1_1_R1.json": "1825425c7d756a3944acf3e615f8242c0d11aecf",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/release_gate/RELEASE_GATE_OUTPUT_V1_1_R1.json": "5e35b95dbd3bbac68302da64a859273f6eec9b94",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json": "524ee9a5d0b744e1b15e2c94fa37b75edf3663f0",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_ARTIFACT_REVIEW_R1.json": "ac15f4049a8c8f17577f9e83f45564a8e9c7c9f1"
+  },
+  "retained_r1_demo_files": {
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E02_V100_PRIMARY_COMPARISON.json": "2ea59f263ac83f34e458272d10202dc0b2829131",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E05_V100_PRIMARY_COMPARISON.json": "056e3bbda09afc2738fba82cce354a8a5f4a0a1e",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/D25_E02_V100_PRIMARY_COMPARISON.json": "e6dd3b0eca82496278417ddd7af91f0f8b9b7e3a",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/OMG_NOV24_V100_VALIDATION_FAILURE.json": "84f80c3e83708e6061ff7009e81ea1c3b8845287",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_RESULT_R1.json": "1eb6d50e8ae8ba2e579ae3048cc622f59e1641a9"
+  },
+  "show_order": [
+    "CURRENT_STATE",
+    "FROZEN_INPUT_AND_ADMISSION_CHECKS",
+    "OMG_V101_RAW_AI1_AI2",
+    "OMG_V101_COMPARISON",
+    "KBM_ELIGIBLE_CORE_REPLAY",
+    "D25_SHARED_UNKNOWN",
+    "R1_OMG_SCHEMA_REJECTION_AND_V1_1_REPAIR_BOUNDARY",
+    "COHORT_AGGREGATE",
+    "RELEASE_GATE",
+    "CLAIM_BOUNDARY"
+  ],
+  "frozen_control_values": {
+    "omg_v101_state": "HOLD_DISAGREEMENT",
+    "omg_v101_calculation_release": false,
+    "cohort_expected_decisions": 12,
+    "cohort_observed_decisions": 12,
+    "cohort_exact_agreement_count": 11,
+    "cohort_numeric_consensus_count": 9,
+    "cohort_shared_unknown_count": 2,
+    "cohort_disagreement_count": 1,
+    "cohort_unresolved_count": 0,
+    "eligible_replay_lanes": [
+      "AI_ONLY_DYAD_KBM_E02_V100",
+      "AI_ONLY_PAIR_KBM_E05_V100"
+    ],
+    "release_gates": "G1_G8_ALL_PASS"
+  },
+  "claim_boundaries": {
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED"
+  },
+  "forbidden": [
+    "EDIT_RAW_PRIMARY_OUTPUTS",
+    "ADJUDICATE_EMPLOYER_KVS",
+    "CONVERT_UNKNOWN_TO_ZERO",
+    "EXECUTE_OMG_V101_CORE_REPLAY",
+    "RESTORE_OLD_OMG_COMPANY_KVS5_POL50",
+    "CLAIM_HISTORICAL_AREA_UNO",
+    "CLAIM_HUMAN_VALIDATION",
+    "CLAIM_PREDICTIVE_VALIDATION",
+    "AUTO_MERGE"
+  ]
+}

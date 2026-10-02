@@ -1,0 +1,92 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_EXPANDED_REVIEW_TARGET_R2",
+  "frozen_at_date": "2026-10-01",
+  "state": "FROZEN_FOR_NEW_INDEPENDENT_REVIEW_R2",
+  "scientific_outputs_changed": false,
+  "target_release_candidate_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+  "source_evaluation": {
+    "run_id": "36885038106",
+    "conclusion": "success",
+    "head_sha": "b099f4fb023c9e262ac95889301ff6ddc66e8716",
+    "artifact_id": "11174645764",
+    "artifact_digest": "sha256:ff8c6cf0d6a4cc43e9ca4ab9a3fe54539fcb8fe9b5e31576cc1e33e7a0087ed6"
+  },
+  "demo_preflight": {
+    "run_id": "36888617846",
+    "conclusion": "success",
+    "head_sha": "4f93d5d659a3fcf303285c03e2c2e9d3ba59b074",
+    "artifact_id": "11176395011",
+    "artifact_digest": "sha256:0741d01501ffbede5b6dbb29f819d40908d913a72ee3f9a800292e1f0b12daf7"
+  },
+  "evidence_files": {
+    "prospective_and_dispatch": {
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/PROTOCOL_FREEZE_R1.md": "1981e1f45143723f1dfa9c1ded1966047af96719",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/CARRY_FORWARD_MANIFEST_R1.json": "fce96fefd7bb9d6626a33bed6fdddbe4f81197c2",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/MODEL_B_SUBSTITUTION_GROK47_R1.md": "6e24ee0bb77d2431b2f5233b00ed5c86001ef11c",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/MODEL_B_SUBSTITUTION_GEMINI31PRO_R2.md": "e54564a21d9100e847fda50ca32b127182d6cb9c",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2/PRIMARY_ATTEMPT_LEDGER_R2.json": "4b7ee00debbf5566b25392fc0c81a13aae9c8905"
+    },
+    "frozen_prompts_and_tools": {
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/omg_nov24_v1_0_1/06_AI1_STANDALONE_RU.md": "225bf43b4e90b1c049f136c77e7f2ce1c53aa0e3",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/omg_nov24_v1_0_1/07_AI2_STANDALONE_RU.md": "9a5f103db14541c7379444886bc83b386224cacf",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/omg_nov24_v1_0_1/compare_primary_v101.py": "3f62d8e164c48d1e0802f6a880000e927c7f7955",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/aggregate_cohort_v101.py": "2aabe293a365ad5d5b811a569bcfefa7a97ece83",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/evaluate_route_v101.py": "9712e3ce028c1d617ec529c76deb9234cc4ce424",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/release_gate_r1/evaluate_release_gate_r1.py": "71bcfd8dd259364df6140be358ad265ce653443d"
+    },
+    "carry_forward_raw": {
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/KBM_E02_V100_AI1_COMPLETED.json": "9021d7419f6b1e5a03c6da7853786c94403e63be",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/KBM_E02_V100_AI2_COMPLETED.json": "0182c954e6df38ee69b4f97f48a68d949beb0108",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/KBM_E05_V100_AI1_COMPLETED.json": "278c5c1b1ecfeee07bebbdc92e68524d831cdf61",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/KBM_E05_V100_AI2_COMPLETED.json": "af6cda3140f3da343078006641201b7f64eb19e0",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/D25_E02_V100_AI1_COMPLETED.json": "4232f8ddff68107ce1f5255b745758571d633a69",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/raw/D25_E02_V100_AI2_COMPLETED.json": "0078744100df6728c5a2ce88ee2c71511effdb86"
+    },
+    "fresh_raw_and_derived": {
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI1_COMPLETED.json": "2c8c9091e3164d08041749c9502062f57b3cb6e3",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/raw/OMG_NOV24_V101_AI2_COMPLETED.json": "3960a46c1bedba2ca15576523f6727a185563744",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/derived/OMG_NOV24_V101_PRIMARY_COMPARISON.json": "2b6754aab5db9f503d6f2d4c7e77891668b8a86a",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/derived/COHORT_AGGREGATE_V1_1_R1.json": "1825425c7d756a3944acf3e615f8242c0d11aecf"
+    },
+    "retained_comparisons_and_replay": {
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E02_V100_PRIMARY_COMPARISON.json": "2ea59f263ac83f34e458272d10202dc0b2829131",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E05_V100_PRIMARY_COMPARISON.json": "056e3bbda09afc2738fba82cce354a8a5f4a0a1e",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/D25_E02_V100_PRIMARY_COMPARISON.json": "e6dd3b0eca82496278417ddd7af91f0f8b9b7e3a",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/OMG_NOV24_V100_VALIDATION_FAILURE.json": "84f80c3e83708e6061ff7009e81ea1c3b8845287",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_RESULT_R1.json": "1eb6d50e8ae8ba2e579ae3048cc622f59e1641a9"
+    },
+    "release_and_receipts": {
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/release_gate/RELEASE_GATE_INPUT_V1_1_R1.json": "543090219a0b5eb73968208b3c7e088ee0e67ea4",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/release_gate/RELEASE_GATE_OUTPUT_V1_1_R1.json": "5e35b95dbd3bbac68302da64a859273f6eec9b94",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_EVALUATION_RECEIPT_R1.json": "524ee9a5d0b744e1b15e2c94fa37b75edf3663f0",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/V1_1_ARTIFACT_REVIEW_R1.json": "ac15f4049a8c8f17577f9e83f45564a8e9c7c9f1",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/DEMO_PREFLIGHT_RECEIPT_R1.json": "3295a442558bd1296bd99a1e264bf21d159edc2f",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/receipts/FAILED_EVALUATION_ATTEMPTS_R1.json": "08c12977b7e94962af3b29272008a6bedbde1474"
+    },
+    "demo_r2": {
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2/DEMO_READINESS_R2.json": "8460e6411614ae8f14194978198051081cb7b01b",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2/DEMO_SCRIPT_15_MIN_R3.md": "87bdff6406309546138f40ef42cbdc7b1a4c67c7",
+      "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2/DEMO_REHEARSAL_CHECKLIST_R2.md": "16938ce3263a328f2e3afe9f20e1e25086d3e5b9"
+    }
+  },
+  "temporal_evidence": {
+    "gemini_binding_commit": "e36985f7e7f608deb039225f8d39d458db5ccc09",
+    "gemini_binding_commit_time_utc": "2026-10-01T15:10:43Z",
+    "gemini_ai2_declared_completed_at_utc": "2026-10-01T15:11:56Z",
+    "prospective_order_supported": true
+  },
+  "explicit_not_proven": [
+    "No independent service audit proves that AI1 content was never viewed by the coordinator before Model B selection.",
+    "No repository evidence can prove the absence of all hidden external attempts outside the preserved project record.",
+    "Gemini primary model identity lacks an independent provider receipt; project evidence includes the frozen UI binding plus the primary's self-reported label/source."
+  ],
+  "review_rules": {
+    "no_prior_hostile_reviews": true,
+    "no_external_search": true,
+    "no_known_outcome": true,
+    "no_primary_recoding": true,
+    "no_coordinator_adjudication": true,
+    "mark_missing_evidence_NOT_PROVEN": true,
+    "prior_r1_hostile_review_outputs_excluded": true
+  }
+}

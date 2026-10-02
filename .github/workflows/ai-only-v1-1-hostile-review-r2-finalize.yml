@@ -1,0 +1,154 @@
+name: AI-only V1.1 hostile review R2 finalize
+
+on:
+  push:
+    branches:
+      - review/ai-only-research-beta-v1-1-fast-repair
+    paths:
+      - ".github/workflows/ai-only-v1-1-hostile-review-r2-finalize.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify raw reviews, conservative comparison and P1 demo patch
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, pathlib, subprocess
+
+          base=pathlib.Path('docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2')
+          files={
+            base/'raw/V1_1_HOSTILE_REVIEW_C_R2_COMPLETED.json':'f49e518ebd1edd5d5c3fbb979e2fb643ec216099',
+            base/'raw/V1_1_HOSTILE_REVIEW_D_R2_COMPLETED.json':'77f5ef622608d9a454f73ca059b9fc8756df4ec8',
+            base/'derived/HOSTILE_REVIEW_R2_INTAKE_VALIDATION_R1.json':'5bd054469cee882b1213c82c8ea41476c8c4d805',
+            base/'derived/HOSTILE_REVIEW_R2_COMPARISON_R1.json':'5b453475fa17c3f499a350876a0bfe3ab5b9e745',
+            base/'HOSTILE_REVIEW_R2_DECISION_R1.json':'a087772c99cbbe823f9530267e4f40b307dcab1f',
+            base/'DEMO_SCRIPT_15_MIN_R4.md':'2abfe5a3d50ca8641a067716ce809447bf737281',
+            base/'DEMO_REHEARSAL_CHECKLIST_R3.md':'c69ae5b992b5b2d13e4aa59fe4e6348cf17f6d49',
+            base/'EXPANDED_REVIEW_TARGET_MANIFEST_R2.json':'4b27f7eb0a393de53dde4ff737e9f2a606b16611',
+          }
+          for p,expected in files.items():
+              actual=subprocess.check_output(['git','hash-object',str(p)],text=True).strip()
+              assert actual==expected,(str(p),expected,actual)
+
+          load=lambda p: json.loads(pathlib.Path(p).read_text(encoding='utf-8'))
+          q=load(base/'raw/V1_1_HOSTILE_REVIEW_C_R2_COMPLETED.json')
+          d=load(base/'raw/V1_1_HOSTILE_REVIEW_D_R2_COMPLETED.json')
+          intake=load(base/'derived/HOSTILE_REVIEW_R2_INTAKE_VALIDATION_R1.json')
+          comp=load(base/'derived/HOSTILE_REVIEW_R2_COMPARISON_R1.json')
+          decision=load(base/'HOSTILE_REVIEW_R2_DECISION_R1.json')
+          script=(base/'DEMO_SCRIPT_15_MIN_R4.md').read_text(encoding='utf-8')
+          checklist=(base/'DEMO_REHEARSAL_CHECKLIST_R3.md').read_text(encoding='utf-8')
+
+          assert q['reviewer_role']=='V1_1_HOSTILE_REVIEWER_C_R2'
+          assert q['actual_model_label']=='Qwen 3.8-Max'
+          assert q['verdict']['state']=='PASS'
+          assert d['reviewer_role']=='V1_1_HOSTILE_REVIEWER_D_R2'
+          assert d['actual_model_label']=='DeepSeek Web — Глубокое мышление (backend model not UI-disclosed)'
+          assert d['verdict']['state']=='PASS_WITH_P1'
+          assert all(v is False for v in q['attestation'].values())
+          assert all(v is False for v in d['attestation'].values())
+          assert q['target_identity']==d['target_identity']
+          assert q['target_identity']['manifest_git_blob']=='4b27f7eb0a393de53dde4ff737e9f2a606b16611'
+
+          assert intake['qwen']['schema_validation']=='PASS'
+          assert intake['deepseek']['schema_validation']=='PASS'
+          assert intake['content_admissibility']=='ADMIT_BOTH_WITH_EXPLICIT_METADATA_WARNINGS'
+          assert len(intake['qwen']['temporal_issues'])==1
+          assert len(intake['deepseek']['temporal_issues'])==1
+
+          assert comp['exact_domain_agreement_count']==9
+          assert comp['exact_domain_disagreement_count']==5
+          assert comp['shared_conclusions']=={
+              'confirmed_p0_absent':True,
+              'rc_state_supported':True,
+              'demo_allowed':True,
+          }
+          assert comp['conservative_pair_verdict']=='PASS_WITH_P1'
+          assert comp['pair_state']=='CONTENT_CONSENSUS_WITH_METADATA_WARNINGS'
+          assert comp['coordinator_adjudication'] is False
+          assert comp['primary_recoding'] is False
+          assert comp['auto_merge'] is False
+
+          assert decision['conservative_pair_verdict']=='PASS_WITH_P1'
+          assert decision['scientific_release_candidate_state']=='AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS'
+          assert decision['scientific_state_changed'] is False
+          assert decision['demo_state']=='READY_FOR_LIMITED_DEMO_WITH_P1_DISCLOSURES'
+          assert decision['review_pair']['confirmed_p0_union']==0
+          assert decision['coordinator_adjudication'] is False
+          assert decision['primary_recoding'] is False
+          assert decision['auto_merge'] is False
+
+          required=[
+              'PASS_WITH_P1',
+              'repair-route triage rows only',
+              'not by an independent provider receipt',
+              'not independently service-audited',
+              'cannot prove the absence of every hidden external attempt',
+              'UNKNOWN != 0',
+              'no auto-merge',
+          ]
+          for token in required:
+              assert token in script,token
+          for token in ('PASS_WITH_P1','inherited KBM worker records','reviewer self-reported timestamps','No HOLD lane is forced through Core'):
+              assert token in checklist,token
+
+          receipt={
+              'schema':'AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_R2_FINALIZE_RECEIPT_R1',
+              'state':'PASS',
+              'github_run_id':os.environ['RUN_ID'],
+              'github_head_sha':os.environ['HEAD_SHA'],
+              'target_manifest_blob':'4b27f7eb0a393de53dde4ff737e9f2a606b16611',
+              'reviewer_c_verdict':'PASS',
+              'reviewer_d_verdict':'PASS_WITH_P1',
+              'conservative_pair_verdict':'PASS_WITH_P1',
+              'confirmed_p0_union':0,
+              'rc_state_supported_by_both':True,
+              'demo_allowed_by_both':True,
+              'domain_exact_agreement':'9/14',
+              'temporal_metadata_warnings_preserved':True,
+              'scientific_state_changed':False,
+              'demo_state':'READY_FOR_LIMITED_DEMO_WITH_P1_DISCLOSURES',
+              'primary_recoding':False,
+              'coordinator_adjudication':False,
+              'auto_merge':False,
+          }
+          out=pathlib.Path('/tmp/hostile-review-r2-finalize')
+          out.mkdir(parents=True,exist_ok=True)
+          (out/'HOSTILE_REVIEW_R2_FINALIZE_RECEIPT_R1.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps(receipt,ensure_ascii=False))
+          PY
+
+      - name: Upload immutable R2 finalize receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-only-v1-1-hostile-review-r2-finalize-r1
+          path: /tmp/hostile-review-r2-finalize/HOSTILE_REVIEW_R2_FINALIZE_RECEIPT_R1.json
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Preserve boundaries
+        run: |
+          echo 'SCIENTIFIC_STATE_CHANGED=false'
+          echo 'PRIMARY_RECODING=false'
+          echo 'COORDINATOR_ADJUDICATION=false'
+          echo 'UNKNOWN_TO_ZERO=false'
+          echo 'HOLD_FORCED_THROUGH_CORE=false'
+          echo 'AUTO_MERGE=false'

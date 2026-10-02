@@ -1,0 +1,127 @@
+name: AI-only V1.1 hostile review R2 preflight and Qwen package
+
+on:
+  push:
+    branches:
+      - review/ai-only-research-beta-v1-1-fast-repair
+    paths:
+      - ".github/workflows/ai-only-v1-1-hostile-review-r2-preflight.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify frozen target and build one-file Qwen package
+        env:
+          RUN_ID: ${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+
+          root=pathlib.Path('.')
+          base=pathlib.Path('docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2')
+          freeze_path=base/'HOSTILE_REVIEW_FREEZE_MANIFEST_R2.json'
+          assert subprocess.check_output(['git','hash-object',str(freeze_path)],text=True).strip()=='db99018a2b3b246f3efdf66ebca8778940a5178c'
+          freeze=json.loads(freeze_path.read_text(encoding='utf-8'))
+          assert freeze['state']=='FROZEN_BEFORE_R2_REVIEW_OUTPUTS'
+          assert freeze['reviewers']['V1_1_HOSTILE_REVIEWER_C_R2']['exact_ui_model']=='Qwen 3.8-Max'
+          assert freeze['reviewers']['V1_1_HOSTILE_REVIEWER_C_R2']['dispatch_state']=='READY'
+          assert freeze['reviewers']['V1_1_HOSTILE_REVIEWER_D_R2']['dispatch_state']=='BLOCKED_PENDING_EXACT_UI_LABEL'
+
+          target_path=pathlib.Path(freeze['target']['path'])
+          assert subprocess.check_output(['git','hash-object',str(target_path)],text=True).strip()==freeze['target']['git_blob']
+          target=json.loads(target_path.read_text(encoding='utf-8'))
+          assert target['state']=='FROZEN_FOR_NEW_INDEPENDENT_REVIEW_R2'
+          assert target['review_rules']['prior_r1_hostile_review_outputs_excluded'] is True
+
+          for path,expected in freeze['package_files'].items():
+              actual=subprocess.check_output(['git','hash-object',path],text=True).strip()
+              assert actual==expected,(path,expected,actual)
+
+          evidence=[]
+          for group,items in target['evidence_files'].items():
+              for path,expected in items.items():
+                  actual=subprocess.check_output(['git','hash-object',path],text=True).strip()
+                  assert actual==expected,(group,path,expected,actual)
+                  evidence.append(path)
+
+          forbidden_substrings=[
+              'hostile_review_r1/raw/V1_1_HOSTILE_REVIEW_B_COMPLETED.json',
+              'REVIEWER_A_CHAT_INTAKE_RECORD_R1.json',
+              'HOSTILE_REVIEW_PAIR_STATUS_R1.json',
+          ]
+          all_paths=json.dumps(target,ensure_ascii=False)
+          assert not any(x in all_paths for x in forbidden_substrings)
+
+          order=[
+              base/'REVIEWER_C_QWEN_STANDALONE_RU.md',
+              base/'HOSTILE_REVIEW_MODEL_BINDING_R2.md',
+              base/'HOSTILE_REVIEW_PROTOCOL_R2.md',
+              base/'HOSTILE_REVIEW_RESPONSE_SCHEMA_R2.json',
+              target_path,
+          ]
+          order += [pathlib.Path(p) for p in evidence]
+
+          outdir=pathlib.Path('/tmp/hostile-r2-qwen')
+          outdir.mkdir(parents=True,exist_ok=True)
+          out=outdir/'V1_1_HOSTILE_REVIEWER_C_QWEN_R2_SINGLE.md'
+          with out.open('w',encoding='utf-8',newline='\n') as f:
+              f.write('# V1.1 HOSTILE REVIEW R2 — REVIEWER C / QWEN 3.8-Max — SINGLE FILE\n\n')
+              f.write('This is a transport wrapper only. Every source object is preserved below with its repository path and frozen Git blob. Follow REVIEWER_C_QWEN_STANDALONE_RU.md. Use no external search. Return exactly one JSON.\n\n')
+              for p in order:
+                  data=p.read_text(encoding='utf-8')
+                  blob=subprocess.check_output(['git','hash-object',str(p)],text=True).strip()
+                  f.write(f'===== FILE BEGIN: {p.as_posix()} @ GIT_BLOB {blob} =====\n')
+                  f.write(data)
+                  if not data.endswith('\n'): f.write('\n')
+                  f.write(f'===== FILE END: {p.as_posix()} =====\n\n')
+
+          digest=hashlib.sha256(out.read_bytes()).hexdigest()
+          receipt={
+              'schema':'AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_R2_QWEN_PACKAGE_RECEIPT',
+              'state':'PASS',
+              'github_run_id':os.environ['RUN_ID'],
+              'github_head_sha':os.environ['HEAD_SHA'],
+              'target_manifest_blob':freeze['target']['git_blob'],
+              'reviewer_role':'V1_1_HOSTILE_REVIEWER_C_R2',
+              'exact_ui_model':'Qwen 3.8-Max',
+              'transport_files':1,
+              'package_filename':out.name,
+              'package_sha256':digest,
+              'source_object_count':len(order),
+              'prior_hostile_reviews_included':False,
+          }
+          (outdir/'QWEN_R2_PACKAGE_RECEIPT.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps(receipt,ensure_ascii=False))
+          PY
+
+      - name: Upload Qwen R2 single-file package
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1-1-hostile-reviewer-c-qwen-r2
+          path: /tmp/hostile-r2-qwen/*
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Preserve boundary
+        run: |
+          echo 'R1_HOSTILE_REVIEWS_INCLUDED=false'
+          echo 'QWEN_SUBSTANTIVE_ATTEMPT_STARTED=false'
+          echo 'DEEPSEEK_DISPATCH_ALLOWED=false'
+          echo 'PRIMARY_OUTPUTS_MODIFIED=false'
+          echo 'AUTO_MERGE=false'

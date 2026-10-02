@@ -1,0 +1,66 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_CURRENT_STATE_R1",
+  "date": "2026-10-01",
+  "route": "AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR",
+  "pr": 124,
+  "pr_state": "DRAFT_OPEN_NOT_MERGED",
+  "release_candidate": {
+    "state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+    "github_run_id": "36885038106",
+    "github_run_conclusion": "success",
+    "gates": {
+      "G1": "PASS",
+      "G2": "PASS",
+      "G3": "PASS",
+      "G4": "PASS",
+      "G5": "PASS",
+      "G6": "PASS",
+      "G7": "PASS",
+      "G8": "PASS"
+    }
+  },
+  "omg_v101": {
+    "state": "HOLD_DISAGREEMENT",
+    "consensus": {
+      "workers_POS_AO2": -5,
+      "workers_KVS_AO2": 5,
+      "employer_POS_AO2": 5
+    },
+    "disagreement": {
+      "factor": "employer_KVS_AO2",
+      "GPT_5_6_Sol_Pro": "UNKNOWN",
+      "Gemini_3_1_Pro": 5
+    },
+    "calculation_release": false
+  },
+  "cohort": {
+    "state": "COMPLETE",
+    "exact_agreement": "11/12",
+    "numeric_consensus": "9/12",
+    "shared_unknown": "2/12",
+    "disagreement": "1/12",
+    "unresolved": "0/12"
+  },
+  "eligible_core_replay_lanes": [
+    "AI_ONLY_DYAD_KBM_E02_V100",
+    "AI_ONLY_PAIR_KBM_E05_V100"
+  ],
+  "demo": {
+    "state": "READY",
+    "target_date": "2026-10-02",
+    "publication_gate_dependency": false,
+    "required_label": "AI-кодирование; человеческая проверка не проводилась; исследовательская версия; прогнозная точность не установлена."
+  },
+  "separate_release_states": {
+    "external_substantive_historical_measurement": "HOLD",
+    "historical_area_UNO": "BLOCKED",
+    "human_validated_scientific_release": "NOT_PERFORMED",
+    "predictive_probability_risk_validation": "BLOCKED_NOT_CLAIMED"
+  },
+  "forbidden": [
+    "ADJUDICATE_EMPLOYER_KVS",
+    "CONVERT_UNKNOWN_TO_ZERO",
+    "RESTORE_OLD_OMG_KVS5_POL50",
+    "AUTO_MERGE"
+  ]
+}
