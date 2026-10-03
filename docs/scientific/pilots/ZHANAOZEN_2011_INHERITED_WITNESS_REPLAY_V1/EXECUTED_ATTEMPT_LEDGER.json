@@ -1,0 +1,1033 @@
+{
+  "artifact_kind": "INHERITED_WITNESS_EXECUTION_LEDGER",
+  "assessor_type": "AI_PREPARATION",
+  "schema_version": "1.0.0",
+  "replay_id": "ZHANAOZEN_2011_INHERITED_WITNESS_REPLAY_V1",
+  "base_commit": "7bb97104a0f70c9b2d331b955eba440e1bee35ee",
+  "base_tree": "a92cdb777038c5901ed7bc4283b62b6f35fe97c3",
+  "plan_id": "ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1",
+  "case_id": "292d238f-9fee-578f-bddd-6f923163788a",
+  "execution_mode": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY_ONLY",
+  "network_search_executed_by_pr16": false,
+  "substantive_review_executed_by_pr16": false,
+  "live_query_budget_consumed": 0,
+  "append_only": true,
+  "source_status": "INHERITED_REPLAY_NOT_LIVE_EXECUTION",
+  "attempts": [
+    {
+      "attempt_id": "9bd0b3a2-c4a0-55e3-81db-5c895a6a4d9e",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "f7f67161-713c-5118-8bf6-4d3264f42f84",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 3,
+      "query_text_sha256": "64305d2c7f4585b8f8ef763eaffa85a3bbed1c2abfdd1b74c4850bef4867fb16",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:20.856142+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20110918124424id_/http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20110918124424id_/http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html"
+      ],
+      "retrieved_bytes": 68274,
+      "retrieved_sha256": "3ccbc77c868072e6b5d15daef180355467ddc4d25f828f052b241f44aafab51e",
+      "archive_capture_timestamp": "20110918124424",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D13-20110918124424",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "Z47XLUTWPJGXYSZWTCRYO4Y33OSHDKIC",
+      "retrieved_payload_sha1_base32": "Z47XLUTWPJGXYSZWTCRYO4Y33OSHDKIC",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "56d19d98-707a-5deb-9472-d355b3835d79",
+          "exact_frozen_fragment": "demanding payment of unfulfilled wage hikes and better labor conditions",
+          "fragment_sha256": "0f6e3a6f15d8d509f36975eb0e400f93343a910a52a9d44f1d1933c7d61e7828",
+          "literal_in_extracted_text": true,
+          "offset": 2650
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "400cd1b5-0068-5680-83e7-cba38eaec8dd",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "22e3d1ce-88a2-52a8-a6a8-4616924a9ee3",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 4,
+      "query_text_sha256": "5a0a108f581e529d285618bc4a3ab07220b8da4cf4041208daa4f4a2d1346e41",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:20.893643+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20111024200546id_/http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20111024200546id_/http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html"
+      ],
+      "retrieved_bytes": 71168,
+      "retrieved_sha256": "8ad09640fa11403bc8fea68c60c248f7266e76430fc6b512cb2b9b056b854d9a",
+      "archive_capture_timestamp": "20111024200546",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D13-20111024200546",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "5KXSUM4HLQBRDSJHBUTP3ESECYZGGRRB",
+      "retrieved_payload_sha1_base32": "5KXSUM4HLQBRDSJHBUTP3ESECYZGGRRB",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "56d19d98-707a-5deb-9472-d355b3835d79",
+          "exact_frozen_fragment": "demanding payment of unfulfilled wage hikes and better labor conditions",
+          "fragment_sha256": "0f6e3a6f15d8d509f36975eb0e400f93343a910a52a9d44f1d1933c7d61e7828",
+          "literal_in_extracted_text": true,
+          "offset": 2212
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "7a35b4a0-edf8-534c-9ec9-8ec139b6fecf",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "faa1396e-b549-5946-8b00-d394b651158e",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-17608513-7164-5d30-9d2e-521338e323d7",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "cd9eb952-6af0-5708-8703-49673415cbe7"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 3,
+      "query_text_sha256": "51a99ed1ec8937a39a7de6ebdd3e6c69751e9da193d6a54f3ff02bb5580e2078",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:51:18.423361+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20111016234632id_/http://iipdigital.usembassy.gov/st/english/texttrans/2011/09/20110901122736su0.701299.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20111016234632id_/http://iipdigital.usembassy.gov/st/english/texttrans/2011/09/20110901122736su0.701299.html"
+      ],
+      "retrieved_bytes": 26520,
+      "retrieved_sha256": "b6beec09616af212e46df988a4b2149f7bdb4524d9af774f5b6488e6e41358d3",
+      "archive_capture_timestamp": "20111016234632",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D18-20111016234632",
+      "witness_role": "OFFICIAL_US_MIRROR_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "ZKEE4EVLFL57VP2BUUNU37NWJT5KSAFS",
+      "retrieved_payload_sha1_base32": "ZKEE4EVLFL57VP2BUUNU37NWJT5KSAFS",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "33ce2949-0da2-5839-9b01-566ae7e4bbf4",
+          "exact_frozen_fragment": "trial appears to have been marred by violations of procedural due process",
+          "fragment_sha256": "adb59f91fd4d4ae7248581db6ff0d94ac88c9b1933c914af2065cd1254d7038a",
+          "literal_in_extracted_text": true,
+          "offset": 969
+        },
+        {
+          "fragment_id": "b5fdecb6-2ac4-5f56-aae6-6aef4bb7b956",
+          "exact_frozen_fragment": "sentencing to six years imprisonment of Natalya Sokolova",
+          "fragment_sha256": "a4cd7f69647c69aac6ae7658e8bc3c7ecb7f1038ba3e427a139a5baf7f125c84",
+          "literal_in_extracted_text": true,
+          "offset": 810
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "db2fa53a-c194-5342-87bb-e02b5fd7fba5",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "9453943f-1c09-575a-b8c0-ec6978c0d63b",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "cd9eb952-6af0-5708-8703-49673415cbe7",
+        "79748746-11e6-506c-82d5-bc5fe877beb0"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 3,
+      "query_text_sha256": "9af3db7140ae22628113bc6680958347ce50384e868c051cfca05117bdd6559e",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:17.782077+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20110629041259id_/http://www.rferl.org:80/content/kazakhstan_oil_workers_protests/24221366.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20110629041259id_/http://www.rferl.org:80/content/kazakhstan_oil_workers_protests/24221366.html"
+      ],
+      "retrieved_bytes": 61251,
+      "retrieved_sha256": "73cd2e04ddfbbdc126e2336d159d6af982ed8439527d6826a2e1271797a87d29",
+      "archive_capture_timestamp": "20110629041259",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D05-20110629041259",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "2YFIVNIRTUIOGDM7ACG3IUT3DPVSQ6CW",
+      "retrieved_payload_sha1_base32": "2YFIVNIRTUIOGDM7ACG3IUT3DPVSQ6CW",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+          "exact_frozen_fragment": "At least 37 protesters were detained.",
+          "fragment_sha256": "ab4dc3c216b97bcee60d18ae1d4baaef37cb57874ca34ee2b3f15144387784d0",
+          "literal_in_extracted_text": true,
+          "offset": 2619
+        },
+        {
+          "fragment_id": "b344006d-0950-57af-b0e7-60eb7b4f5217",
+          "exact_frozen_fragment": "police action in Aqtau was legal",
+          "fragment_sha256": "e90581178df54e8aa90d72fcbe9c488fa57139002797126a3014ebeff56c1340",
+          "literal_in_extracted_text": true,
+          "offset": 2714
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "0e2a1ef1-3b63-5b9b-a4b9-b6dd660028af",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "1cd98202-1724-5bbf-a192-316f5a6c7b0a",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "cd9eb952-6af0-5708-8703-49673415cbe7",
+        "79748746-11e6-506c-82d5-bc5fe877beb0"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 4,
+      "query_text_sha256": "a52b09b008c25013ac22616258222e2ff4ea94ff32799177e5a6e4164b09c1d3",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:18.522365+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20110918081249id_/http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20110918081249id_/http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html"
+      ],
+      "retrieved_bytes": 60494,
+      "retrieved_sha256": "8a66bf2ff3285a3d43dc381675543d4e92986f31081ead9f126478b14998e48e",
+      "archive_capture_timestamp": "20110918081249",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D05-20110918081249",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "2OMSDKFRDE52MI3GWBFW2AB2BQSUV4S3",
+      "retrieved_payload_sha1_base32": "2OMSDKFRDE52MI3GWBFW2AB2BQSUV4S3",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+          "exact_frozen_fragment": "At least 37 protesters were detained.",
+          "fragment_sha256": "ab4dc3c216b97bcee60d18ae1d4baaef37cb57874ca34ee2b3f15144387784d0",
+          "literal_in_extracted_text": true,
+          "offset": 2515
+        },
+        {
+          "fragment_id": "b344006d-0950-57af-b0e7-60eb7b4f5217",
+          "exact_frozen_fragment": "police action in Aqtau was legal",
+          "fragment_sha256": "e90581178df54e8aa90d72fcbe9c488fa57139002797126a3014ebeff56c1340",
+          "literal_in_extracted_text": true,
+          "offset": 2610
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "50449726-ac70-5eda-889c-0f87c1d691c8",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "205a2334-31c4-529f-9340-260fd3f4554b",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "190e3801-e98f-559d-b055-04502db625e9",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 3,
+      "query_text_sha256": "fb01d1370a8f710f645be8cf6fb4bf0227f26c31787a9032e2154f515149d31a",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:21.491550+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20110927202906id_/http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20110927202906id_/http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html"
+      ],
+      "retrieved_bytes": 61531,
+      "retrieved_sha256": "265765efbd21f05acedf2f7e6d12b7d35363f0aaefeb863a36879143d00897e6",
+      "archive_capture_timestamp": "20110927202906",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D14-20110927202906",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "BQZGJXT4UFSA6BJCY7CMUET4DJFOCE3C",
+      "retrieved_payload_sha1_base32": "BQZGJXT4UFSA6BJCY7CMUET4DJFOCE3C",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "49c356b3-3585-587c-9573-d4326e97de77",
+          "exact_frozen_fragment": "Some 410 of the workers have been fired since the strike began",
+          "fragment_sha256": "98437a034ea0d186a2958940f557068d943d9faa351a3aad6aa2c2014a7087da",
+          "literal_in_extracted_text": true,
+          "offset": 2397
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "9d1138ff-b20d-591e-aa10-8efc20b2220a",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "67bfa89b-5231-5d7c-b83d-54c87c3d8000",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "190e3801-e98f-559d-b055-04502db625e9",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 4,
+      "query_text_sha256": "27e664efa34036c6ba2c4604cad1e9079a2a10cfe4d6a0523e412832d80d496f",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:21.649713+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20111106041751id_/http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20111106041751id_/http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html"
+      ],
+      "retrieved_bytes": 59511,
+      "retrieved_sha256": "273b51c9961e9d61b4c63cefa76223bee2c7bcfcadda76e13a63f059b4ae7a94",
+      "archive_capture_timestamp": "20111106041751",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D14-20111106041751",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "CO5IBLFVMX7DWGL37DIDAFJHMB7WLQAS",
+      "retrieved_payload_sha1_base32": "CO5IBLFVMX7DWGL37DIDAFJHMB7WLQAS",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "49c356b3-3585-587c-9573-d4326e97de77",
+          "exact_frozen_fragment": "Some 410 of the workers have been fired since the strike began",
+          "fragment_sha256": "98437a034ea0d186a2958940f557068d943d9faa351a3aad6aa2c2014a7087da",
+          "literal_in_extracted_text": true,
+          "offset": 2282
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "cc031ae9-50a1-53e5-9390-1b01d718315a",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "a4d3e8df-90f9-5bf8-94db-d43f13268104",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "39d9db22-402b-59e7-a000-63c6d85c3435",
+        "28161a20-6dd9-525b-97a0-10787a4ba0da",
+        "451a0d8c-ddec-5395-b631-24323628eb69",
+        "a6f0883a-d5fc-521b-8662-1c160fded750",
+        "e32ebf92-ffa3-51da-b933-b10a9c0ba8df"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 3,
+      "query_text_sha256": "17072417f58b0b866058c415f23f1628e71edc2fcb4e72acb3dc707bd7a0baf0",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:54:40.958322+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20111120030853id_/http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20111120030853id_/http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html"
+      ],
+      "retrieved_bytes": 82184,
+      "retrieved_sha256": "f4052bb64f40c428c80ad987356bf118e91563e7b0a04e2e3c74393ab942885a",
+      "archive_capture_timestamp": "20111120030853",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D22-20111120030853",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "D6ZMCKKXPKQRTGOVCGBBAWGEHZAYFIBH",
+      "retrieved_payload_sha1_base32": "D6ZMCKKXPKQRTGOVCGBBAWGEHZAYFIBH",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "ab55c516-12dc-5533-9e87-a950a6e61b3e",
+          "exact_frozen_fragment": "На встречу пришли около 40 нефтяников",
+          "fragment_sha256": "b148d270bcae31abceaffc93ac1b5fb9319a992ceed42faf19acac5a221cff59",
+          "literal_in_extracted_text": true,
+          "offset": 941
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "48cd76c4-f73a-5876-a467-2482fd4237c8",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "2a658823-36d5-52de-9a50-06126737da34",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "coding_item_id": "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 3,
+      "query_text_sha256": "e78a5cc23f6c7454625b9997105d0e81820719ead94a4698b11c5984fe5ae9b4",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:15.814857+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20110521181520id_/http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20110521181520id_/http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html"
+      ],
+      "retrieved_bytes": 61956,
+      "retrieved_sha256": "5b171ee61f7e202da0b00899aef7659237e01ed6000c2626e4834f265ef66907",
+      "archive_capture_timestamp": "20110521181520",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D01-20110521181520",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "F4T26SQHE5VFDZVDTC3ZDI4P747ZQS6H",
+      "retrieved_payload_sha1_base32": "F4T26SQHE5VFDZVDTC3ZDI4P747ZQS6H",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "d3e6a365-8150-545b-8005-c18c4939142b",
+          "exact_frozen_fragment": "strikers are demanding a pay rise",
+          "fragment_sha256": "fc3fefbdcd67497c70405602e47bb7a3d29bcac9e8ea5faba2dc5cfd68734901",
+          "literal_in_extracted_text": true,
+          "offset": 2396
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "36dbfd7c-fd28-58f9-8e6d-6f661167ff2a",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "43722fe1-161a-5739-9b32-f7c213233df7",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "coding_item_id": "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 4,
+      "query_text_sha256": "cc9122e7f44f1a820465f655cd0f09adb93886ce8b974fe342e6a84e3180bd97",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:15.815855+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20110811165523id_/http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20110811165523id_/http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html"
+      ],
+      "retrieved_bytes": 62206,
+      "retrieved_sha256": "1c222969d2b8b5259ca5afca0d649f17ffcd8a12176d10502bd69c14b5fdaede",
+      "archive_capture_timestamp": "20110811165523",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D01-20110811165523",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "AVIU5SXG6K2PWEVKLAZZ4LIEFHCUBQYG",
+      "retrieved_payload_sha1_base32": "AVIU5SXG6K2PWEVKLAZZ4LIEFHCUBQYG",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "d3e6a365-8150-545b-8005-c18c4939142b",
+          "exact_frozen_fragment": "strikers are demanding a pay rise",
+          "fragment_sha256": "fc3fefbdcd67497c70405602e47bb7a3d29bcac9e8ea5faba2dc5cfd68734901",
+          "literal_in_extracted_text": true,
+          "offset": 2187
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "2c5237a9-6608-540e-81c7-fff89949eaf2",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "314cb51d-3bd2-5779-a799-6f92f4a9847e",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "258efca3-9f6e-550b-8b80-bf27b70424b0",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+        "2c58ce09-3654-5a87-89be-4b1953f467c7"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 3,
+      "query_text_sha256": "370aff8d5545dbf41097b9a9adf232a97cba0635f53492aa785539b54e291bb7",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:22.997749+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20111016060958id_/http://www.eurasianet.org:80/node/64310",
+      "redirect_chain": [
+        "https://web.archive.org/web/20111016060958id_/http://www.eurasianet.org:80/node/64310"
+      ],
+      "retrieved_bytes": 56719,
+      "retrieved_sha256": "c6ae02c231a18cf574743016e307a1b2d302edbc6fe7386c8dc636c679395005",
+      "archive_capture_timestamp": "20111016060958",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D25-20111016060958",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "XR7PYY6TK4LJPBKR4GRR75RSBY5STQT4",
+      "retrieved_payload_sha1_base32": "XR7PYY6TK4LJPBKR4GRR75RSBY5STQT4",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "3ca46849-549e-544d-b72c-d62ef1706612",
+          "exact_frozen_fragment": "company insists that its employees are fairly compensated",
+          "fragment_sha256": "f7760687e7aaae5d2ed74a264f94485465395efdc8c17afd5deb89c452a4d86c",
+          "literal_in_extracted_text": true,
+          "offset": 4009
+        },
+        {
+          "fragment_id": "a7869dd7-97d1-56de-86b4-aadf1e970c0a",
+          "exact_frozen_fragment": "has raised salaries six times since 2008",
+          "fragment_sha256": "57481ba5d7b8f7cc36f5f4ab9281d1e9a35e6b4e931cc6d4f3c427403cbb23b8",
+          "literal_in_extracted_text": true,
+          "offset": 4083
+        },
+        {
+          "fragment_id": "ef7df23c-ba67-5903-9265-adbd1936ffa3",
+          "exact_frozen_fragment": "demanding reinstatement and a review of salaries",
+          "fragment_sha256": "0a2f0dcd6186b9e872d21dabe4af51bf3e062ee1ff69970d0f89681271a9d84f",
+          "literal_in_extracted_text": true,
+          "offset": 4990
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "e616743f-3730-58cf-a55f-d532f3972a6d",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "56fa089f-54a8-5c9d-ac96-a40bc7813b2d",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "258efca3-9f6e-550b-8b80-bf27b70424b0",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+        "2c58ce09-3654-5a87-89be-4b1953f467c7"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 4,
+      "query_text_sha256": "c19753dd0ae2d65ef8c28659cb3014467e5d178776ed7c1a96313a2436bdba20",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:23.205176+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20111116125247id_/http://www.eurasianet.org:80/node/64310",
+      "redirect_chain": [
+        "https://web.archive.org/web/20111116125247id_/http://www.eurasianet.org:80/node/64310"
+      ],
+      "retrieved_bytes": 56599,
+      "retrieved_sha256": "8f6f54a0cf2dcabe5a02e4f0cb4e60cbc6296e5822e5521498481d682353be35",
+      "archive_capture_timestamp": "20111116125247",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D25-20111116125247",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "7YHK6FDDO6SY5E65OBHLKWNVI3ZFCPL5",
+      "retrieved_payload_sha1_base32": "7YHK6FDDO6SY5E65OBHLKWNVI3ZFCPL5",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "3ca46849-549e-544d-b72c-d62ef1706612",
+          "exact_frozen_fragment": "company insists that its employees are fairly compensated",
+          "fragment_sha256": "f7760687e7aaae5d2ed74a264f94485465395efdc8c17afd5deb89c452a4d86c",
+          "literal_in_extracted_text": true,
+          "offset": 3949
+        },
+        {
+          "fragment_id": "a7869dd7-97d1-56de-86b4-aadf1e970c0a",
+          "exact_frozen_fragment": "has raised salaries six times since 2008",
+          "fragment_sha256": "57481ba5d7b8f7cc36f5f4ab9281d1e9a35e6b4e931cc6d4f3c427403cbb23b8",
+          "literal_in_extracted_text": true,
+          "offset": 4023
+        },
+        {
+          "fragment_id": "ef7df23c-ba67-5903-9265-adbd1936ffa3",
+          "exact_frozen_fragment": "demanding reinstatement and a review of salaries",
+          "fragment_sha256": "0a2f0dcd6186b9e872d21dabe4af51bf3e062ee1ff69970d0f89681271a9d84f",
+          "literal_in_extracted_text": true,
+          "offset": 4930
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "d60da3b7-77e3-5e03-8771-48f90f3ce579",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "bef6bd7e-2eb8-5c1c-9fe9-b339243f4b1d",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "190e3801-e98f-559d-b055-04502db625e9",
+        "bc34ea72-a9ac-5e81-ab20-3f2efb729872"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 3,
+      "query_text_sha256": "ec7c95e4340888e1aa5f0cedabcc582b8589f6e19f7afa047b00a316440fcc9c",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:54:40.957305+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20110529132216id_/http://www.rferl.org:80/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20110529132216id_/http://www.rferl.org:80/content/striking_oil_workers_fired_in_kazakhstan/24207466.html"
+      ],
+      "retrieved_bytes": 63205,
+      "retrieved_sha256": "c294d06169104785025a0c564b8f7e4fb34dc5b4ead7a3104c9655b1e4d262a1",
+      "archive_capture_timestamp": "20110529132216",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D04-20110529132216",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "QNZ5VOIFGVHFWCWUASBYDCBEVF7LSE52",
+      "retrieved_payload_sha1_base32": "QNZ5VOIFGVHFWCWUASBYDCBEVF7LSE52",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "7f0b0752-387d-5def-ba3d-ab11c4f1414b",
+          "exact_frozen_fragment": "lifting of restrictions on the activities of independent trade unions",
+          "fragment_sha256": "ac6e8cc659989a1ad7641a8c281b51f933f1c71cec3ac21505f917005f7d11fe",
+          "literal_in_extracted_text": true,
+          "offset": 2459
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "379b101d-ce42-51c9-b451-bd668bce4d6d",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "6d693ad0-6d80-5418-a8c6-0e3d0b53a0ca",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+        "3f4dc104-40c7-59db-ad5c-61f8a80232bc"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 3,
+      "query_text_sha256": "42da55b176be32d03f8131e275c64738ec6d3ddf325c1e2d283504a7abb1ebb7",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:18.570356+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20110716171000id_/http://www.azattyq.org:80/content/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20110716171000id_/http://www.azattyq.org:80/content/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html"
+      ],
+      "retrieved_bytes": 159638,
+      "retrieved_sha256": "65cd8d29565cc4418e5216ce1b608d644870c556eaa16664683e5718986e507f",
+      "archive_capture_timestamp": "20110716171000",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D06-20110716171000",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "U6N4P5R3XMZAUNAHZZPSHUDY3I524PPF",
+      "retrieved_payload_sha1_base32": "U6N4P5R3XMZAUNAHZZPSHUDY3I524PPF",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "d1067ad6-51d6-5a42-b6ea-8cf74c4fd71c",
+          "exact_frozen_fragment": "мұнайшылар мен қала халқы бірнеше күн алаңда түнеді",
+          "fragment_sha256": "09c5ced1e64fcfd9a723ca63cba4eeca4827045e8da09294f02acf025e97cc81",
+          "literal_in_extracted_text": true,
+          "offset": 1927
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "e30c3800-d189-5580-9566-f1bfc7956528",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "0dc41e4c-d002-50c7-8420-a697a33cf6a8",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "coding_item_id": "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 3,
+      "query_text_sha256": "e9697be3292b6d0e838a9218ccfd097a8dbe28b6c1f174b9398b4627a53d2a5b",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:15.816872+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20110527054702id_/http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20110527054702id_/http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html"
+      ],
+      "retrieved_bytes": 61546,
+      "retrieved_sha256": "00fb548b56d73a1088aec39a202c8fa3df7d0295e3d56a55535ccae254030aee",
+      "archive_capture_timestamp": "20110527054702",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D03-20110527054702",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "GVDYFFDIQKST45T2HKS3JWFFUET4IPM3",
+      "retrieved_payload_sha1_base32": "GVDYFFDIQKST45T2HKS3JWFFUET4IPM3",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "cc839407-9eb7-5e05-acca-70f1577883d4",
+          "exact_frozen_fragment": "demanding the revision of the collective contract",
+          "fragment_sha256": "280cab66370750738b1f3e917eedf2c571038385e7cd6829763f6a3955de093c",
+          "literal_in_extracted_text": true,
+          "offset": 2521
+        },
+        {
+          "fragment_id": "d521033f-59ce-5518-9227-b5fe9cb7570f",
+          "exact_frozen_fragment": "Fourteen employees of the OzenMunaiGaz Oil Company",
+          "fragment_sha256": "258e18442bacd8552d907615438d8a4da4c405d4095ca13ee3a3f4051ad2f20a",
+          "literal_in_extracted_text": true,
+          "offset": 2175
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "cec6acd8-db2d-5139-a324-551aa69796d0",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "16455d83-f78c-5737-87ff-20c73bf573b9",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "coding_item_id": "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 4,
+      "query_text_sha256": "daf8f89d13f576d12db6c238b34ee15eb647a6d5238f7f2dd2e058d4f2491f12",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:15.816872+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20110916223846id_/http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20110916223846id_/http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html"
+      ],
+      "retrieved_bytes": 60145,
+      "retrieved_sha256": "dcd1ca9c08888e731da60c70394760bab313cd7c4406caea64071439a749363e",
+      "archive_capture_timestamp": "20110916223846",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D03-20110916223846",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "VDCW4G4WVTHQJRWEPV7H65KOEDZ6C4AV",
+      "retrieved_payload_sha1_base32": "VDCW4G4WVTHQJRWEPV7H65KOEDZ6C4AV",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "cc839407-9eb7-5e05-acca-70f1577883d4",
+          "exact_frozen_fragment": "demanding the revision of the collective contract",
+          "fragment_sha256": "280cab66370750738b1f3e917eedf2c571038385e7cd6829763f6a3955de093c",
+          "literal_in_extracted_text": true,
+          "offset": 2216
+        },
+        {
+          "fragment_id": "d521033f-59ce-5518-9227-b5fe9cb7570f",
+          "exact_frozen_fragment": "Fourteen employees of the OzenMunaiGaz Oil Company",
+          "fragment_sha256": "258e18442bacd8552d907615438d8a4da4c405d4095ca13ee3a3f4051ad2f20a",
+          "literal_in_extracted_text": true,
+          "offset": 1870
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "d82c2ca0-4307-5297-bf65-d50b572af711",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "12f60830-1793-57e6-93ef-a93db455e61d",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "cd9eb952-6af0-5708-8703-49673415cbe7",
+        "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+        "79748746-11e6-506c-82d5-bc5fe877beb0"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 3,
+      "query_text_sha256": "fcb4a89cae0609bbc323f739a98b8cc2cdf4800c8ffa703c0aa354bb2cde1ff5",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:19.971738+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20110809011049id_/http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20110809011049id_/http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html"
+      ],
+      "retrieved_bytes": 69913,
+      "retrieved_sha256": "7ebc00cadfb38a435088a47305fa80696d269d01cd53b4d37d0c2e9adc7e349b",
+      "archive_capture_timestamp": "20110809011049",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D09-20110809011049",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "4SBQWOS6PTPJBCJSXM3HFKJMPT6A3QWW",
+      "retrieved_payload_sha1_base32": "4SBQWOS6PTPJBCJSXM3HFKJMPT6A3QWW",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "2c47a771-1301-55be-a2ab-9b2ef1f82510",
+          "exact_frozen_fragment": "barred from performing legal or social activities",
+          "fragment_sha256": "18eb28e3682e26881c00f5ad81dbdc60ded9be207f68e3f6b21b2e7da960a980",
+          "literal_in_extracted_text": true,
+          "offset": 2221
+        },
+        {
+          "fragment_id": "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94",
+          "exact_frozen_fragment": "sentenced to six years in jail",
+          "fragment_sha256": "801c305068af1eba96cc54ba1006f05bb94bc72ca2f18555a94eeacac2f722c8",
+          "literal_in_extracted_text": true,
+          "offset": 2027
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    },
+    {
+      "attempt_id": "74237a89-ad53-5e23-94a5-758e4e523805",
+      "attempt_class": "INHERITED_PRE_PROTOCOL_WITNESS_REPLAY",
+      "planned_query_id": "1cab5795-d323-57bc-bed6-4aedac0bdf75",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "coding_item_id": null,
+      "affected_coding_item_ids": [
+        "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "cd9eb952-6af0-5708-8703-49673415cbe7",
+        "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+        "79748746-11e6-506c-82d5-bc5fe877beb0"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_AUTHENTICATED_FRAGMENT_WITNESS",
+      "query_ordinal": 4,
+      "query_text_sha256": "8ca21c698b7850e551ee94316e189cc31d6804dccf3b0c78b1c1bd5208b20682",
+      "requested_at_utc": null,
+      "completed_at_utc": "2026-09-26T15:45:20.246680+00:00",
+      "result_state": "NOT_ADMISSIBLE",
+      "error_state": "NONE",
+      "locator": "https://web.archive.org/web/20111022101958id_/http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+      "redirect_chain": [
+        "https://web.archive.org/web/20111022101958id_/http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html"
+      ],
+      "retrieved_bytes": 64190,
+      "retrieved_sha256": "b70cb626e740c244d8629b09cc1eaf59f86a0e9f030f8b9e6fd2d659e561622c",
+      "archive_capture_timestamp": "20111022101958",
+      "content_type": null,
+      "duplicate_of_attempt_id": null,
+      "admissibility_contract_satisfied": false,
+      "prior_status_retained": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "notes": "Inherited witness replay for provenance only; no PR-16 retrieval, no query-budget consumption, and no new admission decision.",
+      "witness_id": "AW-D09-20111022101958",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "archive_digest_sha1_base32": "OAOPVERH3GP3GRBAH4323H6GWA7JTMCZ",
+      "retrieved_payload_sha1_base32": "OAOPVERH3GP3GRBAH4323H6GWA7JTMCZ",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "matched_fragments": [
+        {
+          "fragment_id": "2c47a771-1301-55be-a2ab-9b2ef1f82510",
+          "exact_frozen_fragment": "barred from performing legal or social activities",
+          "fragment_sha256": "18eb28e3682e26881c00f5ad81dbdc60ded9be207f68e3f6b21b2e7da960a980",
+          "literal_in_extracted_text": true,
+          "offset": 1738
+        },
+        {
+          "fragment_id": "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94",
+          "exact_frozen_fragment": "sentenced to six years in jail",
+          "fragment_sha256": "801c305068af1eba96cc54ba1006f05bb94bc72ca2f18555a94eeacac2f722c8",
+          "literal_in_extracted_text": true,
+          "offset": 1544
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "query_budget_effect": "NONE_LEGACY_REPLAY",
+      "network_used_by_pr16": false,
+      "substantive_review_by_pr16": false,
+      "scientific_state_changed_by_pr16": false
+    }
+  ],
+  "scientific_state": {
+    "full_edition_status": "NOT_PROVEN_UNCHANGED",
+    "fragment_status": "INHERITED_PROVEN_FRAGMENT_PRE_CUTOFF_RETAINED",
+    "mapping_admission": "UNCHANGED",
+    "target_time": "UNKNOWN_UNCHANGED",
+    "human_validation_reliability": "NOT_PERFORMED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED"
+  },
+  "limits": [
+    "Replay records do not satisfy PR-15 live-query contracts and do not consume live query slots.",
+    "Missing inherited content_type and requested_at_utc values are retained as null, not invented.",
+    "Fragment proof remains fragment-only and does not authenticate a complete historical edition."
+  ]
+}

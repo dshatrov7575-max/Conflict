@@ -1,0 +1,81 @@
+{
+  "artifact_kind": "INHERITED_WITNESS_REPLAY_VALIDATION_RECEIPT",
+  "assessor_type": "AI_PREPARATION",
+  "status": "PASS_TECHNICAL_ONLY",
+  "base_commit": "7bb97104a0f70c9b2d331b955eba440e1bee35ee",
+  "base_tree": "a92cdb777038c5901ed7bc4283b62b6f35fe97c3",
+  "checks": [
+    "exact_base_and_prior_blobs",
+    "pr15_validator_and_output_pins",
+    "strict_json_and_unique_ids",
+    "eighteen_witnesses_byte_and_digest_bound",
+    "eleven_document_version_blockers",
+    "seventeen_unique_fragments",
+    "deterministic_one_to_one_query_binding",
+    "no_live_query_budget_consumed",
+    "fragment_only_proof_scope",
+    "no_full_edition_promotion",
+    "no_new_network_or_substantive_review",
+    "no_scientific_state_change",
+    "six_file_scope_and_git_diff_check"
+  ],
+  "counts": {
+    "base_blobs_verified": 771,
+    "manifest_input_pins": 7,
+    "manifest_output_pins": 5,
+    "source_witnesses": 18,
+    "replay_records": 18,
+    "document_version_blockers": 11,
+    "unique_proven_fragments": 17,
+    "planned_query_bindings": 18,
+    "live_query_budget_consumed": 0,
+    "missing_content_type_retained_null": 18,
+    "missing_requested_at_retained_null": 18
+  },
+  "pr15_validator": {
+    "status": "PASS_TECHNICAL_ONLY",
+    "counts": {
+      "base_blobs_verified": 765,
+      "manifest_input_pins": 6,
+      "manifest_output_pins": 5,
+      "source_queue_entries": 53,
+      "blocker_units": 53,
+      "route_definitions": 7,
+      "planned_queries": 160,
+      "empty_attempts": 0
+    },
+    "scope_counts": {
+      "ACTOR_SCOPE": 8,
+      "CONTEXT_LANGUAGE": 12,
+      "COUNTEREVIDENCE_COMPLETENESS": 1,
+      "DOCUMENT_VERSION": 27,
+      "REFERENCE_SCOPE": 4,
+      "TARGET_TIME": 1
+    },
+    "fixture_results": {
+      "fragment_to_full_edition": true,
+      "timeout_retains_prior_state": true,
+      "no_result_is_not_absence": true,
+      "person_to_group_requires_mandate": true,
+      "component_to_full_reference_forbidden": true,
+      "old_message_to_cutoff_forbidden": true,
+      "disputed_preserved": true,
+      "rerun_until_favorable_forbidden": true
+    },
+    "output_pins": "PASS",
+    "pr14_validator": "PASS_TECHNICAL_ONLY",
+    "release_state": "FROZEN_PROTOCOL_ONLY_HOLD_BEFORE_EXECUTION"
+  },
+  "scientific_boundaries": {
+    "full_edition_status": "NOT_PROVEN_UNCHANGED",
+    "fragment_status": "INHERITED_PROVEN_FRAGMENT_PRE_CUTOFF_RETAINED",
+    "mapping_admission": "UNCHANGED",
+    "target_time": "UNKNOWN_UNCHANGED",
+    "human_validation_reliability": "NOT_PERFORMED",
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED",
+    "publication_release_deployment": "NOT_EXECUTED",
+    "network_and_substantive_review_by_pr16": "NOT_EXECUTED"
+  }
+}
