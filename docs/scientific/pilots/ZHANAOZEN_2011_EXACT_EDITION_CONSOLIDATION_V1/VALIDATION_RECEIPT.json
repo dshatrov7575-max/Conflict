@@ -1,0 +1,67 @@
+{
+  "artifact_kind": "EXACT_EDITION_CONSOLIDATION_VALIDATION_RECEIPT",
+  "assessor_type": "AI_PREPARATION",
+  "status": "PASS_TECHNICAL_ONLY",
+  "base_commit": "c29a245ac8b29783aeeaecdc86477836096a2a3a",
+  "base_tree": "777a1d08b6caf60fe3bd2d57927f0f918902eb36",
+  "checks": [
+    "one_commit_stacked_on_exact_pr18_head",
+    "exact_base_blobs_and_immutable_source_ledgers",
+    "pr18_validator_chain_and_output_pins",
+    "strict_json_and_manifest_pins",
+    "twenty_seven_versions_and_fifty_four_frozen_queries_exactly_once",
+    "repository_only_no_network_no_new_retrieval",
+    "three_way_nonadmissible_status_classification",
+    "eight_verified_archive_payloads_and_zero_exact_edition_admissions",
+    "per_version_residual_proof_and_technical_gaps",
+    "mapping_target_time_disputed_and_unlinked_state_preservation",
+    "no_factor_human_historical_uno_predictive_or_rating_outputs",
+    "six_file_scope_clean_tree_and_git_diff_check"
+  ],
+  "counts": {
+    "base_blobs_verified": 789,
+    "manifest_input_pins": 9,
+    "manifest_output_pins": 5,
+    "source_tranches": 2,
+    "document_versions": 27,
+    "frozen_queries_consolidated": 54,
+    "publisher_attempts": 27,
+    "archive_attempts": 27,
+    "completed_nonadmissible": 35,
+    "finite_no_result_prior_state_retained": 15,
+    "technical_failure_prior_state_retained": 4,
+    "pre_cutoff_archive_payloads_retrieved": 8,
+    "archive_digests_verified": 8,
+    "exact_edition_contracts_satisfied": 0,
+    "full_edition_not_proven": 27,
+    "mapping_admission_changes": 0,
+    "scientific_state_changes": 0,
+    "disputed_facts_preserved": 3,
+    "unlinked_facts_preserved": 14
+  },
+  "source_response_status_counts": {
+    "FINITE_NO_RESULT": 15,
+    "HTTP_RESPONSE": 27,
+    "PRE_CUTOFF_CAPTURE_RETRIEVED": 8,
+    "TECHNICAL_FAILURE": 2,
+    "TECHNICAL_FAILURE_AFTER_CANDIDATE": 2
+  },
+  "consolidation_status_counts": {
+    "COMPLETED_NONADMISSIBLE": 35,
+    "FINITE_NO_RESULT_PRIOR_STATE_RETAINED": 15,
+    "TECHNICAL_FAILURE_PRIOR_STATE_RETAINED": 4
+  },
+  "prior_validator": {
+    "status": "PASS_TECHNICAL_ONLY",
+    "output_pins": "PASS"
+  },
+  "scientific_boundaries": {
+    "human_validation_reliability": "NOT_PERFORMED",
+    "human_coding_adjudication": "NOT_PERFORMED",
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED",
+    "publication_release_deployment": "NOT_EXECUTED"
+  },
+  "release_state": "EXACT_EDITION_CONSOLIDATED_NO_NEW_ADMISSION"
+}

@@ -1,0 +1,124 @@
+{
+  "artifact_kind": "EXACT_EDITION_CONSOLIDATION_FREEZE_MANIFEST",
+  "assessor_type": "AI_PREPARATION",
+  "schema_version": "1.0.0",
+  "consolidation_id": "ZHANAOZEN_2011_EXACT_EDITION_CONSOLIDATION_V1",
+  "base_commit": "c29a245ac8b29783aeeaecdc86477836096a2a3a",
+  "base_tree": "777a1d08b6caf60fe3bd2d57927f0f918902eb36",
+  "case_id": "292d238f-9fee-578f-bddd-6f923163788a",
+  "network_access_authorized": false,
+  "new_retrieval_authorized": false,
+  "repository_only_consolidation": true,
+  "source_tranche_ledgers_immutable": true,
+  "inputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/EXECUTED_ATTEMPT_LEDGER.json",
+      "bytes": 178996,
+      "sha256": "1bbabb69ffa896f9d7822aed9bf37367a6a38ec169114a4816c88e3babe6089f",
+      "git_blob_sha1": "6829a98f0aa519e1f50c0b6374874632ffc3ca00"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/EXACT_EDITION_DECISIONS.json",
+      "bytes": 12900,
+      "sha256": "d6eafcc34b83b0e6176f52bf7cf117259329943dd08eda2ff89ca38510702bcd",
+      "git_blob_sha1": "fd9020f5817ea33e08d7306d1f6d84a147c039a6"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/VALIDATION_RECEIPT.json",
+      "bytes": 2035,
+      "sha256": "eabfe5255806131f86f50f2bb4a974e059c1c0af43e80ce1d4933c5b2d2fd25a",
+      "git_blob_sha1": "350d1cae2295e3e41ad194e2c443ab4e1aadd652"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1/EXECUTED_ATTEMPT_LEDGER.json",
+      "bytes": 108319,
+      "sha256": "cdd333a280be39fdc5f772610bd83e9df48b6c55264db3483f3e2a9b16a378f8",
+      "git_blob_sha1": "b7b78112d731350fd982780515a0fcacdc16b37a"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1/EXACT_EDITION_DECISIONS.json",
+      "bytes": 18606,
+      "sha256": "112f4f052676489fea8e7df996e6144ff1298ccaffe332e011108dea6cdb34d2",
+      "git_blob_sha1": "b84dcaa4167b98020b2fddeac44ea16ca38a8f27"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1/VALIDATION_RECEIPT.json",
+      "bytes": 1912,
+      "sha256": "b4ce54c85b841f85e609d25d318b73b15818ae03bf31946a21f98e20f6929cdc",
+      "git_blob_sha1": "2a2505260232b2cf31477f093103137bd6f6f0ef"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+      "bytes": 224003,
+      "sha256": "348d6f1c72a9f8b0c016f2c5db4be463a5d99e6b6ee91f781045f3c853a97a19",
+      "git_blob_sha1": "23717a9e193a1e398116fbd46a1d1c6e1d984525"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_ADMISSION_V1/MAPPING_ADMISSION_MATRIX.json",
+      "bytes": 318870,
+      "sha256": "e3b3da0652a9e30a171aa3986158350bebe7d4a4a2ef7d18dc5e6b44c4dac5ab",
+      "git_blob_sha1": "4ea79505b82a2232d696d3d80ed65891838148da"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_ADMISSION_V1/SOURCE_CONTEXT_RECOVERY_QUEUE.json",
+      "bytes": 98342,
+      "sha256": "5e3ae531c070a40641a28ee546f653cb63cca59d5d1cef55ca9107b40256ee75",
+      "git_blob_sha1": "4006090f8a5830b70ca1165e1fd2e6df5381e640"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_CONSOLIDATION_V1/CONSOLIDATED_ATTEMPT_LEDGER.json",
+      "bytes": 111380,
+      "sha256": "5a403ad370af9b1815206b668e3676cdb69c6612f8208de0c5d596ff0a514747",
+      "git_blob_sha1": "ab28b5ea43098833f8da2f05907a01e81905135a"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_CONSOLIDATION_V1/DOCUMENT_VERSION_RESIDUAL_GAP_MATRIX.json",
+      "bytes": 65683,
+      "sha256": "b2e69f7311e70aadfcbdbc082eae21b9d0a19a7c5eef477857c504fff83d9089",
+      "git_blob_sha1": "067b95c2bc78ca32b7407bbf636ec011776beed3"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_CONSOLIDATION_V1/CONSOLIDATION_SUMMARY.md",
+      "bytes": 1786,
+      "sha256": "f38ef49ca219820f1fec5cb51e6d748413c7960d030469d7614acbbde67812bb",
+      "git_blob_sha1": "74c37974c353f987b16f7e157ec819107ad447dd"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_CONSOLIDATION_V1/VALIDATION_RECEIPT.json",
+      "bytes": 2532,
+      "sha256": "7560cff1258d1dbf95ebddea87c5e0a4192f9ee50b551e6d6f14a064c05907e7",
+      "git_blob_sha1": "b5c57ea7d89ee43ced26d609addcd81380db79a6"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_CONSOLIDATION_V1/validate_exact_edition_consolidation.py",
+      "bytes": 27710,
+      "sha256": "3448b6d94a14e0a9455e10efdd1368fc00e31c813c10dfaa48e3896c5b09ce44",
+      "git_blob_sha1": "f41d920495378418139c26fe6c568b4cd60dd5e7"
+    }
+  ],
+  "allowed_files": [
+    "CONSOLIDATED_ATTEMPT_LEDGER.json",
+    "CONSOLIDATION_SUMMARY.md",
+    "DOCUMENT_VERSION_RESIDUAL_GAP_MATRIX.json",
+    "FREEZE_MANIFEST.json",
+    "VALIDATION_RECEIPT.json",
+    "validate_exact_edition_consolidation.py"
+  ],
+  "prohibitions": [
+    "NO_NETWORK_ACCESS",
+    "NO_NEW_RETRIEVAL",
+    "NO_QUERY_EXPANSION",
+    "NO_RERUN",
+    "NO_SOURCE_LEDGER_MUTATION",
+    "NO_EXACT_EDITION_ADMISSION_WITHOUT_FROZEN_COMPLETE_EDITION_BINDING",
+    "NO_FACTOR_VALUES_OR_NUMERIC_ANCHORS",
+    "NO_HUMAN_RESPONSE_OR_ADJUDICATION",
+    "NO_HISTORICAL_ASSESSMENT_OR_VALIDATION_RECORD",
+    "NO_OUTCOME_CLASSIFICATION_OR_UNO",
+    "NO_PREDICTION_PROBABILITY_RISK_OR_COUNTRY_RATING",
+    "NO_PUBLICATION_RELEASE_DEPLOYMENT_MERGE_OR_AUTO_MERGE"
+  ],
+  "release_state": "EXACT_EDITION_CONSOLIDATION_PREPARED_NO_NEW_ADMISSION"
+}
