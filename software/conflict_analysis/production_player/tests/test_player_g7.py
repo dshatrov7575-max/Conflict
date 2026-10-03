@@ -160,6 +160,26 @@ class ProductionPlayerG7Tests(FoundationPlayerFixture, TestCase):
         self.assertNotIn("/api/studio", script)
         self.assertNotIn("latest", script.lower())
 
+    def test_fractional_json_number_is_rejected_before_any_player_write(self):
+        body = self.workspace_body()
+        raw = self.canonical_json(body).replace(
+            b'"metadata":{}',
+            b'"metadata":{"fraction":0.100000000000000005551115123125782702}',
+        )
+        operation_id = uuid4()
+        before = self.database_fingerprint()
+        response = self.csrf_post(
+            self.player_client,
+            self.workspace_list_url(self.project.pk),
+            raw,
+            operation_id=operation_id,
+            if_match=f'"{self.definition.manifest_hash}"',
+        )
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertEqual(response.json()["code"], "PLAYER_REQUEST_INVALID")
+        self.assertEqual(self.database_fingerprint(), before)
+        self.assertFalse(AuditEvent.objects.filter(pk=operation_id).exists())
+
     def test_workspace_create_and_reopen_use_only_foundation_receipt_and_pin(self):
         before = self.database_fingerprint()
         workspace, fresh, body, operation_id = self._complete_workspace()

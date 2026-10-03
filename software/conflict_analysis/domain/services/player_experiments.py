@@ -378,6 +378,8 @@ def create_experiment(*, user, workspace_id, operation_id, if_match, body):
     _require_keys(set_body, {"id","code","version","kind","name","description"})
     _require_keys(profile_body, {"id","code","version","kind","display_name","identity_key","provider","model_name","metadata"})
     _require_profile_contract(profile_body)
+    if type(experiment_body["order"]) is not int:
+        raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
     if set_body["kind"] not in {AssessmentKind.HUMAN, AssessmentKind.AI} or profile_body["kind"] != set_body["kind"]:
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
     operation_id = _uuid(operation_id, operation=True)
@@ -436,6 +438,8 @@ def mutate_experiment(*, user, experiment_id, operation_id, if_match, action, bo
     operation_id = _uuid(operation_id, operation=True)
     if action == "update":
         _require_keys(body, {"name","color","order","description"})
+        if type(body["order"]) is not int:
+            raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
     elif body not in ({}, None):
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
     contract = f"{EXPERIMENT_CONTRACT}_{action.upper()}"
@@ -547,7 +551,7 @@ def create_manual_value(*, user, experiment_id, operation_id, if_match, body):
         or body["status"] not in {ValueStatus.PROVISIONAL, ValueStatus.UNKNOWN}
         or body["temporal_status"] not in set(AssessmentTemporalStatus.values)
         or (body["status"] == ValueStatus.UNKNOWN and body["value"] is not None)
-        or (body["status"] == ValueStatus.PROVISIONAL and type(body["value"]) not in {int, float})
+        or (body["status"] == ValueStatus.PROVISIONAL and type(body["value"]) is not int)
     ):
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
     operation_id=_uuid(operation_id,operation=True)

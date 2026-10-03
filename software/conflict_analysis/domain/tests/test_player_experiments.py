@@ -250,6 +250,40 @@ class PlayerExperimentsTests(PlayerExperimentsFixture, TestCase):
         self.assertTrue(expected_ids <= {row["focus"]["id"] for row in values})
         self.assertEqual(set(ParameterValue.objects.filter(actor_element_assessment__experiment=unknown_pair,successor__isnull=True).values_list("pk",flat=True)),{cleared_first.pk,cleared_second.pk})
 
+    def test_direct_service_rejects_float_values_and_orders(self):
+        _, experiment, _ = self.aggregate()
+        body = self.value_body(experiment, value=1)
+        body["value"] = 1.25
+        etag = list_values(
+            user=self.user, experiment_id=experiment.pk
+        )["experiment"]["etag"]
+        with self.assertRaises(PlayerExperimentError) as fractional_value:
+            create_manual_value(
+                user=self.user,
+                experiment_id=experiment.pk,
+                operation_id=str(uuid4()),
+                if_match=f'"{etag}"',
+                body=body,
+            )
+        self.assertEqual(fractional_value.exception.code, "PLAYER_REQUEST_INVALID")
+        self.assertFalse(
+            ParameterValue.objects.filter(
+                actor_element_assessment__experiment=experiment
+            ).exists()
+        )
+
+        _, create_body = self.aggregate_body()
+        create_body["experiment"]["order"] = 1.5
+        with self.assertRaises(PlayerExperimentError) as fractional_order:
+            create_experiment(
+                user=self.user,
+                workspace_id=self.workspace.pk,
+                operation_id=str(uuid4()),
+                if_match=f'"{typed.MANIFEST_SHA256}"',
+                body=create_body,
+            )
+        self.assertEqual(fractional_order.exception.code, "PLAYER_REQUEST_INVALID")
+
     def test_frozen_computed_and_a5_blocked_targets_deny_value_writes(self):
         _,experiment,_=self.aggregate(); dto=list_experiments(user=self.user,workspace_id=self.workspace.pk)["experiments"][0]
         mutate_experiment(user=self.user,experiment_id=experiment.pk,operation_id=str(uuid4()),if_match=f'"{dto["etag"]}"',action="freeze",body={})

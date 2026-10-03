@@ -102,6 +102,14 @@ def _strict_object(pairs):
     return result
 
 
+def _reject_fractional_number(value):
+    raise ValueError(f"Fractional JSON number is forbidden: {value}")
+
+
+def _reject_constant(value):
+    raise ValueError(f"Non-finite JSON number is forbidden: {value}")
+
+
 def _body(request):
     length = request.META.get("CONTENT_LENGTH", "")
     if length and (not str(length).isascii() or not str(length).isdigit()
@@ -111,8 +119,12 @@ def _body(request):
     if not raw or len(raw) > _MAX_BODY_BYTES:
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
     try:
-        payload = json.loads(raw.decode("utf-8"), object_pairs_hook=_strict_object,
-                             parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
+        payload = json.loads(
+            raw.decode("utf-8"),
+            object_pairs_hook=_strict_object,
+            parse_float=_reject_fractional_number,
+            parse_constant=_reject_constant,
+        )
     except (UnicodeError, ValueError, RecursionError) as exc:
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400) from exc
     if type(payload) is not dict:
@@ -137,8 +149,10 @@ def _xlsx_body(request):
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400)
     try:
         metadata = json.loads(
-            request.POST["metadata"], object_pairs_hook=_strict_object,
-            parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)),
+            request.POST["metadata"],
+            object_pairs_hook=_strict_object,
+            parse_float=_reject_fractional_number,
+            parse_constant=_reject_constant,
         )
     except (UnicodeError, ValueError, RecursionError) as exc:
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400) from exc

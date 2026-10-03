@@ -88,6 +88,43 @@ class ProductionPlayerG8Tests(PlayerExperimentsFixture,TestCase):
         self.assertEqual((rejected.status_code,rejected.json()["code"]),(400,"PLAYER_REQUEST_INVALID"))
         self.assertEqual(self.client.get(detail,HTTP_AUTHORIZATION="Bearer forbidden").status_code,400)
 
+    def test_fractional_json_numbers_are_rejected_before_g8_writes(self):
+        _, experiment, _ = self.aggregate()
+        csrf = self.client.cookies[settings.CSRF_COOKIE_NAME].value
+        body = self.value_body(experiment, value=0)
+        raw = json.dumps(
+            body, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).replace(
+            '"value":0',
+            '"value":0.100000000000000005551115123125782702',
+        ).encode("utf-8")
+        etag = list_values(user=self.user, experiment_id=experiment.pk)["experiment"]["etag"]
+        before = (
+            ActorElementAssessment.objects.filter(experiment=experiment).count(),
+            ParameterValue.objects.filter(
+                actor_element_assessment__experiment=experiment
+            ).count(),
+        )
+        response = self.client.post(
+            self.api(f"experiments/{experiment.pk}/values/"),
+            data=raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+            HTTP_IF_MATCH=f'"{etag}"',
+            HTTP_X_CSRFTOKEN=csrf,
+        )
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertEqual(response.json()["code"], "PLAYER_REQUEST_INVALID")
+        self.assertEqual(
+            (
+                ActorElementAssessment.objects.filter(experiment=experiment).count(),
+                ParameterValue.objects.filter(
+                    actor_element_assessment__experiment=experiment
+                ).count(),
+            ),
+            before,
+        )
+
     def test_only_projection_complete_workspaces_and_draft_assessment_experiments_enable_g8_actions(self):
         source=SCRIPT.read_text(encoding="utf-8"); html=TEMPLATE.read_text(encoding="utf-8"); self.assertIn('app.dataset.projectionStatus !== "COMPLETE"',source); self.assertIn('state.selected.status !== "DRAFT"',source); self.assertIn('>Общее</button>',html); self.assertIn('`Эксперимент ${item.name}`',source)
 
