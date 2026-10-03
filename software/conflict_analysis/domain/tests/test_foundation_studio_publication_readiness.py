@@ -13,7 +13,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import PBKDF2PasswordHasher
 from django.contrib.auth.models import Group, Permission
 from django.contrib.sessions.models import Session
-from django.db import connection, models
+from django.db import DatabaseError, connection, models, transaction
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 from django.urls import resolve
@@ -1580,50 +1580,29 @@ class FoundationStudioPublicationReadinessTests(
             status=PublicationStatus.PUBLISHED,
             project=pinned_definition_project,
         )
+        original_pin = (
+            pinned_workspace.definition_version_id,
+            pinned_workspace.definition_manifest_hash,
+        )
         pinned_workspace.definition_version = different_pinned_definition
         pinned_workspace.definition_manifest_hash = (
             different_pinned_definition.manifest_hash
         )
-        models.Model.save(
-            pinned_workspace,
-            update_fields=(
-                "definition_version",
-                "definition_manifest_hash",
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            models.Model.save(
+                pinned_workspace,
+                update_fields=(
+                    "definition_version",
+                    "definition_manifest_hash",
+                ),
+            )
+        pinned_workspace.refresh_from_db()
+        self.assertEqual(
+            (
+                pinned_workspace.definition_version_id,
+                pinned_workspace.definition_manifest_hash,
             ),
-        )
-        pinned_definition_baseline = _database_fingerprint()
-        pinned_definition_snapshot = self._assert_stable_one_statement_snapshot(
-            pinned_definition_target,
-            kind="NONE",
-            action="NONE",
-            blockers=["SUCCESSOR_INITIAL_RECEIPT_COUNT_INVALID"],
-            stored_manifest_hash=pinned_definition_target.manifest_hash,
-            not_disclosed=(
-                different_pinned_definition.pk,
-                different_pinned_definition.code,
-                pinned_workspace.pk,
-                pinned_workspace.code,
-                pinned_publication.pk,
-                pinned_publication.code,
-                pinned_publication.actor_identifier,
-                pinned_publication.locale,
-            ),
-        )
-        self.assertEqual(
-            pinned_definition_snapshot["project_publication_count"],
-            1,
-        )
-        self.assertEqual(
-            pinned_definition_snapshot["project_workspace_count"],
-            1,
-        )
-        self.assertEqual(
-            pinned_definition_snapshot["initial_publication_receipt_count"],
-            1,
-        )
-        self.assertEqual(
-            _database_fingerprint(),
-            pinned_definition_baseline,
+            original_pin,
         )
 
         (
@@ -1641,43 +1620,18 @@ class FoundationStudioPublicationReadinessTests(
             corrupt_workspace_hash,
             mismatched_hash_definition.manifest_hash,
         )
-        mismatched_hash_workspace.definition_manifest_hash = (
-            corrupt_workspace_hash
-        )
-        models.Model.save(
-            mismatched_hash_workspace,
-            update_fields=("definition_manifest_hash",),
-        )
-        mismatched_hash_baseline = _database_fingerprint()
-        mismatched_hash_snapshot = self._assert_stable_one_statement_snapshot(
-            mismatched_hash_target,
-            kind="NONE",
-            action="NONE",
-            blockers=["SUCCESSOR_INITIAL_RECEIPT_COUNT_INVALID"],
-            stored_manifest_hash=mismatched_hash_target.manifest_hash,
-            not_disclosed=(
-                corrupt_workspace_hash,
-                mismatched_hash_workspace.pk,
-                mismatched_hash_workspace.code,
-                mismatched_hash_publication.pk,
-                mismatched_hash_publication.code,
-                mismatched_hash_publication.actor_identifier,
-                mismatched_hash_publication.locale,
-            ),
-        )
+        original_hash = mismatched_hash_workspace.definition_manifest_hash
+        mismatched_hash_workspace.definition_manifest_hash = corrupt_workspace_hash
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            models.Model.save(
+                mismatched_hash_workspace,
+                update_fields=("definition_manifest_hash",),
+            )
+        mismatched_hash_workspace.refresh_from_db()
         self.assertEqual(
-            mismatched_hash_snapshot["project_publication_count"],
-            1,
+            mismatched_hash_workspace.definition_manifest_hash,
+            original_hash,
         )
-        self.assertEqual(
-            mismatched_hash_snapshot["project_workspace_count"],
-            1,
-        )
-        self.assertEqual(
-            mismatched_hash_snapshot["initial_publication_receipt_count"],
-            1,
-        )
-        self.assertEqual(_database_fingerprint(), mismatched_hash_baseline)
 
         initial = self._initial("integrity-base")
         wrong_predecessor = self._definition(

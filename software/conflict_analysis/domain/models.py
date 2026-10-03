@@ -162,16 +162,45 @@ _ASSESSMENT_PROJECTION_WRITE_AUTHORITIES: ContextVar[frozenset[str]] = ContextVa
     "assessment_projection_write_authorities",
     default=frozenset(),
 )
+_ASSESSMENT_PROJECTION_DB_SETTING = "domain.fd08_projection_write_authorized"
 
 
 @contextmanager
 def _canonical_assessment_projection_write(*authorities: str) -> Iterator[None]:
+    """Open one atomic service lease shared by ORM and database guards."""
+
     current = _ASSESSMENT_PROJECTION_WRITE_AUTHORITIES.get()
     token = _ASSESSMENT_PROJECTION_WRITE_AUTHORITIES.set(
         current | frozenset(authorities)
     )
+    connection = transaction.get_connection()
+    previous_setting: str | None = None
     try:
-        yield
+        with transaction.atomic(using=connection.alias):
+            if connection.vendor == "postgresql":
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT current_setting(%s, true)",
+                        [_ASSESSMENT_PROJECTION_DB_SETTING],
+                    )
+                    previous_setting = cursor.fetchone()[0] or ""
+                    cursor.execute(
+                        "SELECT set_config(%s, %s, true)",
+                        [_ASSESSMENT_PROJECTION_DB_SETTING, "1"],
+                    )
+            try:
+                yield
+            finally:
+                if (
+                    connection.vendor == "postgresql"
+                    and previous_setting is not None
+                    and not connection.needs_rollback
+                ):
+                    with connection.cursor() as cursor:
+                        cursor.execute(
+                            "SELECT set_config(%s, %s, true)",
+                            [_ASSESSMENT_PROJECTION_DB_SETTING, previous_setting],
+                        )
     finally:
         _ASSESSMENT_PROJECTION_WRITE_AUTHORITIES.reset(token)
 
