@@ -1,0 +1,87 @@
+{
+  "artifact_kind": "TECHNICAL_RETRY_PROTOCOL_FREEZE_MANIFEST",
+  "schema_version": "1.0.0",
+  "base_commit": "127f682beba758be36d07ce6ee8a7e8166ecd72d",
+  "base_tree": "7aa4d2a022e99496ae64ee6a7941a00d52e8386c",
+  "protocol_id": "6384e953-8c88-58e2-ac31-cc9ee18ee6d1",
+  "scope": "NEW_DIRECTORY_ONLY_SIX_FILES",
+  "inputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_CONSOLIDATION_V1/CONSOLIDATED_ATTEMPT_LEDGER.json",
+      "bytes": 111380,
+      "sha256": "5a403ad370af9b1815206b668e3676cdb69c6612f8208de0c5d596ff0a514747",
+      "git_blob_sha1": "ab28b5ea43098833f8da2f05907a01e81905135a"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_CONSOLIDATION_V1/DOCUMENT_VERSION_RESIDUAL_GAP_MATRIX.json",
+      "bytes": 65683,
+      "sha256": "b2e69f7311e70aadfcbdbc082eae21b9d0a19a7c5eef477857c504fff83d9089",
+      "git_blob_sha1": "067b95c2bc78ca32b7407bbf636ec011776beed3"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_CONSOLIDATION_V1/VALIDATION_RECEIPT.json",
+      "bytes": 2532,
+      "sha256": "7560cff1258d1dbf95ebddea87c5e0a4192f9ee50b551e6d6f14a064c05907e7",
+      "git_blob_sha1": "b5c57ea7d89ee43ced26d609addcd81380db79a6"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+      "bytes": 224003,
+      "sha256": "348d6f1c72a9f8b0c016f2c5db4be463a5d99e6b6ee91f781045f3c853a97a19",
+      "git_blob_sha1": "23717a9e193a1e398116fbd46a1d1c6e1d984525"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/EXECUTED_ATTEMPT_LEDGER.json",
+      "bytes": 178996,
+      "sha256": "1bbabb69ffa896f9d7822aed9bf37367a6a38ec169114a4816c88e3babe6089f",
+      "git_blob_sha1": "6829a98f0aa519e1f50c0b6374874632ffc3ca00"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1/EXECUTED_ATTEMPT_LEDGER.json",
+      "bytes": 108319,
+      "sha256": "cdd333a280be39fdc5f772610bd83e9df48b6c55264db3483f3e2a9b16a378f8",
+      "git_blob_sha1": "b7b78112d731350fd982780515a0fcacdc16b37a"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_ADMISSION_V1/MAPPING_ADMISSION_MATRIX.json",
+      "bytes": 318870,
+      "sha256": "e3b3da0652a9e30a171aa3986158350bebe7d4a4a2ef7d18dc5e6b44c4dac5ab",
+      "git_blob_sha1": "4ea79505b82a2232d696d3d80ed65891838148da"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1/TECHNICAL_RETRY_PLAN.json",
+      "bytes": 23100,
+      "sha256": "84c25a32eb8bcb89c3161eb3b30a715359ab8105c43e3eeb3c5b44632a16f3f2",
+      "git_blob_sha1": "1040e4736938c5f6d4e54e5fbc3dce124548732f"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1/TECHNICAL_RETRY_ATTEMPT_TEMPLATE.json",
+      "bytes": 1776,
+      "sha256": "49711a1754be883cb1d22db08badc5ba57562c0013dd197dd9b5987199c7b378",
+      "git_blob_sha1": "60b6942bfea4244625eab1d46a402a261fc2a18d"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1/TECHNICAL_RETRY_PROTOCOL.md",
+      "bytes": 2631,
+      "sha256": "8b44d93204807962f7632ac8e899c10f8deaf5f9129403d5a487c5db79569386",
+      "git_blob_sha1": "56f8f1f33978a4040583140b3dc485af389fbca4"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1/validate_technical_retry_protocol.py",
+      "bytes": 10590,
+      "sha256": "a2eec6b3501596c9e699f98d13d0d7b36dab2b6590ed140f00910089ac7f90a1",
+      "git_blob_sha1": "4206e4de1dfb8ddf5499179fbc3031fdd9641b8f"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1/VALIDATION_RECEIPT.json",
+      "bytes": 1210,
+      "sha256": "3951ab61377e3d7cf0731aa5aa079100e1729991838313cece359625499dd617",
+      "git_blob_sha1": "5831af68255981ede4d294f90ef34b60ef9fb924"
+    }
+  ],
+  "network_access_executed_by_pr20": false,
+  "retry_execution_executed_by_pr20": false,
+  "source_files_mutated": false
+}
