@@ -15,6 +15,7 @@ from domain.services.player_experiments import (
 from domain.services.player_workspaces import PlayerError
 
 from .inputs import MAX_BODY_BYTES, ExperimentForm, WeightForm, weights_from_json
+from .quality import quality_ui
 from .services import calculate_experiment, capture_for_player, open_experiment, time_slices
 
 _SPOOF_HEADERS = {
@@ -120,8 +121,10 @@ def result(request, experiment_id, time_slice_id):
         view = calculate_experiment(user=request.user, experiment_id=experiment_id,
                                     time_slice_id=time_slice_id, beta_weights=form.beta_weights)
         from scenario_modeling.session import from_result
+        payload = view.as_dict()
         return render(request, "player_integration/result.html", {
-            **view.as_dict(), "snapshot_json": view.snapshot.to_json(), "run_json": view.run.to_json(),
+            **payload, "quality_ui": quality_ui(view.quality),
+            "snapshot_json": view.snapshot.to_json(), "run_json": view.run.to_json(),
             "scenario_token": from_result(request, view),
         })
     return render(request, "player_integration/inputs.html", {

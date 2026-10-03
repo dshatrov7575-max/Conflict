@@ -10,8 +10,8 @@
 <div class="ui-context"><div class="ui-title" title="{{ experiment.name }}">{{ experiment.name }}</div><p><strong data-testid="assessment-kind">{{ experiment.assessment_set.kind }}</strong> · <span class="ui-truncate" title="{{ experiment.expert_profile.display_name }}">{{ experiment.expert_profile.display_name }}</span></p></div>
 
 <div class="scenario-metrics" aria-label="Сравнение UNO">
-  <section data-panel-help="baseline"><h2>Базовый UNO</h2><strong data-testid="baseline-uno">{{ baseline.UNO|default_if_none:'Недостаточно данных' }}</strong><p>{{ baseline.status }}</p></section>
-  <section data-panel-help="scenario"><h2>Сценарный UNO</h2><strong data-testid="scenario-uno">{{ scenario.UNO|default_if_none:'Недостаточно данных' }}</strong><p data-testid="scenario-status">{{ scenario.status }}</p></section>
+  <section data-panel-help="baseline"><h2>Базовый UNO</h2><strong data-testid="baseline-uno">{{ baseline.UNO|default_if_none:'Недостаточно данных' }}</strong><dl class="ui-data ui-status-grid"><dt>Вычисление</dt><dd data-testid="baseline-status" title="{{ baseline_quality_ui.computation_code }}">{{ baseline_quality_ui.computation_label }}</dd><dt>Входы</dt><dd data-testid="baseline-evidence-status" title="{{ baseline_quality_ui.evidence_code }}">{{ baseline_quality_ui.evidence_label }}</dd><dt>Допуск</dt><dd title="{{ baseline_quality_ui.admission_code }}">{{ baseline_quality_ui.admission_label }}</dd></dl></section>
+  <section data-panel-help="scenario"><h2>Сценарный UNO</h2><strong data-testid="scenario-uno">{{ scenario.UNO|default_if_none:'Недостаточно данных' }}</strong><dl class="ui-data ui-status-grid"><dt>Вычисление</dt><dd data-testid="scenario-status" title="{{ scenario_quality_ui.computation_code }}">{{ scenario_quality_ui.computation_label }}</dd><dt>Входы</dt><dd data-testid="scenario-evidence-status" title="{{ scenario_quality_ui.evidence_code }}">{{ scenario_quality_ui.evidence_label }}</dd><dt>Допуск</dt><dd title="{{ scenario_quality_ui.admission_code }}">{{ scenario_quality_ui.admission_label }}</dd></dl></section>
   <section data-panel-help="delta"><h2>Δ UNO</h2><strong data-testid="delta-uno">{{ delta_uno|default_if_none:'Недостаточно данных' }}</strong></section>
 </div>
 <section class="ui-panel" data-panel-help="override">
@@ -66,7 +66,7 @@
 <p>Строки: {{ scenario.completeness.eligible_rows }} / {{ scenario.completeness.expected_rows }}.
   ПТН: {{ scenario.completeness.computable_ptns }} / {{ scenario.completeness.expected_ptns }}.</p>
 <div class="table-scroll"><table>
-  <thead><tr><th scope="col">ПТН</th><th scope="col">W</th><th scope="col">Pol</th><th scope="col">Вклад UNO</th><th scope="col">Статус</th></tr></thead>
+  <thead><tr><th scope="col">ПТН</th><th scope="col">W</th><th scope="col">Pol</th><th scope="col">Вклад UNO</th><th scope="col">Вычисление</th></tr></thead>
   <tbody>{% for ptn in scenario.ptns %}<tr><th scope="row">{{ ptn.ptn_id }}</th><td>{{ ptn.W }}</td>
     <td>{{ ptn.Pol|default_if_none:'—' }}</td><td>{{ ptn.UNO_contribution|default_if_none:'—' }}</td><td>{{ ptn.status }}</td></tr>{% endfor %}</tbody>
 </table></div>

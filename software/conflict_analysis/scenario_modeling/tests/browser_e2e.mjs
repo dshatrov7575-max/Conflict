@@ -51,6 +51,8 @@ try {
   await click("[data-testid=create-scenario]");
   await wait("document.querySelector('#slider-controls')?.hidden === false");
   assert.equal(await evaluate("document.querySelector('[data-testid=baseline-uno]').textContent"), "100");
+  assert.equal(await evaluate("document.querySelector('[data-testid=baseline-status]').textContent"), "частично");
+  assert.equal(await evaluate("document.querySelector('[data-testid=baseline-evidence-status]').textContent"), "есть пропуски");
   const modelBaseline = await evaluate("JSON.parse(document.querySelector('#model-json').value).baseline");
   assert.deepEqual(modelBaseline, baseline);
   await evaluate(`(() => {
@@ -63,6 +65,8 @@ try {
   await click("[data-testid=apply-override]");
   await wait("document.querySelector('[data-testid=scenario-uno]')?.textContent === '50'");
   assert.equal(await evaluate("document.querySelector('[data-testid=delta-uno]').textContent"), "-50");
+  assert.equal(await evaluate("document.querySelector('[data-testid=scenario-status]').textContent"), "частично");
+  assert.equal(await evaluate("document.querySelector('[data-testid=scenario-evidence-status]').textContent"), "есть пропуски");
   await wait("document.querySelector('#slider-controls')?.hidden === false");
   await evaluate(`(() => {
     const slider = document.querySelector('#scenario-slider'); slider.value = '0';

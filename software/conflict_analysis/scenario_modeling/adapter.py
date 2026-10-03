@@ -5,6 +5,7 @@ import json
 
 from calculation import CalculationRun, CalculationSnapshot, InputValue, calculate
 from calculation.contracts import decimal_text
+from player_integration.quality import quality_ui, summarize_quality
 
 from .model import ScenarioModel, parameters
 
@@ -78,10 +79,16 @@ def result_view(model):
             "isolated_uno": None if isolated.UNO is None else decimal_text(isolated.UNO),
             "isolated_delta": delta(baseline.UNO, isolated.UNO),
         })
+    baseline_quality = summarize_quality(model.baseline, baseline)
+    scenario_quality = summarize_quality(scenario.snapshot, scenario.run)
     return {
-        "contract": "SCENARIO_RESULT_V1", "scenario_id": model.id,
+        "contract": "SCENARIO_RESULT_V2", "scenario_id": model.id,
         "baseline": json.loads(baseline.to_json()),
         "scenario": json.loads(scenario.run.to_json()),
+        "baseline_quality": baseline_quality.as_dict(),
+        "scenario_quality": scenario_quality.as_dict(),
+        "baseline_quality_ui": quality_ui(baseline_quality),
+        "scenario_quality_ui": quality_ui(scenario_quality),
         "delta_uno": delta(baseline.UNO, scenario.run.UNO), "changes": changes,
         "result_digest": scenario.run.result_digest,
         "scenario_snapshot_json": scenario.snapshot.to_json(),

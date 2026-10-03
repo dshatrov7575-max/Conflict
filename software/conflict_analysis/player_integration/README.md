@@ -49,6 +49,8 @@ CI-конфигурации потребует отдельно разрешён
   миграций, хранилища результатов, фоновых запусков и browser storage.
 - HTML показывает отдельную lane, provenance/pins, UNO, все PTN-метрики,
   completeness, предупреждения, trace, исходные статусы и source ID/version.
+  Компактные поля «Вычисление», «Входы» и «Научный допуск» исключают трактовку
+  `COMPLETE` как научной подтверждённости.
   Ноль отображается как `0`, отсутствие результата — как `—`/«Недостаточно данных».
 - POST защищён стандартным Django CSRF. Ответы обработчиков имеют `no-store`,
   `Vary: Cookie`, CSP и `nosniff`. Caller identity/role override headers отклоняются.
@@ -66,8 +68,10 @@ POST /player/calculations/experiments/<experiment_uuid>/time-slices/<time_slice_
 ```
 
 GET последнего маршрута открывает форму. Form-urlencoded POST возвращает HTML.
-JSON POST возвращает `PLAYER_CALCULATION_RESULT_V1` с `lane`, `snapshot`, `run` и
-`result_digest`. Обе формы вызывают один сервис. JSON-запрос требует существующей
+JSON POST возвращает `PLAYER_CALCULATION_RESULT_V2` с `lane`, `snapshot`, `run`,
+`quality` и `result_digest`. `run.status` остаётся только вычислительным статусом Core.
+`quality` отдельно фиксирует состояние входов, научный допуск, HUMAN validation и
+predictive validity; эти поля не входят в формулу и не меняют digest Core. Обе формы вызывают один сервис. JSON-запрос требует существующей
 session и стандартного cookie/header CSRF, как HTML-форма.
 
 Тело JSON ограничено 256 KiB; дополнительные/повторные поля отклоняются:
@@ -133,7 +137,7 @@ HTTP E2E создают тестовые эксперименты и оценк�
 запросах и неизменность всех ParameterValue. Создание тестовых исходных оценок
 в fixture не является поведением расчёта.
 
-Покрытие: COMPLETE/PARTIAL/NOT_COMPUTABLE; HUMAN/AI; отдельные временные срезы;
+Покрытие: раздельные computation/evidence/admission statuses; COMPLETE/PARTIAL/NOT_COMPUTABLE; HUMAN/AI; отдельные временные срезы;
 UNKNOWN и нули; отсутствующий KVPTN при доступных PTN-метриках; successor
 correction и сохранение SAL lineage; replay после freeze/archive; scope,
 permissions, CSRF, ошибки ввода; HTML escaping и точная сериализация.
