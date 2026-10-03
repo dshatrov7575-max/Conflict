@@ -1,0 +1,90 @@
+{
+  "artifact_kind": "RECOVERY_PROTOCOL_FREEZE_MANIFEST",
+  "assessor_type": "AI_PREPARATION",
+  "schema_version": "1.0.0",
+  "base_commit": "c48e3730cc9a7c67d62429614e1ca9e5c58be920",
+  "base_tree": "386a4c134e1a50cf4285c91c36899f71f0eb751b",
+  "inputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_ADMISSION_V1/SOURCE_CONTEXT_RECOVERY_QUEUE.json",
+      "sha256": "5e3ae531c070a40641a28ee546f653cb63cca59d5d1cef55ca9107b40256ee75",
+      "git_blob_sha1": "4006090f8a5830b70ca1165e1fd2e6df5381e640",
+      "bytes": 98342
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_ADMISSION_V1/MAPPING_ADMISSION_MATRIX.json",
+      "sha256": "e3b3da0652a9e30a171aa3986158350bebe7d4a4a2ef7d18dc5e6b44c4dac5ab",
+      "git_blob_sha1": "4ea79505b82a2232d696d3d80ed65891838148da",
+      "bytes": 318870
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_ADMISSION_V1/MAPPING_ADMISSION_SUMMARY.md",
+      "sha256": "e34075a0cb7b6ca0d3c672c52157a86470fc9181511506d6d6a829c0c47c99ba",
+      "git_blob_sha1": "98c0dcdcfb06df2b2b83443b31b0302af5b608ab",
+      "bytes": 1955
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_ADMISSION_V1/VALIDATION_RECEIPT.json",
+      "sha256": "48ce1926592545b5fe9602887ba27f4d18efcd65f4a954114000807df319622e",
+      "git_blob_sha1": "4fa985930bdb74de51db7df7eaa5424c8e479fa7",
+      "bytes": 2195
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_ADMISSION_V1/FREEZE_MANIFEST.json",
+      "sha256": "d3d7545bb6156716774debbdb9947e9256ef673230ee596edcba83138efbaeda",
+      "git_blob_sha1": "756941b21eba52369298afb28ea7df3051de279b",
+      "bytes": 4194
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_MAPPING_ADMISSION_V1/validate_mapping_admission.py",
+      "sha256": "cc48b6eb018eb2fb9a2c68027391c4de26f312230cdfb5a3d2d8e9bb534c154b",
+      "git_blob_sha1": "c2b5c2eaab5681c4e4178e23e3dd37fe503f6a45",
+      "bytes": 21102
+    }
+  ],
+  "outputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PROTOCOL.md",
+      "sha256": "6cdfa8d57b9482aa5eb5ecc02276df1ebf074f1a988577e3b58f3a9543f0955d",
+      "git_blob_sha1": "b3b20cdad578202b2992f8a038248936457a19ad",
+      "bytes": 10196
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+      "sha256": "348d6f1c72a9f8b0c016f2c5db4be463a5d99e6b6ee91f781045f3c853a97a19",
+      "git_blob_sha1": "23717a9e193a1e398116fbd46a1d1c6e1d984525",
+      "bytes": 224003
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/ATTEMPT_LEDGER_TEMPLATE.json",
+      "sha256": "7e1bd48d6dc5c2e56cd337813153bc1aa3321266aba9c97d4fdc102b315f40a9",
+      "git_blob_sha1": "20a8c2fe520032c902920494f262d5c7231e39d0",
+      "bytes": 5533
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/VALIDATION_RECEIPT.json",
+      "sha256": "41d6814498cb986c9ca61250f3ce71a29fb05cb757c1dc8821da2b378bea06c2",
+      "git_blob_sha1": "e02600ef0da92c70d298ab139528d0ee83bfa1d4",
+      "bytes": 2536
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/validate_recovery_protocol.py",
+      "sha256": "f5f3ef1b33f99764f3d5b8f765a13846db0d68c999c7ba20466f11f2260afa49",
+      "git_blob_sha1": "7416bfe9cfbe143b85f2015aa42b44f822e75966",
+      "bytes": 24465
+    }
+  ],
+  "scope": {
+    "allowed_directory": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1",
+    "file_count": 6,
+    "existing_files_modified": false,
+    "retrieval_executed": false,
+    "network_search_executed": false,
+    "substantive_review_executed": false,
+    "human_coding": "NOT_PERFORMED",
+    "factor_scoring": "NOT_PERFORMED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "publication_release_deployment": "NOT_EXECUTED"
+  },
+  "self_binding": "This manifest is bound by the delivery commit and external receipt; no recursive self-hash is embedded."
+}

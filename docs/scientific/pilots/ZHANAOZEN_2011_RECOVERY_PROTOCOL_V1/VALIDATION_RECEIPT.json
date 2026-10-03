@@ -1,0 +1,80 @@
+{
+  "artifact_kind": "RECOVERY_PROTOCOL_VALIDATION_RECEIPT",
+  "assessor_type": "AI_PREPARATION",
+  "status": "PASS_TECHNICAL_ONLY",
+  "base_commit": "c48e3730cc9a7c67d62429614e1ca9e5c58be920",
+  "base_tree": "386a4c134e1a50cf4285c91c36899f71f0eb751b",
+  "checks": [
+    "exact_base_and_prior_blobs",
+    "pr14_validator_and_output_pins",
+    "strict_json_and_unique_ids",
+    "all_fifty_three_blockers_frozen",
+    "seven_allowed_routes_and_query_templates",
+    "prospective_empty_attempt_ledger",
+    "exact_edition_and_fragment_contract_separation",
+    "retention_and_supersession_rules",
+    "deterministic_stopping_and_no_rerun_until_favorable",
+    "timeout_error_and_negative_evidence_semantics",
+    "counterevidence_deduplication_and_custody",
+    "forbidden_result_and_state_mutation_fixtures",
+    "six_file_scope_and_git_diff_check"
+  ],
+  "counts": {
+    "base_blobs_verified": 765,
+    "manifest_input_pins": 6,
+    "manifest_output_pins": 5,
+    "source_queue_entries": 53,
+    "blocker_units": 53,
+    "route_definitions": 7,
+    "planned_queries": 160,
+    "empty_attempts": 0
+  },
+  "scope_counts": {
+    "ACTOR_SCOPE": 8,
+    "CONTEXT_LANGUAGE": 12,
+    "COUNTEREVIDENCE_COMPLETENESS": 1,
+    "DOCUMENT_VERSION": 27,
+    "REFERENCE_SCOPE": 4,
+    "TARGET_TIME": 1
+  },
+  "pr14_validator": {
+    "status": "PASS_TECHNICAL_ONLY",
+    "counts": {
+      "base_blobs_verified": 759,
+      "manifest_input_pins": 7,
+      "manifest_output_pins": 5,
+      "coding_items": 20,
+      "fact_fragment_chains": 58,
+      "unique_document_versions": 27,
+      "unique_proven_fragments": 17,
+      "disputed_facts": 3,
+      "unlinked_facts": 14,
+      "recovery_blocked_items": 12,
+      "recovery_not_reviewed_items": 8,
+      "queue_entries": 53
+    },
+    "decision_counts": {
+      "MAPPING_ADMITTED_FOR_FUTURE_CODING": 0,
+      "MAPPING_NOT_ADMITTED": 12,
+      "NOT_REVIEWED": 8
+    },
+    "queue_counts": {
+      "ACTOR_SCOPE": 8,
+      "CONTEXT_LANGUAGE": 12,
+      "COUNTEREVIDENCE_COMPLETENESS": 1,
+      "DOCUMENT_VERSION": 27,
+      "REFERENCE_SCOPE": 4,
+      "TARGET_TIME": 1
+    },
+    "output_pins": "PASS",
+    "pr13_validator": "PASS_TECHNICAL_ONLY"
+  },
+  "scientific_boundaries": {
+    "human_validation_reliability": "NOT_PERFORMED",
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED",
+    "publication_release_deployment": "NOT_EXECUTED",
+    "retrieval_and_substantive_review": "NOT_EXECUTED"
+  }
+}
