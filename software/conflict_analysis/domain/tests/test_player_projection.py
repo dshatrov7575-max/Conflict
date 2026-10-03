@@ -15,6 +15,7 @@ from django.core.exceptions import ValidationError
 from django.db import (
     DatabaseError,
     close_old_connections,
+    models,
     connection,
     connections,
     transaction,
@@ -84,7 +85,7 @@ _PROJECTION_RECEIPT_ENTITY_TYPE = (
     "FOUNDATION_WORKSPACE_ASSESSMENT_PROJECTION_V1"
 )
 _MIGRATION_FROM = [("domain", "0017_multilingual_evidence_lineage")]
-_MIGRATION_TO = [("domain", "0018_workspace_assessment_projection")]
+_MIGRATION_TO = [("domain", "0019_projection_db_authority_guards")]
 
 
 def _canonical_json_sha256(value: object) -> str:
@@ -237,37 +238,58 @@ def _restore_leaf_migrations() -> None:
 
 
 class _FD08ProjectionGuardTeardownMixin:
-    """Let TransactionTestCase flush fixtures without weakening in-test D-09 guards."""
+    """Drop whichever FD08 guard generation a migration test leaves active."""
 
     _guard_migration_app = "domain"
-    _guard_migration_name = "0018_workspace_assessment_projection"
+    _guard_migrations = (
+        (
+            "0019_projection_db_authority_guards",
+            "_drop_authority_guards",
+            "_install_authority_guards",
+        ),
+        (
+            "0018_workspace_assessment_projection",
+            "_drop_canonical_projection_guards",
+            "_install_canonical_projection_guards",
+        ),
+    )
 
     @classmethod
-    def _fd08_guard_migration_is_applied(cls, database: str) -> bool:
+    def _fd08_guard_migration_is_applied(
+        cls, database: str, migration_name: str
+    ) -> bool:
         return MigrationRecorder(connections[database]).migration_qs.filter(
             app=cls._guard_migration_app,
-            name=cls._guard_migration_name,
+            name=migration_name,
         ).exists()
 
     def _fixture_teardown(self) -> None:
-        migration = import_module(
-            "domain.migrations.0018_workspace_assessment_projection"
-        )
-        guarded_databases: list[str] = []
+        guarded_databases: list[tuple[str, str, str, str]] = []
         try:
             for database in self._databases_names(include_mirrors=False):
-                if not self._fd08_guard_migration_is_applied(database):
-                    continue
-                with connections[database].schema_editor() as schema_editor:
-                    migration._drop_canonical_projection_guards(schema_editor)
-                guarded_databases.append(database)
+                for migration_name, drop_name, install_name in self._guard_migrations:
+                    if not self._fd08_guard_migration_is_applied(
+                        database, migration_name
+                    ):
+                        continue
+                    module_name = f"domain.migrations.{migration_name}"
+                    migration = import_module(module_name)
+                    with connections[database].schema_editor() as schema_editor:
+                        getattr(migration, drop_name)(schema_editor)
+                    guarded_databases.append(
+                        (database, module_name, install_name, migration_name)
+                    )
+                    break
             super()._fixture_teardown()
         finally:
-            for database in guarded_databases:
-                if not self._fd08_guard_migration_is_applied(database):
+            for database, module_name, install_name, migration_name in guarded_databases:
+                if not self._fd08_guard_migration_is_applied(
+                    database, migration_name
+                ):
                     continue
+                migration = import_module(module_name)
                 with connections[database].schema_editor() as schema_editor:
-                    migration._install_canonical_projection_guards(None, schema_editor)
+                    getattr(migration, install_name)(None, schema_editor)
 
 
 class FoundationWorkspaceAssessmentProjectionTests(
@@ -300,6 +322,130 @@ class FoundationWorkspaceAssessmentProjectionTests(
             getattr(principal, "actor_identifier", principal),
             **kwargs,
         )
+
+    def test_database_guards_require_projection_authority_and_block_promotion(self):
+        _definition, workspace, _principal = self._bootstrap(projection_manifest=True)
+        canonical = Actor(
+            id=uuid4(),
+            workspace=workspace,
+            code=f"FD08-DB-CANONICAL-{uuid4().hex[:10]}",
+            version="1.0.0",
+            actor_type="GROUP",
+            label="Canonical database guard",
+            description="Must require the bounded projection authority.",
+            order=0,
+            metadata={},
+            source_manifest_entity_id=uuid4(),
+            source_manifest_entity_sha256="a" * 64,
+        )
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            models.Model.save(canonical, force_insert=True)
+        self.assertFalse(Actor.objects.filter(pk=canonical.pk).exists())
+
+        authorized = Actor(
+            id=uuid4(),
+            workspace=workspace,
+            code=f"FD08-DB-AUTHORIZED-{uuid4().hex[:10]}",
+            version="1.0.0",
+            actor_type="GROUP",
+            label="Authorized canonical row",
+            description="Inserted only while the projection lease is active.",
+            order=1,
+            metadata={},
+            source_manifest_entity_id=uuid4(),
+            source_manifest_entity_sha256="b" * 64,
+        )
+        with _canonical_assessment_projection_write("projection"):
+            models.Model.save(authorized, force_insert=True)
+        self.assertTrue(Actor.objects.filter(pk=authorized.pk).exists())
+
+        lease_probe = Actor(
+            id=uuid4(),
+            workspace=workspace,
+            code=f"FD08-DB-LEASE-RESET-{uuid4().hex[:10]}",
+            version="1.0.0",
+            actor_type="GROUP",
+            label="Projection lease reset",
+            description="The database lease must not escape its context.",
+            order=2,
+            metadata={},
+            source_manifest_entity_id=uuid4(),
+            source_manifest_entity_sha256="d" * 64,
+        )
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            models.Model.save(lease_probe, force_insert=True)
+        self.assertFalse(Actor.objects.filter(pk=lease_probe.pk).exists())
+
+        legacy = Actor.objects.create(
+            id=uuid4(),
+            workspace=workspace,
+            code=f"FD08-DB-LEGACY-{uuid4().hex[:10]}",
+            version="1.0.0",
+            actor_type="GROUP",
+            label="Legacy row",
+            description="Cannot be promoted to canonical by raw SQL.",
+            order=2,
+            metadata={},
+        )
+        table = connection.ops.quote_name(Actor._meta.db_table)
+        pk = Actor._meta.pk.get_db_prep_value(legacy.pk, connection)
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE {table} SET source_manifest_entity_id = %s, "
+                    "source_manifest_entity_sha256 = %s WHERE id = %s",
+                    [
+                        Actor._meta.get_field("source_manifest_entity_id").get_db_prep_value(
+                            uuid4(), connection, prepared=False
+                        ),
+                        "c" * 64,
+                        pk,
+                    ],
+                )
+        legacy.refresh_from_db()
+        self.assertIsNone(legacy.source_manifest_entity_id)
+        self.assertIsNone(legacy.source_manifest_entity_sha256)
+
+    def test_workspace_pin_and_projection_evidence_have_database_guards(self):
+        definition, workspace, principal = self._bootstrap(projection_manifest=True)
+        workspace_table = connection.ops.quote_name(ProjectWorkspace._meta.db_table)
+        workspace_pk = ProjectWorkspace._meta.pk.get_db_prep_value(
+            workspace.pk, connection
+        )
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE {workspace_table} SET definition_manifest_hash = %s "
+                    "WHERE id = %s",
+                    ["d" * 64, workspace_pk],
+                )
+        workspace.refresh_from_db()
+        self.assertEqual(workspace.definition_version_id, definition.pk)
+        self.assertEqual(workspace.definition_manifest_hash, definition.manifest_hash)
+
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE {workspace_table} "
+                    "SET assessment_projection_status = %s, "
+                    "assessment_projection_sha256 = %s WHERE id = %s",
+                    [AssessmentProjectionStatus.COMPLETE, "e" * 64, workspace_pk],
+                )
+        workspace.refresh_from_db()
+        self.assertEqual(
+            workspace.assessment_projection_status,
+            AssessmentProjectionStatus.NOT_PROVEN,
+        )
+        self.assertIsNone(workspace.assessment_projection_sha256)
+
+        result = self._materialize(workspace, uuid4(), principal)
+        self.assertFalse(result.replayed)
+        workspace.refresh_from_db()
+        self.assertEqual(
+            workspace.assessment_projection_status,
+            AssessmentProjectionStatus.COMPLETE,
+        )
+        self.assertEqual(len(workspace.assessment_projection_sha256), 64)
 
     def _time_and_set(self, workspace: ProjectWorkspace) -> tuple[TimeSlice, AssessmentSet]:
         time_slice = TimeSlice.objects.create(
@@ -573,7 +719,7 @@ class FoundationWorkspaceAssessmentProjectionTests(
         self.assertTrue(
             MigrationRecorder(connection).migration_qs.filter(
                 app="domain",
-                name="0018_workspace_assessment_projection",
+                name="0019_projection_db_authority_guards",
             ).exists()
         )
 
@@ -633,10 +779,26 @@ class FoundationWorkspaceAssessmentProjectionTests(
             "FD08_CANONICAL_PROJECTION_REVERSE_BLOCKED",
         ):
             executor.migrate(_MIGRATION_FROM)
+        # MigrationExecutor reverses 0019 successfully before 0018 refuses
+        # the destructive downgrade. Restore the leaf so later tests retain
+        # the strengthened guards rather than silently running on 0018 only.
         self.assertTrue(
             MigrationRecorder(connection).migration_qs.filter(
                 app="domain",
                 name="0018_workspace_assessment_projection",
+            ).exists()
+        )
+        self.assertFalse(
+            MigrationRecorder(connection).migration_qs.filter(
+                app="domain",
+                name="0019_projection_db_authority_guards",
+            ).exists()
+        )
+        _restore_leaf_migrations()
+        self.assertTrue(
+            MigrationRecorder(connection).migration_qs.filter(
+                app="domain",
+                name="0019_projection_db_authority_guards",
             ).exists()
         )
         with connection.cursor() as cursor:
@@ -686,14 +848,16 @@ class FoundationWorkspaceAssessmentProjectionTests(
             workspace.pk,
             connection,
         )
-        with connection.cursor() as cursor:
-            cursor.execute(
-                f"UPDATE {table} SET {hash_column} = %s WHERE {pk_column} = %s",
-                ["0" * 64, prepared_pk],
-            )
+
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE {table} SET {hash_column} = %s WHERE {pk_column} = %s",
+                    ["0" * 64, prepared_pk],
+                )
         workspace.refresh_from_db()
-        with self.assertRaises(AssessmentProjectionConflict):
-            self._materialize(workspace, uuid4(), principal)
+        self.assertEqual(workspace.definition_version_id, definition.pk)
+        self.assertEqual(workspace.definition_manifest_hash, definition.manifest_hash)
         self.assertEqual(_canonical_rows(workspace), baseline)
         self.assertFalse(
             AuditEvent.objects.filter(
@@ -701,39 +865,37 @@ class FoundationWorkspaceAssessmentProjectionTests(
                 entity_type=_PROJECTION_RECEIPT_ENTITY_TYPE,
             ).exists()
         )
-        with connection.cursor() as cursor:
-            cursor.execute(
-                f"UPDATE {table} SET {hash_column} = %s WHERE {pk_column} = %s",
-                [definition.manifest_hash, prepared_pk],
-            )
-        workspace.refresh_from_db()
-        self.assertEqual(workspace.definition_version_id, definition.pk)
 
         combined_operation = uuid4()
         with transaction.atomic():
-            self._materialize(
+            first = self._materialize(
                 workspace,
                 combined_operation,
                 principal,
                 receipt_contract=WORKSPACE_CREATE_CONTRACT,
                 canonical_request_sha256="9" * 64,
             )
+        self.assertFalse(first.replayed)
         combined_receipt = AuditEvent.objects.get(pk=combined_operation)
         receipt_before_pin_drift = copy.deepcopy(combined_receipt.after)
-        with connection.cursor() as cursor:
-            cursor.execute(
-                f"UPDATE {table} SET {hash_column} = %s WHERE {pk_column} = %s",
-                ["0" * 64, prepared_pk],
-            )
-        with transaction.atomic():
-            with self.assertRaises(AssessmentProjectionConflict):
-                self._materialize(
-                    workspace,
-                    combined_operation,
-                    principal,
-                    receipt_contract=WORKSPACE_CREATE_CONTRACT,
-                    canonical_request_sha256="9" * 64,
+
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE {table} SET {hash_column} = %s WHERE {pk_column} = %s",
+                    ["0" * 64, prepared_pk],
                 )
+        workspace.refresh_from_db()
+        self.assertEqual(workspace.definition_manifest_hash, definition.manifest_hash)
+        with transaction.atomic():
+            replay = self._materialize(
+                workspace,
+                combined_operation,
+                principal,
+                receipt_contract=WORKSPACE_CREATE_CONTRACT,
+                canonical_request_sha256="9" * 64,
+            )
+        self.assertTrue(replay.replayed)
         combined_receipt.refresh_from_db()
         self.assertEqual(combined_receipt.after, receipt_before_pin_drift)
         self.assertEqual(
@@ -1536,12 +1698,15 @@ class FoundationWorkspaceAssessmentProjectionTests(
             drift_workspace.pk,
             connection,
         )
-        with connection.cursor() as cursor:
-            cursor.execute(
-                f"UPDATE {workspace_table} SET {workspace_sha} = %s "
-                f"WHERE {workspace_pk} = %s",
-                ["c" * 64, prepared_workspace_pk],
-            )
+        # Simulate corruption through the same private service lease; direct raw
+        # SQL without this lease is covered by the dedicated database-guard test.
+        with _canonical_assessment_projection_write("projection"):
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE {workspace_table} SET {workspace_sha} = %s "
+                    f"WHERE {workspace_pk} = %s",
+                    ["c" * 64, prepared_workspace_pk],
+                )
         with self.assertRaises(AssessmentProjectionConflict):
             self._materialize(drift_workspace, drift_operation, principal)
         drift_workspace.refresh_from_db()

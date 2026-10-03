@@ -5,7 +5,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from django.db import connection
+from django.db import DatabaseError, connection, transaction
 from django.test import TestCase
 from django.utils import timezone
 
@@ -77,7 +77,7 @@ class FoundationP1ImportCorrectionTests(FoundationFactoryMixin, TestCase):
         self.assertFalse(Actor.objects.filter(pk=self.actor_id).exists())
         self.assertFalse(ImportRun.objects.filter(status="COMMITTED").exists())
 
-    def test_commit_rejects_workspace_definition_pin_drift_after_preview_before_any_write(self):
+    def test_database_rejects_workspace_definition_pin_drift_before_service_write(self):
         preview = preview_foundation_package(
             self.package_with_intended_actor_create(),
             workspace=self.workspace,
@@ -113,21 +113,20 @@ class FoundationP1ImportCorrectionTests(FoundationFactoryMixin, TestCase):
             next_definition.pk, connection, prepared=False
         )
         table = connection.ops.quote_name(ProjectWorkspace._meta.db_table)
-        with connection.cursor() as cursor:
-            cursor.execute(
-                f"UPDATE {table} SET definition_version_id = %s, "
-                "definition_manifest_hash = %s WHERE id = %s",
-                [definition_db_id, next_definition.manifest_hash, workspace_db_id],
-            )
         before = (Actor.objects.count(), ImportRun.objects.count(), AuditEvent.objects.count())
-
-        with self.assertRaises(FoundationPackageConflictError):
-            commit_foundation_package(
-                preview,
-                workspace=self.workspace,
-                actor_identifier="fixture:p1-definition-drift",
-            )
-
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE {table} SET definition_version_id = %s, "
+                    "definition_manifest_hash = %s WHERE id = %s",
+                    [definition_db_id, next_definition.manifest_hash, workspace_db_id],
+                )
+        self.workspace.refresh_from_db()
+        self.assertEqual(self.workspace.definition_version_id, self.definition.pk)
+        self.assertEqual(
+            self.workspace.definition_manifest_hash,
+            self.definition.manifest_hash,
+        )
         self.assertEqual(
             (Actor.objects.count(), ImportRun.objects.count(), AuditEvent.objects.count()),
             before,

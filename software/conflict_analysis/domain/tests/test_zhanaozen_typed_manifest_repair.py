@@ -30,6 +30,7 @@ from django.test import TransactionTestCase
 from domain.models import (
     Project, Actor, AnalyticalElement, ActorElementRole, ParameterDefinition,
     ParameterValue, AssessmentSet, Experiment, ImportRun, EvidenceSource, EvidenceLink,
+    _canonical_assessment_projection_write,
 )
 from domain.policies import StudioPrincipal
 from domain.services.seed import SeedConflictError, _system_principal, _upsert
@@ -308,9 +309,10 @@ class ZhanaozenRepairIntegrityTests(TestCase):
         seed_zhanaozen_demo()
         workspace = ProjectWorkspace.objects.get(pk=typed.WORKSPACE_ID)
         # Simulate out-of-service storage corruption; production guards stay enabled.
-        with connection.cursor() as cursor:
-            cursor.execute(f"UPDATE {connection.ops.quote_name(ProjectWorkspace._meta.db_table)} SET assessment_projection_sha256 = %s WHERE id = %s",
-                ["c" * 64, ProjectWorkspace._meta.pk.get_db_prep_value(workspace.pk, connection)])
+        with _canonical_assessment_projection_write("projection"):
+            with connection.cursor() as cursor:
+                cursor.execute(f"UPDATE {connection.ops.quote_name(ProjectWorkspace._meta.db_table)} SET assessment_projection_sha256 = %s WHERE id = %s",
+                    ["c" * 64, ProjectWorkspace._meta.pk.get_db_prep_value(workspace.pk, connection)])
         before = _snapshot()
         self.assertFalse(projection.verify_workspace_assessment_projection(workspace).complete)
         with self.assertRaises(SeedConflictError):
