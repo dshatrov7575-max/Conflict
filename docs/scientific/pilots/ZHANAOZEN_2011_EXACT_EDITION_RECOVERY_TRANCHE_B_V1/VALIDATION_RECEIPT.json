@@ -1,0 +1,56 @@
+{
+  "artifact_kind": "EXACT_EDITION_TRANCHE_VALIDATION_RECEIPT",
+  "assessor_type": "AI_PREPARATION",
+  "status": "PASS_TECHNICAL_ONLY",
+  "base_commit": "ae5770467f93efdf4a3bf988b4339e1ef4577998",
+  "base_tree": "19ccc23a96ccbe2cd3cd1422879aac9059e37cf2",
+  "checks": [
+    "exact_base_and_prior_blobs",
+    "pr17_validator_and_output_pins",
+    "strict_json_and_manifest_pins",
+    "sixteen_versions_and_thirty_two_frozen_queries",
+    "one_execution_per_frozen_query_and_no_reruns",
+    "publisher_and_archive_query_pair_per_version",
+    "technical_failure_retains_prior_state",
+    "current_content_and_fragment_proof_not_promoted",
+    "no_exact_edition_contract_satisfied",
+    "no_mapping_or_target_time_state_change",
+    "six_file_scope_and_git_diff_check"
+  ],
+  "counts": {
+    "base_blobs_verified": 783,
+    "manifest_input_pins": 8,
+    "manifest_output_pins": 5,
+    "document_versions": 16,
+    "frozen_queries_executed": 32,
+    "publisher_attempts": 16,
+    "archive_attempts": 16,
+    "archive_payloads_retrieved": 0,
+    "archive_digests_verified": 0,
+    "technical_or_parser_failures": 1,
+    "exact_edition_contracts_satisfied": 0,
+    "scientific_state_changes": 0,
+    "fragment_route_live_budget_consumed": 0
+  },
+  "response_status_counts": {
+    "FINITE_NO_RESULT": 15,
+    "HTTP_RESPONSE": 16,
+    "TECHNICAL_FAILURE": 1
+  },
+  "result_state_counts": {
+    "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF": 16,
+    "NOT_ADMISSIBLE": 16
+  },
+  "pr17_validator": {
+    "status": "PASS_TECHNICAL_ONLY",
+    "output_pins": "PASS"
+  },
+  "scientific_boundaries": {
+    "human_validation_reliability": "NOT_PERFORMED",
+    "human_coding_adjudication": "NOT_PERFORMED",
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED",
+    "publication_release_deployment": "NOT_EXECUTED"
+  }
+}

@@ -1,0 +1,2002 @@
+{
+  "artifact_kind": "EXACT_EDITION_RECOVERY_EXECUTION_LEDGER",
+  "assessor_type": "AI_PREPARATION",
+  "schema_version": "1.0.0",
+  "tranche_id": "ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1",
+  "base_commit": "ae5770467f93efdf4a3bf988b4339e1ef4577998",
+  "base_tree": "19ccc23a96ccbe2cd3cd1422879aac9059e37cf2",
+  "plan_id": "ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1",
+  "case_id": "292d238f-9fee-578f-bddd-6f923163788a",
+  "execution_mode": "LIVE_FROZEN_EXACT_EDITION_QUERY_TRANCHE_B",
+  "network_search_executed_by_pr18": true,
+  "substantive_review_executed_by_pr18": true,
+  "live_query_budget_consumed": 32,
+  "append_only": true,
+  "legacy_fragment_replay_budget_consumed": 0,
+  "attempts": [
+    {
+      "attempt_id": "bf339c4b-4cd6-5a10-9d0e-0a76d22dd9e4",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "57460e67-2017-51a5-a890-60be3eb920dc",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-e92b6b89-4e75-5f64-ac26-7dd8005c3d56",
+      "document_version_id": "e92b6b89-4e75-5f64-ac26-7dd8005c3d56",
+      "document_id": "e16804b6-a082-5f9c-acf0-2e4291025136",
+      "source_id": "73b0f91b-778e-5238-89ee-636e22196efb",
+      "label": "D17",
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+        "bc34ea72-a9ac-5e81-ab20-3f2efb729872"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "51d54d2a5c3ff4193d112dd6dbb748c2c418d89534423255015424fe2710f056",
+      "requested_at_utc": "2026-10-03T12:45:38.375698+00:00",
+      "completed_at_utc": "2026-10-03T12:45:42.839814+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://iphronline.org/wp-content/uploads/2011/10/eng_labor_protests_briefing_paper_oct_2011.pdf",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://iphronline.org/wp-content/uploads/2011/10/eng_labor_protests_briefing_paper_oct_2011.pdf",
+          "final_url": "https://iphronline.org/wp-content/uploads/2011/10/eng_labor_protests_briefing_paper_oct_2011.pdf",
+          "http_status": 202,
+          "content_type": "text/html",
+          "payload_bytes": 249,
+          "payload_sha256": "5729d93e0fb22ef8a03685ba6f462913e5fe3adb4805cfee6398513b9b37781f",
+          "redirect_chain": [
+            {
+              "url": "https://iphronline.org/wp-content/uploads/2011/10/eng_labor_protests_briefing_paper_oct_2011.pdf",
+              "http_status": 202,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "adb319ac-d60d-535f-b9d2-8d940f93eb64"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "c0ee4164-13f9-576c-aa97-7e4a9ee4339b",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "0f315ede-ef83-5c79-8c0a-a130e9686dcb",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-e92b6b89-4e75-5f64-ac26-7dd8005c3d56",
+      "document_version_id": "e92b6b89-4e75-5f64-ac26-7dd8005c3d56",
+      "document_id": "e16804b6-a082-5f9c-acf0-2e4291025136",
+      "source_id": "73b0f91b-778e-5238-89ee-636e22196efb",
+      "label": "D17",
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+        "bc34ea72-a9ac-5e81-ab20-3f2efb729872"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "5be76e1c82844e278af96e757eac87a4fabf9d59b12bfcc975863ffcd66f4f83",
+      "requested_at_utc": "2026-10-03T12:45:38.376243+00:00",
+      "completed_at_utc": "2026-10-03T12:46:16.597047+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fiphronline.org%2Fwp-content%2Fuploads%2F2011%2F10%2Feng_labor_protests_briefing_paper_oct_2011.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fiphronline.org%2Fwp-content%2Fuploads%2F2011%2F10%2Feng_labor_protests_briefing_paper_oct_2011.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fiphronline.org%2Fwp-content%2Fuploads%2F2011%2F10%2Feng_labor_protests_briefing_paper_oct_2011.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fiphronline.org%2Fwp-content%2Fuploads%2F2011%2F10%2Feng_labor_protests_briefing_paper_oct_2011.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "a2350663-3db8-5f1c-82c5-a3664e2cf757",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "18821e85-191d-50f8-bea1-6e538e346bc3",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-071bd5f5-b78b-5c19-a38e-17ea82817435",
+      "document_version_id": "071bd5f5-b78b-5c19-a38e-17ea82817435",
+      "document_id": "0b7da75f-95eb-58aa-811f-34f3c56471f6",
+      "source_id": "3c0a9fd3-3326-5220-b97c-e2fb0d483f10",
+      "label": "D02",
+      "affected_coding_item_ids": [
+        "bcbda52d-282f-5567-a4ce-f576f6f13a35"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "1d0a5348cc72c572258ec8bd26d4563d385abae5192ac1c5cabdbfb2a6b124de",
+      "requested_at_utc": "2026-10-03T12:45:38.376514+00:00",
+      "completed_at_utc": "2026-10-03T12:45:39.420343+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.rferl.org/a/kazakh_oil_workers_start_hunger_strike/24183948.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.rferl.org/a/kazakh_oil_workers_start_hunger_strike/24183948.html",
+          "final_url": "https://www.rferl.org/a/kazakh_oil_workers_start_hunger_strike/24183948.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 79821,
+          "payload_sha256": "378e548e3fb11ad59aa6829727e49ec52897290142208a5806dfbd4e829f0235",
+          "redirect_chain": [
+            {
+              "url": "https://www.rferl.org/a/kazakh_oil_workers_start_hunger_strike/24183948.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "a4cd5909-0ca5-5a23-ace7-1ada629e4ab6"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "f57edd3e-1eb9-57e3-bdfb-04d5811a0367",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "7275b2bb-dffc-5847-b4da-676162ab376f",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-071bd5f5-b78b-5c19-a38e-17ea82817435",
+      "document_version_id": "071bd5f5-b78b-5c19-a38e-17ea82817435",
+      "document_id": "0b7da75f-95eb-58aa-811f-34f3c56471f6",
+      "source_id": "3c0a9fd3-3326-5220-b97c-e2fb0d483f10",
+      "label": "D02",
+      "affected_coding_item_ids": [
+        "bcbda52d-282f-5567-a4ce-f576f6f13a35"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "e67429b8e2589e7820158406a42ad3303c63e5e4d0c438d063337546230f9745",
+      "requested_at_utc": "2026-10-03T12:45:38.376788+00:00",
+      "completed_at_utc": "2026-10-03T12:45:52.732459+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fkazakh_oil_workers_start_hunger_strike%2F24183948.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fkazakh_oil_workers_start_hunger_strike%2F24183948.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fkazakh_oil_workers_start_hunger_strike%2F24183948.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fkazakh_oil_workers_start_hunger_strike%2F24183948.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "248ee372-6034-545f-b8a5-8b22fd893f91",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "6df64512-0dd5-5a14-9b6d-4e39b23525d4",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3dcd5aa1-e2a9-5dd9-a2d9-992f9c80e835",
+      "document_version_id": "3dcd5aa1-e2a9-5dd9-a2d9-992f9c80e835",
+      "document_id": "d8d0cc9f-2091-5c78-8ac9-27ff273d274a",
+      "source_id": "ab02c333-f700-53c9-bf0e-e499b8152447",
+      "label": "D07",
+      "affected_coding_item_ids": [
+        "258efca3-9f6e-550b-8b80-bf27b70424b0",
+        "092a3bde-2c62-5bae-a31d-b5c8751eb201"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "23f3c7c4794b7029980a43c1dc4b705203a3bad4117f017c05aa221bbf87d74e",
+      "requested_at_utc": "2026-10-03T12:45:38.377100+00:00",
+      "completed_at_utc": "2026-10-03T12:45:41.435551+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://rus.azattyq.org/a/oil_workers_strike_kazakhstan/24279930.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.azattyqasia.org/a/oil_workers_strike_kazakhstan/24279930.html",
+          "final_url": "https://www.azattyqasia.org/a/oil_workers_strike_kazakhstan/24279930.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 91621,
+          "payload_sha256": "3e268a0cb9da203c285cd1a32611cf1502921eae5be2175f15207e72ce79534e",
+          "redirect_chain": [
+            {
+              "url": "https://rus.azattyq.org/a/oil_workers_strike_kazakhstan/24279930.html",
+              "http_status": 301,
+              "location": "https://www.azattyqasia.org/a/oil_workers_strike_kazakhstan/24279930.html"
+            },
+            {
+              "url": "https://www.azattyqasia.org/a/oil_workers_strike_kazakhstan/24279930.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "1461d0ca-4292-5ba2-86f1-aa2c86af4ac3"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "f09648ef-eea3-5b82-a814-cc45b5fc26c3",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "b6175a91-09ac-5298-bf69-29c4d09eff73",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3dcd5aa1-e2a9-5dd9-a2d9-992f9c80e835",
+      "document_version_id": "3dcd5aa1-e2a9-5dd9-a2d9-992f9c80e835",
+      "document_id": "d8d0cc9f-2091-5c78-8ac9-27ff273d274a",
+      "source_id": "ab02c333-f700-53c9-bf0e-e499b8152447",
+      "label": "D07",
+      "affected_coding_item_ids": [
+        "258efca3-9f6e-550b-8b80-bf27b70424b0",
+        "092a3bde-2c62-5bae-a31d-b5c8751eb201"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "aa854845acec50633abbbde5da59a6567d94c69c6ba258801b945d61e1337053",
+      "requested_at_utc": "2026-10-03T12:45:38.377455+00:00",
+      "completed_at_utc": "2026-10-03T12:45:56.525888+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Frus.azattyq.org%2Fa%2Foil_workers_strike_kazakhstan%2F24279930.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Frus.azattyq.org%2Fa%2Foil_workers_strike_kazakhstan%2F24279930.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Frus.azattyq.org%2Fa%2Foil_workers_strike_kazakhstan%2F24279930.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Frus.azattyq.org%2Fa%2Foil_workers_strike_kazakhstan%2F24279930.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "da4ee8d4-ff46-5ebc-8337-4ee44c500afb",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "7d35cf86-5369-5302-a8d2-e9d1df2a1dae",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-0efd353a-191f-5adf-a6ac-152776e3fcc0",
+      "document_version_id": "0efd353a-191f-5adf-a6ac-152776e3fcc0",
+      "document_id": "f5f60829-717b-5ac5-b0c2-706a9149166d",
+      "source_id": "342b110f-efa6-516d-bb55-4e1b09c1bf48",
+      "label": "D08",
+      "affected_coding_item_ids": [
+        "bcbda52d-282f-5567-a4ce-f576f6f13a35"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "fce131ffe1acd1d1752d870e873a5eb92ed161c220b479fb5a8f31953ec87fc6",
+      "requested_at_utc": "2026-10-03T12:45:38.377742+00:00",
+      "completed_at_utc": "2026-10-03T12:45:39.753907+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.amnesty.org/fr/wp-content/uploads/2021/07/eur570042011en.pdf",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.amnesty.org/fr/wp-content/uploads/2021/07/eur570042011en.pdf",
+          "final_url": "https://www.amnesty.org/fr/wp-content/uploads/2021/07/eur570042011en.pdf",
+          "http_status": 200,
+          "content_type": "application/pdf",
+          "payload_bytes": 82287,
+          "payload_sha256": "6a24aadfd124d2002536e0ec2c39d4bebb5ea97ba927bc513368655ce738462b",
+          "redirect_chain": [
+            {
+              "url": "https://www.amnesty.org/fr/wp-content/uploads/2021/07/eur570042011en.pdf",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "360076bc-e86d-5636-8c98-9d5a7cb29c50"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "f1e3c8d5-361d-5a40-a295-204bde1d9402",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "f7a5168d-73f6-5be3-8e13-bb098471c1ea",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-0efd353a-191f-5adf-a6ac-152776e3fcc0",
+      "document_version_id": "0efd353a-191f-5adf-a6ac-152776e3fcc0",
+      "document_id": "f5f60829-717b-5ac5-b0c2-706a9149166d",
+      "source_id": "342b110f-efa6-516d-bb55-4e1b09c1bf48",
+      "label": "D08",
+      "affected_coding_item_ids": [
+        "bcbda52d-282f-5567-a4ce-f576f6f13a35"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "b07edc809d72f2af41ecafcb4d8d0f705943c9e44e3e73791cf99447576ced4d",
+      "requested_at_utc": "2026-10-03T12:45:38.378024+00:00",
+      "completed_at_utc": "2026-10-03T12:46:16.949342+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.amnesty.org%2Ffr%2Fwp-content%2Fuploads%2F2021%2F07%2Feur570042011en.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.amnesty.org%2Ffr%2Fwp-content%2Fuploads%2F2021%2F07%2Feur570042011en.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.amnesty.org%2Ffr%2Fwp-content%2Fuploads%2F2021%2F07%2Feur570042011en.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.amnesty.org%2Ffr%2Fwp-content%2Fuploads%2F2021%2F07%2Feur570042011en.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "057fcf0f-d398-5b4e-a4f0-586334c0da49",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "9228b458-b6e9-52f0-bbe9-52d366f19f22",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-26b9e671-5e1e-5460-a80c-2e803ca81ba6",
+      "document_version_id": "26b9e671-5e1e-5460-a80c-2e803ca81ba6",
+      "document_id": "2d26ce81-e4f8-5e97-abea-e761ae250515",
+      "source_id": "7197119d-d545-5cf2-9b85-a5212d3436c9",
+      "label": "D20",
+      "affected_coding_item_ids": [
+        "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "cd9eb952-6af0-5708-8703-49673415cbe7",
+        "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+        "79748746-11e6-506c-82d5-bc5fe877beb0"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "fe0305540666fb7060695aa365dfa80efde07549690d8a1c3d051d8300b8bca3",
+      "requested_at_utc": "2026-10-03T12:45:39.422306+00:00",
+      "completed_at_utc": "2026-10-03T12:45:40.385805+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://cdn.osce.org/sites/default/files/f/documents/3/b/85058.pdf",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://cdn.osce.org/sites/default/files/f/documents/3/b/85058.pdf",
+          "final_url": "https://cdn.osce.org/sites/default/files/f/documents/3/b/85058.pdf",
+          "http_status": 200,
+          "content_type": "application/pdf",
+          "payload_bytes": 115654,
+          "payload_sha256": "a555cefc93416312b8d84386a861ee9be36bea5ab3fb837aeee3ff86e638ed70",
+          "redirect_chain": [
+            {
+              "url": "https://cdn.osce.org/sites/default/files/f/documents/3/b/85058.pdf",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "674d4813-0a77-5cd7-b819-6a8f36a1beba"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "abfd5559-5319-586c-b0f4-fca8b6d7ffa1",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "68a35bcf-3bd8-51fd-b2aa-9640bd5738be",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-26b9e671-5e1e-5460-a80c-2e803ca81ba6",
+      "document_version_id": "26b9e671-5e1e-5460-a80c-2e803ca81ba6",
+      "document_id": "2d26ce81-e4f8-5e97-abea-e761ae250515",
+      "source_id": "7197119d-d545-5cf2-9b85-a5212d3436c9",
+      "label": "D20",
+      "affected_coding_item_ids": [
+        "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "cd9eb952-6af0-5708-8703-49673415cbe7",
+        "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+        "79748746-11e6-506c-82d5-bc5fe877beb0"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "d25bedd7c03effd2df0afde733761ea4411dc82b20461bd0e89da5072e731c7c",
+      "requested_at_utc": "2026-10-03T12:45:39.755946+00:00",
+      "completed_at_utc": "2026-10-03T12:45:44.289625+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fcdn.osce.org%2Fsites%2Fdefault%2Ffiles%2Ff%2Fdocuments%2F3%2Fb%2F85058.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fcdn.osce.org%2Fsites%2Fdefault%2Ffiles%2Ff%2Fdocuments%2F3%2Fb%2F85058.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fcdn.osce.org%2Fsites%2Fdefault%2Ffiles%2Ff%2Fdocuments%2F3%2Fb%2F85058.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fcdn.osce.org%2Fsites%2Fdefault%2Ffiles%2Ff%2Fdocuments%2F3%2Fb%2F85058.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "cf145e86-918f-5159-94a2-ba3626ba90a0",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "049ae4a3-9f74-58cd-996b-115b4cf7425e",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-659b6499-e44f-55d0-bf21-d8bad66f757a",
+      "document_version_id": "659b6499-e44f-55d0-bf21-d8bad66f757a",
+      "document_id": "5845d9f9-4ee1-5a55-bbd8-71a367bc2b88",
+      "source_id": "ba03b386-5a57-5cfc-a08b-f714be45e83b",
+      "label": "D10",
+      "affected_coding_item_ids": [],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "05857155f1460a7c671568b0e0a00a34a2a38a26913157cd0845a50de030b528",
+      "requested_at_utc": "2026-10-03T12:45:40.387814+00:00",
+      "completed_at_utc": "2026-10-03T12:45:41.397429+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.rferl.org/a/striking_kazakh_oil_workers_quit_ruling_party/24294248.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.rferl.org/a/striking_kazakh_oil_workers_quit_ruling_party/24294248.html",
+          "final_url": "https://www.rferl.org/a/striking_kazakh_oil_workers_quit_ruling_party/24294248.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 83485,
+          "payload_sha256": "128e25fb2e733d1cffeec2aa4a05e8e211dac248ab0fc34dc37dcf81ff22315c",
+          "redirect_chain": [
+            {
+              "url": "https://www.rferl.org/a/striking_kazakh_oil_workers_quit_ruling_party/24294248.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "19f941bf-795c-511e-aa16-aa4fc88869cf"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "c2345911-4918-5627-a8e8-03daa079776e",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "3e16dff6-d367-5b2e-ab57-4b8097b952ed",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-659b6499-e44f-55d0-bf21-d8bad66f757a",
+      "document_version_id": "659b6499-e44f-55d0-bf21-d8bad66f757a",
+      "document_id": "5845d9f9-4ee1-5a55-bbd8-71a367bc2b88",
+      "source_id": "ba03b386-5a57-5cfc-a08b-f714be45e83b",
+      "label": "D10",
+      "affected_coding_item_ids": [],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "860325e82ecfba7bb3c63fd29b32f426802e68cb3fd1792679243949b1740ef3",
+      "requested_at_utc": "2026-10-03T12:45:41.399530+00:00",
+      "completed_at_utc": "2026-10-03T12:45:47.250239+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fstriking_kazakh_oil_workers_quit_ruling_party%2F24294248.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fstriking_kazakh_oil_workers_quit_ruling_party%2F24294248.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fstriking_kazakh_oil_workers_quit_ruling_party%2F24294248.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fstriking_kazakh_oil_workers_quit_ruling_party%2F24294248.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "f78cc3d8-7569-589f-a06f-47e5203d5476",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "2be886a8-d1f0-5ecc-a7b6-3c1e0180fadc",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-38577d2a-6cbc-5387-8359-e147891e6614",
+      "document_version_id": "38577d2a-6cbc-5387-8359-e147891e6614",
+      "document_id": "df5dbc73-ff8c-5d50-98d7-aa18f0ed7222",
+      "source_id": "bcb0fbaf-3dff-58c3-a422-b718cd64bc9a",
+      "label": "D11",
+      "affected_coding_item_ids": [],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "f924b106c9084679cb01268716a7c8c201a6e2ad61e27c622f685e4b546f3b8b",
+      "requested_at_utc": "2026-10-03T12:45:41.439010+00:00",
+      "completed_at_utc": "2026-10-03T12:45:42.581693+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://eurasianet.org/kazakhstan-labor-unrest-denting-astanas-economic-image",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://eurasianet.org/kazakhstan-labor-unrest-denting-astanas-economic-image",
+          "final_url": "https://eurasianet.org/kazakhstan-labor-unrest-denting-astanas-economic-image",
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "payload_bytes": 42156,
+          "payload_sha256": "bc64343cc3d730e94cd58746157828b55399f41cd83b2bc9caad8f05d9183ef4",
+          "redirect_chain": [
+            {
+              "url": "https://eurasianet.org/kazakhstan-labor-unrest-denting-astanas-economic-image",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "7fce17b1-d595-5c0f-9cea-f51920c9db75"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "5a500d21-f1c3-5835-8dd5-4fec4d616b75",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "a945d82b-90b8-5ecc-95f0-ddf24080efce",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-38577d2a-6cbc-5387-8359-e147891e6614",
+      "document_version_id": "38577d2a-6cbc-5387-8359-e147891e6614",
+      "document_id": "df5dbc73-ff8c-5d50-98d7-aa18f0ed7222",
+      "source_id": "bcb0fbaf-3dff-58c3-a422-b718cd64bc9a",
+      "label": "D11",
+      "affected_coding_item_ids": [],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "28f0808bae6d2184b19a2eb8847c5c362f5a8ea0496bbe44e019adffd878949f",
+      "requested_at_utc": "2026-10-03T12:45:42.583301+00:00",
+      "completed_at_utc": "2026-10-03T12:45:45.265791+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Feurasianet.org%2Fkazakhstan-labor-unrest-denting-astanas-economic-image&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Feurasianet.org%2Fkazakhstan-labor-unrest-denting-astanas-economic-image&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Feurasianet.org%2Fkazakhstan-labor-unrest-denting-astanas-economic-image&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Feurasianet.org%2Fkazakhstan-labor-unrest-denting-astanas-economic-image&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "287416b8-beec-5ab2-b57e-dd800638a4b4",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "0f64957d-3a94-5403-97f3-aa52d0e827c9",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-6ba5958d-d1ed-5917-9c5c-660c188744cf",
+      "document_version_id": "6ba5958d-d1ed-5917-9c5c-660c188744cf",
+      "document_id": "151bfbcc-b275-525c-aa69-758e6dbd7b80",
+      "source_id": "1327709c-bb71-58b7-90ce-f0f38656c201",
+      "label": "D12",
+      "affected_coding_item_ids": [
+        "258efca3-9f6e-550b-8b80-bf27b70424b0",
+        "3c17560c-c6c6-5133-82f5-19b451c4e836"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "ba636656da65a19c26e19a9aac46d0a1b2fc6de5912866ec8fcd28f6b188c1e6",
+      "requested_at_utc": "2026-10-03T12:45:42.841294+00:00",
+      "completed_at_utc": "2026-10-03T12:45:43.870083+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.rferl.org/a/striking_kazakh_oil_workers_say_fight_will_go_on/24328725.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.rferl.org/a/striking_kazakh_oil_workers_say_fight_will_go_on/24328725.html",
+          "final_url": "https://www.rferl.org/a/striking_kazakh_oil_workers_say_fight_will_go_on/24328725.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 129327,
+          "payload_sha256": "c52f41eabce51e4dbb006debb6b843bdd24180eb78c15d53d7908c0b7ff050bb",
+          "redirect_chain": [
+            {
+              "url": "https://www.rferl.org/a/striking_kazakh_oil_workers_say_fight_will_go_on/24328725.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "04e5e7a2-1c8f-5dfa-9393-5866718540bc"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "d5712530-3896-5435-8436-3d0bc1456574",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "44cf4832-3a0c-5b21-be25-d118803b1472",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-6ba5958d-d1ed-5917-9c5c-660c188744cf",
+      "document_version_id": "6ba5958d-d1ed-5917-9c5c-660c188744cf",
+      "document_id": "151bfbcc-b275-525c-aa69-758e6dbd7b80",
+      "source_id": "1327709c-bb71-58b7-90ce-f0f38656c201",
+      "label": "D12",
+      "affected_coding_item_ids": [
+        "258efca3-9f6e-550b-8b80-bf27b70424b0",
+        "3c17560c-c6c6-5133-82f5-19b451c4e836"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "3c5876fdeb10f0a732ef69c1c127b18303e87a3f33cd21927fe783d61d58afee",
+      "requested_at_utc": "2026-10-03T12:45:43.872126+00:00",
+      "completed_at_utc": "2026-10-03T12:46:07.862581+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fstriking_kazakh_oil_workers_say_fight_will_go_on%2F24328725.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fstriking_kazakh_oil_workers_say_fight_will_go_on%2F24328725.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fstriking_kazakh_oil_workers_say_fight_will_go_on%2F24328725.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fstriking_kazakh_oil_workers_say_fight_will_go_on%2F24328725.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "ab93d7b7-93c4-546f-9ce1-1f32db6f3505",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "16a539f4-74df-531b-bef2-833c1799153f",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-2d63f3f4-cb01-5b8c-b4ec-9bedb09b4363",
+      "document_version_id": "2d63f3f4-cb01-5b8c-b4ec-9bedb09b4363",
+      "document_id": "71e85ab4-ac4d-5da6-a5f5-7498e118fc2d",
+      "source_id": "e83bc2ab-c6b3-5c89-b8b1-0720ae400d19",
+      "label": "D15",
+      "affected_coding_item_ids": [
+        "258efca3-9f6e-550b-8b80-bf27b70424b0",
+        "5e3146aa-0dfd-5be2-8f8d-39b94edee3ff",
+        "28161a20-6dd9-525b-97a0-10787a4ba0da"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "b6c8af1f77021a8f8ccbf011f87f73e2b64b052736855fec4b1cec4842a6788f",
+      "requested_at_utc": "2026-10-03T12:45:44.291176+00:00",
+      "completed_at_utc": "2026-10-03T12:45:46.012902+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://rus.azattyq.org/a/24350449.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.azattyqasia.org/a/24350449.html",
+          "final_url": "https://www.azattyqasia.org/a/24350449.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 74719,
+          "payload_sha256": "b48496f83e6d88c29be2f61ec3011c4b6c7fe40ee03ba29f60b43b5382bf4273",
+          "redirect_chain": [
+            {
+              "url": "https://rus.azattyq.org/a/24350449.html",
+              "http_status": 301,
+              "location": "https://www.azattyqasia.org/a/24350449.html"
+            },
+            {
+              "url": "https://www.azattyqasia.org/a/24350449.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "3acad196-cd21-5cae-b9a9-2d3d424ac3d2"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "613e2416-9a9f-53fd-9ae3-fc228077edba",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "3ae10364-638e-5e98-9d42-0d648532ba08",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-2d63f3f4-cb01-5b8c-b4ec-9bedb09b4363",
+      "document_version_id": "2d63f3f4-cb01-5b8c-b4ec-9bedb09b4363",
+      "document_id": "71e85ab4-ac4d-5da6-a5f5-7498e118fc2d",
+      "source_id": "e83bc2ab-c6b3-5c89-b8b1-0720ae400d19",
+      "label": "D15",
+      "affected_coding_item_ids": [
+        "258efca3-9f6e-550b-8b80-bf27b70424b0",
+        "5e3146aa-0dfd-5be2-8f8d-39b94edee3ff",
+        "28161a20-6dd9-525b-97a0-10787a4ba0da"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "ffefc2d71686a2001ae9176911a54778b74545144c3c8a5ad89cb1e7c10e7eb0",
+      "requested_at_utc": "2026-10-03T12:45:45.267693+00:00",
+      "completed_at_utc": "2026-10-03T12:45:54.917180+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Frus.azattyq.org%2Fa%2F24350449.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Frus.azattyq.org%2Fa%2F24350449.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Frus.azattyq.org%2Fa%2F24350449.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Frus.azattyq.org%2Fa%2F24350449.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "aa387510-0c0a-51cf-b8c3-5b102fd7517c",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "c75545af-3e9f-518a-8b54-d91410cb2cde",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-bbcfce9f-2362-50de-a567-189ac434cf1a",
+      "document_version_id": "bbcfce9f-2362-50de-a567-189ac434cf1a",
+      "document_id": "bfbbaba9-c401-5716-ae39-266b9d86c984",
+      "source_id": "65a33526-fdaa-5aaa-a0b8-45a54f080ced",
+      "label": "D16",
+      "affected_coding_item_ids": [],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "2de2b16187b78b90644a0a28f24fcda3fe0adb85ae49dee8da24d809d97cb847",
+      "requested_at_utc": "2026-10-03T12:45:46.016386+00:00",
+      "completed_at_utc": "2026-10-03T12:45:46.873088+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.rferl.org/a/striking_kazakh_oil_worker_attacked/24373227.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.rferl.org/a/striking_kazakh_oil_worker_attacked/24373227.html",
+          "final_url": "https://www.rferl.org/a/striking_kazakh_oil_worker_attacked/24373227.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 84748,
+          "payload_sha256": "43e3134ac733ac34dab2147e88f1b19e3a177f03c73ee9b4d949481af53a681a",
+          "redirect_chain": [
+            {
+              "url": "https://www.rferl.org/a/striking_kazakh_oil_worker_attacked/24373227.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "e8d40fc8-ca0d-5889-9d92-eaa3adfd6cc6"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "cd2444b3-d8dd-5c6f-9e2c-58b5bf6e552d",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "80b55880-8b8e-5726-873e-a67ffdcafb38",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-bbcfce9f-2362-50de-a567-189ac434cf1a",
+      "document_version_id": "bbcfce9f-2362-50de-a567-189ac434cf1a",
+      "document_id": "bfbbaba9-c401-5716-ae39-266b9d86c984",
+      "source_id": "65a33526-fdaa-5aaa-a0b8-45a54f080ced",
+      "label": "D16",
+      "affected_coding_item_ids": [],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "e3e0062c36e6af9e91f7cd17bf00b20458fedb01be970298de97b4abaf2e9e19",
+      "requested_at_utc": "2026-10-03T12:45:46.874789+00:00",
+      "completed_at_utc": "2026-10-03T12:46:20.018469+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fstriking_kazakh_oil_worker_attacked%2F24373227.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fstriking_kazakh_oil_worker_attacked%2F24373227.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fstriking_kazakh_oil_worker_attacked%2F24373227.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.rferl.org%2Fa%2Fstriking_kazakh_oil_worker_attacked%2F24373227.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "20d27f7a-829d-5d0a-982a-e6fff7629cce",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "9b3a2203-80c8-5860-9e92-42056a300ca7",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-e85d2031-f492-5e93-b0ac-a7e84f27c7c7",
+      "document_version_id": "e85d2031-f492-5e93-b0ac-a7e84f27c7c7",
+      "document_id": "e7472144-acd9-592e-82c7-17827ed8812c",
+      "source_id": "8581b365-808a-560c-b869-ca2787e4a6d1",
+      "label": "D19",
+      "affected_coding_item_ids": [
+        "cd9eb952-6af0-5708-8703-49673415cbe7"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "634f98130c94b0aa5a1eb5ee8c253c31038210087742a6ac53c4f2bfa87a95f7",
+      "requested_at_utc": "2026-10-03T12:45:47.251665+00:00",
+      "completed_at_utc": "2026-10-03T12:45:50.519198+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.osce.org/files/f/documents/4/8/82141.pdf",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://cdn.osce.org/sites/default/files/f/documents/4/8/82141.pdf",
+          "final_url": "https://cdn.osce.org/sites/default/files/f/documents/4/8/82141.pdf",
+          "http_status": 200,
+          "content_type": "application/pdf",
+          "payload_bytes": 43645,
+          "payload_sha256": "f21ffc04dd3546fc6715fbc4bef670c841abae9a4ecfa330325529a5cc425995",
+          "redirect_chain": [
+            {
+              "url": "https://www.osce.org/files/f/documents/4/8/82141.pdf",
+              "http_status": 301,
+              "location": "/sites/default/files/f/documents/4/8/82141.pdf"
+            },
+            {
+              "url": "https://www.osce.org/sites/default/files/f/documents/4/8/82141.pdf",
+              "http_status": 301,
+              "location": "https://cdn.osce.org/sites/default/files/f/documents/4/8/82141.pdf"
+            },
+            {
+              "url": "https://cdn.osce.org/sites/default/files/f/documents/4/8/82141.pdf",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "8032abfe-d373-51b4-a0a2-c80755436fae"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "6072c454-a9ad-5e99-8d5d-c120957095ea",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "b3ff7e43-1237-516c-b11d-af0b2a68f41c",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-e85d2031-f492-5e93-b0ac-a7e84f27c7c7",
+      "document_version_id": "e85d2031-f492-5e93-b0ac-a7e84f27c7c7",
+      "document_id": "e7472144-acd9-592e-82c7-17827ed8812c",
+      "source_id": "8581b365-808a-560c-b869-ca2787e4a6d1",
+      "label": "D19",
+      "affected_coding_item_ids": [
+        "cd9eb952-6af0-5708-8703-49673415cbe7"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "48eaffc0bbb6650a638432a402838926e2324b572ef639452eacf995eab29c25",
+      "requested_at_utc": "2026-10-03T12:45:50.520843+00:00",
+      "completed_at_utc": "2026-10-03T12:45:54.480169+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.osce.org%2Ffiles%2Ff%2Fdocuments%2F4%2F8%2F82141.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.osce.org%2Ffiles%2Ff%2Fdocuments%2F4%2F8%2F82141.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.osce.org%2Ffiles%2Ff%2Fdocuments%2F4%2F8%2F82141.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.osce.org%2Ffiles%2Ff%2Fdocuments%2F4%2F8%2F82141.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "6789bbb4-643f-598c-a528-01fe09a95ec4",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "69145ae5-eb99-5518-a634-f0eb40713194",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-d2eefc78-82b0-5eb7-b1ae-533745cbbd79",
+      "document_version_id": "d2eefc78-82b0-5eb7-b1ae-533745cbbd79",
+      "document_id": "9d9fc2eb-87be-5b5e-8ba1-9d6ad38661ec",
+      "source_id": "f1f97296-d368-5605-a262-e57e0f489187",
+      "label": "D21",
+      "affected_coding_item_ids": [
+        "2c58ce09-3654-5a87-89be-4b1953f467c7"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "465fef91e48b4d30868402e4e2145796d508a4487041cf77b329f1da9d13088d",
+      "requested_at_utc": "2026-10-03T12:45:52.734224+00:00",
+      "completed_at_utc": "2026-10-03T12:45:54.522193+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://kase.kz/files/emitters/RDGZ/rdgz_reliz_141111_e.pdf",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://kase.kz/files/emitters/RDGZ/rdgz_reliz_141111_e.pdf",
+          "final_url": "https://kase.kz/files/emitters/RDGZ/rdgz_reliz_141111_e.pdf",
+          "http_status": 200,
+          "content_type": "application/pdf",
+          "payload_bytes": 308119,
+          "payload_sha256": "ce4ace9e1fbdebdb4d11e9eed417f0a9fc252133fa09c720e41d2821e04d363f",
+          "redirect_chain": [
+            {
+              "url": "https://kase.kz/files/emitters/RDGZ/rdgz_reliz_141111_e.pdf",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "69162b4f-e874-5f7b-b274-5130a856338a"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "78915bfe-8519-55d0-acca-ba596ac2a2e2",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "96b9c58c-5739-592c-92b9-41b32147a338",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-d2eefc78-82b0-5eb7-b1ae-533745cbbd79",
+      "document_version_id": "d2eefc78-82b0-5eb7-b1ae-533745cbbd79",
+      "document_id": "9d9fc2eb-87be-5b5e-8ba1-9d6ad38661ec",
+      "source_id": "f1f97296-d368-5605-a262-e57e0f489187",
+      "label": "D21",
+      "affected_coding_item_ids": [
+        "2c58ce09-3654-5a87-89be-4b1953f467c7"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "d9e1e3e21cf64cf33367b9d29bd543ea249e4a32ed8b711fc75335d47d750753",
+      "requested_at_utc": "2026-10-03T12:45:54.481919+00:00",
+      "completed_at_utc": "2026-10-03T12:46:10.068311+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fkase.kz%2Ffiles%2Femitters%2FRDGZ%2Frdgz_reliz_141111_e.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fkase.kz%2Ffiles%2Femitters%2FRDGZ%2Frdgz_reliz_141111_e.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fkase.kz%2Ffiles%2Femitters%2FRDGZ%2Frdgz_reliz_141111_e.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fkase.kz%2Ffiles%2Femitters%2FRDGZ%2Frdgz_reliz_141111_e.pdf&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "646118c3-7dee-59ae-a919-10320f7a5eef",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "c0bb0c82-478b-51b6-a504-b5d60426578c",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-02248e81-d235-5306-aef3-5dec2af93ebb",
+      "document_version_id": "02248e81-d235-5306-aef3-5dec2af93ebb",
+      "document_id": "1af09c53-eaae-5af8-94c9-574cdd8683dd",
+      "source_id": "52cc7e9f-cf60-5cee-8c87-740ee516d575",
+      "label": "D23",
+      "affected_coding_item_ids": [
+        "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+        "5e3146aa-0dfd-5be2-8f8d-39b94edee3ff",
+        "3c17560c-c6c6-5133-82f5-19b451c4e836",
+        "a6f0883a-d5fc-521b-8662-1c160fded750"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "716589d3f5db67896d5821a56af6088ef979d90dfe3e423f78cd5af580b70428",
+      "requested_at_utc": "2026-10-03T12:45:54.524526+00:00",
+      "completed_at_utc": "2026-10-03T12:45:56.218943+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.lada.kz/aktau_news/society/1209-bastuyuschim-neftyanikam-zhanaozeni-23-noyabrya-budet-predostavlena-poslednyaya-vozmozhnost-trudoustroitsya.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.lada.kz/aktau_news/society/1209-bastuyuschim-neftyanikam-zhanaozeni-23-noyabrya-budet-predostavlena-poslednyaya-vozmozhnost-trudoustroitsya.html",
+          "final_url": "https://www.lada.kz/aktau_news/society/1209-bastuyuschim-neftyanikam-zhanaozeni-23-noyabrya-budet-predostavlena-poslednyaya-vozmozhnost-trudoustroitsya.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "payload_bytes": 119324,
+          "payload_sha256": "ce5c582bb5cc78ad2042de11a0472cc8f1b2296becf0ec41cf62e110dea3fb00",
+          "redirect_chain": [
+            {
+              "url": "https://www.lada.kz/aktau_news/society/1209-bastuyuschim-neftyanikam-zhanaozeni-23-noyabrya-budet-predostavlena-poslednyaya-vozmozhnost-trudoustroitsya.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "3c9a7959-26c0-50ca-bcb5-ebc48f467813"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "2eaa3fd5-7cbd-58a4-be92-569b1cdab02c",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "4414ed83-df09-50d0-910b-de6ea25dd52d",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-02248e81-d235-5306-aef3-5dec2af93ebb",
+      "document_version_id": "02248e81-d235-5306-aef3-5dec2af93ebb",
+      "document_id": "1af09c53-eaae-5af8-94c9-574cdd8683dd",
+      "source_id": "52cc7e9f-cf60-5cee-8c87-740ee516d575",
+      "label": "D23",
+      "affected_coding_item_ids": [
+        "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+        "5e3146aa-0dfd-5be2-8f8d-39b94edee3ff",
+        "3c17560c-c6c6-5133-82f5-19b451c4e836",
+        "a6f0883a-d5fc-521b-8662-1c160fded750"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "829f4f0450291f2b6329a0a8214e2f9481b35d1eccacc3871c2b958c06bc5be2",
+      "requested_at_utc": "2026-10-03T12:45:54.918781+00:00",
+      "completed_at_utc": "2026-10-03T12:46:11.966001+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.lada.kz%2Faktau_news%2Fsociety%2F1209-bastuyuschim-neftyanikam-zhanaozeni-23-noyabrya-budet-predostavlena-poslednyaya-vozmozhnost-trudoustroitsya.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.lada.kz%2Faktau_news%2Fsociety%2F1209-bastuyuschim-neftyanikam-zhanaozeni-23-noyabrya-budet-predostavlena-poslednyaya-vozmozhnost-trudoustroitsya.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.lada.kz%2Faktau_news%2Fsociety%2F1209-bastuyuschim-neftyanikam-zhanaozeni-23-noyabrya-budet-predostavlena-poslednyaya-vozmozhnost-trudoustroitsya.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.lada.kz%2Faktau_news%2Fsociety%2F1209-bastuyuschim-neftyanikam-zhanaozeni-23-noyabrya-budet-predostavlena-poslednyaya-vozmozhnost-trudoustroitsya.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "cef1de2b-45c6-52e9-aa4c-971098fa81d4",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "4758b110-ad5e-5bd2-ae1d-9d519760da89",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-d3b8d52c-3dbb-5d07-84bd-e07acf35fbbb",
+      "document_version_id": "d3b8d52c-3dbb-5d07-84bd-e07acf35fbbb",
+      "document_id": "79594336-74c1-58c6-bcdc-11fd4df9ff48",
+      "source_id": "82043157-6a1a-5df4-9dd7-9ba42368d19b",
+      "label": "D24",
+      "affected_coding_item_ids": [
+        "190e3801-e98f-559d-b055-04502db625e9",
+        "39d9db22-402b-59e7-a000-63c6d85c3435",
+        "3f4dc104-40c7-59db-ad5c-61f8a80232bc",
+        "28161a20-6dd9-525b-97a0-10787a4ba0da",
+        "451a0d8c-ddec-5395-b631-24323628eb69",
+        "e32ebf92-ffa3-51da-b933-b10a9c0ba8df"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "606a17b1a9b442e3d8cb84f29f024ec00ee4aa7a1d363a163ee3b75ef1ec8d4f",
+      "requested_at_utc": "2026-10-03T12:45:56.220812+00:00",
+      "completed_at_utc": "2026-10-03T12:45:57.532671+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.lada.kz/aktau_news/society/1264-bastuyuschie-neftyaniki-zhanaozenya-razocharovany-primiritelnaya-komissiya-okazalas-razyasnitelnoy.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.lada.kz/aktau_news/society/1264-bastuyuschie-neftyaniki-zhanaozenya-razocharovany-primiritelnaya-komissiya-okazalas-razyasnitelnoy.html",
+          "final_url": "https://www.lada.kz/aktau_news/society/1264-bastuyuschie-neftyaniki-zhanaozenya-razocharovany-primiritelnaya-komissiya-okazalas-razyasnitelnoy.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "payload_bytes": 120710,
+          "payload_sha256": "767f728944609cfc09345f30be6154637fcf8a20943462b4f40e8da0e1894e78",
+          "redirect_chain": [
+            {
+              "url": "https://www.lada.kz/aktau_news/society/1264-bastuyuschie-neftyaniki-zhanaozenya-razocharovany-primiritelnaya-komissiya-okazalas-razyasnitelnoy.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "cebf7228-6d64-5fa2-bba4-adb3ad085b4f"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "660fa271-75e8-5b34-b920-df3c7480ac41",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "11803ab6-7704-5f30-a055-fca0db406d1d",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-d3b8d52c-3dbb-5d07-84bd-e07acf35fbbb",
+      "document_version_id": "d3b8d52c-3dbb-5d07-84bd-e07acf35fbbb",
+      "document_id": "79594336-74c1-58c6-bcdc-11fd4df9ff48",
+      "source_id": "82043157-6a1a-5df4-9dd7-9ba42368d19b",
+      "label": "D24",
+      "affected_coding_item_ids": [
+        "190e3801-e98f-559d-b055-04502db625e9",
+        "39d9db22-402b-59e7-a000-63c6d85c3435",
+        "3f4dc104-40c7-59db-ad5c-61f8a80232bc",
+        "28161a20-6dd9-525b-97a0-10787a4ba0da",
+        "451a0d8c-ddec-5395-b631-24323628eb69",
+        "e32ebf92-ffa3-51da-b933-b10a9c0ba8df"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "5270051cd5e7cd82d143b3c30e799862ab3510ba5ba932899b33030f62a794b3",
+      "requested_at_utc": "2026-10-03T12:45:56.527542+00:00",
+      "completed_at_utc": "2026-10-03T12:46:23.606194+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.lada.kz%2Faktau_news%2Fsociety%2F1264-bastuyuschie-neftyaniki-zhanaozenya-razocharovany-primiritelnaya-komissiya-okazalas-razyasnitelnoy.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.lada.kz%2Faktau_news%2Fsociety%2F1264-bastuyuschie-neftyaniki-zhanaozenya-razocharovany-primiritelnaya-komissiya-okazalas-razyasnitelnoy.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.lada.kz%2Faktau_news%2Fsociety%2F1264-bastuyuschie-neftyaniki-zhanaozenya-razocharovany-primiritelnaya-komissiya-okazalas-razyasnitelnoy.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.lada.kz%2Faktau_news%2Fsociety%2F1264-bastuyuschie-neftyaniki-zhanaozenya-razocharovany-primiritelnaya-komissiya-okazalas-razyasnitelnoy.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "ff247cd7-fbb0-528c-839a-1f9badde3f71",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "ded34ba4-9c53-5aa9-9e7c-9c411dd6da90",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-ff6bdb6f-0cb3-5c83-945c-d6b2e519a487",
+      "document_version_id": "ff6bdb6f-0cb3-5c83-945c-d6b2e519a487",
+      "document_id": "24f9aa6b-a244-54cb-bc4b-07988536f846",
+      "source_id": "2c04fb05-8565-5cc3-b97b-0588179e89f2",
+      "label": "D28",
+      "affected_coding_item_ids": [
+        "39d9db22-402b-59e7-a000-63c6d85c3435",
+        "451a0d8c-ddec-5395-b631-24323628eb69"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "59b4714735c673731fb2c5af721d7822af52770d17480f0ad9add09f50ff6cbc",
+      "requested_at_utc": "2026-10-03T12:45:57.534403+00:00",
+      "completed_at_utc": "2026-10-03T12:45:58.457790+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.azattyqasia.org/a/oil_workers_strike_zhanaozen/24401004.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.azattyqasia.org/a/oil_workers_strike_zhanaozen/24401004.html",
+          "final_url": "https://www.azattyqasia.org/a/oil_workers_strike_zhanaozen/24401004.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 93715,
+          "payload_sha256": "76f488bc67aec0bd10cbeaf05e7173f6f77a7daf6dd25963317970ee0ad53a9f",
+          "redirect_chain": [
+            {
+              "url": "https://www.azattyqasia.org/a/oil_workers_strike_zhanaozen/24401004.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "b9f0238c-adb2-5bca-9ae3-f82e1b374c85"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "0f0b5bb1-cf7b-541b-ba48-7b5709c9181d",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "f69f7aee-d93f-5010-8b28-9e033870e0f3",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-ff6bdb6f-0cb3-5c83-945c-d6b2e519a487",
+      "document_version_id": "ff6bdb6f-0cb3-5c83-945c-d6b2e519a487",
+      "document_id": "24f9aa6b-a244-54cb-bc4b-07988536f846",
+      "source_id": "2c04fb05-8565-5cc3-b97b-0588179e89f2",
+      "label": "D28",
+      "affected_coding_item_ids": [
+        "39d9db22-402b-59e7-a000-63c6d85c3435",
+        "451a0d8c-ddec-5395-b631-24323628eb69"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "2e47c6dafbb44b8b7ed3e73e1e5c8cc91aea3538e660c9d004cd09c8b9495447",
+      "requested_at_utc": "2026-10-03T12:45:58.459958+00:00",
+      "completed_at_utc": "2026-10-03T12:46:46.823564+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.azattyqasia.org%2Fa%2Foil_workers_strike_zhanaozen%2F24401004.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "TECHNICAL_FAILURE",
+      "technical_error": "ReadTimeout: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=45)",
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The single frozen archive-capture query failed technically; failure is not negative evidence.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "b0517bc7-43ef-5132-8685-6e97ee1b67be",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "b5558cff-ab66-575c-8d71-1ed5176ab028",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-9b1dfe95-b290-533c-9414-d8f18d880b1d",
+      "document_version_id": "9b1dfe95-b290-533c-9414-d8f18d880b1d",
+      "document_id": "7a12d83f-30b7-5a83-9334-24066a9e3310",
+      "source_id": "55be8202-f086-55ce-87bd-a11b76f4d1f3",
+      "label": "D29",
+      "affected_coding_item_ids": [
+        "a6f0883a-d5fc-521b-8662-1c160fded750",
+        "e32ebf92-ffa3-51da-b933-b10a9c0ba8df"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "0175a75151c065b52c3e12c1fc950088837ba1896e1887e5b4a1a4a9a2923a7d",
+      "requested_at_utc": "2026-10-03T12:46:07.865770+00:00",
+      "completed_at_utc": "2026-10-03T12:46:09.707122+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://tengrinews.kz/kazakhstan_news/vitse-ministr-truda-sotszaschityi-naseleniya-vstretilsya-201539/",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://tengrinews.kz/kazakhstan_news/vice-ministr-truda-soczashhity-naseleniia-vstretilsia-201539/",
+          "final_url": "https://tengrinews.kz/kazakhstan_news/vice-ministr-truda-soczashhity-naseleniia-vstretilsia-201539/",
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "payload_bytes": 212339,
+          "payload_sha256": "eaa2e7cfb9023d32a3ccdb1369d6d32f944af7ff54801e0fa240d30811d361c8",
+          "redirect_chain": [
+            {
+              "url": "https://tengrinews.kz/kazakhstan_news/vitse-ministr-truda-sotszaschityi-naseleniya-vstretilsya-201539/",
+              "http_status": 301,
+              "location": "/kazakhstan_news/vice-ministr-truda-soczashhity-naseleniia-vstretilsia-201539/"
+            },
+            {
+              "url": "https://tengrinews.kz/kazakhstan_news/vice-ministr-truda-soczashhity-naseleniia-vstretilsia-201539/",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "87777c9c-9bf6-5614-92a0-899bf8bf550b"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "6e15a575-3038-57a1-bcdc-b452e2e89c60",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "8683ab33-c6f4-5517-b18f-1fdd3e17ee97",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-9b1dfe95-b290-533c-9414-d8f18d880b1d",
+      "document_version_id": "9b1dfe95-b290-533c-9414-d8f18d880b1d",
+      "document_id": "7a12d83f-30b7-5a83-9334-24066a9e3310",
+      "source_id": "55be8202-f086-55ce-87bd-a11b76f4d1f3",
+      "label": "D29",
+      "affected_coding_item_ids": [
+        "a6f0883a-d5fc-521b-8662-1c160fded750",
+        "e32ebf92-ffa3-51da-b933-b10a9c0ba8df"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "3257f41aa2ec95675a1a0d45d2f45ae156293533c0d6aee69fb765363f641323",
+      "requested_at_utc": "2026-10-03T12:46:09.709239+00:00",
+      "completed_at_utc": "2026-10-03T12:46:48.872794+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr18": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Ftengrinews.kz%2Fkazakhstan_news%2Fvitse-ministr-truda-sotszaschityi-naseleniya-vstretilsya-201539%2F&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Ftengrinews.kz%2Fkazakhstan_news%2Fvitse-ministr-truda-sotszaschityi-naseleniya-vstretilsya-201539%2F&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Ftengrinews.kz%2Fkazakhstan_news%2Fvitse-ministr-truda-sotszaschityi-naseleniya-vstretilsya-201539%2F&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3,
+          "payload_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Ftengrinews.kz%2Fkazakhstan_news%2Fvitse-ministr-truda-sotszaschityi-naseleniya-vstretilsya-201539%2F&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "FINITE_NO_RESULT",
+      "technical_error": null,
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The finite frozen archive lookup returned no pre-cutoff capture; this is not proof that no edition existed.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr18": false,
+      "rerun_performed": false
+    }
+  ]
+}
