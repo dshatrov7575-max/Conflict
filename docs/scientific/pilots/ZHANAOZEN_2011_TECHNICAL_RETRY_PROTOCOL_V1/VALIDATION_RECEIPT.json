@@ -1,0 +1,32 @@
+{
+  "artifact_kind": "TECHNICAL_RETRY_PROTOCOL_VALIDATION_RECEIPT",
+  "assessor_type": "AI_PREPARATION",
+  "status": "PASS_TECHNICAL_ONLY",
+  "base_commit": "127f682beba758be36d07ce6ee8a7e8166ecd72d",
+  "base_tree": "7aa4d2a022e99496ae64ee6a7941a00d52e8386c",
+  "checks": [
+    "exact_base_identity",
+    "repository_only_protocol_freeze",
+    "exact_four_failed_archive_attempts",
+    "source_attempt_and_query_binding",
+    "failure_stage_distinction",
+    "one_future_retry_per_failed_attempt",
+    "fifty_nonfailure_attempts_prohibited",
+    "transport_parser_custody_and_stop_rules_frozen",
+    "technical_success_not_equal_exact_edition",
+    "scientific_boundaries_preserved",
+    "six_file_scope_and_manifest_pins"
+  ],
+  "counts": {
+    "retry_units": 4,
+    "initial_archive_query_failures": 2,
+    "replay_after_candidate_failures": 2,
+    "completed_nonadmissible_retries_prohibited": 35,
+    "finite_no_result_retries_prohibited": 15,
+    "future_retry_budget": 4,
+    "executions_by_pr20": 0,
+    "scientific_state_changes": 0
+  },
+  "execution_state": "NOT_EXECUTED_PROTOCOL_FREEZE_ONLY",
+  "release_state": "TECHNICAL_RETRY_PROTOCOL_FROZEN_EXECUTION_FORBIDDEN_PENDING_SEPARATE_AUTHORIZATION"
+}
