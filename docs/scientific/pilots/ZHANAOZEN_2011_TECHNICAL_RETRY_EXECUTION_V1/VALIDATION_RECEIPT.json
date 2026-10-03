@@ -1,0 +1,42 @@
+{
+  "artifact_kind": "TECHNICAL_RETRY_EXECUTION_VALIDATION_RECEIPT",
+  "assessor_type": "AI_PREPARATION",
+  "status": "PASS_TECHNICAL_ONLY",
+  "base_commit": "bf22b205b36a4401c15751860fd55e95f0d71459",
+  "base_tree": "b8c87f378715e2f80975479b4bbf21cd87b55675",
+  "task_id": "CA-MVP7-PR21-TECHNICAL-RETRY-EXECUTION-V1_1-001",
+  "run_id": "eac8512e-5c47-471b-90b1-e94efcff3421",
+  "checks": [
+    "exact_base_identity",
+    "protocol_v1_and_v1_1_patch_pinned",
+    "four_logical_retry_ids_executed_once",
+    "maximum_six_http_subrequests",
+    "claim_before_every_network_subrequest",
+    "zero_automatic_retries",
+    "exact_query_locator_cutoff_and_candidate_binding",
+    "no_query_expansion_or_substantive_search",
+    "no_payload_body_storage",
+    "terminal_result_per_retry_id",
+    "technical_completion_not_exact_edition",
+    "scientific_boundaries_preserved",
+    "six_file_scope_and_manifest_pins"
+  ],
+  "counts": {
+    "logical_retry_executions": 4,
+    "http_subrequests_executed": 5,
+    "pre_cutoff_archive_payloads_retrieved": 3,
+    "archive_digests_verified": 3,
+    "exact_edition_contracts_satisfied": 0,
+    "mapping_admission_changes": 0,
+    "scientific_state_changes": 0
+  },
+  "response_status_counts": {
+    "PRE_CUTOFF_CAPTURE_RETRIEVED": 3,
+    "TECHNICAL_FAILURE": 1
+  },
+  "result_state_counts": {
+    "TECHNICAL_FAILURE_PRIOR_STATE_RETAINED": 1,
+    "TECHNICAL_RETRY_COMPLETED_PRIOR_STATE_RETAINED": 3
+  },
+  "release_state": "TECHNICAL_RETRY_EXECUTION_COMPLETE_NO_EXACT_EDITION_ADMISSION"
+}

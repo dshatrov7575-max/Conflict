@@ -1,0 +1,89 @@
+{
+  "artifact_kind": "TECHNICAL_RETRY_EXECUTION_FREEZE_MANIFEST",
+  "schema_version": "1.0.0",
+  "base_commit": "bf22b205b36a4401c15751860fd55e95f0d71459",
+  "base_tree": "b8c87f378715e2f80975479b4bbf21cd87b55675",
+  "task_id": "CA-MVP7-PR21-TECHNICAL-RETRY-EXECUTION-V1_1-001",
+  "run_id": "eac8512e-5c47-471b-90b1-e94efcff3421",
+  "scope": "NEW_DIRECTORY_ONLY_SIX_FILES",
+  "inputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1/TECHNICAL_RETRY_PLAN.json",
+      "bytes": 23100,
+      "sha256": "84c25a32eb8bcb89c3161eb3b30a715359ab8105c43e3eeb3c5b44632a16f3f2",
+      "git_blob_sha1": "1040e4736938c5f6d4e54e5fbc3dce124548732f"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1/VALIDATION_RECEIPT.json",
+      "bytes": 1210,
+      "sha256": "3951ab61377e3d7cf0731aa5aa079100e1729991838313cece359625499dd617",
+      "git_blob_sha1": "5831af68255981ede4d294f90ef34b60ef9fb924"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1/FREEZE_MANIFEST.json",
+      "bytes": 4061,
+      "sha256": "50594f36ff49776024662d2a05d796157539476ca22145e63b58fddc36286c16",
+      "git_blob_sha1": "2bcab7ef7bb5f9f94db01dd6c412afe67b023da5"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1_1_PATCH/PROTOCOL_PATCH.json",
+      "bytes": 2673,
+      "sha256": "6601f6d6c48f0313a400b910b66d50d70dc8584dd6c11d47d8f9046faf8740ba",
+      "git_blob_sha1": "37c4e4f543ddad7e243575f37bd93aff6c134ce5"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1_1_PATCH/VALIDATION_RECEIPT.json",
+      "bytes": 1024,
+      "sha256": "ee8044ff5cf6cbe8bd336fe27a372afc393368797e3aa4b7ee64f7a55c552891",
+      "git_blob_sha1": "9171bdac2980e68ecc05fb4bd603f6b400c8f446"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1_1_PATCH/FREEZE_MANIFEST.json",
+      "bytes": 2560,
+      "sha256": "83d5500ccac9bd6bee777c0247d25b465f76af1cdbb38f5e713f6a7b9c7ea9ff",
+      "git_blob_sha1": "dff0220c24f3dd746c001974f474e08ea8e89fa4"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_CONSOLIDATION_V1/CONSOLIDATED_ATTEMPT_LEDGER.json",
+      "bytes": 111380,
+      "sha256": "5a403ad370af9b1815206b668e3676cdb69c6612f8208de0c5d596ff0a514747",
+      "git_blob_sha1": "ab28b5ea43098833f8da2f05907a01e81905135a"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_EXECUTION_V1/EXECUTION_CLAIM_JOURNAL.jsonl",
+      "bytes": 12371,
+      "sha256": "1bfec7a11ace56876910b6b4b67bd23cef2536176412a3d05c1ab4eec3be4d12",
+      "git_blob_sha1": "1a4ebb3607394013b1aa3ce72226d068fad252e1"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_EXECUTION_V1/EXECUTED_RETRY_LEDGER.json",
+      "bytes": 61929,
+      "sha256": "548a828e7e6171a491c5ec07832f8322a32e0b9f42a659edc66cbc799f14c11a",
+      "git_blob_sha1": "cd0dcc88bfc1c325c33cbb5541e1495316e5772c"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_EXECUTION_V1/EXECUTION_SUMMARY.md",
+      "bytes": 1509,
+      "sha256": "71609d069e786611d430d4c688488bfd4748e29c1fe2edef46cfeca836e9c177",
+      "git_blob_sha1": "2cf8f424d083e9135414cb3b6e0c008d7f1462aa"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_EXECUTION_V1/validate_technical_retry_execution.py",
+      "bytes": 8894,
+      "sha256": "5f5b2eb8db505489d14ba46f64a6b1b5fedbdee53d75738fcf10116a341cafe8",
+      "git_blob_sha1": "e7cc0459addbe61a9b2cd4bf70f2c29ea97bf396"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_EXECUTION_V1/VALIDATION_RECEIPT.json",
+      "bytes": 1524,
+      "sha256": "87e0af6e4876f21f144875617b3764e15514b009aabe2692502f4fd5230f3546",
+      "git_blob_sha1": "04dcca1a7e5150dcc4683fd78f85c40fdbaf3ec8"
+    }
+  ],
+  "source_files_mutated": false,
+  "payload_bodies_stored": false,
+  "logical_retry_executions": 4,
+  "http_subrequests_executed": 5
+}

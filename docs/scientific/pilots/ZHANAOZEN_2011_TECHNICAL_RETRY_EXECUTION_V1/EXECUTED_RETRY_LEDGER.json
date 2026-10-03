@@ -1,0 +1,1267 @@
+{
+  "artifact_kind": "TECHNICAL_RETRY_EXECUTION_LEDGER",
+  "assessor_type": "AI_PREPARATION",
+  "schema_version": "1.0.0",
+  "task_id": "CA-MVP7-PR21-TECHNICAL-RETRY-EXECUTION-V1_1-001",
+  "run_id": "eac8512e-5c47-471b-90b1-e94efcff3421",
+  "base_commit": "bf22b205b36a4401c15751860fd55e95f0d71459",
+  "base_tree": "b8c87f378715e2f80975479b4bbf21cd87b55675",
+  "case_id": "292d238f-9fee-578f-bddd-6f923163788a",
+  "protocol_id": "6384e953-8c88-58e2-ac31-cc9ee18ee6d1",
+  "protocol_patch_id": "CA-MVP7-PR20A-HTTP-SUBREQUEST-BUDGET-CLARIFICATION-001",
+  "execution_mode": "LIVE_FROZEN_TECHNICAL_RETRY_V1_1",
+  "logical_retry_execution_budget": 4,
+  "maximum_http_subrequest_budget": 6,
+  "automatic_library_retries": 0,
+  "logical_retry_executions": 4,
+  "http_subrequests_executed": 5,
+  "query_expansion_performed": false,
+  "mirror_search_performed": false,
+  "publisher_rerun_performed": false,
+  "alternate_candidate_performed": false,
+  "substantive_search_performed": false,
+  "payload_bodies_stored": false,
+  "source_protocol_files_mutated": false,
+  "response_status_counts": {
+    "PRE_CUTOFF_CAPTURE_RETRIEVED": 3,
+    "TECHNICAL_FAILURE": 1
+  },
+  "result_state_counts": {
+    "TECHNICAL_FAILURE_PRIOR_STATE_RETAINED": 1,
+    "TECHNICAL_RETRY_COMPLETED_PRIOR_STATE_RETAINED": 3
+  },
+  "pre_cutoff_archive_payloads_retrieved": 3,
+  "archive_digests_verified": 3,
+  "exact_edition_contracts_satisfied": 0,
+  "mapping_admission_changes": 0,
+  "scientific_state_changes": 0,
+  "attempts": [
+    {
+      "logical_retry_ordinal": 1,
+      "retry_attempt_id": "3ff7f9b4-fdb7-5cdc-9f13-48a1582e066c",
+      "linked_failed_source_attempt_id": "0f0b5bb1-cf7b-541b-ba48-7b5709c9181d",
+      "source_attempt_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1/EXECUTED_ATTEMPT_LEDGER.json",
+        "json_pointer": "/attempts/29"
+      },
+      "source_attempt_canonical_sha256": "ed147824d0868ca127ec9bf9955ffbe526c984d279cbb10a28ddf4c8c55ec624",
+      "planned_query_id": "f69f7aee-d93f-5010-8b28-9e033870e0f3",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-ff6bdb6f-0cb3-5c83-945c-d6b2e519a487",
+      "document_version_id": "ff6bdb6f-0cb3-5c83-945c-d6b2e519a487",
+      "document_id": "24f9aa6b-a244-54cb-bc4b-07988536f846",
+      "source_id": "2c04fb05-8565-5cc3-b97b-0588179e89f2",
+      "label": "D28",
+      "failure_class": "INITIAL_ARCHIVE_QUERY_FAILURE",
+      "frozen_rendered_query": "Web-archive capture lookup for the exact source locator with capture timestamp not later than the information cutoff. | blocker_id=BLOCKER-DOCUMENT-VERSION-ff6bdb6f-0cb3-5c83-945c-d6b2e519a487 | scope=DOCUMENT_VERSION | affected_ids_sha256=3770f5bdb7342c43c32cf33ea062e7c16b33d7d503aeae92483f6d9c950f4fa9",
+      "query_text_sha256": "2e47c6dafbb44b8b7ed3e73e1e5c8cc91aea3538e660c9d004cd09c8b9495447",
+      "information_cutoff": "2011-12-15T23:59:59Z",
+      "started_at_utc": "2026-10-03T14:12:12.023446+00:00",
+      "completed_at_utc": "2026-10-03T14:12:58.464189+00:00",
+      "execution_count_for_retry_attempt_id": 1,
+      "http_subrequest_count": 1,
+      "subrequests": [
+        {
+          "claim_id": "22a902f7-6a26-58a4-951b-d165a6a06fcf",
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "started_at_utc": "2026-10-03T14:12:12.254884+00:00",
+          "completed_at_utc": "2026-10-03T14:12:58.363647+00:00",
+          "transport_state": "TECHNICAL_FAILURE",
+          "technical_error": "ReadTimeout: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=45)",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.azattyqasia.org%2Fa%2Foil_workers_strike_zhanaozen%2F24401004.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": null,
+          "http_status": null,
+          "content_type": null,
+          "payload_bytes": null,
+          "payload_sha256": null,
+          "redirect_chain": []
+        }
+      ],
+      "archive_candidates": [],
+      "selected_candidate": null,
+      "response_status": "TECHNICAL_FAILURE",
+      "result_state": "TECHNICAL_FAILURE_PRIOR_STATE_RETAINED",
+      "technical_error": "ReadTimeout: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=45)",
+      "payload_sha256": null,
+      "cdx_digest_sha1_base32": null,
+      "computed_payload_sha1_base32": null,
+      "digest_match": null,
+      "exact_document_version_full_edition_binding": false,
+      "exact_edition_contract_satisfied": false,
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "full_edition_status_after_retry": "NOT_PROVEN",
+      "mapping_admission_changed": false,
+      "target_time_applicability": "UNKNOWN",
+      "automatic_carry_forward": false,
+      "scientific_state_changed_by_pr21": false,
+      "rerun_performed": false,
+      "terminal_for_retry_attempt_id": true
+    },
+    {
+      "logical_retry_ordinal": 2,
+      "retry_attempt_id": "3f604eb0-23fd-590f-a119-f33de4819a94",
+      "linked_failed_source_attempt_id": "b604abf6-3d7b-5525-bf63-9130f0a872b1",
+      "source_attempt_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/EXECUTED_ATTEMPT_LEDGER.json",
+        "json_pointer": "/attempts/21"
+      },
+      "source_attempt_canonical_sha256": "cf2755c1adf1abb4dcef8dd942601a0593ad46f6dc04a80756779b9fa1775fb9",
+      "planned_query_id": "30eb5f84-fd10-5546-a0cc-7824f628620c",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "document_id": "43a82618-e2f4-5340-b3db-5a08a84dfed1",
+      "source_id": "93272924-00d5-527a-9ace-4ea593c021ad",
+      "label": "D25",
+      "failure_class": "REPLAY_AFTER_CANDIDATE_FAILURE",
+      "frozen_rendered_query": "Web-archive capture lookup for the exact source locator with capture timestamp not later than the information cutoff. | blocker_id=BLOCKER-DOCUMENT-VERSION-86135a7f-79d7-5d6f-870c-f8bdaa925023 | scope=DOCUMENT_VERSION | affected_ids_sha256=f423059fcd79f6341f4d2dee1c58d99412a14c380f7f7771f84e01b8f9069dfe",
+      "query_text_sha256": "d801f64457aef6fe00ce46fc0981a264755103ca042bd578db4215a1f619c52c",
+      "information_cutoff": "2011-12-15T23:59:59Z",
+      "started_at_utc": "2026-10-03T14:12:58.522058+00:00",
+      "completed_at_utc": "2026-10-03T14:13:00.481886+00:00",
+      "execution_count_for_retry_attempt_id": 1,
+      "http_subrequest_count": 1,
+      "subrequests": [
+        {
+          "claim_id": "47e90b0d-cace-5321-b3f6-dd25518f6928",
+          "subrequest_role": "WAYBACK_REPLAY_PAYLOAD",
+          "started_at_utc": "2026-10-03T14:12:58.663591+00:00",
+          "completed_at_utc": "2026-10-03T14:13:00.387403+00:00",
+          "transport_state": "HTTP_RESPONSE",
+          "technical_error": null,
+          "request_url": "https://web.archive.org/web/20111116125247id_/http://www.eurasianet.org:80/node/64310",
+          "final_url": "https://web.archive.org/web/20111116125247id_/http://www.eurasianet.org:80/node/64310",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 56599,
+          "payload_sha256": "8f6f54a0cf2dcabe5a02e4f0cb4e60cbc6296e5822e5521498481d682353be35",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/web/20111116125247id_/http://www.eurasianet.org:80/node/64310",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [
+        {
+          "timestamp": "20111016060958",
+          "original": "http://www.eurasianet.org:80/node/64310",
+          "digest_sha1_base32": "XR7PYY6TK4LJPBKR4GRR75RSBY5STQT4",
+          "mimetype": "text/html",
+          "recorded_length": "12356",
+          "candidate_id": "711810bf-17bf-538b-be4e-ae8a61ec270b"
+        },
+        {
+          "timestamp": "20111016171055",
+          "original": "http://www.eurasianet.org:80/node/64310",
+          "digest_sha1_base32": "UXEK2XF4QVBJVM5JAKFIWLP7J5MU5E7F",
+          "mimetype": "text/html",
+          "recorded_length": "12468",
+          "candidate_id": "fd89ab4f-221b-5a0f-911a-9ceaf4f2297d"
+        },
+        {
+          "timestamp": "20111116125247",
+          "original": "http://www.eurasianet.org:80/node/64310",
+          "digest_sha1_base32": "7YHK6FDDO6SY5E65OBHLKWNVI3ZFCPL5",
+          "mimetype": "text/html",
+          "recorded_length": "12358",
+          "candidate_id": "f030afd4-5c2f-52d5-b6a7-edd0a6848cb4"
+        }
+      ],
+      "selected_candidate": {
+        "timestamp": "20111116125247",
+        "original": "http://www.eurasianet.org:80/node/64310",
+        "digest_sha1_base32": "7YHK6FDDO6SY5E65OBHLKWNVI3ZFCPL5",
+        "mimetype": "text/html",
+        "recorded_length": "12358",
+        "candidate_id": "f030afd4-5c2f-52d5-b6a7-edd0a6848cb4"
+      },
+      "response_status": "PRE_CUTOFF_CAPTURE_RETRIEVED",
+      "result_state": "TECHNICAL_RETRY_COMPLETED_PRIOR_STATE_RETAINED",
+      "technical_error": null,
+      "payload_sha256": "8f6f54a0cf2dcabe5a02e4f0cb4e60cbc6296e5822e5521498481d682353be35",
+      "cdx_digest_sha1_base32": "7YHK6FDDO6SY5E65OBHLKWNVI3ZFCPL5",
+      "computed_payload_sha1_base32": "7YHK6FDDO6SY5E65OBHLKWNVI3ZFCPL5",
+      "digest_match": true,
+      "exact_document_version_full_edition_binding": false,
+      "exact_edition_contract_satisfied": false,
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "full_edition_status_after_retry": "NOT_PROVEN",
+      "mapping_admission_changed": false,
+      "target_time_applicability": "UNKNOWN",
+      "automatic_carry_forward": false,
+      "scientific_state_changed_by_pr21": false,
+      "rerun_performed": false,
+      "terminal_for_retry_attempt_id": true
+    },
+    {
+      "logical_retry_ordinal": 3,
+      "retry_attempt_id": "dab41481-bbb3-5694-9f8e-93a8165359d6",
+      "linked_failed_source_attempt_id": "bab13970-a3bc-5322-a25b-7d45fa3e78b5",
+      "source_attempt_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/EXECUTED_ATTEMPT_LEDGER.json",
+        "json_pointer": "/attempts/13"
+      },
+      "source_attempt_canonical_sha256": "aaaff0abca819428b7f3c640d4626aa4f44e4d4905c28fc2ddfe901813891822",
+      "planned_query_id": "c9a4c9a4-480d-5ff4-a852-33779ad18384",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "document_version_id": "00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "document_id": "46609b00-8ecc-5239-816f-e28da8ae18f3",
+      "source_id": "a31e3834-1227-5f14-acfe-2e43bee2fe47",
+      "label": "D13",
+      "failure_class": "INITIAL_ARCHIVE_QUERY_FAILURE",
+      "frozen_rendered_query": "Web-archive capture lookup for the exact source locator with capture timestamp not later than the information cutoff. | blocker_id=BLOCKER-DOCUMENT-VERSION-00527651-bbea-5b17-89b0-c79f68fb39f6 | scope=DOCUMENT_VERSION | affected_ids_sha256=61c0fe08856d9564a946f7d86535fd755fc789bc74969dbadd09018ce011acf3",
+      "query_text_sha256": "8bd10db3b35f0bfdca4b0f38beb1fc861d124a0adc03e015bc129f0a1337002e",
+      "information_cutoff": "2011-12-15T23:59:59Z",
+      "started_at_utc": "2026-10-03T14:13:00.539800+00:00",
+      "completed_at_utc": "2026-10-03T14:13:09.525425+00:00",
+      "execution_count_for_retry_attempt_id": 1,
+      "http_subrequest_count": 2,
+      "subrequests": [
+        {
+          "claim_id": "70cde77f-7789-5919-a132-19459450053b",
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "started_at_utc": "2026-10-03T14:13:00.681268+00:00",
+          "completed_at_utc": "2026-10-03T14:13:08.270917+00:00",
+          "transport_state": "HTTP_RESPONSE",
+          "technical_error": null,
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_strike_desperation_poverty%2F24331987.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_strike_desperation_poverty%2F24331987.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 17505,
+          "payload_sha256": "700986c1f7c4456906132261e3667b77128bb269e37c4d7d540293f95c5aa638",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_strike_desperation_poverty%2F24331987.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        },
+        {
+          "claim_id": "c422a8b6-4a68-5b8f-96c9-32be42b7d80e",
+          "subrequest_role": "WAYBACK_REPLAY_PAYLOAD",
+          "started_at_utc": "2026-10-03T14:13:08.416369+00:00",
+          "completed_at_utc": "2026-10-03T14:13:09.440594+00:00",
+          "transport_state": "HTTP_RESPONSE",
+          "technical_error": null,
+          "request_url": "https://web.archive.org/web/20111215095909id_/http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "final_url": "https://web.archive.org/web/20111215095909id_/http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 93003,
+          "payload_sha256": "e8f6d80c2dd56c7629065fae7fcfe55e7900edd52cc8372591a9531751dfc350",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/web/20111215095909id_/http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [
+        {
+          "timestamp": "20110918124424",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "Z47XLUTWPJGXYSZWTCRYO4Y33OSHDKIC",
+          "mimetype": "text/html",
+          "recorded_length": "17411",
+          "candidate_id": "8c9162d0-5e60-5e79-8f8e-f49c9fda91b9"
+        },
+        {
+          "timestamp": "20110919084724",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "575CX4H2RPJISP6DHQGKO3BJTNMUGFVA",
+          "mimetype": "text/html",
+          "recorded_length": "18976",
+          "candidate_id": "0c422b72-2146-5531-8361-ed9b387fefd3"
+        },
+        {
+          "timestamp": "20110921005757",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "U77754RQQOMNJ23Z3JDAWSWFUIKH3EBU",
+          "mimetype": "text/html",
+          "recorded_length": "19066",
+          "candidate_id": "e9973e1a-d700-55b4-83d7-4be56038af3e"
+        },
+        {
+          "timestamp": "20110921204641",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "OX7LF6VP4NJX6EQGQEQHHVOJI447FAS5",
+          "mimetype": "text/html",
+          "recorded_length": "19189",
+          "candidate_id": "95523acf-12ae-507f-b787-e405b5e15baa"
+        },
+        {
+          "timestamp": "20110922130556",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "QUZK4FUC3DYB65UJWUORHFULGTBPW7T2",
+          "mimetype": "text/html",
+          "recorded_length": "19155",
+          "candidate_id": "2314d5d2-1ba8-5663-b31e-a091f5ccda3d"
+        },
+        {
+          "timestamp": "20110923104757",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "Y4S2YEHVHGQIOQ6ORQC4GV56OOOTQVPO",
+          "mimetype": "text/html",
+          "recorded_length": "18444",
+          "candidate_id": "3ae560ad-05b5-5211-b29c-1bab46fc90a2"
+        },
+        {
+          "timestamp": "20110924001324",
+          "original": "http://www.rferl.org:80/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "KQEAEGIPLB33M5TGSHOBLVHPSYHFTOTR",
+          "mimetype": "text/html",
+          "recorded_length": "17935",
+          "candidate_id": "b74fc1b7-a536-5494-a16a-945244365e5a"
+        },
+        {
+          "timestamp": "20110924142412",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "RQE4S7366ZZERPHN4QY6WUBVOLOULNYI",
+          "mimetype": "text/html",
+          "recorded_length": "18817",
+          "candidate_id": "4e6fe887-de3e-5072-ade4-a22cac68013c"
+        },
+        {
+          "timestamp": "20110925084705",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "WEDRWRA332P3WZOUESWQMFC46KRQRVIX",
+          "mimetype": "text/html",
+          "recorded_length": "18601",
+          "candidate_id": "ae2e4128-b127-575f-9f4b-c9f5c4107607"
+        },
+        {
+          "timestamp": "20110926095907",
+          "original": "http://www.rferl.org:80/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "NFDFH5XCTYNAD65TW2TX7HWCGLNL32FM",
+          "mimetype": "text/html",
+          "recorded_length": "17999",
+          "candidate_id": "43d38ea4-9782-53aa-9bd1-ed8467f37711"
+        },
+        {
+          "timestamp": "20110926234535",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "ARAZ3K7EB5K3SNMAH7P2UCNKFYO4SSSW",
+          "mimetype": "text/html",
+          "recorded_length": "18748",
+          "candidate_id": "28e6427d-a06f-5a03-9ad8-1747396d1613"
+        },
+        {
+          "timestamp": "20110927211224",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "4GCZM6DBSCLFCVOJRPP3KNWU36KNXGV5",
+          "mimetype": "text/html",
+          "recorded_length": "18851",
+          "candidate_id": "bd1524cd-ec17-53e1-8a64-16d4716b85e7"
+        },
+        {
+          "timestamp": "20110928161859",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "ZRBOA7JAZSKZ7DU3AMXCFBHZMGUIYG2V",
+          "mimetype": "text/html",
+          "recorded_length": "18813",
+          "candidate_id": "8114d5fc-c6ed-586b-bc3e-8986e6191f73"
+        },
+        {
+          "timestamp": "20110929164811",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "AREQS2IHIAWOYHCWWWLG2QOY35LXIB75",
+          "mimetype": "text/html",
+          "recorded_length": "18511",
+          "candidate_id": "63677ff6-3335-5426-95b5-fbdca58a689d"
+        },
+        {
+          "timestamp": "20110930160407",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "ZYWSF6O7DVI2KF34ZQ2JXTKYPXHWZAMC",
+          "mimetype": "text/html",
+          "recorded_length": "18919",
+          "candidate_id": "a35923fc-89c3-5ce3-ad70-4f327e7ee533"
+        },
+        {
+          "timestamp": "20111001111926",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "B2POSRVQFVVIKAAWALQFC2STWSW4V7HL",
+          "mimetype": "text/html",
+          "recorded_length": "19190",
+          "candidate_id": "c774cd99-63c1-56be-ae02-4c7dcfc214e9"
+        },
+        {
+          "timestamp": "20111002233817",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "BGC3VH2TVNMSVDZQXWWQ6DY54WU5HYTB",
+          "mimetype": "text/html",
+          "recorded_length": "18965",
+          "candidate_id": "c0994006-f15e-59a5-9606-91688b481f8d"
+        },
+        {
+          "timestamp": "20111003190142",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "T77YRQ667QT23R7ZWOGXVOSUEZBE5WP7",
+          "mimetype": "text/html",
+          "recorded_length": "19010",
+          "candidate_id": "0dd2ef73-10a7-52ca-afec-9f79334acf83"
+        },
+        {
+          "timestamp": "20111004130359",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "CEUVEJ6ZKRXVRXECUWP6HTACFOLOMCE6",
+          "mimetype": "text/html",
+          "recorded_length": "19230",
+          "candidate_id": "7e274824-249b-5f6d-a2f8-131866b1b8c6"
+        },
+        {
+          "timestamp": "20111005202506",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "Y4F4DSV3DJ5BMUORE5ZZIIBNWBH3E3RC",
+          "mimetype": "text/html",
+          "recorded_length": "18631",
+          "candidate_id": "2d31ec30-516d-56ae-bd2c-31542166d70f"
+        },
+        {
+          "timestamp": "20111006125707",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "I2K5ER3LVF2Z3KEHVPXXX5QOGAVROTUT",
+          "mimetype": "text/html",
+          "recorded_length": "18677",
+          "candidate_id": "e0dae775-aa95-55cd-89fe-79af2f7ad75c"
+        },
+        {
+          "timestamp": "20111007124044",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "HDMACFZRHY3GUKN6EXM7AKCHETLND236",
+          "mimetype": "text/html",
+          "recorded_length": "18715",
+          "candidate_id": "1f42f1d0-5ed7-58de-b8ef-f66481430938"
+        },
+        {
+          "timestamp": "20111007233030",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "XGMDRZSDXK7D66QPMA2XSU6CARK3IUCU",
+          "mimetype": "text/html",
+          "recorded_length": "18101",
+          "candidate_id": "fa925fed-42f9-51a5-8953-1165e62cbac1"
+        },
+        {
+          "timestamp": "20111009100341",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "ZKMPQEDIXQVYZ2BNVIZ6KTL6RZVH6EWY",
+          "mimetype": "text/html",
+          "recorded_length": "18829",
+          "candidate_id": "85f68e91-cdfa-5a75-bd19-29020226a120"
+        },
+        {
+          "timestamp": "20111010022123",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "DVO5PST3GYG5LY6PYEQV4USIMDHJBBTH",
+          "mimetype": "text/html",
+          "recorded_length": "18917",
+          "candidate_id": "40b5a544-85c6-5341-b946-ed87d7b64d2a"
+        },
+        {
+          "timestamp": "20111011112454",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "5PEGCAKAB2O2T5RNSZINTVTXOMGFVAXN",
+          "mimetype": "text/html",
+          "recorded_length": "18444",
+          "candidate_id": "4ea790de-74b6-5e31-8fe9-76ac11ea8147"
+        },
+        {
+          "timestamp": "20111012054645",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "YYHSGA6O2BOVHBJ3MAUOQ2T4YJQ7GVFS",
+          "mimetype": "text/html",
+          "recorded_length": "18907",
+          "candidate_id": "ed34135c-b80d-52ca-b226-54255b6b50b3"
+        },
+        {
+          "timestamp": "20111013091722",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "YEIETC7JPNZVEIVECZ3EE42OYO66WDQE",
+          "mimetype": "text/html",
+          "recorded_length": "18634",
+          "candidate_id": "c7be1b24-97e1-522d-8ca2-a812247c6ccb"
+        },
+        {
+          "timestamp": "20111014103144",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "CD4GJW7XFNDCZJIVDUG7LUFAJ5N5ZQWY",
+          "mimetype": "text/html",
+          "recorded_length": "18583",
+          "candidate_id": "badb8cb7-a659-5f39-a45d-49dd1d4eea70"
+        },
+        {
+          "timestamp": "20111015224249",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "U4XO2B5S7ZTPVEVGB75VHUIM5P4ETD4E",
+          "mimetype": "text/html",
+          "recorded_length": "18746",
+          "candidate_id": "b49a78e3-55a5-5f53-ac1e-b7eb495afac1"
+        },
+        {
+          "timestamp": "20111016175909",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "NMY7VZEQ2ZX5HHGS4TK65TXTEX3QUW4D",
+          "mimetype": "text/html",
+          "recorded_length": "18735",
+          "candidate_id": "019706bb-9668-55f6-8bf9-5cdd956a2dc8"
+        },
+        {
+          "timestamp": "20111018154914",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "76JV6NR7JTHYRIJ6KSO56X6SSGPS34I4",
+          "mimetype": "text/html",
+          "recorded_length": "18430",
+          "candidate_id": "42b83006-c9dc-51b6-8948-457629aa3f34"
+        },
+        {
+          "timestamp": "20111018191028",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "3I2GTDMXFIFIKDO7ET4NFPADJ5OVS6XN",
+          "mimetype": "text/html",
+          "recorded_length": "18429",
+          "candidate_id": "6ed23475-7d05-5fd4-9c29-7d985e23de74"
+        },
+        {
+          "timestamp": "20111019142914",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "TM6NYHNTALL7MIYUC3LDAFXEPDQEWP6W",
+          "mimetype": "text/html",
+          "recorded_length": "18393",
+          "candidate_id": "5d34806c-442c-5c38-960f-e649b876408c"
+        },
+        {
+          "timestamp": "20111019195029",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "23JM3DMARLUWCNELLY6WVZL45TAFF22E",
+          "mimetype": "text/html",
+          "recorded_length": "18409",
+          "candidate_id": "8e66acc2-c0a0-52f7-ac3e-0f1f0952ca4e"
+        },
+        {
+          "timestamp": "20111020154031",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "NOR4LXDQVQU6OXAAHEYWZO22UALJRWQM",
+          "mimetype": "text/html",
+          "recorded_length": "18412",
+          "candidate_id": "ef6c3b2d-bf94-548c-b0d5-477f4071767d"
+        },
+        {
+          "timestamp": "20111021165742",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "SMA37N4PLSDIINY7SCUWCFPRXZ2LIOIW",
+          "mimetype": "text/html",
+          "recorded_length": "18618",
+          "candidate_id": "43f0d4c7-33bf-53bc-a4ac-61213ad026c3"
+        },
+        {
+          "timestamp": "20111022161825",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "RXOD22QBIBC6AIESKU4YDSKM3QBOKXB2",
+          "mimetype": "text/html",
+          "recorded_length": "18739",
+          "candidate_id": "dffad78b-ee9c-5389-b146-0cf14a3bace6"
+        },
+        {
+          "timestamp": "20111023151156",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "NTPYJ46KCA2CALBNWD2H5JLFEFUIFU6O",
+          "mimetype": "text/html",
+          "recorded_length": "18394",
+          "candidate_id": "f19add11-0fe9-58d5-b5a2-52d86d29d2ae"
+        },
+        {
+          "timestamp": "20111024200546",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "5KXSUM4HLQBRDSJHBUTP3ESECYZGGRRB",
+          "mimetype": "text/html",
+          "recorded_length": "18282",
+          "candidate_id": "050523ec-4e20-58bb-8591-f0831d2132ec"
+        },
+        {
+          "timestamp": "20111025185410",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "GCB2RMIT4O64XQPBKVIO2V5XM6GD44DO",
+          "mimetype": "text/html",
+          "recorded_length": "18047",
+          "candidate_id": "8fcfc26d-f4c6-5633-a12f-94b399744b45"
+        },
+        {
+          "timestamp": "20111027062318",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "UDPMT2UY2PYKQ7ESPZWPGK3GBIB3IUB4",
+          "mimetype": "text/html",
+          "recorded_length": "18005",
+          "candidate_id": "1129a02d-c696-5f26-918d-9133094256c9"
+        },
+        {
+          "timestamp": "20111028053429",
+          "original": "http://www.rferl.org:80/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "XTT4SX5XDDUYGVTHJTQAZSFYRH75HS3N",
+          "mimetype": "text/html",
+          "recorded_length": "17459",
+          "candidate_id": "676efc86-e05a-5793-b4f1-fb046add8e01"
+        },
+        {
+          "timestamp": "20111028104809",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "QFZYG4ICNRAWMYBVBFNETT3TXVS3BQ3W",
+          "mimetype": "text/html",
+          "recorded_length": "18051",
+          "candidate_id": "203fe58d-ee34-52aa-8956-1533003a18b3"
+        },
+        {
+          "timestamp": "20111028202201",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "ANE334IE53DBKOK3P64TNLB2LIJ6RONG",
+          "mimetype": "text/html",
+          "recorded_length": "17880",
+          "candidate_id": "3db30ff0-4c99-5d53-9b31-ae1ac2d0022b"
+        },
+        {
+          "timestamp": "20111030121237",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "LZRXEIRU6ZDK2IOMZSJ76ZGU7BS3KSGL",
+          "mimetype": "text/html",
+          "recorded_length": "18279",
+          "candidate_id": "7308606a-336f-5d50-93a8-31e2263af79b"
+        },
+        {
+          "timestamp": "20111031171631",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "LJYH5Q7T7OAUVETYKYL4MU5GPN7VUNXH",
+          "mimetype": "text/html",
+          "recorded_length": "18225",
+          "candidate_id": "411bed12-4d18-5a5d-93b4-97852c8bc92b"
+        },
+        {
+          "timestamp": "20111101140358",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "5R3JCSVBAM3ENVJJGUCSHN6O7J57GF34",
+          "mimetype": "text/html",
+          "recorded_length": "18087",
+          "candidate_id": "0d040b77-84d3-5804-a3ff-b1a059bb3775"
+        },
+        {
+          "timestamp": "20111102124920",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "HDNPCFXZTSVHNMNJ4N2Z73ZO2NJ7EACD",
+          "mimetype": "text/html",
+          "recorded_length": "18324",
+          "candidate_id": "b925b700-f089-52cd-9633-7fffdc43f998"
+        },
+        {
+          "timestamp": "20111103182852",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "GWXHOVMSXAUIJBW3AH5L7F4BSPSBY6B5",
+          "mimetype": "text/html",
+          "recorded_length": "18340",
+          "candidate_id": "33fe883e-b050-5a61-9ea2-5fd96308fd6c"
+        },
+        {
+          "timestamp": "20111105191057",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "5BDUN5IZ2VF3CGTOC3H3NRXLINULLNFU",
+          "mimetype": "text/html",
+          "recorded_length": "18227",
+          "candidate_id": "cb21d969-5deb-5544-94e8-e1e885a1e576"
+        },
+        {
+          "timestamp": "20111106222517",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "DSQZSBFR2XGU6TOS3TA56EMECTW3T4LF",
+          "mimetype": "text/html",
+          "recorded_length": "17964",
+          "candidate_id": "f8f2266d-c8d0-5714-a548-4ff1b040e415"
+        },
+        {
+          "timestamp": "20111107083140",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "2DZBNPVHPX55HURXQRLGFHR35SZUBR2X",
+          "mimetype": "text/html",
+          "recorded_length": "17946",
+          "candidate_id": "b8288896-196f-5c87-9a52-6fa0b880be6e"
+        },
+        {
+          "timestamp": "20111108144943",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "KEMLO4Q5ZEYVFFPRJAIEEHGHRMWWV3DE",
+          "mimetype": "text/html",
+          "recorded_length": "18069",
+          "candidate_id": "fb535623-bf0e-5fed-8244-7b9061b3e046"
+        },
+        {
+          "timestamp": "20111110093636",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "WZG6YRHTPAUTVAPYVBSWKTDGI5DOLWS6",
+          "mimetype": "text/html",
+          "recorded_length": "20041",
+          "candidate_id": "0336c125-8f7d-5e1e-9e2c-5ceb88a2e5bd"
+        },
+        {
+          "timestamp": "20111110142241",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "UD2BESGU7YIPEKPZSNNH3TDSSUS4F45V",
+          "mimetype": "text/html",
+          "recorded_length": "19888",
+          "candidate_id": "a5506b89-2f1d-5bbf-9d10-b3b4ff282662"
+        },
+        {
+          "timestamp": "20111111171416",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "HHHJ2PL33SLR7OP2IPU7VYGA7TS53Y57",
+          "mimetype": "text/html",
+          "recorded_length": "20259",
+          "candidate_id": "bff3fdcf-a07b-5ce0-92be-4733be1a28e9"
+        },
+        {
+          "timestamp": "20111113011840",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "PUFQ7I55SSGDVBTWAF6GCQVX7WUHHP5D",
+          "mimetype": "text/html",
+          "recorded_length": "20299",
+          "candidate_id": "cb51465c-a8d9-5ce3-a6b9-9d57883eff01"
+        },
+        {
+          "timestamp": "20111113195128",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "IK2VEKIMTT7262DY3HOHCVV5W4TUSF2S",
+          "mimetype": "text/html",
+          "recorded_length": "20326",
+          "candidate_id": "30736210-4297-5fd5-8ae0-270c1697eb74"
+        },
+        {
+          "timestamp": "20111114203352",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "WVH7WYH3QJWXKWH6Q2YPO62XYC4VSC4I",
+          "mimetype": "text/html",
+          "recorded_length": "20331",
+          "candidate_id": "6d2a0a4d-40a3-54ff-80f9-f48ead69fc7b"
+        },
+        {
+          "timestamp": "20111116000923",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "GLEVMYEHTVGY7P3KH6KFFNFJ2O4WVJVA",
+          "mimetype": "text/html",
+          "recorded_length": "20467",
+          "candidate_id": "fb2a3e72-607d-5bd6-a1ac-53981cc4ac70"
+        },
+        {
+          "timestamp": "20111117135809",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "ZMJFG5K4DIXSMVFYQHGI57X3Q7XY5BXW",
+          "mimetype": "text/html",
+          "recorded_length": "20236",
+          "candidate_id": "64eed37c-75a0-5c0c-8a73-f35d61af4a9c"
+        },
+        {
+          "timestamp": "20111118191323",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "OXZEHY2NO6T4PGUTTCEK5X5LW4FJ3RF2",
+          "mimetype": "text/html",
+          "recorded_length": "19980",
+          "candidate_id": "6654a1cc-d77a-5aa6-995e-dbbb05574639"
+        },
+        {
+          "timestamp": "20111120210048",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "2T6KKIFT26WTECPZZL2RRPTR66RO4S2V",
+          "mimetype": "text/html",
+          "recorded_length": "20440",
+          "candidate_id": "8703de30-1aa8-5327-bd49-fe835a9a54b8"
+        },
+        {
+          "timestamp": "20111122075935",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "FX6L3AGN4WCXDT2T46WIEYB3HGGJYKCU",
+          "mimetype": "text/html",
+          "recorded_length": "20156",
+          "candidate_id": "64b36b23-0279-5d36-a448-96b089abff82"
+        },
+        {
+          "timestamp": "20111122210922",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "5KCQWWCURWVSWYAZP5KUFWWZFAKD4PCL",
+          "mimetype": "text/html",
+          "recorded_length": "23565",
+          "candidate_id": "cb929b84-a1fe-535c-900a-c7673bb15552"
+        },
+        {
+          "timestamp": "20111123211712",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "OVZC7WZ6FJUESQP2TVZZJLUWQSZGRSE3",
+          "mimetype": "text/html",
+          "recorded_length": "23273",
+          "candidate_id": "31396384-8cb5-513e-b2d1-fee4f3ad5222"
+        },
+        {
+          "timestamp": "20111124210434",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "EECL24UUSQHWTSAN22AFJ2BLRHKI7FFE",
+          "mimetype": "text/html",
+          "recorded_length": "23524",
+          "candidate_id": "81112880-05d1-558c-a9cb-812c455138f4"
+        },
+        {
+          "timestamp": "20111125212208",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "SSPYLPEOPHCPKWNJCBWEWC6KDG7TY2EV",
+          "mimetype": "text/html",
+          "recorded_length": "23332",
+          "candidate_id": "f568fdfd-471b-5039-86da-c6d1a002f2c5"
+        },
+        {
+          "timestamp": "20111126212411",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "TV57XBILTLIVTSZ4MKWLFCKCD7TIPTIQ",
+          "mimetype": "text/html",
+          "recorded_length": "23275",
+          "candidate_id": "d7b11b12-e424-55fe-a348-99e01646c97f"
+        },
+        {
+          "timestamp": "20111127160625",
+          "original": "http://www.rferl.org:80/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "IT7BYHUSJACX2WB5WRYWK2HLFMF5FWZZ",
+          "mimetype": "text/html",
+          "recorded_length": "22405",
+          "candidate_id": "e2510976-1142-58d6-ae26-1b981dcebce0"
+        },
+        {
+          "timestamp": "20111127213319",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "JEIKN424GQ2XTE64BONT3BRMOD2GRD4K",
+          "mimetype": "text/html",
+          "recorded_length": "22972",
+          "candidate_id": "5a0f0645-9b5b-594d-a724-f7779ecc859d"
+        },
+        {
+          "timestamp": "20111128221453",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "HFVYXDULJADWXNBU3UDQDDYBSI3DXJK3",
+          "mimetype": "text/html",
+          "recorded_length": "23447",
+          "candidate_id": "7eb8cd77-c1d4-511a-a95b-3fb2b648ee43"
+        },
+        {
+          "timestamp": "20111130014316",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "PDV73EKKD3WJJEGZOTNXH4KH267V3BKZ",
+          "mimetype": "text/html",
+          "recorded_length": "23432",
+          "candidate_id": "a0b94eb5-26ee-5306-86bc-e3c1d5204856"
+        },
+        {
+          "timestamp": "20111201054202",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "DGQ24ZY5XOIIDRXDIX5A7K37E4AUPMOE",
+          "mimetype": "text/html",
+          "recorded_length": "22581",
+          "candidate_id": "af9ea8f5-105a-5141-89c7-d51f0e83b410"
+        },
+        {
+          "timestamp": "20111202052918",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "3IQXGATGBXMN6USJUW5W6T7K4FHGPIKD",
+          "mimetype": "text/html",
+          "recorded_length": "22836",
+          "candidate_id": "1c0c42de-590c-53af-85f5-3bfc300a6baa"
+        },
+        {
+          "timestamp": "20111203025850",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "QX63A76ALC7V2VXJUNV2TKSRE7MQFCDU",
+          "mimetype": "text/html",
+          "recorded_length": "22916",
+          "candidate_id": "da45ded2-83f1-5462-9a4e-858bcff68b09"
+        },
+        {
+          "timestamp": "20111203145323",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "BDXDAOVMNLU477QN5M22QEQQ2IIVLIE6",
+          "mimetype": "text/html",
+          "recorded_length": "23303",
+          "candidate_id": "fa9e5c3a-ad06-5da2-ba34-8214b887fed8"
+        },
+        {
+          "timestamp": "20111203223543",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "4UWIEZYGY6LL5QV6PK4FJET5X5CBFNHZ",
+          "mimetype": "text/html",
+          "recorded_length": "23246",
+          "candidate_id": "5da80deb-2bb7-5756-a412-1d87f429c85c"
+        },
+        {
+          "timestamp": "20111204230345",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "BVEHCHNYYDDPANU7E6Q7DO7X3YFVTBNA",
+          "mimetype": "text/html",
+          "recorded_length": "23305",
+          "candidate_id": "33ef07ff-d7e9-5eb5-ab6a-a79e96ceb464"
+        },
+        {
+          "timestamp": "20111206042726",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "XURSTZ74I2HZCPPN6I4YY6ZL2A55D6MJ",
+          "mimetype": "text/html",
+          "recorded_length": "23097",
+          "candidate_id": "848f7362-2145-5e8c-abf9-4eb8938e895d"
+        },
+        {
+          "timestamp": "20111206230341",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "DMO64UMTUSTY3BOPO6UKRFUV4ZGJEU4V",
+          "mimetype": "text/html",
+          "recorded_length": "23157",
+          "candidate_id": "4319c9ef-83a5-5bfa-a983-1c114d121489"
+        },
+        {
+          "timestamp": "20111207043627",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "EBWMIF3XOUOICRS7CSMOT27IIROLBNHA",
+          "mimetype": "text/html",
+          "recorded_length": "23155",
+          "candidate_id": "edf5ba9a-cac8-5d76-ade2-754cb589897f"
+        },
+        {
+          "timestamp": "20111208045538",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "7WVZDMIVNAYFPX5KMLLEZE4LZW53SC2A",
+          "mimetype": "text/html",
+          "recorded_length": "22893",
+          "candidate_id": "53e0f0ed-be36-55bd-ae51-5d4d6150227b"
+        },
+        {
+          "timestamp": "20111208061357",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "FAENKP7UYC5XIMPKFFPWNSJKJCMWYH6Q",
+          "mimetype": "text/html",
+          "recorded_length": "22842",
+          "candidate_id": "57d6613f-0ef8-5217-9dcf-e6e247498f2e"
+        },
+        {
+          "timestamp": "20111208225019",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "2LNMHNP5ONGNLYHFVJHJ7SHKZSE7IC75",
+          "mimetype": "text/html",
+          "recorded_length": "22869",
+          "candidate_id": "e261c58a-9784-55ac-954c-b2cf29a1f6d0"
+        },
+        {
+          "timestamp": "20111209071539",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "3V4IUMIQKO2KOQI76BWBP7D2A6XB5PLY",
+          "mimetype": "text/html",
+          "recorded_length": "22871",
+          "candidate_id": "97475dab-0141-5679-aacd-ef4efa2189ff"
+        },
+        {
+          "timestamp": "20111209231208",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "WGYWN5D2N7ZPMTNTHLQH5OVKE4MF2UNO",
+          "mimetype": "text/html",
+          "recorded_length": "22811",
+          "candidate_id": "89dd27b0-7776-5d31-997f-17498c4c2ecf"
+        },
+        {
+          "timestamp": "20111210083547",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "7OQWVZHA5F4QXWHWUHPEJTABYAZEKIQ3",
+          "mimetype": "text/html",
+          "recorded_length": "22823",
+          "candidate_id": "99c71372-d2d9-5171-999b-3f9b0bb5c973"
+        },
+        {
+          "timestamp": "20111210234431",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "JF34OU3OXT2KBCOCUZPNYRSONB4WXSQU",
+          "mimetype": "text/html",
+          "recorded_length": "23068",
+          "candidate_id": "456f2f3c-1909-5286-93c4-c39f1876fa71"
+        },
+        {
+          "timestamp": "20111211094514",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "IFV2UWNAVRL6LSXWB4FYPV2BFJOTJPZ4",
+          "mimetype": "text/html",
+          "recorded_length": "22980",
+          "candidate_id": "2d77ae74-1255-555a-83ba-ab96cfb4d5a0"
+        },
+        {
+          "timestamp": "20111211233020",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "6MKIXFYFQZQB72I7OJN5Q7R5LZN4PVZ6",
+          "mimetype": "text/html",
+          "recorded_length": "23084",
+          "candidate_id": "9d931bf3-3556-528e-853c-dfb7157a3976"
+        },
+        {
+          "timestamp": "20111212132126",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "VXKGL6CIVW7IWSP3UOK7R6F3QPEVJHQJ",
+          "mimetype": "text/html",
+          "recorded_length": "22918",
+          "candidate_id": "0b3d7b9c-a663-531e-819d-b5ac33e064fe"
+        },
+        {
+          "timestamp": "20111212231210",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "TL5RV67FUYSU2W2OU2UQP2NEK5G5FX6R",
+          "mimetype": "text/html",
+          "recorded_length": "22935",
+          "candidate_id": "fee7ba52-828a-551a-a976-4515ab162cfa"
+        },
+        {
+          "timestamp": "20111213055247",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "5BLEU25AGVYOA6RHWNLGLORP4UMK3AZL",
+          "mimetype": "text/html",
+          "recorded_length": "22944",
+          "candidate_id": "c0af6893-437a-514e-a9aa-318c116cff14"
+        },
+        {
+          "timestamp": "20111214034040",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "4XOEXEI6RZNPYMBJNFUOX7DBXHB7XRLL",
+          "mimetype": "text/html",
+          "recorded_length": "22767",
+          "candidate_id": "353f4eec-0a32-5b91-8187-405e09a156dc"
+        },
+        {
+          "timestamp": "20111214082725",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "FWIMUX2K5XF5W4M7ZBEGJF4EQP3UO5GY",
+          "mimetype": "text/html",
+          "recorded_length": "22735",
+          "candidate_id": "0c6c4136-bba3-5e47-9738-3c0c6bf64e2a"
+        },
+        {
+          "timestamp": "20111215023824",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "WGDT5WLQ4DO5YZVS2EFVSU4KZNLGMAUE",
+          "mimetype": "text/html",
+          "recorded_length": "22612",
+          "candidate_id": "2bf5435a-f24d-5ca1-8512-204182178e3b"
+        },
+        {
+          "timestamp": "20111215095909",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "statuscode": "200",
+          "digest_sha1_base32": "MVNPUFDC6MJB55VH4T7JHLVGIE4E6JPC",
+          "mimetype": "text/html",
+          "recorded_length": "22632",
+          "candidate_id": "bd40b23f-4990-535d-8d52-582bec304278"
+        }
+      ],
+      "selected_candidate": {
+        "timestamp": "20111215095909",
+        "original": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+        "statuscode": "200",
+        "digest_sha1_base32": "MVNPUFDC6MJB55VH4T7JHLVGIE4E6JPC",
+        "mimetype": "text/html",
+        "recorded_length": "22632",
+        "candidate_id": "bd40b23f-4990-535d-8d52-582bec304278"
+      },
+      "response_status": "PRE_CUTOFF_CAPTURE_RETRIEVED",
+      "result_state": "TECHNICAL_RETRY_COMPLETED_PRIOR_STATE_RETAINED",
+      "technical_error": null,
+      "payload_sha256": "e8f6d80c2dd56c7629065fae7fcfe55e7900edd52cc8372591a9531751dfc350",
+      "cdx_digest_sha1_base32": "MVNPUFDC6MJB55VH4T7JHLVGIE4E6JPC",
+      "computed_payload_sha1_base32": "MVNPUFDC6MJB55VH4T7JHLVGIE4E6JPC",
+      "digest_match": true,
+      "exact_document_version_full_edition_binding": false,
+      "exact_edition_contract_satisfied": false,
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "full_edition_status_after_retry": "NOT_PROVEN",
+      "mapping_admission_changed": false,
+      "target_time_applicability": "UNKNOWN",
+      "automatic_carry_forward": false,
+      "scientific_state_changed_by_pr21": false,
+      "rerun_performed": false,
+      "terminal_for_retry_attempt_id": true
+    },
+    {
+      "logical_retry_ordinal": 4,
+      "retry_attempt_id": "7de596e2-0981-5151-ac8c-3a99edc39d0f",
+      "linked_failed_source_attempt_id": "f9791b6b-487b-548e-bf0b-0ecefaf1a240",
+      "source_attempt_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/EXECUTED_ATTEMPT_LEDGER.json",
+        "json_pointer": "/attempts/19"
+      },
+      "source_attempt_canonical_sha256": "b65d4a238a52d19b06607ac15cee46d47034c611408bee61f5c6c77ae3419900",
+      "planned_query_id": "77b32e21-f78b-5574-ad79-550de8f9bd3e",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "document_version_id": "53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "document_id": "2c31843a-9181-5786-8ded-86762eae6779",
+      "source_id": "ae117c91-c49a-5022-abb1-4e39a4e8c38d",
+      "label": "D22",
+      "failure_class": "REPLAY_AFTER_CANDIDATE_FAILURE",
+      "frozen_rendered_query": "Web-archive capture lookup for the exact source locator with capture timestamp not later than the information cutoff. | blocker_id=BLOCKER-DOCUMENT-VERSION-53cf6bd9-b51d-5f0a-b56f-addd0caa6af2 | scope=DOCUMENT_VERSION | affected_ids_sha256=4461af09265ca6ba2b42ea8e4379723460995dadb4125ee93e331d45e971abb8",
+      "query_text_sha256": "9aabcfdaa99850b93ccdd09f13c093663bce1eec007ab0f0ca84c3d6e6e3a675",
+      "information_cutoff": "2011-12-15T23:59:59Z",
+      "started_at_utc": "2026-10-03T14:13:09.608834+00:00",
+      "completed_at_utc": "2026-10-03T14:13:10.475617+00:00",
+      "execution_count_for_retry_attempt_id": 1,
+      "http_subrequest_count": 1,
+      "subrequests": [
+        {
+          "claim_id": "03894e22-be22-533f-840c-6b37255ee3e0",
+          "subrequest_role": "WAYBACK_REPLAY_PAYLOAD",
+          "started_at_utc": "2026-10-03T14:13:09.750154+00:00",
+          "completed_at_utc": "2026-10-03T14:13:10.415430+00:00",
+          "transport_state": "HTTP_RESPONSE",
+          "technical_error": null,
+          "request_url": "https://web.archive.org/web/20111120030853id_/http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+          "final_url": "https://web.archive.org/web/20111120030853id_/http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+          "http_status": 200,
+          "content_type": "text/html",
+          "payload_bytes": 82184,
+          "payload_sha256": "f4052bb64f40c428c80ad987356bf118e91563e7b0a04e2e3c74393ab942885a",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/web/20111120030853id_/http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [
+        {
+          "timestamp": "20111120030853",
+          "original": "http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+          "digest_sha1_base32": "D6ZMCKKXPKQRTGOVCGBBAWGEHZAYFIBH",
+          "mimetype": "text/html",
+          "recorded_length": "19770",
+          "candidate_id": "379ad1f4-5ed2-5b78-b64e-c773192481e1"
+        }
+      ],
+      "selected_candidate": {
+        "timestamp": "20111120030853",
+        "original": "http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+        "digest_sha1_base32": "D6ZMCKKXPKQRTGOVCGBBAWGEHZAYFIBH",
+        "mimetype": "text/html",
+        "recorded_length": "19770",
+        "candidate_id": "379ad1f4-5ed2-5b78-b64e-c773192481e1"
+      },
+      "response_status": "PRE_CUTOFF_CAPTURE_RETRIEVED",
+      "result_state": "TECHNICAL_RETRY_COMPLETED_PRIOR_STATE_RETAINED",
+      "technical_error": null,
+      "payload_sha256": "f4052bb64f40c428c80ad987356bf118e91563e7b0a04e2e3c74393ab942885a",
+      "cdx_digest_sha1_base32": "D6ZMCKKXPKQRTGOVCGBBAWGEHZAYFIBH",
+      "computed_payload_sha1_base32": "D6ZMCKKXPKQRTGOVCGBBAWGEHZAYFIBH",
+      "digest_match": true,
+      "exact_document_version_full_edition_binding": false,
+      "exact_edition_contract_satisfied": false,
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "full_edition_status_after_retry": "NOT_PROVEN",
+      "mapping_admission_changed": false,
+      "target_time_applicability": "UNKNOWN",
+      "automatic_carry_forward": false,
+      "scientific_state_changed_by_pr21": false,
+      "rerun_performed": false,
+      "terminal_for_retry_attempt_id": true
+    }
+  ]
+}
