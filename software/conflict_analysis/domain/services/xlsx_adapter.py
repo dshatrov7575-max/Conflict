@@ -331,10 +331,19 @@ def _validate_archive(archive: zipfile.ZipFile) -> None:
 
 
 def _parse_xml(xml: bytes):
-    upper = xml[:4096].upper()
-    if b"<!DOCTYPE" in upper or b"<!ENTITY" in upper:
+    if type(xml) is not bytes or not xml:
+        raise FoundationXlsxAdapterError("XLSX XML member is empty or not bytes.")
+    encoding = "utf-16" if xml.startswith((b"\xff\xfe", b"\xfe\xff")) else "utf-8-sig"
+    if b"\x00" in xml and encoding != "utf-16":
+        raise FoundationXlsxAdapterError("XLSX XML must use UTF-8 or BOM-marked UTF-16.")
+    try:
+        text = xml.decode(encoding)
+    except UnicodeDecodeError as exc:
+        raise FoundationXlsxAdapterError("XLSX XML encoding is invalid or unsupported.") from exc
+    upper = text.upper()
+    if "<!DOCTYPE" in upper or "<!ENTITY" in upper:
         raise FoundationXlsxAdapterError("DTD and entity declarations are forbidden in XLSX XML.")
-    root = ElementTree.fromstring(xml)
+    root = ElementTree.fromstring(text)
     stack = [(root, 1)]
     while stack:
         node, depth = stack.pop()

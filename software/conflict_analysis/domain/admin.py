@@ -53,9 +53,20 @@ from .models import (
 
 
 class StableVersionedAdmin(admin.ModelAdmin):
+    """Expose domain records for inspection without creating a second write authority."""
+
     list_display = ("code", "version", "updated_at")
     search_fields = ("code",)
     readonly_fields = ("id", "created_at", "updated_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 class ReadOnlyStructureAdmin(StableVersionedAdmin):

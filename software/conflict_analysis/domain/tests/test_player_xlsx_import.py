@@ -31,7 +31,7 @@ from domain.services.player_workspaces import PlayerError, canonical_receipt_byt
 from domain.services.seed import seed_zhanaozen_demo
 
 from domain.services.xlsx_adapter import (
-    MAX_CELL_TEXT_BYTES, FoundationXlsxAdapterError, read_xlsx_tables,
+    MAX_CELL_TEXT_BYTES, FoundationXlsxAdapterError, _parse_xml, read_xlsx_tables,
 )
 from domain.services.xlsx_import_profiles import (
     PROFILE_FILENAME, PROFILE_ID, XlsxImportProfileError, load_profile,
@@ -146,7 +146,7 @@ class PlayerXlsxImportTests(TestCase):
         body = {
             "experiment":{"id":str(experiment_id),"code":f"G8-XLSX-EXP-{suffix}","version":"1.0.0","name":f"{kind} {suffix}","color":"#255cca","order":0,"method_version":"A5-v0.1"},
             "assessment_set":{"id":str(set_id),"code":f"G8-XLSX-SET-{suffix}","version":"1.0.0","kind":kind,"name":f"{kind} set","description":"independent lane"},
-            "expert_profile":{"id":str(profile_id),"code":f"G8-XLSX-PROFILE-{suffix}","version":"1.0.0","kind":kind,"display_name":f"{kind} expert","identity_key":f"g8:xlsx:{kind}:{suffix}","provider":"test" if kind=="AI" else "","model_name":"test-model" if kind=="AI" else "","metadata":{"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1"}},
+            "expert_profile":{"id":str(profile_id),"code":f"G8-XLSX-PROFILE-{suffix}","version":"1.0.0","kind":kind,"display_name":f"{kind} expert","identity_key":f"g8:xlsx:{kind}:{suffix}","provider":"test" if kind=="AI" else "","model_name":"test-model" if kind=="AI" else "","metadata":({"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1"} if kind=="AI" else {"contract":"FOUNDATION_PLAYER_EXPERT_PROFILE_V1","organization":"Test organization","role":"Test expert","description":"Independent HUMAN coding lane"})},
         }
         create_experiment(
             user=self.user, workspace_id=self.workspace.pk, operation_id=str(uuid4()),
@@ -189,6 +189,56 @@ class PlayerXlsxImportTests(TestCase):
         self.assertEqual(profile["source_artifacts"]["A3"]["sha256"], "314ac6facb41ba532e475fb008bc8f97ba0b43df26cf0c194782cc24d93f5fff")
         self.assertEqual(profile["source_artifacts"]["A4"]["sha256"], "ce45cc4d6a43950c8ae6d7a54a9a1a6646f7d80340d246d706588ee7060ab826")
         self.assertEqual(profile["source_artifacts"]["A5"]["sha256"], "ba5dd521d61bb14d9e7f3883732d9685c79774430d4b1e3ac91f656a01744876")
+
+    def test_xml_declarations_are_rejected_across_the_complete_member(self):
+        delayed = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<!--' + ('x' * 5000) + '-->'
+            '<!DOCTYPE root [<!ENTITY hidden "EXPANDED">]>'
+            '<root><value>&hidden;</value></root>'
+        ).encode("utf-8")
+        with self.assertRaisesRegex(FoundationXlsxAdapterError, "DTD and entity"):
+            _parse_xml(delayed)
+        utf16 = (
+            '<?xml version="1.0" encoding="UTF-16"?>'
+            '<!DOCTYPE root [<!ENTITY hidden "EXPANDED">]>'
+            '<root><value>&hidden;</value></root>'
+        ).encode("utf-16")
+        with self.assertRaisesRegex(FoundationXlsxAdapterError, "DTD and entity"):
+            _parse_xml(utf16)
+
+    def test_xlsx_source_column_is_bound_to_the_experiment_lane(self):
+        ai = self.aggregate(kind="AI")
+        human = self.aggregate(kind="HUMAN")
+        ai_request = self.import_request(
+            profile_workbook(source_column="ИИ_Значение"),
+            source_column="ИИ_Значение",
+        )
+        human_request = self.import_request(
+            profile_workbook(source_column="Эксперт_Значение"),
+            source_column="Эксперт_Значение",
+        )
+        self.assertTrue(preview_xlsx(
+            user=self.user, experiment_id=ai.pk, body=ai_request,
+        )["commit_allowed"])
+        self.assertTrue(preview_xlsx(
+            user=self.user, experiment_id=human.pk, body=human_request,
+        )["commit_allowed"])
+        for experiment, request in ((ai, human_request), (human, ai_request)):
+            with self.subTest(kind=experiment.assessment_set.kind):
+                with self.assertRaises(PlayerExperimentError) as mismatch:
+                    preview_xlsx(
+                        user=self.user, experiment_id=experiment.pk, body=request,
+                    )
+                self.assertEqual(mismatch.exception.code, "G8_XLSX_MAPPING_INVALID")
+                self.assertFalse(
+                    ActorElementAssessment.objects.filter(experiment=experiment).exists()
+                )
+                self.assertFalse(
+                    ParameterValue.objects.filter(
+                        actor_element_assessment__experiment=experiment,
+                    ).exists()
+                )
 
     def test_xlsx_bounds_repeated_headers_formula_and_cached_values_fail_closed(self):
         raw = profile_workbook(formula=(2, 9))

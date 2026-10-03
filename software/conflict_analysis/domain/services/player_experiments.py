@@ -728,6 +728,20 @@ def _raw_body(body):
     return body["raw_file"]
 
 
+def _require_xlsx_lane_binding(experiment, profile, source_column):
+    kind = experiment.assessment_set.kind
+    if experiment.expert_profile.kind != kind or kind not in {
+        AssessmentKind.HUMAN, AssessmentKind.AI,
+    }:
+        raise PlayerExperimentError("G8_TARGET_MAPPING_MISMATCH")
+    expected = profile.get("input", {}).get("source_columns", {}).get(kind)
+    if type(source_column) is not str or source_column != expected:
+        raise PlayerExperimentError(
+            "G8_XLSX_MAPPING_INVALID", 400,
+            "Selected XLSX source column does not match the experiment HUMAN/AI lane.",
+        )
+
+
 def _validated_import_projection(project, workspace, parsed):
     """Resolve every portable row against the live accepted projection before admission."""
 
@@ -785,6 +799,7 @@ def _validated_import_projection(project, workspace, parsed):
 def preview_xlsx(*, user, experiment_id, body):
     principal=assessment_principal(user); project,workspace,experiment=_experiment_scope(principal,experiment_id)
     raw=_raw_body(body)
+    _require_xlsx_lane_binding(experiment, load_profile(), body["source_column"])
     try: parsed=preview_profile_xlsx(raw,profile_id=body["profile_id"],sheet=body["sheet"],source_column=body["source_column"])
     except XlsxImportProfileError as exc: raise PlayerExperimentError(exc.code,400,exc.detail) from exc
     _validated_import_projection(project, workspace, parsed)
@@ -856,6 +871,7 @@ def import_xlsx(*, user, experiment_id, operation_id, if_match, body):
             or ImportRun.objects.filter(target_experiment=experiment,status=ImportRunStatus.COMMITTED).exists()
         ): raise PlayerExperimentError("G8_IMPORT_NONEMPTY_EXPERIMENT")
         _validator(if_match,body["preview_sha256"])
+        _require_xlsx_lane_binding(experiment, load_profile(), body["source_column"])
         try:
             reparsed=preview_profile_xlsx(raw,profile_id=body["profile_id"],sheet=body["sheet"],source_column=body["source_column"])
         except XlsxImportProfileError as exc:
