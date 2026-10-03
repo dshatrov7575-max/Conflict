@@ -264,6 +264,35 @@ class PlayerExperimentsTests(PlayerExperimentsFixture, TestCase):
         self.assertEqual(comparison(user=self.user,workspace_id=self.workspace.pk)["values"],[])
         self.assertEqual(len(comparison(user=self.user,workspace_id=self.workspace.pk,include_archived=True)["values"]),1)
 
+    def test_xlsx_source_column_is_bound_to_experiment_lane(self):
+        raw = profile_workbook()
+        _, ai, _ = self.aggregate(kind="AI")
+        _, human, _ = self.aggregate(kind="HUMAN")
+        base = {
+            "raw_file": raw,
+            "profile_id": "KZ_ZHANAOZEN_EXPERT_V2_A5_0_1",
+            "sheet": "По_главам",
+        }
+        preview_xlsx(
+            user=self.user, experiment_id=ai.pk,
+            body={**base, "source_column": "ИИ_Значение"},
+        )
+        preview_xlsx(
+            user=self.user, experiment_id=human.pk,
+            body={**base, "source_column": "Эксперт_Значение"},
+        )
+        for experiment, column in (
+            (ai, "Эксперт_Значение"),
+            (human, "ИИ_Значение"),
+        ):
+            with self.subTest(kind=experiment.assessment_set.kind, column=column):
+                with self.assertRaises(PlayerExperimentError) as rejected:
+                    preview_xlsx(
+                        user=self.user, experiment_id=experiment.pk,
+                        body={**base, "source_column": column},
+                    )
+                self.assertEqual(rejected.exception.code, "G8_XLSX_MAPPING_INVALID")
+
     def test_import_candidates_are_experiment_scoped_and_general_does_not_leak_them(self):
         _,one,_=self.aggregate(); _,two,_=self.aggregate(); raw=profile_workbook(); operation=uuid4()
         request={"raw_file":raw,"profile_id":"KZ_ZHANAOZEN_EXPERT_V2_A5_0_1","sheet":"По_главам","source_column":"ИИ_Значение"}; preview=preview_xlsx(user=self.user,experiment_id=one.pk,body=request)
