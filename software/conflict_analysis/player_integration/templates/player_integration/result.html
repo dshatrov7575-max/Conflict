@@ -16,7 +16,11 @@
 </dl></details>
 <section class="ui-panel" data-panel-help="calc-result">
 <h2>UNO: <span data-testid="uno">{{ run.UNO|default_if_none:'Недостаточно данных' }}</span></h2>
-<p>Статус: <strong data-testid="run-status">{{ run.status }}</strong></p>
+<dl class="ui-data ui-status-grid">
+  <dt>Вычисление</dt><dd><strong data-testid="run-status" title="{{ quality_ui.computation_code }}">{{ quality_ui.computation_label }}</strong></dd>
+  <dt>Входы</dt><dd><strong data-testid="evidence-status" title="{{ quality_ui.evidence_code }}">{{ quality_ui.evidence_label }}</strong></dd>
+  <dt>Научный допуск</dt><dd><strong data-testid="admission-status" title="{{ quality_ui.admission_code }}">{{ quality_ui.admission_label }}</strong></dd>
+</dl>
 {% if scenario_token %}<form method="post" action="{% url 'scenario_modeling:update' %}">
   {% csrf_token %}
   <input type="hidden" name="scenario_token" value="{{ scenario_token }}">
@@ -29,7 +33,7 @@
 <section class="ui-panel" data-panel-help="ptn">
 <div class="table-scroll"><table>
   <caption>Метрики ПТН</caption>
-  <thead><tr><th scope="col">ПТН</th><th scope="col">P</th><th scope="col">N</th><th scope="col">A</th><th scope="col">B</th><th scope="col">Pol</th><th scope="col">W</th><th scope="col">Вклад UNO</th><th scope="col">Строки</th><th scope="col">Статус</th></tr></thead>
+  <thead><tr><th scope="col">ПТН</th><th scope="col">P</th><th scope="col">N</th><th scope="col">A</th><th scope="col">B</th><th scope="col">Pol</th><th scope="col">W</th><th scope="col">Вклад UNO</th><th scope="col">Строки</th><th scope="col">Вычисление</th></tr></thead>
   <tbody>{% for ptn in run.ptns %}<tr>
     <th scope="row"><code>{{ ptn.ptn_id }}</code></th>
     <td>{{ ptn.P|default_if_none:'—' }}</td><td>{{ ptn.N|default_if_none:'—' }}</td>

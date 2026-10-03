@@ -140,3 +140,8 @@ python -m pytest -c scenario_modeling/pytest.ini scenario_modeling/tests player_
 На SQLite browser test пропускается: штатный TransactionTestCase flush
 конфликтует с существующими Foundation protection triggers. Триггеры не
 отключаются; на PostgreSQL проверяется полный жизненный цикл тестовой БД.
+
+
+## Статусы результата
+
+`SCENARIO_RESULT_V2` выводит отдельно вычислительный статус Core, состояние входов и научный допуск. Scenario override остаётся `PROVISIONAL`; `COMPLETE` означает только вычислимость и не является scientific admission.

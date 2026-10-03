@@ -56,10 +56,17 @@ class ScenarioHTTPTests(ScenarioHTTPFixture, TestCase):
         baseline_json = response.context["model"].baseline.to_json()
         self.assertContains(response, 'data-testid="baseline-uno">100</strong>')
         self.assertContains(response, 'data-testid="delta-uno">0</strong>')
+        self.assertEqual(response.context["contract"], "SCENARIO_RESULT_V2")
+        self.assertEqual(response.context["baseline_quality"]["computation_status"], "PARTIAL")
+        self.assertEqual(response.context["baseline_quality"]["evidence_status"], "REQUIRED_INPUTS_MISSING")
+        self.assertEqual(response.context["baseline_quality"]["scientific_admission_status"], "NOT_ESTABLISHED")
         changed = self.change(response)
         self.assertContains(changed, 'data-testid="scenario-uno">0</strong>')
         self.assertContains(changed, 'data-testid="delta-uno">-100</strong>')
         self.assertContains(changed, "POS задаёт сторону")
+        self.assertEqual(changed.context["scenario_quality"]["scenario_input_count"], 1)
+        self.assertEqual(changed.context["scenario_quality"]["evidence_status"], "REQUIRED_INPUTS_MISSING")
+        self.assertContains(changed, 'data-testid="scenario-evidence-status" title="REQUIRED_INPUTS_MISSING">есть пропуски</dd>')
         self.assertEqual(changed.context["model"].baseline.to_json(), baseline_json)
         token = changed.context["scenario_token"]
         for _ in range(2):
@@ -121,7 +128,8 @@ class ScenarioHTTPTests(ScenarioHTTPFixture, TestCase):
         for weight in weights["rgu"].values():
             weight["value"] = "0"
         zero = self.change(self.begin(weights=weights), "5")
-        self.assertContains(zero, 'data-testid="scenario-status">NOT_COMPUTABLE</p>')
+        self.assertContains(zero, 'data-testid="scenario-status" title="NOT_COMPUTABLE">не вычисляется</dd>')
+        self.assertEqual(zero.context["scenario_quality"]["computation_status"], "NOT_COMPUTABLE")
         self.assertIsNone(zero.context["baseline"]["UNO"])
         self.assertIsNone(zero.context["scenario"]["UNO"])
         self.assertIsNone(zero.context["delta_uno"])

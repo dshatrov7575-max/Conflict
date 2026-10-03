@@ -10,6 +10,8 @@ from calculation.foundation import BetaWeights, capture_snapshot
 from domain.models import Project, TimeSlice
 from domain.services.player_experiments import PlayerExperimentError, admit_assessment_scope
 
+from .quality import CalculationQuality, summarize_quality
+
 
 def open_experiment(*, user, experiment_id):
     return admit_assessment_scope(user=user, kind="experiment", identity=experiment_id)
@@ -56,10 +58,14 @@ class ResultView:
     snapshot: CalculationSnapshot
     run: CalculationRun
 
+    @property
+    def quality(self) -> CalculationQuality:
+        return summarize_quality(self.snapshot, self.run)
+
     def as_dict(self):
         # Core serialization owns numeric precision, nulls, trace and warnings.
         return {
-            "contract": "PLAYER_CALCULATION_RESULT_V1",
+            "contract": "PLAYER_CALCULATION_RESULT_V2",
             "lane": {
                 "experiment_id": self.snapshot.experiment_id,
                 "experiment_name": self.experiment_name,
@@ -71,6 +77,7 @@ class ResultView:
             },
             "snapshot": json.loads(self.snapshot.to_json()),
             "run": json.loads(self.run.to_json()),
+            "quality": self.quality.as_dict(),
             "result_digest": self.run.result_digest,
         }
 

@@ -57,6 +57,9 @@ try {
       kind: document.querySelector('[data-testid=assessment-kind]').textContent,
       snapshot: JSON.parse(document.querySelector('#snapshot-json').value),
       run: JSON.parse(document.querySelector('#run-json').value),
+      computation: document.querySelector('[data-testid=run-status]').textContent,
+      evidence: document.querySelector('[data-testid=evidence-status]').textContent,
+      admission: document.querySelector('[data-testid=admission-status]').textContent,
       local: Object.keys(localStorage), session: Object.keys(sessionStorage),
       styled: getComputedStyle(document.body).margin === '0px',
     }))()`);
@@ -66,6 +69,9 @@ try {
     assert.equal(result.snapshot.time_slice_id, lane.weights.time_slice_id);
     assert.equal(result.run.snapshot_id, result.snapshot.id);
     assert.equal(result.run.UNO, lane.expected);
+    assert.equal(result.computation, "частично");
+    assert.equal(result.evidence, "есть пропуски");
+    assert.equal(result.admission, "не установлен");
     assert.equal(result.styled, true);
     assert.deepEqual(result.local, []);
     assert.deepEqual(result.session, []);
@@ -76,6 +82,8 @@ try {
   await evaluate("document.querySelector('button[type=submit]').click(); true");
   await wait("document.querySelector('[data-testid=uno]') !== null");
   assert.equal(await evaluate("document.querySelector('[data-testid=uno]').textContent"), "Недостаточно данных");
+  assert.equal(await evaluate("document.querySelector('[data-testid=run-status]').textContent"), "не вычисляется");
+  assert.equal(await evaluate("document.querySelector('[data-testid=evidence-status]').textContent"), "есть пропуски");
   assert.deepEqual([...origins], [new URL(base).origin]);
   assert.deepEqual(failures, []);
   console.log(JSON.stringify({ status: "PASS", lanes: lanes.map(lane => lane.kind), same_origin_only: true }));

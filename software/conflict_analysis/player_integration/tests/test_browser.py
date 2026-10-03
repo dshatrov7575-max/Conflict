@@ -7,13 +7,17 @@ from unittest import skipUnless
 
 from django.conf import settings
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.db import connection
 from django.test import override_settings
 
 from domain.models import ParameterValue
 from .test_e2e import PlayerIntegrationHTTPFixture, TEST_APPS
 
 
-@skipUnless(os.getenv("PLAYER_INTEGRATION_BROWSER") == "1", "Set PLAYER_INTEGRATION_BROWSER=1 for Chromium E2E")
+@skipUnless(
+    os.getenv("PLAYER_INTEGRATION_BROWSER") == "1" and connection.vendor == "postgresql",
+    "Set PLAYER_INTEGRATION_BROWSER=1 with PostgreSQL; FD08 guards block SQLite live-server flush",
+)
 @override_settings(ROOT_URLCONF="player_integration.project_urls", INSTALLED_APPS=TEST_APPS)
 class PlayerIntegrationBrowserTests(PlayerIntegrationHTTPFixture, StaticLiveServerTestCase):
     def setUp(self):
