@@ -1,0 +1,96 @@
+{
+  "artifact_kind": "INHERITED_WITNESS_REPLAY_FREEZE_MANIFEST",
+  "assessor_type": "AI_PREPARATION",
+  "schema_version": "1.0.0",
+  "base_commit": "7bb97104a0f70c9b2d331b955eba440e1bee35ee",
+  "base_tree": "a92cdb777038c5901ed7bc4283b62b6f35fe97c3",
+  "inputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+      "sha256": "348d6f1c72a9f8b0c016f2c5db4be463a5d99e6b6ee91f781045f3c853a97a19",
+      "git_blob_sha1": "23717a9e193a1e398116fbd46a1d1c6e1d984525",
+      "bytes": 224003
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/ATTEMPT_LEDGER_TEMPLATE.json",
+      "sha256": "7e1bd48d6dc5c2e56cd337813153bc1aa3321266aba9c97d4fdc102b315f40a9",
+      "git_blob_sha1": "20a8c2fe520032c902920494f262d5c7231e39d0",
+      "bytes": 5533
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/VALIDATION_RECEIPT.json",
+      "sha256": "41d6814498cb986c9ca61250f3ce71a29fb05cb757c1dc8821da2b378bea06c2",
+      "git_blob_sha1": "e02600ef0da92c70d298ab139528d0ee83bfa1d4",
+      "bytes": 2536
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/FREEZE_MANIFEST.json",
+      "sha256": "eb1491fb34b697cf247ddd225cc9ed192307acd2edad2ca7c9d10588250b53c5",
+      "git_blob_sha1": "b0b8e8dd83e7428e6b1bc57203714baeb06da0da",
+      "bytes": 4024
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/validate_recovery_protocol.py",
+      "sha256": "f5f3ef1b33f99764f3d5b8f765a13846db0d68c999c7ba20466f11f2260afa49",
+      "git_blob_sha1": "7416bfe9cfbe143b85f2015aa42b44f822e75966",
+      "bytes": 24465
+    },
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+      "sha256": "24638c284ca258f0aec9fab5166260471b6b4f662f5747de0c2da5f3e17aa4da",
+      "git_blob_sha1": "7324bcdb008164939171c5b1ae6ac112d09212a6",
+      "bytes": 82780
+    },
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/FREEZE_MANIFEST.json",
+      "sha256": "ce1d51e15777ef201d41256d965e464dec4f9351e1d1d31254d0678bd69be89b",
+      "git_blob_sha1": "e11c9dce7b364aaf87ebcae208974e356efcfdd0",
+      "bytes": 2935
+    }
+  ],
+  "outputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_INHERITED_WITNESS_REPLAY_V1/EXECUTED_ATTEMPT_LEDGER.json",
+      "sha256": "508dafa4860d7fcb1553c5bad76c731e7f02b3a88eb88e360b150a13c70578c1",
+      "git_blob_sha1": "3f9540061bebeb6cb3b07e7f93d7a7638a148345",
+      "bytes": 53669
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_INHERITED_WITNESS_REPLAY_V1/WITNESS_QUERY_BINDING.json",
+      "sha256": "df98911e60d134c56968953a14361ac15a37e071018a473e7c47b17596237fb2",
+      "git_blob_sha1": "8c2f13e5fdb47289c2daa515f90b42445c1d9bd3",
+      "bytes": 29891
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_INHERITED_WITNESS_REPLAY_V1/REPLAY_VALIDATION_RECEIPT.json",
+      "sha256": "aba11d5af7a0eae1adf3415a217f6267288db9934317fb1d5dfec674c6944f6f",
+      "git_blob_sha1": "cf945ca29615d59ec05905cae86391b07f32d820",
+      "bytes": 2795
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_INHERITED_WITNESS_REPLAY_V1/README.md",
+      "sha256": "2bf15e31c8f0536492b51513ec5b87657d1e00ef3c33111fb85fa9df392102ce",
+      "git_blob_sha1": "e4c569efe8cbe12d7d0233c862a0672960ee7b6f",
+      "bytes": 2743
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_INHERITED_WITNESS_REPLAY_V1/validate_witness_replay.py",
+      "sha256": "dd45c9ea8822447f4c2306a4e53c6280a4017dc113d61cea2013cd0d80b3a6b9",
+      "git_blob_sha1": "3b9fad4d0567930bac7995b61073de072327cf2e",
+      "bytes": 22847
+    }
+  ],
+  "scope": {
+    "allowed_directory": "docs/scientific/pilots/ZHANAOZEN_2011_INHERITED_WITNESS_REPLAY_V1",
+    "file_count": 6,
+    "existing_files_modified": false,
+    "network_search_executed_by_pr16": false,
+    "substantive_review_executed_by_pr16": false,
+    "live_query_budget_consumed": 0,
+    "scientific_state_changed": false,
+    "human_coding": "NOT_PERFORMED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "publication_release_deployment": "NOT_EXECUTED"
+  },
+  "self_binding": "This manifest is bound by the delivery commit and external receipt; no recursive self-hash is embedded."
+}

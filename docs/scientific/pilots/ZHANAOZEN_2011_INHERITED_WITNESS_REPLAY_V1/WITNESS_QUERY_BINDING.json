@@ -1,0 +1,655 @@
+{
+  "artifact_kind": "INHERITED_WITNESS_TO_QUERY_BINDING",
+  "assessor_type": "AI_PREPARATION",
+  "schema_version": "1.0.0",
+  "replay_id": "ZHANAOZEN_2011_INHERITED_WITNESS_REPLAY_V1",
+  "base_commit": "7bb97104a0f70c9b2d331b955eba440e1bee35ee",
+  "plan_id": "ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1",
+  "source_witness_record_id": "ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1",
+  "binding_rule": "Sort witnesses by DocumentVersion, capture timestamp, and witness ID; bind chronologically to the two frozen fragment-route query slots without consuming live budget.",
+  "bindings": [
+    {
+      "witness_id": "AW-D13-20110918124424",
+      "document_version_id": "00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "planned_query_id": "f7f67161-713c-5118-8bf6-4d3264f42f84",
+      "planned_query_template_id": "FRAGMENT-EXACT-PHRASE",
+      "planned_query_ordinal": 3,
+      "replay_attempt_id": "9bd0b3a2-c4a0-55e3-81db-5c895a6a4d9e",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/9"
+      },
+      "source_witness_sha256": "d497ff8264588c1f7fda9130aefbe48876e1c510f8deaea9172e41ed58d25f75",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/15"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/15/planned_queries/2"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D13-20111024200546",
+      "document_version_id": "00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "planned_query_id": "22e3d1ce-88a2-52a8-a6a8-4616924a9ee3",
+      "planned_query_template_id": "FRAGMENT-DIGEST-WITNESS",
+      "planned_query_ordinal": 4,
+      "replay_attempt_id": "400cd1b5-0068-5680-83e7-cba38eaec8dd",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/10"
+      },
+      "source_witness_sha256": "af2f0dff1dfdc10e83df60de464f7c04ba892975e010f91f5eb71c79b0820abd",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/15"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/15/planned_queries/3"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D18-20111016234632",
+      "document_version_id": "17608513-7164-5d30-9d2e-521338e323d7",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-17608513-7164-5d30-9d2e-521338e323d7",
+      "planned_query_id": "faa1396e-b549-5946-8b00-d394b651158e",
+      "planned_query_template_id": "FRAGMENT-EXACT-PHRASE",
+      "planned_query_ordinal": 3,
+      "replay_attempt_id": "7a35b4a0-edf8-534c-9ec9-8ec139b6fecf",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/15"
+      },
+      "source_witness_sha256": "98ce2f181a9d0017ec3b45b73fe8772e2c6c3848e8c84b79a8ef289326fcfe55",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/19"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/19/planned_queries/2"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D05-20110629041259",
+      "document_version_id": "3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "planned_query_id": "9453943f-1c09-575a-b8c0-ec6978c0d63b",
+      "planned_query_template_id": "FRAGMENT-EXACT-PHRASE",
+      "planned_query_ordinal": 3,
+      "replay_attempt_id": "db2fa53a-c194-5342-87bb-e02b5fd7fba5",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/4"
+      },
+      "source_witness_sha256": "3409887dcd870a11a5c19904c4e4226e803b225d160b972049df517a756907c3",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/6"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/6/planned_queries/2"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D05-20110918081249",
+      "document_version_id": "3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "planned_query_id": "1cd98202-1724-5bbf-a192-316f5a6c7b0a",
+      "planned_query_template_id": "FRAGMENT-DIGEST-WITNESS",
+      "planned_query_ordinal": 4,
+      "replay_attempt_id": "0e2a1ef1-3b63-5b9b-a4b9-b6dd660028af",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/5"
+      },
+      "source_witness_sha256": "ac1c93a8775fd79c906a25aa0bb5db2f85533790f3eeb1a5f2ae0e3bafec7e33",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/6"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/6/planned_queries/3"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D14-20110927202906",
+      "document_version_id": "3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "planned_query_id": "205a2334-31c4-529f-9340-260fd3f4554b",
+      "planned_query_template_id": "FRAGMENT-EXACT-PHRASE",
+      "planned_query_ordinal": 3,
+      "replay_attempt_id": "50449726-ac70-5eda-889c-0f87c1d691c8",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/11"
+      },
+      "source_witness_sha256": "1b8cf4b8eb58b87781824ebd365efcbc41a63f84de2a452d2a958c275b2da363",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/16"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/16/planned_queries/2"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D14-20111106041751",
+      "document_version_id": "3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "planned_query_id": "67bfa89b-5231-5d7c-b83d-54c87c3d8000",
+      "planned_query_template_id": "FRAGMENT-DIGEST-WITNESS",
+      "planned_query_ordinal": 4,
+      "replay_attempt_id": "9d1138ff-b20d-591e-aa10-8efc20b2220a",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/12"
+      },
+      "source_witness_sha256": "4cd82a988912df0c5058057fbebee731452d65504bf635c256fadedf1d9c4b49",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/16"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/16/planned_queries/3"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D22-20111120030853",
+      "document_version_id": "53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "planned_query_id": "a4d3e8df-90f9-5bf8-94db-d43f13268104",
+      "planned_query_template_id": "FRAGMENT-EXACT-PHRASE",
+      "planned_query_ordinal": 3,
+      "replay_attempt_id": "cc031ae9-50a1-53e5-9390-1b01d718315a",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/17"
+      },
+      "source_witness_sha256": "58b3462d49024e1019c8c4e7aa145d02c43ed0e954f41ff1433386c834f9f881",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/22"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/22/planned_queries/2"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D01-20110521181520",
+      "document_version_id": "64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "planned_query_id": "2a658823-36d5-52de-9a50-06126737da34",
+      "planned_query_template_id": "FRAGMENT-EXACT-PHRASE",
+      "planned_query_ordinal": 3,
+      "replay_attempt_id": "48cd76c4-f73a-5876-a467-2482fd4237c8",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/0"
+      },
+      "source_witness_sha256": "f26e5b72c256cb4119ee374ff52b889fb14c14ca9fdd866980237d4011c3ce44",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/1"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/1/planned_queries/2"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D01-20110811165523",
+      "document_version_id": "64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "planned_query_id": "43722fe1-161a-5739-9b32-f7c213233df7",
+      "planned_query_template_id": "FRAGMENT-DIGEST-WITNESS",
+      "planned_query_ordinal": 4,
+      "replay_attempt_id": "36dbfd7c-fd28-58f9-8e6d-6f661167ff2a",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/1"
+      },
+      "source_witness_sha256": "84d4086cdc06d27685f2a1958d5915f15c7e9f3fc90f7d1af33d40d14ca83fdd",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/1"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/1/planned_queries/3"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D25-20111016060958",
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "planned_query_id": "314cb51d-3bd2-5779-a799-6f92f4a9847e",
+      "planned_query_template_id": "FRAGMENT-EXACT-PHRASE",
+      "planned_query_ordinal": 3,
+      "replay_attempt_id": "2c5237a9-6608-540e-81c7-fff89949eaf2",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/13"
+      },
+      "source_witness_sha256": "842b1e4c9bc779c5a355c737c8032cc260f89c6e715cd35a79c4db452ca55085",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/25"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/25/planned_queries/2"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D25-20111116125247",
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "planned_query_id": "56fa089f-54a8-5c9d-ac96-a40bc7813b2d",
+      "planned_query_template_id": "FRAGMENT-DIGEST-WITNESS",
+      "planned_query_ordinal": 4,
+      "replay_attempt_id": "e616743f-3730-58cf-a55f-d532f3972a6d",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/14"
+      },
+      "source_witness_sha256": "bcd463a3437a1b118c4c21ad8b73daca478fd439d73af72ddb285485109e215f",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/25"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/25/planned_queries/3"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D04-20110529132216",
+      "document_version_id": "adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "planned_query_id": "bef6bd7e-2eb8-5c1c-9fe9-b339243f4b1d",
+      "planned_query_template_id": "FRAGMENT-EXACT-PHRASE",
+      "planned_query_ordinal": 3,
+      "replay_attempt_id": "d60da3b7-77e3-5e03-8771-48f90f3ce579",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/16"
+      },
+      "source_witness_sha256": "14875ff5ce33a420d5b2b44ef14887c4667e6be09273d1506631826b64209def",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/5"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/5/planned_queries/2"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D06-20110716171000",
+      "document_version_id": "bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "planned_query_id": "6d693ad0-6d80-5418-a8c6-0e3d0b53a0ca",
+      "planned_query_template_id": "FRAGMENT-EXACT-PHRASE",
+      "planned_query_ordinal": 3,
+      "replay_attempt_id": "379b101d-ce42-51c9-b451-bd668bce4d6d",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/6"
+      },
+      "source_witness_sha256": "a2fce4d0bc058c800a91cecd30b5ee3b3dc945a3a2bb0384c3eff55e40e7c6c0",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/7"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/7/planned_queries/2"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D03-20110527054702",
+      "document_version_id": "ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "planned_query_id": "0dc41e4c-d002-50c7-8420-a697a33cf6a8",
+      "planned_query_template_id": "FRAGMENT-EXACT-PHRASE",
+      "planned_query_ordinal": 3,
+      "replay_attempt_id": "e30c3800-d189-5580-9566-f1bfc7956528",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/2"
+      },
+      "source_witness_sha256": "7ad4b9772d87b465adf35dba51933eff9d27ed5af6c16317910acc5a924f2a2b",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/4"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/4/planned_queries/2"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D03-20110916223846",
+      "document_version_id": "ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "planned_query_id": "16455d83-f78c-5737-87ff-20c73bf573b9",
+      "planned_query_template_id": "FRAGMENT-DIGEST-WITNESS",
+      "planned_query_ordinal": 4,
+      "replay_attempt_id": "cec6acd8-db2d-5139-a324-551aa69796d0",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/3"
+      },
+      "source_witness_sha256": "c76be817637ea5a8a39df0ce7950c5fe7804448baa89865fd009d72041eafdc0",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/4"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/4/planned_queries/3"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D09-20110809011049",
+      "document_version_id": "f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "planned_query_id": "12f60830-1793-57e6-93ef-a93db455e61d",
+      "planned_query_template_id": "FRAGMENT-EXACT-PHRASE",
+      "planned_query_ordinal": 3,
+      "replay_attempt_id": "d82c2ca0-4307-5297-bf65-d50b572af711",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/7"
+      },
+      "source_witness_sha256": "18356b1a2071c859509672e98793260f155e5a8d4d41f37dbbe8a81bd2210ecf",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/10"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/10/planned_queries/2"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "witness_id": "AW-D09-20111022101958",
+      "document_version_id": "f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "planned_query_id": "1cab5795-d323-57bc-bed6-4aedac0bdf75",
+      "planned_query_template_id": "FRAGMENT-DIGEST-WITNESS",
+      "planned_query_ordinal": 4,
+      "replay_attempt_id": "74237a89-ad53-5e23-94a5-758e4e523805",
+      "source_witness_reference": {
+        "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+        "json_pointer": "/witnesses/8"
+      },
+      "source_witness_sha256": "80cb0c22b7a4e50a1e39fc5c9b420b3b84ddddd93c444160322ee29229fbd681",
+      "plan_blocker_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/10"
+      },
+      "plan_query_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+        "json_pointer": "/blocker_units/10/planned_queries/3"
+      },
+      "binding_mode": "REFERENCE_ONLY_INHERITED_REPLAY",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    }
+  ],
+  "document_version_summary": [
+    {
+      "document_version_id": "00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "witness_ids": [
+        "AW-D13-20110918124424",
+        "AW-D13-20111024200546"
+      ],
+      "planned_query_ids": [
+        "f7f67161-713c-5118-8bf6-4d3264f42f84",
+        "22e3d1ce-88a2-52a8-a6a8-4616924a9ee3"
+      ],
+      "fragment_ids": [
+        "56d19d98-707a-5deb-9472-d355b3835d79"
+      ],
+      "witness_count": 2,
+      "full_edition_status": "NOT_PROVEN_UNCHANGED",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "document_version_id": "17608513-7164-5d30-9d2e-521338e323d7",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-17608513-7164-5d30-9d2e-521338e323d7",
+      "witness_ids": [
+        "AW-D18-20111016234632"
+      ],
+      "planned_query_ids": [
+        "faa1396e-b549-5946-8b00-d394b651158e"
+      ],
+      "fragment_ids": [
+        "33ce2949-0da2-5839-9b01-566ae7e4bbf4",
+        "b5fdecb6-2ac4-5f56-aae6-6aef4bb7b956"
+      ],
+      "witness_count": 1,
+      "full_edition_status": "NOT_PROVEN_UNCHANGED",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "document_version_id": "3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "witness_ids": [
+        "AW-D05-20110629041259",
+        "AW-D05-20110918081249"
+      ],
+      "planned_query_ids": [
+        "9453943f-1c09-575a-b8c0-ec6978c0d63b",
+        "1cd98202-1724-5bbf-a192-316f5a6c7b0a"
+      ],
+      "fragment_ids": [
+        "04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+        "b344006d-0950-57af-b0e7-60eb7b4f5217"
+      ],
+      "witness_count": 2,
+      "full_edition_status": "NOT_PROVEN_UNCHANGED",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "document_version_id": "3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "witness_ids": [
+        "AW-D14-20110927202906",
+        "AW-D14-20111106041751"
+      ],
+      "planned_query_ids": [
+        "205a2334-31c4-529f-9340-260fd3f4554b",
+        "67bfa89b-5231-5d7c-b83d-54c87c3d8000"
+      ],
+      "fragment_ids": [
+        "49c356b3-3585-587c-9573-d4326e97de77"
+      ],
+      "witness_count": 2,
+      "full_edition_status": "NOT_PROVEN_UNCHANGED",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "document_version_id": "53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "witness_ids": [
+        "AW-D22-20111120030853"
+      ],
+      "planned_query_ids": [
+        "a4d3e8df-90f9-5bf8-94db-d43f13268104"
+      ],
+      "fragment_ids": [
+        "ab55c516-12dc-5533-9e87-a950a6e61b3e"
+      ],
+      "witness_count": 1,
+      "full_edition_status": "NOT_PROVEN_UNCHANGED",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "document_version_id": "64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "witness_ids": [
+        "AW-D01-20110521181520",
+        "AW-D01-20110811165523"
+      ],
+      "planned_query_ids": [
+        "2a658823-36d5-52de-9a50-06126737da34",
+        "43722fe1-161a-5739-9b32-f7c213233df7"
+      ],
+      "fragment_ids": [
+        "d3e6a365-8150-545b-8005-c18c4939142b"
+      ],
+      "witness_count": 2,
+      "full_edition_status": "NOT_PROVEN_UNCHANGED",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "witness_ids": [
+        "AW-D25-20111016060958",
+        "AW-D25-20111116125247"
+      ],
+      "planned_query_ids": [
+        "314cb51d-3bd2-5779-a799-6f92f4a9847e",
+        "56fa089f-54a8-5c9d-ac96-a40bc7813b2d"
+      ],
+      "fragment_ids": [
+        "3ca46849-549e-544d-b72c-d62ef1706612",
+        "a7869dd7-97d1-56de-86b4-aadf1e970c0a",
+        "ef7df23c-ba67-5903-9265-adbd1936ffa3"
+      ],
+      "witness_count": 2,
+      "full_edition_status": "NOT_PROVEN_UNCHANGED",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "document_version_id": "adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "witness_ids": [
+        "AW-D04-20110529132216"
+      ],
+      "planned_query_ids": [
+        "bef6bd7e-2eb8-5c1c-9fe9-b339243f4b1d"
+      ],
+      "fragment_ids": [
+        "7f0b0752-387d-5def-ba3d-ab11c4f1414b"
+      ],
+      "witness_count": 1,
+      "full_edition_status": "NOT_PROVEN_UNCHANGED",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "document_version_id": "bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "witness_ids": [
+        "AW-D06-20110716171000"
+      ],
+      "planned_query_ids": [
+        "6d693ad0-6d80-5418-a8c6-0e3d0b53a0ca"
+      ],
+      "fragment_ids": [
+        "d1067ad6-51d6-5a42-b6ea-8cf74c4fd71c"
+      ],
+      "witness_count": 1,
+      "full_edition_status": "NOT_PROVEN_UNCHANGED",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "document_version_id": "ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "witness_ids": [
+        "AW-D03-20110527054702",
+        "AW-D03-20110916223846"
+      ],
+      "planned_query_ids": [
+        "0dc41e4c-d002-50c7-8420-a697a33cf6a8",
+        "16455d83-f78c-5737-87ff-20c73bf573b9"
+      ],
+      "fragment_ids": [
+        "cc839407-9eb7-5e05-acca-70f1577883d4",
+        "d521033f-59ce-5518-9227-b5fe9cb7570f"
+      ],
+      "witness_count": 2,
+      "full_edition_status": "NOT_PROVEN_UNCHANGED",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    },
+    {
+      "document_version_id": "f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "witness_ids": [
+        "AW-D09-20110809011049",
+        "AW-D09-20111022101958"
+      ],
+      "planned_query_ids": [
+        "12f60830-1793-57e6-93ef-a93db455e61d",
+        "1cab5795-d323-57bc-bed6-4aedac0bdf75"
+      ],
+      "fragment_ids": [
+        "2c47a771-1301-55be-a2ab-9b2ef1f82510",
+        "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94"
+      ],
+      "witness_count": 2,
+      "full_edition_status": "NOT_PROVEN_UNCHANGED",
+      "query_budget_effect": "NONE_LEGACY_REPLAY"
+    }
+  ],
+  "coverage": {
+    "witnesses": 18,
+    "document_versions": 11,
+    "unique_fragments": 17,
+    "unique_query_bindings": 18,
+    "live_query_budget_consumed": 0
+  },
+  "boundaries": {
+    "network_search_executed_by_pr16": false,
+    "substantive_review_executed_by_pr16": false,
+    "full_edition_promotion": false,
+    "scientific_state_change": false
+  }
+}
