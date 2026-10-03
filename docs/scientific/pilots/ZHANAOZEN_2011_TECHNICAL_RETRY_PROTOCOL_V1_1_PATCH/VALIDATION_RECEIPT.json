@@ -1,0 +1,28 @@
+{
+  "artifact_kind": "TECHNICAL_RETRY_PROTOCOL_PATCH_VALIDATION_RECEIPT",
+  "assessor_type": "AI_PREPARATION",
+  "status": "PASS_TECHNICAL_ONLY",
+  "base_commit": "8150ce7c7d001f6e75c0c03cdc93aa0b8c5e4db1",
+  "base_tree": "c2e6c4ec21609507689c5c62302a0fc00c0ad6a2",
+  "checks": [
+    "exact_base_identity",
+    "v1_protocol_and_receipt_pinned",
+    "four_logical_retry_units_preserved",
+    "two_initial_and_two_replay_failure_units_preserved",
+    "maximum_six_http_subrequests_derived",
+    "one_execution_per_retry_id_preserved",
+    "automatic_retries_zero",
+    "all_nonbudget_v1_rules_unchanged",
+    "no_execution_or_scientific_state_change",
+    "five_file_scope_and_manifest_pins"
+  ],
+  "counts": {
+    "logical_retry_execution_units": 4,
+    "initial_failure_units": 2,
+    "replay_failure_units": 2,
+    "maximum_total_http_subrequests": 6,
+    "executions_by_pr20a": 0,
+    "scientific_state_changes": 0
+  },
+  "release_state": "PROTOCOL_V1_1_BUDGET_CLARIFIED_EXECUTION_STILL_FORBIDDEN_PENDING_SEPARATE_TASK"
+}
