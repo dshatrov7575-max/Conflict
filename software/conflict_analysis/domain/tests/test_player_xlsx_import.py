@@ -215,6 +215,21 @@ class PlayerXlsxImportTests(TestCase):
             _xlsx_body(request)
         self.assertEqual(extension.exception.code, "PLAYER_REQUEST_INVALID")
 
+    def test_xml_declarations_after_four_kib_are_rejected(self):
+        from domain.services.xlsx_adapter import FoundationXlsxAdapterError, _parse_xml
+
+        padding = b"<!--" + (b"x" * 5000) + b"-->"
+        for declaration in (
+            b"<!DOCTYPE root [<!ENTITY x 'HELLO'>]><root>&x;</root>",
+            b"<!ENTITY x 'HELLO'><root />",
+        ):
+            with self.subTest(declaration=declaration[:16]):
+                with self.assertRaisesRegex(
+                    FoundationXlsxAdapterError,
+                    "DTD and entity declarations are forbidden",
+                ):
+                    _parse_xml(padding + declaration)
+
     def test_row_order_independent_stable_id_mapping_uses_exact_projection_and_applicability(self):
         profile = load_profile(); self.assertEqual(len({row["a5_v4_id"] for row in profile["records"]}), 330)
         transfers=[row for row in profile["records"] if row["migration_status"]=="TRANSFER_WITH_REVIEW"]

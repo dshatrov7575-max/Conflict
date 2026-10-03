@@ -331,7 +331,10 @@ def _validate_archive(archive: zipfile.ZipFile) -> None:
 
 
 def _parse_xml(xml: bytes):
-    upper = xml[:4096].upper()
+    # XLSX members are already size-bounded before parsing. Inspect the complete
+    # member so a long XML comment cannot move a DTD/entity declaration past a
+    # prefix-only guard.
+    upper = xml.upper()
     if b"<!DOCTYPE" in upper or b"<!ENTITY" in upper:
         raise FoundationXlsxAdapterError("DTD and entity declarations are forbidden in XLSX XML.")
     root = ElementTree.fromstring(xml)

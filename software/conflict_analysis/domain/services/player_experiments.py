@@ -782,8 +782,21 @@ def _validated_import_projection(project, workspace, parsed):
     return profile, actors, elements, times, definitions, role_cache
 
 
+def _require_experiment_source_column(experiment, source_column):
+    required = load_profile()["input"]["source_columns"].get(
+        experiment.assessment_set.kind
+    )
+    if required is None or source_column != required:
+        raise PlayerExperimentError(
+            "G8_XLSX_MAPPING_INVALID",
+            400,
+            "Selected XLSX source column does not match the HUMAN/AI experiment lane.",
+        )
+
+
 def preview_xlsx(*, user, experiment_id, body):
     principal=assessment_principal(user); project,workspace,experiment=_experiment_scope(principal,experiment_id)
+    _require_experiment_source_column(experiment, body.get("source_column"))
     raw=_raw_body(body)
     try: parsed=preview_profile_xlsx(raw,profile_id=body["profile_id"],sheet=body["sheet"],source_column=body["source_column"])
     except XlsxImportProfileError as exc: raise PlayerExperimentError(exc.code,400,exc.detail) from exc
@@ -850,6 +863,7 @@ def import_xlsx(*, user, experiment_id, operation_id, if_match, body):
         if ImportRun.objects.filter(pk=operation_id).exists() or AuditEvent.objects.filter(pk=operation_id).exists():
             raise PlayerExperimentError("PLAYER_OPERATION_KEY_REUSE")
         if experiment.status!=ExperimentStatus.DRAFT: raise PlayerExperimentError("G8_EXPERIMENT_NOT_DRAFT")
+        _require_experiment_source_column(experiment, body["source_column"])
         if (
             ActorElementAssessment.objects.filter(experiment=experiment).exists()
             or ParameterValue.objects.filter(actor_element_assessment__experiment=experiment).exists()
