@@ -16,7 +16,7 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from calculation import CalculationSnapshot, calculate
-from domain.models import ActorElementRole, ParameterValue, TimeSlice
+from domain.models import ActorElementRole, AuditEvent, ParameterValue, TimeSlice
 from domain.services import zhanaozen_typed_manifest as typed
 from domain.services.player_experiments import PlayerExperimentError
 from domain.tests.test_player_experiments import PlayerExperimentsFixture
@@ -42,10 +42,12 @@ class PlayerIntegrationHTTPFixture(PlayerExperimentsFixture):
         self.ptn = self.roles[0].element_id
         self.pair = [row for row in self.roles if row.element_id == self.ptn][:2]
 
-    def post_json(self, url, body, *, etag=None):
+    def post_json(self, url, body, *, etag=None, operation_id=None):
         headers = {"HTTP_X_CSRFTOKEN": self.client.cookies["csrftoken"].value}
         if etag is not None:
             headers.update(HTTP_IF_MATCH=f'"{etag}"', HTTP_IDEMPOTENCY_KEY=str(uuid4()))
+        else:
+            headers["HTTP_IDEMPOTENCY_KEY"] = str(operation_id or uuid4())
         return self.client.post(url, json.dumps(body), content_type="application/json", **headers)
 
     def create_experiment_http(self, kind):
@@ -99,22 +101,41 @@ class PlayerIntegrationHTTPFixture(PlayerExperimentsFixture):
             "time_slice_id": time_slice_id or self.time.pk,
         })
 
-    def measured(self, action):
-        before = list(ParameterValue.objects.order_by("pk").values())
+    def measured(self, action, *, expected_audit_inserts=0):
+        before_values = list(ParameterValue.objects.order_by("pk").values())
+        before_audits = AuditEvent.objects.count()
         with CaptureQueriesContext(connection) as queries:
             response = action()
-        self.assertFalse([row["sql"] for row in queries if re.match(
-            r"\s*(INSERT|UPDATE|DELETE)\b", row["sql"], re.IGNORECASE)])
-        self.assertEqual(before, list(ParameterValue.objects.order_by("pk").values()))
+        writes = [row["sql"] for row in queries if re.match(
+            r"\s*(INSERT|UPDATE|DELETE)\b", row["sql"], re.IGNORECASE)]
+        unexpected = [sql for sql in writes if not re.match(
+            r'\s*INSERT\s+INTO\s+["`]?domain_auditevent["`]?', sql, re.IGNORECASE)]
+        self.assertEqual(unexpected, [])
+        observed_audit_inserts = sum(bool(re.match(
+            r'\s*INSERT\s+INTO\s+["`]?domain_auditevent["`]?', sql, re.IGNORECASE
+        )) for sql in writes)
+        self.assertEqual(
+            observed_audit_inserts, expected_audit_inserts,
+            (response.status_code, response.content, writes),
+        )
+        self.assertEqual(before_values, list(ParameterValue.objects.order_by("pk").values()))
+        self.assertEqual(AuditEvent.objects.count() - before_audits, expected_audit_inserts)
         self.assertEqual(response["Cache-Control"], "no-store")
         return response
 
-    def run_json(self, weights=None, **scope):
+    def run_json(self, weights=None, *, operation_id=None, expected_audit_inserts=1, **scope):
+        operation_id = operation_id or uuid4()
         response = self.measured(lambda: self.post_json(
-            self.url(**scope), self.weights(**scope) if weights is None else weights))
+            self.url(**scope), self.weights(**scope) if weights is None else weights,
+            operation_id=operation_id), expected_audit_inserts=expected_audit_inserts)
         self.assertEqual(response.status_code, 200, response.content)
         payload = response.json()
-        self.assertEqual(payload["contract"], "PLAYER_CALCULATION_RESULT_V2")
+        self.assertEqual(payload["contract"], "PLAYER_CALCULATION_RESULT_V3")
+        self.assertEqual(payload["receipt"]["operation_id"], str(operation_id))
+        self.assertEqual(payload["receipt"]["result_digest"], payload["result_digest"])
+        self.assertEqual(payload["receipt_replayed"], expected_audit_inserts == 0)
+        self.assertEqual(response["X-Calculation-Receipt-ID"], str(operation_id))
+        self.assertEqual(response["X-Calculation-Receipt-Replayed"], "true" if expected_audit_inserts == 0 else "false")
         self.assertEqual(payload["quality"]["computation_status"], payload["run"]["status"])
         self.assertEqual(payload["quality"]["scientific_admission_status"], "NOT_ESTABLISHED")
         snapshot = CalculationSnapshot.from_json(json.dumps(payload["snapshot"]))
@@ -125,7 +146,11 @@ class PlayerIntegrationHTTPFixture(PlayerExperimentsFixture):
 
     def form_body(self, response, weights):
         form = response.context["form"]
-        data = {"experiment_id": weights["experiment_id"], "time_slice_id": weights["time_slice_id"]}
+        data = {
+            "operation_id": str(form["operation_id"].value()),
+            "experiment_id": weights["experiment_id"],
+            "time_slice_id": weights["time_slice_id"],
+        }
         for group, identities in form.groups.items():
             for identity in identities:
                 for name, value in weights[group][identity].items():
@@ -149,7 +174,10 @@ class PlayerIntegrationE2ETests(PlayerIntegrationHTTPFixture, TestCase):
         selection = self.measured(lambda: self.client.get(selected["Location"]))
         self.assertContains(selection, self.url())
         inputs = self.measured(lambda: self.client.get(self.url()))
-        response = self.measured(lambda: self.post_form(self.form_body(inputs, self.weights())))
+        response = self.measured(
+            lambda: self.post_form(self.form_body(inputs, self.weights())),
+            expected_audit_inserts=1,
+        )
         self.assertEqual(response.status_code, 200, response.content)
         self.assertContains(response, 'data-testid="uno">100</span>')
         self.assertContains(response, 'data-testid="assessment-kind">HUMAN</strong>')
@@ -194,7 +222,9 @@ class PlayerIntegrationE2ETests(PlayerIntegrationHTTPFixture, TestCase):
         role = next(row for row in self.pair if row.actor.code == pos["actor_code"])
         self.write_value_http(role, "POS", 0, experiment_id=ai_id, predecessor=pos["id"])
         self.assertEqual(self.run_json(experiment_id=ai_id)["run"]["UNO"], "0")
-        self.assertEqual(self.run_json(), human)
+        current = self.run_json()
+        for key in ("lane", "snapshot", "run", "quality", "result_digest"):
+            self.assertEqual(current[key], human[key])
 
     def test_missing_weights_stay_unknown_and_are_not_filled(self):
         self.fill()
@@ -218,11 +248,14 @@ class PlayerIntegrationE2ETests(PlayerIntegrationHTTPFixture, TestCase):
         inputs = self.client.get(self.url())
         response = self.post_form(self.form_body(inputs, self.weights()))
         self.assertContains(response, 'data-testid="uno">0</span>')
+        self.assertContains(response, 'data-testid="receipt-id"')
         weights = self.weights()
         for weight in weights["rgu"].values():
             weight["value"] = "0"
         self.assertIsNone(self.run_json(weights)["run"]["UNO"])
-        response = self.post_form(self.form_body(inputs, weights))
+        second_data = self.form_body(inputs, weights)
+        second_data["operation_id"] = str(uuid4())
+        response = self.post_form(second_data)
         self.assertContains(response, 'data-testid="uno">Недостаточно данных</span>')
 
     def test_missing_one_ptn_weight_blocks_area_but_retains_ptn_metrics(self):
@@ -321,8 +354,11 @@ class PlayerIntegrationE2ETests(PlayerIntegrationHTTPFixture, TestCase):
                 response = self.measured(lambda: self.post_json(self.url(), invalid))
                 self.assertEqual(response.status_code, 400, response.content)
         for raw in ('{"rgu":{},"rgu":{}}', '{"x":NaN}', '{', '[' * 1100, ' ' * 262145):
-            response = self.client.post(self.url(), raw, content_type="application/json",
-                                        HTTP_X_CSRFTOKEN=self.client.cookies["csrftoken"].value)
+            response = self.client.post(
+                self.url(), raw, content_type="application/json",
+                HTTP_X_CSRFTOKEN=self.client.cookies["csrftoken"].value,
+                HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+            )
             self.assertEqual(response.status_code, 400)
 
     def test_form_errors_preserve_user_inputs_and_do_not_run(self):

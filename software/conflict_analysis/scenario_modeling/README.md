@@ -64,8 +64,10 @@ PTN-результаты и JSON для offline replay. Ноль отображ�
 - HUMAN и AI всегда принадлежат своим Experiment/AssessmentSet; сценарий не
   объединяет значения. Проверка Foundation admission выполняется при каждом
   запросе, в том числе после изменения прав, freeze и archive.
-- Нет записей в AssessmentSet, ParameterValue, Experiment, AuditEvent или
-  другие доменные таблицы; нет миграций, изменения Core или формулы.
+- Нет записей в AssessmentSet, ParameterValue, Experiment или исходные данные.
+  Каждый успешный action добавляет один immutable digest-only `AuditEvent` receipt
+  сценарного запуска; snapshot/run/override payload в БД не дублируется.
+  Нет миграций, изменения Core или формулы.
 
 ## Хранение Scenario Model
 
@@ -75,7 +77,8 @@ MVP использует подписанный form state с baseline и overri
 cookie или browser storage; ответ имеет `no-store`, CSRF и CSP.
 
 `POST /player/calculations/scenarios/` принимает form-urlencoded с
-`scenario_token` и действием `start`, `set` (+ `parameter`, `value`),
+`scenario_token`, каноническим UUIDv4 `operation_id` и действием `start`,
+`set` (+ `parameter`, `value`),
 `remove` (+ `parameter`), `recalculate` или `reset`.
 Лишние и повторные поля отклоняются. JSON API PR-2 остаётся прежним.
 
@@ -83,9 +86,11 @@ cookie или browser storage; ответ имеет `no-store`, CSRF и CSP.
 Новая авторизация/ротация session делает старый token недействительным.
 Максимум 256 override и 1 000 000 символов подписанного state. Слишком большой
 baseline по-прежнему доступен в PR-2, но без кнопки создания сценария.
-Постоянного серверного каталога, shared editing и восстановления через URL нет.
-Для сохранения скопируйте Scenario Model JSON; HTTP-импорт неподписанного
-JSON не предоставляется. Offline Python replay:
+Постоянного каталога Scenario Model, shared editing и восстановления модели
+через URL нет. Серверная история содержит только digest receipts с scenario UUID,
+baseline snapshot ID, model SHA-256, result digest и quality status. Для полного
+replay по-прежнему сохраните Scenario Model JSON; HTTP-импорт неподписанного JSON
+не предоставляется. Offline Python replay:
 
 ```python
 import json
@@ -112,7 +117,7 @@ comparison = result_view(model)
 | `templates/scenario_modeling/result.html` | Сравнение, параметры, список изменений и экспорт |
 | `static/scenario_modeling/scenario.js`, `scenario.css` | Связь input/slider и адаптивная раскладка |
 | `tests/test_model.py` | Числовые, immutable и isolation контракты |
-| `tests/test_http.py` | Реальный Foundation/Player/Core flow без SQL writes |
+| `tests/test_http.py` | Foundation/Player/Core flow; только receipt AuditEvent writes |
 | `tests/test_browser.py`, `tests/browser_e2e.mjs` | Chromium: формы, slider, replay, desktop/mobile |
 | `pytest.ini`, `.gitignore` | Вход тестов и исключение артефактов |
 | `VALIDATION.md` | Зафиксированные результаты проверки |
@@ -144,4 +149,4 @@ python -m pytest -c scenario_modeling/pytest.ini scenario_modeling/tests player_
 
 ## Статусы результата
 
-`SCENARIO_RESULT_V2` выводит отдельно вычислительный статус Core, состояние входов и научный допуск. Scenario override остаётся `PROVISIONAL`; `COMPLETE` означает только вычислимость и не является scientific admission.
+`SCENARIO_RESULT_V3` ??????? ???????? ?????????????? ?????? Core, ????????? ?????? ? ??????? ?????? ? ????????? digest-only ????????? ??????? ????????? ?????????? ???????. Scenario override ???????? `PROVISIONAL`; `COMPLETE` ???????? ?????? ???????????? ? ?? ???????? scientific admission.

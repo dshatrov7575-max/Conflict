@@ -1,6 +1,7 @@
 """Bounded transport adapters for explicit, transient beta weights."""
 import json
 import re
+from uuid import RFC_4122, uuid4
 
 from django import forms
 
@@ -66,17 +67,22 @@ class ExperimentForm(forms.Form):
 
 
 class WeightForm(forms.Form):
+    operation_id = forms.UUIDField(widget=forms.HiddenInput)
     experiment_id = forms.CharField(widget=forms.HiddenInput)
     time_slice_id = forms.CharField(widget=forms.HiddenInput)
 
-    def __init__(self, snapshot, *args, **kwargs):
+    def __init__(self, snapshot, *args, operation_id=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.snapshot = snapshot
         self.groups = {
             "rgu": sorted({actor.actor_id for ptn in snapshot.ptns for actor in ptn.actors}),
             "kvptn": [ptn.ptn_id for ptn in snapshot.ptns],
         }
-        self.initial.update(experiment_id=snapshot.experiment_id, time_slice_id=snapshot.time_slice_id)
+        self.initial.update(
+            operation_id=operation_id or uuid4(),
+            experiment_id=snapshot.experiment_id,
+            time_slice_id=snapshot.time_slice_id,
+        )
         for group, identities in self.groups.items():
             for identity in identities:
                 prefix = f"{group}.{identity}."
@@ -89,6 +95,14 @@ class WeightForm(forms.Form):
         data = super().clean()
         if self.errors:
             return data
+        operation_id = data["operation_id"]
+        raw_operation_id = self.data.get("operation_id") if self.is_bound else str(operation_id)
+        if (
+            str(operation_id) != raw_operation_id
+            or operation_id.version != 4
+            or operation_id.variant != RFC_4122
+        ):
+            raise forms.ValidationError("Идентификатор запуска должен быть каноническим UUIDv4.")
         if (data["experiment_id"], data["time_slice_id"]) != (
             self.snapshot.experiment_id, self.snapshot.time_slice_id,
         ):

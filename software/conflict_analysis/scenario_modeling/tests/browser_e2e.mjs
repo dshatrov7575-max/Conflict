@@ -48,8 +48,13 @@ try {
   })()`);
   await wait("document.querySelector('[data-testid=create-scenario]') !== null");
   const baseline = await evaluate("JSON.parse(document.querySelector('#snapshot-json').value)");
+  const baselineReceipt = await evaluate("JSON.parse(document.querySelector('#receipt-json').value)");
+  assert.equal(baselineReceipt.contract, "PLAYER_CALCULATION_RUN_RECEIPT_V1");
   await click("[data-testid=create-scenario]");
   await wait("document.querySelector('#slider-controls')?.hidden === false");
+  const initialScenarioReceipt = await evaluate("JSON.parse(document.querySelector('#scenario-receipt-json').value)");
+  assert.equal(initialScenarioReceipt.contract, "SCENARIO_CALCULATION_RUN_RECEIPT_V1");
+  assert.equal(initialScenarioReceipt.context.kind, "SCENARIO");
   assert.equal(await evaluate("document.querySelector('[data-testid=baseline-uno]').textContent"), "100");
   assert.equal(await evaluate("document.querySelector('[data-testid=baseline-status]').textContent"), "частично");
   assert.equal(await evaluate("document.querySelector('[data-testid=baseline-evidence-status]').textContent"), "есть пропуски");
@@ -64,6 +69,9 @@ try {
   assert.equal(await evaluate("document.querySelector('#scenario-slider').value"), "5");
   await click("[data-testid=apply-override]");
   await wait("document.querySelector('[data-testid=scenario-uno]')?.textContent === '50'");
+  const changedReceipt = await evaluate("JSON.parse(document.querySelector('#scenario-receipt-json').value)");
+  assert.equal(changedReceipt.contract, "SCENARIO_CALCULATION_RUN_RECEIPT_V1");
+  assert.equal(changedReceipt.context.baseline_snapshot_id, baseline.id);
   assert.equal(await evaluate("document.querySelector('[data-testid=delta-uno]').textContent"), "-50");
   assert.equal(await evaluate("document.querySelector('[data-testid=scenario-status]').textContent"), "частично");
   assert.equal(await evaluate("document.querySelector('[data-testid=scenario-evidence-status]').textContent"), "есть пропуски");
