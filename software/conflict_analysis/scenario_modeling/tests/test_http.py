@@ -1,12 +1,14 @@
 import json
 from urllib.parse import urlencode
 from unittest.mock import patch
+from uuid import uuid4
 
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from calculation import CalculationSnapshot, calculate
 from domain.models import AssessmentSet, ParameterValue
+from player_integration.receipts import SCENARIO_RECEIPT_CONTRACT
 from player_integration.tests.test_e2e import PlayerIntegrationHTTPFixture
 from scenario_modeling.model import ScenarioModel
 from scenario_modeling.session import MAX_AGE
@@ -24,16 +26,21 @@ class ScenarioHTTPFixture(PlayerIntegrationHTTPFixture):
         data = self.form_body(inputs, weights)
         response = self.measured(lambda: self.client.post(
             self.url(**scope), urlencode(data), content_type="application/x-www-form-urlencoded",
-            HTTP_X_CSRFTOKEN=self.client.cookies["csrftoken"].value))
+            HTTP_X_CSRFTOKEN=self.client.cookies["csrftoken"].value),
+            expected_audit_inserts=1)
         self.assertEqual(response.status_code, 200, response.content)
         return response
 
-    def scenario_post(self, token, action="start", **fields):
+    def scenario_post(self, token, action="start", *, operation_id=None,
+                      expected_audit_inserts=1, **fields):
+        operation_id = operation_id or uuid4()
         return self.measured(lambda: self.client.post(
             reverse("scenario_modeling:update"),
-            urlencode({"scenario_token": token, "action": action, **fields}, doseq=True),
+            urlencode({"scenario_token": token, "operation_id": operation_id,
+                       "action": action, **fields}, doseq=True),
             content_type="application/x-www-form-urlencoded",
-            HTTP_X_CSRFTOKEN=self.client.cookies["csrftoken"].value))
+            HTTP_X_CSRFTOKEN=self.client.cookies["csrftoken"].value),
+            expected_audit_inserts=expected_audit_inserts)
 
     def begin(self, **scope):
         baseline = self.baseline_response(**scope)
@@ -56,10 +63,13 @@ class ScenarioHTTPTests(ScenarioHTTPFixture, TestCase):
         baseline_json = response.context["model"].baseline.to_json()
         self.assertContains(response, 'data-testid="baseline-uno">100</strong>')
         self.assertContains(response, 'data-testid="delta-uno">0</strong>')
-        self.assertEqual(response.context["contract"], "SCENARIO_RESULT_V2")
+        self.assertEqual(response.context["contract"], "SCENARIO_RESULT_V3")
         self.assertEqual(response.context["baseline_quality"]["computation_status"], "PARTIAL")
         self.assertEqual(response.context["baseline_quality"]["evidence_status"], "REQUIRED_INPUTS_MISSING")
         self.assertEqual(response.context["baseline_quality"]["scientific_admission_status"], "NOT_ESTABLISHED")
+        self.assertEqual(response.context["receipt"]["contract"], SCENARIO_RECEIPT_CONTRACT)
+        self.assertEqual(response.context["receipt"]["context"]["kind"], "SCENARIO")
+        self.assertContains(response, 'data-testid="scenario-receipt-id"')
         changed = self.change(response)
         self.assertContains(changed, 'data-testid="scenario-uno">0</strong>')
         self.assertContains(changed, 'data-testid="delta-uno">-100</strong>')
@@ -69,10 +79,21 @@ class ScenarioHTTPTests(ScenarioHTTPFixture, TestCase):
         self.assertContains(changed, 'data-testid="scenario-evidence-status" title="REQUIRED_INPUTS_MISSING">есть пропуски</dd>')
         self.assertEqual(changed.context["model"].baseline.to_json(), baseline_json)
         token = changed.context["scenario_token"]
-        for _ in range(2):
-            replay = self.scenario_post(token, "recalculate")
-            self.assertEqual(replay.context["scenario_run_json"], changed.context["scenario_run_json"])
-            self.assertEqual(replay.context["result_digest"], changed.context["result_digest"])
+        replay_operation = uuid4()
+        replay = self.scenario_post(token, "recalculate", operation_id=replay_operation)
+        exact_replay = self.scenario_post(
+            token, "recalculate", operation_id=replay_operation,
+            expected_audit_inserts=0,
+        )
+        self.assertEqual(replay.context["receipt"], exact_replay.context["receipt"])
+        self.assertTrue(exact_replay.context["receipt_replayed"])
+        self.assertEqual(replay.context["scenario_run_json"], changed.context["scenario_run_json"])
+        self.assertEqual(replay.context["result_digest"], changed.context["result_digest"])
+        self.assertEqual(replay.context["receipt"]["context"]["scenario_id"], changed.context["model"].id)
+        self.assertEqual(
+            replay.context["receipt"]["context"]["baseline_snapshot_id"],
+            changed.context["model"].baseline.id,
+        )
         for action, fields in (("remove", {"parameter": f"attitude:{self.pair[0].pk}"}), ("reset", {})):
             reset = self.scenario_post(token, action, **fields)
             self.assertEqual(reset.context["model"].overrides, ())
@@ -112,7 +133,7 @@ class ScenarioHTTPTests(ScenarioHTTPFixture, TestCase):
             self.assertContains(replay, f'data-testid="assessment-kind">{kind}</strong>')
             self.assertEqual(replay.context["model"].overrides, ())
         self.assertNotEqual(ai.context["model"].baseline.assessment_set_id, changed.context["model"].baseline.assessment_set_id)
-        rejected = self.scenario_post(human.context["scenario_token"], "set", parameter=f"attitude:{self.pair[0].pk}", value="1", experiment_id=ai_id)
+        rejected = self.scenario_post(human.context["scenario_token"], "set", expected_audit_inserts=0, parameter=f"attitude:{self.pair[0].pk}", value="1", experiment_id=ai_id)
         self.assertEqual(rejected.status_code, 400)
 
     def test_unknown_and_zero_weight_results_keep_missingness(self):
@@ -122,7 +143,7 @@ class ScenarioHTTPTests(ScenarioHTTPFixture, TestCase):
         changed = self.change(unknown, "5")
         self.assertIsNone(changed.context["scenario"]["UNO"])
         self.assertIsNone(changed.context["delta_uno"])
-        rejected = self.scenario_post(unknown.context["scenario_token"], "set", parameter=f"rgu:{self.pair[0].actor_id}", value="1")
+        rejected = self.scenario_post(unknown.context["scenario_token"], "set", expected_audit_inserts=0, parameter=f"rgu:{self.pair[0].actor_id}", value="1")
         self.assertEqual(rejected.status_code, 400)
         weights = self.weights()
         for weight in weights["rgu"].values():
@@ -139,32 +160,32 @@ class ScenarioHTTPTests(ScenarioHTTPFixture, TestCase):
         response = self.begin()
         token = response.context["scenario_token"]
         for value in ("NaN", "1e0", "11", "", "0." + "1" * 33):
-            invalid = self.scenario_post(token, "set", parameter=f"attitude:{self.pair[0].pk}", value=value)
+            invalid = self.scenario_post(token, "set", expected_audit_inserts=0, parameter=f"attitude:{self.pair[0].pk}", value=value)
             self.assertEqual(invalid.status_code, 400)
             self.assertEqual(invalid.context["model"], response.context["model"])
-        repeated = self.scenario_post(token, "set", parameter=f"attitude:{self.pair[0].pk}", value=["1", "2"])
+        repeated = self.scenario_post(token, "set", expected_audit_inserts=0, parameter=f"attitude:{self.pair[0].pk}", value=["1", "2"])
         self.assertEqual(repeated.status_code, 400)
-        self.assertEqual(self.scenario_post(token, "recalculate", value="1").status_code, 400)
+        self.assertEqual(self.scenario_post(token, "recalculate", expected_audit_inserts=0, value="1").status_code, 400)
 
     def test_signed_state_tampering_expiry_csrf_and_new_session_are_rejected(self):
         token = self.begin().context["scenario_token"]
-        self.assertEqual(self.scenario_post(token + "x").status_code, 400)
+        self.assertEqual(self.scenario_post(token + "x", expected_audit_inserts=0).status_code, 400)
         import time
         with patch("django.core.signing.time.time", return_value=time.time() + MAX_AGE + 10):
-            self.assertEqual(self.scenario_post(token).status_code, 400)
+            self.assertEqual(self.scenario_post(token, expected_audit_inserts=0).status_code, 400)
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.user)
         response = client.post(reverse("scenario_modeling:update"), {"scenario_token": token, "action": "start"})
         self.assertEqual(response.status_code, 403)
         self.client = client
         self.client.get(self.url())
-        self.assertEqual(self.scenario_post(token).status_code, 400)
+        self.assertEqual(self.scenario_post(token, expected_audit_inserts=0).status_code, 400)
 
     def test_current_permissions_are_required_when_replaying_old_scenario(self):
         token = self.begin().context["scenario_token"]
         self.user.user_permissions.clear()
         # Ensure the session does not make a previously admitted model authoritative.
-        response = self.scenario_post(token, "recalculate")
+        response = self.scenario_post(token, "recalculate", expected_audit_inserts=0)
         self.assertEqual(response.status_code, 403)
 
     def test_json_export_is_a_model_not_source_data(self):

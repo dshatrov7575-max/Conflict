@@ -9,8 +9,8 @@
 <h2>Веса этого расчёта</h2>
 
 <form method="post" autocomplete="off">
-  {% csrf_token %}{{ form.experiment_id }}{{ form.time_slice_id }}
-  {{ form.non_field_errors }}{{ form.experiment_id.errors }}{{ form.time_slice_id.errors }}
+  {% csrf_token %}{{ form.operation_id }}{{ form.experiment_id }}{{ form.time_slice_id }}
+  {{ form.non_field_errors }}{{ form.operation_id.errors }}{{ form.experiment_id.errors }}{{ form.time_slice_id.errors }}
   <div class="table-scroll"><table>
     <caption>RGU — вес участника; KVPTN — важность ПТН</caption>
     <thead><tr><th scope="col">Вес / объект</th><th scope="col">Статус</th><th scope="col">Значение</th><th scope="col">Источник</th><th scope="col">Версия источника</th></tr></thead>

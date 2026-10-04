@@ -57,6 +57,8 @@ try {
       kind: document.querySelector('[data-testid=assessment-kind]').textContent,
       snapshot: JSON.parse(document.querySelector('#snapshot-json').value),
       run: JSON.parse(document.querySelector('#run-json').value),
+      receipt: JSON.parse(document.querySelector('#receipt-json').value),
+      receiptId: document.querySelector('[data-testid=receipt-id]').textContent,
       computation: document.querySelector('[data-testid=run-status]').textContent,
       evidence: document.querySelector('[data-testid=evidence-status]').textContent,
       admission: document.querySelector('[data-testid=admission-status]').textContent,
@@ -69,6 +71,13 @@ try {
     assert.equal(result.snapshot.time_slice_id, lane.weights.time_slice_id);
     assert.equal(result.run.snapshot_id, result.snapshot.id);
     assert.equal(result.run.UNO, lane.expected);
+    assert.equal(result.receipt.contract, "PLAYER_CALCULATION_RUN_RECEIPT_V1");
+    assert.equal(result.receipt.operation_id, result.receiptId);
+    assert.equal(result.receipt.snapshot_id, result.snapshot.id);
+    assert.equal(result.receipt.result_digest.length, 64);
+    assert.deepEqual(result.receipt.payload_storage, {
+      snapshot_payload_stored: false, run_payload_stored: false, input_values_duplicated: false,
+    });
     assert.equal(result.computation, "частично");
     assert.equal(result.evidence, "есть пропуски");
     assert.equal(result.admission, "не установлен");

@@ -1,4 +1,4 @@
-"""Authorization and orchestration only: no formulas or persistence writes."""
+"""Authorization/orchestration plus durable digest-only run receipts."""
 from dataclasses import dataclass
 import json
 from uuid import UUID
@@ -11,6 +11,7 @@ from domain.models import Project, TimeSlice
 from domain.services.player_experiments import PlayerExperimentError, admit_assessment_scope
 
 from .quality import CalculationQuality, summarize_quality
+from .receipts import ReceiptResult, record_calculation_receipt
 
 
 def open_experiment(*, user, experiment_id):
@@ -62,9 +63,9 @@ class ResultView:
     def quality(self) -> CalculationQuality:
         return summarize_quality(self.snapshot, self.run)
 
-    def as_dict(self):
+    def as_dict(self, *, receipt: ReceiptResult | None = None):
         # Core serialization owns numeric precision, nulls, trace and warnings.
-        return {
+        payload = {
             "contract": "PLAYER_CALCULATION_RESULT_V2",
             "lane": {
                 "experiment_id": self.snapshot.experiment_id,
@@ -80,10 +81,20 @@ class ResultView:
             "quality": self.quality.as_dict(),
             "result_digest": self.run.result_digest,
         }
+        if receipt is None:
+            return payload
+        return {
+            **payload,
+            "contract": "PLAYER_CALCULATION_RESULT_V3",
+            "receipt": dict(receipt.payload),
+            "receipt_replayed": receipt.replayed,
+        }
 
 
 def calculate_experiment(*, user, experiment_id, time_slice_id,
                          beta_weights: BetaWeights | None = None) -> ResultView:
+    """Pure composition path used by Python callers and offline verification."""
+
     experiment, snapshot = capture_for_player(
         user=user, experiment_id=experiment_id, time_slice_id=time_slice_id,
         beta_weights=beta_weights,
@@ -93,3 +104,31 @@ def calculate_experiment(*, user, experiment_id, time_slice_id,
         str(experiment.expert_profile_id), experiment.expert_profile.display_name,
         snapshot, calculate(snapshot),
     )
+
+
+@transaction.atomic
+def calculate_and_record_experiment(
+    *, user, experiment_id, time_slice_id, operation_id,
+    beta_weights: BetaWeights | None = None,
+) -> tuple[ResultView, ReceiptResult]:
+    """Calculate one admitted lane and append/replay its digest-only receipt."""
+
+    experiment, snapshot = capture_for_player(
+        user=user, experiment_id=experiment_id, time_slice_id=time_slice_id,
+        beta_weights=beta_weights,
+    )
+    view = ResultView(
+        experiment.name, experiment.status, experiment.assessment_set.kind,
+        str(experiment.expert_profile_id), experiment.expert_profile.display_name,
+        snapshot, calculate(snapshot),
+    )
+    receipt = record_calculation_receipt(
+        user=user,
+        experiment=experiment,
+        snapshot=view.snapshot,
+        run=view.run,
+        quality=view.quality,
+        operation_id=operation_id,
+        context_kind="BASELINE",
+    )
+    return view, receipt

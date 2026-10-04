@@ -13,6 +13,9 @@
   <dt>Стратегия</dt><dd>{{ run.strategy_id }} / {{ run.strategy_version }}</dd>
   <dt>Snapshot</dt><dd><code>{{ run.snapshot_id }}</code></dd>
   <dt>Хеш результата</dt><dd><code>{{ result_digest }}</code></dd>
+  <dt>Квитанция</dt><dd><a href="{% url 'player_integration:receipt' lane.experiment_id receipt.operation_id %}"><code data-testid="receipt-id">{{ receipt.operation_id }}</code></a></dd>
+  <dt>Время квитанции</dt><dd>{{ receipt.occurred_at }}</dd>
+  <dt>Хеш квитанции</dt><dd><code>{{ receipt.receipt_sha256 }}</code></dd>
 </dl></details>
 <section class="ui-panel" data-panel-help="calc-result">
 <h2>UNO: <span data-testid="uno">{{ run.UNO|default_if_none:'Недостаточно данных' }}</span></h2>
@@ -24,6 +27,7 @@
 {% if scenario_token %}<form method="post" action="{% url 'scenario_modeling:update' %}">
   {% csrf_token %}
   <input type="hidden" name="scenario_token" value="{{ scenario_token }}">
+  <input type="hidden" name="operation_id" value="{{ scenario_operation_id }}">
   <button type="submit" name="action" value="start" data-testid="create-scenario" data-ui-icon="plus" data-ui-kind="primary" data-ui-label="Создать сценарий">Создать сценарий из этого расчёта</button>
 </form>{% else %}<p role="status">Сценарий недоступен: превышен лимит snapshot.</p>{% endif %}
 <p>Строки: {{ run.completeness.eligible_rows }} / {{ run.completeness.expected_rows }}.
@@ -70,5 +74,7 @@
 
 <details data-panel-help="reproduce"><summary>CalculationSnapshot JSON</summary><label for="snapshot-json">Snapshot</label><textarea id="snapshot-json" readonly rows="8" spellcheck="false">{{ snapshot_json }}</textarea></details>
 <details data-panel-help="reproduce"><summary>CalculationRun JSON</summary><label for="run-json">Run</label><textarea id="run-json" readonly rows="8" spellcheck="false">{{ run_json }}</textarea></details>
+<details data-panel-help="reproduce"><summary>RunReceipt JSON</summary><label for="receipt-json">Receipt</label><textarea id="receipt-json" readonly rows="8" spellcheck="false">{{ receipt_json }}</textarea></details>
+<p><a data-ui-icon="list" data-ui-kind="utility" aria-label="История квитанций" title="История квитанций" href="{% url 'player_integration:receipts' lane.experiment_id %}"><span class="visually-hidden">История квитанций</span></a></p>
 </section><p><a data-ui-icon="refresh" data-ui-kind="primary" data-ui-label="Новый расчёт" href="{% url 'player_integration:result' lane.experiment_id snapshot.time_slice_id %}">Подготовить новый расчёт</a></p>
 {% endblock %}
