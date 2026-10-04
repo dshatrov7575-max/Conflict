@@ -13,8 +13,8 @@ Experiment → Baseline Snapshot → Scenario Override → CalculationAdapter
 Из `software/conflict_analysis`, в существующем Python 3.12 окружении:
 
 ```text
-python manage.py check --settings=player_integration.settings
-python manage.py runserver --settings=player_integration.settings
+python manage.py check
+python manage.py runserver
 ```
 
 Для локальной раздачи static через runserver: `DJANGO_DEBUG=true`.
@@ -103,8 +103,10 @@ assert run.run.to_json() == saved_scenario_run_json
 comparison = result_view(model)
 ```
 
-Поставка, как PR-2, запускается из исходного дерева. Корневой wheel allowlist
-и основной профиль проекта не изменены; standalone wheel не заявляется.
+`scenario_modeling` входит в корневой wheel и штатный
+`conflict_analysis.settings`; отдельный source-tree runtime больше не требуется.
+Совместимые старые команды с `--settings=player_integration.settings` продолжают
+работать через алиас единого профиля.
 
 ## Файлы
 
