@@ -1,8 +1,4 @@
-"""Mount the integration alongside all existing Foundation/Player routes."""
-from django.urls import include, path
+"""Compatibility alias for the single supported Conflict Analysis URL graph."""
+from conflict_analysis.urls import urlpatterns as _root_urlpatterns
 
-urlpatterns = [
-    path("player/calculations/scenarios/", include("scenario_modeling.urls")),
-    path("player/calculations/", include("player_integration.urls")),
-    path("", include("conflict_analysis.urls")),
-]
+urlpatterns = list(_root_urlpatterns)

@@ -8,8 +8,8 @@
 Из `software/conflict_analysis` в существующем Python 3.12 окружении:
 
 ```text
-python manage.py check --settings=player_integration.settings
-python manage.py runserver --settings=player_integration.settings
+python manage.py check
+python manage.py runserver
 ```
 
 Для локальной раздачи CSS через runserver задайте `DJANGO_DEBUG=true`.
@@ -22,16 +22,11 @@ python manage.py runserver --settings=player_integration.settings
 или оставьте UNKNOWN и нажмите «Рассчитать». HUMAN/AI и профиль эксперта берутся
 из допущенного Foundation эксперимента, а не из запроса.
 
-Все новые файлы находятся в `player_integration/**`. Профиль
-`player_integration.settings` добавляет приложение и отдельный composition root,
-сохраняя существующие `/player/`, `/studio/` и `/api/foundation/` маршруты.
-Исходный Player и конфигурация проекта не изменены: кнопка в существующем G8 UI
-не добавляется. Профиль запуска и точка входа выше обеспечивают самостоятельный
-рабочий путь в разрешённой области файлов.
-
-Это поставка для исходного дерева: существующий корневой wheel allowlist не
-содержит `player_integration`; подключение его к основному wheel/профилю и общей
-CI-конфигурации потребует отдельно разрешённых изменений за пределами PR-2.
+`player_integration` входит в корневой wheel и штатный
+`conflict_analysis.settings`. Маршрут `/player/calculations/` подключён к единому
+composition root рядом с `/player/`, `/studio/` и `/api/foundation/`.
+`player_integration.settings` и `player_integration.project_urls` оставлены только
+как совместимые алиасы для старых команд и тестов.
 
 ## Граница интеграции
 

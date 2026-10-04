@@ -279,3 +279,19 @@ G7 позволяет создать непустое по имени рабоч
 [Production Player G7 runtime](docs/production-player-g7-runtime.md).
 Эти документы поставляются в исходном дереве; runtime wheel содержит приложение
 Player, шаблоны, статические ресурсы и контракт заявлений с SHA-256 sidecar.
+
+
+## Единый runtime Studio + Player + Calculation + Scenario
+
+Корневой пакет `conflict-analysis` включает `player_integration` и
+`scenario_modeling` вместе с шаблонами и static-ресурсами. Обычный
+`python manage.py runserver` использует `conflict_analysis.settings` и единый
+URL-граф:
+
+- `/studio/` — Studio;
+- `/player/` — основной Player;
+- `/player/calculations/` — расчёт по Experiment/TimeSlice;
+- `/player/calculations/scenarios/` — сценарное моделирование.
+
+`player_integration.settings` и `player_integration.project_urls` сохранены
+только как совместимые алиасы; отдельный opt-in runtime больше не требуется.

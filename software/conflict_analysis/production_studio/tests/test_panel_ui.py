@@ -68,6 +68,14 @@ def fixtures():
         "snapshot": json.loads(snapshot.to_json()), "run": run,
         "lane": {"experiment_id": UUID, "experiment_name": "Расчёт", "assessment_kind": "HUMAN"},
         "snapshot_json": snapshot.to_json(), "run_json": json.dumps(run),
+        "quality_ui": {"computation_code": "PARTIAL", "computation_label": "частично",
+                       "evidence_code": "REQUIRED_INPUTS_MISSING",
+                       "evidence_label": "есть пропуски",
+                       "admission_code": "NOT_ESTABLISHED",
+                       "admission_label": "не установлен"},
+        "receipt": {"operation_id": UUID, "occurred_at": "2026-10-04T00:00:00.000000Z",
+                    "receipt_sha256": "0" * 64},
+        "receipt_json": "{}", "scenario_operation_id": UUID,
         "scenario_token": "synthetic-rendering-only", "claim_sha256": "0" * 64,
         "claim_contract": "STUDIO_READ_ONLY_CLAIM_BOUNDARIES_V1",
         "claim_statements": [{"code": "TRACEABILITY", "text": "Прослеживаемость не подтверждает истинность."}],
@@ -128,9 +136,9 @@ class PanelUIContractTests(SimpleTestCase):
         help_html = render_to_string("production_studio/ui_help.html", {})
         for phrase in (
             "RGU — вес участника", "0…10", "UNKNOWN", "не заменяется нулём",
-            "Эти delta не складываются", "8 часов", "не ведёт историю запусков",
+            "Эти delta не складываются", "8 часов", "хранит только digest-квитанцию",
             "18 METHOD_BLOCKED", "24 RECODING_REQUIRED", "побайтный повтор FD05",
-            "без слепого POST", "Хеш не подтверждает достоверность",
+            "без слепого POST", "Квитанция и хеш не подтверждают достоверность",
         ):
             self.assertIn(phrase, help_html)
 
