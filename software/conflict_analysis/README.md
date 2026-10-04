@@ -239,8 +239,13 @@ $env:USE_SQLITE = "true"
 python -m pytest
 ```
 
-Перед интеграционной поставкой верните `USE_SQLITE=false` и выполните миграции,
-`manage.py check` и сфокусированные тесты на чистой PostgreSQL 18.4 базе.
+Перед интеграционной поставкой верните `USE_SQLITE=false`, включите браузерные
+флаги `PLAYER_INTEGRATION_BROWSER=1` и `SCENARIO_BROWSER=1`, затем выполните
+миграции, `manage.py check` и корневой `python -m pytest` на чистой PostgreSQL 18.
+Корневой registry охватывает Foundation, Calculation, Studio, Player,
+Calculation Integration и Scenario Modeling. Тот же состав автоматически
+проверяет workflow `Conflict Analysis Unified Product Gate` для каждого PR,
+затрагивающего программный комплекс.
 
 ## Границы архитектуры
 
