@@ -12,10 +12,10 @@ from zipfile import ZipFile
 
 WORKFLOW_PATH = Path(".github/workflows/conflict-analysis-required.yml")
 PROJECT_PATH = Path("software/conflict_analysis")
-CHECKOUT_SHA = "11d5960a326750d5838078e36cf38b85af677262"
-SETUP_PYTHON_SHA = "a26af69be951a213d495a4c3e4e4022e16d87065"
-SETUP_NODE_SHA = "49933ea5288caeca8642d1e84afbd3f7d6820020"
-UPLOAD_ARTIFACT_SHA = "ea165f8d65b6e75b540449e92b4886f43607fa02"
+CHECKOUT_SHA = "3d3c42e5aac5ba805825da76410c181273ba90b1"
+SETUP_PYTHON_SHA = "5fda3b95a4ea91299a34e894583c3862153e4b97"
+SETUP_NODE_SHA = "820762786026740c76f36085b0efc47a31fe5020"
+UPLOAD_ARTIFACT_SHA = "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a"
 POSTGRES_DIGEST = "sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873"
 
 PRODUCT_TEST_PATHS = (
@@ -101,6 +101,8 @@ def verify_workflow(repo_root: Path) -> None:
     _require("output directory must be outside the project source tree" in wheel_builder, "wheel builder permits output inside source tree")
     _require(workflow.count("wheel_sha256: ${{ steps.wheel.outputs.sha256 }}") == 2, "both product jobs must publish wheel SHA-256")
     _require("wheel_sha256: ${{ steps.runtime.outputs.sha256 }}" in workflow, "production image must publish installed wheel SHA-256")
+    _require(workflow.count('node-version: "24"') == 2, "both browser-capable jobs must select Node 24")
+    _require(workflow.count("package-manager-cache: false") == 2, "setup-node automatic package-manager caching must be disabled")
 
     test_lock_entries = [
         line.strip()
@@ -191,7 +193,9 @@ def verify_workflow(repo_root: Path) -> None:
         {
             "status": "PASS",
             "workflow": str(WORKFLOW_PATH),
+            "node24_native_actions": True,
             "read_only_permissions": True,
+            "setup_node_package_manager_cache": False,
             "all_pull_requests": True,
             "pinned_actions": pins,
             "postgres_digest": POSTGRES_DIGEST,

@@ -177,7 +177,9 @@ wheel is built through `scripts/build_reproducible_wheel.py`, which seals the
 ZIP timestamp to `SOURCE_DATE_EPOCH=315532800`; the independent SQLite and
 PostgreSQL jobs and the independently built production image publish their
 application-wheel SHA-256 values, and the aggregate gate fails unless all three
-hashes are exactly equal.
+hashes are exactly equal. The required workflow pins Node-24-native official
+GitHub Actions releases by full commit SHA, and explicitly disables setup-node's
+automatic package-manager cache because this product gate does not need it.
 
 Create the production environment file and replace every placeholder:
 
