@@ -1,0 +1,226 @@
+name: Conflict Analysis Required Product Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - review/ai-only-research-beta-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: conflict-analysis-required-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wheel-sqlite:
+    name: Wheel and SQLite full-product gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: software/conflict_analysis
+    env:
+      DJANGO_SECRET_KEY: ci-required-gate-sqlite-only
+      DJANGO_DEBUG: "false"
+      USE_SQLITE: "true"
+      SQLITE_PATH: /tmp/conflict-required-${{ github.run_id }}-${{ github.run_attempt }}.sqlite3
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: Check out tested revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+
+      - name: Install exact project test surface
+        run: |
+          python -m pip install --disable-pip-version-check --no-input -e ".[dev]"
+          python -m pip check
+          python scripts/verify_required_product_gate.py workflow --repo-root ../..
+          find production_studio production_player player_integration scenario_modeling \
+            -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
+
+      - name: Build and inspect one unified wheel
+        id: wheel
+        run: |
+          rm -rf "${RUNNER_TEMP}/conflict-wheel"
+          mkdir -p "${RUNNER_TEMP}/conflict-wheel"
+          python -m pip wheel --no-deps --wheel-dir "${RUNNER_TEMP}/conflict-wheel" .
+          mapfile -t wheels < <(find "${RUNNER_TEMP}/conflict-wheel" -maxdepth 1 -type f -name '*.whl' -print)
+          test "${#wheels[@]}" -eq 1
+          python scripts/verify_required_product_gate.py inspect-wheel --wheel "${wheels[0]}"
+          echo "CONFLICT_WHEEL=${wheels[0]}" >> "${GITHUB_ENV}"
+
+      - name: Smoke-test the installed wheel outside the source tree
+        run: |
+          rm -rf "${RUNNER_TEMP}/conflict-wheel-target" "${RUNNER_TEMP}/conflict-wheel-static"
+          python -m pip install --disable-pip-version-check --no-input --no-deps \
+            --target "${RUNNER_TEMP}/conflict-wheel-target" "${CONFLICT_WHEEL}"
+          python scripts/verify_required_product_gate.py installed-smoke \
+            --target "${RUNNER_TEMP}/conflict-wheel-target" \
+            --static-root "${RUNNER_TEMP}/conflict-wheel-static" \
+            --sqlite-path "${RUNNER_TEMP}/conflict-wheel-smoke.sqlite3"
+
+      - name: Run the default full-product suite on SQLite
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost,::1"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: |
+          python manage.py check --settings=conflict_analysis.settings
+          python manage.py makemigrations --check --dry-run --settings=conflict_analysis.settings
+          STUDIO_C0_WHEEL="${CONFLICT_WHEEL}" python -m pytest -q -p no:cacheprovider \
+            --junitxml="${RUNNER_TEMP}/conflict-required-sqlite.xml"
+
+      - name: Upload wheel and SQLite evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conflict-required-wheel-sqlite-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/conflict-wheel/*.whl
+            ${{ runner.temp }}/conflict-required-sqlite.xml
+          if-no-files-found: error
+          retention-days: 7
+
+  postgresql-product:
+    name: PostgreSQL 18 and Chromium full-product gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    services:
+      postgres:
+        image: postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+        env:
+          POSTGRES_DB: conflict_analysis
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: ci-required-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    defaults:
+      run:
+        working-directory: software/conflict_analysis
+    env:
+      DJANGO_SECRET_KEY: ci-required-gate-postgresql-only
+      DJANGO_DEBUG: "false"
+      USE_SQLITE: "false"
+      POSTGRES_DB: conflict_analysis
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: ci-required-only
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_CONN_MAX_AGE: "0"
+      PLAYER_INTEGRATION_BROWSER: "1"
+      SCENARIO_BROWSER: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: Check out tested revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies and locate Chromium
+        run: |
+          python -m pip install --disable-pip-version-check --no-input -e ".[dev]"
+          python -m pip check
+          python scripts/verify_required_product_gate.py workflow --repo-root ../..
+          chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "${chrome}"
+          test -x "${chrome}"
+          echo "STUDIO_CHROME_BIN=${chrome}" >> "${GITHUB_ENV}"
+          echo "CHROME_BIN=${chrome}" >> "${GITHUB_ENV}"
+          find production_studio production_player player_integration scenario_modeling \
+            -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
+
+      - name: Build the wheel used by wheel-aware runtime tests
+        run: |
+          rm -rf "${RUNNER_TEMP}/conflict-postgresql-wheel"
+          mkdir -p "${RUNNER_TEMP}/conflict-postgresql-wheel"
+          python -m pip wheel --no-deps --wheel-dir "${RUNNER_TEMP}/conflict-postgresql-wheel" .
+          mapfile -t wheels < <(find "${RUNNER_TEMP}/conflict-postgresql-wheel" -maxdepth 1 -type f -name '*.whl' -print)
+          test "${#wheels[@]}" -eq 1
+          python scripts/verify_required_product_gate.py inspect-wheel --wheel "${wheels[0]}"
+          echo "STUDIO_C0_WHEEL=${wheels[0]}" >> "${GITHUB_ENV}"
+
+      - name: Verify migrations and the unified root runtime
+        run: |
+          python manage.py check --settings=conflict_analysis.settings
+          python manage.py makemigrations --check --dry-run --settings=conflict_analysis.settings
+          python manage.py migrate --noinput --settings=conflict_analysis.settings
+
+      - name: Run all product tests with PostgreSQL and Chromium
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost,::1"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: |
+          python -m pytest -q -p no:cacheprovider \
+            --junitxml="${RUNNER_TEMP}/conflict-required-postgresql.xml"
+
+      - name: Upload PostgreSQL evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conflict-required-postgresql-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/conflict-postgresql-wheel/*.whl
+            ${{ runner.temp }}/conflict-required-postgresql.xml
+          if-no-files-found: error
+          retention-days: 7
+
+  required-product-gate:
+    name: Required product gate
+    if: ${{ always() }}
+    needs:
+      - wheel-sqlite
+      - postgresql-product
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require both independent gates
+        env:
+          WHEEL_SQLITE_RESULT: ${{ needs.wheel-sqlite.result }}
+          POSTGRESQL_PRODUCT_RESULT: ${{ needs.postgresql-product.result }}
+        run: |
+          test "${WHEEL_SQLITE_RESULT}" = "success"
+          test "${POSTGRESQL_PRODUCT_RESULT}" = "success"
+          echo "CONFLICT_ANALYSIS_REQUIRED_PRODUCT_GATE=PASS"

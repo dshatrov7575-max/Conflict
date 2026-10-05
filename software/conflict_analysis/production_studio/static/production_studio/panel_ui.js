@@ -95,7 +95,11 @@
       button.setAttribute("aria-haspopup", "dialog");
       button.setAttribute("aria-controls", dialog.id);
       // Keep help visible when details is collapsed, without replacing its summary.
-      (node.tagName === "DETAILS" ? node.querySelector(":scope > summary") : node).append(button);
+      const helpHost = node.tagName === "DETAILS" ? node.querySelector(":scope > summary") : node;
+      // The export section scrolls inside the centre panel. Put its help first so a flow-positioned
+      // control cannot end up beneath the platform scrollbar after stress states are revealed.
+      if (node.id === "status-export") helpHost.prepend(button);
+      else helpHost.append(button);
     }
   }
 
