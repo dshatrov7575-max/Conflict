@@ -21,8 +21,10 @@ WORKDIR /build
 COPY . .
 RUN python -m pip install --require-hashes --only-binary=:all: \
       --requirement requirements/build-lock.txt
-RUN --network=none python -m pip wheel --no-deps --no-build-isolation \
-      --wheel-dir /wheels .
+RUN --network=none python scripts/build_reproducible_wheel.py \
+      --project-root /build \
+      --output-dir /wheels \
+      --metadata-out /wheels/conflict-application-wheel.json
 RUN python -m pip download --require-hashes --only-binary=:all: \
       --dest /wheels \
       --requirement requirements/production-lock.txt
@@ -31,6 +33,7 @@ FROM base AS production
 ENV DJANGO_SETTINGS_MODULE=conflict_analysis.production_settings \
     DJANGO_STATIC_ROOT=/app/staticfiles
 COPY --from=wheel-builder /wheels /wheels
+COPY --from=wheel-builder /wheels/conflict-application-wheel.json /app/conflict-application-wheel.json
 COPY --from=wheel-builder /build/requirements/production-lock.txt /tmp/production-lock.txt
 RUN --network=none python -m pip install --no-index --find-links=/wheels --require-hashes \
       --requirement /tmp/production-lock.txt \

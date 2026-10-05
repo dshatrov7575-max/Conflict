@@ -125,6 +125,8 @@ class ProductionRuntimeContractTests(SimpleTestCase):
         payload = json.loads(completed.stdout)
         self.assertFalse(payload["admin_exposed"])
         self.assertFalse(payload["admin_installed"])
+        self.assertIsNone(payload["application_wheel_sha256"])
+        self.assertFalse(payload["wheel_identity_present"])
         self.assertFalse(payload["debug"])
         self.assertEqual(payload["engine"], "django.db.backends.postgresql")
         self.assertIsInstance(payload["static_root_present"], bool)

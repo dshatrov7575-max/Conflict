@@ -31,6 +31,7 @@ def main() -> None:
     urls = (root / "conflict_analysis/production_urls.py").read_text(encoding="utf-8")
     probe = (root / "conflict_analysis/production_probe.py").read_text(encoding="utf-8")
     pyproject = (root / "pyproject.toml").read_text(encoding="utf-8")
+    wheel_builder = (root / "scripts/build_reproducible_wheel.py").read_text(encoding="utf-8")
     build_lock_lines = (root / "requirements/build-lock.txt").read_text(encoding="utf-8").splitlines()
     lock_lines = (root / "requirements/production-lock.txt").read_text(encoding="utf-8").splitlines()
 
@@ -42,6 +43,12 @@ def main() -> None:
     require("python -m pip install --upgrade pip" not in dockerfile, "mutable pip upgrade is forbidden")
     require('requires = ["setuptools==84.0.0"]' in pyproject, "build backend must be exact")
     require("requirements/build-lock.txt" in dockerfile, "hashed build-tool lock is not used")
+    require("scripts/build_reproducible_wheel.py" in dockerfile, "production image bypasses the canonical wheel builder")
+    require("conflict-application-wheel.json /app/conflict-application-wheel.json" in dockerfile, "production image omits application wheel identity")
+    require("python -m pip wheel" not in dockerfile, "direct production wheel build is forbidden")
+    require("CANONICAL_SOURCE_DATE_EPOCH = 315_532_800" in wheel_builder, "canonical wheel epoch is missing")
+    require('environment["SOURCE_DATE_EPOCH"] = canonical_epoch' in wheel_builder, "wheel builder does not seal SOURCE_DATE_EPOCH")
+    require("output directory must be outside the project source tree" in wheel_builder, "wheel builder permits output inside source tree")
     require(dockerfile.count("RUN --network=none") >= 2, "wheel build and final installation must be offline")
     require("FROM base AS development" in dockerfile, "development target is missing")
     require("FROM base AS production" in dockerfile, "production target is missing")
@@ -93,6 +100,7 @@ def main() -> None:
     workflow = (root.parent.parent / ".github/workflows/conflict-analysis-required.yml").read_text(encoding="utf-8")
     require("python -m conflict_analysis.production_probe" in workflow, "production image job does not execute the installed runtime probe")
     require("admin_exposed" in probe and "source_tree_present" in probe, "production runtime probe is incomplete")
+    require("application_wheel_sha256" in probe and "wheel_identity_present" in probe, "production wheel identity probe is incomplete")
     require('"whitenoise>=6.12,<7"' in pyproject, "WhiteNoise runtime dependency is not declared")
 
     build_entries = [line.strip() for line in build_lock_lines if line.strip() and not line.lstrip().startswith("#") and not line.startswith("--")]
@@ -122,6 +130,7 @@ def main() -> None:
         "admin_exposed": False,
         "source_bind_mount": False,
         "development_target_retained": True,
+        "reproducible_wheel_epoch": 315_532_800,
     }, indent=2, sort_keys=True))
 
 
