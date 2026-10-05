@@ -54,3 +54,6 @@ class RequiredProductCIContractTests(SimpleTestCase):
         self.assertNotIn("secrets.", text)
         self.assertIn("Required product gate", text)
         self.assertIn("postgres:18-alpine@sha256:", text)
+        self.assertIn("Production image hardening gate", text)
+        self.assertIn("PRODUCTION_IMAGE_RESULT", text)
+        self.assertIn("docker build --target production", text)

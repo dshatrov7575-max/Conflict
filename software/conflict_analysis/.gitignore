@@ -10,3 +10,4 @@ build/
 dist/
 db.sqlite3
 staticfiles/
+.env.production
