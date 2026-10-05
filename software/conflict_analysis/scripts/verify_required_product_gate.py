@@ -79,6 +79,8 @@ def verify_workflow(repo_root: Path) -> None:
     repo_root = repo_root.resolve(strict=True)
     workflow = (repo_root / WORKFLOW_PATH).read_text(encoding="utf-8")
     pytest_config = (repo_root / PROJECT_PATH / "pytest.ini").read_text(encoding="utf-8")
+    dockerfile = (repo_root / PROJECT_PATH / "Dockerfile").read_text(encoding="utf-8")
+    wheel_builder = (repo_root / PROJECT_PATH / "scripts/build_reproducible_wheel.py").read_text(encoding="utf-8")
     test_lock_lines = (repo_root / PROJECT_PATH / "requirements/test-lock.txt").read_text(encoding="utf-8").splitlines()
 
     expected_trigger = """on:\n  pull_request:\n  push:\n    branches:\n      - main\n      - review/ai-only-research-beta-v1\n  workflow_dispatch:\n"""
@@ -90,7 +92,15 @@ def verify_workflow(repo_root: Path) -> None:
     _require(workflow.count("requirements/build-lock.txt") == 2, "both product jobs must install the hashed build lock")
     _require(workflow.count("requirements/test-lock.txt") == 2, "both product jobs must install the hashed test lock")
     _require(workflow.count("--no-build-isolation --no-deps -e .") == 2, "editable product install must use the prelocked build environment")
-    _require(workflow.count("pip wheel --no-deps --no-build-isolation") == 2, "both product wheel builds must use the prelocked build environment")
+    _require(workflow.count("scripts/build_reproducible_wheel.py") == 2, "both product jobs must use the canonical wheel builder")
+    _require("pip wheel --no-deps --no-build-isolation" not in workflow, "direct workflow wheel builds are forbidden")
+    _require(dockerfile.count("scripts/build_reproducible_wheel.py") == 1, "production image must use the canonical wheel builder")
+    _require("python -m pip wheel" not in dockerfile, "direct Docker wheel build is forbidden")
+    _require("CANONICAL_SOURCE_DATE_EPOCH = 315_532_800" in wheel_builder, "canonical wheel epoch is missing")
+    _require('environment["SOURCE_DATE_EPOCH"] = canonical_epoch' in wheel_builder, "wheel builder does not seal SOURCE_DATE_EPOCH")
+    _require("output directory must be outside the project source tree" in wheel_builder, "wheel builder permits output inside source tree")
+    _require(workflow.count("wheel_sha256: ${{ steps.wheel.outputs.sha256 }}") == 2, "both product jobs must publish wheel SHA-256")
+    _require("wheel_sha256: ${{ steps.runtime.outputs.sha256 }}" in workflow, "production image must publish installed wheel SHA-256")
 
     test_lock_entries = [
         line.strip()
@@ -138,6 +148,13 @@ def verify_workflow(repo_root: Path) -> None:
         "docker build --target production",
         "python -m django check --deploy --fail-level WARNING",
         "PRODUCTION_IMAGE_RESULT: ${{ needs.production-image.result }}",
+        "WHEEL_SQLITE_SHA256: ${{ needs.wheel-sqlite.outputs.wheel_sha256 }}",
+        "POSTGRESQL_WHEEL_SHA256: ${{ needs.postgresql-product.outputs.wheel_sha256 }}",
+        "PRODUCTION_IMAGE_WHEEL_SHA256: ${{ needs.production-image.outputs.wheel_sha256 }}",
+        'test "${WHEEL_SQLITE_SHA256}" = "${POSTGRESQL_WHEEL_SHA256}"',
+        'test "${WHEEL_SQLITE_SHA256}" = "${PRODUCTION_IMAGE_WHEEL_SHA256}"',
+        "CONFLICT_ANALYSIS_REPRODUCIBLE_WHEEL=PASS",
+        "conflict-required-wheel-reproducibility-",
     ):
         _require(token in workflow, f"required gate contract is missing: {token}")
 
@@ -180,6 +197,8 @@ def verify_workflow(repo_root: Path) -> None:
             "postgres_digest": POSTGRES_DIGEST,
             "product_test_paths": list(PRODUCT_TEST_PATHS),
             "production_image_gate": True,
+            "reproducible_wheel_gate": True,
+            "source_date_epoch": 315_532_800,
             "test_lock_entries": len(test_lock_entries),
         }
     )

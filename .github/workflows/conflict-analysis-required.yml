@@ -20,6 +20,8 @@ jobs:
     name: Wheel and SQLite full-product gate
     runs-on: ubuntu-24.04
     timeout-minutes: 90
+    outputs:
+      wheel_sha256: ${{ steps.wheel.outputs.sha256 }}
     defaults:
       run:
         working-directory: software/conflict_analysis
@@ -65,10 +67,17 @@ jobs:
         run: |
           rm -rf "${RUNNER_TEMP}/conflict-wheel"
           mkdir -p "${RUNNER_TEMP}/conflict-wheel"
-          python -m pip wheel --no-deps --no-build-isolation --wheel-dir "${RUNNER_TEMP}/conflict-wheel" .
+          python scripts/build_reproducible_wheel.py \
+            --project-root . \
+            --output-dir "${RUNNER_TEMP}/conflict-wheel" \
+            --metadata-out "${RUNNER_TEMP}/conflict-wheel-identity.json"
           mapfile -t wheels < <(find "${RUNNER_TEMP}/conflict-wheel" -maxdepth 1 -type f -name '*.whl' -print)
           test "${#wheels[@]}" -eq 1
           python scripts/verify_required_product_gate.py inspect-wheel --wheel "${wheels[0]}"
+          wheel_sha256="$(python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["sha256"])' "${RUNNER_TEMP}/conflict-wheel-identity.json")"
+          test "${#wheel_sha256}" -eq 64
+          [[ "${wheel_sha256}" =~ ^[0-9a-f]{64}$ ]]
+          echo "sha256=${wheel_sha256}" >> "${GITHUB_OUTPUT}"
           echo "CONFLICT_WHEEL=${wheels[0]}" >> "${GITHUB_ENV}"
 
       - name: Smoke-test the installed wheel outside the source tree
@@ -102,6 +111,7 @@ jobs:
           name: conflict-required-wheel-sqlite-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/conflict-wheel/*.whl
+            ${{ runner.temp }}/conflict-wheel-identity.json
             ${{ runner.temp }}/conflict-required-sqlite.xml
           if-no-files-found: error
           retention-days: 7
@@ -110,6 +120,8 @@ jobs:
     name: PostgreSQL 18 and Chromium full-product gate
     runs-on: ubuntu-24.04
     timeout-minutes: 150
+    outputs:
+      wheel_sha256: ${{ steps.wheel.outputs.sha256 }}
     services:
       postgres:
         image: postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
@@ -177,13 +189,21 @@ jobs:
             -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
 
       - name: Build the wheel used by wheel-aware runtime tests
+        id: wheel
         run: |
           rm -rf "${RUNNER_TEMP}/conflict-postgresql-wheel"
           mkdir -p "${RUNNER_TEMP}/conflict-postgresql-wheel"
-          python -m pip wheel --no-deps --no-build-isolation --wheel-dir "${RUNNER_TEMP}/conflict-postgresql-wheel" .
+          python scripts/build_reproducible_wheel.py \
+            --project-root . \
+            --output-dir "${RUNNER_TEMP}/conflict-postgresql-wheel" \
+            --metadata-out "${RUNNER_TEMP}/conflict-postgresql-wheel-identity.json"
           mapfile -t wheels < <(find "${RUNNER_TEMP}/conflict-postgresql-wheel" -maxdepth 1 -type f -name '*.whl' -print)
           test "${#wheels[@]}" -eq 1
           python scripts/verify_required_product_gate.py inspect-wheel --wheel "${wheels[0]}"
+          wheel_sha256="$(python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["sha256"])' "${RUNNER_TEMP}/conflict-postgresql-wheel-identity.json")"
+          test "${#wheel_sha256}" -eq 64
+          [[ "${wheel_sha256}" =~ ^[0-9a-f]{64}$ ]]
+          echo "sha256=${wheel_sha256}" >> "${GITHUB_OUTPUT}"
           echo "STUDIO_C0_WHEEL=${wheels[0]}" >> "${GITHUB_ENV}"
 
       - name: Verify migrations and the unified root runtime
@@ -211,6 +231,7 @@ jobs:
           name: conflict-required-postgresql-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/conflict-postgresql-wheel/*.whl
+            ${{ runner.temp }}/conflict-postgresql-wheel-identity.json
             ${{ runner.temp }}/conflict-required-postgresql.xml
           if-no-files-found: error
           retention-days: 7
@@ -220,6 +241,8 @@ jobs:
     name: Production image hardening gate
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    outputs:
+      wheel_sha256: ${{ steps.runtime.outputs.sha256 }}
     defaults:
       run:
         working-directory: software/conflict_analysis
@@ -265,6 +288,7 @@ jobs:
           echo "CONFLICT_IMAGE=${CONFLICT_IMAGE}" >> "${GITHUB_ENV}"
 
       - name: Verify the production image runtime
+        id: runtime
         run: |
           runtime_env=(
             -e DJANGO_SECRET_KEY=ci-only-not-secret-ci-only-not-secret-ci-only-not-secret-1234567890
@@ -299,7 +323,15 @@ jobs:
           assert payload["source_tree_present"] is False, payload
           assert payload["static_root_present"] is True, payload
           assert payload["uid"] != 0, payload
+          assert payload["wheel_identity_present"] is True, payload
+          wheel_sha256 = payload["application_wheel_sha256"]
+          assert isinstance(wheel_sha256, str) and len(wheel_sha256) == 64, payload
+          assert all(character in "0123456789abcdef" for character in wheel_sha256), payload
           PY
+          wheel_sha256="$(python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["application_wheel_sha256"])' "${RUNNER_TEMP}/conflict-production-runtime.json")"
+          test "${#wheel_sha256}" -eq 64
+          [[ "${wheel_sha256}" =~ ^[0-9a-f]{64}$ ]]
+          echo "sha256=${wheel_sha256}" >> "${GITHUB_OUTPUT}"
           docker image inspect "${CONFLICT_IMAGE}" > "${RUNNER_TEMP}/conflict-production-image.json"
 
       - name: Upload production image evidence
@@ -329,8 +361,44 @@ jobs:
           WHEEL_SQLITE_RESULT: ${{ needs.wheel-sqlite.result }}
           POSTGRESQL_PRODUCT_RESULT: ${{ needs.postgresql-product.result }}
           PRODUCTION_IMAGE_RESULT: ${{ needs.production-image.result }}
+          WHEEL_SQLITE_SHA256: ${{ needs.wheel-sqlite.outputs.wheel_sha256 }}
+          POSTGRESQL_WHEEL_SHA256: ${{ needs.postgresql-product.outputs.wheel_sha256 }}
+          PRODUCTION_IMAGE_WHEEL_SHA256: ${{ needs.production-image.outputs.wheel_sha256 }}
         run: |
+          match=false
+          status=FAIL
+          if [[ "${WHEEL_SQLITE_SHA256}" =~ ^[0-9a-f]{64}$ ]] \
+            && [[ "${POSTGRESQL_WHEEL_SHA256}" =~ ^[0-9a-f]{64}$ ]] \
+            && [[ "${PRODUCTION_IMAGE_WHEEL_SHA256}" =~ ^[0-9a-f]{64}$ ]] \
+            && test "${WHEEL_SQLITE_SHA256}" = "${POSTGRESQL_WHEEL_SHA256}" \
+            && test "${WHEEL_SQLITE_SHA256}" = "${PRODUCTION_IMAGE_WHEEL_SHA256}"; then
+            match=true
+            status=PASS
+          fi
+          cat > "${RUNNER_TEMP}/conflict-required-wheel-reproducibility.json" <<EOF
+          {
+            "match": ${match},
+            "postgresql_wheel_sha256": "${POSTGRESQL_WHEEL_SHA256}",
+            "production_image_wheel_sha256": "${PRODUCTION_IMAGE_WHEEL_SHA256}",
+            "source_date_epoch": 315532800,
+            "status": "${status}",
+            "wheel_sqlite_sha256": "${WHEEL_SQLITE_SHA256}"
+          }
+          EOF
           test "${WHEEL_SQLITE_RESULT}" = "success"
           test "${POSTGRESQL_PRODUCT_RESULT}" = "success"
           test "${PRODUCTION_IMAGE_RESULT}" = "success"
+          test -n "${WHEEL_SQLITE_SHA256}"
+          test "${WHEEL_SQLITE_SHA256}" = "${POSTGRESQL_WHEEL_SHA256}"
+          test "${WHEEL_SQLITE_SHA256}" = "${PRODUCTION_IMAGE_WHEEL_SHA256}"
+          echo "CONFLICT_ANALYSIS_REPRODUCIBLE_WHEEL=PASS"
           echo "CONFLICT_ANALYSIS_REQUIRED_PRODUCT_GATE=PASS"
+
+      - name: Upload reproducible wheel evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conflict-required-wheel-reproducibility-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/conflict-required-wheel-reproducibility.json
+          if-no-files-found: error
+          retention-days: 7
