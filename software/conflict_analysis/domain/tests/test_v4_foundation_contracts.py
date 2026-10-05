@@ -19,6 +19,7 @@ from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.contrib import admin as django_admin
+from django.db import DatabaseError, connection, models, transaction
 from django.db.models.deletion import RestrictedError
 from django.test import SimpleTestCase, TestCase
 from django.utils import timezone
@@ -1600,6 +1601,7 @@ class AssessmentAndStatusContractTests(FoundationFactoryMixin, TestCase):
         confidence_level: str = ConfidenceLevel.MEDIUM,
         reference_statement: str = "The actor supports the issue.",
         reference_statement_incomplete: bool = False,
+        provenance: dict | None = None,
     ) -> tuple[AssessmentSet, Experiment, ActorElementAssessment]:
         assessment_set = clean_save(
             AssessmentSet(
@@ -1651,6 +1653,7 @@ class AssessmentAndStatusContractTests(FoundationFactoryMixin, TestCase):
                 confidence_level=confidence_level,
                 knowledge_cutoff=self.time_slice.cutoff_date,
                 method_version="METHOD-1",
+                provenance=provenance or {},
             )
         )
         return assessment_set, experiment, assessment
@@ -1686,6 +1689,272 @@ class AssessmentAndStatusContractTests(FoundationFactoryMixin, TestCase):
                 rationale="Explicit test coding." if value is not None else "",
             )
         )
+
+    def _raw_present_value(
+        self,
+        *,
+        suffix: str,
+        assessment_set: AssessmentSet,
+        assessment: ActorElementAssessment,
+        definition: ParameterDefinition,
+        confidence: Decimal | None = None,
+        rationale: str = "",
+    ) -> ParameterValue:
+        return ParameterValue(
+            project=self.project,
+            workspace=self.workspace,
+            time_slice=self.time_slice,
+            assessment_set=assessment_set,
+            actor_element_assessment=assessment,
+            parameter_definition=definition,
+            target_type=TargetType.ACTOR_ELEMENT_ASSESSMENT,
+            target_id=assessment.id,
+            code=f"VALUE-DB-{suffix}-{uuid4().hex[:10]}",
+            version="1.0.0",
+            status=ValueStatus.CONFIRMED,
+            value=5,
+            confidence=confidence,
+            rationale=rationale,
+        )
+
+    def test_database_rejects_unqualified_assessment_header_for_present_value(self):
+        assessment_set, _, assessment = self.make_lane(
+            suffix="DB-INCOMPLETE",
+            kind=AssessmentKind.HUMAN,
+            confidence_level=ConfidenceLevel.UNKNOWN,
+            reference_statement="",
+            reference_statement_incomplete=True,
+        )
+        value = self._raw_present_value(
+            suffix="INCOMPLETE",
+            assessment_set=assessment_set,
+            assessment=assessment,
+            definition=self.pos_definition,
+        )
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            models.Model.save(value, force_insert=True)
+        self.assertFalse(ParameterValue.objects.filter(pk=value.pk).exists())
+
+    def test_database_rejects_cross_context_assessment_header(self):
+        first_set, _, _first_assessment = self.make_lane(
+            suffix="DB-CONTEXT-FIRST",
+            kind=AssessmentKind.HUMAN,
+        )
+        _second_set, _, second_assessment = self.make_lane(
+            suffix="DB-CONTEXT-SECOND",
+            kind=AssessmentKind.HUMAN,
+        )
+        value = self._raw_present_value(
+            suffix="CROSS-CONTEXT",
+            assessment_set=first_set,
+            assessment=second_assessment,
+            definition=self.pos_definition,
+            confidence=Decimal("80"),
+            rationale="Explicit metadata cannot authorize a mismatched header.",
+        )
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            models.Model.save(value, force_insert=True)
+        self.assertFalse(ParameterValue.objects.filter(pk=value.pk).exists())
+
+    def test_database_accepts_exact_explicit_metadata_without_header_inheritance(self):
+        assessment_set, _, assessment = self.make_lane(
+            suffix="DB-EXPLICIT",
+            kind=AssessmentKind.HUMAN,
+            confidence_level=ConfidenceLevel.UNKNOWN,
+            reference_statement="",
+            reference_statement_incomplete=True,
+        )
+        value = self._raw_present_value(
+            suffix="EXPLICIT",
+            assessment_set=assessment_set,
+            assessment=assessment,
+            definition=self.pos_definition,
+            confidence=Decimal("80"),
+            rationale="Direct coder confidence and rationale.",
+        )
+        models.Model.save(value, force_insert=True)
+        self.assertTrue(ParameterValue.objects.filter(pk=value.pk).exists())
+
+    def test_database_accepts_complete_inherited_assessment_header(self):
+        assessment_set, _, assessment = self.make_lane(
+            suffix="DB-HEADER",
+            kind=AssessmentKind.HUMAN,
+            confidence_level=ConfidenceLevel.MEDIUM,
+            reference_statement="The source states the actor position.",
+        )
+        value = self._raw_present_value(
+            suffix="HEADER",
+            assessment_set=assessment_set,
+            assessment=assessment,
+            definition=self.pos_definition,
+        )
+        models.Model.save(value, force_insert=True)
+        self.assertTrue(ParameterValue.objects.filter(pk=value.pk).exists())
+
+    def test_database_requires_exact_pos_sal_categorical_header(self):
+        valid_set, _, valid_assessment = self.make_lane(
+            suffix="DB-CATEGORICAL-VALID",
+            kind=AssessmentKind.HUMAN,
+            confidence_level=ConfidenceLevel.UNKNOWN,
+            reference_statement="",
+            reference_statement_incomplete=True,
+            provenance={
+                "parameter_confidence": {"POS": "HIGH", "SAL": "MEDIUM"}
+            },
+        )
+        valid = self._raw_present_value(
+            suffix="CATEGORICAL-VALID",
+            assessment_set=valid_set,
+            assessment=valid_assessment,
+            definition=self.pos_definition,
+            rationale="Categorical POS confidence rationale.",
+        )
+        models.Model.save(valid, force_insert=True)
+        self.assertTrue(ParameterValue.objects.filter(pk=valid.pk).exists())
+
+        invalid_set, _, invalid_assessment = self.make_lane(
+            suffix="DB-CATEGORICAL-INVALID",
+            kind=AssessmentKind.HUMAN,
+            confidence_level=ConfidenceLevel.UNKNOWN,
+            reference_statement="",
+            reference_statement_incomplete=True,
+            provenance={"parameter_confidence": {"POS": "HIGH"}},
+        )
+        invalid = self._raw_present_value(
+            suffix="CATEGORICAL-INVALID",
+            assessment_set=invalid_set,
+            assessment=invalid_assessment,
+            definition=self.pos_definition,
+            rationale="Incomplete categorical confidence map.",
+        )
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            models.Model.save(invalid, force_insert=True)
+        self.assertFalse(ParameterValue.objects.filter(pk=invalid.pk).exists())
+
+    def test_database_blocks_raw_update_that_removes_required_metadata(self):
+        assessment_set, _, assessment = self.make_lane(
+            suffix="DB-UPDATE",
+            kind=AssessmentKind.HUMAN,
+            confidence_level=ConfidenceLevel.UNKNOWN,
+            reference_statement="",
+            reference_statement_incomplete=True,
+        )
+        value = self._raw_present_value(
+            suffix="UPDATE",
+            assessment_set=assessment_set,
+            assessment=assessment,
+            definition=self.pos_definition,
+            confidence=Decimal("75"),
+            rationale="Initial explicit metadata.",
+        )
+        models.Model.save(value, force_insert=True)
+        table = connection.ops.quote_name(ParameterValue._meta.db_table)
+        pk = ParameterValue._meta.pk.get_db_prep_value(value.pk, connection)
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE {table} SET confidence = NULL, rationale = %s "
+                    "WHERE id = %s",
+                    ["", pk],
+                )
+        value.refresh_from_db()
+        self.assertEqual(value.confidence, Decimal("75"))
+        self.assertEqual(value.rationale, "Initial explicit metadata.")
+
+    def test_database_blocks_assessment_update_that_invalidates_inherited_metadata(self):
+        assessment_set, _, assessment = self.make_lane(
+            suffix="DB-ASSESSMENT-DEPENDENCY",
+            kind=AssessmentKind.HUMAN,
+            confidence_level=ConfidenceLevel.MEDIUM,
+            reference_statement="The source states the actor position.",
+        )
+        value = self._raw_present_value(
+            suffix="ASSESSMENT-DEPENDENCY",
+            assessment_set=assessment_set,
+            assessment=assessment,
+            definition=self.pos_definition,
+        )
+        models.Model.save(value, force_insert=True)
+        table = connection.ops.quote_name(ActorElementAssessment._meta.db_table)
+        pk = ActorElementAssessment._meta.pk.get_db_prep_value(
+            assessment.pk,
+            connection,
+        )
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE {table} SET confidence_level = %s, "
+                    "reference_statement = %s, "
+                    "reference_statement_incomplete = %s WHERE id = %s",
+                    [ConfidenceLevel.UNKNOWN, "", True, pk],
+                )
+        assessment.refresh_from_db()
+        self.assertEqual(assessment.confidence_level, ConfidenceLevel.MEDIUM)
+        self.assertEqual(
+            assessment.reference_statement,
+            "The source states the actor position.",
+        )
+
+    def test_database_blocks_unknown_assessment_confidence_token_dependency(self):
+        assessment_set, _, assessment = self.make_lane(
+            suffix="DB-ASSESSMENT-CHOICE-DEPENDENCY",
+            kind=AssessmentKind.HUMAN,
+            confidence_level=ConfidenceLevel.MEDIUM,
+            reference_statement="The source states the actor position.",
+        )
+        value = self._raw_present_value(
+            suffix="ASSESSMENT-CHOICE-DEPENDENCY",
+            assessment_set=assessment_set,
+            assessment=assessment,
+            definition=self.pos_definition,
+        )
+        models.Model.save(value, force_insert=True)
+        table = connection.ops.quote_name(ActorElementAssessment._meta.db_table)
+        pk = ActorElementAssessment._meta.pk.get_db_prep_value(
+            assessment.pk,
+            connection,
+        )
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE {table} SET confidence_level = %s WHERE id = %s",
+                    ["UNRECOGNIZED", pk],
+                )
+        assessment.refresh_from_db()
+        self.assertEqual(assessment.confidence_level, ConfidenceLevel.MEDIUM)
+
+    def test_database_blocks_definition_update_that_invalidates_categorical_metadata(self):
+        assessment_set, _, assessment = self.make_lane(
+            suffix="DB-DEFINITION-DEPENDENCY",
+            kind=AssessmentKind.HUMAN,
+            confidence_level=ConfidenceLevel.UNKNOWN,
+            reference_statement="",
+            reference_statement_incomplete=True,
+            provenance={
+                "parameter_confidence": {"POS": "HIGH", "SAL": "MEDIUM"}
+            },
+        )
+        value = self._raw_present_value(
+            suffix="DEFINITION-DEPENDENCY",
+            assessment_set=assessment_set,
+            assessment=assessment,
+            definition=self.pos_definition,
+            rationale="Categorical confidence depends on the POS definition.",
+        )
+        models.Model.save(value, force_insert=True)
+        table = connection.ops.quote_name(ParameterDefinition._meta.db_table)
+        pk = ParameterDefinition._meta.pk.get_db_prep_value(
+            self.pos_definition.pk,
+            connection,
+        )
+        with self.assertRaises(DatabaseError), transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"UPDATE {table} SET code = %s WHERE id = %s",
+                    [f"OTHER-{uuid4().hex[:10]}", pk],
+                )
+        self.pos_definition.refresh_from_db()
+        self.assertEqual(self.pos_definition.code, "POS")
 
     @covers("FND-A01", "FND-A02", "FND-A03", "FND-A04", "FND-A05", "FND-S05")
     @exercises_fixtures(

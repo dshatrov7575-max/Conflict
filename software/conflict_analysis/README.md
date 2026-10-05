@@ -172,7 +172,9 @@ serves collected static assets through WhiteNoise, uses digest-pinned Python
 and PostgreSQL images, verifies SHA-256 locks for build tools and production
 dependencies, keeps the application filesystem read-only and does not mount the
 source tree. The universal required CI installs its test surface from a separate
-SHA-256 lock, then builds and probes this production image. Every application
+SHA-256 lock, then builds and probes this production image. PostgreSQL and
+SQLite database triggers also enforce the exact `ParameterValue` metadata
+inheritance contract when a write bypasses model validation. Every application
 wheel is built through `scripts/build_reproducible_wheel.py`, which seals the
 ZIP timestamp to `SOURCE_DATE_EPOCH=315532800`; the independent SQLite and
 PostgreSQL jobs and the independently built production image publish their
