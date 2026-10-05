@@ -474,17 +474,23 @@ export async function test_chromium_successor_validate_publish_lost_response_rec
     const publicationRecovered = await harness.waitPublicationRecovery(page);
     assert.equal(publicationRecovered.operationId, publicationTicket.ticket.operation_id);
 
-    const persisted = await harness.client.evaluate(`Promise.all([
-      ${JSON.stringify(`/api/foundation/definitions/${harness.env.predecessorId}/`)},
-      ${JSON.stringify(`/api/foundation/definitions/${harness.env.definitionId}/`)},
-    ].map(async (url) => {
-      const response = await fetch(url, {
-        credentials: "same-origin",
-        cache: "no-store",
-        redirect: "error",
-      });
-      return { status: response.status, url: response.url, body: await response.json() };
-    }))`, page.sessionId);
+    const persisted = await harness.client.evaluate(`(async () => {
+      // Django shares one connection across SQLite in-memory live-server threads.
+      // These are state assertions, not a concurrency contract, so read serially.
+      const results = [];
+      for (const url of [
+        ${JSON.stringify(`/api/foundation/definitions/${harness.env.predecessorId}/`)},
+        ${JSON.stringify(`/api/foundation/definitions/${harness.env.definitionId}/`)},
+      ]) {
+        const response = await fetch(url, {
+          credentials: "same-origin",
+          cache: "no-store",
+          redirect: "error",
+        });
+        results.push({ status: response.status, url: response.url, body: await response.json() });
+      }
+      return results;
+    })()`, page.sessionId);
     assert.equal(persisted[0].status, 200, JSON.stringify(persisted[0]));
     assert.equal(persisted[1].status, 200, JSON.stringify(persisted[1]));
     assert.equal(persisted[0].body.publication_status, "PUBLISHED");
