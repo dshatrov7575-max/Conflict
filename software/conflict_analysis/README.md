@@ -295,3 +295,13 @@ URL-граф:
 
 `player_integration.settings` и `player_integration.project_urls` сохранены
 только как совместимые алиасы; отдельный opt-in runtime больше не требуется.
+
+
+## Обязательный CI всего комплекса
+
+`.github/workflows/conflict-analysis-required.yml` запускается для каждого pull request без списка разрешённых веток. Стабильная итоговая проверка `Required product gate` проходит только после двух независимых контуров:
+
+- сборка и установка единого wheel вне исходного дерева, `collectstatic` и полный default-suite на SQLite;
+- PostgreSQL 18, миграции, полный default-suite и реальные Chromium-проверки Studio, Player, Calculation и Scenario.
+
+Корневой `pytest.ini` включает все семь продуктовых наборов тестов. Workflow имеет только `contents: read`, не использует секреты или внешние model API; actions и PostgreSQL service image закреплены полными digest. После появления проверки в целевой ветке её имя следует закрепить как required status в repository ruleset. Это технический release gate и не заменяет HUMAN validation, исторический admission или predictive validation.
