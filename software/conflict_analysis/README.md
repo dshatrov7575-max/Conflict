@@ -162,8 +162,41 @@ PostgreSQL 18.4: миграции применяются с нуля, затем
 включается только явно и предназначен для быстрых локальных тестов; успешный
 прогон на SQLite не заменяет PostgreSQL 18.4 gate.
 
-## Запуск через Docker Compose
+## Production deployment profile
 
+`docker-compose.yml` and `.env.example` are development-only. The fail-closed
+production path uses the separate `docker-compose.prod.yml`, the
+`production` Docker target and `conflict_analysis.production_settings`.
+It requires explicit secrets and hosts, runs Gunicorn, removes Django Admin,
+serves collected static assets through WhiteNoise, uses digest-pinned Python
+and PostgreSQL images, verifies SHA-256 locks for build tools and production
+dependencies, keeps the application filesystem read-only and does not mount the
+source tree. The universal required CI installs its test surface from a separate
+SHA-256 lock, then builds and probes this production image.
+
+Create the production environment file and replace every placeholder:
+
+```bash
+cp .env.production.example .env.production
+# edit .env.production before the next command
+docker compose --env-file .env.production -f docker-compose.prod.yml config
+docker compose --env-file .env.production -f docker-compose.prod.yml up --build -d
+```
+
+The web port is bound to `127.0.0.1` deliberately. Put an HTTPS reverse proxy
+in front of it; the proxy must discard any client-supplied `X-Forwarded-Proto`
+and set `X-Forwarded-Proto: https` itself. Do not expose the Gunicorn port
+directly. The migration service must complete successfully before the web
+service starts. Missing secrets, DEBUG, SQLite, wildcard hosts and the
+development database password make production settings refuse to start.
+
+This profile does not add a credential-collection endpoint. Studio and Player
+still require a Django session issued by the trusted host or an upstream SSO
+integration. Without that session issuer, authenticated work screens correctly
+remain unavailable. The profile is therefore a hardened runtime path, not a
+turnkey public deployment or a scientific-release claim.
+
+## Development Docker Compose
 При необходимости скопируйте `.env.example` в `.env` и замените локальные
 секреты. Затем выполните:
 

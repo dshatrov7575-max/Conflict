@@ -79,6 +79,7 @@ def verify_workflow(repo_root: Path) -> None:
     repo_root = repo_root.resolve(strict=True)
     workflow = (repo_root / WORKFLOW_PATH).read_text(encoding="utf-8")
     pytest_config = (repo_root / PROJECT_PATH / "pytest.ini").read_text(encoding="utf-8")
+    test_lock_lines = (repo_root / PROJECT_PATH / "requirements/test-lock.txt").read_text(encoding="utf-8").splitlines()
 
     expected_trigger = """on:\n  pull_request:\n  push:\n    branches:\n      - main\n      - review/ai-only-research-beta-v1\n  workflow_dispatch:\n"""
     _require(expected_trigger in workflow, "required workflow must run on every pull request")
@@ -86,6 +87,22 @@ def verify_workflow(repo_root: Path) -> None:
     _require("name: Required product gate" in workflow, "stable aggregate job name is absent")
     _require("if: ${{ always() }}" in workflow, "aggregate job must execute after failures")
     _require("secrets." not in workflow, "required product gate must not consume repository secrets")
+    _require(workflow.count("requirements/build-lock.txt") == 2, "both product jobs must install the hashed build lock")
+    _require(workflow.count("requirements/test-lock.txt") == 2, "both product jobs must install the hashed test lock")
+    _require(workflow.count("--no-build-isolation --no-deps -e .") == 2, "editable product install must use the prelocked build environment")
+    _require(workflow.count("pip wheel --no-deps --no-build-isolation") == 2, "both product wheel builds must use the prelocked build environment")
+
+    test_lock_entries = [
+        line.strip()
+        for line in test_lock_lines
+        if line.strip() and not line.lstrip().startswith("#") and not line.startswith("--")
+    ]
+    _require("--only-binary=:all:" in test_lock_lines, "test lock must require binary wheels")
+    _require(len(test_lock_entries) == 22, f"unexpected test lock size: {len(test_lock_entries)}")
+    _require(
+        all(re.fullmatch(r"[A-Za-z0-9_.-]+==[^=\s]+ --hash=sha256:[0-9a-f]{64}", line) for line in test_lock_entries),
+        "test lock entries must be exact and SHA-256 pinned",
+    )
 
     pins = {
         "checkout": CHECKOUT_SHA,
@@ -115,6 +132,12 @@ def verify_workflow(repo_root: Path) -> None:
         "python manage.py makemigrations --check --dry-run",
         "installed-smoke",
         "inspect-wheel",
+        "production-image:",
+        "Production image hardening gate",
+        "verify_production_runtime.py",
+        "docker build --target production",
+        "python -m django check --deploy --fail-level WARNING",
+        "PRODUCTION_IMAGE_RESULT: ${{ needs.production-image.result }}",
     ):
         _require(token in workflow, f"required gate contract is missing: {token}")
 
@@ -156,6 +179,8 @@ def verify_workflow(repo_root: Path) -> None:
             "pinned_actions": pins,
             "postgres_digest": POSTGRES_DIGEST,
             "product_test_paths": list(PRODUCT_TEST_PATHS),
+            "production_image_gate": True,
+            "test_lock_entries": len(test_lock_entries),
         }
     )
 
