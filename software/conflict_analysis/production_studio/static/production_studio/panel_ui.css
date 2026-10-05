@@ -9,6 +9,9 @@
   color: #23445f; font: 700 8px/1 system-ui, sans-serif; cursor: pointer;
 }
 .panel-help::after { content: ""; position: absolute; inset: -11px; border-radius: 50%; }
+#status-export > .panel-help,
+#status-export > .export-card > .panel-help { inset-inline-end: 20px; }
+#status-export > h2 { padding-inline-end: 44px; }
 fieldset[data-panel-help] > .panel-help { inset-block-start: -7px; inset-inline-end: 10px; }
 [data-panel-help] > label:first-of-type + :is(input, select, textarea) {
   width: calc(100% - 36px); justify-self: start;
