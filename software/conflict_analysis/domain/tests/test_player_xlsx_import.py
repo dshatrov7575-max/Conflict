@@ -34,7 +34,7 @@ from domain.services.xlsx_adapter import (
     MAX_CELL_TEXT_BYTES, FoundationXlsxAdapterError, read_xlsx_tables,
 )
 from domain.services.xlsx_import_profiles import (
-    PROFILE_FILENAME, PROFILE_ID, XlsxImportProfileError, load_profile,
+    PROFILE_FILENAME, PROFILE_ID, XlsxImportProfileError, _number, load_profile,
     preview_profile_xlsx,
 )
 
@@ -229,6 +229,48 @@ class PlayerXlsxImportTests(TestCase):
                     "DTD and entity declarations are forbidden",
                 ):
                     _parse_xml(padding + declaration)
+
+    def test_xml_preflight_rejects_utf16_dtd_before_tree_construction(self):
+        from domain.services.xlsx_adapter import _parse_xml
+
+        raw = (
+            '<?xml version="1.0" encoding="UTF-16"?>'
+            '<!DOCTYPE root [<!ENTITY x "HELLO">]><root>&x;</root>'
+        ).encode("utf-16")
+        with patch("domain.services.xlsx_adapter.ElementTree.fromstring") as build_tree:
+            with self.assertRaisesRegex(
+                FoundationXlsxAdapterError,
+                "DTD and entity declarations are forbidden",
+            ):
+                _parse_xml(raw)
+        build_tree.assert_not_called()
+
+    def test_xml_preflight_rejects_depth_before_tree_construction(self):
+        from domain.services.xlsx_adapter import _parse_xml
+
+        raw = ("<root>" + "<x>" * 65 + "</x>" * 65 + "</root>").encode("utf-8")
+        with patch("domain.services.xlsx_adapter.ElementTree.fromstring") as build_tree:
+            with self.assertRaisesRegex(
+                FoundationXlsxAdapterError,
+                "nesting limit",
+            ):
+                _parse_xml(raw)
+        build_tree.assert_not_called()
+
+    def test_workbook_has_aggregate_cell_budget(self):
+        with patch("domain.services.xlsx_adapter.MAX_WORKBOOK_CELLS", 1):
+            with self.assertRaisesRegex(
+                FoundationXlsxAdapterError,
+                "workbook cell budget",
+            ):
+                read_xlsx_tables(profile_workbook())
+
+    def test_number_range_is_checked_before_large_integer_materialization(self):
+        with self.assertRaisesRegex(
+            XlsxImportProfileError,
+            "POS is outside -10..10",
+        ):
+            _number("1e1000000", "POS")
 
     def test_row_order_independent_stable_id_mapping_uses_exact_projection_and_applicability(self):
         profile = load_profile(); self.assertEqual(len({row["a5_v4_id"] for row in profile["records"]}), 330)
