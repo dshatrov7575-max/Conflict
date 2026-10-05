@@ -126,12 +126,11 @@ def _number(value: str, parameter: str) -> int:
         raise XlsxImportProfileError("G8_XLSX_VALUE_INVALID", "Value is not a finite number.") from exc
     if not number.is_finite() or number != number.to_integral_value():
         raise XlsxImportProfileError("G8_XLSX_VALUE_INVALID", "Profile requires an integer value.")
-    result = int(number)
-    if parameter == "POS" and not -10 <= result <= 10:
+    if parameter == "POS" and not Decimal("-10") <= number <= Decimal("10"):
         raise XlsxImportProfileError("G8_XLSX_VALUE_OUT_OF_RANGE", "POS is outside -10..10.")
-    if parameter == "SAL" and not 0 <= result <= 10:
+    if parameter == "SAL" and not Decimal("0") <= number <= Decimal("10"):
         raise XlsxImportProfileError("G8_XLSX_VALUE_OUT_OF_RANGE", "SAL is outside 0..10.")
-    return result
+    return int(number)
 
 
 def preview_profile_xlsx(

@@ -13,6 +13,7 @@ from io import BytesIO
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
 from xml.etree import ElementTree
+from xml.parsers import expat
 
 
 _MAIN_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
@@ -29,7 +30,10 @@ MAX_COLUMNS = 512
 MAX_CELLS_PER_SHEET = 1_000_000
 MAX_SHARED_STRINGS = 1_000_000
 MAX_XML_DEPTH = 64
+MAX_XML_ELEMENTS = 4_500_000
 MAX_CELL_TEXT_BYTES = 1_048_576
+MAX_WORKBOOK_ROWS = 400_000
+MAX_WORKBOOK_CELLS = 4_000_000
 _ACTIVE_CONTENT_PREFIXES = (
     "xl/activeX/", "xl/connections", "xl/embeddings/", "xl/externalLinks/",
     "xl/macrosheets/", "xl/vbaProject", "xl/webExtensions/",
@@ -330,24 +334,67 @@ def _validate_archive(archive: zipfile.ZipFile) -> None:
         raise FoundationXlsxAdapterError(f"XLSX is missing required members {sorted(missing)}.")
 
 
-def _parse_xml(xml: bytes):
-    # XLSX members are already size-bounded before parsing. Inspect the complete
-    # member so a long XML comment cannot move a DTD/entity declaration past a
-    # prefix-only guard.
-    upper = xml.upper()
-    if b"<!DOCTYPE" in upper or b"<!ENTITY" in upper:
-        raise FoundationXlsxAdapterError("DTD and entity declarations are forbidden in XLSX XML.")
-    root = ElementTree.fromstring(xml)
-    stack = [(root, 1)]
-    while stack:
-        node, depth = stack.pop()
+def _preflight_xml(xml: bytes) -> None:
+    """Reject unsafe or over-budget XML before constructing an ElementTree."""
+
+    parser = expat.ParserCreate()
+    parser.SetParamEntityParsing(expat.XML_PARAM_ENTITY_PARSING_NEVER)
+    depth = 0
+    elements = 0
+    text_bytes: list[int] = []
+
+    def reject_declaration(*_args: object) -> None:
+        raise FoundationXlsxAdapterError(
+            "DTD and entity declarations are forbidden in XLSX XML."
+        )
+
+    def start_element(_name: str, _attrs: Mapping[str, str]) -> None:
+        nonlocal depth, elements
+        depth += 1
+        elements += 1
         if depth > MAX_XML_DEPTH:
             raise FoundationXlsxAdapterError("XLSX XML nesting limit exceeded.")
-        for value in (node.text, node.tail):
-            if value is not None and len(value.encode("utf-8")) > MAX_CELL_TEXT_BYTES:
-                raise FoundationXlsxAdapterError("XLSX contains oversized cell text.")
-        stack.extend((child, depth + 1) for child in node)
-    return root
+        if elements > MAX_XML_ELEMENTS:
+            raise FoundationXlsxAdapterError("XLSX XML element budget exceeded.")
+        text_bytes.append(0)
+
+    def end_element(_name: str) -> None:
+        nonlocal depth
+        if text_bytes:
+            text_bytes.pop()
+        depth -= 1
+
+    def character_data(value: str) -> None:
+        if not text_bytes or not value:
+            return
+        text_bytes[-1] += len(value.encode("utf-8"))
+        if text_bytes[-1] > MAX_CELL_TEXT_BYTES:
+            raise FoundationXlsxAdapterError("XLSX contains oversized cell text.")
+
+    parser.StartDoctypeDeclHandler = reject_declaration
+    parser.EntityDeclHandler = reject_declaration
+    parser.ExternalEntityRefHandler = reject_declaration
+    parser.StartElementHandler = start_element
+    parser.EndElementHandler = end_element
+    parser.CharacterDataHandler = character_data
+    try:
+        parser.Parse(xml, True)
+    except FoundationXlsxAdapterError:
+        raise
+    except expat.ExpatError as exc:
+        raise FoundationXlsxAdapterError(f"Cannot parse XLSX XML: {exc}.") from exc
+
+
+def _parse_xml(xml: bytes):
+    # Cheap byte scanning keeps the common malicious case fast; the Expat
+    # preflight below is the authoritative declaration/encoding/resource gate.
+    upper = xml.upper()
+    if b"<!DOCTYPE" in upper or b"<!ENTITY" in upper:
+        raise FoundationXlsxAdapterError(
+            "DTD and entity declarations are forbidden in XLSX XML."
+        )
+    _preflight_xml(xml)
+    return ElementTree.fromstring(xml)
 
 
 def _read_workbook(
@@ -364,6 +411,8 @@ def _read_workbook(
     if len(sheet_nodes) > MAX_SHEETS:
         raise FoundationXlsxAdapterError("XLSX contains too many sheets.")
     result: dict[str, list[dict[int, str]]] = {}
+    total_rows = 0
+    total_cells = 0
     for sheet in sheet_nodes:
         name = sheet.attrib["name"].strip().upper()
         if not name or name in result:
@@ -383,11 +432,18 @@ def _read_workbook(
             raise FoundationXlsxAdapterError(f"Sheet {name!r} has an unsafe relationship target.")
         if str(normalized) not in archive.namelist():
             raise FoundationXlsxAdapterError(f"Sheet {name!r} XML member is missing.")
-        result[name] = _worksheet_rows(
+        rows = _worksheet_rows(
             archive.read(str(normalized)),
             shared,
             reject_formulas=reject_all_formulas or name not in _IGNORED_FORMULA_SHEETS,
         )
+        total_rows += len(rows)
+        total_cells += sum(len(row) for row in rows)
+        if total_rows > MAX_WORKBOOK_ROWS:
+            raise FoundationXlsxAdapterError("XLSX workbook row budget exceeded.")
+        if total_cells > MAX_WORKBOOK_CELLS:
+            raise FoundationXlsxAdapterError("XLSX workbook cell budget exceeded.")
+        result[name] = rows
     return result
 
 
