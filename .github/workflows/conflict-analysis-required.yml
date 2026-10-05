@@ -27,7 +27,7 @@ jobs:
       DJANGO_SECRET_KEY: ci-required-gate-sqlite-only
       DJANGO_DEBUG: "false"
       USE_SQLITE: "true"
-      SQLITE_PATH: ${{ runner.temp }}/conflict-required.sqlite3
+      SQLITE_PATH: /tmp/conflict-required-${{ github.run_id }}-${{ github.run_attempt }}.sqlite3
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"
 
