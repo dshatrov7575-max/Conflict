@@ -1,0 +1,928 @@
+{
+  "report_id": "ZHANAOZEN_2011_HUMAN_PILOT_ADMISSION_REASSESSMENT_RECOVERY_V1",
+  "base_commit": "0777f1704f920941198f68d8b62cb4f5cbf600eb",
+  "audit_at_utc": "2026-09-26T16:11:33.963531+00:00",
+  "overall_gate": "BLOCKED",
+  "item_status_counts": {
+    "ADMITTED": 0,
+    "PARTIAL": 0,
+    "BLOCKED": 12
+  },
+  "items": [
+    {
+      "coding_item_id": "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+      "H1": "H1-10",
+      "H2": "H2-08",
+      "actor_code": "GU01",
+      "element_code": "E02",
+      "actor_id": "d31904bd-a9e2-52bc-886d-d959d8e6f86d",
+      "element_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+      "actor_name": "Работники основных нефтегазовых предприятий",
+      "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+      "reference_sha256": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172",
+      "status": "BLOCKED",
+      "prior_status": "BLOCKED",
+      "recovered": "Исторический контекст D01/D03/D13 восстановил Соколову, пресс-секретаря компании и Лесова; действие голодовки D03 теперь видно в отдельном witness.",
+      "remaining_reason": "Октябрьская D17 и её майская связь остаются неподтверждёнными; нет основания распространять частные/пересказанные требования на всю GU01 и весь target time/reference.",
+      "human_review_task": "Проверить мандат и допустимый охват представительства GU01, майско-октябрьскую Fact-link и временную применимость. Не назначать POS/KVS.",
+      "checks": {
+        "actor_element_reference_mapping": {
+          "registry_binding": "PASS_UNCHANGED",
+          "substantive_group_mapping": "NOT_ESTABLISHED",
+          "scope_mismatch_confirmed": false
+        },
+        "fact_fragment_version_source_chain": {
+          "structural_integrity": "PASS_UNCHANGED",
+          "chain_ids": [
+            "1e7fec6b-118a-55ac-9b5e-cbfb14328c2e",
+            "34c226d3-8e31-5734-ad74-cc42d758ee4f",
+            "4b6e8cd6-dff4-5d12-9092-e86477fee8a4",
+            "4e0565a6-c170-51e9-9997-a7190eb2b8a0",
+            "cbcc9b78-9a8f-569d-b0be-738ec694d301"
+          ],
+          "count": 5,
+          "retroactive_rebinding": false
+        },
+        "fragment_context": {
+          "authenticated_context_fragment_ids": [
+            "56d19d98-707a-5deb-9472-d355b3835d79",
+            "cc839407-9eb7-5e05-acca-70f1577883d4",
+            "d3e6a365-8150-545b-8005-c18c4939142b",
+            "d521033f-59ce-5518-9227-b5fe9cb7570f"
+          ],
+          "all_inputs_historical_context_available": false,
+          "full_group_reference_time_scope": "NOT_ESTABLISHED",
+          "annex_is_not_frozen_coder_input": true
+        },
+        "language_translation": {
+          "original_languages": [
+            "en"
+          ],
+          "annex_translation_candidates_supplied": true,
+          "human_verification": "NOT_PERFORMED",
+          "coder_language_competence": "NOT_ATTESTED",
+          "RUSSIAN_original_needs_no_translation": true
+        },
+        "historical_availability": {
+          "all_selected_fragments_proven_pre_cutoff": false,
+          "proven_fragments": 4,
+          "selected_fragments": 5,
+          "not_proven_versions": [
+            "D17"
+          ],
+          "late_CP3_edition_identity": "NOT_PROVEN"
+        },
+        "post_cutoff_leakage": {
+          "qualifying_witnesses": "ONLY_PRE_CUTOFF_CAPTURE_AND_DIGEST_VERIFIED",
+          "explicit_frozen_fragment_outcome": "NOT_DETECTED",
+          "not_proven_inputs": "NO_ASSERTION_OF_ABSENCE_OF_LATER_EDITS",
+          "current_pages_comments_widgets_and_search_snippets": "NOT_ADMITTED_TO_CODER_INPUT"
+        }
+      },
+      "availability_witness_ids": [
+        "AW-D01-20110521181520",
+        "AW-D01-20110811165523",
+        "AW-D03-20110527054702",
+        "AW-D03-20110916223846",
+        "AW-D13-20110918124424",
+        "AW-D13-20111024200546"
+      ],
+      "numeric_answer_sufficiency_is_not_admission_filter": true,
+      "factor_answers_created": false,
+      "requires_human_review": true
+    },
+    {
+      "coding_item_id": "951f300c-27d0-5a09-b312-e3fdad147f54",
+      "H1": "H1-01",
+      "H2": "H2-06",
+      "actor_code": "GU01",
+      "element_code": "E06",
+      "actor_id": "d31904bd-a9e2-52bc-886d-d959d8e6f86d",
+      "element_id": "0ca209e6-ca1a-5751-b27e-cbd0d180ffa9",
+      "actor_name": "Работники основных нефтегазовых предприятий",
+      "reference_statement": "Существующие правоохранительные и судебные процедуры реагирования на трудовой конфликт достаточны и соразмерны с точки зрения данного актора.",
+      "reference_sha256": "690666cdf713d75e095073573145b45e98195adf580b98fcfc410e72784523ed",
+      "status": "BLOCKED",
+      "prior_status": "BLOCKED",
+      "recovered": "D05/D09/D18 получили исторические witnesses и точных говорящих.",
+      "remaining_reason": "D20 NOT_PROVEN. США, прокуратура и суд не являются собственным коллективным голосом работников; групповой Mapping к GU01 не закрыт.",
+      "human_review_task": "Проверить допустимость связи правовых событий/внешних заявлений с данным actor/reference; отделить её от присвоения ответа.",
+      "checks": {
+        "actor_element_reference_mapping": {
+          "registry_binding": "PASS_UNCHANGED",
+          "substantive_group_mapping": "NOT_ESTABLISHED",
+          "scope_mismatch_confirmed": false
+        },
+        "fact_fragment_version_source_chain": {
+          "structural_integrity": "PASS_UNCHANGED",
+          "chain_ids": [
+            "06771a8f-8172-51a4-aed0-806c820c328f",
+            "0a80d046-9dd0-58ac-b1df-41508cb34b5a",
+            "6530b92f-e4d5-514d-a0e0-0640a25587a6",
+            "e096e9bc-09b3-5cf7-a598-e1cff13ad4a7",
+            "fb265c9c-83c9-53b4-a2aa-3fbc6413a65a"
+          ],
+          "count": 5,
+          "retroactive_rebinding": false
+        },
+        "fragment_context": {
+          "authenticated_context_fragment_ids": [
+            "04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+            "33ce2949-0da2-5839-9b01-566ae7e4bbf4",
+            "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94",
+            "b5fdecb6-2ac4-5f56-aae6-6aef4bb7b956"
+          ],
+          "all_inputs_historical_context_available": false,
+          "full_group_reference_time_scope": "NOT_ESTABLISHED",
+          "annex_is_not_frozen_coder_input": true
+        },
+        "language_translation": {
+          "original_languages": [
+            "en"
+          ],
+          "annex_translation_candidates_supplied": true,
+          "human_verification": "NOT_PERFORMED",
+          "coder_language_competence": "NOT_ATTESTED",
+          "RUSSIAN_original_needs_no_translation": true
+        },
+        "historical_availability": {
+          "all_selected_fragments_proven_pre_cutoff": false,
+          "proven_fragments": 4,
+          "selected_fragments": 5,
+          "not_proven_versions": [
+            "D20"
+          ],
+          "late_CP3_edition_identity": "NOT_PROVEN"
+        },
+        "post_cutoff_leakage": {
+          "qualifying_witnesses": "ONLY_PRE_CUTOFF_CAPTURE_AND_DIGEST_VERIFIED",
+          "explicit_frozen_fragment_outcome": "NOT_DETECTED",
+          "not_proven_inputs": "NO_ASSERTION_OF_ABSENCE_OF_LATER_EDITS",
+          "current_pages_comments_widgets_and_search_snippets": "NOT_ADMITTED_TO_CODER_INPUT"
+        }
+      },
+      "availability_witness_ids": [
+        "AW-D05-20110629041259",
+        "AW-D05-20110918081249",
+        "AW-D09-20110809011049",
+        "AW-D09-20111022101958",
+        "AW-D18-20111016234632"
+      ],
+      "numeric_answer_sufficiency_is_not_admission_filter": true,
+      "factor_answers_created": false,
+      "requires_human_review": true
+    },
+    {
+      "coding_item_id": "bc34ea72-a9ac-5e81-ab20-3f2efb729872",
+      "H1": "H1-03",
+      "H2": "H2-05",
+      "actor_code": "GU02",
+      "element_code": "E05",
+      "actor_id": "4c215889-7a31-56ae-8a60-cc546c915241",
+      "element_id": "728c8406-ba99-5787-9557-933b5670be7c",
+      "actor_name": "Работники подрядных и нефтесервисных организаций",
+      "reference_statement": "Существующие механизмы представительства, переговоров и коллективных действий обеспечивают достаточный доступ к выражению и согласованию интересов.",
+      "reference_sha256": "f689f671787c35619a3a32c6079908fb8ac5436a30cd832355b0238fe44f1deb",
+      "status": "BLOCKED",
+      "prior_status": "BLOCKED",
+      "recovered": "D04 теперь исторически подтверждён и явно относится к работникам QarazhanbasMunai.",
+      "remaining_reason": "Это не установленный состав подрядчиков GU02. D17 NOT_PROVEN; общее упоминание Ersai в текущем PDF не даёт права перенести все коллективные тезисы на GU02.",
+      "human_review_task": "Проверить границу основных предприятий и подрядчиков, конкретное авторство каждого сообщения и precision октябрьской даты.",
+      "checks": {
+        "actor_element_reference_mapping": {
+          "registry_binding": "PASS_UNCHANGED",
+          "substantive_group_mapping": "NOT_ESTABLISHED",
+          "scope_mismatch_confirmed": true
+        },
+        "fact_fragment_version_source_chain": {
+          "structural_integrity": "PASS_UNCHANGED",
+          "chain_ids": [
+            "9b2a572b-bf18-55ba-9de3-1dbb0b8f04f6",
+            "a012a5b0-6790-513d-b274-d759b2c8b950",
+            "dadf11cf-66ca-594f-a7c3-30e4114b4a7a"
+          ],
+          "count": 3,
+          "retroactive_rebinding": false
+        },
+        "fragment_context": {
+          "authenticated_context_fragment_ids": [
+            "7f0b0752-387d-5def-ba3d-ab11c4f1414b"
+          ],
+          "all_inputs_historical_context_available": false,
+          "full_group_reference_time_scope": "NOT_ESTABLISHED",
+          "annex_is_not_frozen_coder_input": true
+        },
+        "language_translation": {
+          "original_languages": [
+            "en"
+          ],
+          "annex_translation_candidates_supplied": true,
+          "human_verification": "NOT_PERFORMED",
+          "coder_language_competence": "NOT_ATTESTED",
+          "RUSSIAN_original_needs_no_translation": true
+        },
+        "historical_availability": {
+          "all_selected_fragments_proven_pre_cutoff": false,
+          "proven_fragments": 1,
+          "selected_fragments": 3,
+          "not_proven_versions": [
+            "D17"
+          ],
+          "late_CP3_edition_identity": "NOT_PROVEN"
+        },
+        "post_cutoff_leakage": {
+          "qualifying_witnesses": "ONLY_PRE_CUTOFF_CAPTURE_AND_DIGEST_VERIFIED",
+          "explicit_frozen_fragment_outcome": "NOT_DETECTED",
+          "not_proven_inputs": "NO_ASSERTION_OF_ABSENCE_OF_LATER_EDITS",
+          "current_pages_comments_widgets_and_search_snippets": "NOT_ADMITTED_TO_CODER_INPUT"
+        }
+      },
+      "availability_witness_ids": [
+        "AW-D04-20110529132216"
+      ],
+      "numeric_answer_sufficiency_is_not_admission_filter": true,
+      "factor_answers_created": false,
+      "requires_human_review": true
+    },
+    {
+      "coding_item_id": "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+      "H1": "H1-07",
+      "H2": "H2-09",
+      "actor_code": "GU03",
+      "element_code": "E02",
+      "actor_id": "6e5f84f6-8988-5e72-8fbd-bf67d4c8bb45",
+      "element_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+      "actor_name": "Уволенные и соискатели нефтегазовой занятости",
+      "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+      "reference_sha256": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172",
+      "status": "BLOCKED",
+      "prior_status": "BLOCKED",
+      "recovered": "Все связанные exact fragments D13/D14/D25 получили pre-cutoff witnesses; названы индивидуальный работник, предприятия и подгруппа уволенных.",
+      "remaining_reason": "Группа GU03 также включает бывших работников и местных соискателей. Основание общего представительства и закреплённый Mapping к этой широкой группе/target time остаются отсутствующими; recovered context не включён в frozen H1/H2.",
+      "human_review_task": "Проверить допустимость обобщения с описанной подгруппы уволенных на frozen GU03. Историческую доступность уже подтверждённых fragments повторно добывать не требуется.",
+      "checks": {
+        "actor_element_reference_mapping": {
+          "registry_binding": "PASS_UNCHANGED",
+          "substantive_group_mapping": "NOT_ESTABLISHED",
+          "scope_mismatch_confirmed": false
+        },
+        "fact_fragment_version_source_chain": {
+          "structural_integrity": "PASS_UNCHANGED",
+          "chain_ids": [
+            "4b6e8cd6-dff4-5d12-9092-e86477fee8a4",
+            "4d016edb-801c-5b2f-a4b7-0a2211f03711",
+            "f07fb0c1-2fea-5341-bdab-96681a75de89"
+          ],
+          "count": 3,
+          "retroactive_rebinding": false
+        },
+        "fragment_context": {
+          "authenticated_context_fragment_ids": [
+            "49c356b3-3585-587c-9573-d4326e97de77",
+            "56d19d98-707a-5deb-9472-d355b3835d79",
+            "ef7df23c-ba67-5903-9265-adbd1936ffa3"
+          ],
+          "all_inputs_historical_context_available": true,
+          "full_group_reference_time_scope": "NOT_ESTABLISHED",
+          "annex_is_not_frozen_coder_input": true
+        },
+        "language_translation": {
+          "original_languages": [
+            "en"
+          ],
+          "annex_translation_candidates_supplied": true,
+          "human_verification": "NOT_PERFORMED",
+          "coder_language_competence": "NOT_ATTESTED",
+          "RUSSIAN_original_needs_no_translation": true
+        },
+        "historical_availability": {
+          "all_selected_fragments_proven_pre_cutoff": true,
+          "proven_fragments": 3,
+          "selected_fragments": 3,
+          "not_proven_versions": [],
+          "late_CP3_edition_identity": "NOT_PROVEN"
+        },
+        "post_cutoff_leakage": {
+          "qualifying_witnesses": "ONLY_PRE_CUTOFF_CAPTURE_AND_DIGEST_VERIFIED",
+          "explicit_frozen_fragment_outcome": "NOT_DETECTED",
+          "not_proven_inputs": "NO_ASSERTION_OF_ABSENCE_OF_LATER_EDITS",
+          "current_pages_comments_widgets_and_search_snippets": "NOT_ADMITTED_TO_CODER_INPUT"
+        }
+      },
+      "availability_witness_ids": [
+        "AW-D13-20110918124424",
+        "AW-D13-20111024200546",
+        "AW-D14-20110927202906",
+        "AW-D14-20111106041751",
+        "AW-D25-20111016060958",
+        "AW-D25-20111116125247"
+      ],
+      "numeric_answer_sufficiency_is_not_admission_filter": true,
+      "factor_answers_created": false,
+      "requires_human_review": true
+    },
+    {
+      "coding_item_id": "cd9eb952-6af0-5708-8703-49673415cbe7",
+      "H1": "H1-02",
+      "H2": "H2-10",
+      "actor_code": "GU03",
+      "element_code": "E06",
+      "actor_id": "6e5f84f6-8988-5e72-8fbd-bf67d4c8bb45",
+      "element_id": "0ca209e6-ca1a-5751-b27e-cbd0d180ffa9",
+      "actor_name": "Уволенные и соискатели нефтегазовой занятости",
+      "reference_statement": "Существующие правоохранительные и судебные процедуры реагирования на трудовой конфликт достаточны и соразмерны с точки зрения данного актора.",
+      "reference_sha256": "690666cdf713d75e095073573145b45e98195adf580b98fcfc410e72784523ed",
+      "status": "BLOCKED",
+      "prior_status": "BLOCKED",
+      "recovered": "Исторически восстановлены контекст D05/D09 и голос США D18.",
+      "remaining_reason": "D19/D20 NOT_PROVEN. ЕС/США/делегация не представляют GU03; события о суде сами не закрывают Actor Mapping.",
+      "human_review_task": "Проверить provenance D19/D20 и основание связи внешних правовых заявлений с собственным reference GU03.",
+      "checks": {
+        "actor_element_reference_mapping": {
+          "registry_binding": "PASS_UNCHANGED",
+          "substantive_group_mapping": "NOT_ESTABLISHED",
+          "scope_mismatch_confirmed": false
+        },
+        "fact_fragment_version_source_chain": {
+          "structural_integrity": "PASS_UNCHANGED",
+          "chain_ids": [
+            "0a80d046-9dd0-58ac-b1df-41508cb34b5a",
+            "6530b92f-e4d5-514d-a0e0-0640a25587a6",
+            "cbf31553-ffdf-5d61-86ee-04e6dfe0b683",
+            "e096e9bc-09b3-5cf7-a598-e1cff13ad4a7",
+            "fb265c9c-83c9-53b4-a2aa-3fbc6413a65a"
+          ],
+          "count": 5,
+          "retroactive_rebinding": false
+        },
+        "fragment_context": {
+          "authenticated_context_fragment_ids": [
+            "04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+            "33ce2949-0da2-5839-9b01-566ae7e4bbf4",
+            "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94"
+          ],
+          "all_inputs_historical_context_available": false,
+          "full_group_reference_time_scope": "NOT_ESTABLISHED",
+          "annex_is_not_frozen_coder_input": true
+        },
+        "language_translation": {
+          "original_languages": [
+            "en"
+          ],
+          "annex_translation_candidates_supplied": true,
+          "human_verification": "NOT_PERFORMED",
+          "coder_language_competence": "NOT_ATTESTED",
+          "RUSSIAN_original_needs_no_translation": true
+        },
+        "historical_availability": {
+          "all_selected_fragments_proven_pre_cutoff": false,
+          "proven_fragments": 3,
+          "selected_fragments": 5,
+          "not_proven_versions": [
+            "D19",
+            "D20"
+          ],
+          "late_CP3_edition_identity": "NOT_PROVEN"
+        },
+        "post_cutoff_leakage": {
+          "qualifying_witnesses": "ONLY_PRE_CUTOFF_CAPTURE_AND_DIGEST_VERIFIED",
+          "explicit_frozen_fragment_outcome": "NOT_DETECTED",
+          "not_proven_inputs": "NO_ASSERTION_OF_ABSENCE_OF_LATER_EDITS",
+          "current_pages_comments_widgets_and_search_snippets": "NOT_ADMITTED_TO_CODER_INPUT"
+        }
+      },
+      "availability_witness_ids": [
+        "AW-D05-20110629041259",
+        "AW-D05-20110918081249",
+        "AW-D09-20110809011049",
+        "AW-D09-20111022101958",
+        "AW-D18-20111016234632"
+      ],
+      "numeric_answer_sufficiency_is_not_admission_filter": true,
+      "factor_answers_created": false,
+      "requires_human_review": true
+    },
+    {
+      "coding_item_id": "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+      "H1": "H1-06",
+      "H2": "H2-11",
+      "actor_code": "GU04",
+      "element_code": "E04",
+      "actor_id": "744feea3-d4d4-5a3c-9d65-394894389e67",
+      "element_id": "2fecb360-274b-55da-a7d4-6020a87de286",
+      "actor_name": "Жители территории вне нефтегазовых трудовых групп",
+      "reference_statement": "Существующий доступ местных жителей к нефтегазовым рабочим местам достаточен и не требует существенного расширения.",
+      "reference_sha256": "9f8dfaf65197fa359ee5ee5526c4ea4e985ae0998a0c23d5c9a96431682512f2",
+      "status": "BLOCKED",
+      "prior_status": "BLOCKED",
+      "recovered": "D06 имеет исторический witness и перевод-кандидат KK; текущие D07/D23 раскрывают источники статистики.",
+      "remaining_reason": "D07/D23 NOT_PROVEN; нефтяники/семьи/население не выделяют жителей вне трудовых групп. Статистика компании/акимата не становится голосом GU04.",
+      "human_review_task": "Проверить исключающую границу GU04, Kazakh перевод и допустимость использования статистики как контекста без приписывания её жителям.",
+      "checks": {
+        "actor_element_reference_mapping": {
+          "registry_binding": "PASS_UNCHANGED",
+          "substantive_group_mapping": "NOT_ESTABLISHED",
+          "scope_mismatch_confirmed": false
+        },
+        "fact_fragment_version_source_chain": {
+          "structural_integrity": "PASS_UNCHANGED",
+          "chain_ids": [
+            "47dd7a1c-a546-5108-b345-dcdc6c583a8c",
+            "73866456-884b-5cac-9940-3eb5b47f51fc",
+            "fc45dc13-eec5-5d41-8a2d-cf7568a5550e"
+          ],
+          "count": 3,
+          "retroactive_rebinding": false
+        },
+        "fragment_context": {
+          "authenticated_context_fragment_ids": [
+            "d1067ad6-51d6-5a42-b6ea-8cf74c4fd71c"
+          ],
+          "all_inputs_historical_context_available": false,
+          "full_group_reference_time_scope": "NOT_ESTABLISHED",
+          "annex_is_not_frozen_coder_input": true
+        },
+        "language_translation": {
+          "original_languages": [
+            "kk",
+            "ru"
+          ],
+          "annex_translation_candidates_supplied": true,
+          "human_verification": "NOT_PERFORMED",
+          "coder_language_competence": "NOT_ATTESTED",
+          "RUSSIAN_original_needs_no_translation": true
+        },
+        "historical_availability": {
+          "all_selected_fragments_proven_pre_cutoff": false,
+          "proven_fragments": 1,
+          "selected_fragments": 3,
+          "not_proven_versions": [
+            "D07",
+            "D23"
+          ],
+          "late_CP3_edition_identity": "NOT_PROVEN"
+        },
+        "post_cutoff_leakage": {
+          "qualifying_witnesses": "ONLY_PRE_CUTOFF_CAPTURE_AND_DIGEST_VERIFIED",
+          "explicit_frozen_fragment_outcome": "NOT_DETECTED",
+          "not_proven_inputs": "NO_ASSERTION_OF_ABSENCE_OF_LATER_EDITS",
+          "current_pages_comments_widgets_and_search_snippets": "NOT_ADMITTED_TO_CODER_INPUT"
+        }
+      },
+      "availability_witness_ids": [
+        "AW-D06-20110716171000"
+      ],
+      "numeric_answer_sufficiency_is_not_admission_filter": true,
+      "factor_answers_created": false,
+      "requires_human_review": true
+    },
+    {
+      "coding_item_id": "3f4dc104-40c7-59db-ad5c-61f8a80232bc",
+      "H1": "H1-11",
+      "H2": "H2-04",
+      "actor_code": "GU04",
+      "element_code": "E05",
+      "actor_id": "744feea3-d4d4-5a3c-9d65-394894389e67",
+      "element_id": "728c8406-ba99-5787-9557-933b5670be7c",
+      "actor_name": "Жители территории вне нефтегазовых трудовых групп",
+      "reference_statement": "Существующие механизмы представительства, переговоров и коллективных действий обеспечивают достаточный доступ к выражению и согласованию интересов.",
+      "reference_sha256": "f689f671787c35619a3a32c6079908fb8ac5436a30cd832355b0238fe44f1deb",
+      "status": "BLOCKED",
+      "prior_status": "BLOCKED",
+      "recovered": "Контекст D06 исторически восстановлен; в текущем D24 установлены перечисленные участники встречи.",
+      "remaining_reason": "D24 NOT_PROVEN; ни собрание нефтяников/семей, ни встреча ведомств/компаний не устанавливает представительство именно GU04.",
+      "human_review_task": "Проверить группу жителей и её представительство; подтвердить перевод KK и историческую редакцию D24.",
+      "checks": {
+        "actor_element_reference_mapping": {
+          "registry_binding": "PASS_UNCHANGED",
+          "substantive_group_mapping": "NOT_ESTABLISHED",
+          "scope_mismatch_confirmed": false
+        },
+        "fact_fragment_version_source_chain": {
+          "structural_integrity": "PASS_UNCHANGED",
+          "chain_ids": [
+            "c17d0910-ff76-5f32-a278-fe97306b6ae8",
+            "fc45dc13-eec5-5d41-8a2d-cf7568a5550e"
+          ],
+          "count": 2,
+          "retroactive_rebinding": false
+        },
+        "fragment_context": {
+          "authenticated_context_fragment_ids": [
+            "d1067ad6-51d6-5a42-b6ea-8cf74c4fd71c"
+          ],
+          "all_inputs_historical_context_available": false,
+          "full_group_reference_time_scope": "NOT_ESTABLISHED",
+          "annex_is_not_frozen_coder_input": true
+        },
+        "language_translation": {
+          "original_languages": [
+            "kk",
+            "ru"
+          ],
+          "annex_translation_candidates_supplied": true,
+          "human_verification": "NOT_PERFORMED",
+          "coder_language_competence": "NOT_ATTESTED",
+          "RUSSIAN_original_needs_no_translation": true
+        },
+        "historical_availability": {
+          "all_selected_fragments_proven_pre_cutoff": false,
+          "proven_fragments": 1,
+          "selected_fragments": 2,
+          "not_proven_versions": [
+            "D24"
+          ],
+          "late_CP3_edition_identity": "NOT_PROVEN"
+        },
+        "post_cutoff_leakage": {
+          "qualifying_witnesses": "ONLY_PRE_CUTOFF_CAPTURE_AND_DIGEST_VERIFIED",
+          "explicit_frozen_fragment_outcome": "NOT_DETECTED",
+          "not_proven_inputs": "NO_ASSERTION_OF_ABSENCE_OF_LATER_EDITS",
+          "current_pages_comments_widgets_and_search_snippets": "NOT_ADMITTED_TO_CODER_INPUT"
+        }
+      },
+      "availability_witness_ids": [
+        "AW-D06-20110716171000"
+      ],
+      "numeric_answer_sufficiency_is_not_admission_filter": true,
+      "factor_answers_created": false,
+      "requires_human_review": true
+    },
+    {
+      "coding_item_id": "2c58ce09-3654-5a87-89be-4b1953f467c7",
+      "H1": "H1-09",
+      "H2": "H2-07",
+      "actor_code": "GU05",
+      "element_code": "E02",
+      "actor_id": "d803888d-ec24-5c7e-905b-96f88d01c36f",
+      "element_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+      "actor_name": "Работодатели нефтегазового сектора и подрядного контура",
+      "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+      "reference_sha256": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172",
+      "status": "BLOCKED",
+      "prior_status": "BLOCKED",
+      "recovered": "D25 имеет исторический witness; компания KMG EP и авторство её утверждений отделены от слов уволенных работников.",
+      "remaining_reason": "D21 NOT_PROVEN. Одна компания не представляет автоматически весь основной/подрядный/сервисный контур GU05. Производственные потери не задают KVS.",
+      "human_review_task": "Проверить мандат компании на frozen GU05 и точную редакцию D21; не восстанавливать приоритет из убытков.",
+      "checks": {
+        "actor_element_reference_mapping": {
+          "registry_binding": "PASS_UNCHANGED",
+          "substantive_group_mapping": "NOT_ESTABLISHED",
+          "scope_mismatch_confirmed": false
+        },
+        "fact_fragment_version_source_chain": {
+          "structural_integrity": "PASS_UNCHANGED",
+          "chain_ids": [
+            "904af249-41ef-5986-9bea-1a00f59d9f19",
+            "a6efe35a-1792-5574-9fed-1d9ce640561b",
+            "c9036ec1-6b3c-55d0-aa15-7f63bea91fa6"
+          ],
+          "count": 3,
+          "retroactive_rebinding": false
+        },
+        "fragment_context": {
+          "authenticated_context_fragment_ids": [
+            "3ca46849-549e-544d-b72c-d62ef1706612",
+            "a7869dd7-97d1-56de-86b4-aadf1e970c0a"
+          ],
+          "all_inputs_historical_context_available": false,
+          "full_group_reference_time_scope": "NOT_ESTABLISHED",
+          "annex_is_not_frozen_coder_input": true
+        },
+        "language_translation": {
+          "original_languages": [
+            "en"
+          ],
+          "annex_translation_candidates_supplied": true,
+          "human_verification": "NOT_PERFORMED",
+          "coder_language_competence": "NOT_ATTESTED",
+          "RUSSIAN_original_needs_no_translation": true
+        },
+        "historical_availability": {
+          "all_selected_fragments_proven_pre_cutoff": false,
+          "proven_fragments": 2,
+          "selected_fragments": 3,
+          "not_proven_versions": [
+            "D21"
+          ],
+          "late_CP3_edition_identity": "NOT_PROVEN"
+        },
+        "post_cutoff_leakage": {
+          "qualifying_witnesses": "ONLY_PRE_CUTOFF_CAPTURE_AND_DIGEST_VERIFIED",
+          "explicit_frozen_fragment_outcome": "NOT_DETECTED",
+          "not_proven_inputs": "NO_ASSERTION_OF_ABSENCE_OF_LATER_EDITS",
+          "current_pages_comments_widgets_and_search_snippets": "NOT_ADMITTED_TO_CODER_INPUT"
+        }
+      },
+      "availability_witness_ids": [
+        "AW-D25-20111016060958",
+        "AW-D25-20111116125247"
+      ],
+      "numeric_answer_sufficiency_is_not_admission_filter": true,
+      "factor_answers_created": false,
+      "requires_human_review": true
+    },
+    {
+      "coding_item_id": "5e3146aa-0dfd-5be2-8f8d-39b94edee3ff",
+      "H1": "H1-08",
+      "H2": "H2-02",
+      "actor_code": "GU05",
+      "element_code": "E04",
+      "actor_id": "d803888d-ec24-5c7e-905b-96f88d01c36f",
+      "element_id": "2fecb360-274b-55da-a7d4-6020a87de286",
+      "actor_name": "Работодатели нефтегазового сектора и подрядного контура",
+      "reference_statement": "Существующий доступ местных жителей к нефтегазовым рабочим местам достаточен и не требует существенного расширения.",
+      "reference_sha256": "9f8dfaf65197fa359ee5ee5526c4ea4e985ae0998a0c23d5c9a96431682512f2",
+      "status": "BLOCKED",
+      "prior_status": "BLOCKED",
+      "recovered": "Текущие D15/D23 раскрыли компанию и регионального заместителя акима как разных говорящих.",
+      "remaining_reason": "Обе версии NOT_PROVEN. Конкретное восстановление уволенных не равно доступу всех жителей; региональный чиновник не является всей GU05.",
+      "human_review_task": "Проверить исторические редакции, отдельные голоса и групповой/предметный охват; не переносить речь акимата на работодателей.",
+      "checks": {
+        "actor_element_reference_mapping": {
+          "registry_binding": "PASS_UNCHANGED",
+          "substantive_group_mapping": "NOT_ESTABLISHED",
+          "scope_mismatch_confirmed": false
+        },
+        "fact_fragment_version_source_chain": {
+          "structural_integrity": "PASS_UNCHANGED",
+          "chain_ids": [
+            "0fac41c8-4af0-5808-8d16-28ebf4ba1616",
+            "2dcee05b-f6d2-5660-a752-0108800a4088",
+            "e3286e30-8ddd-5598-a9c7-182ab890694f"
+          ],
+          "count": 3,
+          "retroactive_rebinding": false
+        },
+        "fragment_context": {
+          "authenticated_context_fragment_ids": [],
+          "all_inputs_historical_context_available": false,
+          "full_group_reference_time_scope": "NOT_ESTABLISHED",
+          "annex_is_not_frozen_coder_input": true
+        },
+        "language_translation": {
+          "original_languages": [
+            "ru"
+          ],
+          "annex_translation_candidates_supplied": true,
+          "human_verification": "NOT_PERFORMED",
+          "coder_language_competence": "NOT_ATTESTED",
+          "RUSSIAN_original_needs_no_translation": true
+        },
+        "historical_availability": {
+          "all_selected_fragments_proven_pre_cutoff": false,
+          "proven_fragments": 0,
+          "selected_fragments": 3,
+          "not_proven_versions": [
+            "D15",
+            "D23"
+          ],
+          "late_CP3_edition_identity": "NOT_PROVEN"
+        },
+        "post_cutoff_leakage": {
+          "qualifying_witnesses": "ONLY_PRE_CUTOFF_CAPTURE_AND_DIGEST_VERIFIED",
+          "explicit_frozen_fragment_outcome": "NOT_DETECTED",
+          "not_proven_inputs": "NO_ASSERTION_OF_ABSENCE_OF_LATER_EDITS",
+          "current_pages_comments_widgets_and_search_snippets": "NOT_ADMITTED_TO_CODER_INPUT"
+        }
+      },
+      "availability_witness_ids": [],
+      "numeric_answer_sufficiency_is_not_admission_filter": true,
+      "factor_answers_created": false,
+      "requires_human_review": true
+    },
+    {
+      "coding_item_id": "a6f0883a-d5fc-521b-8662-1c160fded750",
+      "H1": "H1-12",
+      "H2": "H2-01",
+      "actor_code": "GU07",
+      "element_code": "E04",
+      "actor_id": "fd80f79b-7c39-58db-b122-7245b77ff0c5",
+      "element_id": "2fecb360-274b-55da-a7d4-6020a87de286",
+      "actor_name": "Центральные органы государственной власти",
+      "reference_statement": "Существующий доступ местных жителей к нефтегазовым рабочим местам достаточен и не требует существенного расширения.",
+      "reference_sha256": "9f8dfaf65197fa359ee5ee5526c4ea4e985ae0998a0c23d5c9a96431682512f2",
+      "status": "BLOCKED",
+      "prior_status": "BLOCKED",
+      "recovered": "Исторический D22 подтверждает участие вице-министра 15 ноября и состав встречи; дата frozen Fact согласуется с witness.",
+      "remaining_reason": "D23/D29 NOT_PROVEN. Присутствие центрального чиновника, региональные числа и будущая повестка не дают установленного мандата на всё центральное actor/reference.",
+      "human_review_task": "Проверить уровень полномочий и охват GU07; подтвердить D23/D29 и сохранить различие повестки и принятого решения.",
+      "checks": {
+        "actor_element_reference_mapping": {
+          "registry_binding": "PASS_UNCHANGED",
+          "substantive_group_mapping": "NOT_ESTABLISHED",
+          "scope_mismatch_confirmed": false
+        },
+        "fact_fragment_version_source_chain": {
+          "structural_integrity": "PASS_UNCHANGED",
+          "chain_ids": [
+            "0fac41c8-4af0-5808-8d16-28ebf4ba1616",
+            "a2b5e54e-c200-5a27-8bfa-f55758794fe2",
+            "b5751043-17fe-5475-bf3e-f2e16190d8ed"
+          ],
+          "count": 3,
+          "retroactive_rebinding": false
+        },
+        "fragment_context": {
+          "authenticated_context_fragment_ids": [
+            "ab55c516-12dc-5533-9e87-a950a6e61b3e"
+          ],
+          "all_inputs_historical_context_available": false,
+          "full_group_reference_time_scope": "NOT_ESTABLISHED",
+          "annex_is_not_frozen_coder_input": true
+        },
+        "language_translation": {
+          "original_languages": [
+            "ru"
+          ],
+          "annex_translation_candidates_supplied": true,
+          "human_verification": "NOT_PERFORMED",
+          "coder_language_competence": "NOT_ATTESTED",
+          "RUSSIAN_original_needs_no_translation": true
+        },
+        "historical_availability": {
+          "all_selected_fragments_proven_pre_cutoff": false,
+          "proven_fragments": 1,
+          "selected_fragments": 3,
+          "not_proven_versions": [
+            "D23",
+            "D29"
+          ],
+          "late_CP3_edition_identity": "NOT_PROVEN"
+        },
+        "post_cutoff_leakage": {
+          "qualifying_witnesses": "ONLY_PRE_CUTOFF_CAPTURE_AND_DIGEST_VERIFIED",
+          "explicit_frozen_fragment_outcome": "NOT_DETECTED",
+          "not_proven_inputs": "NO_ASSERTION_OF_ABSENCE_OF_LATER_EDITS",
+          "current_pages_comments_widgets_and_search_snippets": "NOT_ADMITTED_TO_CODER_INPUT"
+        }
+      },
+      "availability_witness_ids": [
+        "AW-D22-20111120030853"
+      ],
+      "numeric_answer_sufficiency_is_not_admission_filter": true,
+      "factor_answers_created": false,
+      "requires_human_review": true
+    },
+    {
+      "coding_item_id": "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+      "H1": "H1-04",
+      "H2": "H2-12",
+      "actor_code": "GU08",
+      "element_code": "E05",
+      "actor_id": "6782018f-1868-5aa7-b40e-fb5ad11269ca",
+      "element_id": "728c8406-ba99-5787-9557-933b5670be7c",
+      "actor_name": "Правоохранительные, судебные и надзорные органы",
+      "reference_statement": "Существующие механизмы представительства, переговоров и коллективных действий обеспечивают достаточный доступ к выражению и согласованию интересов.",
+      "reference_sha256": "f689f671787c35619a3a32c6079908fb8ac5436a30cd832355b0238fe44f1deb",
+      "status": "BLOCKED",
+      "prior_status": "BLOCKED",
+      "recovered": "D09 исторически идентифицирует судью, приговор и адресата запрета деятельности.",
+      "remaining_reason": "D20 NOT_PROVEN. Конкретное судебное решение и ответ делегации не обосновывают объединённый голос всех органов GU08 по механизмам представительства.",
+      "human_review_task": "Проверить правило агрегации конкретных органов и мандат делегации, без выбора факторного ответа.",
+      "checks": {
+        "actor_element_reference_mapping": {
+          "registry_binding": "PASS_UNCHANGED",
+          "substantive_group_mapping": "NOT_ESTABLISHED",
+          "scope_mismatch_confirmed": false
+        },
+        "fact_fragment_version_source_chain": {
+          "structural_integrity": "PASS_UNCHANGED",
+          "chain_ids": [
+            "6530b92f-e4d5-514d-a0e0-0640a25587a6",
+            "b7c4c3a7-2f92-5f35-984c-9f6fc4c8c6db",
+            "e096e9bc-09b3-5cf7-a598-e1cff13ad4a7",
+            "f2d96bce-433e-559a-b187-adacac6238e4"
+          ],
+          "count": 4,
+          "retroactive_rebinding": false
+        },
+        "fragment_context": {
+          "authenticated_context_fragment_ids": [
+            "2c47a771-1301-55be-a2ab-9b2ef1f82510",
+            "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94"
+          ],
+          "all_inputs_historical_context_available": false,
+          "full_group_reference_time_scope": "NOT_ESTABLISHED",
+          "annex_is_not_frozen_coder_input": true
+        },
+        "language_translation": {
+          "original_languages": [
+            "en"
+          ],
+          "annex_translation_candidates_supplied": true,
+          "human_verification": "NOT_PERFORMED",
+          "coder_language_competence": "NOT_ATTESTED",
+          "RUSSIAN_original_needs_no_translation": true
+        },
+        "historical_availability": {
+          "all_selected_fragments_proven_pre_cutoff": false,
+          "proven_fragments": 2,
+          "selected_fragments": 3,
+          "not_proven_versions": [
+            "D20"
+          ],
+          "late_CP3_edition_identity": "NOT_PROVEN"
+        },
+        "post_cutoff_leakage": {
+          "qualifying_witnesses": "ONLY_PRE_CUTOFF_CAPTURE_AND_DIGEST_VERIFIED",
+          "explicit_frozen_fragment_outcome": "NOT_DETECTED",
+          "not_proven_inputs": "NO_ASSERTION_OF_ABSENCE_OF_LATER_EDITS",
+          "current_pages_comments_widgets_and_search_snippets": "NOT_ADMITTED_TO_CODER_INPUT"
+        }
+      },
+      "availability_witness_ids": [
+        "AW-D09-20110809011049",
+        "AW-D09-20111022101958"
+      ],
+      "numeric_answer_sufficiency_is_not_admission_filter": true,
+      "factor_answers_created": false,
+      "requires_human_review": true
+    },
+    {
+      "coding_item_id": "79748746-11e6-506c-82d5-bc5fe877beb0",
+      "H1": "H1-05",
+      "H2": "H2-03",
+      "actor_code": "GU08",
+      "element_code": "E06",
+      "actor_id": "6782018f-1868-5aa7-b40e-fb5ad11269ca",
+      "element_id": "0ca209e6-ca1a-5751-b27e-cbd0d180ffa9",
+      "actor_name": "Правоохранительные, судебные и надзорные органы",
+      "reference_statement": "Существующие правоохранительные и судебные процедуры реагирования на трудовой конфликт достаточны и соразмерны с точки зрения данного актора.",
+      "reference_sha256": "690666cdf713d75e095073573145b45e98195adf580b98fcfc410e72784523ed",
+      "status": "BLOCKED",
+      "prior_status": "BLOCKED",
+      "recovered": "D05 исторически приписывает слова о законности Генеральной прокуратуре; D09 устанавливает отдельный судебный акт.",
+      "remaining_reason": "D20 NOT_PROVEN. Законность одного действия и совокупная достаточность/соразмерность процедур — разные области утверждения; групповой мандат GU08 не закреплён.",
+      "human_review_task": "Проверить агрегацию органов, предметный охват юридического заявления и provenance D20.",
+      "checks": {
+        "actor_element_reference_mapping": {
+          "registry_binding": "PASS_UNCHANGED",
+          "substantive_group_mapping": "NOT_ESTABLISHED",
+          "scope_mismatch_confirmed": false
+        },
+        "fact_fragment_version_source_chain": {
+          "structural_integrity": "PASS_UNCHANGED",
+          "chain_ids": [
+            "3375e9a8-4315-5451-a505-e354314c36b3",
+            "6530b92f-e4d5-514d-a0e0-0640a25587a6",
+            "b7c4c3a7-2f92-5f35-984c-9f6fc4c8c6db",
+            "e096e9bc-09b3-5cf7-a598-e1cff13ad4a7"
+          ],
+          "count": 4,
+          "retroactive_rebinding": false
+        },
+        "fragment_context": {
+          "authenticated_context_fragment_ids": [
+            "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94",
+            "b344006d-0950-57af-b0e7-60eb7b4f5217"
+          ],
+          "all_inputs_historical_context_available": false,
+          "full_group_reference_time_scope": "NOT_ESTABLISHED",
+          "annex_is_not_frozen_coder_input": true
+        },
+        "language_translation": {
+          "original_languages": [
+            "en"
+          ],
+          "annex_translation_candidates_supplied": true,
+          "human_verification": "NOT_PERFORMED",
+          "coder_language_competence": "NOT_ATTESTED",
+          "RUSSIAN_original_needs_no_translation": true
+        },
+        "historical_availability": {
+          "all_selected_fragments_proven_pre_cutoff": false,
+          "proven_fragments": 2,
+          "selected_fragments": 3,
+          "not_proven_versions": [
+            "D20"
+          ],
+          "late_CP3_edition_identity": "NOT_PROVEN"
+        },
+        "post_cutoff_leakage": {
+          "qualifying_witnesses": "ONLY_PRE_CUTOFF_CAPTURE_AND_DIGEST_VERIFIED",
+          "explicit_frozen_fragment_outcome": "NOT_DETECTED",
+          "not_proven_inputs": "NO_ASSERTION_OF_ABSENCE_OF_LATER_EDITS",
+          "current_pages_comments_widgets_and_search_snippets": "NOT_ADMITTED_TO_CODER_INPUT"
+        }
+      },
+      "availability_witness_ids": [
+        "AW-D05-20110629041259",
+        "AW-D05-20110918081249",
+        "AW-D09-20110809011049",
+        "AW-D09-20111022101958"
+      ],
+      "numeric_answer_sufficiency_is_not_admission_filter": true,
+      "factor_answers_created": false,
+      "requires_human_review": true
+    }
+  ],
+  "earlier_admission_report": "../../ZHANAOZEN_2011_HUMAN_PILOT_ADMISSION_REPORT.md",
+  "earlier_report_preserved": true,
+  "new_context_requires_separate_future_input_version_before_coding": true,
+  "no_blanket_failure_for_UNKNOWN_eligibility": "No factor outcome selected. Historical input recovery and group/reference eligibility are distinct from numeric anchor sufficiency.",
+  "release": "HOLD_DO_NOT_DISTRIBUTE",
+  "human_started": false,
+  "adjudication_performed": false,
+  "model_computation_performed": false
+}

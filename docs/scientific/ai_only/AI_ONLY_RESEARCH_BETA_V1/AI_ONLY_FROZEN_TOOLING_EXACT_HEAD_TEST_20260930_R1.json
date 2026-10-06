@@ -1,0 +1,58 @@
+{
+  "test_receipt_id": "AI_ONLY_FROZEN_TOOLING_EXACT_HEAD_20260930_R1",
+  "date": "2026-09-30",
+  "workflow": ".github/workflows/ai-only-frozen-tooling-test.yml",
+  "workflow_run_id": 36715476245,
+  "head_sha": "468d5d69b20d63bb2b6cadd0b2e3aeb74d3d9cdf",
+  "status": "PASS",
+  "conclusion": "success",
+  "tests": [
+    {
+      "name": "KBM E02 comparator",
+      "result": "PASS",
+      "cases": 8
+    },
+    {
+      "name": "OMG Nov24 comparator",
+      "result": "PASS",
+      "cases": 8
+    },
+    {
+      "name": "KBM E05 comparator",
+      "result": "PASS",
+      "cases": 8
+    },
+    {
+      "name": "D25 E02 comparator",
+      "result": "PASS",
+      "cases": 8
+    },
+    {
+      "name": "Common sensitivity runner V2.1",
+      "result": "PASS",
+      "cases": 11
+    },
+    {
+      "name": "Cohort aggregator R1",
+      "result": "PASS",
+      "cases": 5
+    },
+    {
+      "name": "Release evaluator R1",
+      "result": "PASS",
+      "cases": 6
+    },
+    {
+      "name": "Cohort intake orchestrator R1",
+      "result": "PASS",
+      "cases": 3
+    }
+  ],
+  "model_api_calls_made": false,
+  "primary_outputs_generated": 0,
+  "core_historical_replay_performed": false,
+  "frozen_inputs_modified_by_test": false,
+  "cohort_modified_by_test": false,
+  "weight_grid_modified_by_test": false,
+  "calculation_release": false
+}

@@ -1,0 +1,71 @@
+{
+  "executor_id": "COPILOT_CLI_PRIMARY_EXECUTOR_R2",
+  "status": "FROZEN_READY_CREDENTIAL_ONLY_BLOCKED",
+  "frozen_date": "2026-09-30",
+  "supersedes": "COPILOT_CLI_PRIMARY_EXECUTOR_R1",
+  "supersession_reason": "R1 referenced a missing execution workflow and pinned model IDs not guaranteed by the Copilot CLI v1.0.89 command reference. No cohort primary output existed before this correction.",
+  "cohort_id": "AI_ONLY_REPLICATION_COHORT_R1_20260930",
+  "cli": {
+    "repository": "github/copilot-cli",
+    "version": "1.0.89",
+    "linux_x64_asset": "copilot-linux-x64.tar.gz",
+    "linux_x64_sha256": "c5c234ccba6fae2b7a9eae462caf628e86c21b5e6240ec2e885727fc148a1dcc",
+    "release_verified_via_github_api": true
+  },
+  "model_pins": {
+    "AI1": "gpt-6-astra",
+    "AI2": "claude-opus-5.5",
+    "basis": "Both model IDs are explicitly listed in the current Copilot CLI command reference; pinned before any new cohort primary output.",
+    "substitution": "FORBIDDEN"
+  },
+  "authentication": {
+    "repository_owner_type": "PERSONAL",
+    "required_actions_secret": "COPILOT_GITHUB_TOKEN",
+    "token_type": "FINE_GRAINED_PERSONAL_ACCESS_TOKEN",
+    "required_account_permission": "Copilot Requests",
+    "current_preflight_run_id": 36715770075,
+    "current_secret_presence": "ABSENT",
+    "github_token_fallback": "NOT_USED_FOR_PERSONAL_REPO_R2"
+  },
+  "isolation": {
+    "one_matrix_job_per_primary_role": true,
+    "fresh_github_hosted_vm": true,
+    "fresh_copilot_home_per_role": true,
+    "model_working_directory": "EMPTY_RUNNER_TEMP_OUTSIDE_REPOSITORY",
+    "prompt_source": "EXACT_FROZEN_STANDALONE_FILE_CONTENT_ONLY",
+    "available_tools": [
+      "view"
+    ],
+    "builtin_mcps_disabled": true,
+    "external_search_unavailable": true,
+    "repository_context_not_supplied": true,
+    "sibling_output_visible": false,
+    "prior_r2_episode_outputs_visible": false,
+    "coordinator_notes_visible": false,
+    "known_outcome_visible": false,
+    "one_model_invocation_per_role": true
+  },
+  "output_policy": {
+    "cli_quiet_response_only": true,
+    "preserve_cli_stdout_as_primary_output_unchanged": true,
+    "no_markdown_stripping": true,
+    "no_json_repair": true,
+    "no_retry_on_unknown_disagreement_or_malformed_output": true,
+    "no_replacement_model": true,
+    "successful_stdout_filename": "FROZEN_ROLE_EXPECTED_FILENAME"
+  },
+  "execution": {
+    "workflow": ".github/workflows/ai-only-primary-executor-r2.yml",
+    "trigger_file": ".github/ai-only-primary-executor-trigger-r2.txt",
+    "trigger_file_absent_at_freeze": true,
+    "auto_merge": false
+  },
+  "scientific_boundaries": {
+    "frozen_cohort_unchanged": true,
+    "frozen_inputs_unchanged": true,
+    "frozen_weight_grid_unchanged": true,
+    "no_core_replay_in_primary_jobs": true,
+    "no_cross_lane_aggregation_in_primary_jobs": true,
+    "calculation_release": false
+  }
+}

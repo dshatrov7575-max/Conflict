@@ -1,0 +1,58 @@
+{
+  "artifact_id": "MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT_FREEZE",
+  "status": "LOCAL_INPUTS_AND_KEY_FREEZE",
+  "phase": "BEFORE_ANY_HOLDOUT_REVIEW_OR_CODING",
+  "freeze_time_utc": "2026-09-26T10:50:30.525024+00:00",
+  "cases": 48,
+  "factor_counts": {
+    "KVS": 24,
+    "POS": 24
+  },
+  "adjacent_pairs": 16,
+  "files": {
+    "CASES.json": {
+      "sha256": "d58fa7d838254193511b693e4793fec2ab4c1e33dbb826954d72df7f18446049",
+      "bytes": 52513
+    },
+    "CODER_PACKET.md": {
+      "sha256": "cfee1f1a2c2f561051087bb884050e2c0b0345eabc0bfab86a299800ab60ae70",
+      "bytes": 52733
+    },
+    "INTENDED_KEY.json": {
+      "sha256": "0813e724287d7f0c42cddeb5b00a057a145b1eb5dca4c141b5ef05b27a3c2874",
+      "bytes": 39061
+    },
+    "PATCHED_RUBRIC_FOR_CODERS.md": {
+      "sha256": "cbcf0aa2b09aaabcbbc4b9b083b33aaeab69d10b78f45eb1daf6eea14933e08d",
+      "bytes": 48912
+    },
+    "PREREGISTRATION.md": {
+      "sha256": "38642b5dfae34b2b3243fec346b7e67d0fb7c6ba782f0ef45e3004c7d018437e",
+      "bytes": 10317
+    },
+    "PATCH_PLAN_FREEZE.json": {
+      "sha256": "63ac1f0f68ba9af3bfb6552e2a28b0de1cfa16085207f9056c12a1c3c774f589",
+      "bytes": 686
+    },
+    "SOURCE_MANIFEST.json": {
+      "sha256": "6673c0a011257273b04c25ad318239cf050c02d84e92a54cd9edf15d8b5c2444",
+      "bytes": 7713
+    },
+    "build_holdout.py": {
+      "sha256": "d0de5cfde305ac6f2bbaf42e5307e5656f6b463c9a4e386d810b00f1225ca22a",
+      "bytes": 40169
+    }
+  },
+  "amendment_rule": "Do not overwrite inputs/key after this freeze. All defects stay in the report and denominator.",
+  "coder_allowlist": [
+    "CODER_PACKET.md",
+    "PATCHED_RUBRIC_FOR_CODERS.md"
+  ],
+  "independence": {
+    "new_scenarios_not_old_60": true,
+    "author_knows_key": true,
+    "human_coding": false,
+    "technical_acl_enforced": false,
+    "external_trusted_timestamp": false
+  }
+}

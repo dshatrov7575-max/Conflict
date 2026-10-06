@@ -1,0 +1,1413 @@
+{
+  "record_id": "ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1",
+  "base_commit": "0777f1704f920941198f68d8b62cb4f5cbf600eb",
+  "audit_at_utc": "2026-09-26T16:11:33.963531+00:00",
+  "cutoff": "2011-12-15T23:59:59Z",
+  "audience": "COORDINATOR_ONLY_NOT_FOR_H1_H2",
+  "definitions": {
+    "PROVEN_PRE_CUTOFF": "A retrieved pre-cutoff preserved payload has authenticated capture/custody timing and matches the exact recorded late CP3 version content_hash with documented representation. None obtained.",
+    "PROVEN_FRAGMENT_PRE_CUTOFF": "A verified pre-cutoff payload contains the exact case-sensitive frozen fragment text; full CP3 version identity remains NOT_PROVEN. Coverage is listed per fragment. All 11 positive versions cover every selected fragment.",
+    "NOT_PROVEN": "No qualifying preserved payload found in the completed bounded automated searches. This is not proof of historical nonexistence.",
+    "disallowed_shortcuts": [
+      "publication date alone",
+      "printed PDF date or PDF CreationDate alone",
+      "current URL/Last-Modified/filename date",
+      "post-cutoff nearest snapshot",
+      "archive index without retrieved payload",
+      "similar wording or another actor without identity/context review"
+    ],
+    "gate_rule": "ADMITTED requires complete admission checks. Critical unresolved actor/group/time mapping or unauthenticated required inputs -> BLOCKED; noncritical incomplete checks -> PARTIAL. READY_TO_DISTRIBUTE only with all 12 ADMITTED and authorized frozen inputs. Missing basis for a numeric answer alone is not an admission failure."
+  },
+  "version_counts": {
+    "PROVEN_PRE_CUTOFF": 0,
+    "PROVEN_FRAGMENT_PRE_CUTOFF": 11,
+    "NOT_PROVEN": 9
+  },
+  "unique_fragment_counts": {
+    "PROVEN_FRAGMENT_PRE_CUTOFF": 17,
+    "NOT_PROVEN": 12
+  },
+  "versions": [
+    {
+      "label": "D01",
+      "document_version_id": "64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "document_id": "6d02a123-4cac-527f-9b96-a76af63cc16a",
+      "source_id": "fad22d7e-a495-55e7-85c3-25b774a3b87e",
+      "frozen_source_url": "https://www.rferl.org/a/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+      "status": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "02419a24e3be19ff11aef22863d4b6254b3d18f22ab7d223aa6b20403bac4950",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D01_6d02a123_capture.txt",
+      "recorded_publication_date_not_proof": "2011-05-17",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "d3e6a365-8150-545b-8005-c18c4939142b"
+      ],
+      "proven_fragment_ids": [
+        "d3e6a365-8150-545b-8005-c18c4939142b"
+      ],
+      "not_proven_fragment_ids": [],
+      "availability_witness_ids": [
+        "AW-D01-20110521181520",
+        "AW-D01-20110811165523"
+      ],
+      "search_ids": [
+        "ARCHIVE_PROBES-001",
+        "ARCHIVE_PROBES-002",
+        "ARCHIVE_PROBES-003",
+        "ARCHIVE_PROBES-004",
+        "ARCHIVE_PROBES-005"
+      ],
+      "reason": "Все выбранные exact fragments найдены в аутентифицированном pre-cutoff witness; поздняя frozen DocumentVersion не объявляется тождественной.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D03",
+      "document_version_id": "ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "document_id": "2c117675-d4c1-5125-8f0b-88086e6bb887",
+      "source_id": "041d7f7c-ad6e-50ac-8322-fa21fd7e8ce4",
+      "frozen_source_url": "https://www.rferl.org/a/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+      "status": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "df51bb60f64b9e5cb31bad337983c8f0a892b1245ccccb316c800329b9509da6",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D03_2c117675_capture.txt",
+      "recorded_publication_date_not_proof": "2011-05-26",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "cc839407-9eb7-5e05-acca-70f1577883d4",
+        "d521033f-59ce-5518-9227-b5fe9cb7570f"
+      ],
+      "proven_fragment_ids": [
+        "cc839407-9eb7-5e05-acca-70f1577883d4",
+        "d521033f-59ce-5518-9227-b5fe9cb7570f"
+      ],
+      "not_proven_fragment_ids": [],
+      "availability_witness_ids": [
+        "AW-D03-20110527054702",
+        "AW-D03-20110916223846"
+      ],
+      "search_ids": [
+        "ARCHIVE_PROBES-006",
+        "ARCHIVE_PROBES-007",
+        "ARCHIVE_PROBES-008",
+        "ARCHIVE_PROBES-009",
+        "ARCHIVE_PROBES-010"
+      ],
+      "reason": "Все выбранные exact fragments найдены в аутентифицированном pre-cutoff witness; поздняя frozen DocumentVersion не объявляется тождественной.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D04",
+      "document_version_id": "adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "document_id": "2496aaf4-f84e-5c67-85e4-015f7e0519ec",
+      "source_id": "4e46c56c-9f35-5dbd-b634-2b6796d90391",
+      "frozen_source_url": "https://www.rferl.org/a/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+      "status": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "69532f7e9b56187dba62597ae82b6ee0943abf83c6aae8436dbe2c9ed8fe666f",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D04_2496aaf4_capture.txt",
+      "recorded_publication_date_not_proof": "2011-05-27",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "7f0b0752-387d-5def-ba3d-ab11c4f1414b"
+      ],
+      "proven_fragment_ids": [
+        "7f0b0752-387d-5def-ba3d-ab11c4f1414b"
+      ],
+      "not_proven_fragment_ids": [],
+      "availability_witness_ids": [
+        "AW-D04-20110529132216"
+      ],
+      "search_ids": [
+        "ARCHIVE_PROBES-011",
+        "ARCHIVE_PROBES-012",
+        "ARCHIVE_PROBES-013",
+        "ARCHIVE_PROBES-014",
+        "ARCHIVE_PROBES-015",
+        "EXTRA_PROBES-001",
+        "EXTRA_PROBES-002",
+        "MIRROR_PROBES-001",
+        "MIRROR_PROBES-002",
+        "MIRROR_PROBES-003"
+      ],
+      "reason": "Все выбранные exact fragments найдены в аутентифицированном pre-cutoff witness; поздняя frozen DocumentVersion не объявляется тождественной.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D05",
+      "document_version_id": "3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "document_id": "c5f122b3-33f5-58bf-9c14-4d6f79657a59",
+      "source_id": "ddeaf877-0282-52a2-898a-311bd154a72b",
+      "frozen_source_url": "https://www.rferl.org/a/kazakhstan_oil_workers_protests/24221366.html",
+      "status": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "e1b888b372abc06b8fa68b255b94951d1b07d0cf09b56418bac38119a618c86c",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D05_c5f122b3_capture.txt",
+      "recorded_publication_date_not_proof": "2011-06-06",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+        "b344006d-0950-57af-b0e7-60eb7b4f5217"
+      ],
+      "proven_fragment_ids": [
+        "04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+        "b344006d-0950-57af-b0e7-60eb7b4f5217"
+      ],
+      "not_proven_fragment_ids": [],
+      "availability_witness_ids": [
+        "AW-D05-20110629041259",
+        "AW-D05-20110918081249"
+      ],
+      "search_ids": [
+        "ARCHIVE_PROBES-016",
+        "ARCHIVE_PROBES-017",
+        "ARCHIVE_PROBES-018",
+        "ARCHIVE_PROBES-019",
+        "ARCHIVE_PROBES-020"
+      ],
+      "reason": "Все выбранные exact fragments найдены в аутентифицированном pre-cutoff witness; поздняя frozen DocumentVersion не объявляется тождественной.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D06",
+      "document_version_id": "bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "document_id": "a09bab6c-8f4c-5fa9-8a01-38cc05d7724c",
+      "source_id": "8872ed80-7dfe-5761-a8a7-5cb6a64dcec4",
+      "frozen_source_url": "https://www.azattyq.org/a/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+      "status": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "2b8dab7dff1adf0e64cbb01873a751dc429d608ba48ce38963350d8b4572c3a3",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D06_a09bab6c_capture.txt",
+      "recorded_publication_date_not_proof": "2011-07-11",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "d1067ad6-51d6-5a42-b6ea-8cf74c4fd71c"
+      ],
+      "proven_fragment_ids": [
+        "d1067ad6-51d6-5a42-b6ea-8cf74c4fd71c"
+      ],
+      "not_proven_fragment_ids": [],
+      "availability_witness_ids": [
+        "AW-D06-20110716171000"
+      ],
+      "search_ids": [
+        "ARCHIVE_PROBES-021",
+        "ARCHIVE_PROBES-022",
+        "ARCHIVE_PROBES-023",
+        "ARCHIVE_PROBES-024",
+        "ARCHIVE_PROBES-025"
+      ],
+      "reason": "Все выбранные exact fragments найдены в аутентифицированном pre-cutoff witness; поздняя frozen DocumentVersion не объявляется тождественной.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D07",
+      "document_version_id": "3dcd5aa1-e2a9-5dd9-a2d9-992f9c80e835",
+      "document_id": "d8d0cc9f-2091-5c78-8ac9-27ff273d274a",
+      "source_id": "ab02c333-f700-53c9-bf0e-e499b8152447",
+      "frozen_source_url": "https://rus.azattyq.org/a/oil_workers_strike_kazakhstan/24279930.html",
+      "status": "NOT_PROVEN",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "778d61386dbfd8044eab009c204df0e0744bf90781898c4484d79d284fbadaa6",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D07_d8d0cc9f_capture.txt",
+      "recorded_publication_date_not_proof": "2011-07-28",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "facfa6e5-5707-5d1f-8a9e-a2386955211e"
+      ],
+      "proven_fragment_ids": [],
+      "not_proven_fragment_ids": [
+        "facfa6e5-5707-5d1f-8a9e-a2386955211e"
+      ],
+      "availability_witness_ids": [],
+      "search_ids": [
+        "ARCHIVE_PROBES-026",
+        "ARCHIVE_PROBES-027",
+        "ARCHIVE_PROBES-028",
+        "ARCHIVE_PROBES-029",
+        "ARCHIVE_PROBES-030",
+        "EXTRA_PROBES-003",
+        "MIRROR_PROBES-004",
+        "MIRROR_PROBES-005",
+        "FINAL_PROBES-001",
+        "LAST_ARCHIVE_PROBES-002"
+      ],
+      "reason": "В выполненных архивных, publisher/mirror и поисковых проверках не найден проверенный pre-cutoff payload с exact fragments. Публикационные даты и современные копии недостаточны.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D09",
+      "document_version_id": "f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "document_id": "36796596-76fc-5e5c-b702-0627641d54e8",
+      "source_id": "bec0db84-f828-51e3-a57c-03b36e0655c5",
+      "frozen_source_url": "https://www.rferl.org/a/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+      "status": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "c77d2581a452587eecaee70c4ee5956d181d12e681094ad1ae78b8bad632c465",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D09_36796596_capture.txt",
+      "recorded_publication_date_not_proof": "2011-08-08",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "2c47a771-1301-55be-a2ab-9b2ef1f82510",
+        "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94"
+      ],
+      "proven_fragment_ids": [
+        "2c47a771-1301-55be-a2ab-9b2ef1f82510",
+        "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94"
+      ],
+      "not_proven_fragment_ids": [],
+      "availability_witness_ids": [
+        "AW-D09-20110809011049",
+        "AW-D09-20111022101958"
+      ],
+      "search_ids": [
+        "ARCHIVE_PROBES-031",
+        "ARCHIVE_PROBES-032",
+        "ARCHIVE_PROBES-033",
+        "ARCHIVE_PROBES-034",
+        "ARCHIVE_PROBES-035"
+      ],
+      "reason": "Все выбранные exact fragments найдены в аутентифицированном pre-cutoff witness; поздняя frozen DocumentVersion не объявляется тождественной.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D13",
+      "document_version_id": "00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "document_id": "46609b00-8ecc-5239-816f-e28da8ae18f3",
+      "source_id": "a31e3834-1227-5f14-acfe-2e43bee2fe47",
+      "frozen_source_url": "https://www.rferl.org/a/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+      "status": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "e853d18e16a1e105d4b568559855e801f51000d66315140044f1ede73d51d501",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D13_46609b00_capture.txt",
+      "recorded_publication_date_not_proof": "2011-09-18",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "56d19d98-707a-5deb-9472-d355b3835d79"
+      ],
+      "proven_fragment_ids": [
+        "56d19d98-707a-5deb-9472-d355b3835d79"
+      ],
+      "not_proven_fragment_ids": [],
+      "availability_witness_ids": [
+        "AW-D13-20110918124424",
+        "AW-D13-20111024200546"
+      ],
+      "search_ids": [
+        "ARCHIVE_PROBES-036",
+        "ARCHIVE_PROBES-037",
+        "ARCHIVE_PROBES-038",
+        "ARCHIVE_PROBES-039",
+        "ARCHIVE_PROBES-040"
+      ],
+      "reason": "Все выбранные exact fragments найдены в аутентифицированном pre-cutoff witness; поздняя frozen DocumentVersion не объявляется тождественной.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D14",
+      "document_version_id": "3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "document_id": "1fdb293f-696f-5b38-9a64-469dd0de7340",
+      "source_id": "0d49d515-8eee-58d3-891a-45b906138ef9",
+      "frozen_source_url": "https://www.rferl.org/a/kazakhstan_oil_workers_lawyer/24341367.html",
+      "status": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "8e85cf150955fd314fa1bad27ab9df16dc0de48662ea403f68258738357511a6",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D14_1fdb293f_capture.txt",
+      "recorded_publication_date_not_proof": "2011-09-27",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "49c356b3-3585-587c-9573-d4326e97de77"
+      ],
+      "proven_fragment_ids": [
+        "49c356b3-3585-587c-9573-d4326e97de77"
+      ],
+      "not_proven_fragment_ids": [],
+      "availability_witness_ids": [
+        "AW-D14-20110927202906",
+        "AW-D14-20111106041751"
+      ],
+      "search_ids": [
+        "ARCHIVE_PROBES-041",
+        "ARCHIVE_PROBES-042",
+        "ARCHIVE_PROBES-043",
+        "ARCHIVE_PROBES-044",
+        "ARCHIVE_PROBES-045"
+      ],
+      "reason": "Все выбранные exact fragments найдены в аутентифицированном pre-cutoff witness; поздняя frozen DocumentVersion не объявляется тождественной.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D15",
+      "document_version_id": "2d63f3f4-cb01-5b8c-b4ec-9bedb09b4363",
+      "document_id": "71e85ab4-ac4d-5da6-a5f5-7498e118fc2d",
+      "source_id": "e83bc2ab-c6b3-5c89-b8b1-0720ae400d19",
+      "frozen_source_url": "https://rus.azattyq.org/a/24350449.html",
+      "status": "NOT_PROVEN",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "105f0a4475fd676a900c9d2686789a5f92a42eb246bc3626f312757fdaf1ad26",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D15_71e85ab4_capture.txt",
+      "recorded_publication_date_not_proof": "2011-10-06",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "3832d42b-4806-56e6-8281-575100f9201b",
+        "3c9cca86-6ba6-58ee-a6a1-b4c6aade6f54"
+      ],
+      "proven_fragment_ids": [],
+      "not_proven_fragment_ids": [
+        "3832d42b-4806-56e6-8281-575100f9201b",
+        "3c9cca86-6ba6-58ee-a6a1-b4c6aade6f54"
+      ],
+      "availability_witness_ids": [],
+      "search_ids": [
+        "ARCHIVE_PROBES-046",
+        "ARCHIVE_PROBES-047",
+        "ARCHIVE_PROBES-048",
+        "ARCHIVE_PROBES-049",
+        "ARCHIVE_PROBES-050",
+        "EXTRA_PROBES-004",
+        "MIRROR_PROBES-006",
+        "MIRROR_PROBES-007",
+        "FINAL_PROBES-002",
+        "LAST_ARCHIVE_PROBES-001"
+      ],
+      "reason": "В выполненных архивных, publisher/mirror и поисковых проверках не найден проверенный pre-cutoff payload с exact fragments. Публикационные даты и современные копии недостаточны.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D17",
+      "document_version_id": "e92b6b89-4e75-5f64-ac26-7dd8005c3d56",
+      "document_id": "e16804b6-a082-5f9c-acf0-2e4291025136",
+      "source_id": "73b0f91b-778e-5238-89ee-636e22196efb",
+      "frozen_source_url": "https://iphronline.org/wp-content/uploads/2011/10/eng_labor_protests_briefing_paper_oct_2011.pdf",
+      "status": "NOT_PROVEN",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "ae9021062594bf5692b482841a39842034d940d987f613c030053a5f6b405a68",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D17_e16804b6_capture.txt",
+      "recorded_publication_date_not_proof": "2011-10-01",
+      "recorded_precision": "MONTH",
+      "selected_fragment_ids": [
+        "15e6b7e7-98f3-5830-8d5d-ae44862e445a",
+        "51e5ac30-63a9-5433-8472-a22727f1db36"
+      ],
+      "proven_fragment_ids": [],
+      "not_proven_fragment_ids": [
+        "15e6b7e7-98f3-5830-8d5d-ae44862e445a",
+        "51e5ac30-63a9-5433-8472-a22727f1db36"
+      ],
+      "availability_witness_ids": [],
+      "search_ids": [
+        "ARCHIVE_PROBES-051",
+        "ARCHIVE_PROBES-052",
+        "ARCHIVE_PROBES-053",
+        "EXTRA_PROBES-005",
+        "EXTRA_PROBES-006",
+        "MIRROR_PROBES-008",
+        "MIRROR_PROBES-009",
+        "FINAL_PROBES-003",
+        "LAST_ARCHIVE_PROBES-013"
+      ],
+      "reason": "В выполненных архивных, publisher/mirror и поисковых проверках не найден проверенный pre-cutoff payload с exact fragments. Публикационные даты и современные копии недостаточны.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D18",
+      "document_version_id": "17608513-7164-5d30-9d2e-521338e323d7",
+      "document_id": "fc776a08-7158-5bb1-bdf6-aee5264c6f61",
+      "source_id": "4cc51c34-2212-5ab5-b3f1-f6bbfe309c6c",
+      "frozen_source_url": "https://www.osce.org/files/f/documents/4/b/82126.pdf",
+      "status": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "47a25deca65723e6b0285de06520f55189ef3b94d5f0ae271659c5b203a38f1e",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D18_fc776a08_capture.txt",
+      "recorded_publication_date_not_proof": "2011-09-01",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "33ce2949-0da2-5839-9b01-566ae7e4bbf4",
+        "b5fdecb6-2ac4-5f56-aae6-6aef4bb7b956"
+      ],
+      "proven_fragment_ids": [
+        "33ce2949-0da2-5839-9b01-566ae7e4bbf4",
+        "b5fdecb6-2ac4-5f56-aae6-6aef4bb7b956"
+      ],
+      "not_proven_fragment_ids": [],
+      "availability_witness_ids": [
+        "AW-D18-20111016234632"
+      ],
+      "search_ids": [
+        "ARCHIVE_PROBES-054",
+        "ARCHIVE_PROBES-055",
+        "ARCHIVE_PROBES-056",
+        "ARCHIVE_PROBES-057",
+        "ARCHIVE_PROBES-058",
+        "ARCHIVE_PROBES-059",
+        "ARCHIVE_PROBES-060",
+        "EXTRA_PROBES-007",
+        "EXTRA_PROBES-008",
+        "EXTRA_PROBES-009"
+      ],
+      "reason": "Все выбранные exact fragments найдены в аутентифицированном pre-cutoff witness; поздняя frozen DocumentVersion не объявляется тождественной.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D19",
+      "document_version_id": "e85d2031-f492-5e93-b0ac-a7e84f27c7c7",
+      "document_id": "e7472144-acd9-592e-82c7-17827ed8812c",
+      "source_id": "8581b365-808a-560c-b869-ca2787e4a6d1",
+      "frozen_source_url": "https://www.osce.org/files/f/documents/4/8/82141.pdf",
+      "status": "NOT_PROVEN",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "5a2c9a876ef8458620e84da179cfe25a300c7e795f09457c1223803f900dd42a",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D19_e7472144_capture.txt",
+      "recorded_publication_date_not_proof": "2011-09-02",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "fcd2397b-c4e9-5035-9ff9-45969f55ecf4"
+      ],
+      "proven_fragment_ids": [],
+      "not_proven_fragment_ids": [
+        "fcd2397b-c4e9-5035-9ff9-45969f55ecf4"
+      ],
+      "availability_witness_ids": [],
+      "search_ids": [
+        "ARCHIVE_PROBES-061",
+        "ARCHIVE_PROBES-062",
+        "ARCHIVE_PROBES-063",
+        "ARCHIVE_PROBES-064",
+        "ARCHIVE_PROBES-065",
+        "ARCHIVE_PROBES-066",
+        "ARCHIVE_PROBES-067",
+        "EXTRA_PROBES-010",
+        "EXTRA_PROBES-011",
+        "EXTRA_PROBES-012",
+        "MIRROR_PROBES-010",
+        "FINAL_PROBES-004",
+        "FINAL_PROBES-005",
+        "LAST_ARCHIVE_PROBES-008",
+        "LAST_ARCHIVE_PROBES-011"
+      ],
+      "reason": "В выполненных архивных, publisher/mirror и поисковых проверках не найден проверенный pre-cutoff payload с exact fragments. Публикационные даты и современные копии недостаточны.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D20",
+      "document_version_id": "26b9e671-5e1e-5460-a80c-2e803ca81ba6",
+      "document_id": "2d26ce81-e4f8-5e97-abea-e761ae250515",
+      "source_id": "7197119d-d545-5cf2-9b85-a5212d3436c9",
+      "frozen_source_url": "https://cdn.osce.org/sites/default/files/f/documents/3/b/85058.pdf",
+      "status": "NOT_PROVEN",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "10c08f6e82a6adea0332429661d8abdab06f1d7a5b2d5b3db40107d2c83bb13d",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D20_2d26ce81_capture.txt",
+      "recorded_publication_date_not_proof": "2011-11-03",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "150704f4-c65a-50f4-b758-b9b456f909ff"
+      ],
+      "proven_fragment_ids": [],
+      "not_proven_fragment_ids": [
+        "150704f4-c65a-50f4-b758-b9b456f909ff"
+      ],
+      "availability_witness_ids": [],
+      "search_ids": [
+        "ARCHIVE_PROBES-068",
+        "ARCHIVE_PROBES-069",
+        "ARCHIVE_PROBES-070",
+        "ARCHIVE_PROBES-071",
+        "ARCHIVE_PROBES-072",
+        "ARCHIVE_PROBES-073",
+        "ARCHIVE_PROBES-074",
+        "EXTRA_PROBES-013",
+        "EXTRA_PROBES-014",
+        "MIRROR_PROBES-011",
+        "FINAL_PROBES-006",
+        "FINAL_PROBES-007",
+        "LAST_ARCHIVE_PROBES-003"
+      ],
+      "reason": "В выполненных архивных, publisher/mirror и поисковых проверках не найден проверенный pre-cutoff payload с exact fragments. Публикационные даты и современные копии недостаточны.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D21",
+      "document_version_id": "d2eefc78-82b0-5eb7-b1ae-533745cbbd79",
+      "document_id": "9d9fc2eb-87be-5b5e-8ba1-9d6ad38661ec",
+      "source_id": "f1f97296-d368-5605-a262-e57e0f489187",
+      "frozen_source_url": "https://kase.kz/files/emitters/RDGZ/rdgz_reliz_141111_e.pdf",
+      "status": "NOT_PROVEN",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "f37bed02661583fcd84a62c53ffb1a538adf18fdcc7fa4357170f74b013a04cc",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D21_9d9fc2eb_capture.txt",
+      "recorded_publication_date_not_proof": "2011-11-14",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "6295e487-c225-5445-ae8b-653d1691579a"
+      ],
+      "proven_fragment_ids": [],
+      "not_proven_fragment_ids": [
+        "6295e487-c225-5445-ae8b-653d1691579a"
+      ],
+      "availability_witness_ids": [],
+      "search_ids": [
+        "ARCHIVE_PROBES-075",
+        "ARCHIVE_PROBES-076",
+        "ARCHIVE_PROBES-077",
+        "EXTRA_PROBES-015",
+        "EXTRA_PROBES-016",
+        "MIRROR_PROBES-012",
+        "FINAL_PROBES-008",
+        "LAST_ARCHIVE_PROBES-007"
+      ],
+      "reason": "В выполненных архивных, publisher/mirror и поисковых проверках не найден проверенный pre-cutoff payload с exact fragments. Публикационные даты и современные копии недостаточны.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D22",
+      "document_version_id": "53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "document_id": "2c31843a-9181-5786-8ded-86762eae6779",
+      "source_id": "ae117c91-c49a-5022-abb1-4e39a4e8c38d",
+      "frozen_source_url": "https://www.lada.kz/society/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+      "status": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "e6f07b15b2822e6af738be912d09f4abbacc4857c0761e6a485c8996733003ee",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D22_2c31843a_capture.txt",
+      "recorded_publication_date_not_proof": "2011-11-17",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "ab55c516-12dc-5533-9e87-a950a6e61b3e"
+      ],
+      "proven_fragment_ids": [
+        "ab55c516-12dc-5533-9e87-a950a6e61b3e"
+      ],
+      "not_proven_fragment_ids": [],
+      "availability_witness_ids": [
+        "AW-D22-20111120030853"
+      ],
+      "search_ids": [
+        "ARCHIVE_PROBES-078",
+        "ARCHIVE_PROBES-079",
+        "ARCHIVE_PROBES-080",
+        "EXTRA_PROBES-017",
+        "MIRROR_PROBES-013"
+      ],
+      "reason": "Все выбранные exact fragments найдены в аутентифицированном pre-cutoff witness; поздняя frozen DocumentVersion не объявляется тождественной.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D23",
+      "document_version_id": "02248e81-d235-5306-aef3-5dec2af93ebb",
+      "document_id": "1af09c53-eaae-5af8-94c9-574cdd8683dd",
+      "source_id": "52cc7e9f-cf60-5cee-8c87-740ee516d575",
+      "frozen_source_url": "https://www.lada.kz/aktau_news/society/1209-bastuyuschim-neftyanikam-zhanaozeni-23-noyabrya-budet-predostavlena-poslednyaya-vozmozhnost-trudoustroitsya.html",
+      "status": "NOT_PROVEN",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "0e6a08c88995d51c55e14751f2f622feeb44bd136390ceb3cf246be0477be04c",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D23_1af09c53_capture.txt",
+      "recorded_publication_date_not_proof": "2011-11-22",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "7d82ddb5-b949-59af-90b3-3da2bc4691ad",
+        "f3130edc-588f-5f37-a88d-ffea7eca56c3"
+      ],
+      "proven_fragment_ids": [],
+      "not_proven_fragment_ids": [
+        "7d82ddb5-b949-59af-90b3-3da2bc4691ad",
+        "f3130edc-588f-5f37-a88d-ffea7eca56c3"
+      ],
+      "availability_witness_ids": [],
+      "search_ids": [
+        "ARCHIVE_PROBES-081",
+        "ARCHIVE_PROBES-082",
+        "ARCHIVE_PROBES-083",
+        "EXTRA_PROBES-018",
+        "MIRROR_PROBES-014",
+        "FINAL_PROBES-009",
+        "FINAL_PROBES-010",
+        "LAST_ARCHIVE_PROBES-004",
+        "LAST_ARCHIVE_PROBES-009"
+      ],
+      "reason": "В выполненных архивных, publisher/mirror и поисковых проверках не найден проверенный pre-cutoff payload с exact fragments. Публикационные даты и современные копии недостаточны.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D24",
+      "document_version_id": "d3b8d52c-3dbb-5d07-84bd-e07acf35fbbb",
+      "document_id": "79594336-74c1-58c6-bcdc-11fd4df9ff48",
+      "source_id": "82043157-6a1a-5df4-9dd7-9ba42368d19b",
+      "frozen_source_url": "https://www.lada.kz/aktau_news/society/1264-bastuyuschie-neftyaniki-zhanaozenya-razocharovany-primiritelnaya-komissiya-okazalas-razyasnitelnoy.html",
+      "status": "NOT_PROVEN",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "74b2caeaccf08d4d3a91c3f8108c0d20b210d5881b4638f0b234811fdba7448b",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D24_79594336_capture.txt",
+      "recorded_publication_date_not_proof": "2011-11-27",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "bbf0a151-afb1-57cd-9c19-cba3f5319e42"
+      ],
+      "proven_fragment_ids": [],
+      "not_proven_fragment_ids": [
+        "bbf0a151-afb1-57cd-9c19-cba3f5319e42"
+      ],
+      "availability_witness_ids": [],
+      "search_ids": [
+        "ARCHIVE_PROBES-084",
+        "ARCHIVE_PROBES-085",
+        "ARCHIVE_PROBES-086",
+        "EXTRA_PROBES-019",
+        "MIRROR_PROBES-015",
+        "FINAL_PROBES-011",
+        "LAST_ARCHIVE_PROBES-006",
+        "LAST_ARCHIVE_PROBES-010"
+      ],
+      "reason": "В выполненных архивных, publisher/mirror и поисковых проверках не найден проверенный pre-cutoff payload с exact fragments. Публикационные даты и современные копии недостаточны.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D25",
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "document_id": "43a82618-e2f4-5340-b3db-5a08a84dfed1",
+      "source_id": "93272924-00d5-527a-9ace-4ea593c021ad",
+      "frozen_source_url": "https://eurasianet.org/kazakhstan-labor-dispute-dragging-energy-production-down",
+      "status": "PROVEN_FRAGMENT_PRE_CUTOFF",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-24T12:00:00Z",
+      "late_capture_content_hash": "58cdfe78806e6121a878875241d097db593aca2877f7f546b94a5b54b07b7034",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D25_43a82618_capture.txt",
+      "recorded_publication_date_not_proof": "2011-10-13",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "3ca46849-549e-544d-b72c-d62ef1706612",
+        "a7869dd7-97d1-56de-86b4-aadf1e970c0a",
+        "ef7df23c-ba67-5903-9265-adbd1936ffa3"
+      ],
+      "proven_fragment_ids": [
+        "3ca46849-549e-544d-b72c-d62ef1706612",
+        "a7869dd7-97d1-56de-86b4-aadf1e970c0a",
+        "ef7df23c-ba67-5903-9265-adbd1936ffa3"
+      ],
+      "not_proven_fragment_ids": [],
+      "availability_witness_ids": [
+        "AW-D25-20111016060958",
+        "AW-D25-20111116125247"
+      ],
+      "search_ids": [
+        "ARCHIVE_PROBES-087",
+        "ARCHIVE_PROBES-088",
+        "ARCHIVE_PROBES-089",
+        "ARCHIVE_PROBES-090",
+        "ARCHIVE_PROBES-091"
+      ],
+      "reason": "Все выбранные exact fragments найдены в аутентифицированном pre-cutoff witness; поздняя frozen DocumentVersion не объявляется тождественной.",
+      "frozen_links_preserved": true
+    },
+    {
+      "label": "D29",
+      "document_version_id": "9b1dfe95-b290-533c-9414-d8f18d880b1d",
+      "document_id": "7a12d83f-30b7-5a83-9334-24066a9e3310",
+      "source_id": "55be8202-f086-55ce-87bd-a11b76f4d1f3",
+      "frozen_source_url": "https://tengrinews.kz/kazakhstan_news/vitse-ministr-truda-sotszaschityi-naseleniya-vstretilsya-201539/",
+      "status": "NOT_PROVEN",
+      "late_captured_edition_identity": "NOT_PROVEN",
+      "late_capture_at": "2026-08-25T13:49:00Z",
+      "late_capture_content_hash": "6ddd2bada0957498cd622a604d6f125113f2977f68915e5d6cc203776f558dcd",
+      "late_capture_locator": "zhanaozen_v4_2011_evidence_captures/D29_7a12d83f_capture.txt",
+      "recorded_publication_date_not_proof": "2011-11-14",
+      "recorded_precision": "DAY",
+      "selected_fragment_ids": [
+        "b9981fe5-0c46-5bd0-91ad-1f2e8a1f2aff"
+      ],
+      "proven_fragment_ids": [],
+      "not_proven_fragment_ids": [
+        "b9981fe5-0c46-5bd0-91ad-1f2e8a1f2aff"
+      ],
+      "availability_witness_ids": [],
+      "search_ids": [
+        "ARCHIVE_PROBES-092",
+        "ARCHIVE_PROBES-093",
+        "ARCHIVE_PROBES-094",
+        "EXTRA_PROBES-020",
+        "MIRROR_PROBES-016",
+        "MIRROR_PROBES-017",
+        "FINAL_PROBES-012",
+        "LAST_ARCHIVE_PROBES-005",
+        "LAST_ARCHIVE_PROBES-012"
+      ],
+      "reason": "В выполненных архивных, publisher/mirror и поисковых проверках не найден проверенный pre-cutoff payload с exact fragments. Публикационные даты и современные копии недостаточны.",
+      "frozen_links_preserved": true
+    }
+  ],
+  "witnesses": [
+    {
+      "witness_id": "AW-D01-20110521181520",
+      "document_version_id": "64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "label": "D01",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+      "archive_replay_url": "https://web.archive.org/web/20110521181520id_/http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+      "final_url": "https://web.archive.org/web/20110521181520id_/http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+      "archive_capture_timestamp": "20110521181520",
+      "memento_datetime": "Sat, 21 May 2011 18:15:20 GMT",
+      "archive_digest_sha1_base32": "F4T26SQHE5VFDZVDTC3ZDI4P747ZQS6H",
+      "retrieved_payload_sha1_base32": "F4T26SQHE5VFDZVDTC3ZDI4P747ZQS6H",
+      "retrieved_payload_sha256": "5b171ee61f7e202da0b00899aef7659237e01ed6000c2626e4834f265ef66907",
+      "payload_bytes": 61956,
+      "retrieved_at_utc": "2026-09-26T15:45:15.814857+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "d3e6a365-8150-545b-8005-c18c4939142b",
+          "exact_frozen_fragment": "strikers are demanding a pay rise",
+          "fragment_sha256": "fc3fefbdcd67497c70405602e47bb7a3d29bcac9e8ea5faba2dc5cfd68734901",
+          "literal_in_extracted_text": true,
+          "offset": 2396
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D01-20110811165523",
+      "document_version_id": "64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "label": "D01",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+      "archive_replay_url": "https://web.archive.org/web/20110811165523id_/http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+      "final_url": "https://web.archive.org/web/20110811165523id_/http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+      "archive_capture_timestamp": "20110811165523",
+      "memento_datetime": "Thu, 11 Aug 2011 16:55:23 GMT",
+      "archive_digest_sha1_base32": "AVIU5SXG6K2PWEVKLAZZ4LIEFHCUBQYG",
+      "retrieved_payload_sha1_base32": "AVIU5SXG6K2PWEVKLAZZ4LIEFHCUBQYG",
+      "retrieved_payload_sha256": "1c222969d2b8b5259ca5afca0d649f17ffcd8a12176d10502bd69c14b5fdaede",
+      "payload_bytes": 62206,
+      "retrieved_at_utc": "2026-09-26T15:45:15.815855+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "d3e6a365-8150-545b-8005-c18c4939142b",
+          "exact_frozen_fragment": "strikers are demanding a pay rise",
+          "fragment_sha256": "fc3fefbdcd67497c70405602e47bb7a3d29bcac9e8ea5faba2dc5cfd68734901",
+          "literal_in_extracted_text": true,
+          "offset": 2187
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D03-20110527054702",
+      "document_version_id": "ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "label": "D03",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+      "archive_replay_url": "https://web.archive.org/web/20110527054702id_/http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+      "final_url": "https://web.archive.org/web/20110527054702id_/http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+      "archive_capture_timestamp": "20110527054702",
+      "memento_datetime": "Fri, 27 May 2011 05:47:02 GMT",
+      "archive_digest_sha1_base32": "GVDYFFDIQKST45T2HKS3JWFFUET4IPM3",
+      "retrieved_payload_sha1_base32": "GVDYFFDIQKST45T2HKS3JWFFUET4IPM3",
+      "retrieved_payload_sha256": "00fb548b56d73a1088aec39a202c8fa3df7d0295e3d56a55535ccae254030aee",
+      "payload_bytes": 61546,
+      "retrieved_at_utc": "2026-09-26T15:45:15.816872+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "cc839407-9eb7-5e05-acca-70f1577883d4",
+          "exact_frozen_fragment": "demanding the revision of the collective contract",
+          "fragment_sha256": "280cab66370750738b1f3e917eedf2c571038385e7cd6829763f6a3955de093c",
+          "literal_in_extracted_text": true,
+          "offset": 2521
+        },
+        {
+          "fragment_id": "d521033f-59ce-5518-9227-b5fe9cb7570f",
+          "exact_frozen_fragment": "Fourteen employees of the OzenMunaiGaz Oil Company",
+          "fragment_sha256": "258e18442bacd8552d907615438d8a4da4c405d4095ca13ee3a3f4051ad2f20a",
+          "literal_in_extracted_text": true,
+          "offset": 2175
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D03-20110916223846",
+      "document_version_id": "ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "label": "D03",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+      "archive_replay_url": "https://web.archive.org/web/20110916223846id_/http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+      "final_url": "https://web.archive.org/web/20110916223846id_/http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+      "archive_capture_timestamp": "20110916223846",
+      "memento_datetime": "Fri, 16 Sep 2011 22:38:46 GMT",
+      "archive_digest_sha1_base32": "VDCW4G4WVTHQJRWEPV7H65KOEDZ6C4AV",
+      "retrieved_payload_sha1_base32": "VDCW4G4WVTHQJRWEPV7H65KOEDZ6C4AV",
+      "retrieved_payload_sha256": "dcd1ca9c08888e731da60c70394760bab313cd7c4406caea64071439a749363e",
+      "payload_bytes": 60145,
+      "retrieved_at_utc": "2026-09-26T15:45:15.816872+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "cc839407-9eb7-5e05-acca-70f1577883d4",
+          "exact_frozen_fragment": "demanding the revision of the collective contract",
+          "fragment_sha256": "280cab66370750738b1f3e917eedf2c571038385e7cd6829763f6a3955de093c",
+          "literal_in_extracted_text": true,
+          "offset": 2216
+        },
+        {
+          "fragment_id": "d521033f-59ce-5518-9227-b5fe9cb7570f",
+          "exact_frozen_fragment": "Fourteen employees of the OzenMunaiGaz Oil Company",
+          "fragment_sha256": "258e18442bacd8552d907615438d8a4da4c405d4095ca13ee3a3f4051ad2f20a",
+          "literal_in_extracted_text": true,
+          "offset": 1870
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D05-20110629041259",
+      "document_version_id": "3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "label": "D05",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.rferl.org:80/content/kazakhstan_oil_workers_protests/24221366.html",
+      "archive_replay_url": "https://web.archive.org/web/20110629041259id_/http://www.rferl.org:80/content/kazakhstan_oil_workers_protests/24221366.html",
+      "final_url": "https://web.archive.org/web/20110629041259id_/http://www.rferl.org:80/content/kazakhstan_oil_workers_protests/24221366.html",
+      "archive_capture_timestamp": "20110629041259",
+      "memento_datetime": "Wed, 29 Jun 2011 04:12:59 GMT",
+      "archive_digest_sha1_base32": "2YFIVNIRTUIOGDM7ACG3IUT3DPVSQ6CW",
+      "retrieved_payload_sha1_base32": "2YFIVNIRTUIOGDM7ACG3IUT3DPVSQ6CW",
+      "retrieved_payload_sha256": "73cd2e04ddfbbdc126e2336d159d6af982ed8439527d6826a2e1271797a87d29",
+      "payload_bytes": 61251,
+      "retrieved_at_utc": "2026-09-26T15:45:17.782077+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+          "exact_frozen_fragment": "At least 37 protesters were detained.",
+          "fragment_sha256": "ab4dc3c216b97bcee60d18ae1d4baaef37cb57874ca34ee2b3f15144387784d0",
+          "literal_in_extracted_text": true,
+          "offset": 2619
+        },
+        {
+          "fragment_id": "b344006d-0950-57af-b0e7-60eb7b4f5217",
+          "exact_frozen_fragment": "police action in Aqtau was legal",
+          "fragment_sha256": "e90581178df54e8aa90d72fcbe9c488fa57139002797126a3014ebeff56c1340",
+          "literal_in_extracted_text": true,
+          "offset": 2714
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D05-20110918081249",
+      "document_version_id": "3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "label": "D05",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+      "archive_replay_url": "https://web.archive.org/web/20110918081249id_/http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+      "final_url": "https://web.archive.org/web/20110918081249id_/http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+      "archive_capture_timestamp": "20110918081249",
+      "memento_datetime": "Sun, 18 Sep 2011 08:12:49 GMT",
+      "archive_digest_sha1_base32": "2OMSDKFRDE52MI3GWBFW2AB2BQSUV4S3",
+      "retrieved_payload_sha1_base32": "2OMSDKFRDE52MI3GWBFW2AB2BQSUV4S3",
+      "retrieved_payload_sha256": "8a66bf2ff3285a3d43dc381675543d4e92986f31081ead9f126478b14998e48e",
+      "payload_bytes": 60494,
+      "retrieved_at_utc": "2026-09-26T15:45:18.522365+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+          "exact_frozen_fragment": "At least 37 protesters were detained.",
+          "fragment_sha256": "ab4dc3c216b97bcee60d18ae1d4baaef37cb57874ca34ee2b3f15144387784d0",
+          "literal_in_extracted_text": true,
+          "offset": 2515
+        },
+        {
+          "fragment_id": "b344006d-0950-57af-b0e7-60eb7b4f5217",
+          "exact_frozen_fragment": "police action in Aqtau was legal",
+          "fragment_sha256": "e90581178df54e8aa90d72fcbe9c488fa57139002797126a3014ebeff56c1340",
+          "literal_in_extracted_text": true,
+          "offset": 2610
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D06-20110716171000",
+      "document_version_id": "bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "label": "D06",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.azattyq.org:80/content/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+      "archive_replay_url": "https://web.archive.org/web/20110716171000id_/http://www.azattyq.org:80/content/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+      "final_url": "https://web.archive.org/web/20110716171000id_/http://www.azattyq.org:80/content/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+      "archive_capture_timestamp": "20110716171000",
+      "memento_datetime": "Sat, 16 Jul 2011 17:10:00 GMT",
+      "archive_digest_sha1_base32": "U6N4P5R3XMZAUNAHZZPSHUDY3I524PPF",
+      "retrieved_payload_sha1_base32": "U6N4P5R3XMZAUNAHZZPSHUDY3I524PPF",
+      "retrieved_payload_sha256": "65cd8d29565cc4418e5216ce1b608d644870c556eaa16664683e5718986e507f",
+      "payload_bytes": 159638,
+      "retrieved_at_utc": "2026-09-26T15:45:18.570356+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "d1067ad6-51d6-5a42-b6ea-8cf74c4fd71c",
+          "exact_frozen_fragment": "мұнайшылар мен қала халқы бірнеше күн алаңда түнеді",
+          "fragment_sha256": "09c5ced1e64fcfd9a723ca63cba4eeca4827045e8da09294f02acf025e97cc81",
+          "literal_in_extracted_text": true,
+          "offset": 1927
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D09-20110809011049",
+      "document_version_id": "f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "label": "D09",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+      "archive_replay_url": "https://web.archive.org/web/20110809011049id_/http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+      "final_url": "https://web.archive.org/web/20110809011049id_/http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+      "archive_capture_timestamp": "20110809011049",
+      "memento_datetime": "Tue, 09 Aug 2011 01:10:49 GMT",
+      "archive_digest_sha1_base32": "4SBQWOS6PTPJBCJSXM3HFKJMPT6A3QWW",
+      "retrieved_payload_sha1_base32": "4SBQWOS6PTPJBCJSXM3HFKJMPT6A3QWW",
+      "retrieved_payload_sha256": "7ebc00cadfb38a435088a47305fa80696d269d01cd53b4d37d0c2e9adc7e349b",
+      "payload_bytes": 69913,
+      "retrieved_at_utc": "2026-09-26T15:45:19.971738+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "2c47a771-1301-55be-a2ab-9b2ef1f82510",
+          "exact_frozen_fragment": "barred from performing legal or social activities",
+          "fragment_sha256": "18eb28e3682e26881c00f5ad81dbdc60ded9be207f68e3f6b21b2e7da960a980",
+          "literal_in_extracted_text": true,
+          "offset": 2221
+        },
+        {
+          "fragment_id": "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94",
+          "exact_frozen_fragment": "sentenced to six years in jail",
+          "fragment_sha256": "801c305068af1eba96cc54ba1006f05bb94bc72ca2f18555a94eeacac2f722c8",
+          "literal_in_extracted_text": true,
+          "offset": 2027
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D09-20111022101958",
+      "document_version_id": "f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "label": "D09",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+      "archive_replay_url": "https://web.archive.org/web/20111022101958id_/http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+      "final_url": "https://web.archive.org/web/20111022101958id_/http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+      "archive_capture_timestamp": "20111022101958",
+      "memento_datetime": "Sat, 22 Oct 2011 10:19:58 GMT",
+      "archive_digest_sha1_base32": "OAOPVERH3GP3GRBAH4323H6GWA7JTMCZ",
+      "retrieved_payload_sha1_base32": "OAOPVERH3GP3GRBAH4323H6GWA7JTMCZ",
+      "retrieved_payload_sha256": "b70cb626e740c244d8629b09cc1eaf59f86a0e9f030f8b9e6fd2d659e561622c",
+      "payload_bytes": 64190,
+      "retrieved_at_utc": "2026-09-26T15:45:20.246680+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "2c47a771-1301-55be-a2ab-9b2ef1f82510",
+          "exact_frozen_fragment": "barred from performing legal or social activities",
+          "fragment_sha256": "18eb28e3682e26881c00f5ad81dbdc60ded9be207f68e3f6b21b2e7da960a980",
+          "literal_in_extracted_text": true,
+          "offset": 1738
+        },
+        {
+          "fragment_id": "82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94",
+          "exact_frozen_fragment": "sentenced to six years in jail",
+          "fragment_sha256": "801c305068af1eba96cc54ba1006f05bb94bc72ca2f18555a94eeacac2f722c8",
+          "literal_in_extracted_text": true,
+          "offset": 1544
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D13-20110918124424",
+      "document_version_id": "00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "label": "D13",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+      "archive_replay_url": "https://web.archive.org/web/20110918124424id_/http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+      "final_url": "https://web.archive.org/web/20110918124424id_/http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+      "archive_capture_timestamp": "20110918124424",
+      "memento_datetime": "Sun, 18 Sep 2011 12:44:24 GMT",
+      "archive_digest_sha1_base32": "Z47XLUTWPJGXYSZWTCRYO4Y33OSHDKIC",
+      "retrieved_payload_sha1_base32": "Z47XLUTWPJGXYSZWTCRYO4Y33OSHDKIC",
+      "retrieved_payload_sha256": "3ccbc77c868072e6b5d15daef180355467ddc4d25f828f052b241f44aafab51e",
+      "payload_bytes": 68274,
+      "retrieved_at_utc": "2026-09-26T15:45:20.856142+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "56d19d98-707a-5deb-9472-d355b3835d79",
+          "exact_frozen_fragment": "demanding payment of unfulfilled wage hikes and better labor conditions",
+          "fragment_sha256": "0f6e3a6f15d8d509f36975eb0e400f93343a910a52a9d44f1d1933c7d61e7828",
+          "literal_in_extracted_text": true,
+          "offset": 2650
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D13-20111024200546",
+      "document_version_id": "00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "label": "D13",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+      "archive_replay_url": "https://web.archive.org/web/20111024200546id_/http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+      "final_url": "https://web.archive.org/web/20111024200546id_/http://www.rferl.org/content/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+      "archive_capture_timestamp": "20111024200546",
+      "memento_datetime": "Mon, 24 Oct 2011 20:05:46 GMT",
+      "archive_digest_sha1_base32": "5KXSUM4HLQBRDSJHBUTP3ESECYZGGRRB",
+      "retrieved_payload_sha1_base32": "5KXSUM4HLQBRDSJHBUTP3ESECYZGGRRB",
+      "retrieved_payload_sha256": "8ad09640fa11403bc8fea68c60c248f7266e76430fc6b512cb2b9b056b854d9a",
+      "payload_bytes": 71168,
+      "retrieved_at_utc": "2026-09-26T15:45:20.893643+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "56d19d98-707a-5deb-9472-d355b3835d79",
+          "exact_frozen_fragment": "demanding payment of unfulfilled wage hikes and better labor conditions",
+          "fragment_sha256": "0f6e3a6f15d8d509f36975eb0e400f93343a910a52a9d44f1d1933c7d61e7828",
+          "literal_in_extracted_text": true,
+          "offset": 2212
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D14-20110927202906",
+      "document_version_id": "3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "label": "D14",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+      "archive_replay_url": "https://web.archive.org/web/20110927202906id_/http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+      "final_url": "https://web.archive.org/web/20110927202906id_/http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+      "archive_capture_timestamp": "20110927202906",
+      "memento_datetime": "Tue, 27 Sep 2011 20:29:06 GMT",
+      "archive_digest_sha1_base32": "BQZGJXT4UFSA6BJCY7CMUET4DJFOCE3C",
+      "retrieved_payload_sha1_base32": "BQZGJXT4UFSA6BJCY7CMUET4DJFOCE3C",
+      "retrieved_payload_sha256": "265765efbd21f05acedf2f7e6d12b7d35363f0aaefeb863a36879143d00897e6",
+      "payload_bytes": 61531,
+      "retrieved_at_utc": "2026-09-26T15:45:21.491550+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "49c356b3-3585-587c-9573-d4326e97de77",
+          "exact_frozen_fragment": "Some 410 of the workers have been fired since the strike began",
+          "fragment_sha256": "98437a034ea0d186a2958940f557068d943d9faa351a3aad6aa2c2014a7087da",
+          "literal_in_extracted_text": true,
+          "offset": 2397
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D14-20111106041751",
+      "document_version_id": "3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "label": "D14",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+      "archive_replay_url": "https://web.archive.org/web/20111106041751id_/http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+      "final_url": "https://web.archive.org/web/20111106041751id_/http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+      "archive_capture_timestamp": "20111106041751",
+      "memento_datetime": "Sun, 06 Nov 2011 04:17:51 GMT",
+      "archive_digest_sha1_base32": "CO5IBLFVMX7DWGL37DIDAFJHMB7WLQAS",
+      "retrieved_payload_sha1_base32": "CO5IBLFVMX7DWGL37DIDAFJHMB7WLQAS",
+      "retrieved_payload_sha256": "273b51c9961e9d61b4c63cefa76223bee2c7bcfcadda76e13a63f059b4ae7a94",
+      "payload_bytes": 59511,
+      "retrieved_at_utc": "2026-09-26T15:45:21.649713+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "49c356b3-3585-587c-9573-d4326e97de77",
+          "exact_frozen_fragment": "Some 410 of the workers have been fired since the strike began",
+          "fragment_sha256": "98437a034ea0d186a2958940f557068d943d9faa351a3aad6aa2c2014a7087da",
+          "literal_in_extracted_text": true,
+          "offset": 2282
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D25-20111016060958",
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "label": "D25",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.eurasianet.org:80/node/64310",
+      "archive_replay_url": "https://web.archive.org/web/20111016060958id_/http://www.eurasianet.org:80/node/64310",
+      "final_url": "https://web.archive.org/web/20111016060958id_/http://www.eurasianet.org:80/node/64310",
+      "archive_capture_timestamp": "20111016060958",
+      "memento_datetime": "Sun, 16 Oct 2011 06:09:58 GMT",
+      "archive_digest_sha1_base32": "XR7PYY6TK4LJPBKR4GRR75RSBY5STQT4",
+      "retrieved_payload_sha1_base32": "XR7PYY6TK4LJPBKR4GRR75RSBY5STQT4",
+      "retrieved_payload_sha256": "c6ae02c231a18cf574743016e307a1b2d302edbc6fe7386c8dc636c679395005",
+      "payload_bytes": 56719,
+      "retrieved_at_utc": "2026-09-26T15:45:22.997749+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "3ca46849-549e-544d-b72c-d62ef1706612",
+          "exact_frozen_fragment": "company insists that its employees are fairly compensated",
+          "fragment_sha256": "f7760687e7aaae5d2ed74a264f94485465395efdc8c17afd5deb89c452a4d86c",
+          "literal_in_extracted_text": true,
+          "offset": 4009
+        },
+        {
+          "fragment_id": "a7869dd7-97d1-56de-86b4-aadf1e970c0a",
+          "exact_frozen_fragment": "has raised salaries six times since 2008",
+          "fragment_sha256": "57481ba5d7b8f7cc36f5f4ab9281d1e9a35e6b4e931cc6d4f3c427403cbb23b8",
+          "literal_in_extracted_text": true,
+          "offset": 4083
+        },
+        {
+          "fragment_id": "ef7df23c-ba67-5903-9265-adbd1936ffa3",
+          "exact_frozen_fragment": "demanding reinstatement and a review of salaries",
+          "fragment_sha256": "0a2f0dcd6186b9e872d21dabe4af51bf3e062ee1ff69970d0f89681271a9d84f",
+          "literal_in_extracted_text": true,
+          "offset": 4990
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D25-20111116125247",
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "label": "D25",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.eurasianet.org:80/node/64310",
+      "archive_replay_url": "https://web.archive.org/web/20111116125247id_/http://www.eurasianet.org:80/node/64310",
+      "final_url": "https://web.archive.org/web/20111116125247id_/http://www.eurasianet.org:80/node/64310",
+      "archive_capture_timestamp": "20111116125247",
+      "memento_datetime": "Wed, 16 Nov 2011 12:52:47 GMT",
+      "archive_digest_sha1_base32": "7YHK6FDDO6SY5E65OBHLKWNVI3ZFCPL5",
+      "retrieved_payload_sha1_base32": "7YHK6FDDO6SY5E65OBHLKWNVI3ZFCPL5",
+      "retrieved_payload_sha256": "8f6f54a0cf2dcabe5a02e4f0cb4e60cbc6296e5822e5521498481d682353be35",
+      "payload_bytes": 56599,
+      "retrieved_at_utc": "2026-09-26T15:45:23.205176+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "3ca46849-549e-544d-b72c-d62ef1706612",
+          "exact_frozen_fragment": "company insists that its employees are fairly compensated",
+          "fragment_sha256": "f7760687e7aaae5d2ed74a264f94485465395efdc8c17afd5deb89c452a4d86c",
+          "literal_in_extracted_text": true,
+          "offset": 3949
+        },
+        {
+          "fragment_id": "a7869dd7-97d1-56de-86b4-aadf1e970c0a",
+          "exact_frozen_fragment": "has raised salaries six times since 2008",
+          "fragment_sha256": "57481ba5d7b8f7cc36f5f4ab9281d1e9a35e6b4e931cc6d4f3c427403cbb23b8",
+          "literal_in_extracted_text": true,
+          "offset": 4023
+        },
+        {
+          "fragment_id": "ef7df23c-ba67-5903-9265-adbd1936ffa3",
+          "exact_frozen_fragment": "demanding reinstatement and a review of salaries",
+          "fragment_sha256": "0a2f0dcd6186b9e872d21dabe4af51bf3e062ee1ff69970d0f89681271a9d84f",
+          "literal_in_extracted_text": true,
+          "offset": 4930
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D18-20111016234632",
+      "document_version_id": "17608513-7164-5d30-9d2e-521338e323d7",
+      "label": "D18",
+      "witness_role": "OFFICIAL_US_MIRROR_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://iipdigital.usembassy.gov/st/english/texttrans/2011/09/20110901122736su0.701299.html",
+      "archive_replay_url": "https://web.archive.org/web/20111016234632id_/http://iipdigital.usembassy.gov/st/english/texttrans/2011/09/20110901122736su0.701299.html",
+      "final_url": "https://web.archive.org/web/20111016234632id_/http://iipdigital.usembassy.gov/st/english/texttrans/2011/09/20110901122736su0.701299.html",
+      "archive_capture_timestamp": "20111016234632",
+      "memento_datetime": "Sun, 16 Oct 2011 23:46:32 GMT",
+      "archive_digest_sha1_base32": "ZKEE4EVLFL57VP2BUUNU37NWJT5KSAFS",
+      "retrieved_payload_sha1_base32": "ZKEE4EVLFL57VP2BUUNU37NWJT5KSAFS",
+      "retrieved_payload_sha256": "b6beec09616af212e46df988a4b2149f7bdb4524d9af774f5b6488e6e41358d3",
+      "payload_bytes": 26520,
+      "retrieved_at_utc": "2026-09-26T15:51:18.423361+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "33ce2949-0da2-5839-9b01-566ae7e4bbf4",
+          "exact_frozen_fragment": "trial appears to have been marred by violations of procedural due process",
+          "fragment_sha256": "adb59f91fd4d4ae7248581db6ff0d94ac88c9b1933c914af2065cd1254d7038a",
+          "literal_in_extracted_text": true,
+          "offset": 969
+        },
+        {
+          "fragment_id": "b5fdecb6-2ac4-5f56-aae6-6aef4bb7b956",
+          "exact_frozen_fragment": "sentencing to six years imprisonment of Natalya Sokolova",
+          "fragment_sha256": "a4cd7f69647c69aac6ae7658e8bc3c7ecb7f1038ba3e427a139a5baf7f125c84",
+          "literal_in_extracted_text": true,
+          "offset": 810
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D04-20110529132216",
+      "document_version_id": "adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "label": "D04",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://www.rferl.org:80/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+      "archive_replay_url": "https://web.archive.org/web/20110529132216id_/http://www.rferl.org:80/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+      "final_url": "https://web.archive.org/web/20110529132216id_/http://www.rferl.org:80/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+      "archive_capture_timestamp": "20110529132216",
+      "memento_datetime": "Sun, 29 May 2011 13:22:16 GMT",
+      "archive_digest_sha1_base32": "QNZ5VOIFGVHFWCWUASBYDCBEVF7LSE52",
+      "retrieved_payload_sha1_base32": "QNZ5VOIFGVHFWCWUASBYDCBEVF7LSE52",
+      "retrieved_payload_sha256": "c294d06169104785025a0c564b8f7e4fb34dc5b4ead7a3104c9655b1e4d262a1",
+      "payload_bytes": 63205,
+      "retrieved_at_utc": "2026-09-26T15:54:40.957305+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "7f0b0752-387d-5def-ba3d-ab11c4f1414b",
+          "exact_frozen_fragment": "lifting of restrictions on the activities of independent trade unions",
+          "fragment_sha256": "ac6e8cc659989a1ad7641a8c281b51f933f1c71cec3ac21505f917005f7d11fe",
+          "literal_in_extracted_text": true,
+          "offset": 2459
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    },
+    {
+      "witness_id": "AW-D22-20111120030853",
+      "document_version_id": "53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "label": "D22",
+      "witness_role": "PUBLISHER_PAGE_ARCHIVED_BY_INTERNET_ARCHIVE",
+      "original_witness_url": "http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+      "archive_replay_url": "https://web.archive.org/web/20111120030853id_/http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+      "final_url": "https://web.archive.org/web/20111120030853id_/http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+      "archive_capture_timestamp": "20111120030853",
+      "memento_datetime": "Sun, 20 Nov 2011 03:08:53 GMT",
+      "archive_digest_sha1_base32": "D6ZMCKKXPKQRTGOVCGBBAWGEHZAYFIBH",
+      "retrieved_payload_sha1_base32": "D6ZMCKKXPKQRTGOVCGBBAWGEHZAYFIBH",
+      "retrieved_payload_sha256": "f4052bb64f40c428c80ad987356bf118e91563e7b0a04e2e3c74393ab942885a",
+      "payload_bytes": 82184,
+      "retrieved_at_utc": "2026-09-26T15:54:40.958322+00:00",
+      "proof_basis": "Pre-cutoff Internet Archive capture + retrieved original payload equals archived CDX digest + literal frozen fragment in decoded text.",
+      "proof_scope": "FRAGMENT_TEXT_AND_THIS_ARCHIVED_CONTEXT_ONLY_NOT_LATE_CP3_EDITION_IDENTITY",
+      "match_policy": "HTML charset decode, character-reference decode, strip markup/script/style; exact case-sensitive substring in extracted text. No case-folding, stemming, synonyms or punctuation replacement. All matches also pass before whitespace normalization.",
+      "locator_policy": "Offsets refer to whitespace-normalized visible replay text, solely for navigation; proof uses unnormalized extracted text.",
+      "matched_fragments": [
+        {
+          "fragment_id": "ab55c516-12dc-5533-9e87-a950a6e61b3e",
+          "exact_frozen_fragment": "На встречу пришли около 40 нефтяников",
+          "fragment_sha256": "b148d270bcae31abceaffc93ac1b5fb9319a992ceed42faf19acac5a221cff59",
+          "literal_in_extracted_text": true,
+          "offset": 941
+        }
+      ],
+      "publication_date_used_as_proof": false,
+      "frozen_chain_rebound": false,
+      "full_payload_distribution": "Full source payload retained in private audit cache; PR provides URL, SHA-1/SHA-256 and existing frozen excerpts, not full copyrighted articles."
+    }
+  ],
+  "original_chains_rebound": 0,
+  "old_frozen_capture_authentication": "NOT_PROVEN_ALL_20",
+  "complete_document_copy_not_published": true
+}

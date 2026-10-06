@@ -1,0 +1,69 @@
+{
+  "protocol_id": "AI_ONLY_RESEARCH_BETA_V1",
+  "protocol_patch": "PATCH_1",
+  "state": "PRIMARY_AI_STAGE_COMPLETE",
+  "source_packet_commit": "0959f88e482753ea65b015eb6d1da4572d9eafe1",
+  "primary_runs": {
+    "AI1": {
+      "actual_model_label": "GPT-6 Astra Pro",
+      "run_id": "AI1_PRIMARY_20260928T105855Z",
+      "status_counts": {
+        "UNKNOWN": 24,
+        "NUMERIC": 0,
+        "DISPUTED": 0
+      }
+    },
+    "AI2": {
+      "actual_model_label": "GPT-5.6 Sol Pro",
+      "run_id": "e635e10e-701b-4c15-80b6-9c36bbf18620",
+      "status_counts": {
+        "UNKNOWN": 24,
+        "NUMERIC": 0,
+        "DISPUTED": 0
+      }
+    }
+  },
+  "mechanical_normalization": {
+    "applied": true,
+    "semantics_changed": false,
+    "both_canonical_ids_filled_from_frozen_H1_H2_crosswalk": true,
+    "AI1_rubric_rule_ref_arrays_joined": true,
+    "AI2_verbatim_objects_projected_to_text": true,
+    "required_empty_placeholders_added": true
+  },
+  "comparison": {
+    "same_status_and_null_value": 24,
+    "same_evidence_reference_set": 24,
+    "shared_failed_gates": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5"
+    ],
+    "only_gate_difference": "G6: AI1=true, AI2=false",
+    "frozen_comparator_primary_triage": {
+      "TARGETED_CRITIQUE_REQUIRED": 24
+    }
+  },
+  "targeted_critique": {
+    "rounds_used": 1,
+    "rounds_remaining": 0,
+    "resolution": "G6 difference non-decisive because G1-G5 independently block NUMERIC",
+    "final_disposition_counts": {
+      "AI_SHARED_UNKNOWN_AFTER_TARGETED_CRITIQUE": 24,
+      "CALCULATION_ELIGIBLE": 0
+    }
+  },
+  "uno": "NOT_COMPUTED",
+  "human_validation": "NOT_PERFORMED",
+  "human_reliability": "NOT_PERFORMED",
+  "next_required_state": "EFFECTIVE_INPUT_V2_OR_STOP",
+  "source_fingerprints": {
+    "AI1_raw_paste_sha256": "dec770f5a39c94fa4d7eea5ca027cae789d9ce81a4cdf7fd969c58ae06af09c0",
+    "AI1_normalized_sha256": "6f4e0917febe41bbac8283d88012426d8db1e78ed2abb66020d09019c4f6fffa",
+    "AI2_raw_file_sha256": "d83f84ce8fa99f92bcee8f6c47d44aac4a8f56503828f42dbe1a2dec02f2bfc3",
+    "AI2_normalized_sha256": "709325862bd78d400757b781a6abb567e8a9015e4355a7ae53843209c16c2336",
+    "local_comparison_bundle_sha256": "412c38f73c9395bd6926408053006f44f964239e64bd2e8347c62b28ea330051"
+  }
+}

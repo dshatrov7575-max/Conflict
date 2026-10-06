@@ -1,0 +1,55 @@
+{
+  "protocol_id": "AI_ONLY_RESEARCH_BETA_V1",
+  "protocol_patch": "PATCH_1",
+  "status": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+  "source_head_before_validator_freeze": "0959f88e482753ea65b015eb6d1da4572d9eafe1",
+  "expected_primary_roles": [
+    "AI1",
+    "AI2"
+  ],
+  "expected_entries_per_role": 24,
+  "expected_item_ids": [
+    "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+    "951f300c-27d0-5a09-b312-e3fdad147f54",
+    "bc34ea72-a9ac-5e81-ab20-3f2efb729872",
+    "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+    "cd9eb952-6af0-5708-8703-49673415cbe7",
+    "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+    "3f4dc104-40c7-59db-ad5c-61f8a80232bc",
+    "2c58ce09-3654-5a87-89be-4b1953f467c7",
+    "5e3146aa-0dfd-5be2-8f8d-39b94edee3ff",
+    "a6f0883a-d5fc-521b-8662-1c160fded750",
+    "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+    "79748746-11e6-506c-82d5-bc5fe877beb0"
+  ],
+  "permitted_anchors": {
+    "POS": [
+      -10,
+      -5,
+      0,
+      5,
+      10
+    ],
+    "KVS": [
+      0,
+      2,
+      5,
+      8,
+      10
+    ]
+  },
+  "blobs": {
+    "AI1_STANDALONE_PACKET_MD": "0c876ff2d0100468c9dcd788e2e2904b14c0332b",
+    "AI2_STANDALONE_PACKET_MD": "7c7b2e068bdd42d5a429d026f31486ff87c08e8c",
+    "PROTOCOL_PATCH_1": "61594cc2daca1936f74314d00acd9707460d9bed",
+    "AI_PRIMARY_COMPARISON_PROTOCOL": "9f1994063002ccac9c43f46196bfad855e3e2b87"
+  },
+  "rules": {
+    "automatic_numeric_release": false,
+    "rerun_until_agreement": false,
+    "averaging": false,
+    "max_targeted_critique_rounds": 1,
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED"
+  }
+}

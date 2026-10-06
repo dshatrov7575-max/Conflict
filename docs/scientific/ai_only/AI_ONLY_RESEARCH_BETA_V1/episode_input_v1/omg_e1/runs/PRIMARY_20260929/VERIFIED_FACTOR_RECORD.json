@@ -1,0 +1,33 @@
+{
+  "route_id": "AI_ONLY_EPISODE_OMG_E1_V1",
+  "contract_version": "1.0.0",
+  "state": "VERIFIED_NUMERIC_AFTER_TARGETED_REVIEW",
+  "episode_id": "OMG_INITIAL_WAGE_DISPUTE_2011_05_26_2011_06_28",
+  "ptn_id": "E02_PAY",
+  "targeted_review_rounds_used": 1,
+  "targeted_review_rounds_remaining": 0,
+  "actors": {
+    "OMG_WORKERS_INITIAL_STRIKE": {
+      "status": "VERIFIED_NUMERIC",
+      "POS": -5,
+      "KVS": 5,
+      "source_ids": [
+        "OMG_E1_WORKERS_D03"
+      ],
+      "measurement_status": "PROVISIONAL"
+    },
+    "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": {
+      "status": "VERIFIED_NUMERIC",
+      "POS": 5,
+      "KVS": 5,
+      "source_ids": [
+        "OMG_E1_COMPANY_KASE_20110628"
+      ],
+      "measurement_status": "PROVISIONAL"
+    }
+  },
+  "calculation_release_gate": "PASS_FOR_AI_ONLY_EPISODE_SCENARIO",
+  "carry_forward_policy": "NONE_BEYOND_EPISODE",
+  "human_validation": "NOT_PERFORMED",
+  "human_reliability": "NOT_PERFORMED"
+}

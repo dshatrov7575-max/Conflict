@@ -1,0 +1,78 @@
+{
+  "schema_version": "1.0.0",
+  "document_kind": "STRUCTURE_ONLY",
+  "assessments": [
+    {
+      "assessment_id": null,
+      "case_id": "ZHANAOZEN_2011_EXAMPLE",
+      "factor_id": "POS",
+      "factor_mapping_reference": {
+        "reference": "docs/scientific/ZHANAOZEN_2011_EXAMPLE.json",
+        "sha256": "997ab230a4ca8ce21e49fef21ddfaab8f8f0d255fde4dfe49758cb91246b8152",
+        "json_pointer": "/cases/0/episodes/0/factor_mappings/0",
+        "mapping_id": "STRUCTURE_ONLY_POS"
+      },
+      "evidence_references": [],
+      "observed_indicator": null,
+      "assessment_value": null,
+      "confidence": "UNKNOWN",
+      "rationale": null,
+      "assessor_type": null,
+      "status": "UNKNOWN"
+    },
+    {
+      "assessment_id": null,
+      "case_id": "ZHANAOZEN_2011_EXAMPLE",
+      "factor_id": "KVS",
+      "factor_mapping_reference": {
+        "reference": "docs/scientific/ZHANAOZEN_2011_EXAMPLE.json",
+        "sha256": "997ab230a4ca8ce21e49fef21ddfaab8f8f0d255fde4dfe49758cb91246b8152",
+        "json_pointer": "/cases/0/episodes/0/factor_mappings/1",
+        "mapping_id": "STRUCTURE_ONLY_KVS"
+      },
+      "evidence_references": [],
+      "observed_indicator": null,
+      "assessment_value": null,
+      "confidence": "UNKNOWN",
+      "rationale": null,
+      "assessor_type": null,
+      "status": "UNKNOWN"
+    },
+    {
+      "assessment_id": null,
+      "case_id": "ZHANAOZEN_2011_EXAMPLE",
+      "factor_id": "RGU",
+      "factor_mapping_reference": {
+        "reference": "docs/scientific/ZHANAOZEN_2011_EXAMPLE.json",
+        "sha256": "997ab230a4ca8ce21e49fef21ddfaab8f8f0d255fde4dfe49758cb91246b8152",
+        "json_pointer": "/cases/0/episodes/0/factor_mappings/2",
+        "mapping_id": "STRUCTURE_ONLY_RGU"
+      },
+      "evidence_references": [],
+      "observed_indicator": null,
+      "assessment_value": null,
+      "confidence": "UNKNOWN",
+      "rationale": null,
+      "assessor_type": null,
+      "status": "UNKNOWN"
+    },
+    {
+      "assessment_id": null,
+      "case_id": "ZHANAOZEN_2011_EXAMPLE",
+      "factor_id": "KVPTN",
+      "factor_mapping_reference": {
+        "reference": "docs/scientific/ZHANAOZEN_2011_EXAMPLE.json",
+        "sha256": "997ab230a4ca8ce21e49fef21ddfaab8f8f0d255fde4dfe49758cb91246b8152",
+        "json_pointer": "/cases/0/episodes/0/factor_mappings/3",
+        "mapping_id": "STRUCTURE_ONLY_KVPTN"
+      },
+      "evidence_references": [],
+      "observed_indicator": null,
+      "assessment_value": null,
+      "confidence": "UNKNOWN",
+      "rationale": null,
+      "assessor_type": null,
+      "status": "UNKNOWN"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "schema": "MANUAL_DUAL_MODEL_EXECUTION_RECEIPT_R1",
+  "route_id": "AI_ONLY_DYAD_D25_E02_V100",
+  "status": "ACCEPTED_FOR_FROZEN_COMPARISON",
+  "binding_commit": "c949d592150f079a9013fc77e9ad1b03f622d19b",
+  "dispatch_commit": "63940f52f97cdf039ebd3d38cd70adbc68e0a064",
+  "ai1": {
+    "service": "ChatGPT",
+    "frozen_selection": "GPT-5.6 Sol Pro",
+    "raw_actual_model_label": "GPT-5.6 Sol Pro",
+    "role": "D25_E02_V100_AI1",
+    "run_id": "2fb81e47-b5df-44c0-9e44-6450b9a39a5c",
+    "raw_capture_sha256": "7eea4713af3baaf2860473adb8fbe9171383d62456d228e5717a0c06fee3f088",
+    "capture_mode": "owner pasted raw JSON into coordinator chat"
+  },
+  "ai2": {
+    "service": "Claude",
+    "frozen_selection": "Claude Opus 5.5 High",
+    "raw_actual_model_label": "Claude Opus 5.5",
+    "raw_model_label_source": "SYSTEM_PROMPT_PRODUCT_INFORMATION",
+    "operator_selection_evidence": "owner prospectively specified Claude Opus 5.5 High before manual primary responses and then executed the instructed fresh Claude chat",
+    "role": "D25_E02_V100_AI2",
+    "run_id": "D25_E02_V100_AI2_RUN_20261001T083400Z",
+    "raw_capture_sha256": "1691aa129d8e49790054299e073b32369d31a2b124b4a85de2ba09378ca032bb",
+    "capture_mode": "owner pasted raw JSON into coordinator chat"
+  },
+  "contamination_checks": {
+    "sibling_output_seen": false,
+    "prior_episode_outputs_seen": false,
+    "prior_r2_outputs_seen": false,
+    "outcome_used_as_evidence": false,
+    "external_sources_used": false,
+    "coordinator_substitution": false,
+    "targeted_content_review": false,
+    "retry_or_repair": false
+  },
+  "comparison": {
+    "frozen_comparator_blob": "6c4a246f99579dcadcf48b4185fb8a2e4c0e46ef",
+    "state": "HOLD_FACTOR_INCOMPLETE",
+    "calculation_release": false
+  },
+  "note": "Raw outputs are preserved unchanged. The Claude raw self-label reports the model family as Claude Opus 5.5; the pre-response operator selection records High separately as the chosen UI effort/mode."
+}

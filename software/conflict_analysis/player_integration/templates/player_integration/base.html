@@ -1,0 +1,17 @@
+{% load static %}<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Расчёт эксперимента{% endblock %} · Player</title>
+  <link rel="stylesheet" href="{% static 'player_integration/result.css' %}">
+  {% block extra_head %}{% endblock %}
+  <link rel="stylesheet" href="{% static 'production_studio/panel_ui.css' %}">
+  <script src="{% static 'production_studio/panel_ui.js' %}" defer></script>
+</head>
+<body><main class="ui-result-main">
+  <nav><a href="{% url 'player_integration:start' %}">Расчёт эксперимента</a> · <a href="/player/">Player</a>{% include 'production_studio/ui_help_button.html' %}</nav>
+  {% block content %}{% endblock %}
+  <aside class="ui-warning" data-panel-help="warnings" aria-label="Границы интерпретации"><strong>POLARIZATION_V1_BETA / 1.0.0</strong><a href="#ui-help-topic-warnings" data-help-open="warnings">Бета · не прогноз · KVS/KVPTN не проверены</a></aside>
+</main>{% include 'production_studio/ui_help.html' %}
+</body></html>

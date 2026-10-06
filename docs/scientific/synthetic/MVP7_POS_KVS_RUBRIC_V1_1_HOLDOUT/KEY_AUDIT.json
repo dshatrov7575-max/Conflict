@@ -1,0 +1,2763 @@
+{
+  "artifact_type": "Независимый AI-аудит замороженного ключа",
+  "status": "COMPLETE",
+  "completed_at_utc": "2026-09-26T11:00:47.7140173Z",
+  "audit_scope_complete": true,
+  "case_count": 48,
+  "supported_count": 43,
+  "key_error_count": 0,
+  "unresolved_count": 4,
+  "fixture_defect_count": 1,
+  "failure_count": 5,
+  "count_definition": "Четыре verdict взаимоисключающие. key_error_count считает только KEY_ERROR; дефекты числового fixture и неразрешённые нормы также считаются failures, независимо от совпадения с ключом.",
+  "pre_key_outcome_anchor_matches": 48,
+  "g_key_status": "BLOCKED",
+  "g_key_rationale": "Одно числовое fixture требует недостающего обязательного условия P2; четыре числовых примера имеют неразрешённую границу допустимых преобразований P1. Первоначальное совпадение 48/48 не доказывает корректность ключа.",
+  "prior_binding": {
+    "status": "KEY_AUDIT_IN_PROGRESS",
+    "pre_key_file": "AUDITOR_PRE_KEY_REVIEW.json",
+    "pre_key_sha256": "cc33cb4f4b62acc730d6250fa1ed11cf38290dc6410c0cbdd689aab8ee7cbc21",
+    "pre_key_completed_at_utc": "2026-09-26T10:56:02.6309705Z",
+    "pre_key_last_write_time_utc": "2026-09-26T10:56:02.7886678Z",
+    "pre_key_hash_recorded_at_utc": "2026-09-26T10:56:22.5386699Z",
+    "first_key_access_at_utc": "2026-09-26T10:56:22.5406108Z",
+    "first_key_access_definition": "Время снято и записано непосредственно перед первым Get-Content INTENDED_KEY.json; до этого ключ не открывался."
+  },
+  "pre_key_sha256_after_audit": "cc33cb4f4b62acc730d6250fa1ed11cf38290dc6410c0cbdd689aab8ee7cbc21",
+  "pre_key_unchanged": true,
+  "freeze_time_utc": "2026-09-26T13:50:30.525024+03:00",
+  "authorized_input_integrity_checks": [
+    {
+      "file": "CODER_PACKET.md",
+      "actual_sha256": "cfee1f1a2c2f561051087bb884050e2c0b0345eabc0bfab86a299800ab60ae70",
+      "frozen_sha256": "cfee1f1a2c2f561051087bb884050e2c0b0345eabc0bfab86a299800ab60ae70",
+      "matches_freeze": true,
+      "bytes": 52733
+    },
+    {
+      "file": "PATCHED_RUBRIC_FOR_CODERS.md",
+      "actual_sha256": "cbcf0aa2b09aaabcbbc4b9b083b33aaeab69d10b78f45eb1daf6eea14933e08d",
+      "frozen_sha256": "cbcf0aa2b09aaabcbbc4b9b083b33aaeab69d10b78f45eb1daf6eea14933e08d",
+      "matches_freeze": true,
+      "bytes": 48912
+    },
+    {
+      "file": "INTENDED_KEY.json",
+      "actual_sha256": "0813e724287d7f0c42cddeb5b00a057a145b1eb5dca4c141b5ef05b27a3c2874",
+      "frozen_sha256": "0813e724287d7f0c42cddeb5b00a057a145b1eb5dca4c141b5ef05b27a3c2874",
+      "matches_freeze": true,
+      "bytes": 39061
+    },
+    {
+      "file": "PREREGISTRATION.md",
+      "actual_sha256": "38642b5dfae34b2b3243fec346b7e67d0fb7c6ba782f0ef45e3004c7d018437e",
+      "frozen_sha256": "38642b5dfae34b2b3243fec346b7e67d0fb7c6ba782f0ef45e3004c7d018437e",
+      "matches_freeze": true,
+      "bytes": 10317
+    }
+  ],
+  "freeze_manifest_sha256": "2738587fabd7af22dab82746756a5ece7db445e512829b5bd2a5f29463123a7f",
+  "integrity_scope": "Проверены хеши только четырёх прочитанных замороженных входов и записан hash manifest. Остальные входы из manifest и старый ключ не открывались; полная G-INTEGRITY здесь не заявляется.",
+  "review_sequence": [
+    "Прочитаны только CODER_PACKET.md и PATCHED_RUBRIC_FOR_CODERS.md.",
+    "Записаны 48 собственных ответов в AUDITOR_PRE_KEY_REVIEW.json с key_seen=false.",
+    "Записаны SHA-256 предварительного файла и время первого доступа перед чтением INTENDED_KEY.json.",
+    "Прочитаны INTENDED_KEY.json, PREREGISTRATION.md и FREEZE_MANIFEST.json.",
+    "Проверены все 48 intended answers по видимым карточкам и рубрике; предварительный файл не изменялся."
+  ],
+  "independence": {
+    "reviewer_is_author": false,
+    "reviewer_is_human": false,
+    "independent_pre_key_context": true,
+    "other_coder_case_responses_seen": false,
+    "previous_60_cases_read": false,
+    "historical_evidence_read": false,
+    "comparative_novelty_audit_performed": false,
+    "comparative_novelty_result": "NOT_ASSESSED",
+    "limits": [
+      "Отдельный AI-контекст, но общая настроенная модель/семейство с другими агентами; модельная независимость не обеспечена.",
+      "Общая файловая система, без технического ACL ослепления. Порядок доступа зафиксирован локальными timestamps/hash, не внешней доверенной регистрацией.",
+      "Авторские сценарии имеют явные учебные признаки; пары зависимы.",
+      "Сравнительная новизна против прежних 60 и Zhanaozen не проверялась и не утверждается.",
+      "Предварительное самостоятельное чтение уже содержит интерпретационные решения; после доступа к ключу аудит не является слепым.",
+      "Просматривались статусы агентов без их покарточных ответов; они не использованы для решений."
+    ]
+  },
+  "no_frozen_files_modified": true,
+  "cases": [
+    {
+      "id": "SYN-H11-001",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 2,
+        "reason_code": null,
+        "rationale": "A прямо второстепенен; B и C выше, допустим добровольный отказ от электронного указателя ради полного B."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 2,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 5,
+        "distinguishing_predicate": "Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A имеет для меня положительное значение, но явно второстепенен. B и C важнее A; B важнее C. Добровольно приму пакет без удовлетворения A, оставляющий только бумажные таблички платформ, ради полного выполнения B. Содержание этой уступки я понимаю."
+      ],
+      "exact_context": "Создатель миниатюрной железной дороги согласует модернизацию. Сам говорящий зафиксировал полную повестку: A — электронный указатель платформы; B — плавное управление стрелками; C — защита блока питания. Он заранее определил единый критерий: A удовлетворён только если у каждой платформы есть электронный указатель. Пакет без удовлетворения A оставляет только бумажные таблички платформ. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "A прямо второстепенен; B и C выше, допустим добровольный отказ от электронного указателя ради полного B. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-S",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "0",
+        "5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Положительная второстепенная значимость исключает 0 и сопоставимый неведущий статус 5.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 2,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-002",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -5,
+        "reason_code": null,
+        "rationale": "Личное отношение ко всему правилу ближе к несогласию; нейтральность и полнота отрицания прямо исключены. Риторика не меняет степень."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -5,
+        "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Степень дана отдельно от спокойного/резкого тона; полнота против неполноты.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": -10,
+        "distinguishing_predicate": "Степень дана отдельно от спокойного/резкого тона; полнота против неполноты."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Я резко возражаю! Но по всему правилу я ближе к несогласию, чем к согласию; это не нейтральность и не полное несогласие. Сомнения в фактах тут ни при чём."
+      ],
+      "exact_context": "Оператор симулятора обсуждает нормативный режим регистрации, не точность датчика. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Личное отношение ко всему правилу ближе к несогласию; нейтральность и полнота отрицания прямо исключены. Риторика не меняет степень. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-NQ",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "-10",
+        "0"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Прямо сказано «не нейтральность и не полное несогласие».",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": -5,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-003",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "reason_code": null,
+        "rationale": "A первый; удовлетворение определено как отклонение не более двух секунд. Две секунды удовлетворяют A; отказ от желательной одной секунды не является уступкой по A. Более двух отклонено при любом B/C."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "rationale": "Единый собственный критерий установлен; уступка избыточного пожелания не означает отказа от удовлетворения A.",
+        "rule_refs": [
+          "v1.1 K1"
+        ],
+        "rejected_neighbor": 8,
+        "distinguishing_predicate": "Ни один исход без удовлетворения A по одному критерию не допускается."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A первый и ведущий, B второй, C третий. Для этого решения A удовлетворён тогда и только тогда, когда отклонение не больше двух секунд за цикл. Вариант с одной секундой был пожеланием сверх необходимого. При двух секундах ради B и C согласен; более двух не приму ни при каком выполнении B и C. Никаких внешних запретов нет."
+      ],
+      "exact_context": "Полная повестка инженера: A — точность таймера; B — сменный аккумулятор; C — складная стойка. Варианты добровольны. В своей речи инженер сам устанавливает критерий удовлетворения A.",
+      "audit_rationale": "A первый; удовлетворение определено как отклонение не более двух секунд. Две секунды удовлетворяют A; отказ от желательной одной секунды не является уступкой по A. Более двух отклонено при любом B/C. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-V",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "8"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Допускаемый исход удовлетворяет A; исход без удовлетворения отвергнут. Внешних запретов нет.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-004",
+      "factor": "POS",
+      "verdict": "FIXTURE_DEFECT",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "reason_code": null,
+        "rationale": "После прочтения всей формулировки актор определил собственное равное предпочтение принятия и отклонения; отрицает незнание и ожидание других."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Отсутствие направленного предпочтения против выраженного неполного согласия.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": 5,
+        "distinguishing_predicate": "Отсутствие направленного предпочтения против выраженного неполного согласия."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Моё собственное отношение к принятию и отклонению всего правила нейтрально; оба варианта для меня равнопредпочтительны. Это не незнание темы и не ожидание решения других."
+      ],
+      "exact_context": "Организатор определил своё отношение ко всей формулировке после её прочтения. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Числовой intended P-Z требует явного понимания точного R. Контекст устанавливает только прочтение и определение отношения, а S1 исключает незнание темы. Знание темы и прочтение не устанавливают понимание всего точного правила. Первоначальный ответ 0 неявно достроил это обязательное условие; совпадение с ключом не исправляет дефект.",
+      "rule_refs": [
+        "P-Z",
+        "P1",
+        "P2"
+      ],
+      "excluded_adjacent_predicates": [
+        "-5",
+        "+5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Явное установленное равнопредпочтение исключает направленный перевес. При этом указанный дефект числового допуска имеет приоритет: Числовой intended P-Z требует явного понимания точного R. Контекст устанавливает только прочтение и определение отношения, а S1 исключает незнание темы. Знание темы и прочтение не устанавливают понимание всего точного правила. Первоначальный ответ 0 неявно достроил это обязательное условие; совпадение с ключом не исправляет дефект.",
+      "missing_conditions": "Явно предъявленное понимание точного R целиком, как требует P2.",
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "MISSING_PREDICATE"
+      },
+      "exact_issue_quotes": [
+        "Организатор определил своё отношение ко всей формулировке после её прочтения.",
+        "Это не незнание темы и не ожидание решения других."
+      ],
+      "normative_issue_quote": "P-Z требует явного понимания точного R и **собственного** отсутствия\nпредпочтения между принятием и отклонением этого R.",
+      "prior_answer_revised": true,
+      "revision_explanation": "До ключа понимание было ошибочно выведено из прочтения и отсутствия незнания темы. При проверке обязательного отдельного предиката P2 эта достройка отклонена.",
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-005",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null,
+        "rationale": "Выражено личное преимущественное, неполное согласие со всем предложением; это не оценка вероятности."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "rationale": "Разрешённая симметричная переформулировка с явно исключёнными полной степенью и нейтральностью.",
+        "rule_refs": [
+          "v1.1 P1"
+        ],
+        "rejected_neighbor": 10,
+        "distinguishing_predicate": "Согласие прямо неполное."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "По всему предложению я ближе к согласию, чем к несогласию; это не нейтральность и не полное согласие. Таково моё личное отношение, не предположение о фактах."
+      ],
+      "exact_context": "Сборщик оценивает собственное принятие R целиком, не вероятность физического эффекта.",
+      "audit_rationale": "Выражено личное преимущественное, неполное согласие со всем предложением; это не оценка вероятности. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-PQ",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "0",
+        "+10"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Прямо исключены нейтральность и полное согласие.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-006",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "reason_code": null,
+        "rationale": "Единственный ведущий A добровольно уступается: приклеенная палуба не удовлетворяет критерию съёма без инструмента; B и C полностью выполнены."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 5,
+        "distinguishing_predicate": "Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "В полной повестке A — мой единственный первый, ведущий вопрос; B второй, C третий. Тем не менее я добровольно приму пакет, где A не удовлетворён: останется палуба остаётся приклеенной. Такой конкретный обмен для меня допустим при полном выполнении B и C. Это моё предпочтение, не вынужденная уступка."
+      ],
+      "exact_context": "Капитан настольного корабля обсуждает набор доработок модели. Сам говорящий зафиксировал полную повестку: A — съёмная палуба; B — подвижный руль; C — защитный футляр. Он заранее определил единый критерий: A удовлетворён только если палубу можно снимать без инструмента. Пакет без удовлетворения A оставляет палуба остаётся приклеенной. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "Единственный ведущий A добровольно уступается: приклеенная палуба не удовлетворяет критерию съёма без инструмента; B и C полностью выполнены. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-L",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "5",
+        "10"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Прямое единственное первенство исключает 5; добровольное принятие без A исключает 10.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-007",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 2,
+        "reason_code": null,
+        "rationale": "Цветовая маркировка положительно значима, явно второстепенна; отказ от неё ради полного B доброволен."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 2,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 5,
+        "distinguishing_predicate": "Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A имеет для меня положительное значение, но явно второстепенен. B и C важнее A; B важнее C. Добровольно приму пакет без удовлетворения A, оставляющий одинаковые серые ящики без цветовых меток, ради полного выполнения B. Содержание этой уступки я понимаю."
+      ],
+      "exact_context": "Владелец вымышленной мастерской трафаретов выбирает комплект оборудования. Сам говорящий зафиксировал полную повестку: A — цветовая маркировка ящиков; B — прозрачные крышки контейнеров; C — устойчивое крепление стола. Он заранее определил единый критерий: A удовлетворён только если все ящики получают различимую цветовую маркировку. Пакет без удовлетворения A оставляет одинаковые серые ящики без цветовых меток. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "Цветовая маркировка положительно значима, явно второстепенна; отказ от неё ради полного B доброволен. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-S",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "0",
+        "5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Заявлены положительная второстепенность и более важные B/C, а не отсутствие значимости или сопоставимый статус.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 2,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-008",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "MISSING_PREDICATE",
+        "rationale": "Безразличие касается голосования других и последствий. Собственное принятие/отклонение R не установлено; вопрос в контексте не дописывает его."
+      },
+      "intended_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "rationale": "Чужое решение и последствия не определяют собственного отношения к R.",
+        "rule_refs": [
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": null,
+        "distinguishing_predicate": null
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Мне всё равно, как проголосуют остальные участники. Их решение на мои занятия не повлияет."
+      ],
+      "exact_context": "Участник отвечает после точного вопроса о R, но не описывает собственного выбора иначе.",
+      "audit_rationale": "Безразличие касается голосования других и последствий. Собственное принятие/отклонение R не установлено; вопрос в контексте не дописывает его. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P2",
+        "G5"
+      ],
+      "excluded_adjacent_predicates": [
+        "P-Z"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Нет личного отсутствия предпочтения по R.",
+      "missing_conditions": "Нет личного отсутствия предпочтения по R.",
+      "missing_condition_is_designed_refusal": true,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "MISSING_PREDICATE"
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-009",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "MISSING_PREDICATE",
+        "rationale": "Первенство A и принципиальная уступка заявлены, но существенный вариант вставки не предъявлен; конкретного проверяемого обмена нет."
+      },
+      "intended_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "rationale": "Названный допустимый обмен не предъявлен; ключ не вправе выдумать его в rationale.",
+        "rule_refs": [
+          "v1.1 K1",
+          "v1.1 K2",
+          "v1.1 T1"
+        ],
+        "rejected_neighbor": null,
+        "distinguishing_predicate": null
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A для меня важнее B и стоит первым. Без ручки я согласен остаться только при получении варианта вставки из отдельного предложения мастерской. Какой вариант имеется в виду, в этой записи не указано."
+      ],
+      "exact_context": "Полная повестка: A — ручка; B — мягкая внутренняя вставка. A удовлетворён наличием пригодной ручки. Выбор свободен. Упомянутое в речи предложение мастерской не приложено, его содержание неизвестно.",
+      "audit_rationale": "Первенство A и принципиальная уступка заявлены, но существенный вариант вставки не предъявлен; конкретного проверяемого обмена нет. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K1",
+        "K2",
+        "K-L"
+      ],
+      "excluded_adjacent_predicates": [
+        "K-L",
+        "K-V"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Для 8 не хватает содержания обмена; 10 опровергнуто допускаемым отказом от ручки при неизвестном условии.",
+      "missing_conditions": "Для 8 не хватает содержания обмена; 10 опровергнуто допускаемым отказом от ручки при неизвестном условии.",
+      "missing_condition_is_designed_refusal": true,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "MISSING_PREDICATE"
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-010",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "DEGREE_UNSPECIFIED",
+        "rationale": "Поддержка и повтор устанавливают положительное направление, но не полную или преимущественную неполную степень."
+      },
+      "intended_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "rationale": "Поддержка с усилителями без самостоятельного признака степени.",
+        "rule_refs": [
+          "v1.1 P1"
+        ],
+        "rejected_neighbor": null,
+        "distinguishing_predicate": null
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Решительно поддерживаю зелёные обложки. Повторяю: поддерживаю!"
+      ],
+      "exact_context": "Наблюдатель говорит о решении, весь относящийся текст предъявлен.",
+      "audit_rationale": "Поддержка и повтор устанавливают положительное направление, но не полную или преимущественную неполную степень. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P1",
+        "G5"
+      ],
+      "excluded_adjacent_predicates": [
+        "P-PQ",
+        "P-PF"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Слово «решительно» и повтор не являются выражением степени.",
+      "missing_conditions": "Слово «решительно» и повтор не являются выражением степени.",
+      "missing_condition_is_designed_refusal": true,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "DEGREE_UNSPECIFIED"
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-011",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "reason_code": null,
+        "rationale": "A прямо не важен и не влияет ни на выбор, ни на условия согласия."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 2,
+        "distinguishing_predicate": "Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "В этой повестке A для моего решения не важен и никак не влияет ни на выбор, ни на условия моего согласия. Это именно отсутствие значимости, а не забытый пункт."
+      ],
+      "exact_context": "Автор макетного музея выбирает оснащение стенда. Сам говорящий зафиксировал полную повестку: A — тактильная схема входа; B — звуковое описание маршрута; C — контрастная маркировка выходов. Он заранее определил единый критерий: A удовлетворён только если установлена тактильная схема входа. Пакет без удовлетворения A оставляет обычная плоская схема без рельефа. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "A прямо не важен и не влияет ни на выбор, ни на условия согласия. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-Z",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "2"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Именно отсутствие значимости, не положительная второстепенность.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-012",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "DEGREE_UNSPECIFIED",
+        "rationale": "Категорическое отвержение и настаивание устанавливают направление, но без отдельной степени не допускают -10 или -5."
+      },
+      "intended_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "rationale": "Риторика и направление не устанавливают полную/неполную степень.",
+        "rule_refs": [
+          "v1.1 P1"
+        ],
+        "rejected_neighbor": null,
+        "distinguishing_predicate": null
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Категорически отвергаю правило о круглых жетонах! Настаиваю на своём!"
+      ],
+      "exact_context": "Автор игры выражает личное отношение ко всему правилу; иной речи о степени нет.",
+      "audit_rationale": "Категорическое отвержение и настаивание устанавливают направление, но без отдельной степени не допускают -10 или -5. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P1",
+        "G5"
+      ],
+      "excluded_adjacent_predicates": [
+        "P-NF",
+        "P-NQ"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Риторическая категоричность не обозначает степень по закрытому перечню.",
+      "missing_conditions": "Риторическая категоричность не обозначает степень по закрытому перечню.",
+      "missing_condition_is_designed_refusal": true,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "DEGREE_UNSPECIFIED"
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-013",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "DISPUTED",
+        "anchor": null,
+        "reason_code": "CONTENT_CONFLICT",
+        "rationale": "Две допускаемые речи об одной единице без пересмотра дают полное согласие и полное несогласие. Ни одной нельзя отдать приоритет."
+      },
+      "intended_answer": {
+        "outcome": "DISPUTED",
+        "anchor": null,
+        "rationale": "Допущенные заявления несовместимы в одной единице; это противоречие содержания.",
+        "rule_refs": [
+          "v1 §6",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": null,
+        "distinguishing_predicate": null
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Полностью согласен с этим R в целом, без каких-либо оговорок.",
+        "Полностью не согласен с тем же R в целом, без каких-либо оговорок."
+      ],
+      "exact_context": "Две аутентичные речи того же автора относятся к одному T, предмету и условиям; пересмотра или разных смыслов нет.",
+      "audit_rationale": "Две допускаемые речи об одной единице без пересмотра дают полное согласие и полное несогласие. Ни одной нельзя отдать приоритет. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "G6",
+        "§6",
+        "P-NF",
+        "P-PF"
+      ],
+      "excluded_adjacent_predicates": [
+        "P-Z"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Конфликт -10/+10 не является нейтральностью и не разрешается усреднением.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": [
+        {
+          "anchor": 10,
+          "confidence": "HIGH",
+          "speech": "S1"
+        },
+        {
+          "anchor": -10,
+          "confidence": "HIGH",
+          "speech": "S2"
+        }
+      ],
+      "audited_disposition": {
+        "outcome": "DISPUTED",
+        "anchor": null,
+        "reason_code": "CONTENT_CONFLICT"
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-014",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "PROFILE_NOT_COVERED",
+        "rationale": "Положительная второстепенность совместно с добровольной неуступаемостью не покрыта ни одним полным предикатом."
+      },
+      "intended_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "rationale": "Второстепенный, но неуступаемый профиль не удовлетворяет целиком ни K-S, ни K-V.",
+        "rule_refs": [
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": null,
+        "distinguishing_predicate": null
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A имеет положительную, но второстепенную значимость; B и C для меня важнее. Тем не менее без полного комплекта A ни на какой вариант не соглашусь, даже при выполнении B и C. Это мой выбор."
+      ],
+      "exact_context": "Автор выбрал полную повестку: A — сменные колёса; B — тяговый мотор; C — переносной кейс. A удовлетворён наличием полного комплекта четырёх колёс. Варианты добровольны, запретов нет.",
+      "audit_rationale": "Положительная второстепенность совместно с добровольной неуступаемостью не покрыта ни одним полным предикатом. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K2",
+        "K1",
+        "§4"
+      ],
+      "excluded_adjacent_predicates": [
+        "K-S",
+        "K-V"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Для 2 нет уступки, для 10 нет ведущего статуса; важность не может быть повышена из-за отказа.",
+      "missing_conditions": "Для 2 нет уступки, для 10 нет ведущего статуса; важность не может быть повышена из-за отказа.",
+      "missing_condition_is_designed_refusal": true,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "PROFILE_NOT_COVERED"
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-015",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null,
+        "rationale": "A/B важны, сопоставимы и явно неведущие при единственном ведущем C; повторно используемые шаблоны добровольно уступаются ради полного B при выполненном C."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 8,
+        "distinguishing_predicate": "Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A и B для меня важны и сопоставимы по приоритету; оба не второстепенны, но не ведущие. В этой полной повестке единственный ведущий вопрос — C. Добровольно соглашусь на пакет без удовлетворения A, оставляющий одноразовые бумажные шаблоны, в обмен на полное выполнение B; C при этом выполнен."
+      ],
+      "exact_context": "Автор курса мозаики выбирает формат учебного набора. Сам говорящий зафиксировал полную повестку: A — многоразовые шаблоны узора; B — сортированные по форме детали; C — карточки с описанием процесса. Он заранее определил единый критерий: A удовлетворён только если шаблоны можно повторно использовать после сборки. Пакет без удовлетворения A оставляет одноразовые бумажные шаблоны. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "A/B важны, сопоставимы и явно неведущие при единственном ведущем C; повторно используемые шаблоны добровольно уступаются ради полного B при выполненном C. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-M",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "2",
+        "8"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Прямое отрицание второстепенности исключает 2, прямой неведущий статус исключает 8.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-016",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -5,
+        "reason_code": null,
+        "rationale": "Несогласие со всем принципом перевешивает согласие, неполно и прямо не нейтрально; речь не об осведомлённости."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -5,
+        "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Неполное преобладающее несогласие против явно определённой нейтральности по самому R.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": 0,
+        "distinguishing_predicate": "Неполное преобладающее несогласие против явно определённой нейтральности по самому R."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "В отношении всего принципа согласия у меня меньше: несогласие перевешивает согласие, но не является полным. Нейтральным это отношение не считаю; речь не о моей осведомлённости."
+      ],
+      "exact_context": "Хранитель учебной коллекции оценивает только названный принцип расположения; предмет ему понятен. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Несогласие со всем принципом перевешивает согласие, неполно и прямо не нейтрально; речь не об осведомлённости. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-NQ",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "-10",
+        "0"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Указаны неполнота и направленный перевес.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": -5,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-017",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "reason_code": null,
+        "rationale": "A единственный ведущий; все варианты без второго исправного микрофона отвергаются даже при полном B/C по собственной неуступаемости."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 8,
+        "distinguishing_predicate": "Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "В полной повестке A — мой единственный первый, ведущий вопрос; B второй, C третий. Ни один вариант без удовлетворения A по моему заранее заданному критерию я не приму, даже при полном выполнении B и C. Это моя собственная неуступаемость; никаких внешних запретов, вынуждающих меня отказать, нет."
+      ],
+      "exact_context": "Координатор вымышленной радиостанции решает вопрос новой аппаратной. Сам говорящий зафиксировал полную повестку: A — дублирующий микрофон; B — тихая клавиатура; C — регулируемый пюпитр. Он заранее определил единый критерий: A удовлетворён только если есть второй исправный микрофон для немедленной замены. Пакет без удовлетворения A оставляет один микрофон без замены. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "A единственный ведущий; все варианты без второго исправного микрофона отвергаются даже при полном B/C по собственной неуступаемости. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-V",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "8"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Вариант без удовлетворения A не допускается; внешнее принуждение исключено.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-018",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null,
+        "rationale": "Личное отношение ко всему правилу ближе к согласию; нейтральность и полное согласие исключены."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Нейтральность собственного выбора против положительного неполного перевеса.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": 0,
+        "distinguishing_predicate": "Нейтральность собственного выбора против положительного неполного перевеса."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "По всему правилу об общей папке ближе к согласию, чем к несогласию; это не нейтральность и не полное согласие. Это моё отношение к правилу, не вероятность успеха."
+      ],
+      "exact_context": "Участник решает вопрос о собственном принятии правила; право выбрать любой вариант у него есть. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Личное отношение ко всему правилу ближе к согласию; нейтральность и полное согласие исключены. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-PQ",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "0",
+        "10"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Неполный положительный перевес прямо отделён от прогноза успеха.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-019",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -5,
+        "reason_code": null,
+        "rationale": "Со всем правилом скорее не согласен, чем согласен; несогласие неполное. Это собственное предпочтение."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -5,
+        "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Выраженный отрицательный перевес против установленного отсутствия собственного предпочтения.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": 0,
+        "distinguishing_predicate": "Выраженный отрицательный перевес против установленного отсутствия собственного предпочтения."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Со всем правилом одновременной публикации скорее не согласен, чем согласен; несогласие неполное. Это моё предпочтение, не сомнение в сообщённых фактах."
+      ],
+      "exact_context": "Редактор принимает своё решение о точном порядке выпуска и уже обдумал его целиком. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Со всем правилом скорее не согласен, чем согласен; несогласие неполное. Это собственное предпочтение. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-NQ",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "-10",
+        "0"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Сравнительный перевес и неполнота исключают крайний и нулевой якоря.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": -5,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-020",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "SATISFACTION_UNDEFINED",
+        "rationale": "Одновременно разрешён отказ от части желаемого освещения и запрещён исход без минимального улучшения; единый критерий удовлетворения A отсутствует."
+      },
+      "intended_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "rationale": "Нет единого установленного критерия удовлетворения; нельзя чередовать максимум для K-L и минимум для K-V.",
+        "rule_refs": [
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": null,
+        "distinguishing_predicate": null
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A для меня первый, B второй, C третий. Ради B и C могу отказаться от части желаемого освещения. Но никакого соглашения без минимального улучшения освещения не приму. Больше подробностей своего минимума я не задавал."
+      ],
+      "exact_context": "Полная повестка автора: A — улучшение освещения; B — поворотное основание; C — пылевой экран. Любые названные варианты добровольны. Что считается удовлетворением A, ни в контексте, ни в речи не установлено.",
+      "audit_rationale": "Одновременно разрешён отказ от части желаемого освещения и запрещён исход без минимального улучшения; единый критерий удовлетворения A отсутствует. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "K-L",
+        "K-V"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Нельзя назвать отказ от максимума уступкой по A и затем применить другой минимум для 10.",
+      "missing_conditions": "Нельзя назвать отказ от максимума уступкой по A и затем применить другой минимум для 10.",
+      "missing_condition_is_designed_refusal": true,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "SATISFACTION_UNDEFINED"
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-021",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 2,
+        "reason_code": null,
+        "rationale": "Отдельная дорожка имеет положительную второстепенную значимость и добровольно уступается ради полного B."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 2,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 0,
+        "distinguishing_predicate": "Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A имеет для меня положительное значение, но явно второстепенен. B и C важнее A; B важнее C. Добровольно приму пакет без удовлетворения A, оставляющий сведение метронома с основной записью, ради полного выполнения B. Содержание этой уступки я понимаю."
+      ],
+      "exact_context": "Музыкант собирает переносную студию для вымышленного фестиваля. Сам говорящий зафиксировал полную повестку: A — отдельная дорожка для метронома; B — резервный аккумулятор; C — пылезащитный чехол. Он заранее определил единый критерий: A удовлетворён только если метроном записывается на отдельную дорожку. Пакет без удовлетворения A оставляет сведение метронома с основной записью. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "Отдельная дорожка имеет положительную второстепенную значимость и добровольно уступается ради полного B. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-S",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "0",
+        "5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "B/C прямо выше A; положительная второстепенность не равна нулю или сопоставимости.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 2,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-022",
+      "factor": "POS",
+      "verdict": "UNRESOLVED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -5,
+        "reason_code": null,
+        "rationale": "По всему предложению личное несогласие перевешивает согласие, оставаясь неполным; нейтральность и вероятность отдельно исключены."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -5,
+        "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Полное несогласие против явно преимущественного неполного несогласия.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": -10,
+        "distinguishing_predicate": "Полное несогласие против явно преимущественного неполного несогласия."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "По всему предложению об охристых карточках моё несогласие перевешивает согласие, но не является полным. Не оцениваю вероятность и не занимаю нейтральную позицию."
+      ],
+      "exact_context": "Куратор вымышленной выставки выбирает единый дизайн подписей и понимает всё предложение. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Степень и охват содержательно задают -5, как в первоначальном ответе. Но карточка заменяет предусмотренное для формы «несогласие перевешивает согласие» управление «в отношении всего R» на «по всему предложению». Закрытый список допускает изменения порядка слов и другие перечисленные операции, но не замену предлога/оборота. Вводное «смысловые шаблоны, не поиск строк» поддерживает более широкое чтение. Без выбора между этими чтениями числовой допуск не доказан; авторский intended не разрешает норму.",
+      "rule_refs": [
+        "P-NQ",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "-10",
+        "0"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Степень задана неполным перевесом несогласия по всему R. При этом указанный дефект числового допуска имеет приоритет: Степень и охват содержательно задают -5, как в первоначальном ответе. Но карточка заменяет предусмотренное для формы «несогласие перевешивает согласие» управление «в отношении всего R» на «по всему предложению». Закрытый список допускает изменения порядка слов и другие перечисленные операции, но не замену предлога/оборота. Вводное «смысловые шаблоны, не поиск строк» поддерживает более широкое чтение. Без выбора между этими чтениями числовой допуск не доказан; авторский intended не разрешает норму.",
+      "missing_conditions": "Однозначная нормативная лицензия P1 на замену «в отношении всего R» на «по всему R» в шаблоне перевеса.",
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "P1_TRANSFORM_BOUNDARY_UNRESOLVED"
+      },
+      "exact_issue_quotes": "По всему предложению об охристых карточках моё несогласие перевешивает согласие, но не является полным.",
+      "normative_issue_quote": "Это перечень смысловых шаблонов, не поиск строк. Разрешены только изменения лица, числа, рода, порядка слов, замена R его точным полным текстом, вставка «именно это утверждение» при однозначной отсылке к R и перенос уже явно названного условия в другую фразу той же речи.",
+      "prior_answer_revised": true,
+      "revision_explanation": "Первоначальное семантическое чтение дало -5; аудит обнаружил неразрешённый предел закрытого перечня преобразований.",
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-023",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "reason_code": null,
+        "rationale": "Актор явно понимает всё R и лично не предпочитает ни принятия, ни отклонения; это определённое отношение. Безразличие к последствиям его не отменяет."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "rationale": "Собственная нейтральность по всему R явно задана; безразличие к последствиям отдельно.",
+        "rule_refs": [
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": 5,
+        "distinguishing_predicate": "Нет положительного перевеса, прямо задана нейтральность."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Мне безразличны организационные последствия. Но я понимаю всё R и лично не предпочитаю ни принять, ни отклонить его. Это уже определённое отношение, не колебание."
+      ],
+      "exact_context": "Составитель прочитал R и прямо отделяет своё отношение от последствий чужого решения.",
+      "audit_rationale": "Актор явно понимает всё R и лично не предпочитает ни принятия, ни отклонения; это определённое отношение. Безразличие к последствиям его не отменяет. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-Z",
+        "P1",
+        "P2"
+      ],
+      "excluded_adjacent_predicates": [
+        "-5",
+        "+5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Равное отсутствие личного предпочтения прямо установлено независимо от последствий.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-024",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "reason_code": null,
+        "rationale": "Единственный ведущий A допускается оставить неудовлетворённым: вращение без паузы добровольно принимается за полный B/C."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 10,
+        "distinguishing_predicate": "Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "В полной повестке A — мой единственный первый, ведущий вопрос; B второй, C третий. Тем не менее я добровольно приму пакет, где A не удовлетворён: останется непрерывное вращение без кнопки паузы. Такой конкретный обмен для меня допустим при полном выполнении B и C. Это моё предпочтение, не вынужденная уступка."
+      ],
+      "exact_context": "Создатель симулятора планетария выбирает набор функций. Сам говорящий зафиксировал полную повестку: A — пауза вращения небосвода; B — подписи созвездий; C — изменяемый цвет фона. Он заранее определил единый критерий: A удовлетворён только если пользователь может остановить вращение в любой момент. Пакет без удовлетворения A оставляет непрерывное вращение без кнопки паузы. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "Единственный ведущий A допускается оставить неудовлетворённым: вращение без паузы добровольно принимается за полный B/C. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-L",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "5",
+        "10"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Первенство исключает 5, конкретная добровольная уступка A исключает 10.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-025",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "reason_code": null,
+        "rationale": "A прямо не важен и не влияет на выбор или условия согласия."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 2,
+        "distinguishing_predicate": "Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "В этой повестке A для моего решения не важен и никак не влияет ни на выбор, ни на условия моего согласия. Это именно отсутствие значимости, а не забытый пункт."
+      ],
+      "exact_context": "Музыкант собирает переносную студию для вымышленного фестиваля. Сам говорящий зафиксировал полную повестку: A — отдельная дорожка для метронома; B — резервный аккумулятор; C — пылезащитный чехол. Он заранее определил единый критерий: A удовлетворён только если метроном записывается на отдельную дорожку. Пакет без удовлетворения A оставляет сведение метронома с основной записью. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "A прямо не важен и не влияет на выбор или условия согласия. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-Z",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "2"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Отсутствие значимости названо прямо; положительного значения нет.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-026",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -10,
+        "reason_code": null,
+        "rationale": "Личное отвержение охватывает всё утверждение и выражено формой «целиком отвергаю … без оговорок». Контекст однозначно связывает указание с полным R."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -10,
+        "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Полное несогласие против явно преимущественного неполного несогласия.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": -5,
+        "distinguishing_predicate": "Полное несогласие против явно преимущественного неполного несогласия."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Карточки цвета охры перед каждым экспонатом: целиком отвергаю всё это утверждение без оговорок. Речь о моём отношении к решению, а не о его осуществимости."
+      ],
+      "exact_context": "Куратор вымышленной выставки выбирает единый дизайн подписей и понимает всё предложение. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Личное отвержение охватывает всё утверждение и выражено формой «целиком отвергаю … без оговорок». Контекст однозначно связывает указание с полным R. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-NF",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "-5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Полная степень, а не неполный перевес несогласия.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": -10,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-027",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "RULE_OVERLAP",
+        "rationale": "Равная сопоставимость и отсутствие выделенного ведущего совместимы с совместным первым местом всех вопросов; конкретная уступка есть. Это предусмотренное перекрытие чтений K-M/K-L."
+      },
+      "intended_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "rationale": "Смешанная формулировка совместного первенства и отсутствия выделенного ведущего перекрывает K-M/K-L; приоритет правила не задан.",
+        "rule_refs": [
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": null,
+        "distinguishing_predicate": null
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Оба вопроса одинаково важны и сопоставимы, ни один не выделяю ведущим. Одновременно ставлю A и B совместно на первое место всей повестки. Допускаю обычную промокаемую обложку без A ради полностью съёмных листов B."
+      ],
+      "exact_context": "Художник зафиксировал полную повестку: A — непромокаемая обложка; B — съёмные листы. A удовлетворён только непромокаемой обложкой. Оба варианта доступны добровольно, других вопросов нет.",
+      "audit_rationale": "Равная сопоставимость и отсутствие выделенного ведущего совместимы с совместным первым местом всех вопросов; конкретная уступка есть. Это предусмотренное перекрытие чтений K-M/K-L. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "K-M",
+        "K-L"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Не противоречие двух сообщений: одновременно подходят два чтения правила, поэтому 5 и 8 не выбираются.",
+      "missing_conditions": "Не противоречие двух сообщений: одновременно подходят два чтения правила, поэтому 5 и 8 не выбираются.",
+      "missing_condition_is_designed_refusal": true,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "RULE_OVERLAP"
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-028",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 2,
+        "reason_code": null,
+        "rationale": "Тактильная схема положительно значима, но явно второстепенна; обычная схема без рельефа добровольно допускается ради полного B."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 2,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 0,
+        "distinguishing_predicate": "Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A имеет для меня положительное значение, но явно второстепенен. B и C важнее A; B важнее C. Добровольно приму пакет без удовлетворения A, оставляющий обычная плоская схема без рельефа, ради полного выполнения B. Содержание этой уступки я понимаю."
+      ],
+      "exact_context": "Автор макетного музея выбирает оснащение стенда. Сам говорящий зафиксировал полную повестку: A — тактильная схема входа; B — звуковое описание маршрута; C — контрастная маркировка выходов. Он заранее определил единый критерий: A удовлетворён только если установлена тактильная схема входа. Пакет без удовлетворения A оставляет обычная плоская схема без рельефа. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "Тактильная схема положительно значима, но явно второстепенна; обычная схема без рельефа добровольно допускается ради полного B. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-S",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "0",
+        "5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Положительная второстепенность при более важных B/C исключает соседние статусы.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 2,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-029",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "reason_code": null,
+        "rationale": "Собственное отношение к принятию и отклонению всего принципа нейтрально, варианты равнопредпочтительны; понимание и определённость прямо подтверждены."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Неполное преобладающее несогласие против явно определённой нейтральности по самому R.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": -5,
+        "distinguishing_predicate": "Неполное преобладающее несогласие против явно определённой нейтральности по самому R."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Моё собственное отношение к принятию и отклонению всего этого принципа нейтрально; оба варианта для меня равнопредпочтительны. Я всё понял и свою позицию определил."
+      ],
+      "exact_context": "Хранитель учебной коллекции оценивает только названный принцип расположения; предмет ему понятен. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Собственное отношение к принятию и отклонению всего принципа нейтрально, варианты равнопредпочтительны; понимание и определённость прямо подтверждены. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-Z",
+        "P1",
+        "P2"
+      ],
+      "excluded_adjacent_predicates": [
+        "-5",
+        "+5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Нет направленного перевеса, не незнание и не нерешённость.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-030",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null,
+        "rationale": "Со всем правилом скорее согласен, чем не согласен; согласие неполно и является собственным отношением."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Преимущественное неполное согласие против полного принятия без оговорок.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": 10,
+        "distinguishing_predicate": "Преимущественное неполное согласие против полного принятия без оговорок."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Со всем правилом публикации скорее согласен, чем не согласен; согласие неполное. Это оценённое мной отношение ко всему правилу, не неуверенность в показаниях."
+      ],
+      "exact_context": "Руководитель имеет полномочия высказать личное отношение, не действует под внешней обязанностью. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Со всем правилом скорее согласен, чем не согласен; согласие неполно и является собственным отношением. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-PQ",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "0",
+        "10"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Явный положительный перевес исключает 0, неполнота исключает 10.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-031",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "reason_code": null,
+        "rationale": "Единственный ведущий A неуступаем по заранее заданному критерию возможности паузы; даже полный B/C не делает отказ от A допустимым."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 8,
+        "distinguishing_predicate": "Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "В полной повестке A — мой единственный первый, ведущий вопрос; B второй, C третий. Ни один вариант без удовлетворения A по моему заранее заданному критерию я не приму, даже при полном выполнении B и C. Это моя собственная неуступаемость; никаких внешних запретов, вынуждающих меня отказать, нет."
+      ],
+      "exact_context": "Создатель симулятора планетария выбирает набор функций. Сам говорящий зафиксировал полную повестку: A — пауза вращения небосвода; B — подписи созвездий; C — изменяемый цвет фона. Он заранее определил единый критерий: A удовлетворён только если пользователь может остановить вращение в любой момент. Пакет без удовлетворения A оставляет непрерывное вращение без кнопки паузы. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "Единственный ведущий A неуступаем по заранее заданному критерию возможности паузы; даже полный B/C не делает отказ от A допустимым. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-V",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "8"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Добровольное принятие без удовлетворения A прямо отвергнуто; внешних запретов нет.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-032",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "reason_code": null,
+        "rationale": "Личное полное согласие выражено принятием всего правила без оговорок и без исключения частей."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Преимущественное неполное согласие против полного принятия без оговорок.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": 5,
+        "distinguishing_predicate": "Преимущественное неполное согласие против полного принятия без оговорок."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Целиком принимаю всё правило публикации без оговорок. Никакой части правила не исключаю; это моё собственное полное согласие."
+      ],
+      "exact_context": "Руководитель имеет полномочия высказать личное отношение, не действует под внешней обязанностью. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Личное полное согласие выражено принятием всего правила без оговорок и без исключения частей. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-PF",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Полнота согласия прямо обозначена; неполный перевес не подходит.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-033",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "DISPUTED",
+        "anchor": null,
+        "reason_code": "CONTENT_CONFLICT",
+        "rationale": "Одна речь разрешает добровольно принять отсутствие A за полный B/C, другая запрещает тот же обмен. A ведущий в обеих; время и условия одинаковы, пересмотра нет."
+      },
+      "intended_answer": {
+        "outcome": "DISPUTED",
+        "anchor": null,
+        "rationale": "Несовместимая готовность принять один и тот же пакет без A; не перекрытие непротиворечивого правила.",
+        "rule_refs": [
+          "v1.1 K2",
+          "v1 §6"
+        ],
+        "rejected_neighbor": null,
+        "distinguishing_predicate": null
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A для меня первый и ведущий. Добровольно приму комплект вовсе без A в обмен на ремень B и карту C в полном составе.",
+        "A для меня первый и ведущий. Ни одного комплекта без A не приму даже при наличии полного B и C. Это мой свободный выбор."
+      ],
+      "exact_context": "Полная повестка оператора: A — запасной объектив; B — ремень для переноски; C — карта настройки. A удовлетворён наличием исправного запасного объектива. Две речи об одном T и условиях, обе допущены; пересмотра нет, выбор доброволен.",
+      "audit_rationale": "Одна речь разрешает добровольно принять отсутствие A за полный B/C, другая запрещает тот же обмен. A ведущий в обеих; время и условия одинаковы, пересмотра нет. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "G6",
+        "§6",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "K-L",
+        "K-V"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Разрешение и запрет того же исхода несовместимы; это конфликт содержания, а не перекрытие правил.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": [
+        {
+          "anchor": 8,
+          "confidence": "HIGH",
+          "speech": "S1"
+        },
+        {
+          "anchor": 10,
+          "confidence": "HIGH",
+          "speech": "S2"
+        }
+      ],
+      "audited_disposition": {
+        "outcome": "DISPUTED",
+        "anchor": null,
+        "reason_code": "CONTENT_CONFLICT"
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-034",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "reason_code": null,
+        "rationale": "A прямо совместно ведущий и первый с B при более низком C; обычные защёлки не удовлетворяют A, но добровольно допускаются за полный конкретный B/C."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "rationale": "Явный совместно ведущий статус и полностью предъявленный обмен с отказом от удовлетворения A; утверждения об отсутствии ведущего нет.",
+        "rule_refs": [
+          "v1.1 K1",
+          "v1 §4"
+        ],
+        "rejected_neighbor": 5,
+        "distinguishing_predicate": "A прямо ведущий; не задан неведущий статус K-M."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A и B совместно ведущие и первые, C ниже; я прямо называю A ведущим приоритетом. Всё же приму обычные защёлки без удовлетворения A, если каждая панель имеет собственный цвет по B и все края закрыты мягкими накладками по C. Весь этот обмен доброволен."
+      ],
+      "exact_context": "Авторская полная повестка: A — магнитное крепление; B — окраска панелей в разные цвета; C — мягкие накладки на края. A удовлетворён только магнитным креплением. Обычные защёлки не удовлетворяют A. Все варианты свободно доступны.",
+      "audit_rationale": "A прямо совместно ведущий и первый с B при более низком C; обычные защёлки не удовлетворяют A, но добровольно допускаются за полный конкретный B/C. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-L",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "5",
+        "10"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Явно ведущий статус исключает 5; разрешённый исход без A исключает 10. Это не ничья всех без ведущего.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-035",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "reason_code": null,
+        "rationale": "Понимание всего правила и личное отсутствие предпочтения принятия/отклонения установлены; решение не отложено."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Выраженный отрицательный перевес против установленного отсутствия собственного предпочтения.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": -5,
+        "distinguishing_predicate": "Выраженный отрицательный перевес против установленного отсутствия собственного предпочтения."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Понимаю всё правило одновременной публикации. Лично не предпочитаю ни принять, ни отклонить это правило; это моя сложившаяся позиция, а не отложенное решение."
+      ],
+      "exact_context": "Редактор принимает своё решение о точном порядке выпуска и уже обдумал его целиком. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Понимание всего правила и личное отсутствие предпочтения принятия/отклонения установлены; решение не отложено. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-Z",
+        "P1",
+        "P2"
+      ],
+      "excluded_adjacent_predicates": [
+        "-5",
+        "+5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Сложившаяся нейтральность без направленного перевеса.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-036",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "reason_code": null,
+        "rationale": "Единственный первый A добровольно уступается: один микрофон без замены не проходит критерий A; B/C полностью выполняются."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 10,
+        "distinguishing_predicate": "Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "В полной повестке A — мой единственный первый, ведущий вопрос; B второй, C третий. Тем не менее я добровольно приму пакет, где A не удовлетворён: останется один микрофон без замены. Такой конкретный обмен для меня допустим при полном выполнении B и C. Это моё предпочтение, не вынужденная уступка."
+      ],
+      "exact_context": "Координатор вымышленной радиостанции решает вопрос новой аппаратной. Сам говорящий зафиксировал полную повестку: A — дублирующий микрофон; B — тихая клавиатура; C — регулируемый пюпитр. Он заранее определил единый критерий: A удовлетворён только если есть второй исправный микрофон для немедленной замены. Пакет без удовлетворения A оставляет один микрофон без замены. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "Единственный первый A добровольно уступается: один микрофон без замены не проходит критерий A; B/C полностью выполняются. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-L",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "5",
+        "10"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Явное первенство и конкретная добровольная уступка различают 8 от 5 и 10.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-037",
+      "factor": "POS",
+      "verdict": "UNRESOLVED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null,
+        "rationale": "По всему правилу согласие перевешивает несогласие и неполно; нейтральность и эпистемическое чтение исключены."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Отсутствие направленного предпочтения против выраженного неполного согласия.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": 0,
+        "distinguishing_predicate": "Отсутствие направленного предпочтения против выраженного неполного согласия."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "По всему этому правилу согласие перевешивает несогласие, но не является полным. Я не нейтрален и не высказываю предположение об истинности чьей-то информации."
+      ],
+      "exact_context": "Организатор определил своё отношение ко всей формулировке после её прочтения. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Содержательно личное неполное согласие со всем R соответствует +5. Однако для шаблона «согласие перевешивает несогласие» P1 приводит «в отношении всего R», а карточка использует «по всему этому правилу». Это замена оборота, а не только порядка слов. Широкое прочтение смыслового шаблона и строгий закрытый список преобразований расходятся по допуску числа. Замороженный текст не устанавливает приоритет этих чтений.",
+      "rule_refs": [
+        "P-PQ",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "0",
+        "10"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Неполный положительный перевес прямо обозначен. При этом указанный дефект числового допуска имеет приоритет: Содержательно личное неполное согласие со всем R соответствует +5. Однако для шаблона «согласие перевешивает несогласие» P1 приводит «в отношении всего R», а карточка использует «по всему этому правилу». Это замена оборота, а не только порядка слов. Широкое прочтение смыслового шаблона и строгий закрытый список преобразований расходятся по допуску числа. Замороженный текст не устанавливает приоритет этих чтений.",
+      "missing_conditions": "Однозначная нормативная лицензия P1 на замену вводного оборота шаблона перевеса.",
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "P1_TRANSFORM_BOUNDARY_UNRESOLVED"
+      },
+      "exact_issue_quotes": "По всему этому правилу согласие перевешивает несогласие, но не является полным.",
+      "normative_issue_quote": "Это перечень смысловых шаблонов, не поиск строк. Разрешены только изменения лица, числа, рода, порядка слов, замена R его точным полным текстом, вставка «именно это утверждение» при однозначной отсылке к R и перенос уже явно названного условия в другую фразу той же речи.",
+      "prior_answer_revised": true,
+      "revision_explanation": "Первоначальное +5 сохраняется как факт независимого чтения; для аудита числового допуска выявлена неразрешённость P1.",
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-038",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "CHOICE_CONSTRAINED",
+        "rationale": "Отказ обусловлен только запретом контракта и отсутствием допустимых вариантов; собственные значимость и ранжирование не сообщены."
+      },
+      "intended_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "rationale": "Внешнее обязательство и отсутствие альтернатив не устанавливают собственный приоритет.",
+        "rule_refs": [
+          "v1.1 K2",
+          "v1 §4"
+        ],
+        "rejected_neighbor": null,
+        "distinguishing_predicate": null
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Я отказался от устройства без A только потому, что контракт не позволяет принять его. Своё личное ранжирование и значимость A я не сообщаю."
+      ],
+      "exact_context": "Личная полная повестка смотрителя: A — дополнительный экран; B — новая клавиатура. Вопрос о собственном приоритете A. Учебный контракт запрещает смотрителю соглашаться на устройство без A, других допустимых вариантов у него нет.",
+      "audit_rationale": "Отказ обусловлен только запретом контракта и отсутствием допустимых вариантов; собственные значимость и ранжирование не сообщены. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K2",
+        "G5",
+        "§4"
+      ],
+      "excluded_adjacent_predicates": [
+        "K-V",
+        "K-Z"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Вынужденный отказ не даёт 10; отсутствие личного сообщения не является значимостью 0.",
+      "missing_conditions": "Вынужденный отказ не даёт 10; отсутствие личного сообщения не является значимостью 0.",
+      "missing_condition_is_designed_refusal": true,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "CHOICE_CONSTRAINED"
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-039",
+      "factor": "POS",
+      "verdict": "UNRESOLVED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null,
+        "rationale": "Риторическое выступление за сопровождается явным неполным перевесом согласия по всему предложению, не нейтральностью и не прогнозом."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Неполная степень сохраняется при решительной риторике; спокойный тон не отменяет полной степени.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": 10,
+        "distinguishing_predicate": "Неполная степень сохраняется при решительной риторике; спокойный тон не отменяет полной степени."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Решительно выступаю за! При этом по всему предложению моё согласие перевешивает несогласие, но не является полным. Не нейтрален; это не прогноз поведения публики."
+      ],
+      "exact_context": "Создатель установки понимает точное предложение и оценивает его как собственный выбор. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Риторика отделена от явно неполного перевеса согласия и сама не создаёт ошибки величины. Неопределённость возникает в нормативной допустимости замены «в отношении всего R» на «по всему предложению» в шаблоне перевеса. Такая замена не названа в закрытом списке P1, хотя указание на смысловые шаблоны допускает более свободное чтение. Ключ не может постфактум расширить список.",
+      "rule_refs": [
+        "P-PQ",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "0",
+        "10"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Степень берётся из неполного перевеса, а не из слова «решительно». При этом указанный дефект числового допуска имеет приоритет: Риторика отделена от явно неполного перевеса согласия и сама не создаёт ошибки величины. Неопределённость возникает в нормативной допустимости замены «в отношении всего R» на «по всему предложению» в шаблоне перевеса. Такая замена не названа в закрытом списке P1, хотя указание на смысловые шаблоны допускает более свободное чтение. Ключ не может постфактум расширить список.",
+      "missing_conditions": "Однозначная нормативная лицензия P1 на замену оборота в закрытом шаблоне перевеса.",
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "P1_TRANSFORM_BOUNDARY_UNRESOLVED"
+      },
+      "exact_issue_quotes": "При этом по всему предложению моё согласие перевешивает несогласие, но не является полным.",
+      "normative_issue_quote": "Это перечень смысловых шаблонов, не поиск строк. Разрешены только изменения лица, числа, рода, порядка слов, замена R его точным полным текстом, вставка «именно это утверждение» при однозначной отсылке к R и перенос уже явно названного условия в другую фразу той же речи.",
+      "prior_answer_revised": true,
+      "revision_explanation": "Предварительное +5 следовало из семантики; аудит допуска формы оставляет неразрешённый вопрос.",
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-040",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -10,
+        "reason_code": null,
+        "rationale": "Собственное несогласие со всем правилом прямо полное и без исключений; спокойная подача его не ослабляет."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -10,
+        "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Степень дана отдельно от спокойного/резкого тона; полнота против неполноты.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": -5,
+        "distinguishing_predicate": "Степень дана отдельно от спокойного/резкого тона; полнота против неполноты."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Моё несогласие со всем правилом о семиминутной записи полное. Это установленное личное отношение без каких-либо исключений; говорю совершенно спокойно."
+      ],
+      "exact_context": "Оператор симулятора обсуждает нормативный режим регистрации, не точность датчика. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Собственное несогласие со всем правилом прямо полное и без исключений; спокойная подача его не ослабляет. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-NF",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "-5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Полнота несогласия обозначена прямо; риторическая интенсивность нерелевантна.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": -10,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-041",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "reason_code": null,
+        "rationale": "Согласие со всем предложением прямо полное, исключений и встречных условий нет."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Неполная степень сохраняется при решительной риторике; спокойный тон не отменяет полной степени.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": 5,
+        "distinguishing_predicate": "Неполная степень сохраняется при решительной риторике; спокойный тон не отменяет полной степени."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Без всякого пафоса: моё согласие со всем предложением о минуте тишины полное. Исключений и встречных условий у меня нет."
+      ],
+      "exact_context": "Создатель установки понимает точное предложение и оценивает его как собственный выбор. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Согласие со всем предложением прямо полное, исключений и встречных условий нет. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-PF",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Полное согласие не превращается в неполное из-за отсутствия пафоса.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 10,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-042",
+      "factor": "POS",
+      "verdict": "UNRESOLVED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -10,
+        "reason_code": null,
+        "rationale": "Полная степень собственного несогласия явно отнесена ко всему предложению без исключений; спокойствие не изменяет её."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": -10,
+        "rationale": "Грамматическая перестановка разрешённого полного несогласия; спокойствие не уменьшает степень.",
+        "rule_refs": [
+          "v1.1 P1"
+        ],
+        "rejected_neighbor": -5,
+        "distinguishing_predicate": "Явно полная, а не неполная степень."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Всему этому предложению моё несогласие полное; без исключений. Для ясности: я спокоен, а не рассержен."
+      ],
+      "exact_context": "Дизайнер высказывается о всём предложении в точной целевой области.",
+      "audit_rationale": "Содержательно полное личное несогласие со всем предложением явно, поэтому предварительный ответ -10 понятен. Но «Всему этому предложению моё несогласие полное» отличается от закрытого «моё несогласие со всем R полное» не только порядком слов: исчезает предлог и меняется падежное управление. Ключ называет это грамматической перестановкой, что не описывает фактическую операцию. Если смысловые шаблоны допускают такую нормализацию, -10 возможно; при закрытом списке разрешённых изменений нужна UNKNOWN. Норма этого не разрешает однозначно.",
+      "rule_refs": [
+        "P-NF",
+        "P1"
+      ],
+      "excluded_adjacent_predicates": [
+        "-5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Слово «полное» и охват всего R исключают преимущественную неполную степень. При этом указанный дефект числового допуска имеет приоритет: Содержательно полное личное несогласие со всем предложением явно, поэтому предварительный ответ -10 понятен. Но «Всему этому предложению моё несогласие полное» отличается от закрытого «моё несогласие со всем R полное» не только порядком слов: исчезает предлог и меняется падежное управление. Ключ называет это грамматической перестановкой, что не описывает фактическую операцию. Если смысловые шаблоны допускают такую нормализацию, -10 возможно; при закрытом списке разрешённых изменений нужна UNKNOWN. Норма этого не разрешает однозначно.",
+      "missing_conditions": "Явная лицензия на падежно-предложную нормализацию сверх перечисленных преобразований P1.",
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "P1_TRANSFORM_BOUNDARY_UNRESOLVED"
+      },
+      "exact_issue_quotes": "Всему этому предложению моё несогласие полное; без исключений.",
+      "normative_issue_quote": "Это перечень смысловых шаблонов, не поиск строк. Разрешены только изменения лица, числа, рода, порядка слов, замена R его точным полным текстом, вставка «именно это утверждение» при однозначной отсылке к R и перенос уже явно названного условия в другую фразу той же речи.",
+      "prior_answer_revised": true,
+      "revision_explanation": "Предварительное чтение сочло неграмматичность не меняющей смысл. Аудит ключа отдельно проверил, разрешает ли закрытая норма такую нормализацию; этот вопрос остаётся открыт.",
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-043",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null,
+        "rationale": "A/B прямо важны и сопоставимы, не второстепенны и неведущие при единственном ведущем C; приклеенная палуба добровольно допускается ради полного B при выполненном C."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 8,
+        "distinguishing_predicate": "Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A и B для меня важны и сопоставимы по приоритету; оба не второстепенны, но не ведущие. В этой полной повестке единственный ведущий вопрос — C. Добровольно соглашусь на пакет без удовлетворения A, оставляющий палуба остаётся приклеенной, в обмен на полное выполнение B; C при этом выполнен."
+      ],
+      "exact_context": "Капитан настольного корабля обсуждает набор доработок модели. Сам говорящий зафиксировал полную повестку: A — съёмная палуба; B — подвижный руль; C — защитный футляр. Он заранее определил единый критерий: A удовлетворён только если палубу можно снимать без инструмента. Пакет без удовлетворения A оставляет палуба остаётся приклеенной. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "A/B прямо важны и сопоставимы, не второстепенны и неведущие при единственном ведущем C; приклеенная палуба добровольно допускается ради полного B при выполненном C. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-M",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "2",
+        "8"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Явно исключены второстепенность и ведущий статус A.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-044",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null,
+        "rationale": "A/B важны и сопоставимы, явно неведущие и не второстепенные; единственный ведущий C. Серые ящики без A принимаются за полный B при выполненном C."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 2,
+        "distinguishing_predicate": "Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A и B для меня важны и сопоставимы по приоритету; оба не второстепенны, но не ведущие. В этой полной повестке единственный ведущий вопрос — C. Добровольно соглашусь на пакет без удовлетворения A, оставляющий одинаковые серые ящики без цветовых меток, в обмен на полное выполнение B; C при этом выполнен."
+      ],
+      "exact_context": "Владелец вымышленной мастерской трафаретов выбирает комплект оборудования. Сам говорящий зафиксировал полную повестку: A — цветовая маркировка ящиков; B — прозрачные крышки контейнеров; C — устойчивое крепление стола. Он заранее определил единый критерий: A удовлетворён только если все ящики получают различимую цветовую маркировку. Пакет без удовлетворения A оставляет одинаковые серые ящики без цветовых меток. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "A/B важны и сопоставимы, явно неведущие и не второстепенные; единственный ведущий C. Серые ящики без A принимаются за полный B при выполненном C. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-M",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "2",
+        "8"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Положительные признаки сопоставимости и компромисса есть; соседние статусы прямо исключены.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-045",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "reason_code": null,
+        "rationale": "Единственный ведущий A добровольно уступается: одноразовые шаблоны не удовлетворяют критерию повторного использования; B/C полностью выполнены."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 5,
+        "distinguishing_predicate": "Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "В полной повестке A — мой единственный первый, ведущий вопрос; B второй, C третий. Тем не менее я добровольно приму пакет, где A не удовлетворён: останется одноразовые бумажные шаблоны. Такой конкретный обмен для меня допустим при полном выполнении B и C. Это моё предпочтение, не вынужденная уступка."
+      ],
+      "exact_context": "Автор курса мозаики выбирает формат учебного набора. Сам говорящий зафиксировал полную повестку: A — многоразовые шаблоны узора; B — сортированные по форме детали; C — карточки с описанием процесса. Он заранее определил единый критерий: A удовлетворён только если шаблоны можно повторно использовать после сборки. Пакет без удовлетворения A оставляет одноразовые бумажные шаблоны. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "Единственный ведущий A добровольно уступается: одноразовые шаблоны не удовлетворяют критерию повторного использования; B/C полностью выполнены. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-L",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "5",
+        "10"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Ведущий статус исключает 5, добровольный отказ от удовлетворения A исключает 10.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 8,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-046",
+      "factor": "KVS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null,
+        "rationale": "A/B важны, сопоставимы, прямо не второстепенны и неведущие; C единственный ведущий. Бумажные таблички допускаются ради полного B при выполненном C."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "rationale": "Все признаки категории предъявлены в речи и контексте; Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C.",
+        "rule_refs": [
+          "v1 §4",
+          "v1.1 K1",
+          "v1.1 K2"
+        ],
+        "rejected_neighbor": 2,
+        "distinguishing_predicate": "Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "A и B для меня важны и сопоставимы по приоритету; оба не второстепенны, но не ведущие. В этой полной повестке единственный ведущий вопрос — C. Добровольно соглашусь на пакет без удовлетворения A, оставляющий только бумажные таблички платформ, в обмен на полное выполнение B; C при этом выполнен."
+      ],
+      "exact_context": "Создатель миниатюрной железной дороги согласует модернизацию. Сам говорящий зафиксировал полную повестку: A — электронный указатель платформы; B — плавное управление стрелками; C — защита блока питания. Он заранее определил единый критерий: A удовлетворён только если у каждой платформы есть электронный указатель. Пакет без удовлетворения A оставляет только бумажные таблички платформ. Все упоминаемые варианты осуществимы и добровольны; внешних запретов и скрытых вопросов нет. Определить приоритет A в одном решении в момент T.",
+      "audit_rationale": "A/B важны, сопоставимы, прямо не второстепенны и неведущие; C единственный ведущий. Бумажные таблички допускаются ради полного B при выполненном C. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "K-M",
+        "K1",
+        "K2"
+      ],
+      "excluded_adjacent_predicates": [
+        "2",
+        "8"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Явно задан неведущий сопоставимый статус и добровольный компромисс.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 5,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-047",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "reason_code": null,
+        "rationale": "Актор понимает всё правило и лично не предпочитает ни принятие, ни отклонение; отложенное решение и выбор других исключены."
+      },
+      "intended_answer": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Нейтральность собственного выбора против положительного неполного перевеса.",
+        "rule_refs": [
+          "v1 §3",
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": 5,
+        "distinguishing_predicate": "Нейтральность собственного выбора против положительного неполного перевеса."
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Понимаю всё правило об общей папке; лично не предпочитаю ни принять, ни отклонить его. Я не затягиваю решение и не говорю о том, что выберут остальные."
+      ],
+      "exact_context": "Участник решает вопрос о собственном принятии правила; право выбрать любой вариант у него есть. Требуется собственное отношение говорящего ко всему R в момент T.",
+      "audit_rationale": "Актор понимает всё правило и лично не предпочитает ни принятие, ни отклонение; отложенное решение и выбор других исключены. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P-Z",
+        "P1",
+        "P2"
+      ],
+      "excluded_adjacent_predicates": [
+        "-5",
+        "+5"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Собственное установленное отсутствие предпочтения, а не безразличие к чужому голосованию.",
+      "missing_conditions": null,
+      "missing_condition_is_designed_refusal": false,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "ANCHOR",
+        "anchor": 0,
+        "reason_code": null
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    },
+    {
+      "id": "SYN-H11-048",
+      "factor": "POS",
+      "verdict": "SUPPORTED",
+      "prior_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "EPISTEMIC_NOT_POSITION",
+        "rationale": "Есть только эпистемическое предположение; собственное принятие рекомендации ещё не определено."
+      },
+      "intended_answer": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "rationale": "Эпистемическая вероятность не является степенью согласия, решение не определено.",
+        "rule_refs": [
+          "v1.1 P1",
+          "v1.1 P2"
+        ],
+        "rejected_neighbor": null,
+        "distinguishing_predicate": null
+      },
+      "pre_key_match": true,
+      "exact_evidence_phrases": [
+        "Вероятно, утверждение о белой площадке верно. Но я ещё не решил, принимаю ли эту рекомендацию."
+      ],
+      "exact_context": "Разработчик формулирует лишь предположение об истинности рекомендации; собственного предпочтения не сообщает.",
+      "audit_rationale": "Есть только эпистемическое предположение; собственное принятие рекомендации ещё не определено. Проверено по видимой карточке; авторское обоснование не использовано как недостающее свидетельство.",
+      "rule_refs": [
+        "P1",
+        "P2",
+        "G5"
+      ],
+      "excluded_adjacent_predicates": [
+        "P-PQ",
+        "P-Z"
+      ],
+      "why_neighbors_excluded_or_refusal_required": "Вероятность истинности не даёт +5, нерешённость не даёт 0.",
+      "missing_conditions": "Вероятность истинности не даёт +5, нерешённость не даёт 0.",
+      "missing_condition_is_designed_refusal": true,
+      "unresolved_content_alternatives": null,
+      "audited_disposition": {
+        "outcome": "UNKNOWN",
+        "anchor": null,
+        "reason_code": "EPISTEMIC_NOT_POSITION"
+      },
+      "exact_issue_quotes": null,
+      "normative_issue_quote": null,
+      "prior_answer_revised": false,
+      "revision_explanation": null,
+      "hidden_author_intent_needed_for_supported_verdict": false
+    }
+  ],
+  "pair_fixture_review": [
+    {
+      "pair_id": "PAIR-01",
+      "factor": "POS",
+      "boundary": "-10/-5",
+      "members": [
+        "SYN-H11-026",
+        "SYN-H11-022"
+      ],
+      "visible_distinction_supported": false,
+      "blocking_member_ids": [
+        "SYN-H11-022"
+      ],
+      "note": "Содержательное различие видно, но нормативный числовой допуск как минимум одного члена не подтверждён; пару нельзя считать безусловно валидной."
+    },
+    {
+      "pair_id": "PAIR-02",
+      "factor": "POS",
+      "boundary": "-10/-5",
+      "members": [
+        "SYN-H11-040",
+        "SYN-H11-002"
+      ],
+      "visible_distinction_supported": true,
+      "blocking_member_ids": [],
+      "note": "Оба полных предиката различимы по собственным карточкам при заданных допусках."
+    },
+    {
+      "pair_id": "PAIR-03",
+      "factor": "POS",
+      "boundary": "-5/0",
+      "members": [
+        "SYN-H11-019",
+        "SYN-H11-035"
+      ],
+      "visible_distinction_supported": true,
+      "blocking_member_ids": [],
+      "note": "Оба полных предиката различимы по собственным карточкам при заданных допусках."
+    },
+    {
+      "pair_id": "PAIR-04",
+      "factor": "POS",
+      "boundary": "-5/0",
+      "members": [
+        "SYN-H11-016",
+        "SYN-H11-029"
+      ],
+      "visible_distinction_supported": true,
+      "blocking_member_ids": [],
+      "note": "Оба полных предиката различимы по собственным карточкам при заданных допусках."
+    },
+    {
+      "pair_id": "PAIR-05",
+      "factor": "POS",
+      "boundary": "0/+5",
+      "members": [
+        "SYN-H11-047",
+        "SYN-H11-018"
+      ],
+      "visible_distinction_supported": true,
+      "blocking_member_ids": [],
+      "note": "Оба полных предиката различимы по собственным карточкам при заданных допусках."
+    },
+    {
+      "pair_id": "PAIR-06",
+      "factor": "POS",
+      "boundary": "0/+5",
+      "members": [
+        "SYN-H11-004",
+        "SYN-H11-037"
+      ],
+      "visible_distinction_supported": false,
+      "blocking_member_ids": [
+        "SYN-H11-004",
+        "SYN-H11-037"
+      ],
+      "note": "Содержательное различие видно, но нормативный числовой допуск как минимум одного члена не подтверждён; пару нельзя считать безусловно валидной."
+    },
+    {
+      "pair_id": "PAIR-07",
+      "factor": "POS",
+      "boundary": "+5/+10",
+      "members": [
+        "SYN-H11-030",
+        "SYN-H11-032"
+      ],
+      "visible_distinction_supported": true,
+      "blocking_member_ids": [],
+      "note": "Оба полных предиката различимы по собственным карточкам при заданных допусках."
+    },
+    {
+      "pair_id": "PAIR-08",
+      "factor": "POS",
+      "boundary": "+5/+10",
+      "members": [
+        "SYN-H11-039",
+        "SYN-H11-041"
+      ],
+      "visible_distinction_supported": false,
+      "blocking_member_ids": [
+        "SYN-H11-039"
+      ],
+      "note": "Содержательное различие видно, но нормативный числовой допуск как минимум одного члена не подтверждён; пару нельзя считать безусловно валидной."
+    },
+    {
+      "pair_id": "PAIR-09",
+      "factor": "KVS",
+      "boundary": "0/2",
+      "members": [
+        "SYN-H11-011",
+        "SYN-H11-028"
+      ],
+      "visible_distinction_supported": true,
+      "blocking_member_ids": [],
+      "note": "Оба полных предиката различимы по собственным карточкам при заданных допусках."
+    },
+    {
+      "pair_id": "PAIR-10",
+      "factor": "KVS",
+      "boundary": "0/2",
+      "members": [
+        "SYN-H11-025",
+        "SYN-H11-021"
+      ],
+      "visible_distinction_supported": true,
+      "blocking_member_ids": [],
+      "note": "Оба полных предиката различимы по собственным карточкам при заданных допусках."
+    },
+    {
+      "pair_id": "PAIR-11",
+      "factor": "KVS",
+      "boundary": "2/5",
+      "members": [
+        "SYN-H11-001",
+        "SYN-H11-046"
+      ],
+      "visible_distinction_supported": true,
+      "blocking_member_ids": [],
+      "note": "Оба полных предиката различимы по собственным карточкам при заданных допусках."
+    },
+    {
+      "pair_id": "PAIR-12",
+      "factor": "KVS",
+      "boundary": "2/5",
+      "members": [
+        "SYN-H11-007",
+        "SYN-H11-044"
+      ],
+      "visible_distinction_supported": true,
+      "blocking_member_ids": [],
+      "note": "Оба полных предиката различимы по собственным карточкам при заданных допусках."
+    },
+    {
+      "pair_id": "PAIR-13",
+      "factor": "KVS",
+      "boundary": "5/8",
+      "members": [
+        "SYN-H11-043",
+        "SYN-H11-006"
+      ],
+      "visible_distinction_supported": true,
+      "blocking_member_ids": [],
+      "note": "Оба полных предиката различимы по собственным карточкам при заданных допусках."
+    },
+    {
+      "pair_id": "PAIR-14",
+      "factor": "KVS",
+      "boundary": "5/8",
+      "members": [
+        "SYN-H11-015",
+        "SYN-H11-045"
+      ],
+      "visible_distinction_supported": true,
+      "blocking_member_ids": [],
+      "note": "Оба полных предиката различимы по собственным карточкам при заданных допусках."
+    },
+    {
+      "pair_id": "PAIR-15",
+      "factor": "KVS",
+      "boundary": "8/10",
+      "members": [
+        "SYN-H11-036",
+        "SYN-H11-017"
+      ],
+      "visible_distinction_supported": true,
+      "blocking_member_ids": [],
+      "note": "Оба полных предиката различимы по собственным карточкам при заданных допусках."
+    },
+    {
+      "pair_id": "PAIR-16",
+      "factor": "KVS",
+      "boundary": "8/10",
+      "members": [
+        "SYN-H11-024",
+        "SYN-H11-031"
+      ],
+      "visible_distinction_supported": true,
+      "blocking_member_ids": [],
+      "note": "Оба полных предиката различимы по собственным карточкам при заданных допусках."
+    }
+  ],
+  "editorial_observations": [
+    "Сбои согласования в KVS 006/011/028/043/045 не меняют предикат: непригодный исход и явное отсутствие удовлетворения A уже названы. Они не требуют ремонта для определения содержания.",
+    "В 042 грамматическая проблема дополнительно затрагивает закрытый допуск преобразований P1, поэтому не списана как безвредная редактура.",
+    "Ключ не содержит отдельного reason_code для отказов, но их причины прямо изложены в rationale; это не меняет intended outcome и не признано ошибкой ключа."
+  ]
+}

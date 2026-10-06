@@ -1,0 +1,132 @@
+{
+  "artifact_id": "MVP7_POS_KVS_RUBRIC_STRESS_TEST_V1_FREEZE",
+  "status": "LOCAL_SYNTHETIC_DESIGN_FREEZE",
+  "phase": "INPUTS_AND_INTENDED_KEY_FROZEN_BEFORE_WRITTEN_STRESS_REVIEW",
+  "freeze_time_utc": "2026-09-26 01:25:08 UTC",
+  "baseline_commit": "89154c6e32a774c59e65bc665cd6ce7860a2a001",
+  "original_rubric": {
+    "reference": "../../MVP7_POS_KVS_NUMERIC_ANCHORS_V1.md",
+    "sha256": "3971a424225b8789c1b4cbceec54b29406b1a26d5bcb92f353aa2753c4c0362c"
+  },
+  "files": {
+    "CODER_PACKET.md": {
+      "sha256": "2d46bb0231569b1100d298fe944978861f23e8a299072d679911e48ea6c3791d",
+      "bytes": 58644
+    },
+    "RUBRIC_FOR_CODERS.md": {
+      "sha256": "fd3cf3633fa5397dead5c673be96fa800dc91555a498a23ea27769091d63a1d6",
+      "bytes": 35968
+    },
+    "INTENDED_KEY.json": {
+      "sha256": "2278d18a2366e4675fb3f568cee200c6cd8e3c2fe9c34b3e47a5b6481047ef1f",
+      "bytes": 45254
+    }
+  },
+  "counts": {
+    "cases": 60,
+    "POS": 30,
+    "KVS": 30,
+    "anchor_families": 10,
+    "per_anchor": {
+      "POS/5": {
+        "total": 6,
+        "positive_intents": 3,
+        "boundary": 1,
+        "contradictory": 1,
+        "insufficient": 1
+      },
+      "POS/0": {
+        "total": 6,
+        "positive_intents": 3,
+        "boundary": 1,
+        "contradictory": 1,
+        "insufficient": 1
+      },
+      "POS/-5": {
+        "total": 6,
+        "positive_intents": 3,
+        "boundary": 1,
+        "contradictory": 1,
+        "insufficient": 1
+      },
+      "KVS/5": {
+        "total": 6,
+        "positive_intents": 3,
+        "boundary": 1,
+        "contradictory": 1,
+        "insufficient": 1
+      },
+      "KVS/10": {
+        "total": 6,
+        "positive_intents": 3,
+        "boundary": 1,
+        "contradictory": 1,
+        "insufficient": 1
+      },
+      "POS/-10": {
+        "total": 6,
+        "positive_intents": 3,
+        "boundary": 1,
+        "contradictory": 1,
+        "insufficient": 1
+      },
+      "KVS/8": {
+        "total": 6,
+        "positive_intents": 3,
+        "boundary": 1,
+        "contradictory": 1,
+        "insufficient": 1
+      },
+      "KVS/2": {
+        "total": 6,
+        "positive_intents": 3,
+        "boundary": 1,
+        "contradictory": 1,
+        "insufficient": 1
+      },
+      "POS/10": {
+        "total": 6,
+        "positive_intents": 3,
+        "boundary": 1,
+        "contradictory": 1,
+        "insufficient": 1
+      },
+      "KVS/0": {
+        "total": 6,
+        "positive_intents": 3,
+        "boundary": 1,
+        "contradictory": 1,
+        "insufficient": 1
+      }
+    }
+  },
+  "isolation": {
+    "synthetic_only": true,
+    "uses_zhanaozen_evidence": false,
+    "creates_human_records": false,
+    "changes_methodology": false,
+    "changes_factor_ontology": false,
+    "intended_values_are_research_scores": false,
+    "intended_key_is_empirical_ground_truth": false
+  },
+  "future_distribution": {
+    "coders": [
+      "CODER_PACKET.md",
+      "RUBRIC_FOR_CODERS.md"
+    ],
+    "curator_only": [
+      "INTENDED_KEY.json",
+      "FREEZE_MANIFEST.json",
+      "../../MVP7_POS_KVS_RUBRIC_STRESS_TEST_V1.md"
+    ],
+    "access_control_enforced": false,
+    "note": "Раздельные файлы не обеспечивают техническую слепоту. Нужна контролируемая выдача организатором; общий checkout не передавать кодерам."
+  },
+  "precommitted_review_plan_reference": "INTENDED_KEY.json#/review_plan",
+  "limitations": [
+    "Локальная фиксация, не внешняя preregistration и не защищённая временная метка.",
+    "Автор видел intended key; последующий desk review не является blind coding.",
+    "Набор разработан под v1 и служит калибровке; это не независимая эмпирическая валидация."
+  ],
+  "amendment_rule": "Не перезаписывать эти frozen files после review. Выявленные дефекты ключа/тестов сохраняются в отчёте; пересмотр требует отдельно разрешённой новой версии."
+}

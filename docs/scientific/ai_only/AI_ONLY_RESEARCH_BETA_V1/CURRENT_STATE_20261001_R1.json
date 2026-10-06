@@ -1,0 +1,127 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_CURRENT_STATE_R1",
+  "date": "2026-10-01",
+  "pr": 123,
+  "branch": "review/ai-only-research-beta-v1",
+  "pr_state": "DRAFT_OPEN_NOT_MERGED",
+  "release_gate": {
+    "gate_id": "AI_ONLY_RESEARCH_BETA_V1_RELEASE_GATE_R1",
+    "state": "AI_ONLY_RESEARCH_BETA_RC_HOLD",
+    "github_run_id": "36845373815",
+    "github_run_conclusion": "success",
+    "gates": {
+      "G1": "PASS",
+      "G2": "FAIL",
+      "G3": "PASS",
+      "G4": "FAIL",
+      "G5": "PASS",
+      "G6": "PASS",
+      "G7": "PASS",
+      "G8": "PASS"
+    },
+    "blocking_reasons": [
+      "OMG_NOV24_V100_AI1 is an invalid protocol output because run_id is absent.",
+      "OMG_NOV24_V100_AI2 is an invalid protocol output because run_id is absent.",
+      "The frozen OMG Nov24 comparator therefore did not produce an admissible lane comparison."
+    ]
+  },
+  "cohort": {
+    "cohort_id": "AI_ONLY_REPLICATION_COHORT_R1_20260930",
+    "state": "PARTIAL",
+    "expected_lanes": 4,
+    "expected_primary_roles": 8,
+    "valid_primary_roles": 6,
+    "invalid_primary_roles": 2,
+    "expected_decisions": 12,
+    "observed_decisions": 8,
+    "exact_agreement_count": 8,
+    "numeric_consensus_count": 6,
+    "shared_unknown_count": 2,
+    "unresolved_count": 4
+  },
+  "lanes": {
+    "AI_ONLY_DYAD_KBM_E02_V100": {
+      "state": "ELIGIBLE_FOR_READ_ONLY_DYAD_SCENARIO_REPLAY",
+      "factor_values": {
+        "actor_a": {"POS_AO2": -5, "KVS_AO2": 5},
+        "actor_b": {"POS_AO2": 5, "KVS_AO2": 5}
+      },
+      "g7_replay": "PASS_CORE_PARITY",
+      "scenario_count": 15,
+      "baseline_Pol": "50.00000000",
+      "RGU_Pol_envelope": {"min": "9.09090909", "max": "50.00000000"},
+      "metric_scope": "SINGLE_PTN_PAIR_DYAD_SCENARIO_NOT_AREA_UNO"
+    },
+    "AI_ONLY_DYAD_OMG_NOV24_V100": {
+      "state": "INVALID_PRIMARY_OUTPUT_TECHNICAL_MISMATCH",
+      "exact_comparator_error": "run_id must differ",
+      "substantive_values_observed_but_not_admitted": {
+        "workers_POS_AO2": -5,
+        "workers_KVS_AO2": 5,
+        "company_POS_AO2": 5,
+        "company_KVS_AO2": "UNKNOWN"
+      },
+      "repair_performed": false,
+      "retry_performed": false,
+      "calculation_release": false
+    },
+    "AI_ONLY_PAIR_KBM_E05_V100": {
+      "state": "ELIGIBLE_FOR_READ_ONLY_PAIR_SCENARIO_REPLAY",
+      "factor_values": {
+        "actor_a": {"POS_AO2": -5, "KVS_AO2": 5},
+        "actor_b": {"POS_AO2": 5, "KVS_AO2": 5}
+      },
+      "g7_replay": "PASS_CORE_PARITY",
+      "scenario_count": 15,
+      "baseline_Pol": "50.00000000",
+      "RGU_Pol_envelope": {"min": "9.09090909", "max": "50.00000000"},
+      "metric_scope": "SINGLE_PTN_PAIR_DYAD_SCENARIO_NOT_AREA_UNO"
+    },
+    "AI_ONLY_DYAD_D25_E02_V100": {
+      "state": "HOLD_FACTOR_INCOMPLETE",
+      "factor_values": {
+        "workers_POS_AO2": "UNKNOWN",
+        "workers_KVS_AO2": 5,
+        "company_POS_AO2": 5,
+        "company_KVS_AO2": "UNKNOWN"
+      },
+      "calculation_release": false
+    }
+  },
+  "eligible_replay": {
+    "github_run_id": "36844856009",
+    "github_run_conclusion": "success",
+    "artifact_id": "11153425007",
+    "artifact_zip_digest": "sha256:1b31f30ffd5f435c1f0dd48a014e7c0fe5fbbb2829d8ffc506c736175a181580",
+    "eligible_routes": [
+      "AI_ONLY_DYAD_KBM_E02_V100",
+      "AI_ONLY_PAIR_KBM_E05_V100"
+    ],
+    "ineligible_routes_not_executed": [
+      "AI_ONLY_DYAD_OMG_NOV24_V100",
+      "AI_ONLY_DYAD_D25_E02_V100"
+    ],
+    "all_snapshot_json_replays": "PASS",
+    "all_core_result_digests_stable": true,
+    "factor_or_weight_mutation": false
+  },
+  "canonical_boundaries": {
+    "required_label": "AI-кодирование; человеческая проверка не проводилась; исследовательская версия; прогнозная точность не установлена.",
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED_BLOCKED",
+    "coordinator_substitution": "FORBIDDEN",
+    "targeted_content_review": "FORBIDDEN",
+    "post_result_weight_tuning": "FORBIDDEN",
+    "cross_lane_historical_aggregation": "FORBIDDEN",
+    "auto_merge": false
+  },
+  "superseded_values_never_restored": {
+    "old_OMG_company_KVS": 5,
+    "old_OMG_Pol": 50,
+    "scientific_status": "SUPERSEDED_TECHNICAL_DEMO_ONLY"
+  },
+  "canonical_next_state": "HOLD_UNTIL_SEPARATELY_AUTHORIZED_PROSPECTIVE_PROTOCOL_OR_ROUTE_CLOSURE"
+}

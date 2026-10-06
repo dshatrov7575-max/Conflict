@@ -1,0 +1,199 @@
+{
+  "computed_at_utc": "2026-09-26T12:14:56.126690+00:00",
+  "rubric_status": "PROPOSAL",
+  "POS": {
+    "status": "READY_FOR_DOUBLE_BLIND_HUMAN_PILOT",
+    "gates": {
+      "G_KEY": true,
+      "G_ADJ": true,
+      "G_PROBES": true,
+      "G_CLARITY": true,
+      "G_INTEGRITY": true
+    },
+    "key_verdicts": {
+      "SUPPORTED": 36
+    },
+    "coders": {
+      "A": {
+        "exact_matches_descriptive": 36,
+        "total": 36,
+        "supported_answers": 36,
+        "boundaries": {
+          "-10/-5": {
+            "resolved": 4,
+            "total": 4,
+            "threshold": 0.9,
+            "pass": true
+          },
+          "0/+5": {
+            "resolved": 4,
+            "total": 4,
+            "threshold": 0.9,
+            "pass": true
+          },
+          "+5/+10": {
+            "resolved": 4,
+            "total": 4,
+            "threshold": 0.9,
+            "pass": true
+          }
+        },
+        "uncertified_cases": [],
+        "uncertified_probes": [],
+        "numbers_on_intended_unknown": []
+      },
+      "B": {
+        "exact_matches_descriptive": 36,
+        "total": 36,
+        "supported_answers": 36,
+        "boundaries": {
+          "-10/-5": {
+            "resolved": 4,
+            "total": 4,
+            "threshold": 0.9,
+            "pass": true
+          },
+          "0/+5": {
+            "resolved": 4,
+            "total": 4,
+            "threshold": 0.9,
+            "pass": true
+          },
+          "+5/+10": {
+            "resolved": 4,
+            "total": 4,
+            "threshold": 0.9,
+            "pass": true
+          }
+        },
+        "uncertified_cases": [],
+        "uncertified_probes": [],
+        "numbers_on_intended_unknown": []
+      }
+    },
+    "inherited_unchanged_boundary": {
+      "boundary": "-5/0",
+      "source": "v1.1",
+      "A": "2/2",
+      "B": "2/2",
+      "not_retested": true
+    }
+  },
+  "KVS": {
+    "factor": "KVS",
+    "status": "READY_FOR_DOUBLE_BLIND_HUMAN_PILOT",
+    "source": "v1.1 only",
+    "v2_testing": "NOT_RETESTED_IN_V2",
+    "unchanged_rule_sections": 3,
+    "supported_intended_answers": 24,
+    "total_intended_answers": 24,
+    "coders": {
+      "A": {
+        "supported_answers": 24,
+        "total": 24,
+        "boundaries": {
+          "0/2": {
+            "resolved": 2,
+            "total": 2,
+            "threshold": 0.9
+          },
+          "2/5": {
+            "resolved": 2,
+            "total": 2,
+            "threshold": 0.9
+          },
+          "5/8": {
+            "resolved": 2,
+            "total": 2,
+            "threshold": 0.9
+          },
+          "8/10": {
+            "resolved": 2,
+            "total": 2,
+            "threshold": 0.9
+          }
+        }
+      },
+      "B": {
+        "supported_answers": 24,
+        "total": 24,
+        "boundaries": {
+          "0/2": {
+            "resolved": 2,
+            "total": 2,
+            "threshold": 0.9
+          },
+          "2/5": {
+            "resolved": 2,
+            "total": 2,
+            "threshold": 0.9
+          },
+          "5/8": {
+            "resolved": 2,
+            "total": 2,
+            "threshold": 0.9
+          },
+          "8/10": {
+            "resolved": 2,
+            "total": 2,
+            "threshold": 0.9
+          }
+        }
+      }
+    },
+    "source_sha256": {
+      "INTENDED_KEY.json": "0813e724287d7f0c42cddeb5b00a057a145b1eb5dca4c141b5ef05b27a3c2874",
+      "KEY_AUDIT.json": "4850aeae793efbe8b864e8475ef1a8b0ff9706bf388345e31b133a306e811eac",
+      "RATIONALE_AUDIT.json": "05f8ff07aa5ea0d5c70c418e735374079cdb0f92c38bd1110348ceadc9c72b5d",
+      "AI_CODER_A.json": "2c586c80126c19a8c52ae50b7bdf2a55388e1a158fcaade2c701b784e502e406",
+      "AI_CODER_B.json": "9db4d9d9967344782b8ae68eccd02545a69720dd47624f4c434a65fb7e4d0c56",
+      "ANONYMIZED_RESPONSE_BINDING.json": "65a3a0e9747dbb3a16df14eb0cb044607da0599b2a36c86e9bf43d12526a1835",
+      "FREEZE_MANIFEST.json": "2738587fabd7af22dab82746756a5ece7db445e512829b5bd2a5f29463123a7f",
+      "PREREGISTRATION.md": "38642b5dfae34b2b3243fec346b7e67d0fb7c6ba782f0ef45e3004c7d018437e"
+    },
+    "limits": "Read-only derivation from saved v1.1 audits; no old-case recoding, no new KVS experiment, no HUMAN pilot."
+  },
+  "technical": {
+    "status": "PASS_TECHNICAL_ONLY",
+    "cases": 36,
+    "pairs": 12,
+    "probes": 12,
+    "protected_local_files": 58,
+    "protected_external_sources": 6,
+    "frozen_files": 12,
+    "old_exact_reference_overlap": 0,
+    "old_exact_utterance_overlap": 0,
+    "limits": "Integrity/string checks do not establish semantic novelty, key correctness or enforced blinding."
+  },
+  "human_pilot_started": false,
+  "input_sha256": {
+    "AI_CODER_A.json": "3a904a5f3d3f8fc47e99ed51de50a6e739950a8c7d358720e610c85289dab263",
+    "AI_CODER_B.json": "30c7bfd92d9834bb7132646f0546f134f91a8a18c2bf027d9fe5f6b4e9d9bd67",
+    "ANONYMIZED_RESPONSES.json": "98d8588efe9acd2125dddb9c83b5368b0dbe2f2b77278fea0b053840806bf452",
+    "ANONYMIZED_RESPONSE_BINDING.json": "0ff9d4786fa5183157bd4e0a779abfbdc2f2271eb8e14bf1372cbfbfd075fa08",
+    "AUDITOR_PRE_KEY_REVIEW.json": "d75480ff1372091bfa3bd2a78d6ea61bb3dcda88d4bf18c4086fb1f75e25dc22",
+    "AUTHOR_RECORD.json": "b26786f603e807669273d39c0ce497af2d49ecaf17302286a6116a31d8c38d15",
+    "BASELINE_MANIFEST.json": "bc8d0d259b9fb908f5fff4566ca9b6ebf0b3e04886d953b772e09846f599c054",
+    "CASES.json": "120fa6dcbe003b27d05205c433591b74a3591c64c38a29c863065fdb59a2cc18",
+    "ERROR_LEDGER.json": "c363b8e74fe0154006361b0f64e0a0a997be3301ba30df3934c018efdae44992",
+    "EXCLUSION_CATALOG.json": "fc7fa7607159797c1a843d93903d5630acbd65d9ea9c2f43a12343039dea4ffa",
+    "FREEZE_MANIFEST.json": "09dff558f2e4f705db456f1d5d02046b45c0c681a499860c190dfbf4339f6c8f",
+    "INTENDED_KEY.json": "e9b468786c5a5784069d4d4e8f1a649567658719d7cef768a2afe0e44c29a91a",
+    "KEY_AUDIT.json": "42e498010ba4d5c7bbf8c68208d8c80ce7ef0d2b8256d828c681aac7218db643",
+    "KEY_DISCLOSURE.json": "3e01bb24f28b899d826af712afad0071efac6adc60df818561677fad83898ef6",
+    "KVS_CARRY_FORWARD.json": "3eded6a5912a198cc600ea14744e580e1c692ed951193ff788c2ad3a53d6af21",
+    "NOVELTY_REVIEW.json": "22c593a7d8c451180e719e36d702a362e9638fc0074b6f8827030877395c64e2",
+    "PLAN_FREEZE.json": "e4dea3c387467c301b6610ff2696f5f03585ebc98df85d9ead98a9ff31324940",
+    "RATIONALE_AUDIT.json": "51129a1bed934eadd4ddc07ecf8f63f4080105b875a842d79053ce1286a6a41c",
+    "REVIEW_RUN_MANIFEST.json": "3a02c11ba492de0b4f5bfb735cb2665f58fb1c632b88e6e7d537d8d14d9b4a3b",
+    "RUBRIC_CLARITY_REVIEW.json": "4a14a05f768dad9eebd3ff6fb53277bc4066be1bf9f44b05fd9d1e6abde8ffdc",
+    "RUNNER_COMPATIBILITY.json": "8accba7545d9be4dfc85accd267f5c5dcb6e495b3a21cf20305be872f66ed5f3",
+    "TECHNICAL_CHECKS.json": "21b60f7ba7f9ec426b1bb4013009ef24fca1bc185221ed8175fe5059a28e86d9"
+  },
+  "limits": [
+    "AI synthetic instruction check only; same model and shared filesystem.",
+    "Local freeze is not an externally trusted timestamp or enforced ACL.",
+    "36 cards include paired dependencies; no statistical/HUMAN reliability claim.",
+    "No silent key repairs, denominator exclusions, commit or PR."
+  ]
+}

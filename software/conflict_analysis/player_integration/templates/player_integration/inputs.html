@@ -1,0 +1,25 @@
+{% extends 'player_integration/base.html' %}
+{% block content %}
+<h1>Запуск расчёта · {{ experiment.name }}</h1>
+<p><strong>{{ experiment.assessment_set.kind }}</strong> · {{ experiment.status }} · {{ experiment.expert_profile.display_name }}</p>
+<p>Эксперимент: <code>{{ snapshot.experiment_id }}</code><br>
+Временной срез: <code>{{ snapshot.time_slice_id }}</code> · {{ snapshot.cutoff_date }} · {{ snapshot.time_slice_version }}</p>
+
+<section class="ui-panel" data-panel-help="weights">
+<h2>Веса этого расчёта</h2>
+
+<form method="post" autocomplete="off">
+  {% csrf_token %}{{ form.operation_id }}{{ form.experiment_id }}{{ form.time_slice_id }}
+  {{ form.non_field_errors }}{{ form.operation_id.errors }}{{ form.experiment_id.errors }}{{ form.time_slice_id.errors }}
+  <div class="table-scroll"><table>
+    <caption>RGU — вес участника; KVPTN — важность ПТН</caption>
+    <thead><tr><th scope="col">Вес / объект</th><th scope="col">Статус</th><th scope="col">Значение</th><th scope="col">Источник</th><th scope="col">Версия источника</th></tr></thead>
+    <tbody>{% for row in rows %}<tr>
+      <th scope="row">{{ row.group }}<br><code>{{ row.identity }}</code></th>
+      {% for field in row.fields %}<td>{{ field.errors }}<label class="visually-hidden" for="{{ field.id_for_label }}">{{ row.group }} {{ row.identity }} {{ field.label }}</label>{{ field }}</td>{% endfor %}
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  <button type="submit" data-ui-icon="refresh" data-ui-kind="primary" data-ui-label="Рассчитать">Рассчитать</button>
+</form>
+</section>
+{% endblock %}

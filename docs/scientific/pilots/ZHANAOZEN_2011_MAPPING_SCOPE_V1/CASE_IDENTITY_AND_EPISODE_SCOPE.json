@@ -1,0 +1,66 @@
+{
+  "artifact_kind": "CASE_IDENTITY_AND_EPISODE_SCOPE",
+  "assessor_type": "AI_PREPARATION",
+  "case_id": "292d238f-9fee-578f-bddd-6f923163788a",
+  "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+  "country": "Kazakhstan",
+  "country_basis": {
+    "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/EVIDENCE_SUBSET.json",
+    "json_pointer": "/facts/0"
+  },
+  "identity_basis": {
+    "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/PACKET_AUDIT.json",
+    "json_pointer": "/case_id"
+  },
+  "preregistration_basis": {
+    "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/STUDY_PLAN.json",
+    "json_pointer": "/information_cutoff"
+  },
+  "structural_example": {
+    "case_id": "ZHANAOZEN_2011_EXAMPLE",
+    "role": "STRUCTURE_ONLY",
+    "id_reassignment": false
+  },
+  "episode_scope": {
+    "information_cutoff": "2011-12-15T23:59:59Z",
+    "target_time": "2011-12-15T23:59:59Z",
+    "message_review_window": {
+      "start_date": "2011-05-17",
+      "end_date": "2011-12-15"
+    },
+    "registered_message_dates": [
+      "2011-05-17",
+      "2011-11-27"
+    ],
+    "natural_conflict_start": null,
+    "natural_conflict_end": null,
+    "natural_boundaries_status": "UNKNOWN",
+    "gap_state": "UNKNOWN",
+    "automatic_carry_forward": false,
+    "unobserved_target_interval": [
+      "2011-11-28",
+      "2011-12-15"
+    ],
+    "scope_interpretation": "Analytical message-review scope for the frozen Zhanaozen/Mangistau labour-dispute packet; not a country assessment or proof of one continuously observed conflict state."
+  },
+  "actor_registry_reference": {
+    "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/EVIDENCE_SUBSET.json",
+    "json_pointer": "/actors"
+  },
+  "element_registry_reference": {
+    "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/EVIDENCE_SUBSET.json",
+    "json_pointer": "/analytical_elements"
+  },
+  "time_slice_reference": {
+    "path": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/EVIDENCE_SUBSET.json",
+    "json_pointer": "/time_slices/0"
+  },
+  "group_representation": "UNKNOWN",
+  "full_reference_coverage": "UNKNOWN",
+  "human_validation": "NOT_PERFORMED",
+  "limitations": [
+    "Individual, subgroup, company and separate authority reports do not automatically represent the registered actor group.",
+    "Publication dates, PDF metadata and late snapshots do not establish historical availability.",
+    "External CP3 and full archive payload bytes were not retrieved; only local frozen records are used."
+  ]
+}

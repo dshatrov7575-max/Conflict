@@ -1,0 +1,21 @@
+{
+  "recorded_at_utc": "2026-09-26T12:01:43.866662+00:00",
+  "agents": {
+    "author": "/root/v2_holdout_author",
+    "A": "/root/v2_coder_a",
+    "B": "/root/v2_coder_b",
+    "auditor": "/root/v2_independent_auditor"
+  },
+  "context_policy": "fresh fork_turns=none; author/coders/auditor separate; same model and shared filesystem; explicit file allowlists",
+  "files": {
+    "AI_CODER_A.json": "3a904a5f3d3f8fc47e99ed51de50a6e739950a8c7d358720e610c85289dab263",
+    "AI_CODER_B.json": "30c7bfd92d9834bb7132646f0546f134f91a8a18c2bf027d9fe5f6b4e9d9bd67",
+    "AUDITOR_PRE_KEY_REVIEW.json": "d75480ff1372091bfa3bd2a78d6ea61bb3dcda88d4bf18c4086fb1f75e25dc22",
+    "RUBRIC_CLARITY_REVIEW.json": "4a14a05f768dad9eebd3ff6fb53277bc4066be1bf9f44b05fd9d1e6abde8ffdc",
+    "ANONYMIZED_RESPONSES.json": "98d8588efe9acd2125dddb9c83b5368b0dbe2f2b77278fea0b053840806bf452",
+    "ANONYMIZED_RESPONSE_BINDING.json": "0ff9d4786fa5183157bd4e0a779abfbdc2f2271eb8e14bf1372cbfbfd075fa08",
+    "run_v2.py": "2208a49182a76aeb9b498ee6000994867a351c27d3775850622ad068a2de35f0",
+    "RUNNER_COMPATIBILITY.json": "8accba7545d9be4dfc85accd267f5c5dcb6e495b3a21cf20305be872f66ed5f3"
+  },
+  "auditor_pre_key_label_note": "Auditor declared NUMERIC as a numeric anchor before seeing the key; preserve raw labels. This preliminary record is not silently rewritten to ANCHOR."
+}

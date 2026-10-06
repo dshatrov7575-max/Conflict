@@ -1,0 +1,58 @@
+{
+  "artifact_kind": "EXACT_EDITION_TRANCHE_VALIDATION_RECEIPT",
+  "assessor_type": "AI_PREPARATION",
+  "status": "PASS_TECHNICAL_ONLY",
+  "base_commit": "cd056e3bc03001705a9fa359173a082eefb26099",
+  "base_tree": "954a8330922249539a67f7d5b7eeae35f8ec939b",
+  "checks": [
+    "exact_base_and_prior_blobs",
+    "pr16_validator_and_output_pins",
+    "strict_json_and_manifest_pins",
+    "eleven_versions_and_twenty_two_frozen_queries",
+    "one_execution_per_frozen_query_and_no_reruns",
+    "publisher_and_archive_query_pair_per_version",
+    "technical_failure_retains_prior_state",
+    "current_content_and_fragment_proof_not_promoted",
+    "no_exact_edition_contract_satisfied",
+    "no_mapping_or_target_time_state_change",
+    "six_file_scope_and_git_diff_check"
+  ],
+  "counts": {
+    "base_blobs_verified": 777,
+    "manifest_input_pins": 6,
+    "manifest_output_pins": 5,
+    "document_versions": 11,
+    "frozen_queries_executed": 22,
+    "publisher_attempts": 11,
+    "archive_attempts": 11,
+    "archive_payloads_retrieved": 8,
+    "archive_digests_verified": 8,
+    "technical_or_parser_failures": 3,
+    "exact_edition_contracts_satisfied": 0,
+    "scientific_state_changes": 0,
+    "fragment_route_live_budget_consumed": 0
+  },
+  "response_status_counts": {
+    "HTTP_RESPONSE": 11,
+    "PRE_CUTOFF_CAPTURE_RETRIEVED": 8,
+    "TECHNICAL_FAILURE": 1,
+    "TECHNICAL_FAILURE_AFTER_CANDIDATE": 2
+  },
+  "result_state_counts": {
+    "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF": 11,
+    "NOT_ADMISSIBLE": 3,
+    "PRE_CUTOFF_CAPTURE_RETRIEVED_NOT_ADMISSIBLE_AS_FULL_EDITION": 8
+  },
+  "pr16_validator": {
+    "status": "PASS_TECHNICAL_ONLY",
+    "output_pins": "PASS"
+  },
+  "scientific_boundaries": {
+    "human_validation_reliability": "NOT_PERFORMED",
+    "human_coding_adjudication": "NOT_PERFORMED",
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED",
+    "publication_release_deployment": "NOT_EXECUTED"
+  }
+}

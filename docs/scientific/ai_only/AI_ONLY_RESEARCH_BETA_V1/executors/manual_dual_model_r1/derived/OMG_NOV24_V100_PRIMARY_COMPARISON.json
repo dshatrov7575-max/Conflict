@@ -1,0 +1,17 @@
+{
+  "route_id": "AI_ONLY_DYAD_OMG_NOV24_V100",
+  "contract_version": "1.0.0",
+  "input_sha256": "72b061d6999b596052adc34df493cd2f9687979589ddd17a83ae21f375a0a9a4",
+  "state": "REJECT_INVALID_PRIMARY_RUN",
+  "validation_failure_artifact": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/OMG_NOV24_V100_VALIDATION_FAILURE.json",
+  "exact_comparator_error": "run_id must differ",
+  "unresolved_decisions": 4,
+  "coordinator_substitution": "FORBIDDEN",
+  "targeted_content_review_rounds": 0,
+  "calculation_release": false,
+  "simultaneous_snapshot": false,
+  "carry_forward": "NONE",
+  "historical_snapshot": "NOT_ESTABLISHED",
+  "historical_area_UNO": "NOT_COMPUTED",
+  "human_validation": "NOT_PERFORMED"
+}

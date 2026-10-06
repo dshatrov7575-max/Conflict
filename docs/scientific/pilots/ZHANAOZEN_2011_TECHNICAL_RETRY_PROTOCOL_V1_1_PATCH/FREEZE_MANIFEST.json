@@ -1,0 +1,57 @@
+{
+  "artifact_kind": "TECHNICAL_RETRY_PROTOCOL_PATCH_FREEZE_MANIFEST",
+  "schema_version": "1.0.1",
+  "base_commit": "8150ce7c7d001f6e75c0c03cdc93aa0b8c5e4db1",
+  "base_tree": "c2e6c4ec21609507689c5c62302a0fc00c0ad6a2",
+  "patch_id": "CA-MVP7-PR20A-HTTP-SUBREQUEST-BUDGET-CLARIFICATION-001",
+  "scope": "NEW_DIRECTORY_ONLY_FIVE_FILES",
+  "inputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1/TECHNICAL_RETRY_PLAN.json",
+      "bytes": 23100,
+      "sha256": "84c25a32eb8bcb89c3161eb3b30a715359ab8105c43e3eeb3c5b44632a16f3f2",
+      "git_blob_sha1": "1040e4736938c5f6d4e54e5fbc3dce124548732f"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1/VALIDATION_RECEIPT.json",
+      "bytes": 1210,
+      "sha256": "3951ab61377e3d7cf0731aa5aa079100e1729991838313cece359625499dd617",
+      "git_blob_sha1": "5831af68255981ede4d294f90ef34b60ef9fb924"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1/FREEZE_MANIFEST.json",
+      "bytes": 4061,
+      "sha256": "50594f36ff49776024662d2a05d796157539476ca22145e63b58fddc36286c16",
+      "git_blob_sha1": "2bcab7ef7bb5f9f94db01dd6c412afe67b023da5"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1_1_PATCH/PROTOCOL_PATCH.json",
+      "bytes": 2673,
+      "sha256": "6601f6d6c48f0313a400b910b66d50d70dc8584dd6c11d47d8f9046faf8740ba",
+      "git_blob_sha1": "37c4e4f543ddad7e243575f37bd93aff6c134ce5"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1_1_PATCH/PROTOCOL_PATCH.md",
+      "bytes": 1510,
+      "sha256": "b230bb8fba8f4ab20318c4a23f4532d6f54080585b310837d9432addf6ad52a3",
+      "git_blob_sha1": "2c3d8e929b74f138a2b28582ebd4919cd49ae56a"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1_1_PATCH/validate_protocol_patch.py",
+      "bytes": 4768,
+      "sha256": "1b71074d0efdce3ff0d78a678ea68b602562047252655dbd1a1459e42699d834",
+      "git_blob_sha1": "7c8b2972f4e1a75da8bfe4fcf7399d8bb8d6cc9c"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1_1_PATCH/VALIDATION_RECEIPT.json",
+      "bytes": 1024,
+      "sha256": "ee8044ff5cf6cbe8bd336fe27a372afc393368797e3aa4b7ee64f7a55c552891",
+      "git_blob_sha1": "9171bdac2980e68ecc05fb4bd603f6b400c8f446"
+    }
+  ],
+  "network_access_executed_by_pr20a": false,
+  "retry_execution_executed_by_pr20a": false,
+  "source_files_mutated": false
+}

@@ -1,0 +1,28 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_R2_INTAKE_VALIDATION_R1",
+  "intake_at_utc": "2026-10-01T17:56:03Z",
+  "qwen": {
+    "schema_validation": "PASS",
+    "errors": [],
+    "temporal_issues": [
+      {
+        "code": "COMPLETED_IN_FUTURE_RELATIVE_TO_INTAKE",
+        "completed_at": "2026-10-02T12:00:00+00:00",
+        "intake_at": "2026-10-01T17:56:03+00:00"
+      }
+    ]
+  },
+  "deepseek": {
+    "schema_validation": "PASS",
+    "errors": [],
+    "temporal_issues": [
+      {
+        "code": "COMPLETED_BEFORE_PACKAGE_READY",
+        "completed_at": "2026-10-01T00:00:00+00:00",
+        "package_ready_at": "2026-10-01T17:50:08+00:00"
+      }
+    ]
+  },
+  "content_admissibility": "ADMIT_BOTH_WITH_EXPLICIT_METADATA_WARNINGS",
+  "reason": "Both outputs satisfy the frozen JSON contract and target identity. Their self-reported completion timestamps are not reliable chronology evidence, but the timestamps are not used to derive substantive domain findings or verdicts."
+}

@@ -1,0 +1,38 @@
+{
+  "test_receipt_id": "COMMON_WEIGHT_RUNNER_V2_1_TEST_20260930_R1",
+  "date": "2026-09-30",
+  "design_id": "AI_ONLY_COMMON_EXOGENOUS_WEIGHT_DESIGN_V2",
+  "runner": "read_only_sensitivity_runner_v2_1.py",
+  "runner_git_blob_sha": "04ed2c062d35e04cd073a001f81523a0342283ab",
+  "bindings": "LANE_BINDINGS_R2.json",
+  "status": "PASS",
+  "self_test": {
+    "result": "PASS",
+    "cases": 11,
+    "exact_github_blob_match": true,
+    "execution_environment": "isolated ChatGPT Python/container environment"
+  },
+  "covered_routes": [
+    "AI_ONLY_DYAD_KBM_E02_V100",
+    "AI_ONLY_DYAD_OMG_NOV24_V100",
+    "AI_ONLY_PAIR_KBM_E05_V100",
+    "AI_ONLY_DYAD_D25_E02_V100"
+  ],
+  "checks": [
+    "company-only inherited-actor extraction",
+    "full four-entry dyad extraction",
+    "equal-positive baseline",
+    "seven-scenario positive RGU envelope",
+    "positive q-scale invariance",
+    "actor-zero coverage stress",
+    "all-RGU-zero NOT_COMPUTABLE",
+    "KVS=8 synthetic baseline",
+    "HOLD gate rejection",
+    "input hash mismatch rejection",
+    "D25 full-dyad support"
+  ],
+  "supersedes_runner": "read_only_sensitivity_runner_v2.py",
+  "grid_changed": false,
+  "post_result_tuning": "FORBIDDEN",
+  "calculation_release": false
+}

@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Conflict Analysis MVP7 ValidationRecord 1.0.0",
+  "description": "Scientific validation metadata only. No calculation, weight update or historical data mutation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_kind", "validation_id", "case_id", "country", "event_period", "information_cutoff_date", "model_version", "input_snapshot_reference", "factor_mapping_reference", "calculated_result", "observed_outcome", "comparison_type", "limitations", "status", "protocol_reference", "comparison_report_reference"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "record_kind": {"enum": ["TEMPLATE", "VALIDATION_RECORD"]},
+    "validation_id": {"$ref": "#/$defs/nullable_text"},
+    "case_id": {"$ref": "#/$defs/nullable_text"},
+    "country": {"$ref": "#/$defs/nullable_text"},
+    "event_period": {"$ref": "#/$defs/period"},
+    "information_cutoff_date": {"$ref": "#/$defs/nullable_date"},
+    "model_version": {"anyOf": [{"$ref": "#/$defs/model_version"}, {"type": "null"}]},
+    "input_snapshot_reference": {"$ref": "#/$defs/nullable_artifact"},
+    "factor_mapping_reference": {"$ref": "#/$defs/nullable_artifact"},
+    "calculated_result": {"$ref": "#/$defs/nullable_artifact"},
+    "observed_outcome": {"anyOf": [{"$ref": "#/$defs/observed_outcome"}, {"type": "null"}]},
+    "comparison_type": {"enum": ["INDEPENDENT_VALIDATION", "PRE_EVENT_BACKTEST", null]},
+    "limitations": {"type": "array", "items": {"$ref": "#/$defs/text"}},
+    "status": {"enum": ["VALIDATED", "PARTIAL", "INSUFFICIENT_DATA", "NOT_APPLICABLE"]},
+    "protocol_reference": {"$ref": "#/$defs/nullable_artifact"},
+    "comparison_report_reference": {"$ref": "#/$defs/nullable_artifact"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"record_kind": {"const": "TEMPLATE"}}},
+      "then": {"properties": {
+        "validation_id": {"type": "null"},
+        "case_id": {"type": "null"},
+        "country": {"type": "null"},
+        "event_period": {"properties": {"start_date": {"type": "null"}, "end_date": {"type": "null"}}},
+        "information_cutoff_date": {"type": "null"},
+        "model_version": {"type": "null"},
+        "input_snapshot_reference": {"type": "null"},
+        "factor_mapping_reference": {"type": "null"},
+        "calculated_result": {"type": "null"},
+        "observed_outcome": {"type": "null"},
+        "comparison_type": {"type": "null"},
+        "status": {"const": "INSUFFICIENT_DATA"},
+        "protocol_reference": {"type": "null"},
+        "comparison_report_reference": {"type": "null"}
+      }},
+      "else": {"properties": {
+        "validation_id": {"$ref": "#/$defs/text"},
+        "case_id": {"$ref": "#/$defs/text"},
+        "information_cutoff_date": {"$ref": "#/$defs/date"},
+        "comparison_type": {"enum": ["INDEPENDENT_VALIDATION", "PRE_EVENT_BACKTEST"]}
+      }}
+    },
+    {
+      "if": {"properties": {"status": {"const": "VALIDATED"}}},
+      "then": {"properties": {
+        "record_kind": {"const": "VALIDATION_RECORD"},
+        "country": {"$ref": "#/$defs/text"},
+        "event_period": {"properties": {"start_date": {"$ref": "#/$defs/date"}, "end_date": {"$ref": "#/$defs/date"}}},
+        "model_version": {"$ref": "#/$defs/model_version"},
+        "input_snapshot_reference": {"$ref": "#/$defs/artifact"},
+        "factor_mapping_reference": {"$ref": "#/$defs/artifact"},
+        "calculated_result": {"$ref": "#/$defs/artifact"},
+        "observed_outcome": {"$ref": "#/$defs/observed_outcome"},
+        "protocol_reference": {"$ref": "#/$defs/artifact"},
+        "comparison_report_reference": {"$ref": "#/$defs/artifact"}
+      }},
+      "else": {"properties": {"limitations": {"minItems": 1}}}
+    },
+    {
+      "if": {"properties": {"status": {"const": "PARTIAL"}}},
+      "then": {"properties": {
+        "calculated_result": {"$ref": "#/$defs/artifact"},
+        "protocol_reference": {"$ref": "#/$defs/artifact"},
+        "comparison_report_reference": {"$ref": "#/$defs/artifact"}
+      }}
+    }
+  ],
+  "$defs": {
+    "text": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "nullable_text": {"anyOf": [{"$ref": "#/$defs/text"}, {"type": "null"}]},
+    "date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", "format": "date"},
+    "nullable_date": {"anyOf": [{"$ref": "#/$defs/date"}, {"type": "null"}]},
+    "period": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_date", "end_date"],
+      "properties": {"start_date": {"$ref": "#/$defs/nullable_date"}, "end_date": {"$ref": "#/$defs/nullable_date"}}
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "sha256"],
+      "properties": {
+        "reference": {"$ref": "#/$defs/text"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "nullable_artifact": {"anyOf": [{"$ref": "#/$defs/artifact"}, {"type": "null"}]},
+    "model_version": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model_name", "strategy_id", "strategy_version", "implementation_commit"],
+      "properties": {
+        "model_name": {"const": "Conflict Analysis MVP7"},
+        "strategy_id": {"const": "POLARIZATION_V1_BETA"},
+        "strategy_version": {"const": "1.0.0"},
+        "implementation_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+      }
+    },
+    "observed_outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classes", "source_references", "coding_protocol_reference", "notes"],
+      "properties": {
+        "classes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["NO_ESCALATION", "LOCALIZED_CONFLICT", "MASS_PROTEST", "VIOLENT_CLASH", "ARMED_CONFLICT", "INSTITUTIONAL_CRISIS"]},
+          "if": {"contains": {"const": "NO_ESCALATION"}},
+          "then": {"maxItems": 1}
+        },
+        "source_references": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/artifact"}},
+        "coding_protocol_reference": {"$ref": "#/$defs/artifact"},
+        "notes": {"$ref": "#/$defs/nullable_text"}
+      }
+    }
+  }
+}

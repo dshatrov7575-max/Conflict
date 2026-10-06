@@ -1,0 +1,824 @@
+{
+  "artifact_id": "MVP7_POS_KVS_V1_1_HOLDOUT_INTENDED_KEY",
+  "status": "FROZEN_DESIGN_INTENT",
+  "synthetic_only": true,
+  "human_coding": false,
+  "cases": [
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 2,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 5,
+      "distinguishing_predicate": "Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C.",
+      "id": "SYN-H11-001"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": -5,
+      "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Степень дана отдельно от спокойного/резкого тона; полнота против неполноты.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": -10,
+      "distinguishing_predicate": "Степень дана отдельно от спокойного/резкого тона; полнота против неполноты.",
+      "id": "SYN-H11-002"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 10,
+      "rationale": "Единый собственный критерий установлен; уступка избыточного пожелания не означает отказа от удовлетворения A.",
+      "rule_refs": [
+        "v1.1 K1"
+      ],
+      "rejected_neighbor": 8,
+      "distinguishing_predicate": "Ни один исход без удовлетворения A по одному критерию не допускается.",
+      "id": "SYN-H11-003"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 0,
+      "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Отсутствие направленного предпочтения против выраженного неполного согласия.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": 5,
+      "distinguishing_predicate": "Отсутствие направленного предпочтения против выраженного неполного согласия.",
+      "id": "SYN-H11-004"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Разрешённая симметричная переформулировка с явно исключёнными полной степенью и нейтральностью.",
+      "rule_refs": [
+        "v1.1 P1"
+      ],
+      "rejected_neighbor": 10,
+      "distinguishing_predicate": "Согласие прямо неполное.",
+      "id": "SYN-H11-005"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 8,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 5,
+      "distinguishing_predicate": "Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях.",
+      "id": "SYN-H11-006"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 2,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 5,
+      "distinguishing_predicate": "Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C.",
+      "id": "SYN-H11-007"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Чужое решение и последствия не определяют собственного отношения к R.",
+      "rule_refs": [
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": null,
+      "distinguishing_predicate": null,
+      "id": "SYN-H11-008"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Названный допустимый обмен не предъявлен; ключ не вправе выдумать его в rationale.",
+      "rule_refs": [
+        "v1.1 K1",
+        "v1.1 K2",
+        "v1.1 T1"
+      ],
+      "rejected_neighbor": null,
+      "distinguishing_predicate": null,
+      "id": "SYN-H11-009"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Поддержка с усилителями без самостоятельного признака степени.",
+      "rule_refs": [
+        "v1.1 P1"
+      ],
+      "rejected_neighbor": null,
+      "distinguishing_predicate": null,
+      "id": "SYN-H11-010"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 0,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 2,
+      "distinguishing_predicate": "Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой.",
+      "id": "SYN-H11-011"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Риторика и направление не устанавливают полную/неполную степень.",
+      "rule_refs": [
+        "v1.1 P1"
+      ],
+      "rejected_neighbor": null,
+      "distinguishing_predicate": null,
+      "id": "SYN-H11-012"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "DISPUTED",
+      "intended_anchor": null,
+      "rationale": "Допущенные заявления несовместимы в одной единице; это противоречие содержания.",
+      "rule_refs": [
+        "v1 §6",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": null,
+      "distinguishing_predicate": null,
+      "id": "SYN-H11-013"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Второстепенный, но неуступаемый профиль не удовлетворяет целиком ни K-S, ни K-V.",
+      "rule_refs": [
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": null,
+      "distinguishing_predicate": null,
+      "id": "SYN-H11-014"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 8,
+      "distinguishing_predicate": "Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях.",
+      "id": "SYN-H11-015"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": -5,
+      "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Неполное преобладающее несогласие против явно определённой нейтральности по самому R.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": 0,
+      "distinguishing_predicate": "Неполное преобладающее несогласие против явно определённой нейтральности по самому R.",
+      "id": "SYN-H11-016"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 10,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 8,
+      "distinguishing_predicate": "Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе.",
+      "id": "SYN-H11-017"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Нейтральность собственного выбора против положительного неполного перевеса.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": 0,
+      "distinguishing_predicate": "Нейтральность собственного выбора против положительного неполного перевеса.",
+      "id": "SYN-H11-018"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": -5,
+      "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Выраженный отрицательный перевес против установленного отсутствия собственного предпочтения.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": 0,
+      "distinguishing_predicate": "Выраженный отрицательный перевес против установленного отсутствия собственного предпочтения.",
+      "id": "SYN-H11-019"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Нет единого установленного критерия удовлетворения; нельзя чередовать максимум для K-L и минимум для K-V.",
+      "rule_refs": [
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": null,
+      "distinguishing_predicate": null,
+      "id": "SYN-H11-020"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 2,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 0,
+      "distinguishing_predicate": "Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой.",
+      "id": "SYN-H11-021"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": -5,
+      "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Полное несогласие против явно преимущественного неполного несогласия.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": -10,
+      "distinguishing_predicate": "Полное несогласие против явно преимущественного неполного несогласия.",
+      "id": "SYN-H11-022"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 0,
+      "rationale": "Собственная нейтральность по всему R явно задана; безразличие к последствиям отдельно.",
+      "rule_refs": [
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": 5,
+      "distinguishing_predicate": "Нет положительного перевеса, прямо задана нейтральность.",
+      "id": "SYN-H11-023"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 8,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 10,
+      "distinguishing_predicate": "Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе.",
+      "id": "SYN-H11-024"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 0,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 2,
+      "distinguishing_predicate": "Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой.",
+      "id": "SYN-H11-025"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": -10,
+      "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Полное несогласие против явно преимущественного неполного несогласия.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": -5,
+      "distinguishing_predicate": "Полное несогласие против явно преимущественного неполного несогласия.",
+      "id": "SYN-H11-026"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Смешанная формулировка совместного первенства и отсутствия выделенного ведущего перекрывает K-M/K-L; приоритет правила не задан.",
+      "rule_refs": [
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": null,
+      "distinguishing_predicate": null,
+      "id": "SYN-H11-027"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 2,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 0,
+      "distinguishing_predicate": "Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой.",
+      "id": "SYN-H11-028"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 0,
+      "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Неполное преобладающее несогласие против явно определённой нейтральности по самому R.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": -5,
+      "distinguishing_predicate": "Неполное преобладающее несогласие против явно определённой нейтральности по самому R.",
+      "id": "SYN-H11-029"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Преимущественное неполное согласие против полного принятия без оговорок.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": 10,
+      "distinguishing_predicate": "Преимущественное неполное согласие против полного принятия без оговорок.",
+      "id": "SYN-H11-030"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 10,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 8,
+      "distinguishing_predicate": "Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе.",
+      "id": "SYN-H11-031"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 10,
+      "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Преимущественное неполное согласие против полного принятия без оговорок.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": 5,
+      "distinguishing_predicate": "Преимущественное неполное согласие против полного принятия без оговорок.",
+      "id": "SYN-H11-032"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "DISPUTED",
+      "intended_anchor": null,
+      "rationale": "Несовместимая готовность принять один и тот же пакет без A; не перекрытие непротиворечивого правила.",
+      "rule_refs": [
+        "v1.1 K2",
+        "v1 §6"
+      ],
+      "rejected_neighbor": null,
+      "distinguishing_predicate": null,
+      "id": "SYN-H11-033"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 8,
+      "rationale": "Явный совместно ведущий статус и полностью предъявленный обмен с отказом от удовлетворения A; утверждения об отсутствии ведущего нет.",
+      "rule_refs": [
+        "v1.1 K1",
+        "v1 §4"
+      ],
+      "rejected_neighbor": 5,
+      "distinguishing_predicate": "A прямо ведущий; не задан неведущий статус K-M.",
+      "id": "SYN-H11-034"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 0,
+      "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Выраженный отрицательный перевес против установленного отсутствия собственного предпочтения.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": -5,
+      "distinguishing_predicate": "Выраженный отрицательный перевес против установленного отсутствия собственного предпочтения.",
+      "id": "SYN-H11-035"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 8,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 10,
+      "distinguishing_predicate": "Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе.",
+      "id": "SYN-H11-036"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Отсутствие направленного предпочтения против выраженного неполного согласия.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": 0,
+      "distinguishing_predicate": "Отсутствие направленного предпочтения против выраженного неполного согласия.",
+      "id": "SYN-H11-037"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Внешнее обязательство и отсутствие альтернатив не устанавливают собственный приоритет.",
+      "rule_refs": [
+        "v1.1 K2",
+        "v1 §4"
+      ],
+      "rejected_neighbor": null,
+      "distinguishing_predicate": null,
+      "id": "SYN-H11-038"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Неполная степень сохраняется при решительной риторике; спокойный тон не отменяет полной степени.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": 10,
+      "distinguishing_predicate": "Неполная степень сохраняется при решительной риторике; спокойный тон не отменяет полной степени.",
+      "id": "SYN-H11-039"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": -10,
+      "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Степень дана отдельно от спокойного/резкого тона; полнота против неполноты.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": -5,
+      "distinguishing_predicate": "Степень дана отдельно от спокойного/резкого тона; полнота против неполноты.",
+      "id": "SYN-H11-040"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 10,
+      "rationale": "Собственное отношение ко всему R; явно выполнена верхняя категория этой пары: Неполная степень сохраняется при решительной риторике; спокойный тон не отменяет полной степени.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": 5,
+      "distinguishing_predicate": "Неполная степень сохраняется при решительной риторике; спокойный тон не отменяет полной степени.",
+      "id": "SYN-H11-041"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": -10,
+      "rationale": "Грамматическая перестановка разрешённого полного несогласия; спокойствие не уменьшает степень.",
+      "rule_refs": [
+        "v1.1 P1"
+      ],
+      "rejected_neighbor": -5,
+      "distinguishing_predicate": "Явно полная, а не неполная степень.",
+      "id": "SYN-H11-042"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 8,
+      "distinguishing_predicate": "Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях.",
+      "id": "SYN-H11-043"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 2,
+      "distinguishing_predicate": "Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C.",
+      "id": "SYN-H11-044"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 8,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 5,
+      "distinguishing_predicate": "Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях.",
+      "id": "SYN-H11-045"
+    },
+    {
+      "factor": "KVS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 5,
+      "rationale": "Все признаки категории предъявлены в речи и контексте; Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C.",
+      "rule_refs": [
+        "v1 §4",
+        "v1.1 K1",
+        "v1.1 K2"
+      ],
+      "rejected_neighbor": 2,
+      "distinguishing_predicate": "Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C.",
+      "id": "SYN-H11-046"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "ANCHOR",
+      "intended_anchor": 0,
+      "rationale": "Собственное отношение ко всему R; явно выполнена нижняя категория этой пары: Нейтральность собственного выбора против положительного неполного перевеса.",
+      "rule_refs": [
+        "v1 §3",
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": 5,
+      "distinguishing_predicate": "Нейтральность собственного выбора против положительного неполного перевеса.",
+      "id": "SYN-H11-047"
+    },
+    {
+      "factor": "POS",
+      "intended_outcome": "UNKNOWN",
+      "intended_anchor": null,
+      "rationale": "Эпистемическая вероятность не является степенью согласия, решение не определено.",
+      "rule_refs": [
+        "v1.1 P1",
+        "v1.1 P2"
+      ],
+      "rejected_neighbor": null,
+      "distinguishing_predicate": null,
+      "id": "SYN-H11-048"
+    }
+  ],
+  "adjacent_pairs": [
+    {
+      "pair_id": "PAIR-01",
+      "factor": "POS",
+      "boundary": "-10/-5",
+      "members": [
+        "SYN-H11-026",
+        "SYN-H11-022"
+      ],
+      "distinguishing_predicate": "Полное несогласие против явно преимущественного неполного несогласия."
+    },
+    {
+      "pair_id": "PAIR-02",
+      "factor": "POS",
+      "boundary": "-10/-5",
+      "members": [
+        "SYN-H11-040",
+        "SYN-H11-002"
+      ],
+      "distinguishing_predicate": "Степень дана отдельно от спокойного/резкого тона; полнота против неполноты."
+    },
+    {
+      "pair_id": "PAIR-03",
+      "factor": "POS",
+      "boundary": "-5/0",
+      "members": [
+        "SYN-H11-019",
+        "SYN-H11-035"
+      ],
+      "distinguishing_predicate": "Выраженный отрицательный перевес против установленного отсутствия собственного предпочтения."
+    },
+    {
+      "pair_id": "PAIR-04",
+      "factor": "POS",
+      "boundary": "-5/0",
+      "members": [
+        "SYN-H11-016",
+        "SYN-H11-029"
+      ],
+      "distinguishing_predicate": "Неполное преобладающее несогласие против явно определённой нейтральности по самому R."
+    },
+    {
+      "pair_id": "PAIR-05",
+      "factor": "POS",
+      "boundary": "0/+5",
+      "members": [
+        "SYN-H11-047",
+        "SYN-H11-018"
+      ],
+      "distinguishing_predicate": "Нейтральность собственного выбора против положительного неполного перевеса."
+    },
+    {
+      "pair_id": "PAIR-06",
+      "factor": "POS",
+      "boundary": "0/+5",
+      "members": [
+        "SYN-H11-004",
+        "SYN-H11-037"
+      ],
+      "distinguishing_predicate": "Отсутствие направленного предпочтения против выраженного неполного согласия."
+    },
+    {
+      "pair_id": "PAIR-07",
+      "factor": "POS",
+      "boundary": "+5/+10",
+      "members": [
+        "SYN-H11-030",
+        "SYN-H11-032"
+      ],
+      "distinguishing_predicate": "Преимущественное неполное согласие против полного принятия без оговорок."
+    },
+    {
+      "pair_id": "PAIR-08",
+      "factor": "POS",
+      "boundary": "+5/+10",
+      "members": [
+        "SYN-H11-039",
+        "SYN-H11-041"
+      ],
+      "distinguishing_predicate": "Неполная степень сохраняется при решительной риторике; спокойный тон не отменяет полной степени."
+    },
+    {
+      "pair_id": "PAIR-09",
+      "factor": "KVS",
+      "boundary": "0/2",
+      "members": [
+        "SYN-H11-011",
+        "SYN-H11-028"
+      ],
+      "distinguishing_predicate": "Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой."
+    },
+    {
+      "pair_id": "PAIR-10",
+      "factor": "KVS",
+      "boundary": "0/2",
+      "members": [
+        "SYN-H11-025",
+        "SYN-H11-021"
+      ],
+      "distinguishing_predicate": "Отсутствие значимости против положительной второстепенности с названным более важным B и добровольной уступкой."
+    },
+    {
+      "pair_id": "PAIR-11",
+      "factor": "KVS",
+      "boundary": "2/5",
+      "members": [
+        "SYN-H11-001",
+        "SYN-H11-046"
+      ],
+      "distinguishing_predicate": "Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C."
+    },
+    {
+      "pair_id": "PAIR-12",
+      "factor": "KVS",
+      "boundary": "2/5",
+      "members": [
+        "SYN-H11-007",
+        "SYN-H11-044"
+      ],
+      "distinguishing_predicate": "Второстепенность A против положительной сопоставимости A/B и явно неведущего, но не второстепенного A при ведущем C."
+    },
+    {
+      "pair_id": "PAIR-13",
+      "factor": "KVS",
+      "boundary": "5/8",
+      "members": [
+        "SYN-H11-043",
+        "SYN-H11-006"
+      ],
+      "distinguishing_predicate": "Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях."
+    },
+    {
+      "pair_id": "PAIR-14",
+      "factor": "KVS",
+      "boundary": "5/8",
+      "members": [
+        "SYN-H11-015",
+        "SYN-H11-045"
+      ],
+      "distinguishing_predicate": "Явно неведущий A при ведущем C против ведущего A; конкретная уступка допустима в обоих случаях."
+    },
+    {
+      "pair_id": "PAIR-15",
+      "factor": "KVS",
+      "boundary": "8/10",
+      "members": [
+        "SYN-H11-036",
+        "SYN-H11-017"
+      ],
+      "distinguishing_predicate": "Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе."
+    },
+    {
+      "pair_id": "PAIR-16",
+      "factor": "KVS",
+      "boundary": "8/10",
+      "members": [
+        "SYN-H11-024",
+        "SYN-H11-031"
+      ],
+      "distinguishing_predicate": "Допускается исход без удовлетворения того же A против отказа от всякого такого исхода при одном критерии и добровольном выборе."
+    }
+  ],
+  "shuffle": {
+    "seed": 202609261147,
+    "method": "Python random.Random.shuffle before public ID assignment"
+  },
+  "warning": "Design intentions, not empirical truth. Key errors must be logged without rewriting frozen bytes."
+}

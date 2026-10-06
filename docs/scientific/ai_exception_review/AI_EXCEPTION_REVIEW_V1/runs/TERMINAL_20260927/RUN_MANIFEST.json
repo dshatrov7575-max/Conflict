@@ -1,0 +1,23 @@
+{
+  "review_id": "AI_EXCEPTION_REVIEW_V1",
+  "review_manifest_sha256": "864932f217ac7bbf7076ace3547d255b4c417f45db69c8543cf6714ec5e810f9",
+  "response_file_sha256": {
+    "EXPERT_A_CHATGPT_PRO": "0cb61d890720fe9dc20ec2d83bac003227805170529d25ef64d6f3a6766f375d",
+    "EXPERT_B_CHATGPT_PRO": "3426ce66a6eceb031c2156cef4d8a68cd3a638e7f1e5f576ee4c4271a883f108",
+    "EXPERT_C_CLAUDE_FABLE_5_1": "4b7ca3b982dea3a9ca4390864f45055bb8aef347686dd0701284ada00582a02e"
+  },
+  "files": [
+    {
+      "path": "CANDIDATE_CHECK_TEMPLATE.json",
+      "sha256": "8b7bbae173879b9307d0e81d72196ab8687132232369f9fbfe5d6d6d79ca1ef5"
+    },
+    {
+      "path": "COMPARISON_RESULTS.json",
+      "sha256": "984b394c1b1d2871f7c471c28c0a36319de8397ac642cc4188c6e58740b5fddc"
+    },
+    {
+      "path": "HUMAN_EXCEPTION_PACKET.md",
+      "sha256": "873797bcb34d61e3fd5bb4543a55dd1f716dcac20e0d48d3dd1d886650b75b40"
+    }
+  ]
+}

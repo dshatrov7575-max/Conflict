@@ -1,0 +1,14 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_R2_QWEN_PACKAGE_RECEIPT",
+  "state": "PASS",
+  "github_run_id": "36898131857",
+  "github_head_sha": "aaf18e0bdfb52726b6df5956ce9210c2641bf862",
+  "target_manifest_blob": "4b27f7eb0a393de53dde4ff737e9f2a606b16611",
+  "reviewer_role": "V1_1_HOSTILE_REVIEWER_C_R2",
+  "exact_ui_model": "Qwen 3.8-Max",
+  "transport_files": 1,
+  "package_filename": "V1_1_HOSTILE_REVIEWER_C_QWEN_R2_SINGLE.md",
+  "package_sha256": "5145cc144f4ba2ba3dd8439adbcdfdd37998a747ff740c6035177b40afefe405",
+  "source_object_count": 40,
+  "prior_hostile_reviews_included": false
+}

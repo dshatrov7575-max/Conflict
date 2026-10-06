@@ -1,0 +1,43 @@
+{
+  "route_id": "AI_ONLY_DYAD_KBM_E02_V100",
+  "contract_version": "1.0.0",
+  "input_sha256": "d0fb1f4a87f1cf64380f99167d77ecd63fd37b2827c48d044679b6abf027bf42",
+  "state": "ELIGIBLE_FOR_READ_ONLY_DYAD_SCENARIO_REPLAY",
+  "inherited_worker_record": {
+    "unit_id": "AO2S-C1-03",
+    "actor_id": "AOV2_KBM_STRIKERS",
+    "source_id": "D01-FPAY",
+    "source_report_date": "2011-05-17",
+    "POS_AO2": -5,
+    "KVS_AO2": 5,
+    "status": "INHERITED_TWO_PRIMARY_NUMERIC_AGREEMENT"
+  },
+  "company_entries": [
+    {
+      "factor": "POS_AO2",
+      "ai1_status": "NUMERIC",
+      "ai1_value": 5,
+      "ai2_status": "NUMERIC",
+      "ai2_value": 5,
+      "same_C1_C8": true,
+      "triage": "CONSENSUS_NUMERIC"
+    },
+    {
+      "factor": "KVS_AO2",
+      "ai1_status": "NUMERIC",
+      "ai1_value": 5,
+      "ai2_status": "NUMERIC",
+      "ai2_value": 5,
+      "same_C1_C8": true,
+      "triage": "CONSENSUS_NUMERIC"
+    }
+  ],
+  "coordinator_substitution": "FORBIDDEN",
+  "targeted_content_review_rounds": 0,
+  "calculation_release": true,
+  "simultaneous_snapshot": false,
+  "carry_forward": "NONE",
+  "historical_snapshot": "NOT_ESTABLISHED",
+  "historical_area_UNO": "NOT_COMPUTED",
+  "human_validation": "NOT_PERFORMED"
+}

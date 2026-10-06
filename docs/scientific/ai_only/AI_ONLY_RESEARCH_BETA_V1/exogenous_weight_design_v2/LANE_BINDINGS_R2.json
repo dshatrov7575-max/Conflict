@@ -1,0 +1,49 @@
+{
+  "design_id": "AI_ONLY_COMMON_EXOGENOUS_WEIGHT_DESIGN_V2",
+  "status": "FROZEN_BEFORE_NEW_PRIMARY_RESULTS",
+  "revision": "R2_WITH_D25_BINDING",
+  "grid_file": "SENSITIVITY_GRID_V2.json",
+  "lanes": [
+    {
+      "route_id": "AI_ONLY_DYAD_KBM_E02_V100",
+      "input_sha256": "d0fb1f4a87f1cf64380f99167d77ecd63fd37b2827c48d044679b6abf027bf42",
+      "actor_a": "AOV2_KBM_STRIKERS",
+      "actor_b": "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527",
+      "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+      "eligibility_state": "ELIGIBLE_FOR_READ_ONLY_DYAD_SCENARIO_REPLAY",
+      "extraction_mode": "COMPANY_ONLY_WITH_INHERITED_ACTOR_A"
+    },
+    {
+      "route_id": "AI_ONLY_DYAD_OMG_NOV24_V100",
+      "input_sha256": "72b061d6999b596052adc34df493cd2f9687979589ddd17a83ae21f375a0a9a4",
+      "actor_a": "OMG_DISMISSED_WORKERS_NOV23_24_AS_REPORTED_CONTUR",
+      "actor_b": "RD_KMG_OMG_EMPLOYER_SIDE_NOV23_24_AS_REPORTED_CONTUR",
+      "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+      "eligibility_state": "ELIGIBLE_FOR_READ_ONLY_DYAD_SCENARIO_REPLAY",
+      "extraction_mode": "FULL_DYAD_FOUR_ENTRY_CONSENSUS"
+    },
+    {
+      "route_id": "AI_ONLY_PAIR_KBM_E05_V100",
+      "input_sha256": "51f1a805986f7550828d8b05e0a1aa7aa2c80d43410540cd0f72a82448660f95",
+      "actor_a": "AOV2_KBM_STRIKERS",
+      "actor_b": "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514",
+      "ptn_id": "728c8406-ba99-5787-9557-933b5670be7c",
+      "eligibility_state": "ELIGIBLE_FOR_READ_ONLY_PAIR_SCENARIO_REPLAY",
+      "extraction_mode": "COMPANY_ONLY_WITH_INHERITED_ACTOR_A"
+    },
+    {
+      "route_id": "AI_ONLY_DYAD_D25_E02_V100",
+      "input_sha256": "aa256f3c1822eea2494b4267a15f5b65707a86896b457531762b2066387872aa",
+      "actor_a": "D25_DISMISSED_KMG_EP_WORKERS_20111013",
+      "actor_b": "D25_KMG_EP_MANAGEMENT_20111013",
+      "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+      "eligibility_state": "ELIGIBLE_FOR_READ_ONLY_DYAD_SCENARIO_REPLAY",
+      "extraction_mode": "FULL_DYAD_FOUR_ENTRY_CONSENSUS"
+    }
+  ],
+  "excluded_route": {
+    "route_id": "AI_ONLY_DYAD_OMG_E1_V102",
+    "reason": "EXACT_FROZEN_DELIVERY_ARTIFACT_UNAVAILABLE; no primary comparison exists."
+  },
+  "post_result_tuning": "FORBIDDEN"
+}

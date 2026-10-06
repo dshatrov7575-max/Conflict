@@ -1,0 +1,24 @@
+{
+  "gate_id": "AI_ONLY_RESEARCH_BETA_V1_RELEASE_GATE_R1",
+  "state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+  "gates": {
+    "G1": "PASS",
+    "G2": "PASS",
+    "G3": "PASS",
+    "G4": "PASS",
+    "G5": "PASS",
+    "G6": "PASS",
+    "G7": "PASS",
+    "G8": "PASS"
+  },
+  "eligible_lanes": [
+    "AI_ONLY_DYAD_KBM_E02_V100",
+    "AI_ONLY_PAIR_KBM_E05_V100"
+  ],
+  "separate_release_states": {
+    "external_substantive_historical_measurement": "HOLD",
+    "historical_area_UNO": "BLOCKED",
+    "human_validated_scientific_release": "NOT_PERFORMED",
+    "predictive_probability_risk_validation": "BLOCKED_NOT_CLAIMED"
+  }
+}

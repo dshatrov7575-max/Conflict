@@ -1,0 +1,72 @@
+{
+  "pilot_id": "ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1",
+  "base_commit": "709eea6c3e3c270b368eea4495dbd6e93b1695b8",
+  "source_inputs": [
+    {
+      "source": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/sources/ZHANAOZEN_V4_2011_SEALED_EVIDENCE_PACKET_CP3.json",
+      "sha256": "3a24135df10f1610854478b4526b176d6c3f912a8837044fecf700b04e147256",
+      "bytes": 159511,
+      "modified": false
+    },
+    {
+      "source": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/sources/ZHANAOZEN_V4_2011_SEALED_EVIDENCE_PACKET_CP3.xlsx",
+      "sha256": "04a5098cdbcbed580f9f71ce0b28c0a4f50fbae48a97f579274556bcf26030df",
+      "bytes": 51240,
+      "modified": false
+    },
+    {
+      "source": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/sources/ZHANAOZEN_V4_2011_CP3_VALIDATION_PACKAGE.zip",
+      "sha256": "a1903fd0cc492b877a80c00a0fb2c70fd601477df8373b5251ac5ab2ffa3b4bc",
+      "bytes": 131883,
+      "modified": false
+    }
+  ],
+  "method_inputs": [
+    {
+      "path": "docs/scientific/MVP7_POS_KVS_NUMERIC_ANCHORS_V1.md",
+      "sha256": "3971a424225b8789c1b4cbceec54b29406b1a26d5bcb92f353aa2753c4c0362c"
+    },
+    {
+      "path": "docs/scientific/MVP7_POS_KVS_RUBRIC_V1_1_PATCH.md",
+      "sha256": "76644923f3ca66fb6760ac5ffb64540f7ec8f5bbe0e9b4c3868787b6579e160d"
+    },
+    {
+      "path": "docs/scientific/MVP7_POS_KVS_RUBRIC_V1_2_PATCH.md",
+      "sha256": "dd176760c2c314e46364e6b27e09ac5cb3a1d9d7d7fe6e17484a5496ec8a514b"
+    },
+    {
+      "path": "docs/scientific/MVP7_WEIGHT_SEMANTICS_DECISION_PATCH_V1.md",
+      "sha256": "e57ca01c2414fea213003ca330a7f9d7b560eaf0fa2c0f1b60e6b1dc48129bbc"
+    },
+    {
+      "path": "docs/scientific/MVP7_METHODOLOGY_RUBRIC_FREEZE_MANIFEST.json",
+      "sha256": "73bd19fc02b66a834d8bd291d47579b875cbdba4de44eefec8ece781b5e99162"
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/PATCHED_RUBRIC_FOR_CODERS.md",
+      "sha256": "e3d57484e6df3bc6a7e31e560ac803a3a0ac7c30bf9204d2698f409f9e3040cd"
+    }
+  ],
+  "instruction_transform": {
+    "source_path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/PATCHED_RUBRIC_FOR_CODERS.md",
+    "body_start": "## 1. Что именно предлагается измерять",
+    "content_rule_changes": false,
+    "removed_source_intro": "Synthetic title/preamble replaced by human operational wrapper.",
+    "links_replaced_with_visible_labels": 2,
+    "coder_instruction_body_sha256": "73aa91a2417d39576ed534826e96d1736b17ec79e1717ea0e48f35c986184256"
+  },
+  "evidence_transforms": [
+    "Only existing records selected through existing links; original rows preserved in coordinator subset.",
+    "Coder presentation omits source URL, live document title/locator and original CodingItem ID; crosswalk retained by coordinator.",
+    "Actor scope/reference/Fact statements/fragment exact_text and hashes preserved; no new translation or Evidence assertion.",
+    "No complete context/capture/admission verification claimed."
+  ],
+  "context_capture_files_available_in_archive": [],
+  "unlinked_disputed_fact_ids": [
+    "7bf6c3d8-e010-5b17-b966-2fc73b85ece7",
+    "10d94580-3cf3-589c-8559-75cb21dff279",
+    "a2592518-5346-5ad7-853b-108cca8eaf88"
+  ],
+  "frozen_keys": "Not used in selection, not copied to coder packets, original files unchanged.",
+  "compiler_role": "Preparation only; no AI or HUMAN coding of real items."
+}

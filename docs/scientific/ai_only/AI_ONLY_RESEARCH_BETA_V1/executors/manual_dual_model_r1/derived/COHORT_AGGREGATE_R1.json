@@ -1,0 +1,61 @@
+{
+  "cohort_id": "AI_ONLY_REPLICATION_COHORT_R1_20260930",
+  "state": "PARTIAL",
+  "expected_lanes": 4,
+  "expected_decisions": 12,
+  "observed_decisions": 8,
+  "overall": {
+    "exact_agreement_count": 8,
+    "exact_agreement_fraction_expected_denominator": "0.66666667",
+    "numeric_consensus_count": 6,
+    "numeric_consensus_fraction_expected_denominator": "0.50000000",
+    "shared_unknown_count": 2,
+    "shared_unknown_fraction_expected_denominator": "0.16666667",
+    "shared_disputed_count": 0,
+    "shared_disputed_fraction_expected_denominator": "0.00000000",
+    "disagreement_count": 0,
+    "disagreement_fraction_expected_denominator": "0.00000000",
+    "unresolved_count": 4,
+    "unresolved_fraction_expected_denominator": "0.33333333"
+  },
+  "by_factor": {
+    "POS_AO2": {
+      "expected": 6,
+      "exact_agreement_count": 4,
+      "exact_agreement_fraction": "0.66666667",
+      "numeric_consensus_count": 3,
+      "shared_unknown_count": 1,
+      "shared_disputed_count": 0,
+      "disagreement_count": 0,
+      "unresolved_count": 2
+    },
+    "KVS_AO2": {
+      "expected": 6,
+      "exact_agreement_count": 4,
+      "exact_agreement_fraction": "0.66666667",
+      "numeric_consensus_count": 3,
+      "shared_unknown_count": 1,
+      "shared_disputed_count": 0,
+      "disagreement_count": 0,
+      "unresolved_count": 2
+    }
+  },
+  "lane_states": {
+    "AI_ONLY_DYAD_KBM_E02_V100": "ELIGIBLE_FOR_READ_ONLY_DYAD_SCENARIO_REPLAY",
+    "AI_ONLY_DYAD_OMG_NOV24_V100": "REJECT_INVALID_PRIMARY_RUN",
+    "AI_ONLY_PAIR_KBM_E05_V100": "ELIGIBLE_FOR_READ_ONLY_PAIR_SCENARIO_REPLAY",
+    "AI_ONLY_DYAD_D25_E02_V100": "HOLD_FACTOR_INCOMPLETE"
+  },
+  "eligible_replay_lanes": [
+    "AI_ONLY_DYAD_KBM_E02_V100",
+    "AI_ONLY_PAIR_KBM_E05_V100"
+  ],
+  "claims": {
+    "representative_sample": false,
+    "population_inference": false,
+    "human_validation": "NOT_PERFORMED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "fraction_denominator": "FROZEN_EXPECTED_DECISIONS"
+  },
+  "aggregator_git_blob_sha": "47b3fc0fc3828066b8cb68450114d4f7f8b69790"
+}

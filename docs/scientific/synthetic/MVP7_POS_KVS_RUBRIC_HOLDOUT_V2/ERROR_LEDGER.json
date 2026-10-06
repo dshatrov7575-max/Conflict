@@ -1,0 +1,12 @@
+{
+  "status": "NO_OPEN_FINDINGS_IN_TARGETED_SCOPE",
+  "created_at_utc": "2026-09-26T12:14:55.814422+00:00",
+  "denominator": 36,
+  "excluded_cases": [],
+  "findings": [],
+  "source_sha256": {
+    "KEY_AUDIT.json": "42e498010ba4d5c7bbf8c68208d8c80ce7ef0d2b8256d828c681aac7218db643",
+    "RATIONALE_AUDIT.json": "51129a1bed934eadd4ddc07ecf8f63f4080105b875a842d79053ce1286a6a41c"
+  },
+  "old_findings": "Old 60/48 findings and frozen keys remain unchanged. This record concerns only new V2."
+}

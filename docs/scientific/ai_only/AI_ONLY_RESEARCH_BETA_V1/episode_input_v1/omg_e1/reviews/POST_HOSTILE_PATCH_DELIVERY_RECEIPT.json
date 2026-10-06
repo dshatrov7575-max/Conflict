@@ -1,0 +1,13 @@
+{
+  "package_id": "MVP7_OMG_E1_POST_HOSTILE_PATCH_PACK_20260929",
+  "zip_name": "MVP7_OMG_E1_POST_HOSTILE_PATCH_PACK_10_FILES_20260929.zip",
+  "zip_bytes": 14555,
+  "zip_sha256": "cbc69b76e08fd2831431df856cec5c2ce724c93be4af7ee6a8a91ed111366fe9",
+  "files": 10,
+  "zip_crc": "PASS",
+  "final_verdict": "HOLD_EXTERNAL_SCIENTIFIC_RELEASE",
+  "internal_status": "PASS_INTERNAL_TECHNICAL_DEMO_ONLY",
+  "technical_files_modified": false,
+  "primary_outputs_modified": false,
+  "core_modified": false
+}

@@ -1,0 +1,59 @@
+{
+  "cohort_fixed": true,
+  "new_lane_after_results": false,
+  "all_four_lanes_reported": true,
+  "primary_roles": {
+    "KBM_COMPANY_E02_V100_AI1": "VALID",
+    "KBM_COMPANY_E02_V100_AI2": "VALID",
+    "OMG_NOV24_V101_AI1": "VALID",
+    "OMG_NOV24_V101_AI2": "VALID",
+    "KBM_E05_V100_AI1": "VALID",
+    "KBM_E05_V100_AI2": "VALID",
+    "D25_E02_V100_AI1": "VALID",
+    "D25_E02_V100_AI2": "VALID"
+  },
+  "primary_role_provenance": {
+    "carry_forward_validated_roles": 6,
+    "fresh_blind_roles": 2,
+    "fresh_model_pair": [
+      "GPT-5.6 Sol Pro",
+      "Gemini 3.1 Pro"
+    ],
+    "executor_substitution": "PROSPECTIVE_AVAILABILITY_ONLY_BEFORE_AI2_RESPONSE"
+  },
+  "input_provenance_integrity": "PASS",
+  "post_result_rebinding": false,
+  "all_lane_comparators_executed": true,
+  "coordinator_substitution_used": false,
+  "targeted_content_review_used": false,
+  "all_lane_outcomes_retained": true,
+  "lane_states": {
+    "AI_ONLY_DYAD_KBM_E02_V100": "ELIGIBLE_FOR_READ_ONLY_DYAD_SCENARIO_REPLAY",
+    "AI_ONLY_DYAD_OMG_NOV24_V101": "HOLD_DISAGREEMENT",
+    "AI_ONLY_PAIR_KBM_E05_V100": "ELIGIBLE_FOR_READ_ONLY_PAIR_SCENARIO_REPLAY",
+    "AI_ONLY_DYAD_D25_E02_V100": "HOLD_FACTOR_INCOMPLETE"
+  },
+  "omg_v101_state": "HOLD_DISAGREEMENT",
+  "cohort_aggregator_test": "PASS",
+  "cohort_aggregate_schema": "PASS",
+  "denominator_rule_preserved": true,
+  "weight_grid_unchanged": true,
+  "weight_runner_test": "PASS",
+  "weights_inferred_from_evidence_or_outcome": false,
+  "eligible_lanes": [
+    "AI_ONLY_DYAD_KBM_E02_V100",
+    "AI_ONLY_PAIR_KBM_E05_V100"
+  ],
+  "eligible_lane_core_replay": {
+    "AI_ONLY_DYAD_KBM_E02_V100": "PASS",
+    "AI_ONLY_PAIR_KBM_E05_V100": "PASS"
+  },
+  "required_label": "AI-кодирование; человеческая проверка не проводилась; исследовательская версия; прогнозная точность не установлена.",
+  "claims": {
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "artifact_kind": "TECHNICAL_SCOPE_CHECKS",
+  "assessor_type": "AI_PREPARATION",
+  "status": "PASS_TECHNICAL_ONLY",
+  "base_commit": "cb77ddbbc5cae3115f90a1512494d09be12c54d4",
+  "checks": [
+    "strict_json_parse",
+    "input_git_blob_and_sha256",
+    "existing_manifest_pins",
+    "all_local_references_and_json_pointers",
+    "typed_ids_and_original_links",
+    "reference_text_hashes",
+    "fragment_hashes",
+    "admission_status_preservation",
+    "fragment_proof_not_edition_proof",
+    "disputed_and_unlinked_facts_retained",
+    "no_results_in_audit_data",
+    "three_existing_schemas_and_templates",
+    "historical_schema_rejects_ai_preparation",
+    "negative_result_field_fixtures",
+    "temporal_and_representation_fixtures",
+    "all_existing_files_byte_identical",
+    "six_new_files_only",
+    "git_diff_check"
+  ],
+  "counts": {
+    "base_blobs_verified": 753,
+    "input_pins": 17,
+    "inherited_manifest_file_pins": 92,
+    "coding_items": 20,
+    "fact_fragment_links": 58,
+    "facts": 56,
+    "fragments": 56,
+    "document_versions": 27,
+    "disputed_facts": 3,
+    "recovery_blocked_items": 12,
+    "recorded_archive_witnesses": 18,
+    "unique_proven_fragments": 17
+  },
+  "negative_temporal_fixtures": [
+    "after_cutoff_same_window",
+    "company_to_employer_group",
+    "current_url_only",
+    "fragment_to_edition",
+    "late_snapshot",
+    "month_crosses_cutoff",
+    "no_carry_forward_to_2011-11-28",
+    "no_carry_forward_to_2011-12-15",
+    "no_literal_match",
+    "no_timezone",
+    "pdf_metadata_only",
+    "person_to_group",
+    "publication_date_only",
+    "reversed_interval"
+  ],
+  "limits": [
+    "External CP3 and full archive payload bytes are not in Git and were not retrieved.",
+    "Inherited witness records verified locally; no new historical authentication.",
+    "Audit artifacts are outside existing assessment/pilot schemas; those schemas remain unchanged.",
+    "Technical PASS does not change scientific admission or establish empirical validity."
+  ]
+}

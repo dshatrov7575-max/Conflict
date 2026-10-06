@@ -1,0 +1,21 @@
+{
+  "package_id": "MVP7_OMG_EPISODE_E1_WEIGHT_SENSITIVITY_V1",
+  "executed_at_utc": "2026-09-29T10:17:53Z",
+  "python": "3.13.5",
+  "test_file": "test_weight_sensitivity.py",
+  "test_methods": 12,
+  "result": "PASS",
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "synthetic_expectations": {
+    "equal_POS_plus_minus_5_equal_KVS_equal_RGU_Pol": "50.00000000",
+    "company_KVS_8_Pol": "38.46153846",
+    "RGU_ratio_10_to_1_Pol": "9.09090909",
+    "positive_q_scale_invariance": true,
+    "q_zero_area_field": null,
+    "missing_company_KVS": "NOT_COMPUTABLE"
+  },
+  "scientific_validation": "NOT_CLAIMED",
+  "core_replay": "NOT_YET_PERFORMED_FOR_REAL_EPISODE_INPUT"
+}

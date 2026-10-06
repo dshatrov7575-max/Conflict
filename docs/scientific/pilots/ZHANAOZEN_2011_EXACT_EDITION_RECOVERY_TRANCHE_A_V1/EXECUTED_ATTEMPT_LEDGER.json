@@ -1,0 +1,3481 @@
+{
+  "artifact_kind": "EXACT_EDITION_RECOVERY_EXECUTION_LEDGER",
+  "assessor_type": "AI_PREPARATION",
+  "schema_version": "1.0.0",
+  "tranche_id": "ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1",
+  "base_commit": "cd056e3bc03001705a9fa359173a082eefb26099",
+  "base_tree": "954a8330922249539a67f7d5b7eeae35f8ec939b",
+  "plan_id": "ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1",
+  "case_id": "292d238f-9fee-578f-bddd-6f923163788a",
+  "execution_mode": "LIVE_FROZEN_EXACT_EDITION_QUERY_TRANCHE_A",
+  "network_search_executed_by_pr17": true,
+  "substantive_review_executed_by_pr17": true,
+  "live_query_budget_consumed": 22,
+  "append_only": true,
+  "legacy_fragment_replay_budget_consumed": 0,
+  "attempts": [
+    {
+      "attempt_id": "4b4676d9-2232-5660-93d2-2ca81f118ce6",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "7b460e50-6231-5278-abec-1d87484359ff",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "document_version_id": "64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "document_id": "6d02a123-4cac-527f-9b96-a76af63cc16a",
+      "source_id": "fad22d7e-a495-55e7-85c3-25b774a3b87e",
+      "label": "D01",
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "0a03f67623e91aede9c994c4429a343e4c6b46697a2128c814f767efc8b644c4",
+      "requested_at_utc": "2026-10-03T12:23:40.433438+00:00",
+      "completed_at_utc": "2026-10-03T12:23:42.094037+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.rferl.org/a/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.rferl.org/a/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+          "final_url": "https://www.rferl.org/a/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 80140,
+          "payload_sha256": "d30a2e235531f9a1d7a667233ea77dc3e5578704efb02a82b9133768eaef36d3",
+          "redirect_chain": [
+            {
+              "url": "https://www.rferl.org/a/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "66e3971a-cf28-56de-806d-93e27cd4c7e6"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "4ac51d9f-b457-5cc6-a1a2-dbddfbd40b91",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "7ce842d3-b8c7-58a4-ba49-0d52a04c7b36",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "document_version_id": "64f97ffe-8d27-5837-86bf-e5851257a76d",
+      "document_id": "6d02a123-4cac-527f-9b96-a76af63cc16a",
+      "source_id": "fad22d7e-a495-55e7-85c3-25b774a3b87e",
+      "label": "D01",
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "4bc6e7aaffbf6a2c2387b550d7022a52b9c426c252777932c6482441f60056a9",
+      "requested_at_utc": "2026-10-03T12:23:40.434324+00:00",
+      "completed_at_utc": "2026-10-03T12:24:20.203169+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%3A80%2Fcontent%2Foil_workers_strike_in_kazakhstan_grows%2F24177839.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%3A80%2Fcontent%2Foil_workers_strike_in_kazakhstan_grows%2F24177839.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%3A80%2Fcontent%2Foil_workers_strike_in_kazakhstan_grows%2F24177839.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 405,
+          "payload_sha256": "c2ae1b6e203b3d173454c9209a017196a30b30f47feb15320bdd85db2bb471a7",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%3A80%2Fcontent%2Foil_workers_strike_in_kazakhstan_grows%2F24177839.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        },
+        {
+          "subrequest_role": "WAYBACK_REPLAY_PAYLOAD",
+          "request_url": "https://web.archive.org/web/20110811165523id_/http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+          "final_url": "https://web.archive.org/web/20110811165523id_/http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 62206,
+          "payload_sha256": "1c222969d2b8b5259ca5afca0d649f17ffcd8a12176d10502bd69c14b5fdaede",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/web/20110811165523id_/http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [
+        {
+          "timestamp": "20110521181520",
+          "original": "http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+          "digest_sha1_base32": "F4T26SQHE5VFDZVDTC3ZDI4P747ZQS6H",
+          "mimetype": "text/html",
+          "recorded_length": "14512",
+          "candidate_id": "69828603-83a2-56dc-8cf5-2f46947a71f8"
+        },
+        {
+          "timestamp": "20110811165523",
+          "original": "http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+          "digest_sha1_base32": "AVIU5SXG6K2PWEVKLAZZ4LIEFHCUBQYG",
+          "mimetype": "text/html",
+          "recorded_length": "14205",
+          "candidate_id": "e82c8899-9967-5c91-a1ae-243e0f993f70"
+        }
+      ],
+      "chosen_capture": {
+        "timestamp": "20110811165523",
+        "original": "http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+        "replay_url": "https://web.archive.org/web/20110811165523id_/http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+        "cdx_digest_sha1_base32": "AVIU5SXG6K2PWEVKLAZZ4LIEFHCUBQYG",
+        "computed_payload_sha1_base32": "AVIU5SXG6K2PWEVKLAZZ4LIEFHCUBQYG",
+        "digest_match": true,
+        "payload_sha256": "1c222969d2b8b5259ca5afca0d649f17ffcd8a12176d10502bd69c14b5fdaede",
+        "inherited_witness_id": "AW-D01-20110811165523",
+        "inherited_payload_sha256_match": true
+      },
+      "response_status": "PRE_CUTOFF_CAPTURE_RETRIEVED",
+      "technical_error": null,
+      "candidate_ids": [
+        "69828603-83a2-56dc-8cf5-2f46947a71f8",
+        "e82c8899-9967-5c91-a1ae-243e0f993f70"
+      ],
+      "result_state": "PRE_CUTOFF_CAPTURE_RETRIEVED_NOT_ADMISSIBLE_AS_FULL_EDITION",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "A pre-cutoff archive payload was retrieved and custody metadata recorded, but the repository has no frozen complete-edition byte identity binding this payload to the exact DocumentVersion. Fragment proof and locator continuity do not satisfy the full exact-edition contract.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": true,
+        "complete_payload_retrieved": true,
+        "archive_digest_verified": true,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "d5b03cea-d7ea-563c-a642-fa2c355cb431",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "8d8b7767-bc01-5ba3-9033-2f65bf2457e6",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "document_version_id": "ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "document_id": "2c117675-d4c1-5125-8f0b-88086e6bb887",
+      "source_id": "041d7f7c-ad6e-50ac-8322-fa21fd7e8ce4",
+      "label": "D03",
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "d78ef464697e178b159a7e51ecb37a817759c9ecab5797dd20952261dce7dee2",
+      "requested_at_utc": "2026-10-03T12:23:40.434636+00:00",
+      "completed_at_utc": "2026-10-03T12:23:42.193646+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.rferl.org/a/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.rferl.org/a/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+          "final_url": "https://www.rferl.org/a/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 79730,
+          "payload_sha256": "4cb51e97306d56a80cbf60700b15dfa92d9117a6d7259bba9fc0327d2f14a1b8",
+          "redirect_chain": [
+            {
+              "url": "https://www.rferl.org/a/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "53cb7bdf-4047-57a2-8598-12d16f9484e3"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "adb61ece-81ec-5d9f-b61d-735a2512fb74",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "f962cc6d-a45c-570a-99a0-c8038036e50f",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "document_version_id": "ed5b18f5-d4b4-57bf-99db-d59131945ed9",
+      "document_id": "2c117675-d4c1-5125-8f0b-88086e6bb887",
+      "source_id": "041d7f7c-ad6e-50ac-8322-fa21fd7e8ce4",
+      "label": "D03",
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "b824d2c01a0d4a4e6562127dce007f7d2b7aac33235ea8b7c7fbeb79559c8ca8",
+      "requested_at_utc": "2026-10-03T12:23:40.434934+00:00",
+      "completed_at_utc": "2026-10-03T12:23:59.505232+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fmore_oil_workers_hunger_strike_kazakhstan%2F24206131.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fmore_oil_workers_hunger_strike_kazakhstan%2F24206131.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fmore_oil_workers_hunger_strike_kazakhstan%2F24206131.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 1251,
+          "payload_sha256": "ee6381b2b7e49b73004139d0c1270a9890559fb81699ac2d35628addd0a8a96b",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fmore_oil_workers_hunger_strike_kazakhstan%2F24206131.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        },
+        {
+          "subrequest_role": "WAYBACK_REPLAY_PAYLOAD",
+          "request_url": "https://web.archive.org/web/20110916223846id_/http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+          "final_url": "https://web.archive.org/web/20110916223846id_/http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 60145,
+          "payload_sha256": "dcd1ca9c08888e731da60c70394760bab313cd7c4406caea64071439a749363e",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/web/20110916223846id_/http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [
+        {
+          "timestamp": "20110527054702",
+          "original": "http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+          "digest_sha1_base32": "GVDYFFDIQKST45T2HKS3JWFFUET4IPM3",
+          "mimetype": "text/html",
+          "recorded_length": "14088",
+          "candidate_id": "7e92babd-3934-5384-a362-8f7d9e2b1b10"
+        },
+        {
+          "timestamp": "20110531034836",
+          "original": "http://www.rferl.org:80/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+          "digest_sha1_base32": "QKHBWXBPGVPGAYCSVVQDNLVZT3M33RID",
+          "mimetype": "text/html",
+          "recorded_length": "14045",
+          "candidate_id": "79c60339-46c9-52d0-b084-923e8a11a7df"
+        },
+        {
+          "timestamp": "20110605164434",
+          "original": "http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+          "digest_sha1_base32": "OMXZSGLDYPLW7YSIYURDHTS7LRTYYMYE",
+          "mimetype": "text/html",
+          "recorded_length": "14108",
+          "candidate_id": "915c1aeb-7da1-54b6-a485-08a8736e8e0e"
+        },
+        {
+          "timestamp": "20110809051856",
+          "original": "http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+          "digest_sha1_base32": "XTVSTA7CDNFBBFOEVVDXGIFCPRIJ5FE4",
+          "mimetype": "text/html",
+          "recorded_length": "15026",
+          "candidate_id": "f2548c09-6477-525d-8d95-49a1cef42696"
+        },
+        {
+          "timestamp": "20110810051603",
+          "original": "http://www.rferl.org:80/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+          "digest_sha1_base32": "MJ3QCCKRF3BLJZLEKTUZB6WTCEGKKZZM",
+          "mimetype": "text/html",
+          "recorded_length": "14251",
+          "candidate_id": "ecae9e24-82cd-54fe-a316-cfc248fb2d2a"
+        },
+        {
+          "timestamp": "20110810172420",
+          "original": "http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+          "digest_sha1_base32": "X2HSNY3SQCVTE5KAT36CDTW2CWV4PD5Q",
+          "mimetype": "text/html",
+          "recorded_length": "14954",
+          "candidate_id": "94783dea-ab4b-5b8a-814c-fa16e372c2c9"
+        },
+        {
+          "timestamp": "20110916223846",
+          "original": "http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+          "digest_sha1_base32": "VDCW4G4WVTHQJRWEPV7H65KOEDZ6C4AV",
+          "mimetype": "text/html",
+          "recorded_length": "14517",
+          "candidate_id": "40173e7e-5695-5253-ac26-16c08a4d04d8"
+        }
+      ],
+      "chosen_capture": {
+        "timestamp": "20110916223846",
+        "original": "http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+        "replay_url": "https://web.archive.org/web/20110916223846id_/http://www.rferl.org/content/more_oil_workers_hunger_strike_kazakhstan/24206131.html",
+        "cdx_digest_sha1_base32": "VDCW4G4WVTHQJRWEPV7H65KOEDZ6C4AV",
+        "computed_payload_sha1_base32": "VDCW4G4WVTHQJRWEPV7H65KOEDZ6C4AV",
+        "digest_match": true,
+        "payload_sha256": "dcd1ca9c08888e731da60c70394760bab313cd7c4406caea64071439a749363e",
+        "inherited_witness_id": "AW-D03-20110916223846",
+        "inherited_payload_sha256_match": true
+      },
+      "response_status": "PRE_CUTOFF_CAPTURE_RETRIEVED",
+      "technical_error": null,
+      "candidate_ids": [
+        "7e92babd-3934-5384-a362-8f7d9e2b1b10",
+        "79c60339-46c9-52d0-b084-923e8a11a7df",
+        "915c1aeb-7da1-54b6-a485-08a8736e8e0e",
+        "f2548c09-6477-525d-8d95-49a1cef42696",
+        "ecae9e24-82cd-54fe-a316-cfc248fb2d2a",
+        "94783dea-ab4b-5b8a-814c-fa16e372c2c9",
+        "40173e7e-5695-5253-ac26-16c08a4d04d8"
+      ],
+      "result_state": "PRE_CUTOFF_CAPTURE_RETRIEVED_NOT_ADMISSIBLE_AS_FULL_EDITION",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "A pre-cutoff archive payload was retrieved and custody metadata recorded, but the repository has no frozen complete-edition byte identity binding this payload to the exact DocumentVersion. Fragment proof and locator continuity do not satisfy the full exact-edition contract.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": true,
+        "complete_payload_retrieved": true,
+        "archive_digest_verified": true,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "95a4d4e1-ce71-5963-9416-dd36af995404",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "0a2301ee-ec94-5475-9c69-fcbb1a11595e",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "document_version_id": "adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "document_id": "2496aaf4-f84e-5c67-85e4-015f7e0519ec",
+      "source_id": "4e46c56c-9f35-5dbd-b634-2b6796d90391",
+      "label": "D04",
+      "affected_coding_item_ids": [
+        "190e3801-e98f-559d-b055-04502db625e9",
+        "bc34ea72-a9ac-5e81-ab20-3f2efb729872"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "34b1bf8c7b72712e5af19aff1235732fbd7ab0dedaad79cd870dfcb6bf349cf1",
+      "requested_at_utc": "2026-10-03T12:23:40.435326+00:00",
+      "completed_at_utc": "2026-10-03T12:23:42.127035+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.rferl.org/a/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.rferl.org/a/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "final_url": "https://www.rferl.org/a/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 81283,
+          "payload_sha256": "0af34c439e9b4d0d83bee7ded618b69ff4179da14427fa6e0140c20a256ff313",
+          "redirect_chain": [
+            {
+              "url": "https://www.rferl.org/a/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "2261e2c9-1f9b-53af-b51b-1ed10a9a4878"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "4ac6779a-be28-5ceb-886e-6d31bd620f6c",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "7ebb4cbd-a881-50f2-b902-9954d6a54a32",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "document_version_id": "adbcb401-ba65-5904-95c0-8ef2be653ed1",
+      "document_id": "2496aaf4-f84e-5c67-85e4-015f7e0519ec",
+      "source_id": "4e46c56c-9f35-5dbd-b634-2b6796d90391",
+      "label": "D04",
+      "affected_coding_item_ids": [
+        "190e3801-e98f-559d-b055-04502db625e9",
+        "bc34ea72-a9ac-5e81-ab20-3f2efb729872"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "db053c088ac5185f2328e3f29b0efeb7cc6bb1739f677aba7d38cf60be5f83a3",
+      "requested_at_utc": "2026-10-03T12:23:40.435609+00:00",
+      "completed_at_utc": "2026-10-03T12:24:08.836187+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%3A80%2Fcontent%2Fstriking_oil_workers_fired_in_kazakhstan%2F24207466.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%3A80%2Fcontent%2Fstriking_oil_workers_fired_in_kazakhstan%2F24207466.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%3A80%2Fcontent%2Fstriking_oil_workers_fired_in_kazakhstan%2F24207466.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 3078,
+          "payload_sha256": "835c9d59a4086b44bb8b8eae9b4aab51ed0ab5b6f2cb44443a41d8943b7aba1b",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%3A80%2Fcontent%2Fstriking_oil_workers_fired_in_kazakhstan%2F24207466.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        },
+        {
+          "subrequest_role": "WAYBACK_REPLAY_PAYLOAD",
+          "request_url": "https://web.archive.org/web/20110918081149id_/http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "final_url": "https://web.archive.org/web/20110918081149id_/http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 60436,
+          "payload_sha256": "df4663de5ae9ea50d16bd49c829f6b626944f2bba98976423aaa58518784756f",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/web/20110918081149id_/http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [
+        {
+          "timestamp": "20110529132216",
+          "original": "http://www.rferl.org:80/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "QNZ5VOIFGVHFWCWUASBYDCBEVF7LSE52",
+          "mimetype": "text/html",
+          "recorded_length": "14113",
+          "candidate_id": "eb02f95e-c0ef-594c-86c9-97b3e6c279c1"
+        },
+        {
+          "timestamp": "20110803182647",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "4DRQ2WM5UXLCXZ64XXP6BVQ3OGT7MUIY",
+          "mimetype": "text/html",
+          "recorded_length": "14370",
+          "candidate_id": "3e28273f-e2de-53a1-951e-c32f5285541b"
+        },
+        {
+          "timestamp": "20110804154315",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "JCX73CPSWM7EEQJCJ4IMGRFVTNIKPTX3",
+          "mimetype": "text/html",
+          "recorded_length": "14584",
+          "candidate_id": "20b66227-0a35-56c0-8ce8-a1944dfd74b3"
+        },
+        {
+          "timestamp": "20110805160425",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "2T6DKTYCXOOPVHG45AIIPAPQAOXUCNBY",
+          "mimetype": "text/html",
+          "recorded_length": "14996",
+          "candidate_id": "7e82a3f5-3aa1-52bb-9e2f-ca6d8d9b3fae"
+        },
+        {
+          "timestamp": "20110806210211",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "NDJZVBZGHGGYRMYTTWFGR3GQEO2Q6JAJ",
+          "mimetype": "text/html",
+          "recorded_length": "14830",
+          "candidate_id": "3bdf96b9-a61a-5f3d-9c48-f90770d84db1"
+        },
+        {
+          "timestamp": "20110807094824",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "PGWPW4CRBW6OV7QQ7D4R7HA4MLBGLVXR",
+          "mimetype": "text/html",
+          "recorded_length": "14797",
+          "candidate_id": "041fb408-83f6-5ed7-bc47-9458b11d0c3b"
+        },
+        {
+          "timestamp": "20110808175256",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "I3KD6M5B4YYG5LBXGEUCCO2WWX523VCL",
+          "mimetype": "text/html",
+          "recorded_length": "15121",
+          "candidate_id": "728aa26a-fc58-5aa3-98bd-acf5b3f9699a"
+        },
+        {
+          "timestamp": "20110809142801",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "CJBVYCT36757AHHOUHLHLIO5ID2PSDYN",
+          "mimetype": "text/html",
+          "recorded_length": "15241",
+          "candidate_id": "7ea5478b-6b40-5717-b950-50b42f6822ec"
+        },
+        {
+          "timestamp": "20110811190729",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "S74GD7AU7VVXHQIGPXV56GK56ULL2LDO",
+          "mimetype": "text/html",
+          "recorded_length": "15062",
+          "candidate_id": "106e825d-be5b-5543-8f1c-6247cd544b19"
+        },
+        {
+          "timestamp": "20110812211216",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "GLB4IXIXSNYOY42W35DOACPOUI45JDEW",
+          "mimetype": "text/html",
+          "recorded_length": "15281",
+          "candidate_id": "b158a7ce-83fc-5a77-bffd-2f02a40c5bd3"
+        },
+        {
+          "timestamp": "20110813181317",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "A7GKIEHCI3ALC7IBPQPEEQSHUO6PFEHR",
+          "mimetype": "text/html",
+          "recorded_length": "15295",
+          "candidate_id": "b0e3c1ca-fe25-5b9b-83e6-81f7fcc2cb2d"
+        },
+        {
+          "timestamp": "20110814205039",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "TDINSQJ4Y26DF7EP4ND57EPEHULYQWPQ",
+          "mimetype": "text/html",
+          "recorded_length": "14847",
+          "candidate_id": "15720a20-86fa-5d43-95cb-7560526f55b3"
+        },
+        {
+          "timestamp": "20110816151312",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "ZMHK5J53ZPODW3AVWDHVB3Q4LJZ62ZER",
+          "mimetype": "text/html",
+          "recorded_length": "14003",
+          "candidate_id": "58ed86a5-586c-58f8-b487-7df92f939bcb"
+        },
+        {
+          "timestamp": "20110817182751",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "TDKDJ3XCHLJEHCNKSPEPOABHP736TS75",
+          "mimetype": "text/html",
+          "recorded_length": "14616",
+          "candidate_id": "8c4148f2-052a-5026-9040-c718f06fa64c"
+        },
+        {
+          "timestamp": "20110827220414",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "MNCKFXVBD5OD43NZYM5NH2C4OJZUU7RL",
+          "mimetype": "text/html",
+          "recorded_length": "14783",
+          "candidate_id": "dcbf22d0-9318-57e3-9789-0eeadfeede37"
+        },
+        {
+          "timestamp": "20110829073455",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "WNCXZ57WWZOIUU7B4W4K4SZPSTWK2SJH",
+          "mimetype": "text/html",
+          "recorded_length": "14769",
+          "candidate_id": "100b9362-de6a-5926-a007-257ef5f618a3"
+        },
+        {
+          "timestamp": "20110830022844",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "WV2WVEDMAPVDXXH6JK6T7YSAVLYHJMKS",
+          "mimetype": "text/html",
+          "recorded_length": "14611",
+          "candidate_id": "c96ae613-12f0-5823-8ea4-4e1ffda85ab9"
+        },
+        {
+          "timestamp": "20110918081149",
+          "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+          "digest_sha1_base32": "WJMDKN53BZ7NULA5QZFUAHNOSYJRKTYY",
+          "mimetype": "text/html",
+          "recorded_length": "14620",
+          "candidate_id": "63816bc4-1f0c-593b-999b-f8e2ad2cbdb9"
+        }
+      ],
+      "chosen_capture": {
+        "timestamp": "20110918081149",
+        "original": "http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+        "replay_url": "https://web.archive.org/web/20110918081149id_/http://www.rferl.org/content/striking_oil_workers_fired_in_kazakhstan/24207466.html",
+        "cdx_digest_sha1_base32": "WJMDKN53BZ7NULA5QZFUAHNOSYJRKTYY",
+        "computed_payload_sha1_base32": "WJMDKN53BZ7NULA5QZFUAHNOSYJRKTYY",
+        "digest_match": true,
+        "payload_sha256": "df4663de5ae9ea50d16bd49c829f6b626944f2bba98976423aaa58518784756f",
+        "inherited_witness_id": null,
+        "inherited_payload_sha256_match": false
+      },
+      "response_status": "PRE_CUTOFF_CAPTURE_RETRIEVED",
+      "technical_error": null,
+      "candidate_ids": [
+        "eb02f95e-c0ef-594c-86c9-97b3e6c279c1",
+        "3e28273f-e2de-53a1-951e-c32f5285541b",
+        "20b66227-0a35-56c0-8ce8-a1944dfd74b3",
+        "7e82a3f5-3aa1-52bb-9e2f-ca6d8d9b3fae",
+        "3bdf96b9-a61a-5f3d-9c48-f90770d84db1",
+        "041fb408-83f6-5ed7-bc47-9458b11d0c3b",
+        "728aa26a-fc58-5aa3-98bd-acf5b3f9699a",
+        "7ea5478b-6b40-5717-b950-50b42f6822ec",
+        "106e825d-be5b-5543-8f1c-6247cd544b19",
+        "b158a7ce-83fc-5a77-bffd-2f02a40c5bd3",
+        "b0e3c1ca-fe25-5b9b-83e6-81f7fcc2cb2d",
+        "15720a20-86fa-5d43-95cb-7560526f55b3",
+        "58ed86a5-586c-58f8-b487-7df92f939bcb",
+        "8c4148f2-052a-5026-9040-c718f06fa64c",
+        "dcbf22d0-9318-57e3-9789-0eeadfeede37",
+        "100b9362-de6a-5926-a007-257ef5f618a3",
+        "c96ae613-12f0-5823-8ea4-4e1ffda85ab9",
+        "63816bc4-1f0c-593b-999b-f8e2ad2cbdb9"
+      ],
+      "result_state": "PRE_CUTOFF_CAPTURE_RETRIEVED_NOT_ADMISSIBLE_AS_FULL_EDITION",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "A pre-cutoff archive payload was retrieved and custody metadata recorded, but the repository has no frozen complete-edition byte identity binding this payload to the exact DocumentVersion. Fragment proof and locator continuity do not satisfy the full exact-edition contract.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": true,
+        "complete_payload_retrieved": true,
+        "archive_digest_verified": true,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "09eb327e-b350-5a12-9537-4c1ce322ab25",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "b8c95695-ad05-5dac-94aa-f9d0ec43aba8",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "document_version_id": "3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "document_id": "c5f122b3-33f5-58bf-9c14-4d6f79657a59",
+      "source_id": "ddeaf877-0282-52a2-898a-311bd154a72b",
+      "label": "D05",
+      "affected_coding_item_ids": [
+        "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "cd9eb952-6af0-5708-8703-49673415cbe7",
+        "79748746-11e6-506c-82d5-bc5fe877beb0"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "42e36883aa1c85dd521bad1ca3d8fa93ae1f26e4a7ab17d0b0330e995b889068",
+      "requested_at_utc": "2026-10-03T12:23:40.435851+00:00",
+      "completed_at_utc": "2026-10-03T12:23:42.148876+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.rferl.org/a/kazakhstan_oil_workers_protests/24221366.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.rferl.org/a/kazakhstan_oil_workers_protests/24221366.html",
+          "final_url": "https://www.rferl.org/a/kazakhstan_oil_workers_protests/24221366.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 80143,
+          "payload_sha256": "bfcf3a2ddacbfedb79a4bedae73144ffd29cc752bea9373f0aa756bb6b26f0bf",
+          "redirect_chain": [
+            {
+              "url": "https://www.rferl.org/a/kazakhstan_oil_workers_protests/24221366.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "e6838ef6-afee-5a7d-88da-f34bb39ac680"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "dd278af7-bf7e-506a-94e9-8f44db8ca337",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "b7ca1805-1f24-5add-bb3c-9940ac720f0d",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "document_version_id": "3186a5ae-1c7c-5570-90e6-f6a68b938f59",
+      "document_id": "c5f122b3-33f5-58bf-9c14-4d6f79657a59",
+      "source_id": "ddeaf877-0282-52a2-898a-311bd154a72b",
+      "label": "D05",
+      "affected_coding_item_ids": [
+        "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "cd9eb952-6af0-5708-8703-49673415cbe7",
+        "79748746-11e6-506c-82d5-bc5fe877beb0"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "5cdef4dc8dea9f9a7e1156134e49a712d40562b30a937da4ebe91ae664c1a0d2",
+      "requested_at_utc": "2026-10-03T12:23:40.436344+00:00",
+      "completed_at_utc": "2026-10-03T12:24:14.873377+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_protests%2F24221366.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_protests%2F24221366.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_protests%2F24221366.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 4025,
+          "payload_sha256": "c54f74131cf2a0052c9a42049533feadb5a115d810e1049332945575cf30a93d",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_protests%2F24221366.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        },
+        {
+          "subrequest_role": "WAYBACK_REPLAY_PAYLOAD",
+          "request_url": "https://web.archive.org/web/20110918081249id_/http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "final_url": "https://web.archive.org/web/20110918081249id_/http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 60494,
+          "payload_sha256": "8a66bf2ff3285a3d43dc381675543d4e92986f31081ead9f126478b14998e48e",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/web/20110918081249id_/http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [
+        {
+          "timestamp": "20110629041259",
+          "original": "http://www.rferl.org:80/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "2YFIVNIRTUIOGDM7ACG3IUT3DPVSQ6CW",
+          "mimetype": "text/html",
+          "recorded_length": "13820",
+          "candidate_id": "e6f53893-8d18-5682-a391-b340eb61e50e"
+        },
+        {
+          "timestamp": "20110714175418",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "UVNRQGGENBW2EARUZWTGKOLKIFYC2LHQ",
+          "mimetype": "text/html",
+          "recorded_length": "14657",
+          "candidate_id": "ea24ce89-d15f-57a5-92e7-9ff4918054c1"
+        },
+        {
+          "timestamp": "20110715191836",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "XJHPKHP6OQNPGNKGF53PMAHBLJPZTUM6",
+          "mimetype": "text/html",
+          "recorded_length": "14856",
+          "candidate_id": "72ace241-57c6-581f-9bca-eda438ba1da3"
+        },
+        {
+          "timestamp": "20110722201208",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "JRARN4PEEBWD4RIWMA5S37PA6JTBPAXJ",
+          "mimetype": "text/html",
+          "recorded_length": "15143",
+          "candidate_id": "44b5d0c5-e397-5bb2-b067-3a816d0da4e9"
+        },
+        {
+          "timestamp": "20110725191152",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "YE6WDL3RKXC5JRBQHPLLGBBTR67MKBFV",
+          "mimetype": "text/html",
+          "recorded_length": "15019",
+          "candidate_id": "e2e46e83-6caf-5f82-8277-bc6ac63fd3a8"
+        },
+        {
+          "timestamp": "20110727204826",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "KJV4IBD7C2TRMJGN2EE2VBPMDFFMA7DN",
+          "mimetype": "text/html",
+          "recorded_length": "14856",
+          "candidate_id": "f1459411-0553-5b41-a8de-e63f8168f112"
+        },
+        {
+          "timestamp": "20110801204043",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "O2HRCBKZX24WIS6CTRZ4SIPBQLCEK6ET",
+          "mimetype": "text/html",
+          "recorded_length": "14977",
+          "candidate_id": "50b59f20-f7a6-511b-8d84-8a46cba6c855"
+        },
+        {
+          "timestamp": "20110803182749",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "ZFBJTGFVNV3G7IHLLWDUAI24WLZJBB4G",
+          "mimetype": "text/html",
+          "recorded_length": "14443",
+          "candidate_id": "036e05ab-77c5-5915-bf3a-3402bb395d15"
+        },
+        {
+          "timestamp": "20110804154412",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "UOL5ZDESZBAEJSLTIO6OCJLRPMAVIFWL",
+          "mimetype": "text/html",
+          "recorded_length": "14641",
+          "candidate_id": "8638e0e1-213c-59fb-b416-59c4506947d7"
+        },
+        {
+          "timestamp": "20110805160523",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "YPCQQZYRW7GTQRDIXDYVXDTWTO633IZN",
+          "mimetype": "text/html",
+          "recorded_length": "15066",
+          "candidate_id": "9dc45646-efe4-543b-9f20-c2cb3502348a"
+        },
+        {
+          "timestamp": "20110806210256",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "JA6OQJDYDQMCGPWIC2XTNJK6MMAWVUP2",
+          "mimetype": "text/html",
+          "recorded_length": "14898",
+          "candidate_id": "25769abe-4fcc-5157-8bc9-76b352de2dad"
+        },
+        {
+          "timestamp": "20110807094924",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "TKQJRXW4ONXM33SOTFEQSY4X6PMUCOLH",
+          "mimetype": "text/html",
+          "recorded_length": "14862",
+          "candidate_id": "1d609d4f-c26e-5407-ab2e-c809c88b6632"
+        },
+        {
+          "timestamp": "20110808175353",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "44H6TYGLTEUTAWVHUNF4OUKNMUZS2Z6G",
+          "mimetype": "text/html",
+          "recorded_length": "15180",
+          "candidate_id": "428a12d6-e197-5f74-8db0-37e5c28c8a70"
+        },
+        {
+          "timestamp": "20110809142831",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "APRNY5SP673GVAFMXQHYRFD4LXMXNDWC",
+          "mimetype": "text/html",
+          "recorded_length": "15305",
+          "candidate_id": "9f286091-f665-573a-b16a-d7d13d20004b"
+        },
+        {
+          "timestamp": "20110811190829",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "MRQ2DK5NGQNJFHE36GPW5DLR5D5UZYFG",
+          "mimetype": "text/html",
+          "recorded_length": "15131",
+          "candidate_id": "afdc2372-b77f-57b0-b564-0a8e4f44bbbb"
+        },
+        {
+          "timestamp": "20110812211315",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "4HUZCM33PYQCDRJ6M3JZRF67RGGQQLMS",
+          "mimetype": "text/html",
+          "recorded_length": "15328",
+          "candidate_id": "bb671875-bbf1-5040-aea2-74f8096228ff"
+        },
+        {
+          "timestamp": "20110813181428",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "JDOOBB4CVGNTWM3K6WEFDY4ZTI3GZJ7G",
+          "mimetype": "text/html",
+          "recorded_length": "15356",
+          "candidate_id": "14ec6145-3499-5dfe-9649-ea86673e5aa8"
+        },
+        {
+          "timestamp": "20110814205145",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "CNNPAVOIQT6RAN7J4H57QWPPU3RMX5FO",
+          "mimetype": "text/html",
+          "recorded_length": "14906",
+          "candidate_id": "3e2ee5c9-eaef-544f-b8c9-cffc7742cc2c"
+        },
+        {
+          "timestamp": "20110816151426",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "HQLXCHFP5YRSRS46EJWDAO2W4YAV77EV",
+          "mimetype": "text/html",
+          "recorded_length": "14812",
+          "candidate_id": "0d426255-8e8e-588c-8f41-d7a8f707cb8f"
+        },
+        {
+          "timestamp": "20110817182843",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "WTWZJZYM7YGM7JXPKKVCPPDR62WQIFXR",
+          "mimetype": "text/html",
+          "recorded_length": "14673",
+          "candidate_id": "a20759dc-98bb-54fc-9937-36184821c4cb"
+        },
+        {
+          "timestamp": "20110827220521",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "4I4MYGO7NBRYQ5SCRE6J44FODBBMA4PN",
+          "mimetype": "text/html",
+          "recorded_length": "14877",
+          "candidate_id": "d2fcce5f-2030-5527-bc2b-8f41888f13f9"
+        },
+        {
+          "timestamp": "20110828201413",
+          "original": "http://www.rferl.org:80/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "EGSN75EJISDRBCVXGMV47YOCHZMEWZHR",
+          "mimetype": "text/html",
+          "recorded_length": "14174",
+          "candidate_id": "910ec451-8d68-5beb-825b-e38bb667d840"
+        },
+        {
+          "timestamp": "20110829073619",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "SS4JQTVEUQRNYXEZ76VPWETV6BT3E6TI",
+          "mimetype": "text/html",
+          "recorded_length": "14861",
+          "candidate_id": "ebb48565-9e26-5bb2-bf15-5558f1decb59"
+        },
+        {
+          "timestamp": "20110830023007",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "KVXCVQOHXRW36KQO236YJKVNHOYDQSDR",
+          "mimetype": "text/html",
+          "recorded_length": "14696",
+          "candidate_id": "0a485614-e51d-566e-a2ab-3dff5aadf4cc"
+        },
+        {
+          "timestamp": "20110918081249",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+          "digest_sha1_base32": "2OMSDKFRDE52MI3GWBFW2AB2BQSUV4S3",
+          "mimetype": "text/html",
+          "recorded_length": "14702",
+          "candidate_id": "86e74286-a470-50f4-b61d-6865d85699c4"
+        }
+      ],
+      "chosen_capture": {
+        "timestamp": "20110918081249",
+        "original": "http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+        "replay_url": "https://web.archive.org/web/20110918081249id_/http://www.rferl.org/content/kazakhstan_oil_workers_protests/24221366.html",
+        "cdx_digest_sha1_base32": "2OMSDKFRDE52MI3GWBFW2AB2BQSUV4S3",
+        "computed_payload_sha1_base32": "2OMSDKFRDE52MI3GWBFW2AB2BQSUV4S3",
+        "digest_match": true,
+        "payload_sha256": "8a66bf2ff3285a3d43dc381675543d4e92986f31081ead9f126478b14998e48e",
+        "inherited_witness_id": "AW-D05-20110918081249",
+        "inherited_payload_sha256_match": true
+      },
+      "response_status": "PRE_CUTOFF_CAPTURE_RETRIEVED",
+      "technical_error": null,
+      "candidate_ids": [
+        "e6f53893-8d18-5682-a391-b340eb61e50e",
+        "ea24ce89-d15f-57a5-92e7-9ff4918054c1",
+        "72ace241-57c6-581f-9bca-eda438ba1da3",
+        "44b5d0c5-e397-5bb2-b067-3a816d0da4e9",
+        "e2e46e83-6caf-5f82-8277-bc6ac63fd3a8",
+        "f1459411-0553-5b41-a8de-e63f8168f112",
+        "50b59f20-f7a6-511b-8d84-8a46cba6c855",
+        "036e05ab-77c5-5915-bf3a-3402bb395d15",
+        "8638e0e1-213c-59fb-b416-59c4506947d7",
+        "9dc45646-efe4-543b-9f20-c2cb3502348a",
+        "25769abe-4fcc-5157-8bc9-76b352de2dad",
+        "1d609d4f-c26e-5407-ab2e-c809c88b6632",
+        "428a12d6-e197-5f74-8db0-37e5c28c8a70",
+        "9f286091-f665-573a-b16a-d7d13d20004b",
+        "afdc2372-b77f-57b0-b564-0a8e4f44bbbb",
+        "bb671875-bbf1-5040-aea2-74f8096228ff",
+        "14ec6145-3499-5dfe-9649-ea86673e5aa8",
+        "3e2ee5c9-eaef-544f-b8c9-cffc7742cc2c",
+        "0d426255-8e8e-588c-8f41-d7a8f707cb8f",
+        "a20759dc-98bb-54fc-9937-36184821c4cb",
+        "d2fcce5f-2030-5527-bc2b-8f41888f13f9",
+        "910ec451-8d68-5beb-825b-e38bb667d840",
+        "ebb48565-9e26-5bb2-bf15-5558f1decb59",
+        "0a485614-e51d-566e-a2ab-3dff5aadf4cc",
+        "86e74286-a470-50f4-b61d-6865d85699c4"
+      ],
+      "result_state": "PRE_CUTOFF_CAPTURE_RETRIEVED_NOT_ADMISSIBLE_AS_FULL_EDITION",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "A pre-cutoff archive payload was retrieved and custody metadata recorded, but the repository has no frozen complete-edition byte identity binding this payload to the exact DocumentVersion. Fragment proof and locator continuity do not satisfy the full exact-edition contract.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": true,
+        "complete_payload_retrieved": true,
+        "archive_digest_verified": true,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "469ccf27-9ffd-5d4a-9aba-7f5ac18fb4d7",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "1d956947-e18b-5cee-b948-9a0393a7c58c",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "document_version_id": "bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "document_id": "a09bab6c-8f4c-5fa9-8a01-38cc05d7724c",
+      "source_id": "8872ed80-7dfe-5761-a8a7-5cb6a64dcec4",
+      "label": "D06",
+      "affected_coding_item_ids": [
+        "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+        "3f4dc104-40c7-59db-ad5c-61f8a80232bc"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "583b7f713356185be43a65f31d5bd8c8b783a1734bc0f3da18365ef6ec334006",
+      "requested_at_utc": "2026-10-03T12:23:42.097296+00:00",
+      "completed_at_utc": "2026-10-03T12:23:43.471962+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.azattyq.org/a/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.azattyq.org/a/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+          "final_url": "https://www.azattyq.org/a/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 89725,
+          "payload_sha256": "0bd2f86bb64bd0869c1beb1700416553ffbcd725e9e32341efc25f96109919e3",
+          "redirect_chain": [
+            {
+              "url": "https://www.azattyq.org/a/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "c7302fef-625d-5c25-96a0-5f3081e20685"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "218d8f46-72e1-5429-b919-2027a0ef33bb",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "65f81143-51e6-5d7a-8b81-0daabe40f76e",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "document_version_id": "bb5c161c-2e58-55b9-abaf-a92a634ebf37",
+      "document_id": "a09bab6c-8f4c-5fa9-8a01-38cc05d7724c",
+      "source_id": "8872ed80-7dfe-5761-a8a7-5cb6a64dcec4",
+      "label": "D06",
+      "affected_coding_item_ids": [
+        "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+        "3f4dc104-40c7-59db-ad5c-61f8a80232bc"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "a675d60fc7abba832f5f32da94d1e486b347f9effba504627c074ffe54eb36d7",
+      "requested_at_utc": "2026-10-03T12:23:42.128787+00:00",
+      "completed_at_utc": "2026-10-03T12:24:09.556978+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.azattyq.org%3A80%2Fcontent%2Fkazakhstan_zhangaozen_strike_oil_undustry_workers%2F24261582.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.azattyq.org%3A80%2Fcontent%2Fkazakhstan_zhangaozen_strike_oil_undustry_workers%2F24261582.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.azattyq.org%3A80%2Fcontent%2Fkazakhstan_zhangaozen_strike_oil_undustry_workers%2F24261582.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 250,
+          "payload_sha256": "7c1ed282c9b35c0e99901edd797e7c0058a9d2a3a15ff4a8afe8ba243deaf203",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.azattyq.org%3A80%2Fcontent%2Fkazakhstan_zhangaozen_strike_oil_undustry_workers%2F24261582.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        },
+        {
+          "subrequest_role": "WAYBACK_REPLAY_PAYLOAD",
+          "request_url": "https://web.archive.org/web/20110716171000id_/http://www.azattyq.org:80/content/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+          "final_url": "https://web.archive.org/web/20110716171000id_/http://www.azattyq.org:80/content/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 159638,
+          "payload_sha256": "65cd8d29565cc4418e5216ce1b608d644870c556eaa16664683e5718986e507f",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/web/20110716171000id_/http://www.azattyq.org:80/content/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [
+        {
+          "timestamp": "20110716171000",
+          "original": "http://www.azattyq.org:80/content/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+          "digest_sha1_base32": "U6N4P5R3XMZAUNAHZZPSHUDY3I524PPF",
+          "mimetype": "text/html",
+          "recorded_length": "32994",
+          "candidate_id": "4d8cfbf9-f29a-5b42-8293-637e7b153bcd"
+        }
+      ],
+      "chosen_capture": {
+        "timestamp": "20110716171000",
+        "original": "http://www.azattyq.org:80/content/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+        "replay_url": "https://web.archive.org/web/20110716171000id_/http://www.azattyq.org:80/content/kazakhstan_zhangaozen_strike_oil_undustry_workers/24261582.html",
+        "cdx_digest_sha1_base32": "U6N4P5R3XMZAUNAHZZPSHUDY3I524PPF",
+        "computed_payload_sha1_base32": "U6N4P5R3XMZAUNAHZZPSHUDY3I524PPF",
+        "digest_match": true,
+        "payload_sha256": "65cd8d29565cc4418e5216ce1b608d644870c556eaa16664683e5718986e507f",
+        "inherited_witness_id": "AW-D06-20110716171000",
+        "inherited_payload_sha256_match": true
+      },
+      "response_status": "PRE_CUTOFF_CAPTURE_RETRIEVED",
+      "technical_error": null,
+      "candidate_ids": [
+        "4d8cfbf9-f29a-5b42-8293-637e7b153bcd"
+      ],
+      "result_state": "PRE_CUTOFF_CAPTURE_RETRIEVED_NOT_ADMISSIBLE_AS_FULL_EDITION",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "A pre-cutoff archive payload was retrieved and custody metadata recorded, but the repository has no frozen complete-edition byte identity binding this payload to the exact DocumentVersion. Fragment proof and locator continuity do not satisfy the full exact-edition contract.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": true,
+        "complete_payload_retrieved": true,
+        "archive_digest_verified": true,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "ee92c05e-5dfc-51e9-834d-04b32ff06f1e",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "6c216716-0470-560b-8159-bb0875bf8972",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "document_version_id": "f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "document_id": "36796596-76fc-5e5c-b702-0627641d54e8",
+      "source_id": "bec0db84-f828-51e3-a57c-03b36e0655c5",
+      "label": "D09",
+      "affected_coding_item_ids": [
+        "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "cd9eb952-6af0-5708-8703-49673415cbe7",
+        "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+        "79748746-11e6-506c-82d5-bc5fe877beb0"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "bc56fa8b632caeebd8fa015758ef4565bc36be40b56b7f7d354d78ca481e276f",
+      "requested_at_utc": "2026-10-03T12:23:42.150583+00:00",
+      "completed_at_utc": "2026-10-03T12:23:43.145502+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.rferl.org/a/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.rferl.org/a/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "final_url": "https://www.rferl.org/a/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 83542,
+          "payload_sha256": "fd34596927e563534f3ac7ea5aeb92e652bbefa1b8a1ce85db86d6ac78cce148",
+          "redirect_chain": [
+            {
+              "url": "https://www.rferl.org/a/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "38538faa-3f51-5613-8e08-833a981c34af"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "828ba080-cf4c-5f20-aa89-04d435c39cc3",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "851aaca4-7fb2-5215-8eda-032e48b59611",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "document_version_id": "f8c37ae0-cf47-50e7-844e-117d0da2d1e8",
+      "document_id": "36796596-76fc-5e5c-b702-0627641d54e8",
+      "source_id": "bec0db84-f828-51e3-a57c-03b36e0655c5",
+      "label": "D09",
+      "affected_coding_item_ids": [
+        "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "cd9eb952-6af0-5708-8703-49673415cbe7",
+        "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+        "79748746-11e6-506c-82d5-bc5fe877beb0"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "0499676cfc05fadd32262727baf0a7dfd8a37f453ab996e1ad6d3e422fabf0c0",
+      "requested_at_utc": "2026-10-03T12:23:42.195410+00:00",
+      "completed_at_utc": "2026-10-03T12:24:11.505828+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fstriking_kazakh_oil_workers_lawyer_gets_six_year_jail_term%2F24290769.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fstriking_kazakh_oil_workers_lawyer_gets_six_year_jail_term%2F24290769.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fstriking_kazakh_oil_workers_lawyer_gets_six_year_jail_term%2F24290769.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 13204,
+          "payload_sha256": "18c7a69304ac7dae876d2d1212a0d76e283148de280ff5515f07415521c87838",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fstriking_kazakh_oil_workers_lawyer_gets_six_year_jail_term%2F24290769.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        },
+        {
+          "subrequest_role": "WAYBACK_REPLAY_PAYLOAD",
+          "request_url": "https://web.archive.org/web/20111215193620id_/http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "final_url": "https://web.archive.org/web/20111215193620id_/http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 84108,
+          "payload_sha256": "ce40b72d3a7cf3c32ac06110a4f8183177f2a988d723342b9fffac6c4c03c00d",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/web/20111215193620id_/http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [
+        {
+          "timestamp": "20110809011049",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "4SBQWOS6PTPJBCJSXM3HFKJMPT6A3QWW",
+          "mimetype": "text/html",
+          "recorded_length": "16523",
+          "candidate_id": "c6eaab20-c36a-55a8-9e70-9b32b5942c51"
+        },
+        {
+          "timestamp": "20110810042014",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "64QU4ZDSLRGGBXUODD3OVTOA62FRSUXO",
+          "mimetype": "text/html",
+          "recorded_length": "16503",
+          "candidate_id": "dd42d2dd-659e-5a76-9c87-297785391266"
+        },
+        {
+          "timestamp": "20110810070810",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "6NZ7KTV43CCMTUT2KGITORRG274LQFK4",
+          "mimetype": "text/html",
+          "recorded_length": "15848",
+          "candidate_id": "c50a32bf-e416-5d58-a143-a0f037fc3603"
+        },
+        {
+          "timestamp": "20110811083402",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "XVFF3W2OMSE3L4CNKCOH23S4WKD3OI7C",
+          "mimetype": "text/html",
+          "recorded_length": "15874",
+          "candidate_id": "6409b8fb-8003-51db-9c7f-2efb85f3bffc"
+        },
+        {
+          "timestamp": "20110812174430",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "JUUHBSOLCJCJGIGGXGMMG5SJPDHSSJBS",
+          "mimetype": "text/html",
+          "recorded_length": "16567",
+          "candidate_id": "e6dc8244-160a-52b4-ac36-41ff4fe0f0d2"
+        },
+        {
+          "timestamp": "20110815214703",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "SWF5XMPOPCPGXRLUNYVGOZ6R4ZKUGOVE",
+          "mimetype": "text/html",
+          "recorded_length": "16306",
+          "candidate_id": "ab7f9f8c-3b2e-50ac-91d4-fb130381bad3"
+        },
+        {
+          "timestamp": "20110816230426",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "2J2NNPUWOJ5WT34Y3ENFUVVI3IJX5RKK",
+          "mimetype": "text/html",
+          "recorded_length": "16142",
+          "candidate_id": "417272ab-b7bc-5746-b700-8f776da72e80"
+        },
+        {
+          "timestamp": "20110817202238",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "U4JGZY5AQDH543AEBFPHUZP2B5462OWP",
+          "mimetype": "text/html",
+          "recorded_length": "15904",
+          "candidate_id": "595397da-e7e4-5826-8ea3-d52bb59a5152"
+        },
+        {
+          "timestamp": "20110819131640",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "NLYROUWEDJDCYEZBN6J2QA7CGVPIIPKV",
+          "mimetype": "text/html",
+          "recorded_length": "15941",
+          "candidate_id": "5da36e83-ff5b-5ec4-9b08-b8951dedd21b"
+        },
+        {
+          "timestamp": "20110820132942",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "D3W3WR72EOPK327TNGX47KZCOQ5GW7KF",
+          "mimetype": "text/html",
+          "recorded_length": "15733",
+          "candidate_id": "1225b538-931f-5cf0-a051-722af9d8200d"
+        },
+        {
+          "timestamp": "20110821230243",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "PGFZLHMMJDWVHGIILWDKXSCHA5CGYQUD",
+          "mimetype": "text/html",
+          "recorded_length": "15798",
+          "candidate_id": "299ac3a7-1fb3-5fa3-9234-b6550d5a73b9"
+        },
+        {
+          "timestamp": "20110822125049",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "Z3YICG3CUHGTHFTMCL7K6RL4UJW5VGEN",
+          "mimetype": "text/html",
+          "recorded_length": "15689",
+          "candidate_id": "083df18b-5988-5ab9-9081-214d24902d6e"
+        },
+        {
+          "timestamp": "20110825103624",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "FFF5ZVZGX2BFQZMJHMWYPORZJOOSM7PY",
+          "mimetype": "text/html",
+          "recorded_length": "16047",
+          "candidate_id": "624cc9d4-3fde-5f3b-93de-c9d114b36003"
+        },
+        {
+          "timestamp": "20110827205213",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "AIVJYQAMGAKHZGDDR4ATWZWH5AKLDDMV",
+          "mimetype": "text/html",
+          "recorded_length": "16119",
+          "candidate_id": "95541f68-2356-5c36-8f5a-525017091436"
+        },
+        {
+          "timestamp": "20110829050614",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "B7YBHRB3DEFAQTT3LZDWMSVVTMCKBPNW",
+          "mimetype": "text/html",
+          "recorded_length": "16095",
+          "candidate_id": "bfc564b6-46cc-529a-acbf-f8537bfac1ad"
+        },
+        {
+          "timestamp": "20110830022136",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "76G43RXD7I7NZ352NO7V3GWOV5WV7YQ7",
+          "mimetype": "text/html",
+          "recorded_length": "15957",
+          "candidate_id": "b5a3b0da-4d14-5b4d-a2f8-b068cd944a6c"
+        },
+        {
+          "timestamp": "20110831201458",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "PKKRDM5AQQI5WAUVJYCDMTKOD3Z7UEOR",
+          "mimetype": "text/html",
+          "recorded_length": "15409",
+          "candidate_id": "7f95784a-e274-5fa1-a271-830097c33c68"
+        },
+        {
+          "timestamp": "20110901121459",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "XWAO2XHYA3YN2N33645SUMNRFD2NB7CO",
+          "mimetype": "text/html",
+          "recorded_length": "15697",
+          "candidate_id": "65688b27-9ba9-58ee-bede-cb86f17a4f58"
+        },
+        {
+          "timestamp": "20110915215850",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "4BSXHGT545O5T7OMXOT5NBF742LGVQKS",
+          "mimetype": "text/html",
+          "recorded_length": "15706",
+          "candidate_id": "9e573b22-1706-539c-b7a2-769843aaf0b0"
+        },
+        {
+          "timestamp": "20110916105628",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "FGK4AGF64BLJJQV7AQYCETT2FLHOAICV",
+          "mimetype": "text/html",
+          "recorded_length": "15717",
+          "candidate_id": "50422156-6d82-5a4e-bc71-602847b75907"
+        },
+        {
+          "timestamp": "20110918005318",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "AB4OERX6OHCELO3FN72XF3OLQMDIHKHS",
+          "mimetype": "text/html",
+          "recorded_length": "15989",
+          "candidate_id": "5eec3282-14d8-5f39-9f9d-0e38738d5a85"
+        },
+        {
+          "timestamp": "20110919015653",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "QFJ3YVGEGYJCFKOLRWEWLOTO6SVHJBYB",
+          "mimetype": "text/html",
+          "recorded_length": "15610",
+          "candidate_id": "f493600d-827f-5e32-be39-a4f5263b9de6"
+        },
+        {
+          "timestamp": "20110919172328",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "EMWWFXO26TBWVR5XTR54V5R423H4XLGP",
+          "mimetype": "text/html",
+          "recorded_length": "15949",
+          "candidate_id": "31e69e87-7e8e-5e06-892e-5e47162d2c8d"
+        },
+        {
+          "timestamp": "20110921133415",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "4V2W4DAGL7ZD22HTAP57EPZJ3ZENSNNB",
+          "mimetype": "text/html",
+          "recorded_length": "15763",
+          "candidate_id": "21cf2b9c-2de9-5a84-a719-c3000a2b5683"
+        },
+        {
+          "timestamp": "20110922211042",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "XUTAZJFNVW5HL7HOCBY357MKS6UXUYLJ",
+          "mimetype": "text/html",
+          "recorded_length": "15978",
+          "candidate_id": "061b1623-42d6-5546-8419-2a837eb6774b"
+        },
+        {
+          "timestamp": "20110923155814",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "TWTDL7KQ26MXJFOJEJ6OWYYN6AYRL6J2",
+          "mimetype": "text/html",
+          "recorded_length": "15624",
+          "candidate_id": "fe69d035-9038-570d-88b4-c45ff0d91d96"
+        },
+        {
+          "timestamp": "20110924215835",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "NJ3INEFP4IVX3KTYHIDJOZLROLBES3HI",
+          "mimetype": "text/html",
+          "recorded_length": "15511",
+          "candidate_id": "d118677d-8e19-55b6-8e79-cb72e42b883a"
+        },
+        {
+          "timestamp": "20110925203330",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "LL7SYT46TKVT7NEQF5V7HUEY2OBJJR5F",
+          "mimetype": "text/html",
+          "recorded_length": "15495",
+          "candidate_id": "16c146c5-aa64-56bb-94c8-4c4bbf01135d"
+        },
+        {
+          "timestamp": "20110927115056",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "A233QPOALSC3F2OHO2TPEE2CKVB64B7F",
+          "mimetype": "text/html",
+          "recorded_length": "15569",
+          "candidate_id": "28977527-c6a3-54c5-b6aa-a180d3c4cec3"
+        },
+        {
+          "timestamp": "20110928011543",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "BRYOVHP4RBQMXY7ENM4NWNFKMLVJQ6OF",
+          "mimetype": "text/html",
+          "recorded_length": "15682",
+          "candidate_id": "0953770d-cda5-539b-86d5-e48163a8e64a"
+        },
+        {
+          "timestamp": "20110928204529",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "MEXVNFE66PS5F54FT4NJ6B3U3A4PD7NH",
+          "mimetype": "text/html",
+          "recorded_length": "15686",
+          "candidate_id": "dce42c26-2027-5e9f-812d-1ea5d9228578"
+        },
+        {
+          "timestamp": "20110930070346",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "WII4ZEYBP3ZOS53I3FXUPZQMUONDUKQM",
+          "mimetype": "text/html",
+          "recorded_length": "15567",
+          "candidate_id": "c8ab680e-f9bf-5db4-a10d-df204a647529"
+        },
+        {
+          "timestamp": "20111002005231",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "4MTYAQM2IGYFRJIKPOHLMKTKBROXJQLM",
+          "mimetype": "text/html",
+          "recorded_length": "15956",
+          "candidate_id": "79ece7f4-26e9-5902-8093-40cfcd43b43d"
+        },
+        {
+          "timestamp": "20111007031917",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "LTZSIMRYC52SHOHP42GCMJADGWNQOOFS",
+          "mimetype": "text/html",
+          "recorded_length": "15662",
+          "candidate_id": "f2a001e1-6e72-516c-b691-93b5d38cfc72"
+        },
+        {
+          "timestamp": "20111008020120",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "NSQNFLVI5P437A2CZLVQLJLVRUZJTSRY",
+          "mimetype": "text/html",
+          "recorded_length": "15507",
+          "candidate_id": "8be0d791-97ab-5231-81f6-35a7ba54d2e6"
+        },
+        {
+          "timestamp": "20111010182336",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "WVFYOSJ3H5AOJYGOCISSGVQXL3ZWUHKU",
+          "mimetype": "text/html",
+          "recorded_length": "15574",
+          "candidate_id": "796417c7-fe95-5425-9317-b5479d3b22dd"
+        },
+        {
+          "timestamp": "20111017120415",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "KAR5LXIUW7SDG56K35NJNHXYHFPTPLCR",
+          "mimetype": "text/html",
+          "recorded_length": "15477",
+          "candidate_id": "47aa63bf-af82-548c-9f9d-09d3c8d86759"
+        },
+        {
+          "timestamp": "20111020063416",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "PGAM4ARDNQI65SNHF27UNDOGQCCJW5AN",
+          "mimetype": "text/html",
+          "recorded_length": "15523",
+          "candidate_id": "a964a3b3-b906-59ea-98d4-a8771521010a"
+        },
+        {
+          "timestamp": "20111020104607",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "EQVUXO55IFJHJO2KU7LU267I5FI3PGUH",
+          "mimetype": "text/html",
+          "recorded_length": "15579",
+          "candidate_id": "36c0708a-ff4b-533e-a54f-398ee7c544d7"
+        },
+        {
+          "timestamp": "20111022101958",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "OAOPVERH3GP3GRBAH4323H6GWA7JTMCZ",
+          "mimetype": "text/html",
+          "recorded_length": "15923",
+          "candidate_id": "cf3f3c81-b8b2-5af9-ab03-8ba4965bdf7b"
+        },
+        {
+          "timestamp": "20111024043305",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "26WVHDLDQGMZGFRAZUCPJIM2XH24SWEL",
+          "mimetype": "text/html",
+          "recorded_length": "15605",
+          "candidate_id": "d7ca5ea2-8ebf-5e98-97db-ff6cc1c697c1"
+        },
+        {
+          "timestamp": "20111025113521",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "VMLNSIVRHXRPVBDMG5GOR4L4FBVNH2HN",
+          "mimetype": "text/html",
+          "recorded_length": "15053",
+          "candidate_id": "2e6c8317-c0b9-578f-99f9-ec5af12880cb"
+        },
+        {
+          "timestamp": "20111102031109",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "6SYWHLZFA7HDH7LSQJ4COPORPA6TT34O",
+          "mimetype": "text/html",
+          "recorded_length": "14870",
+          "candidate_id": "a74a912a-40fb-5de0-8f6d-ccf0b7d8c34c"
+        },
+        {
+          "timestamp": "20111102051145",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "TYR7YQBD4ZWGK45SHUP5ZYCHQ6X4LPPU",
+          "mimetype": "text/html",
+          "recorded_length": "15388",
+          "candidate_id": "28c70e97-1275-56ec-85a9-482d146846ef"
+        },
+        {
+          "timestamp": "20111108034405",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "MYY7RA27BQE3Z6DA3TT4A2DWAZE2IVWE",
+          "mimetype": "text/html",
+          "recorded_length": "15259",
+          "candidate_id": "8befd169-8e5d-5eea-acff-ba202f893c26"
+        },
+        {
+          "timestamp": "20111115105227",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "YYUJV6JG3G3BANY3YGIQFOJRZ4LZGW4D",
+          "mimetype": "text/html",
+          "recorded_length": "17215",
+          "candidate_id": "1837ed62-7cf0-580c-8244-2404c4e456c9"
+        },
+        {
+          "timestamp": "20111119132731",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "URIABWZ2527FFEKM35RBS47ILQ6X32P4",
+          "mimetype": "text/html",
+          "recorded_length": "17299",
+          "candidate_id": "58e3b31d-3d3b-5226-961b-6818f1e97c7d"
+        },
+        {
+          "timestamp": "20111123081243",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "NTVEV2ZUNO7HN3PGLYYIGPNKTWRSZ2R6",
+          "mimetype": "text/html",
+          "recorded_length": "20637",
+          "candidate_id": "b99a1cbf-5cbf-5fed-b503-8ef9e2887094"
+        },
+        {
+          "timestamp": "20111124072538",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "D3SEPSBJ2NJAFKWOOLQBRHOYX2OZH3TY",
+          "mimetype": "text/html",
+          "recorded_length": "20605",
+          "candidate_id": "2d8a4801-aaa9-5fd8-af55-528f28399ad9"
+        },
+        {
+          "timestamp": "20111125055351",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "CUYHLUFHXENPUVMM653MIYMUL4BPGVPG",
+          "mimetype": "text/html",
+          "recorded_length": "20662",
+          "candidate_id": "6a62e067-dc61-5153-a29a-0825182953f3"
+        },
+        {
+          "timestamp": "20111126101519",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "VW7IRZU24VQDOTMGE3DQ376WG45OW7VC",
+          "mimetype": "text/html",
+          "recorded_length": "20404",
+          "candidate_id": "f68532a8-51cf-560c-83c1-9134b248cad0"
+        },
+        {
+          "timestamp": "20111127072339",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "5C5P4GMTRJ6I73FPAPKH6IZZ4QPRJ3NF",
+          "mimetype": "text/html",
+          "recorded_length": "20382",
+          "candidate_id": "eec52b24-4af7-55fe-9d4a-82e282f1ea50"
+        },
+        {
+          "timestamp": "20111128100530",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "RNQU6JMJZEYHNWXAEWYZ5JLNHDDV7YVD",
+          "mimetype": "text/html",
+          "recorded_length": "20179",
+          "candidate_id": "f981f60d-51b4-58d9-ae4f-09da71e26d2f"
+        },
+        {
+          "timestamp": "20111129134642",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "VP33HIOONM4NTFKSFFESSDV22GKQ2V3C",
+          "mimetype": "text/html",
+          "recorded_length": "20699",
+          "candidate_id": "47daae46-ac92-5782-b412-0580786d851a"
+        },
+        {
+          "timestamp": "20111203195235",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "WC6U2WCNPTLZU2CVQFLRZ3ESKVJAYAPH",
+          "mimetype": "text/html",
+          "recorded_length": "20526",
+          "candidate_id": "d220dcfd-6048-5820-914b-d2eecb2c232b"
+        },
+        {
+          "timestamp": "20111204051751",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "MYWP5LSX2TTTWBFJSY7WTZWYKHJ5S5UZ",
+          "mimetype": "text/html",
+          "recorded_length": "20365",
+          "candidate_id": "355c9f0f-c06f-5147-972f-067fcd8c5c4b"
+        },
+        {
+          "timestamp": "20111204190111",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "SHH3QDBLNY67ZKRO3CCHVDOBPEGIQU75",
+          "mimetype": "text/html",
+          "recorded_length": "20628",
+          "candidate_id": "1d0be48a-5525-5c1a-89b0-ec3bec6cf708"
+        },
+        {
+          "timestamp": "20111205130043",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "UNTZMXCVMV4AQ532S6U7BPNNGDKEPCFS",
+          "mimetype": "text/html",
+          "recorded_length": "20504",
+          "candidate_id": "6acd8df1-7ce6-59ac-8667-cdd802884cdd"
+        },
+        {
+          "timestamp": "20111207155251",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "3JUU6MRDSTLV7NETV2S26VG3H36IHTP4",
+          "mimetype": "text/html",
+          "recorded_length": "20241",
+          "candidate_id": "e2397a86-5928-5808-be8a-27d1229e9be8"
+        },
+        {
+          "timestamp": "20111208192418",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "DVGS37SVQ2IRQLAMOMUZ2PDRGNI4IVRJ",
+          "mimetype": "text/html",
+          "recorded_length": "20177",
+          "candidate_id": "042d001b-d16b-5e7c-b146-e9af8ba2f3d7"
+        },
+        {
+          "timestamp": "20111209110624",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "2D5PAKAMWI5F5LKMNU25ZWLNJ6OT67RI",
+          "mimetype": "text/html",
+          "recorded_length": "20233",
+          "candidate_id": "bb8936dc-1a6d-57c8-afc5-876710c75106"
+        },
+        {
+          "timestamp": "20111209190104",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "2ARX4TUVVLJJG4HI4WK5E52XMPVRKNUO",
+          "mimetype": "text/html",
+          "recorded_length": "20196",
+          "candidate_id": "5f78a12b-78e4-57ed-a549-52ddb934da4b"
+        },
+        {
+          "timestamp": "20111210122223",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "25E7MZZOASJKCFCWUUFRHC5FKE4DRVM2",
+          "mimetype": "text/html",
+          "recorded_length": "20034",
+          "candidate_id": "600d23b3-d1ad-5417-a022-58192678bc15"
+        },
+        {
+          "timestamp": "20111210230016",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "MSJHYMXH7OUQDTOF2HTTRZLUAEWW3ERA",
+          "mimetype": "text/html",
+          "recorded_length": "20258",
+          "candidate_id": "937bff36-15b2-5d2b-adb5-a1a96be370e7"
+        },
+        {
+          "timestamp": "20111211134521",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "ZCLE7ZENDFNL25XE7TOJJ4665IAYI2MX",
+          "mimetype": "text/html",
+          "recorded_length": "20204",
+          "candidate_id": "2a4b43bb-42d4-59fe-8313-b568ac197e2d"
+        },
+        {
+          "timestamp": "20111211224307",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "UOB7TEBIBIQENOYFPXGNGSPUF2XTR5IJ",
+          "mimetype": "text/html",
+          "recorded_length": "20310",
+          "candidate_id": "9fa0c6f1-fae3-5cda-9690-3d2eede4d310"
+        },
+        {
+          "timestamp": "20111212133912",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "42F6PP5PW4EP67PI7U2SDN5L2WDYCOQF",
+          "mimetype": "text/html",
+          "recorded_length": "20049",
+          "candidate_id": "725b2711-f77f-5430-b7ea-0dda72976609"
+        },
+        {
+          "timestamp": "20111213105524",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "O5P6GBR3B6KBPMQTCAWJFZA3P75N7UKY",
+          "mimetype": "text/html",
+          "recorded_length": "20028",
+          "candidate_id": "a5287329-fcce-58e7-8361-e30bc3d157d2"
+        },
+        {
+          "timestamp": "20111213123559",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "IJM6VV6FX6VU3KLYGGH735J6T4TUHKKQ",
+          "mimetype": "text/html",
+          "recorded_length": "20113",
+          "candidate_id": "a17840c4-adba-51c2-924e-276dc95c7f52"
+        },
+        {
+          "timestamp": "20111214221352",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "O4OA4TRJSHBCQHBI24VS2PKUR33BMFP7",
+          "mimetype": "text/html",
+          "recorded_length": "20067",
+          "candidate_id": "fef625be-89a7-568d-bc13-7e9533ced9cd"
+        },
+        {
+          "timestamp": "20111215193620",
+          "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+          "digest_sha1_base32": "2GZNJNC67GTIY2MCKOME4TI4U5RMNO7M",
+          "mimetype": "text/html",
+          "recorded_length": "20208",
+          "candidate_id": "c5018bbd-7455-5f54-a22d-32bb579e49a8"
+        }
+      ],
+      "chosen_capture": {
+        "timestamp": "20111215193620",
+        "original": "http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+        "replay_url": "https://web.archive.org/web/20111215193620id_/http://www.rferl.org/content/striking_kazakh_oil_workers_lawyer_gets_six_year_jail_term/24290769.html",
+        "cdx_digest_sha1_base32": "2GZNJNC67GTIY2MCKOME4TI4U5RMNO7M",
+        "computed_payload_sha1_base32": "2GZNJNC67GTIY2MCKOME4TI4U5RMNO7M",
+        "digest_match": true,
+        "payload_sha256": "ce40b72d3a7cf3c32ac06110a4f8183177f2a988d723342b9fffac6c4c03c00d",
+        "inherited_witness_id": null,
+        "inherited_payload_sha256_match": false
+      },
+      "response_status": "PRE_CUTOFF_CAPTURE_RETRIEVED",
+      "technical_error": null,
+      "candidate_ids": [
+        "c6eaab20-c36a-55a8-9e70-9b32b5942c51",
+        "dd42d2dd-659e-5a76-9c87-297785391266",
+        "c50a32bf-e416-5d58-a143-a0f037fc3603",
+        "6409b8fb-8003-51db-9c7f-2efb85f3bffc",
+        "e6dc8244-160a-52b4-ac36-41ff4fe0f0d2",
+        "ab7f9f8c-3b2e-50ac-91d4-fb130381bad3",
+        "417272ab-b7bc-5746-b700-8f776da72e80",
+        "595397da-e7e4-5826-8ea3-d52bb59a5152",
+        "5da36e83-ff5b-5ec4-9b08-b8951dedd21b",
+        "1225b538-931f-5cf0-a051-722af9d8200d",
+        "299ac3a7-1fb3-5fa3-9234-b6550d5a73b9",
+        "083df18b-5988-5ab9-9081-214d24902d6e",
+        "624cc9d4-3fde-5f3b-93de-c9d114b36003",
+        "95541f68-2356-5c36-8f5a-525017091436",
+        "bfc564b6-46cc-529a-acbf-f8537bfac1ad",
+        "b5a3b0da-4d14-5b4d-a2f8-b068cd944a6c",
+        "7f95784a-e274-5fa1-a271-830097c33c68",
+        "65688b27-9ba9-58ee-bede-cb86f17a4f58",
+        "9e573b22-1706-539c-b7a2-769843aaf0b0",
+        "50422156-6d82-5a4e-bc71-602847b75907",
+        "5eec3282-14d8-5f39-9f9d-0e38738d5a85",
+        "f493600d-827f-5e32-be39-a4f5263b9de6",
+        "31e69e87-7e8e-5e06-892e-5e47162d2c8d",
+        "21cf2b9c-2de9-5a84-a719-c3000a2b5683",
+        "061b1623-42d6-5546-8419-2a837eb6774b",
+        "fe69d035-9038-570d-88b4-c45ff0d91d96",
+        "d118677d-8e19-55b6-8e79-cb72e42b883a",
+        "16c146c5-aa64-56bb-94c8-4c4bbf01135d",
+        "28977527-c6a3-54c5-b6aa-a180d3c4cec3",
+        "0953770d-cda5-539b-86d5-e48163a8e64a",
+        "dce42c26-2027-5e9f-812d-1ea5d9228578",
+        "c8ab680e-f9bf-5db4-a10d-df204a647529",
+        "79ece7f4-26e9-5902-8093-40cfcd43b43d",
+        "f2a001e1-6e72-516c-b691-93b5d38cfc72",
+        "8be0d791-97ab-5231-81f6-35a7ba54d2e6",
+        "796417c7-fe95-5425-9317-b5479d3b22dd",
+        "47aa63bf-af82-548c-9f9d-09d3c8d86759",
+        "a964a3b3-b906-59ea-98d4-a8771521010a",
+        "36c0708a-ff4b-533e-a54f-398ee7c544d7",
+        "cf3f3c81-b8b2-5af9-ab03-8ba4965bdf7b",
+        "d7ca5ea2-8ebf-5e98-97db-ff6cc1c697c1",
+        "2e6c8317-c0b9-578f-99f9-ec5af12880cb",
+        "a74a912a-40fb-5de0-8f6d-ccf0b7d8c34c",
+        "28c70e97-1275-56ec-85a9-482d146846ef",
+        "8befd169-8e5d-5eea-acff-ba202f893c26",
+        "1837ed62-7cf0-580c-8244-2404c4e456c9",
+        "58e3b31d-3d3b-5226-961b-6818f1e97c7d",
+        "b99a1cbf-5cbf-5fed-b503-8ef9e2887094",
+        "2d8a4801-aaa9-5fd8-af55-528f28399ad9",
+        "6a62e067-dc61-5153-a29a-0825182953f3",
+        "f68532a8-51cf-560c-83c1-9134b248cad0",
+        "eec52b24-4af7-55fe-9d4a-82e282f1ea50",
+        "f981f60d-51b4-58d9-ae4f-09da71e26d2f",
+        "47daae46-ac92-5782-b412-0580786d851a",
+        "d220dcfd-6048-5820-914b-d2eecb2c232b",
+        "355c9f0f-c06f-5147-972f-067fcd8c5c4b",
+        "1d0be48a-5525-5c1a-89b0-ec3bec6cf708",
+        "6acd8df1-7ce6-59ac-8667-cdd802884cdd",
+        "e2397a86-5928-5808-be8a-27d1229e9be8",
+        "042d001b-d16b-5e7c-b146-e9af8ba2f3d7",
+        "bb8936dc-1a6d-57c8-afc5-876710c75106",
+        "5f78a12b-78e4-57ed-a549-52ddb934da4b",
+        "600d23b3-d1ad-5417-a022-58192678bc15",
+        "937bff36-15b2-5d2b-adb5-a1a96be370e7",
+        "2a4b43bb-42d4-59fe-8313-b568ac197e2d",
+        "9fa0c6f1-fae3-5cda-9690-3d2eede4d310",
+        "725b2711-f77f-5430-b7ea-0dda72976609",
+        "a5287329-fcce-58e7-8361-e30bc3d157d2",
+        "a17840c4-adba-51c2-924e-276dc95c7f52",
+        "fef625be-89a7-568d-bc13-7e9533ced9cd",
+        "c5018bbd-7455-5f54-a22d-32bb579e49a8"
+      ],
+      "result_state": "PRE_CUTOFF_CAPTURE_RETRIEVED_NOT_ADMISSIBLE_AS_FULL_EDITION",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "A pre-cutoff archive payload was retrieved and custody metadata recorded, but the repository has no frozen complete-edition byte identity binding this payload to the exact DocumentVersion. Fragment proof and locator continuity do not satisfy the full exact-edition contract.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": true,
+        "complete_payload_retrieved": true,
+        "archive_digest_verified": true,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "d2a54498-1914-5f4e-b103-e816ac020b55",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "9237e7a0-ed68-5e12-8042-2cfb16f23fc9",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "document_version_id": "00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "document_id": "46609b00-8ecc-5239-816f-e28da8ae18f3",
+      "source_id": "a31e3834-1227-5f14-acfe-2e43bee2fe47",
+      "label": "D13",
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "df0c3139684d1340586b5b013ef5d5a1e9e33754ab3fe42e2a6a28c55c38d606",
+      "requested_at_utc": "2026-10-03T12:23:43.147248+00:00",
+      "completed_at_utc": "2026-10-03T12:23:44.041015+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.rferl.org/a/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.rferl.org/a/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "final_url": "https://www.rferl.org/a/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 89974,
+          "payload_sha256": "2faaee05e8863fa2344e43469edc408c782293ed2038c20a0aafbde94ff0e6fc",
+          "redirect_chain": [
+            {
+              "url": "https://www.rferl.org/a/kazakhstan_oil_workers_strike_desperation_poverty/24331987.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "b70d29ea-55fb-5478-8ade-3e36cf24e04a"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "bab13970-a3bc-5322-a25b-7d45fa3e78b5",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "c9a4c9a4-480d-5ff4-a852-33779ad18384",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "document_version_id": "00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "document_id": "46609b00-8ecc-5239-816f-e28da8ae18f3",
+      "source_id": "a31e3834-1227-5f14-acfe-2e43bee2fe47",
+      "label": "D13",
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "8bd10db3b35f0bfdca4b0f38beb1fc861d124a0adc03e015bc129f0a1337002e",
+      "requested_at_utc": "2026-10-03T12:23:43.473647+00:00",
+      "completed_at_utc": "2026-10-03T12:24:32.481336+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_strike_desperation_poverty%2F24331987.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [],
+      "archive_candidates": [],
+      "chosen_capture": null,
+      "response_status": "TECHNICAL_FAILURE",
+      "technical_error": "ReadTimeout: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=45)",
+      "candidate_ids": [],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "The single frozen archive-capture query failed technically; failure is not negative evidence.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": false,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "231b215d-ab37-57e7-b66b-c140de17210d",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "915172f6-0fb4-5444-ab27-050c918acbf6",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "document_version_id": "3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "document_id": "1fdb293f-696f-5b38-9a64-469dd0de7340",
+      "source_id": "0d49d515-8eee-58d3-891a-45b906138ef9",
+      "label": "D14",
+      "affected_coding_item_ids": [
+        "190e3801-e98f-559d-b055-04502db625e9",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "b374280979a952f0d72bc2b79bda7997ad6d2d2c19e641085ce525f54f187b23",
+      "requested_at_utc": "2026-10-03T12:23:44.043016+00:00",
+      "completed_at_utc": "2026-10-03T12:23:44.893404+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.rferl.org/a/kazakhstan_oil_workers_lawyer/24341367.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.rferl.org/a/kazakhstan_oil_workers_lawyer/24341367.html",
+          "final_url": "https://www.rferl.org/a/kazakhstan_oil_workers_lawyer/24341367.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 79225,
+          "payload_sha256": "489a2b4d78f98c56d2f1a82d6e156f8ec4e34ed62fca03f611923a169d1afe60",
+          "redirect_chain": [
+            {
+              "url": "https://www.rferl.org/a/kazakhstan_oil_workers_lawyer/24341367.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "c51e2275-de51-5892-824d-1492a71e06f0"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "14a0ce09-031b-566d-82e5-c30b04f2330e",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "cbf8ff7f-7373-5e98-b472-13e02950d988",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "document_version_id": "3fa6e3d7-8fac-5372-84f4-6924a8bf819e",
+      "document_id": "1fdb293f-696f-5b38-9a64-469dd0de7340",
+      "source_id": "0d49d515-8eee-58d3-891a-45b906138ef9",
+      "label": "D14",
+      "affected_coding_item_ids": [
+        "190e3801-e98f-559d-b055-04502db625e9",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "421eeb0830ebbfc7b1daedf544f8199c929cfa2437e369f5f56d8d249578f53f",
+      "requested_at_utc": "2026-10-03T12:23:44.895106+00:00",
+      "completed_at_utc": "2026-10-03T12:24:26.081506+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_lawyer%2F24341367.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_lawyer%2F24341367.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_lawyer%2F24341367.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 12246,
+          "payload_sha256": "f82ae87a5f0d41a55f5b2e379dcfff7509ab93ae79eca531a1d61bffba117331",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_lawyer%2F24341367.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        },
+        {
+          "subrequest_role": "WAYBACK_REPLAY_PAYLOAD",
+          "request_url": "https://web.archive.org/web/20111215034811id_/http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "final_url": "https://web.archive.org/web/20111215034811id_/http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=utf-8",
+          "payload_bytes": 81514,
+          "payload_sha256": "8fd93795c9712224b618cc01d0de4d141853840ef169d1a0291c0757c70cb449",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/web/20111215034811id_/http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [
+        {
+          "timestamp": "20110927202906",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "BQZGJXT4UFSA6BJCY7CMUET4DJFOCE3C",
+          "mimetype": "text/html",
+          "recorded_length": "15133",
+          "candidate_id": "b52c6695-36d1-5cda-b01c-91306de0db1a"
+        },
+        {
+          "timestamp": "20110928154945",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "JC25KDAGCG563TXCVBAFMS4MAJ26OHYA",
+          "mimetype": "text/html",
+          "recorded_length": "15009",
+          "candidate_id": "a863ee9c-f68a-5363-b737-5c942f52fdcb"
+        },
+        {
+          "timestamp": "20110930102035",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "JF2UEZ2W5ZM5WEPCGPDEGKLADY77AG7N",
+          "mimetype": "text/html",
+          "recorded_length": "14895",
+          "candidate_id": "f38daa5b-480b-5453-8702-686b9dc3f15c"
+        },
+        {
+          "timestamp": "20110930132049",
+          "original": "http://www.rferl.org:80/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "HEGS3CRXD6DAQMHCDGIZ6HXQJEHHDIZF",
+          "mimetype": "text/html",
+          "recorded_length": "14493",
+          "candidate_id": "b8610682-5e3d-5c04-87dd-340da9165b34"
+        },
+        {
+          "timestamp": "20111001142848",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "JJSDOCGRH2PBJBKJVPHJ5S4EGGM3HFBW",
+          "mimetype": "text/html",
+          "recorded_length": "15429",
+          "candidate_id": "3ed91aff-bbc4-52dc-8288-99467b3b8400"
+        },
+        {
+          "timestamp": "20111003090534",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "X2W2CJQ7QMQ3DND7QQZ325IMJLIMRMQH",
+          "mimetype": "text/html",
+          "recorded_length": "15229",
+          "candidate_id": "ec7b3550-ad94-559c-a354-d0f2086baf43"
+        },
+        {
+          "timestamp": "20111003190242",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "2GYHUG5U3FHEO43SOPLBI7Q3UVZX34PB",
+          "mimetype": "text/html",
+          "recorded_length": "15205",
+          "candidate_id": "18b98bae-c826-5059-a891-2e85d3328e11"
+        },
+        {
+          "timestamp": "20111004232438",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "TIHMX54K6IVQCNRVYE5GLKZOA33OR6RT",
+          "mimetype": "text/html",
+          "recorded_length": "15436",
+          "candidate_id": "7157df6d-66ac-5cc5-a801-07bd7041f035"
+        },
+        {
+          "timestamp": "20111005202403",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "FYYKQZVHH3RCHVFDRSX3C6V3ZYJ6R4ZB",
+          "mimetype": "text/html",
+          "recorded_length": "14890",
+          "candidate_id": "da71109f-92d8-54d0-bd98-1d31456e0551"
+        },
+        {
+          "timestamp": "20111006141438",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "A4N7RIRO3NUAF6JFI6DUKR26U72Y3GFT",
+          "mimetype": "text/html",
+          "recorded_length": "14987",
+          "candidate_id": "2b058cba-b12c-5f89-bfb2-b3579becbdce"
+        },
+        {
+          "timestamp": "20111007133419",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "WNDKLXMJVCJP4RNQJA65HQWKO3OQKP3H",
+          "mimetype": "text/html",
+          "recorded_length": "14972",
+          "candidate_id": "ae99d033-6343-5e6b-9025-b2e47df78576"
+        },
+        {
+          "timestamp": "20111009121457",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "GZAZ43QO5QAJTVQE6OHUGXCTXPCMSGVK",
+          "mimetype": "text/html",
+          "recorded_length": "15020",
+          "candidate_id": "2113df6a-61a1-5ffb-9b3e-b64878b934c5"
+        },
+        {
+          "timestamp": "20111010031150",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "J4LNELR2U7PD3G22U2RNJTSVVBTMVAQC",
+          "mimetype": "text/html",
+          "recorded_length": "15110",
+          "candidate_id": "abb687c7-bddc-58c5-941d-be32ef9694ff"
+        },
+        {
+          "timestamp": "20111011194822",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "GQINCGCPPWH5MTRQR2AXZKLHFPVPBH5Q",
+          "mimetype": "text/html",
+          "recorded_length": "15207",
+          "candidate_id": "f9800dd4-b3f4-5f19-b5ed-b43d02313f55"
+        },
+        {
+          "timestamp": "20111012053234",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "2LSE75W4OP7C2YW7UEMYOGWPWMZJGS6M",
+          "mimetype": "text/html",
+          "recorded_length": "15115",
+          "candidate_id": "5ca3e70c-dd6c-5f5e-aaac-ef355a42fd8f"
+        },
+        {
+          "timestamp": "20111013030441",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "UAXBSSDKVK42RCFIP44AU5M56EIBP3PN",
+          "mimetype": "text/html",
+          "recorded_length": "14454",
+          "candidate_id": "cb1d6b7a-7bf8-5c21-b8fb-b6415d72d4d4"
+        },
+        {
+          "timestamp": "20111013085357",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "KYCOWYNIQVRZRK3F2FRZCI7XS6L2DS6M",
+          "mimetype": "text/html",
+          "recorded_length": "14955",
+          "candidate_id": "b8d03668-1517-5b37-8852-01b82cbc2ee1"
+        },
+        {
+          "timestamp": "20111014101734",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "VMUG4I4Z5KIRAAW3P3LKMDIPGG6E2OIW",
+          "mimetype": "text/html",
+          "recorded_length": "14781",
+          "candidate_id": "d492f578-7056-5dde-91db-77f6ab002354"
+        },
+        {
+          "timestamp": "20111015235055",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "6JTE5BQDUD7H424Y52ZUNFWNPWX4G5TH",
+          "mimetype": "text/html",
+          "recorded_length": "14904",
+          "candidate_id": "72cf69ec-f75b-59c6-a31f-9403a9a9feae"
+        },
+        {
+          "timestamp": "20111016191018",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "GXMSWEOBYNBZMLLKFIULWOH4YSU4IH4I",
+          "mimetype": "text/html",
+          "recorded_length": "14821",
+          "candidate_id": "ed5c04cd-4303-529b-8224-57a8f1d3a6f2"
+        },
+        {
+          "timestamp": "20111018152342",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "KIEDV4MYNJKRIDTO65M5V6LTGDIBVQ2D",
+          "mimetype": "text/html",
+          "recorded_length": "14915",
+          "candidate_id": "b685cc5e-8e6e-5f8a-afc3-ba484ac8f449"
+        },
+        {
+          "timestamp": "20111018185351",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "XROVL7YQLMWRSUN2E3TFGRLDBUKERBM4",
+          "mimetype": "text/html",
+          "recorded_length": "14941",
+          "candidate_id": "2d97089c-3811-5483-8073-a4345dbce626"
+        },
+        {
+          "timestamp": "20111019152344",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "VOJ437TI477OPHLOGL643GVXPIQGSP6L",
+          "mimetype": "text/html",
+          "recorded_length": "14908",
+          "candidate_id": "928dbbe6-a5ad-59e7-8ef4-072039d1399d"
+        },
+        {
+          "timestamp": "20111019210056",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "WIZVOUI6H57OXV4PW6YUR7OPGBG5WZC5",
+          "mimetype": "text/html",
+          "recorded_length": "14945",
+          "candidate_id": "ef8faf8f-2e66-5b28-99e2-e9199a70d7d0"
+        },
+        {
+          "timestamp": "20111020153351",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "AOTPT7CIRUTJDCHFZ27M54UBCACVQPS2",
+          "mimetype": "text/html",
+          "recorded_length": "14915",
+          "candidate_id": "d7437a54-7242-58c6-bd76-db0f2f4faf5e"
+        },
+        {
+          "timestamp": "20111021175709",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "HMKAKMERNGFFBLY5FSQCXG6C3TCMMJ7W",
+          "mimetype": "text/html",
+          "recorded_length": "15135",
+          "candidate_id": "ca7507a4-2e9e-56ae-8477-0c6216b35c49"
+        },
+        {
+          "timestamp": "20111023030516",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "VALRSLTGW3MZLWWYRUEZS4FYFD4WFWMC",
+          "mimetype": "text/html",
+          "recorded_length": "14999",
+          "candidate_id": "993a036a-ee1a-526a-99c0-a70ad436a805"
+        },
+        {
+          "timestamp": "20111023155900",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "7VCRWHQ7FE6AR55GHV25UZGMQF2KBTPK",
+          "mimetype": "text/html",
+          "recorded_length": "14993",
+          "candidate_id": "83cf2209-8241-557a-9da5-bfdcc76ba8e0"
+        },
+        {
+          "timestamp": "20111024205655",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "5IEPOGESXX2DXVQ4P2WTDMVQXJ3UZ6IX",
+          "mimetype": "text/html",
+          "recorded_length": "14636",
+          "candidate_id": "56a26ef2-c8bf-53ff-8bb3-f25c26b9852f"
+        },
+        {
+          "timestamp": "20111026033038",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "RGW3JMW2SLAP67ANX52ABCFVH4X2TXUQ",
+          "mimetype": "text/html",
+          "recorded_length": "14607",
+          "candidate_id": "71b0b227-b256-50fe-ab72-55d7a57450b3"
+        },
+        {
+          "timestamp": "20111027061110",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "U4DJTH3OA5WT6E4IN4UJUEFMDVLX5NL4",
+          "mimetype": "text/html",
+          "recorded_length": "14394",
+          "candidate_id": "d3448347-fc1d-520b-a2e2-d2ead7bdcf35"
+        },
+        {
+          "timestamp": "20111028203723",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "ILHNPCOXNFHDQMDWGAME7NTBNBWYDIJ6",
+          "mimetype": "text/html",
+          "recorded_length": "14464",
+          "candidate_id": "aa21dae5-9084-5e7c-a1a4-920e7626d054"
+        },
+        {
+          "timestamp": "20111028210839",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "DS6WL5GZWEJ42YXNRZOXMIBN36F4TZUV",
+          "mimetype": "text/html",
+          "recorded_length": "14462",
+          "candidate_id": "02c868cb-b96c-5cf1-8f74-85ce38dcac4d"
+        },
+        {
+          "timestamp": "20111030203108",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "2DBIBQIA23VEB6N5T5Z4KRE27GE5ICKS",
+          "mimetype": "text/html",
+          "recorded_length": "14728",
+          "candidate_id": "814f5fcb-911b-50b6-a632-eb40695771b3"
+        },
+        {
+          "timestamp": "20111031044349",
+          "original": "http://www.rferl.org:80/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "FLKDDFKGH3ZK5MWUA6WTHH3RO55XISO6",
+          "mimetype": "text/html",
+          "recorded_length": "14099",
+          "candidate_id": "441a276e-1d61-57db-af7f-084aab7d0ef0"
+        },
+        {
+          "timestamp": "20111031170756",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "IX6RXWB5FACLOQSYV7GHVGLHUPDZFW4R",
+          "mimetype": "text/html",
+          "recorded_length": "14625",
+          "candidate_id": "952c1829-a7a6-53e7-be3b-a1778732f237"
+        },
+        {
+          "timestamp": "20111101145143",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "Z7DPZVAJTKMLPO4ADKK72P6DHFWSJW5Y",
+          "mimetype": "text/html",
+          "recorded_length": "14490",
+          "candidate_id": "8d62a084-8c2f-53e2-8b58-5bcd88fac175"
+        },
+        {
+          "timestamp": "20111102123907",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "ELXKUBIADOJ6C6W36SF54FU3I77AG4YC",
+          "mimetype": "text/html",
+          "recorded_length": "14711",
+          "candidate_id": "f654a8cc-2829-5105-9ab3-d5636451067e"
+        },
+        {
+          "timestamp": "20111103192245",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "MTVE6H5UXI42YQMPW4LY7ZUHJVPMDA6H",
+          "mimetype": "text/html",
+          "recorded_length": "14742",
+          "candidate_id": "f4d12645-5379-5e28-8117-28550e76a10b"
+        },
+        {
+          "timestamp": "20111106041751",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "CO5IBLFVMX7DWGL37DIDAFJHMB7WLQAS",
+          "mimetype": "text/html",
+          "recorded_length": "14736",
+          "candidate_id": "40856e5a-8d04-512f-84c9-936f91b74c08"
+        },
+        {
+          "timestamp": "20111106221421",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "7OBJ656ZBWK3R72TSWP35Z3CC5A3YOZS",
+          "mimetype": "text/html",
+          "recorded_length": "14460",
+          "candidate_id": "f9534fa6-21d4-5ef6-b46a-4f781445b05c"
+        },
+        {
+          "timestamp": "20111107094424",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "TC7KSENR6JKV6DX24Z5D3BJIQPPF5GC5",
+          "mimetype": "text/html",
+          "recorded_length": "14444",
+          "candidate_id": "f513a297-cb39-5234-ab10-cbcc334565aa"
+        },
+        {
+          "timestamp": "20111109060031",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "CRODS2VG7GTVQ3KYNIYDWBBEMAQVGFDO",
+          "mimetype": "text/html",
+          "recorded_length": "14603",
+          "candidate_id": "778ac78f-6eac-5cf3-ac66-d45b0a981c6a"
+        },
+        {
+          "timestamp": "20111110151329",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "TCHHSC7EAL6HB6MIIEJUM4ZMZEWB32GC",
+          "mimetype": "text/html",
+          "recorded_length": "16389",
+          "candidate_id": "dde75bc9-6c00-5d9e-95f6-98ef4dcb5722"
+        },
+        {
+          "timestamp": "20111110230339",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "A3HKHZTMCQOKRTYS5E5FPZ44FULA6CZN",
+          "mimetype": "text/html",
+          "recorded_length": "16710",
+          "candidate_id": "c1b53a66-6801-589b-9da0-25d5da220d8a"
+        },
+        {
+          "timestamp": "20111112024634",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "5DRTOMOTI4LJS2TSWZDL46QZ3PAI3VHG",
+          "mimetype": "text/html",
+          "recorded_length": "16688",
+          "candidate_id": "94344efc-1def-5e29-b03e-fec3b68638d3"
+        },
+        {
+          "timestamp": "20111113100345",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "Y3LXA6JHDYSPZ3B3FGMZWERKMCCNFN3F",
+          "mimetype": "text/html",
+          "recorded_length": "16675",
+          "candidate_id": "7fdb558f-c2b5-56eb-a983-415e4bac22d6"
+        },
+        {
+          "timestamp": "20111113195314",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "FQMF7RUO7TKCJX37LNI3QJ5WXSCUIGOA",
+          "mimetype": "text/html",
+          "recorded_length": "16736",
+          "candidate_id": "140fcf83-fa68-5c7a-8fd4-f0f3ec5cb581"
+        },
+        {
+          "timestamp": "20111114213311",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "LEPB4EVMK2XROKYITYKXRSADJGHS2RR5",
+          "mimetype": "text/html",
+          "recorded_length": "16618",
+          "candidate_id": "33dff390-6d36-564e-991d-8879815a1c47"
+        },
+        {
+          "timestamp": "20111116102803",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "HAQWW34ECLDKK2K6B7PD4YPT5LHEMPYK",
+          "mimetype": "text/html",
+          "recorded_length": "16785",
+          "candidate_id": "5e9ece56-0018-560a-8bce-2eb2bdd73d4d"
+        },
+        {
+          "timestamp": "20111117161853",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "BS5HMAIRMAO5C63XTHNWNA2BOZZF773O",
+          "mimetype": "text/html",
+          "recorded_length": "16538",
+          "candidate_id": "d4e72478-f731-5584-9e42-be68b58363ed"
+        },
+        {
+          "timestamp": "20111118200829",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "BUN67HYNB7UTUMFCM66IT6HRPQH4KNH4",
+          "mimetype": "text/html",
+          "recorded_length": "16472",
+          "candidate_id": "de3d7d92-eac0-5b7c-b0b8-06467967a273"
+        },
+        {
+          "timestamp": "20111121074457",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "VDWBVR53YAK55EDWZSLA24DXEW6OTDGN",
+          "mimetype": "text/html",
+          "recorded_length": "16763",
+          "candidate_id": "81654990-9dd1-51d7-84bf-925f6ff5cfb4"
+        },
+        {
+          "timestamp": "20111122222722",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "3MCZSARYV3PVGP5XQCV4ODUOHSG7FNGL",
+          "mimetype": "text/html",
+          "recorded_length": "19781",
+          "candidate_id": "8ed0fcce-c21e-537e-8772-64a7ddce543c"
+        },
+        {
+          "timestamp": "20111123052438",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "DUVQ5SSBO25ACRWHQIC2HVLRZQ5VWUGB",
+          "mimetype": "text/html",
+          "recorded_length": "19805",
+          "candidate_id": "73482eee-2507-5f8e-8036-a1053b25a0b2"
+        },
+        {
+          "timestamp": "20111124045237",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "TPI3YBVKDMFI4QOFZUMUXKFULD7GCHJA",
+          "mimetype": "text/html",
+          "recorded_length": "19698",
+          "candidate_id": "eb2366e4-8603-5c42-9cc5-735ca44c75cf"
+        },
+        {
+          "timestamp": "20111125035223",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "OBOMUZGWFAJDMDA4ZXALJLBXXA47BIJ5",
+          "mimetype": "text/html",
+          "recorded_length": "19870",
+          "candidate_id": "23b0d2dd-a2d7-577c-9028-6bc8059c9426"
+        },
+        {
+          "timestamp": "20111125221057",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "6IPYA6343Z2R6KUZDS2M62UKO3ZRFAZA",
+          "mimetype": "text/html",
+          "recorded_length": "19872",
+          "candidate_id": "bc9d66e9-80a0-5b46-84b4-0fd179c3080b"
+        },
+        {
+          "timestamp": "20111127050218",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "FNJIIN45SIAH5EI7IROCM6KADW2H5EUL",
+          "mimetype": "text/html",
+          "recorded_length": "19718",
+          "candidate_id": "a102a500-6ae6-5518-ba48-22c4b6dcbc89"
+        },
+        {
+          "timestamp": "20111128061306",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "IECXZDYDCHDCYWRGLE34ER36BVHQLADY",
+          "mimetype": "text/html",
+          "recorded_length": "19366",
+          "candidate_id": "f7cc9dff-402a-5f00-9b2e-f82e82f80477"
+        },
+        {
+          "timestamp": "20111129071655",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "DPVG4STRMCDQSJVYJN73X7FUAEGOFRHX",
+          "mimetype": "text/html",
+          "recorded_length": "19897",
+          "candidate_id": "0705364a-e62f-551e-80cc-7d86e0638c70"
+        },
+        {
+          "timestamp": "20111130014420",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "RG2JJWQSCW6WY573KUELQRQ2QCP7LHVH",
+          "mimetype": "text/html",
+          "recorded_length": "19799",
+          "candidate_id": "50e90d92-dd6c-558e-af4e-e3b6f73c8e7f"
+        },
+        {
+          "timestamp": "20111130140945",
+          "original": "http://www.rferl.org:80/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "6F7GSP2TUWTIHZIU7V7CHLWRWHOD4JFR",
+          "mimetype": "text/html",
+          "recorded_length": "19012",
+          "candidate_id": "86b28bfe-64c4-5088-a365-f21ddd75306c"
+        },
+        {
+          "timestamp": "20111201064944",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "4YEBNBVDZLAZDNW4DJSVJ6VU5OPVOYCH",
+          "mimetype": "text/html",
+          "recorded_length": "19179",
+          "candidate_id": "6ac2052f-bf66-5bac-a7ec-20f892ee4a55"
+        },
+        {
+          "timestamp": "20111202065134",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "3FWVAMK4WWYDRA2NX2K25EDRMIJH5HTC",
+          "mimetype": "text/html",
+          "recorded_length": "19188",
+          "candidate_id": "f1f97fdd-9332-554b-a16e-d39f3fb09bc8"
+        },
+        {
+          "timestamp": "20111203034726",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "QBZMBDSRK3KDUQHN6274IFWEHOL7ILIR",
+          "mimetype": "text/html",
+          "recorded_length": "19502",
+          "candidate_id": "92e9eb29-e97e-59d6-b50c-0052d045b30a"
+        },
+        {
+          "timestamp": "20111203233059",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "D56BHF353HS2ENC7FFBJ3WEZE5Z6J4DW",
+          "mimetype": "text/html",
+          "recorded_length": "19743",
+          "candidate_id": "cae4a294-d102-5b13-8280-c7cfcc5cac48"
+        },
+        {
+          "timestamp": "20111205080151",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "2LQFHC6ED4WWGECKOF4OHTVPKKJ5YUMH",
+          "mimetype": "text/html",
+          "recorded_length": "19822",
+          "candidate_id": "b1ec9795-aee1-598d-98ff-af5acac697d6"
+        },
+        {
+          "timestamp": "20111206053938",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "NQWBNCMNGKYBP3LSTMA57GSMMACUXIUT",
+          "mimetype": "text/html",
+          "recorded_length": "19761",
+          "candidate_id": "620c3fd7-a7f4-5969-afae-c9591492937d"
+        },
+        {
+          "timestamp": "20111206235835",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "MFEAGJ6KQXVNRH5KZE5SEPNN26DUMJDJ",
+          "mimetype": "text/html",
+          "recorded_length": "19644",
+          "candidate_id": "4f58262f-ca17-5139-9228-288ea0da9c68"
+        },
+        {
+          "timestamp": "20111208061640",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "NKHH3WAUS2AI3XGZVKSADY6URGWBIF7I",
+          "mimetype": "text/html",
+          "recorded_length": "19325",
+          "candidate_id": "75abf7a6-b7de-5b4f-a53f-0e4724646287"
+        },
+        {
+          "timestamp": "20111209083934",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "PEQQNK5ULMSVHTOS2MQHVRD77W56UZ7J",
+          "mimetype": "text/html",
+          "recorded_length": "19359",
+          "candidate_id": "d53591e4-c845-5c44-b401-93dda7f9465d"
+        },
+        {
+          "timestamp": "20111210000007",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "BQ4TQGKEGJRWPOPBN3NF6L3BRT7FGSZH",
+          "mimetype": "text/html",
+          "recorded_length": "19135",
+          "candidate_id": "6c3d21b9-fd7e-5ab5-bdfa-f4ec8449e325"
+        },
+        {
+          "timestamp": "20111211004326",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "7HEKNEWKGBSCWSEAAMGDFY33R54QTIX3",
+          "mimetype": "text/html",
+          "recorded_length": "19418",
+          "candidate_id": "35ddcada-2d17-5c00-b05f-62eff6c40ade"
+        },
+        {
+          "timestamp": "20111212084357",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "4S6C75YQRPJBWNDASTOJYFKLPU5STVKI",
+          "mimetype": "text/html",
+          "recorded_length": "19363",
+          "candidate_id": "d9dca306-8deb-5c74-9d22-82339679ee03"
+        },
+        {
+          "timestamp": "20111212235954",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "H7NUCZIQOY2ZT2E3H73O2BYRSPUMVXHH",
+          "mimetype": "text/html",
+          "recorded_length": "19286",
+          "candidate_id": "710f332c-a44a-542d-9559-7fdcf6515132"
+        },
+        {
+          "timestamp": "20111214052627",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "4HQNJE2AQGBSEVPXR3HIKHUTYNRX6ISC",
+          "mimetype": "text/html",
+          "recorded_length": "19161",
+          "candidate_id": "2523ee63-7164-56eb-97fa-822162cef52f"
+        },
+        {
+          "timestamp": "20111215034811",
+          "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+          "digest_sha1_base32": "NBAHPCL3ZHSEKNFDSWGDYEWBLGXL5MBQ",
+          "mimetype": "text/html",
+          "recorded_length": "19243",
+          "candidate_id": "b4d5234a-124f-5969-a67a-dc001354cdff"
+        }
+      ],
+      "chosen_capture": {
+        "timestamp": "20111215034811",
+        "original": "http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+        "replay_url": "https://web.archive.org/web/20111215034811id_/http://www.rferl.org/content/kazakhstan_oil_workers_lawyer/24341367.html",
+        "cdx_digest_sha1_base32": "NBAHPCL3ZHSEKNFDSWGDYEWBLGXL5MBQ",
+        "computed_payload_sha1_base32": "NBAHPCL3ZHSEKNFDSWGDYEWBLGXL5MBQ",
+        "digest_match": true,
+        "payload_sha256": "8fd93795c9712224b618cc01d0de4d141853840ef169d1a0291c0757c70cb449",
+        "inherited_witness_id": null,
+        "inherited_payload_sha256_match": false
+      },
+      "response_status": "PRE_CUTOFF_CAPTURE_RETRIEVED",
+      "technical_error": null,
+      "candidate_ids": [
+        "b52c6695-36d1-5cda-b01c-91306de0db1a",
+        "a863ee9c-f68a-5363-b737-5c942f52fdcb",
+        "f38daa5b-480b-5453-8702-686b9dc3f15c",
+        "b8610682-5e3d-5c04-87dd-340da9165b34",
+        "3ed91aff-bbc4-52dc-8288-99467b3b8400",
+        "ec7b3550-ad94-559c-a354-d0f2086baf43",
+        "18b98bae-c826-5059-a891-2e85d3328e11",
+        "7157df6d-66ac-5cc5-a801-07bd7041f035",
+        "da71109f-92d8-54d0-bd98-1d31456e0551",
+        "2b058cba-b12c-5f89-bfb2-b3579becbdce",
+        "ae99d033-6343-5e6b-9025-b2e47df78576",
+        "2113df6a-61a1-5ffb-9b3e-b64878b934c5",
+        "abb687c7-bddc-58c5-941d-be32ef9694ff",
+        "f9800dd4-b3f4-5f19-b5ed-b43d02313f55",
+        "5ca3e70c-dd6c-5f5e-aaac-ef355a42fd8f",
+        "cb1d6b7a-7bf8-5c21-b8fb-b6415d72d4d4",
+        "b8d03668-1517-5b37-8852-01b82cbc2ee1",
+        "d492f578-7056-5dde-91db-77f6ab002354",
+        "72cf69ec-f75b-59c6-a31f-9403a9a9feae",
+        "ed5c04cd-4303-529b-8224-57a8f1d3a6f2",
+        "b685cc5e-8e6e-5f8a-afc3-ba484ac8f449",
+        "2d97089c-3811-5483-8073-a4345dbce626",
+        "928dbbe6-a5ad-59e7-8ef4-072039d1399d",
+        "ef8faf8f-2e66-5b28-99e2-e9199a70d7d0",
+        "d7437a54-7242-58c6-bd76-db0f2f4faf5e",
+        "ca7507a4-2e9e-56ae-8477-0c6216b35c49",
+        "993a036a-ee1a-526a-99c0-a70ad436a805",
+        "83cf2209-8241-557a-9da5-bfdcc76ba8e0",
+        "56a26ef2-c8bf-53ff-8bb3-f25c26b9852f",
+        "71b0b227-b256-50fe-ab72-55d7a57450b3",
+        "d3448347-fc1d-520b-a2e2-d2ead7bdcf35",
+        "aa21dae5-9084-5e7c-a1a4-920e7626d054",
+        "02c868cb-b96c-5cf1-8f74-85ce38dcac4d",
+        "814f5fcb-911b-50b6-a632-eb40695771b3",
+        "441a276e-1d61-57db-af7f-084aab7d0ef0",
+        "952c1829-a7a6-53e7-be3b-a1778732f237",
+        "8d62a084-8c2f-53e2-8b58-5bcd88fac175",
+        "f654a8cc-2829-5105-9ab3-d5636451067e",
+        "f4d12645-5379-5e28-8117-28550e76a10b",
+        "40856e5a-8d04-512f-84c9-936f91b74c08",
+        "f9534fa6-21d4-5ef6-b46a-4f781445b05c",
+        "f513a297-cb39-5234-ab10-cbcc334565aa",
+        "778ac78f-6eac-5cf3-ac66-d45b0a981c6a",
+        "dde75bc9-6c00-5d9e-95f6-98ef4dcb5722",
+        "c1b53a66-6801-589b-9da0-25d5da220d8a",
+        "94344efc-1def-5e29-b03e-fec3b68638d3",
+        "7fdb558f-c2b5-56eb-a983-415e4bac22d6",
+        "140fcf83-fa68-5c7a-8fd4-f0f3ec5cb581",
+        "33dff390-6d36-564e-991d-8879815a1c47",
+        "5e9ece56-0018-560a-8bce-2eb2bdd73d4d",
+        "d4e72478-f731-5584-9e42-be68b58363ed",
+        "de3d7d92-eac0-5b7c-b0b8-06467967a273",
+        "81654990-9dd1-51d7-84bf-925f6ff5cfb4",
+        "8ed0fcce-c21e-537e-8772-64a7ddce543c",
+        "73482eee-2507-5f8e-8036-a1053b25a0b2",
+        "eb2366e4-8603-5c42-9cc5-735ca44c75cf",
+        "23b0d2dd-a2d7-577c-9028-6bc8059c9426",
+        "bc9d66e9-80a0-5b46-84b4-0fd179c3080b",
+        "a102a500-6ae6-5518-ba48-22c4b6dcbc89",
+        "f7cc9dff-402a-5f00-9b2e-f82e82f80477",
+        "0705364a-e62f-551e-80cc-7d86e0638c70",
+        "50e90d92-dd6c-558e-af4e-e3b6f73c8e7f",
+        "86b28bfe-64c4-5088-a365-f21ddd75306c",
+        "6ac2052f-bf66-5bac-a7ec-20f892ee4a55",
+        "f1f97fdd-9332-554b-a16e-d39f3fb09bc8",
+        "92e9eb29-e97e-59d6-b50c-0052d045b30a",
+        "cae4a294-d102-5b13-8280-c7cfcc5cac48",
+        "b1ec9795-aee1-598d-98ff-af5acac697d6",
+        "620c3fd7-a7f4-5969-afae-c9591492937d",
+        "4f58262f-ca17-5139-9228-288ea0da9c68",
+        "75abf7a6-b7de-5b4f-a53f-0e4724646287",
+        "d53591e4-c845-5c44-b401-93dda7f9465d",
+        "6c3d21b9-fd7e-5ab5-bdfa-f4ec8449e325",
+        "35ddcada-2d17-5c00-b05f-62eff6c40ade",
+        "d9dca306-8deb-5c74-9d22-82339679ee03",
+        "710f332c-a44a-542d-9559-7fdcf6515132",
+        "2523ee63-7164-56eb-97fa-822162cef52f",
+        "b4d5234a-124f-5969-a67a-dc001354cdff"
+      ],
+      "result_state": "PRE_CUTOFF_CAPTURE_RETRIEVED_NOT_ADMISSIBLE_AS_FULL_EDITION",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "A pre-cutoff archive payload was retrieved and custody metadata recorded, but the repository has no frozen complete-edition byte identity binding this payload to the exact DocumentVersion. Fragment proof and locator continuity do not satisfy the full exact-edition contract.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": true,
+        "complete_payload_retrieved": true,
+        "archive_digest_verified": true,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "1c65ed13-c0cc-552d-a429-bb41e70f331f",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "ffe7f0cd-bee2-53d4-a4ae-ef915d4e8bfa",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-17608513-7164-5d30-9d2e-521338e323d7",
+      "document_version_id": "17608513-7164-5d30-9d2e-521338e323d7",
+      "document_id": "fc776a08-7158-5bb1-bdf6-aee5264c6f61",
+      "source_id": "4cc51c34-2212-5ab5-b3f1-f6bbfe309c6c",
+      "label": "D18",
+      "affected_coding_item_ids": [
+        "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "cd9eb952-6af0-5708-8703-49673415cbe7"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "5e15d564bf84aa77fd58e6bf9972e522eedc9101a8e807a36fd742ef72585f9d",
+      "requested_at_utc": "2026-10-03T12:23:59.508799+00:00",
+      "completed_at_utc": "2026-10-03T12:24:06.910986+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.osce.org/files/f/documents/4/b/82126.pdf",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://cdn.osce.org/sites/default/files/f/documents/4/b/82126.pdf",
+          "final_url": "https://cdn.osce.org/sites/default/files/f/documents/4/b/82126.pdf",
+          "http_status": 200,
+          "content_type": "application/pdf",
+          "payload_bytes": 54212,
+          "payload_sha256": "5cebd29c25fe37db4e0e4744cdb7451d9e34e822291af05bf0a4c6752495c0aa",
+          "redirect_chain": [
+            {
+              "url": "https://www.osce.org/files/f/documents/4/b/82126.pdf",
+              "http_status": 301,
+              "location": "/sites/default/files/f/documents/4/b/82126.pdf"
+            },
+            {
+              "url": "https://www.osce.org/sites/default/files/f/documents/4/b/82126.pdf",
+              "http_status": 301,
+              "location": "https://cdn.osce.org/sites/default/files/f/documents/4/b/82126.pdf"
+            },
+            {
+              "url": "https://cdn.osce.org/sites/default/files/f/documents/4/b/82126.pdf",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "db53e720-b665-5e6e-9ac2-785d5fab1650"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "d8e78a0e-a929-51f4-9cf4-3d59f0909467",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "98175020-d37a-50c9-81f3-bae34a0fe39f",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-17608513-7164-5d30-9d2e-521338e323d7",
+      "document_version_id": "17608513-7164-5d30-9d2e-521338e323d7",
+      "document_id": "fc776a08-7158-5bb1-bdf6-aee5264c6f61",
+      "source_id": "4cc51c34-2212-5ab5-b3f1-f6bbfe309c6c",
+      "label": "D18",
+      "affected_coding_item_ids": [
+        "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "cd9eb952-6af0-5708-8703-49673415cbe7"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "becbddc8b42241925840d0e05c0f5b87a386313f80c4ab0cbe631084e7d3af9f",
+      "requested_at_utc": "2026-10-03T12:24:06.912663+00:00",
+      "completed_at_utc": "2026-10-03T12:24:27.208773+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fiipdigital.usembassy.gov%2Fst%2Fenglish%2Ftexttrans%2F2011%2F09%2F20110901122736su0.701299.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fiipdigital.usembassy.gov%2Fst%2Fenglish%2Ftexttrans%2F2011%2F09%2F20110901122736su0.701299.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fiipdigital.usembassy.gov%2Fst%2Fenglish%2Ftexttrans%2F2011%2F09%2F20110901122736su0.701299.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 242,
+          "payload_sha256": "3b917342d170275b291629d8d05bd746f3b8fa4614cb48ec56885d7e0aec2ba8",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fiipdigital.usembassy.gov%2Fst%2Fenglish%2Ftexttrans%2F2011%2F09%2F20110901122736su0.701299.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        },
+        {
+          "subrequest_role": "WAYBACK_REPLAY_PAYLOAD",
+          "request_url": "https://web.archive.org/web/20111016234632id_/http://iipdigital.usembassy.gov/st/english/texttrans/2011/09/20110901122736su0.701299.html",
+          "final_url": "https://web.archive.org/web/20111016234632id_/http://iipdigital.usembassy.gov/st/english/texttrans/2011/09/20110901122736su0.701299.html",
+          "http_status": 200,
+          "content_type": "text/html",
+          "payload_bytes": 26520,
+          "payload_sha256": "b6beec09616af212e46df988a4b2149f7bdb4524d9af774f5b6488e6e41358d3",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/web/20111016234632id_/http://iipdigital.usembassy.gov/st/english/texttrans/2011/09/20110901122736su0.701299.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [
+        {
+          "timestamp": "20111016234632",
+          "original": "http://iipdigital.usembassy.gov/st/english/texttrans/2011/09/20110901122736su0.701299.html",
+          "digest_sha1_base32": "ZKEE4EVLFL57VP2BUUNU37NWJT5KSAFS",
+          "mimetype": "text/html",
+          "recorded_length": "7196",
+          "candidate_id": "e2a791ea-3b9c-5e11-822d-d6b5035605c1"
+        }
+      ],
+      "chosen_capture": {
+        "timestamp": "20111016234632",
+        "original": "http://iipdigital.usembassy.gov/st/english/texttrans/2011/09/20110901122736su0.701299.html",
+        "replay_url": "https://web.archive.org/web/20111016234632id_/http://iipdigital.usembassy.gov/st/english/texttrans/2011/09/20110901122736su0.701299.html",
+        "cdx_digest_sha1_base32": "ZKEE4EVLFL57VP2BUUNU37NWJT5KSAFS",
+        "computed_payload_sha1_base32": "ZKEE4EVLFL57VP2BUUNU37NWJT5KSAFS",
+        "digest_match": true,
+        "payload_sha256": "b6beec09616af212e46df988a4b2149f7bdb4524d9af774f5b6488e6e41358d3",
+        "inherited_witness_id": "AW-D18-20111016234632",
+        "inherited_payload_sha256_match": true
+      },
+      "response_status": "PRE_CUTOFF_CAPTURE_RETRIEVED",
+      "technical_error": null,
+      "candidate_ids": [
+        "e2a791ea-3b9c-5e11-822d-d6b5035605c1"
+      ],
+      "result_state": "PRE_CUTOFF_CAPTURE_RETRIEVED_NOT_ADMISSIBLE_AS_FULL_EDITION",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "A pre-cutoff archive payload was retrieved and custody metadata recorded, but the repository has no frozen complete-edition byte identity binding this payload to the exact DocumentVersion. Fragment proof and locator continuity do not satisfy the full exact-edition contract.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": true,
+        "complete_payload_retrieved": true,
+        "archive_digest_verified": true,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "1a53ffcc-5d4c-5aa7-859e-10a1bf902917",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "6394d479-9f1c-5079-bd94-b0d7b73e4ed8",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "document_version_id": "53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "document_id": "2c31843a-9181-5786-8ded-86762eae6779",
+      "source_id": "ae117c91-c49a-5022-abb1-4e39a4e8c38d",
+      "label": "D22",
+      "affected_coding_item_ids": [
+        "39d9db22-402b-59e7-a000-63c6d85c3435",
+        "28161a20-6dd9-525b-97a0-10787a4ba0da",
+        "451a0d8c-ddec-5395-b631-24323628eb69",
+        "a6f0883a-d5fc-521b-8662-1c160fded750",
+        "e32ebf92-ffa3-51da-b933-b10a9c0ba8df"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "659d0233cbd58732c2be068f8b53a3ead39453960e4c79e25274a099ec8b2719",
+      "requested_at_utc": "2026-10-03T12:24:08.839639+00:00",
+      "completed_at_utc": "2026-10-03T12:24:10.810748+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://www.lada.kz/society/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://www.lada.kz/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+          "final_url": "https://www.lada.kz/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "payload_bytes": 120783,
+          "payload_sha256": "10fb9b723c391561b581c5f068eebf1b742a6726af80fae65ed5529710ad6ad9",
+          "redirect_chain": [
+            {
+              "url": "https://www.lada.kz/society/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+              "http_status": 301,
+              "location": "https://www.lada.kz/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html"
+            },
+            {
+              "url": "https://www.lada.kz/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "c51ddc79-6328-59bf-a2d7-8ded93065fbd"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "f9791b6b-487b-548e-bf0b-0ecefaf1a240",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "77b32e21-f78b-5574-ad79-550de8f9bd3e",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "document_version_id": "53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "document_id": "2c31843a-9181-5786-8ded-86762eae6779",
+      "source_id": "ae117c91-c49a-5022-abb1-4e39a4e8c38d",
+      "label": "D22",
+      "affected_coding_item_ids": [
+        "39d9db22-402b-59e7-a000-63c6d85c3435",
+        "28161a20-6dd9-525b-97a0-10787a4ba0da",
+        "451a0d8c-ddec-5395-b631-24323628eb69",
+        "a6f0883a-d5fc-521b-8662-1c160fded750",
+        "e32ebf92-ffa3-51da-b933-b10a9c0ba8df"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "9aabcfdaa99850b93ccdd09f13c093663bce1eec007ab0f0ca84c3d6e6e3a675",
+      "requested_at_utc": "2026-10-03T12:24:09.561971+00:00",
+      "completed_at_utc": "2026-10-03T12:24:56.587699+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Flada.kz%3A80%2Faktau_news%2Fsociety%2F1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Flada.kz%3A80%2Faktau_news%2Fsociety%2F1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Flada.kz%3A80%2Faktau_news%2Fsociety%2F1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 308,
+          "payload_sha256": "d52cd3a2ba53d64e0feb6c667e351a5529ce11aa10564c53fb18ae4d5f54e7a1",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Flada.kz%3A80%2Faktau_news%2Fsociety%2F1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [
+        {
+          "timestamp": "20111120030853",
+          "original": "http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+          "digest_sha1_base32": "D6ZMCKKXPKQRTGOVCGBBAWGEHZAYFIBH",
+          "mimetype": "text/html",
+          "recorded_length": "19770",
+          "candidate_id": "379ad1f4-5ed2-5b78-b64e-c773192481e1"
+        }
+      ],
+      "chosen_capture": null,
+      "response_status": "TECHNICAL_FAILURE_AFTER_CANDIDATE",
+      "technical_error": "ConnectionError: HTTPSConnectionPool(host='web.archive.org', port=443): Max retries exceeded with url: /web/20111120030853id_/http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html (Caused by NewConnectionError(\"HTTPSConnection(host='web.archive.org', port=443): Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение\"))",
+      "candidate_ids": [
+        "379ad1f4-5ed2-5b78-b64e-c773192481e1"
+      ],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Pre-cutoff capture candidates were listed, but the selected replay payload could not be retrieved; prior state retained.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": true,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "399e2787-b0db-57ca-bc52-0785499c893e",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "761ab5c8-e4bc-5288-9ef0-9c5bbdb5cb83",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "document_id": "43a82618-e2f4-5340-b3db-5a08a84dfed1",
+      "source_id": "93272924-00d5-527a-9ace-4ea593c021ad",
+      "label": "D25",
+      "affected_coding_item_ids": [
+        "258efca3-9f6e-550b-8b80-bf27b70424b0",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+        "2c58ce09-3654-5a87-89be-4b1953f467c7"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-PUBLISHER-HISTORY",
+      "query_ordinal": 1,
+      "query_text_sha256": "85529f7d610154ecbfbdb7e3053f798c481f2d5ed7b273c68b07ca873368ed24",
+      "requested_at_utc": "2026-10-03T12:24:10.812507+00:00",
+      "completed_at_utc": "2026-10-03T12:24:12.308174+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://eurasianet.org/kazakhstan-labor-dispute-dragging-energy-production-down",
+      "subrequests": [
+        {
+          "subrequest_role": "PUBLISHER_CURRENT_OR_HISTORY_PAGE",
+          "request_url": "https://eurasianet.org/kazakhstan-labor-dispute-dragging-energy-production-down",
+          "final_url": "https://eurasianet.org/kazakhstan-labor-dispute-dragging-energy-production-down",
+          "http_status": 200,
+          "content_type": "text/html; charset=UTF-8",
+          "payload_bytes": 42243,
+          "payload_sha256": "9ae0b70315e920d4aa0b812d7265f14a05130667fa7370ce8cc1f85a04eb1437",
+          "redirect_chain": [
+            {
+              "url": "https://eurasianet.org/kazakhstan-labor-dispute-dragging-energy-production-down",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "response_status": "HTTP_RESPONSE",
+      "technical_error": null,
+      "candidate_ids": [
+        "40d6582b-1906-51af-b118-1d3f01cd0982"
+      ],
+      "result_state": "CURRENT_PUBLISHER_CANDIDATE_NOT_HISTORICAL_PROOF",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Current publisher content, redirects, HTTP status, metadata, or publication date cannot authenticate the exact pre-cutoff complete edition bound to the frozen DocumentVersion.",
+      "admissibility_gates": {
+        "complete_payload_retrieved": true,
+        "pre_cutoff_historical_capture": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    },
+    {
+      "attempt_id": "b604abf6-3d7b-5525-bf63-9130f0a872b1",
+      "attempt_class": "LIVE_FROZEN_QUERY_EXECUTION",
+      "planned_query_id": "30eb5f84-fd10-5546-a0cc-7824f628620c",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "document_id": "43a82618-e2f4-5340-b3db-5a08a84dfed1",
+      "source_id": "93272924-00d5-527a-9ace-4ea593c021ad",
+      "label": "D25",
+      "affected_coding_item_ids": [
+        "258efca3-9f6e-550b-8b80-bf27b70424b0",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+        "2c58ce09-3654-5a87-89be-4b1953f467c7"
+      ],
+      "dimension": "DOCUMENT_VERSION",
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "query_text_sha256": "d801f64457aef6fe00ce46fc0981a264755103ca042bd578db4215a1f619c52c",
+      "requested_at_utc": "2026-10-03T12:24:11.509494+00:00",
+      "completed_at_utc": "2026-10-03T12:24:33.692410+00:00",
+      "executor_identity": "PR17_AUTOMATED_HTTP_CLIENT",
+      "query_budget_effect": "CONSUMED_ONE_FROZEN_QUERY",
+      "network_used_by_pr17": true,
+      "substantive_review_by_pr17": true,
+      "request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.eurasianet.org%3A80%2Fnode%2F64310&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "subrequests": [
+        {
+          "subrequest_role": "WAYBACK_CDX_LOOKUP",
+          "request_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.eurasianet.org%3A80%2Fnode%2F64310&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "final_url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.eurasianet.org%3A80%2Fnode%2F64310&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+          "http_status": 200,
+          "content_type": "application/json",
+          "payload_bytes": 438,
+          "payload_sha256": "98f8f6fd5ad61e9b9aa1ef90189fbc459d19fe73aab11cddfefcb6d50ab21466",
+          "redirect_chain": [
+            {
+              "url": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.eurasianet.org%3A80%2Fnode%2F64310&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+              "http_status": 200,
+              "location": null
+            }
+          ]
+        }
+      ],
+      "archive_candidates": [
+        {
+          "timestamp": "20111016060958",
+          "original": "http://www.eurasianet.org:80/node/64310",
+          "digest_sha1_base32": "XR7PYY6TK4LJPBKR4GRR75RSBY5STQT4",
+          "mimetype": "text/html",
+          "recorded_length": "12356",
+          "candidate_id": "711810bf-17bf-538b-be4e-ae8a61ec270b"
+        },
+        {
+          "timestamp": "20111016171055",
+          "original": "http://www.eurasianet.org:80/node/64310",
+          "digest_sha1_base32": "UXEK2XF4QVBJVM5JAKFIWLP7J5MU5E7F",
+          "mimetype": "text/html",
+          "recorded_length": "12468",
+          "candidate_id": "fd89ab4f-221b-5a0f-911a-9ceaf4f2297d"
+        },
+        {
+          "timestamp": "20111116125247",
+          "original": "http://www.eurasianet.org:80/node/64310",
+          "digest_sha1_base32": "7YHK6FDDO6SY5E65OBHLKWNVI3ZFCPL5",
+          "mimetype": "text/html",
+          "recorded_length": "12358",
+          "candidate_id": "f030afd4-5c2f-52d5-b6a7-edd0a6848cb4"
+        }
+      ],
+      "chosen_capture": null,
+      "response_status": "TECHNICAL_FAILURE_AFTER_CANDIDATE",
+      "technical_error": "ConnectionError: HTTPSConnectionPool(host='web.archive.org', port=443): Max retries exceeded with url: /web/20111116125247id_/http://www.eurasianet.org:80/node/64310 (Caused by NewConnectionError(\"HTTPSConnection(host='web.archive.org', port=443): Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение\"))",
+      "candidate_ids": [
+        "711810bf-17bf-538b-be4e-ae8a61ec270b",
+        "fd89ab4f-221b-5a0f-911a-9ceaf4f2297d",
+        "f030afd4-5c2f-52d5-b6a7-edd0a6848cb4"
+      ],
+      "result_state": "NOT_ADMISSIBLE",
+      "admission_decision": "RETAIN_NOT_PROVEN",
+      "decision_reason": "Pre-cutoff capture candidates were listed, but the selected replay payload could not be retrieved; prior state retained.",
+      "admissibility_gates": {
+        "pre_cutoff_capture_found": true,
+        "complete_payload_retrieved": false,
+        "archive_digest_verified": false,
+        "exact_document_version_full_edition_binding": false,
+        "exact_edition_contract_satisfied": false
+      },
+      "prior_status_retained": "NOT_PROVEN",
+      "scientific_state_changed_by_pr17": false,
+      "rerun_performed": false
+    }
+  ]
+}

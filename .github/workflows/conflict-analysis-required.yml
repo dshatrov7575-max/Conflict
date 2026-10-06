@@ -1,0 +1,674 @@
+name: Conflict Analysis Required Product Gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - review/ai-only-research-beta-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: conflict-analysis-required-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wheel-sqlite:
+    name: Wheel and SQLite full-product gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    outputs:
+      wheel_sha256: ${{ steps.wheel.outputs.sha256 }}
+    defaults:
+      run:
+        working-directory: software/conflict_analysis
+    env:
+      DJANGO_SECRET_KEY: ci-required-gate-sqlite-only
+      DJANGO_DEBUG: "false"
+      USE_SQLITE: "true"
+      SQLITE_PATH: /tmp/conflict-required-${{ github.run_id }}-${{ github.run_attempt }}.sqlite3
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: Check out tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install exact project test surface
+        run: |
+          python -m pip install --disable-pip-version-check --no-input --require-hashes --only-binary=:all: \
+            --requirement requirements/build-lock.txt
+          python -m pip install --disable-pip-version-check --no-input --require-hashes --only-binary=:all: \
+            --requirement requirements/test-lock.txt
+          python -m pip install --disable-pip-version-check --no-input --no-build-isolation --no-deps -e .
+          python -m pip check
+          python scripts/verify_required_product_gate.py workflow --repo-root ../..
+          find production_studio production_player player_integration scenario_modeling \
+            -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
+
+      - name: Build and inspect one unified wheel
+        id: wheel
+        run: |
+          rm -rf "${RUNNER_TEMP}/conflict-wheel"
+          mkdir -p "${RUNNER_TEMP}/conflict-wheel"
+          python scripts/build_reproducible_wheel.py \
+            --project-root . \
+            --output-dir "${RUNNER_TEMP}/conflict-wheel" \
+            --metadata-out "${RUNNER_TEMP}/conflict-wheel-identity.json"
+          mapfile -t wheels < <(find "${RUNNER_TEMP}/conflict-wheel" -maxdepth 1 -type f -name '*.whl' -print)
+          test "${#wheels[@]}" -eq 1
+          python scripts/verify_required_product_gate.py inspect-wheel --wheel "${wheels[0]}"
+          wheel_sha256="$(python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["sha256"])' "${RUNNER_TEMP}/conflict-wheel-identity.json")"
+          test "${#wheel_sha256}" -eq 64
+          [[ "${wheel_sha256}" =~ ^[0-9a-f]{64}$ ]]
+          echo "sha256=${wheel_sha256}" >> "${GITHUB_OUTPUT}"
+          echo "CONFLICT_WHEEL=${wheels[0]}" >> "${GITHUB_ENV}"
+
+      - name: Smoke-test the installed wheel outside the source tree
+        run: |
+          rm -rf "${RUNNER_TEMP}/conflict-wheel-target" "${RUNNER_TEMP}/conflict-wheel-static"
+          python -m pip install --disable-pip-version-check --no-input --no-deps \
+            --target "${RUNNER_TEMP}/conflict-wheel-target" "${CONFLICT_WHEEL}"
+          python scripts/verify_required_product_gate.py installed-smoke \
+            --target "${RUNNER_TEMP}/conflict-wheel-target" \
+            --static-root "${RUNNER_TEMP}/conflict-wheel-static" \
+            --sqlite-path "${RUNNER_TEMP}/conflict-wheel-smoke.sqlite3"
+
+      - name: Run the default full-product suite on SQLite
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost,::1"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: |
+          python manage.py check --settings=conflict_analysis.settings
+          python manage.py makemigrations --check --dry-run --settings=conflict_analysis.settings
+          STUDIO_C0_WHEEL="${CONFLICT_WHEEL}" python -m pytest -q -p no:cacheprovider \
+            --junitxml="${RUNNER_TEMP}/conflict-required-sqlite.xml"
+
+      - name: Upload wheel and SQLite evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: conflict-required-wheel-sqlite-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/conflict-wheel/*.whl
+            ${{ runner.temp }}/conflict-wheel-identity.json
+            ${{ runner.temp }}/conflict-required-sqlite.xml
+          if-no-files-found: error
+          retention-days: 7
+
+  postgresql-product:
+    name: PostgreSQL 18 and Chromium full-product gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    outputs:
+      wheel_sha256: ${{ steps.wheel.outputs.sha256 }}
+    services:
+      postgres:
+        image: postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+        env:
+          POSTGRES_DB: conflict_analysis
+          POSTGRES_USER: conflict_analysis
+          POSTGRES_PASSWORD: ci-required-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U conflict_analysis -d conflict_analysis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    defaults:
+      run:
+        working-directory: software/conflict_analysis
+    env:
+      DJANGO_SECRET_KEY: ci-required-gate-postgresql-only
+      DJANGO_DEBUG: "false"
+      USE_SQLITE: "false"
+      POSTGRES_DB: conflict_analysis
+      POSTGRES_USER: conflict_analysis
+      POSTGRES_PASSWORD: ci-required-only
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_CONN_MAX_AGE: "0"
+      PLAYER_INTEGRATION_BROWSER: "1"
+      SCENARIO_BROWSER: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: Check out tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Install dependencies and locate Chromium
+        run: |
+          python -m pip install --disable-pip-version-check --no-input --require-hashes --only-binary=:all: \
+            --requirement requirements/build-lock.txt
+          python -m pip install --disable-pip-version-check --no-input --require-hashes --only-binary=:all: \
+            --requirement requirements/test-lock.txt
+          python -m pip install --disable-pip-version-check --no-input --no-build-isolation --no-deps -e .
+          python -m pip check
+          python scripts/verify_required_product_gate.py workflow --repo-root ../..
+          chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "${chrome}"
+          test -x "${chrome}"
+          echo "STUDIO_CHROME_BIN=${chrome}" >> "${GITHUB_ENV}"
+          echo "CHROME_BIN=${chrome}" >> "${GITHUB_ENV}"
+          find production_studio production_player player_integration scenario_modeling \
+            -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
+
+      - name: Build the wheel used by wheel-aware runtime tests
+        id: wheel
+        run: |
+          rm -rf "${RUNNER_TEMP}/conflict-postgresql-wheel"
+          mkdir -p "${RUNNER_TEMP}/conflict-postgresql-wheel"
+          python scripts/build_reproducible_wheel.py \
+            --project-root . \
+            --output-dir "${RUNNER_TEMP}/conflict-postgresql-wheel" \
+            --metadata-out "${RUNNER_TEMP}/conflict-postgresql-wheel-identity.json"
+          mapfile -t wheels < <(find "${RUNNER_TEMP}/conflict-postgresql-wheel" -maxdepth 1 -type f -name '*.whl' -print)
+          test "${#wheels[@]}" -eq 1
+          python scripts/verify_required_product_gate.py inspect-wheel --wheel "${wheels[0]}"
+          wheel_sha256="$(python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["sha256"])' "${RUNNER_TEMP}/conflict-postgresql-wheel-identity.json")"
+          test "${#wheel_sha256}" -eq 64
+          [[ "${wheel_sha256}" =~ ^[0-9a-f]{64}$ ]]
+          echo "sha256=${wheel_sha256}" >> "${GITHUB_OUTPUT}"
+          echo "STUDIO_C0_WHEEL=${wheels[0]}" >> "${GITHUB_ENV}"
+
+      - name: Verify migrations and the unified root runtime
+        run: |
+          python manage.py check --settings=conflict_analysis.settings
+          python manage.py makemigrations --check --dry-run --settings=conflict_analysis.settings
+          python manage.py migrate --noinput --settings=conflict_analysis.settings
+
+      - name: Run all product tests with PostgreSQL and Chromium
+        env:
+          HTTP_PROXY: "http://127.0.0.1:9"
+          HTTPS_PROXY: "http://127.0.0.1:9"
+          NO_PROXY: "127.0.0.1,localhost,::1"
+          OPENAI_API_KEY: ""
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+        run: |
+          python -m pytest -q -p no:cacheprovider \
+            --junitxml="${RUNNER_TEMP}/conflict-required-postgresql.xml"
+
+      - name: Upload PostgreSQL evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: conflict-required-postgresql-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/conflict-postgresql-wheel/*.whl
+            ${{ runner.temp }}/conflict-postgresql-wheel-identity.json
+            ${{ runner.temp }}/conflict-required-postgresql.xml
+          if-no-files-found: error
+          retention-days: 7
+
+
+  production-image:
+    name: Production image hardening gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      wheel_sha256: ${{ steps.runtime.outputs.sha256 }}
+    defaults:
+      run:
+        working-directory: software/conflict_analysis
+
+    steps:
+      - name: Check out tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Verify production contract and Compose graph
+        run: |
+          python scripts/verify_production_runtime.py --project-root . > "${RUNNER_TEMP}/conflict-production-contract.json"
+          cat > "${RUNNER_TEMP}/conflict-production.env" <<'EOF'
+          DJANGO_SECRET_KEY=ci-only-not-secret-ci-only-not-secret-ci-only-not-secret-1234567890
+          DJANGO_ALLOWED_HOSTS=conflict.example.org
+          DJANGO_CSRF_TRUSTED_ORIGINS=https://conflict.example.org
+          FD08_PROJECTION_LEASE_SECRET=ci-only-fd08-projection-capability-not-secret
+          UPSTREAM_AUTH_SHARED_SECRET=ci-only-upstream-auth-secret-not-secret
+          POSTGRES_DB=conflict_analysis
+          POSTGRES_MIGRATION_USER=conflict_migration
+          POSTGRES_MIGRATION_PASSWORD=ci-only-migration-database-password-not-secret
+          POSTGRES_RUNTIME_USER=conflict_runtime
+          POSTGRES_RUNTIME_PASSWORD=ci-only-runtime-database-password-not-secret
+          POSTGRES_HOST=db
+          POSTGRES_PORT=5432
+          POSTGRES_CONN_MAX_AGE=60
+          APP_PORT=8000
+          GUNICORN_WORKERS=2
+          GUNICORN_TIMEOUT=120
+          CONFLICT_IMAGE_TAG=required-${{ github.run_id }}-${{ github.run_attempt }}
+          EOF
+          docker compose --env-file "${RUNNER_TEMP}/conflict-production.env" \
+            -f docker-compose.prod.yml config --quiet
+
+      - name: Build production image from locked wheels
+        env:
+          CONFLICT_IMAGE: conflict-analysis:required-${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          DOCKER_BUILDKIT=1 docker build --target production --tag "${CONFLICT_IMAGE}" .
+          echo "CONFLICT_IMAGE=${CONFLICT_IMAGE}" >> "${GITHUB_ENV}"
+
+      - name: Verify the production image runtime
+        id: runtime
+        run: |
+          runtime_env=(
+            -e DJANGO_SECRET_KEY=ci-only-not-secret-ci-only-not-secret-ci-only-not-secret-1234567890
+            -e DJANGO_ALLOWED_HOSTS=conflict.example.org
+            -e DJANGO_CSRF_TRUSTED_ORIGINS=https://conflict.example.org
+            -e FD08_PROJECTION_LEASE_SECRET=ci-only-fd08-projection-capability-not-secret
+            -e UPSTREAM_AUTH_SHARED_SECRET=ci-only-upstream-auth-secret-not-secret
+            -e POSTGRES_DB=conflict_analysis
+            -e POSTGRES_USER=conflict_runtime
+            -e POSTGRES_PASSWORD=ci-only-runtime-database-password-not-secret
+            -e POSTGRES_HOST=127.0.0.1
+            -e POSTGRES_PORT=5432
+            -e POSTGRES_CONN_MAX_AGE=0
+            -e USE_SQLITE=false
+            -e DJANGO_DEBUG=false
+          )
+          docker run --rm --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+            "${runtime_env[@]}" "${CONFLICT_IMAGE}" \
+            python -m django check --deploy --fail-level WARNING
+          docker run --rm --read-only --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+            "${runtime_env[@]}" "${CONFLICT_IMAGE}" \
+            python -m conflict_analysis.production_probe \
+            > "${RUNNER_TEMP}/conflict-production-runtime.json"
+          python - "${RUNNER_TEMP}/conflict-production-runtime.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert payload["admin_exposed"] is False, payload
+          assert payload["admin_installed"] is False, payload
+          assert payload["debug"] is False, payload
+          assert payload["engine"] == "django.db.backends.postgresql", payload
+          assert payload["package_path"].startswith("/usr/local/lib/python3.12/site-packages/"), payload
+          assert payload["source_tree_present"] is False, payload
+          assert payload["static_root_present"] is True, payload
+          assert payload["uid"] != 0, payload
+          assert payload["wheel_identity_present"] is True, payload
+          assert payload["upstream_auth_middleware"] is True, payload
+          assert payload["authentication_backends"] == [
+              "conflict_analysis.upstream_auth.ProvisionedRemoteUserBackend"
+          ], payload
+          assert payload["drf_authentication_classes"] == [
+              "rest_framework.authentication.SessionAuthentication"
+          ], payload
+          wheel_sha256 = payload["application_wheel_sha256"]
+          assert isinstance(wheel_sha256, str) and len(wheel_sha256) == 64, payload
+          assert all(character in "0123456789abcdef" for character in wheel_sha256), payload
+          PY
+          wheel_sha256="$(python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["application_wheel_sha256"])' "${RUNNER_TEMP}/conflict-production-runtime.json")"
+          test "${#wheel_sha256}" -eq 64
+          [[ "${wheel_sha256}" =~ ^[0-9a-f]{64}$ ]]
+          echo "sha256=${wheel_sha256}" >> "${GITHUB_OUTPUT}"
+          docker image inspect "${CONFLICT_IMAGE}" > "${RUNNER_TEMP}/conflict-production-image.json"
+
+      - name: Run production Compose end-to-end gate
+        run: |
+          compose=(
+            docker compose
+            --env-file "${RUNNER_TEMP}/conflict-production.env"
+            -f docker-compose.prod.yml
+          )
+          cleanup() {
+            "${compose[@]}" ps --all > "${RUNNER_TEMP}/conflict-production-compose-ps.txt" || true
+            "${compose[@]}" logs --no-color > "${RUNNER_TEMP}/conflict-production-compose.log" || true
+            "${compose[@]}" down -v --remove-orphans || true
+          }
+          trap cleanup EXIT
+
+          "${compose[@]}" up --no-build --wait --wait-timeout 180 web
+
+          redirect_status="$(
+            curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              -H 'Host: conflict.example.org' \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${redirect_status}" = "301"
+
+          admitted_status="$(
+            curl --silent --show-error \
+              --output "${RUNNER_TEMP}/conflict-production-http-body.html" \
+              --write-out '%{http_code}' \
+              -H 'Host: conflict.example.org' \
+              -H 'X-Forwarded-Proto: https' \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${admitted_status}" = "401"
+          cat > "${RUNNER_TEMP}/conflict-production-http.json" <<EOF
+          {
+            "http_redirect_status": ${redirect_status},
+            "https_unauthenticated_status": ${admitted_status},
+            "status": "PASS"
+          }
+          EOF
+
+          "${compose[@]}" exec -T web \
+            python -m conflict_analysis.production_db_probe \
+            > "${RUNNER_TEMP}/conflict-production-db-authority.json"
+
+          python - "${RUNNER_TEMP}/conflict-production-db-authority.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert payload["status"] == "PASS", payload
+          assert payload["current_user"] == "conflict_runtime", payload
+          assert payload["configured_user"] == "conflict_runtime", payload
+          assert payload["runtime_is_database_owner"] is False, payload
+          assert payload["runtime_is_audit_owner"] is False, payload
+          assert payload["role_memberships"] == 0, payload
+          assert payload["owned_relations"] == 0, payload
+          assert payload["owned_schemas"] == 0, payload
+          assert payload["schema_create"] is False, payload
+          assert payload["database_temp"] is False, payload
+          assert payload["migration_user_env_present"] is False, payload
+          assert payload["postgres_password_present"] is True, payload
+          assert payload["fd08_projection_secret_present"] is True, payload
+          assert payload["role_flags"] == {
+              "superuser": False,
+              "createdb": False,
+              "createrole": False,
+              "inherit": False,
+              "replication": False,
+              "bypassrls": False,
+          }, payload
+          assert payload["audit_privileges"] == {
+              "select": True,
+              "insert": True,
+              "update": False,
+              "delete": False,
+              "truncate": False,
+              "trigger": False,
+          }, payload
+          assert payload["capability_privileges"] == {
+              "select": False,
+              "insert": False,
+              "update": False,
+              "delete": False,
+              "truncate": False,
+              "references": False,
+              "trigger": False,
+          }, payload
+          assert payload["migration_privileges"] == {
+              "insert": False,
+              "update": False,
+              "delete": False,
+              "truncate": False,
+              "trigger": False,
+          }, payload
+          assert payload["migration_sequence_update"] is False, payload
+          PY
+
+          sentinel="backup_restore_probe"
+          basic_sentinel="basic_bypass_probe"
+          "${compose[@]}" exec -T web python -c \
+            "import django; django.setup(); from django.contrib.auth import get_user_model; U=get_user_model(); assert not U.objects.filter(username='${sentinel}').exists(); assert not U.objects.filter(username='${basic_sentinel}').exists(); u=U(username='${sentinel}', is_active=True); u.set_unusable_password(); u.save(); b=U(username='${basic_sentinel}', is_active=True); b.set_password('ci-basic-bypass-password'); b.save()"
+
+          valid_auth_status="$(
+            curl --silent --show-error \
+              --output "${RUNNER_TEMP}/conflict-production-auth-body.html" \
+              --write-out '%{http_code}' \
+              -H 'Host: conflict.example.org' \
+              -H 'X-Forwarded-Proto: https' \
+              -H "X-Conflict-Auth-User: ${sentinel}" \
+              -H 'X-Conflict-Auth-Secret: ci-only-upstream-auth-secret-not-secret' \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${valid_auth_status}" = "200"
+
+          # The CI connection to the loopback-bound container is plain HTTP while
+          # X-Forwarded-Proto models the trusted TLS terminator. Secure cookies are
+          # therefore intentionally not relied on by curl. Read the one server-side
+          # session key created by the successful upstream-auth request and present
+          # it explicitly to prove that a stale valid session cannot bypass fresh
+          # upstream headers.
+          session_value="$(
+            "${compose[@]}" exec -T web python -c \
+              "import django; django.setup(); from django.contrib.sessions.models import Session; rows=list(Session.objects.values_list('session_key', flat=True)); assert len(rows) == 1, rows; print(rows[0])"
+          )"
+          test -n "${session_value}"
+          stale_session_status="$(
+            curl --silent --show-error \
+              --output /dev/null \
+              --write-out '%{http_code}' \
+              -H 'Host: conflict.example.org' \
+              -H 'X-Forwarded-Proto: https' \
+              -H "Cookie: sessionid=${session_value}" \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${stale_session_status}" = "401"
+
+          bad_secret_status="$(
+            curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              -H 'Host: conflict.example.org' \
+              -H 'X-Forwarded-Proto: https' \
+              -H "X-Conflict-Auth-User: ${sentinel}" \
+              -H 'X-Conflict-Auth-Secret: wrong-secret' \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${bad_secret_status}" = "403"
+
+          basic_bypass_status="$(
+            curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              --user "${basic_sentinel}:ci-basic-bypass-password" \
+              -H 'Host: conflict.example.org' \
+              -H 'X-Forwarded-Proto: https' \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${basic_bypass_status}" = "403"
+
+          unknown_user_status="$(
+            curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              -H 'Host: conflict.example.org' \
+              -H 'X-Forwarded-Proto: https' \
+              -H 'X-Conflict-Auth-User: not-provisioned' \
+              -H 'X-Conflict-Auth-Secret: ci-only-upstream-auth-secret-not-secret' \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${unknown_user_status}" = "403"
+          "${compose[@]}" exec -T web python -c \
+            "import django; django.setup(); from django.contrib.auth import get_user_model; assert not get_user_model().objects.filter(username='not-provisioned').exists()"
+
+          cat > "${RUNNER_TEMP}/conflict-production-auth.json" <<EOF
+          {
+            "bad_secret_status": ${bad_secret_status},
+            "basic_bypass_status": ${basic_bypass_status},
+            "stale_session_status": ${stale_session_status},
+            "status": "PASS",
+            "unknown_user_status": ${unknown_user_status},
+            "valid_auth_status": ${valid_auth_status}
+          }
+          EOF
+
+          backup="${RUNNER_TEMP}/conflict-production-backup.dump"
+          restore_db="conflict_restore_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          "${compose[@]}" exec -T db \
+            pg_dump -U conflict_migration -d conflict_analysis \
+              --format=custom --no-owner --no-privileges \
+            > "${backup}"
+          test -s "${backup}"
+          backup_bytes="$(stat --format='%s' "${backup}")"
+          backup_sha256="$(sha256sum "${backup}" | awk '{print $1}')"
+          [[ "${backup_sha256}" =~ ^[0-9a-f]{64}$ ]]
+
+          "${compose[@]}" exec -T db \
+            createdb -U conflict_migration -O conflict_migration "${restore_db}"
+          cat "${backup}" | "${compose[@]}" exec -T db \
+            pg_restore -U conflict_migration -d "${restore_db}" \
+              --no-owner --no-privileges --exit-on-error
+
+          "${compose[@]}" run --rm --no-deps -T \
+            -e POSTGRES_DB="${restore_db}" \
+            migrate python -m django migrate --check
+
+          "${compose[@]}" run --rm --no-deps -T \
+            -e POSTGRES_DB="${restore_db}" \
+            db-runtime-role
+
+          "${compose[@]}" run --rm --no-deps -T \
+            -e POSTGRES_DB="${restore_db}" \
+            web python -c \
+            "import django; django.setup(); from django.contrib.auth import get_user_model; assert get_user_model().objects.filter(username='${sentinel}').count() == 1"
+
+          "${compose[@]}" run --rm --no-deps -T \
+            -e POSTGRES_DB="${restore_db}" \
+            web python -m conflict_analysis.production_db_probe \
+            > "${RUNNER_TEMP}/conflict-production-restore-db-authority.json"
+
+          python - "${RUNNER_TEMP}/conflict-production-restore-db-authority.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert payload["status"] == "PASS", payload
+          assert payload["current_user"] == "conflict_runtime", payload
+          assert payload["configured_user"] == "conflict_runtime", payload
+          assert payload["runtime_is_database_owner"] is False, payload
+          assert payload["runtime_is_audit_owner"] is False, payload
+          assert payload["role_memberships"] == 0, payload
+          assert payload["owned_relations"] == 0, payload
+          assert payload["owned_schemas"] == 0, payload
+          assert payload["schema_create"] is False, payload
+          assert payload["database_temp"] is False, payload
+          assert not any(payload["capability_privileges"].values()), payload
+          assert payload["migration_sequence_update"] is False, payload
+          PY
+
+          cat > "${RUNNER_TEMP}/conflict-production-backup-restore.json" <<EOF
+          {
+            "backup_bytes": ${backup_bytes},
+            "backup_sha256": "${backup_sha256}",
+            "dump_uploaded": false,
+            "restore_database": "${restore_db}",
+            "sentinel": "${sentinel}",
+            "status": "PASS"
+          }
+          EOF
+          rm -f "${backup}"
+
+      - name: Upload production image evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: conflict-required-production-image-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/conflict-production-contract.json
+            ${{ runner.temp }}/conflict-production-runtime.json
+            ${{ runner.temp }}/conflict-production-image.json
+            ${{ runner.temp }}/conflict-production-compose-ps.txt
+            ${{ runner.temp }}/conflict-production-compose.log
+            ${{ runner.temp }}/conflict-production-http.json
+            ${{ runner.temp }}/conflict-production-http-body.html
+            ${{ runner.temp }}/conflict-production-auth.json
+            ${{ runner.temp }}/conflict-production-auth-body.html
+            ${{ runner.temp }}/conflict-production-db-authority.json
+            ${{ runner.temp }}/conflict-production-restore-db-authority.json
+            ${{ runner.temp }}/conflict-production-backup-restore.json
+          if-no-files-found: error
+          retention-days: 7
+
+  required-product-gate:
+    name: Required product gate
+    if: ${{ always() }}
+    needs:
+      - wheel-sqlite
+      - postgresql-product
+      - production-image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require all independent gates
+        env:
+          WHEEL_SQLITE_RESULT: ${{ needs.wheel-sqlite.result }}
+          POSTGRESQL_PRODUCT_RESULT: ${{ needs.postgresql-product.result }}
+          PRODUCTION_IMAGE_RESULT: ${{ needs.production-image.result }}
+          WHEEL_SQLITE_SHA256: ${{ needs.wheel-sqlite.outputs.wheel_sha256 }}
+          POSTGRESQL_WHEEL_SHA256: ${{ needs.postgresql-product.outputs.wheel_sha256 }}
+          PRODUCTION_IMAGE_WHEEL_SHA256: ${{ needs.production-image.outputs.wheel_sha256 }}
+        run: |
+          match=false
+          status=FAIL
+          if [[ "${WHEEL_SQLITE_SHA256}" =~ ^[0-9a-f]{64}$ ]] \
+            && [[ "${POSTGRESQL_WHEEL_SHA256}" =~ ^[0-9a-f]{64}$ ]] \
+            && [[ "${PRODUCTION_IMAGE_WHEEL_SHA256}" =~ ^[0-9a-f]{64}$ ]] \
+            && test "${WHEEL_SQLITE_SHA256}" = "${POSTGRESQL_WHEEL_SHA256}" \
+            && test "${WHEEL_SQLITE_SHA256}" = "${PRODUCTION_IMAGE_WHEEL_SHA256}"; then
+            match=true
+            status=PASS
+          fi
+          cat > "${RUNNER_TEMP}/conflict-required-wheel-reproducibility.json" <<EOF
+          {
+            "match": ${match},
+            "postgresql_wheel_sha256": "${POSTGRESQL_WHEEL_SHA256}",
+            "production_image_wheel_sha256": "${PRODUCTION_IMAGE_WHEEL_SHA256}",
+            "source_date_epoch": 315532800,
+            "status": "${status}",
+            "wheel_sqlite_sha256": "${WHEEL_SQLITE_SHA256}"
+          }
+          EOF
+          test "${WHEEL_SQLITE_RESULT}" = "success"
+          test "${POSTGRESQL_PRODUCT_RESULT}" = "success"
+          test "${PRODUCTION_IMAGE_RESULT}" = "success"
+          test -n "${WHEEL_SQLITE_SHA256}"
+          test "${WHEEL_SQLITE_SHA256}" = "${POSTGRESQL_WHEEL_SHA256}"
+          test "${WHEEL_SQLITE_SHA256}" = "${PRODUCTION_IMAGE_WHEEL_SHA256}"
+          echo "CONFLICT_ANALYSIS_REPRODUCIBLE_WHEEL=PASS"
+          echo "CONFLICT_ANALYSIS_REQUIRED_PRODUCT_GATE=PASS"
+
+      - name: Upload reproducible wheel evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: conflict-required-wheel-reproducibility-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/conflict-required-wheel-reproducibility.json
+          if-no-files-found: error
+          retention-days: 7

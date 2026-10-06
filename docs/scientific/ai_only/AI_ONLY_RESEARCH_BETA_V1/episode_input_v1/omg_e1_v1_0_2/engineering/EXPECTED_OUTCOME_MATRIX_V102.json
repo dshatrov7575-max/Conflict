@@ -1,0 +1,52 @@
+{
+  "route_id": "AI_ONLY_DYAD_OMG_E1_V102",
+  "contract_version": "1.0.2",
+  "input_sha256": "34a70bb18664a8ccf5fb5713dd90bbebe32a1a60d17303603e4cb7d84d961f42",
+  "inherited_worker_record": {
+    "POS_AO2": -5,
+    "KVS_AO2": 5,
+    "status": "INHERITED_REPLICATED_SOURCE_STATEMENT"
+  },
+  "company_gate_matrix": [
+    {
+      "condition": "POS CONSENSUS_NUMERIC AND KVS CONSENSUS_NUMERIC",
+      "state": "ELIGIBLE_FOR_READ_ONLY_DYAD_SCENARIO_REPLAY",
+      "calculation_release": true
+    },
+    {
+      "condition": "ANY SHARED_UNKNOWN",
+      "state": "HOLD_FACTOR_INCOMPLETE",
+      "calculation_release": false
+    },
+    {
+      "condition": "ANY SHARED_DISPUTED",
+      "state": "HOLD_FACTOR_INCOMPLETE",
+      "calculation_release": false
+    },
+    {
+      "condition": "ANY STATUS_OR_VALUE_OR_C1_C8_MISMATCH",
+      "state": "HOLD_DISAGREEMENT",
+      "calculation_release": false
+    },
+    {
+      "condition": "ANY ATTESTATION_OR_IDENTITY_FAILURE",
+      "state": "REJECT_INVALID_PRIMARY_RUN",
+      "calculation_release": false
+    }
+  ],
+  "forbidden_repairs": [
+    "coordinator substitution",
+    "targeted content review",
+    "averaging",
+    "majority vote",
+    "replacement-model shopping",
+    "UNKNOWN to zero",
+    "RGU/KVPTN adjustment to bypass missing POS/KVS"
+  ],
+  "claims": {
+    "simultaneous_snapshot": false,
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "package_id": "MVP7_OMG_EPISODE_E1_WEIGHT_SENSITIVITY_V1",
+  "status": "FROZEN_BEFORE_EPISODE_PRIMARY_RESPONSES",
+  "source_head_before_receipt": "57243e92fee3eb2d33ce222e8465e7941ad940fa",
+  "delivery": {
+    "zip_name": "MVP7_OMG_E1_WEIGHT_SENSITIVITY_V1.zip",
+    "bytes": 12216,
+    "sha256": "8a95c39614df548fe31d6dd886990b44993706bbbfc559528303cc2ccab81253",
+    "files": 8,
+    "zip_crc": "PASS",
+    "location": "Downloadable attachment in coordinating conversation",
+    "archive_uploaded_to_git": false
+  },
+  "design": {
+    "baseline_RGU": {
+      "OMG_WORKERS_INITIAL_STRIKE": "1",
+      "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "1"
+    },
+    "baseline_KVPTN": {
+      "E02_PAY": "1"
+    },
+    "main_positive_RGU_scenarios": 7,
+    "positive_q_invariance_checks": 3,
+    "zero_weight_stresses": 4,
+    "all_four_factor_entries_required": true
+  },
+  "checks": {
+    "synthetic_test_methods": 12,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "manifest_corrected_to_exact_GitHub_bytes": true
+  },
+  "boundaries": {
+    "real_episode_answers_included": false,
+    "core_changed": false,
+    "historical_december_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "candidate_id": "KBM_E02_DYAD_CANDIDATE_R1",
+  "status": "SUPERSEDED_BY_FROZEN_KBM_E02_DYAD_V100",
+  "route": "AI_ONLY_RESEARCH_BETA_V1",
+  "date_correction": {
+    "old_discovery_t0": "2011-05-21",
+    "correct_source_report_t0": "2011-05-17",
+    "old_date_meaning": "WAYBACK_CAPTURE_DATE",
+    "corrected_before_primary_responses": true
+  },
+  "target_ptn": {
+    "element_code": "E02",
+    "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+    "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+    "reference_sha256": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172"
+  },
+  "temporal_object": {
+    "t0": {
+      "date": "2011-05-17",
+      "actor": "AOV2_KBM_STRIKERS",
+      "source": "D01-FPAY"
+    },
+    "t1": {
+      "date": "2011-05-27",
+      "reported_dateline_date": "2011-05-26",
+      "actor": "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527",
+      "source": "KBM_NOMAD_PRESS_RESPONSE_20110527"
+    },
+    "simultaneous_snapshot": false,
+    "carry_forward": "NONE"
+  },
+  "worker_side": {
+    "r2_unit_id": "AO2S-C1-03",
+    "POS_AO2": -5,
+    "KVS_AO2": 5,
+    "agreement_basis": "TWO_PRIMARY_NUMERIC_AGREEMENT_NO_TARGETED_REVIEW_FOR_THESE_ENTRIES",
+    "inheritance_status": "FROZEN_IN_KBM_E02_V100_INTERNAL_CONTRACT"
+  },
+  "company_side": {
+    "historical_byte_authentication": "P1_ARCHIVE_REPLAY_AUTHENTICATED",
+    "archive_capture_utc": "2011-05-28T15:32:27Z",
+    "payload_bytes": 30312,
+    "payload_sha256": "4280ad5774d94cae7efc788943301852550080c69c28a02fb99ddbadb4b9f06a",
+    "factor_values_preassigned": false
+  },
+  "superseded_by": "episode_input_v1/kbm_e02_v1_0_0/",
+  "calculation_release": false
+}

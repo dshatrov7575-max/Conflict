@@ -1,0 +1,22 @@
+{
+  "denominator_rule_id": "COHORT_R1_DENOMINATOR_RULE_20260930",
+  "status": "FROZEN_BEFORE_ANY_COHORT_PRIMARY_RESULT",
+  "expected_decisions_total": 12,
+  "expected_by_factor": {
+    "POS_AO2": 6,
+    "KVS_AO2": 6
+  },
+  "primary_fraction_denominator": "EXPECTED_DECISIONS",
+  "rules": {
+    "overall_exact_agreement_fraction": "exact_agreement_count / 12",
+    "overall_numeric_consensus_fraction": "numeric_consensus_count / 12",
+    "overall_shared_unknown_fraction": "shared_unknown_count / 12",
+    "overall_shared_disputed_fraction": "shared_disputed_count / 12",
+    "overall_disagreement_fraction": "disagreement_count / 12",
+    "overall_unresolved_fraction": "unresolved_count / 12",
+    "by_factor_fraction": "count / 6 for each POS_AO2 or KVS_AO2"
+  },
+  "unresolved_definition": "Expected decisions belonging to a lane without a valid paired comparator result because a primary is missing, invalid, or externally unavailable.",
+  "no_complete_case_denominator_switch": true,
+  "no_exclusion_after_results": true
+}

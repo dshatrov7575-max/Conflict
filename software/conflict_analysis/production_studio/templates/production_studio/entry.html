@@ -1,0 +1,66 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Production Studio C — только чтение</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="{% static 'production_studio/studio.css' %}">
+  <script src="{% static 'production_studio/studio.js' %}" defer></script>
+  <link rel="stylesheet" href="{% static 'production_studio/panel_ui.css' %}">
+  <script src="{% static 'production_studio/panel_ui.js' %}" defer></script>
+</head>
+<body data-studio-page="entry">
+  <header data-panel-help="bounds" id="studio-boundary-banner" class="claim-banner" data-claim-contract="{{ claim_contract }}" data-claim-sha256="{{ claim_sha256 }}"><a href="#ui-help-topic-bounds" data-help-open="bounds">C0 · Только чтение</a><span>Научная валидность не подтверждена</span>{% include 'production_studio/ui_help_button.html' %}</header>
+
+  <main
+    id="studio-entry"
+    class="entry-shell"
+    data-authenticated="{{ studio_authenticated|yesno:'true,false' }}"
+    data-definition-base="{% url 'production_studio:entry' %}definitions/"
+  >
+    <section class="entry-card" aria-labelledby="entry-title" data-panel-help="entry">
+
+      <h1 id="entry-title">Production Studio C</h1>
+      {% if studio_authenticated %}
+
+        <form id="definition-entry-form" novalidate>
+          <label for="definition-entry-id">UUID версии определения</label>
+          <div class="entry-controls">
+            <input
+              id="definition-entry-id"
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              spellcheck="false"
+              required
+              pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+              aria-describedby="definition-entry-error"
+            >
+            <button type="submit" data-ui-icon="open" data-ui-kind="primary" data-ui-label="Открыть">Открыть только для чтения</button>
+          </div>
+
+          <p id="definition-entry-error" class="error-text" role="alert" hidden>Укажите корректный UUID версии определения.</p>
+        </form>
+      {% else %}
+        <section class="state-card state-card--attention" role="status" data-state="AUTHENTICATION_REQUIRED" data-panel-help="state">
+          <h2>Требуется сессия</h2>
+          <p>Нет доступа к Studio.</p>
+        </section>
+      {% endif %}
+    </section>
+
+
+  </main>
+
+  <noscript>
+    <section class="noscript-boundary">
+      <h2>JavaScript отключён</h2>
+      <p>Определение не загружено: проверка идентичности Foundation требует JavaScript.</p>
+      {% for statement in claim_statements %}<p>{{ statement.text }}</p>{% endfor %}
+    </section>
+  </noscript>
+{% include 'production_studio/ui_help.html' %}
+</body>
+</html>

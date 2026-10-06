@@ -1,0 +1,56 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_RELEASE_GATE_LIVE_INPUT_R1",
+  "evaluated_after_g7_run": "36844856009",
+  "cohort_fixed": true,
+  "new_lane_after_results": false,
+  "all_four_lanes_reported": true,
+  "primary_roles": {
+    "KBM_COMPANY_E02_V100_AI1": "VALID",
+    "KBM_COMPANY_E02_V100_AI2": "VALID",
+    "OMG_NOV24_V100_AI1": "INVALID_TECHNICAL_MISMATCH",
+    "OMG_NOV24_V100_AI2": "INVALID_TECHNICAL_MISMATCH",
+    "KBM_E05_V100_AI1": "VALID",
+    "KBM_E05_V100_AI2": "VALID",
+    "D25_E02_V100_AI1": "VALID",
+    "D25_E02_V100_AI2": "VALID"
+  },
+  "input_provenance_integrity": "PASS",
+  "post_result_rebinding": false,
+  "all_lane_comparators_executed": false,
+  "coordinator_substitution_used": false,
+  "targeted_content_review_used": false,
+  "all_lane_outcomes_retained": true,
+  "cohort_aggregator_test": "PASS",
+  "cohort_aggregate_schema": "PASS",
+  "denominator_rule_preserved": true,
+  "weight_grid_unchanged": true,
+  "weight_runner_test": "PASS",
+  "weights_inferred_from_evidence_or_outcome": false,
+  "eligible_lanes": [
+    "AI_ONLY_DYAD_KBM_E02_V100",
+    "AI_ONLY_PAIR_KBM_E05_V100"
+  ],
+  "eligible_lane_core_replay": {
+    "AI_ONLY_DYAD_KBM_E02_V100": "PASS",
+    "AI_ONLY_PAIR_KBM_E05_V100": "PASS"
+  },
+  "required_label": "AI-кодирование; человеческая проверка не проводилась; исследовательская версия; прогнозная точность не установлена.",
+  "claims": {
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED"
+  },
+  "evidence_refs": {
+    "fixed_cohort": "AI_ONLY_REPLICATION_COHORT_R1_20260930",
+    "cohort_aggregate": "executors/manual_dual_model_r1/derived/COHORT_AGGREGATE_R1.json",
+    "omg_validation_failure": "executors/manual_dual_model_r1/derived/OMG_NOV24_V100_VALIDATION_FAILURE.json",
+    "eligible_replay_result": "eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_RESULT_R1.json",
+    "eligible_replay_artifact_review": "eligible_replay_r1/run_36844856009/ELIGIBLE_REPLAY_ARTIFACT_REVIEW_R1.json"
+  },
+  "expected_gate_outcome": {
+    "state": "AI_ONLY_RESEARCH_BETA_RC_HOLD",
+    "reason": "G2 and G4 remain blocked by the two technically invalid OMG Nov24 primary outputs and the resulting absent frozen comparator product. G7 now passes for both eligible lanes."
+  }
+}

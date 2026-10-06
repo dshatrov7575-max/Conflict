@@ -1,0 +1,53 @@
+{
+  "artifact_kind": "TECHNICAL_RETRY_ATTEMPT_TEMPLATE",
+  "schema_version": "1.0.0",
+  "execution_authorized": false,
+  "required_fields": {
+    "retry_attempt_id": "UUID frozen in TECHNICAL_RETRY_PLAN.json",
+    "linked_failed_source_attempt_id": "UUID",
+    "planned_query_id": "UUID",
+    "document_version_id": "UUID",
+    "failure_class": [
+      "INITIAL_ARCHIVE_QUERY_FAILURE",
+      "REPLAY_AFTER_CANDIDATE_FAILURE"
+    ],
+    "started_at_utc": "RFC3339 UTC",
+    "completed_at_utc": "RFC3339 UTC",
+    "exact_target_locator": "byte-identical string from plan",
+    "transport_contract_sha256": "cbaca2c3631d4fc42f645904d178e45a345734de0f46da4e377f3e2033b0f4b4",
+    "response_status": [
+      "HTTP_RESPONSE",
+      "FINITE_NO_RESULT",
+      "TECHNICAL_FAILURE",
+      "PARSER_FAILURE",
+      "DIGEST_MISMATCH",
+      "HTTP_RESPONSE_NOT_USABLE"
+    ],
+    "technical_error": "string or null",
+    "subrequests": "array of request metadata; no payload bodies",
+    "candidate_state": "frozen or newly parsed under deterministic rules",
+    "payload_sha256": "hex or null",
+    "cdx_digest_sha1_base32": "string or null",
+    "computed_payload_sha1_base32": "string or null",
+    "digest_match": "boolean or null",
+    "execution_count_for_retry_attempt_id": 1,
+    "admission_decision": "RETAIN_NOT_PROVEN",
+    "scientific_state_changed": false
+  },
+  "forbidden_fields": [
+    "factor_value",
+    "numeric_anchor",
+    "human_response",
+    "historical_assessment",
+    "validation_record",
+    "outcome_classification",
+    "uno",
+    "probability",
+    "risk",
+    "country_rating",
+    "payload_body",
+    "full_text",
+    "article_text"
+  ],
+  "note": "This template is frozen for a future separately authorized execution. PR-20 creates no attempt instance."
+}

@@ -1,0 +1,226 @@
+{
+  "pilot_id": "ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1",
+  "frozen_before_selection_at_utc": "2026-09-26T14:46:59.932921+00:00",
+  "items": [
+    {
+      "coding_item_id": "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU04",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E04",
+      "stratum": "E04",
+      "existing_item_fact_link_count": 3,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "190e3801-e98f-559d-b055-04502db625e9",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU01",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E05",
+      "stratum": "E05",
+      "existing_item_fact_link_count": 4,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU01",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E02",
+      "stratum": "E02",
+      "existing_item_fact_link_count": 4,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "258efca3-9f6e-550b-8b80-bf27b70424b0",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU03",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E04",
+      "stratum": "E04",
+      "existing_item_fact_link_count": 5,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "28161a20-6dd9-525b-97a0-10787a4ba0da",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU05",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E05",
+      "stratum": "E05",
+      "existing_item_fact_link_count": 3,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "2c58ce09-3654-5a87-89be-4b1953f467c7",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU05",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E02",
+      "stratum": "E02",
+      "existing_item_fact_link_count": 3,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "39d9db22-402b-59e7-a000-63c6d85c3435",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU03",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E05",
+      "stratum": "E05",
+      "existing_item_fact_link_count": 7,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "3c17560c-c6c6-5133-82f5-19b451c4e836",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU06",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E04",
+      "stratum": "E04",
+      "existing_item_fact_link_count": 4,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "3f4dc104-40c7-59db-ad5c-61f8a80232bc",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU04",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E05",
+      "stratum": "E05",
+      "existing_item_fact_link_count": 2,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU03",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E02",
+      "stratum": "E02",
+      "existing_item_fact_link_count": 3,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "451a0d8c-ddec-5395-b631-24323628eb69",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU06",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E05",
+      "stratum": "E05",
+      "existing_item_fact_link_count": 4,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "5e3146aa-0dfd-5be2-8f8d-39b94edee3ff",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU05",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E04",
+      "stratum": "E04",
+      "existing_item_fact_link_count": 3,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "79748746-11e6-506c-82d5-bc5fe877beb0",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU08",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E06",
+      "stratum": "E06",
+      "existing_item_fact_link_count": 3,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "951f300c-27d0-5a09-b312-e3fdad147f54",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU01",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E06",
+      "stratum": "E06",
+      "existing_item_fact_link_count": 4,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "a6f0883a-d5fc-521b-8662-1c160fded750",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU07",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E04",
+      "stratum": "E04",
+      "existing_item_fact_link_count": 3,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "bc34ea72-a9ac-5e81-ab20-3f2efb729872",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU02",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E05",
+      "stratum": "E05",
+      "existing_item_fact_link_count": 3,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "bcbda52d-282f-5567-a4ce-f576f6f13a35",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU02",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E02",
+      "stratum": "E02",
+      "existing_item_fact_link_count": 3,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "cd9eb952-6af0-5708-8703-49673415cbe7",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU03",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E06",
+      "stratum": "E06",
+      "existing_item_fact_link_count": 4,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU08",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E05",
+      "stratum": "E05",
+      "existing_item_fact_link_count": 3,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    },
+    {
+      "coding_item_id": "e32ebf92-ffa3-51da-b933-b10a9c0ba8df",
+      "actor_code": "KZ.ZHANAOZEN.ACTOR.GU07",
+      "element_code": "KZ.ZHANAOZEN.ELEMENT.E05",
+      "stratum": "E05",
+      "existing_item_fact_link_count": 4,
+      "complete_fragment_chains": true,
+      "registered_dates_not_after_cutoff": true,
+      "structurally_eligible": true,
+      "scientific_admission": "NOT_ESTABLISHED_BY_FRAME"
+    }
+  ]
+}

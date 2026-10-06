@@ -1,0 +1,54 @@
+{
+  "artifact_kind": "TECHNICAL_RETRY_PROTOCOL_PATCH",
+  "assessor_type": "AI_PREPARATION",
+  "schema_version": "1.0.1",
+  "patch_id": "CA-MVP7-PR20A-HTTP-SUBREQUEST-BUDGET-CLARIFICATION-001",
+  "base_commit": "8150ce7c7d001f6e75c0c03cdc93aa0b8c5e4db1",
+  "base_tree": "c2e6c4ec21609507689c5c62302a0fc00c0ad6a2",
+  "superseded_protocol_reference": {
+    "path": "docs/scientific/pilots/ZHANAOZEN_2011_TECHNICAL_RETRY_PROTOCOL_V1/TECHNICAL_RETRY_PLAN.json",
+    "protocol_id": "6384e953-8c88-58e2-ac31-cc9ee18ee6d1",
+    "sha256": "84c25a32eb8bcb89c3161eb3b30a715359ab8105c43e3eeb3c5b44632a16f3f2",
+    "git_blob_sha1": "1040e4736938c5f6d4e54e5fbc3dce124548732f"
+  },
+  "problem": {
+    "field": "future_retry_budget.total_maximum_future_http_attempts",
+    "v1_value": 4,
+    "status": "AMBIGUOUS_AND_INTERNALLY_INCONSISTENT_WITH_PER_UNIT_RETRY_STAGE",
+    "reason": "Two INITIAL_ARCHIVE_QUERY_FAILURE units permit one exact CDX subrequest followed by one deterministic replay subrequest if a candidate is returned. Two REPLAY_AFTER_CANDIDATE_FAILURE units permit one replay subrequest each. Therefore four logical retry executions can require up to six HTTP subrequests."
+  },
+  "authoritative_v1_1_budget": {
+    "logical_retry_execution_units": 4,
+    "maximum_executions_per_retry_attempt_id": 1,
+    "initial_failure_units": 2,
+    "maximum_http_subrequests_per_initial_failure_unit": 2,
+    "replay_failure_units": 2,
+    "maximum_http_subrequests_per_replay_failure_unit": 1,
+    "maximum_total_http_subrequests": 6,
+    "automatic_library_retries": 0,
+    "extra_http_subrequests_beyond_frozen_stage": 0
+  },
+  "interpretation_rule": {
+    "v1_field_total_maximum_future_http_attempts": "DEPRECATED_MISNAMED_FIELD_DO_NOT_USE_FOR_EXECUTION",
+    "v1_1_logical_retry_units": "AUTHORITATIVE",
+    "v1_1_http_subrequest_budget": "AUTHORITATIVE",
+    "all_other_v1_protocol_fields": "UNCHANGED_AND_STILL_AUTHORITATIVE"
+  },
+  "execution_state": "NOT_EXECUTED_PROTOCOL_PATCH_ONLY",
+  "network_access_executed_by_pr20a": false,
+  "retrieval_executed_by_pr20a": false,
+  "scientific_state_changed_by_pr20a": false,
+  "retry_execution_authorized_by_pr20a": false,
+  "boundaries": {
+    "full_edition_status_for_all_four": "NOT_PROVEN",
+    "mapping_admission_changes": 0,
+    "target_time_applicability": "UNKNOWN",
+    "automatic_carry_forward": false,
+    "human_validation_reliability": "NOT_PERFORMED",
+    "human_coding_adjudication": "NOT_PERFORMED",
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED",
+    "publication_release_deployment": "NOT_EXECUTED"
+  }
+}

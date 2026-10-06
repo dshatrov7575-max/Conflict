@@ -1,0 +1,3282 @@
+from __future__ import annotations
+
+import base64
+import copy
+import hashlib
+import json
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
+from urllib.parse import urlencode
+from uuid import uuid4
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import PBKDF2PasswordHasher
+from django.contrib.auth.models import Group, Permission
+from django.contrib.sessions.backends.db import SessionStore
+from django.contrib.sessions.models import Session
+from django.test import TestCase
+from django.urls import Resolver404, resolve
+from django.utils import timezone
+from rest_framework.test import APIClient, APIRequestFactory
+
+from domain.api.studio_definitions import (
+    attempt_definition_package_2_1,
+    project_access_group_name,
+)
+from domain.enums import PublicationStatus
+from domain.models import (
+    AuditEvent,
+    ImportRun,
+    Project,
+    ProjectDefinitionVersion,
+    ProjectPublication,
+    ProjectWorkspace,
+    _canonical_studio_write,
+)
+from domain.policies import (
+    StudioCapability,
+    StudioPrincipal,
+    StudioRole,
+    bootstrap_initial_project_definition,
+    validate_project_definition,
+)
+from domain.services.foundation_packages import (
+    FOUNDATION_RAW_JSON_MAX_BYTES,
+    FOUNDATION_RAW_JSON_MAX_NESTING,
+    FoundationPackageValidationError,
+    RawJSONError,
+    canonical_json,
+    capture_json_source,
+    export_project_definition_package_2_1,
+    foundation_import_service_capabilities_2_1,
+    parse_captured_json,
+    parse_raw_json_bytes,
+    preview_foundation_package_2_1,
+    seal_foundation_package_2_1,
+    validate_foundation_package_2_1,
+)
+from domain.services.project_definitions import (
+    clone_project_definition_draft,
+    create_project_definition_draft,
+    hash_project_definition_manifest_v1,
+)
+from domain.tests.test_foundation_studio_bootstrap import (
+    FoundationStudioBootstrapMixin,
+)
+
+
+FIXTURE_PATH = (
+    Path(__file__).resolve().parent
+    / "fixtures"
+    / "foundation_studio_definition_vectors_v1.json"
+)
+
+
+class _AdversarialBoundedWSGIInput:
+    """Short-read stream that raises if a caller asks past the byte budget."""
+
+    def __init__(self, payload: bytes, *, max_bytes: int) -> None:
+        self._payload = payload
+        self._offset = 0
+        self._budget = max_bytes + 1
+        self.bytes_served = 0
+
+    def read(self, size: int = -1) -> bytes:
+        if self._offset >= len(self._payload):
+            return b""
+        if self.bytes_served >= self._budget:
+            raise AssertionError("HTTP body read exceeded max_bytes + 1")
+        remaining_budget = self._budget - self.bytes_served
+        requested = len(self._payload) - self._offset if size < 0 else size
+        served = min(
+            requested,
+            remaining_budget,
+            len(self._payload) - self._offset,
+        )
+        chunk = self._payload[self._offset : self._offset + served]
+        self._offset += served
+        self.bytes_served += served
+        return chunk
+
+    def readline(self, size: int = -1) -> bytes:
+        return self.read(size)
+
+
+class _ZeroReadWSGIInput:
+    """Hostile stream proving a header-only failure never touches the body."""
+
+    def __init__(self) -> None:
+        self.bytes_served = 0
+        self.read_attempts = 0
+
+    def read(self, size: int = -1) -> bytes:
+        self.read_attempts += 1
+        raise AssertionError("HTTP body must not be read before media rejection")
+
+    def readline(self, size: int = -1) -> bytes:
+        self.read_attempts += 1
+        raise AssertionError("HTTP body must not be read before media rejection")
+
+
+class FoundationStudioRawIngressTests(TestCase):
+    def setUp(self) -> None:
+        fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+        self.manifest = copy.deepcopy(fixture["vectors"][0]["manifest"])
+        identity = self.manifest["project"]
+        self.project = Project.objects.create(
+            id=identity["id"],
+            code=identity["code"],
+            version=identity["version"],
+            name="Raw ingress Project",
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
+        )
+        self.editor_principal = StudioPrincipal.for_role(
+            actor_identifier="raw-editor",
+            role=StudioRole.STUDIO_EDITOR,
+        )
+        User = get_user_model()
+        self.editor_user = User.objects.create_user(
+            username="raw-editor", password="test-password"
+        )
+        permissions = {
+            permission.codename: permission
+            for permission in Permission.objects.filter(
+                content_type__app_label="domain",
+                content_type__model="projectdefinitionversion",
+            )
+        }
+        self.editor_user.user_permissions.add(
+            permissions["studio_read_definition"],
+            permissions["studio_create_definition_draft"],
+            permissions["studio_clone_definition_draft"],
+            permissions["studio_save_definition_draft"],
+        )
+        self.editor_user.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="domain",
+                content_type__model="importrun",
+                codename="add_importrun",
+            )
+        )
+        group = Group.objects.create(name=project_access_group_name(self.project.pk))
+        self.editor_user.groups.add(group)
+        self.client = APIClient()
+        self.client.force_authenticate(self.editor_user)
+        self.create_url = f"/api/foundation/projects/{self.project.pk}/definitions/"
+
+    def _create_body(self, manifest_text: str | None = None) -> bytes:
+        if manifest_text is None:
+            manifest_text = json.dumps(
+                self.manifest, ensure_ascii=False, separators=(",", ":")
+            )
+        return (
+            '{"id":"'
+            + str(uuid4())
+            + '","code":"RAW-DRAFT","version":"1.0.0","manifest":'
+            + manifest_text
+            + ',"semantic_version":"1.0.0","construct_version":"1.0.0"}'
+        ).encode("utf-8")
+
+    def _post_raw(self, payload: bytes, *, content_type: str = "application/json"):
+        return self.client.generic(
+            "POST",
+            self.create_url,
+            payload,
+            content_type=content_type,
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+        )
+
+    def test_raw_ingress_has_one_authoritative_service_module(self):
+        domain_dir = Path(__file__).resolve().parents[1]
+        self.assertFalse((domain_dir / "services" / "raw_ingest.py").exists())
+
+        for relative_path in (
+            Path("api") / "studio_definitions.py",
+            Path("services") / "foundation_packages.py",
+            Path("services") / "project_definitions.py",
+        ):
+            source = (domain_dir / relative_path).read_text(encoding="utf-8")
+            self.assertNotIn("domain.services.raw_ingest", source)
+
+    def test_only_the_exact_canonical_foundation_routes_are_public(self):
+        paths = (
+            self.create_url,
+            "/api/foundation/definitions/17000000-0000-4000-8000-000000000001/",
+            "/api/foundation/definitions/17000000-0000-4000-8000-000000000001/clone/",
+            "/api/foundation/definitions/17000000-0000-4000-8000-000000000001/draft/",
+            "/api/foundation/definitions/17000000-0000-4000-8000-000000000001/validate/",
+            "/api/foundation/definitions/17000000-0000-4000-8000-000000000001/publish-initial/",
+            "/api/foundation/definitions/17000000-0000-4000-8000-000000000001/publish-successor/",
+            "/api/foundation/definitions/17000000-0000-4000-8000-000000000001/publication-readiness/",
+            "/api/foundation/definitions/17000000-0000-4000-8000-000000000001/package/2.1/",
+            "/api/foundation/projects/17000000-0000-4000-8000-000000000001/definition-packages/2.1/preview/",
+            "/api/foundation/projects/17000000-0000-4000-8000-000000000001/definition-packages/2.1/attempt/",
+            "/api/foundation/projects/bootstrap-first-draft/",
+            "/api/foundation/help/studio.welcome/",
+        )
+        for path in paths:
+            with self.subTest(path=path):
+                self.assertTrue(resolve(path).url_name.startswith("foundation-"))
+        for path in (
+            "/api/studio/definitions/drafts/",
+            "/api/studio/definitions/17000000-0000-4000-8000-000000000001/save/",
+            "/api/studio/help/studio.welcome/",
+        ):
+            with self.subTest(path=path), self.assertRaises(Resolver404):
+                resolve(path)
+
+    def test_real_http_rejects_every_raw_byte_vector_without_mutation(self):
+        manifest_text = json.dumps(
+            self.manifest, ensure_ascii=False, separators=(",", ":")
+        )
+        duplicate = manifest_text.replace(
+            '"format":"conflict-analysis-project-definition"',
+            '"format":"conflict-analysis-project-definition",'
+            '"format":"conflict-analysis-project-definition"',
+            1,
+        )
+        nested_duplicate = manifest_text.replace(
+            f'"id":"{self.project.pk}"',
+            f'"id":"{self.project.pk}","id":"{self.project.pk}"',
+            1,
+        )
+        numeric_decimal = manifest_text.replace('"minimum":"-10"', '"minimum":-10', 1)
+        vectors = {
+            "duplicate": self._create_body(duplicate),
+            "nested_duplicate": self._create_body(nested_duplicate),
+            "bom": b"\xef\xbb\xbf" + self._create_body(),
+            "invalid_utf8": self._create_body()[:-1] + b"\xff}",
+            "nan": self._create_body().replace(b'"order":0', b'"order":NaN', 1),
+            "infinity": self._create_body().replace(b'"order":0', b'"order":Infinity', 1),
+            "negative_infinity": self._create_body().replace(b'"order":0', b'"order":-Infinity', 1),
+            "exponent_overflow": self._create_body().replace(
+                b'"order":0', b'"order":1e1000000', 1
+            ),
+            "trailing": self._create_body() + b"{}",
+            "numeric_decimal": self._create_body(numeric_decimal),
+            "non_object": b"[]",
+            "lone_surrogate": self._create_body().replace(
+                b'"RAW-DRAFT"',
+                b'"RAW-\\ud800-DRAFT"',
+                1,
+            ),
+            "wrong_exact_envelope": self._create_body(
+                manifest_text.replace(
+                    '"format":"conflict-analysis-project-definition"',
+                    '"format":"another-definition-authority"',
+                    1,
+                )
+            ),
+        }
+        for name, payload in vectors.items():
+            with self.subTest(name=name):
+                response = self._post_raw(payload)
+                self.assertEqual(response.status_code, 400, response.data)
+                if name == "lone_surrogate":
+                    self.assertEqual(
+                        response.data["code"],
+                        "AUTHORING_ENVELOPE_INVALID",
+                    )
+                self.assertFalse(ProjectDefinitionVersion.objects.exists())
+
+        for content_type in (
+            "text/plain",
+            "application/json; charset=iso-8859-1",
+            "application/json; charset=utf-8; charset=utf-8",
+            'application/json; charset=utf-8"',
+            'application/json; charset="utf-8',
+            'application/json; charset="""utf-8"""',
+        ):
+            with self.subTest(content_type=content_type):
+                response = self._post_raw(self._create_body(), content_type=content_type)
+                self.assertEqual(response.status_code, 400, response.data)
+                self.assertFalse(ProjectDefinitionVersion.objects.exists())
+
+    def test_byte_budget_below_at_above_and_diagnostics_are_deterministic(self):
+        for size in (FOUNDATION_RAW_JSON_MAX_BYTES - 1, FOUNDATION_RAW_JSON_MAX_BYTES):
+            payload = b"{" + b" " * (size - 2) + b"}"
+            document = parse_raw_json_bytes(payload)
+            self.assertEqual(document.identity.byte_length, size)
+            self.assertEqual(document.value, {})
+        oversized = b"{" + b" " * (FOUNDATION_RAW_JSON_MAX_BYTES - 1) + b"}"
+        failures = []
+        for _ in range(2):
+            with self.assertRaises(RawJSONError) as raised:
+                parse_raw_json_bytes(oversized)
+            failures.append(dict(raised.exception.as_dict()))
+        self.assertEqual(failures[0], failures[1])
+        self.assertEqual(failures[0]["code"], "RAW_JSON_BYTE_BUDGET_EXCEEDED")
+        response = self._post_raw(oversized)
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertFalse(ProjectDefinitionVersion.objects.exists())
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "oversized.json"
+            path_oversized = oversized + b" " * 4096
+            path.write_bytes(path_oversized)
+            captured = capture_json_source(path)
+            self.assertEqual(captured.identity.kind, "PATH_BYTES")
+            self.assertEqual(captured.identity.byte_length, len(path_oversized))
+            self.assertEqual(
+                captured.identity.sha256,
+                hashlib.sha256(path_oversized).hexdigest(),
+            )
+            self.assertEqual(len(captured.payload), FOUNDATION_RAW_JSON_MAX_BYTES + 1)
+            with self.assertRaises(RawJSONError) as path_error:
+                parse_captured_json(captured)
+            self.assertEqual(path_error.exception.code, "RAW_JSON_BYTE_BUDGET_EXCEEDED")
+
+    def test_http_validation_does_not_echo_attacker_controlled_schema_material(self):
+        secret_key = "SECRET_MATERIAL_" + "x" * 100_000
+        manifest = copy.deepcopy(self.manifest)
+        manifest["project"][secret_key] = "must-not-echo"
+        response = self._post_raw(
+            self._create_body(
+                json.dumps(manifest, ensure_ascii=False, separators=(",", ":"))
+            )
+        )
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertLess(len(response.content), 1024)
+        self.assertNotIn(secret_key.encode("utf-8"), response.content)
+        self.assertNotIn(b"must-not-echo", response.content)
+        self.assertFalse(ProjectDefinitionVersion.objects.exists())
+
+    def test_deep_nesting_and_oversized_integer_are_stable_raw_failures(self):
+        deep = (
+            b'{"deep":'
+            + b"[" * (FOUNDATION_RAW_JSON_MAX_NESTING + 1)
+            + b"0"
+            + b"]" * (FOUNDATION_RAW_JSON_MAX_NESTING + 1)
+            + b"}"
+        )
+        huge_integer = b'{"value":' + b"9" * 5000 + b"}"
+        for payload, expected_code in (
+            (deep, "RAW_JSON_NESTING_EXCEEDED"),
+            (huge_integer, "RAW_JSON_NUMBER_INVALID"),
+        ):
+            with self.subTest(expected_code=expected_code):
+                with self.assertRaises(RawJSONError) as raised:
+                    parse_raw_json_bytes(payload)
+                self.assertEqual(raised.exception.code, expected_code)
+                response = self._post_raw(payload)
+                self.assertEqual(response.status_code, 400, response.data)
+                self.assertEqual(response.data["code"], expected_code)
+                self.assertFalse(ProjectDefinitionVersion.objects.exists())
+
+    def test_strong_if_match_is_the_only_draft_save_authority(self):
+        definition = create_project_definition_draft(
+            project=self.project,
+            code="IF-MATCH-DRAFT",
+            version="1.0.0",
+            manifest=self.manifest,
+            principal=self.editor_principal,
+        )
+        url = f"/api/foundation/definitions/{definition.pk}/draft/"
+        changed = copy.deepcopy(self.manifest)
+        changed["project"]["name"] = "If-Match changed"
+        body = json.dumps(
+            {"manifest": changed}, ensure_ascii=False, separators=(",", ":")
+        ).encode("utf-8")
+        validators = (
+            None,
+            "*",
+            f'W/"{definition.manifest_hash}"',
+            definition.manifest_hash,
+            f'"{definition.manifest_hash}", "{definition.manifest_hash}"',
+            f'"{definition.manifest_hash.upper()}"',
+            '"short"',
+        )
+        for validator in validators:
+            kwargs = {
+                "HTTP_IDEMPOTENCY_KEY": str(uuid4()),
+                **(
+                    {"HTTP_IF_MATCH": validator}
+                    if validator is not None
+                    else {}
+                ),
+            }
+            response = self.client.generic(
+                "PUT", url, body, content_type="application/json", **kwargs
+            )
+            self.assertEqual(response.status_code, 400, (validator, response.data))
+            definition.refresh_from_db()
+            self.assertEqual(definition.manifest, self.manifest)
+
+        spoofed_body = json.dumps(
+            {
+                "manifest": changed,
+                "expected_manifest_hash": definition.manifest_hash,
+            },
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        response = self.client.generic(
+            "PUT",
+            url,
+            spoofed_body,
+            content_type="application/json",
+            HTTP_IF_MATCH=f'"{definition.manifest_hash}"',
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+        )
+        self.assertEqual(response.status_code, 400, response.data)
+        definition.refresh_from_db()
+        self.assertEqual(definition.manifest, self.manifest)
+
+        stale = "0" * 64
+        response = self.client.generic(
+            "PUT",
+            url,
+            body,
+            content_type="application/json",
+            HTTP_IF_MATCH=f'"{stale}"',
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+        )
+        self.assertEqual(response.status_code, 409, response.data)
+        definition.refresh_from_db()
+        self.assertEqual(definition.manifest, self.manifest)
+
+        save_operation_id = uuid4()
+        response = self.client.generic(
+            "PUT",
+            url,
+            body,
+            content_type="application/json",
+            HTTP_IF_MATCH=f'"{definition.manifest_hash}"',
+            HTTP_IDEMPOTENCY_KEY=str(save_operation_id),
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response["ETag"], f'"{response.data["manifest_hash"]}"')
+        self.assertEqual(response["X-Foundation-Operation-Replayed"], "false")
+        self.assertEqual(
+            response.data["write_receipt"]["operation_id"],
+            str(save_operation_id),
+        )
+        receipt = response.data["write_receipt"]
+        receipt_sha256 = response["X-Foundation-Receipt-SHA256"]
+        etag = response["ETag"]
+        self.assertEqual(AuditEvent.objects.filter(pk=save_operation_id).count(), 1)
+
+        basic = APIClient(enforce_csrf_checks=True)
+        basic_credentials = base64.b64encode(
+            f"{self.editor_user.username}:test-password".encode("utf-8")
+        ).decode("ascii")
+        password_bytes = self.editor_user.password
+        replay = basic.generic(
+            "PUT",
+            url,
+            body,
+            content_type="application/json",
+            HTTP_IF_MATCH=f'"{definition.manifest_hash}"',
+            HTTP_IDEMPOTENCY_KEY=str(save_operation_id),
+            HTTP_AUTHORIZATION=f"Basic {basic_credentials}",
+        )
+        self.assertEqual(replay.status_code, 200, replay.data)
+        self.assertEqual(
+            set(replay.data),
+            {"code", "write_receipt"},
+        )
+        self.assertEqual(replay.data["code"], "WRITE_OPERATION_RECONCILED")
+        self.assertEqual(replay.data["write_receipt"], receipt)
+        self.assertEqual(replay["X-Foundation-Operation-Replayed"], "true")
+        self.assertEqual(replay["X-Foundation-Receipt-SHA256"], receipt_sha256)
+        self.assertEqual(replay["ETag"], etag)
+        self.assertEqual(AuditEvent.objects.filter(pk=save_operation_id).count(), 1)
+        self.editor_user.refresh_from_db()
+        self.assertEqual(self.editor_user.password, password_bytes)
+
+    def test_package_bytes_path_and_mapping_share_one_strict_parser(self):
+        definition = create_project_definition_draft(
+            project=self.project,
+            code="RAW-PACKAGE",
+            version="1.0.0",
+            manifest=self.manifest,
+            principal=self.editor_principal,
+        )
+        package = export_project_definition_package_2_1(definition)
+        canonical = canonical_json(package).encode("utf-8")
+        duplicate = canonical.replace(
+            b'"package_scope":"PROJECT_DEFINITION"',
+            b'"package_scope":"PROJECT_DEFINITION","package_scope":"PROJECT_DEFINITION"',
+            1,
+        )
+        malformed = (
+            duplicate,
+            b"\xef\xbb\xbf" + canonical,
+            canonical[:-1] + b"\xff",
+            canonical + b"{}",
+            canonical.replace(b'"order":0', b'"order":NaN', 1),
+        )
+        for raw in malformed:
+            with self.assertRaises(FoundationPackageValidationError):
+                validate_foundation_package_2_1(raw)
+
+        reversed_top = {
+            key: package[key] for key in reversed(tuple(package.keys()))
+        }
+        pretty = json.dumps(reversed_top, ensure_ascii=False, indent=2).encode("utf-8")
+        preview_one = preview_foundation_package_2_1(canonical, project=self.project)
+        preview_two = preview_foundation_package_2_1(pretty, project=self.project)
+        self.assertEqual(preview_one.checksum, preview_two.checksum)
+        self.assertNotEqual(preview_one.raw_input_sha256, preview_two.raw_input_sha256)
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "definition-package.json"
+            path.write_bytes(canonical)
+            path_preview = preview_foundation_package_2_1(path, project=self.project)
+        self.assertEqual(path_preview.raw_input_kind, "PATH_BYTES")
+        self.assertEqual(path_preview.raw_input_sha256, hashlib.sha256(canonical).hexdigest())
+        mapping_preview = preview_foundation_package_2_1(package, project=self.project)
+        self.assertEqual(mapping_preview.raw_input_kind, "CANONICAL_MAPPING")
+
+        cyclic: dict[str, object] = {}
+        cyclic["self"] = cyclic
+        with self.assertRaises(RawJSONError) as cyclic_error:
+            capture_json_source(cyclic)
+        self.assertEqual(
+            cyclic_error.exception.code,
+            "RAW_JSON_MAPPING_NOT_SERIALIZABLE",
+        )
+
+    def test_package_http_preview_attempt_and_export_preserve_both_hashes(self):
+        definition = create_project_definition_draft(
+            project=self.project,
+            code="HTTP-PACKAGE",
+            version="1.0.0",
+            manifest=self.manifest,
+            principal=self.editor_principal,
+        )
+        package = export_project_definition_package_2_1(definition)
+        request_bytes = canonical_json(package).encode("utf-8")
+        project_prefix = f"/api/foundation/projects/{self.project.pk}"
+
+        preview = self.client.generic(
+            "POST",
+            f"{project_prefix}/definition-packages/2.1/preview/",
+            request_bytes,
+            content_type="application/json",
+        )
+        self.assertEqual(preview.status_code, 200, preview.data)
+        self.assertEqual(preview.data["intended_action"], "REUSE_EXACT")
+        self.assertEqual(preview.data["raw_input_kind"], "HTTP_BYTES")
+        self.assertEqual(
+            preview.data["raw_input_sha256"],
+            hashlib.sha256(request_bytes).hexdigest(),
+        )
+        self.assertFalse(ImportRun.objects.exists())
+
+        attempt = self.client.generic(
+            "POST",
+            f"{project_prefix}/definition-packages/2.1/attempt/",
+            request_bytes,
+            content_type="application/json",
+        )
+        self.assertEqual(attempt.status_code, 200, attempt.data)
+        self.assertEqual(attempt.data["status"], "COMMITTED")
+        self.assertEqual(attempt.data["receipt"]["id"], attempt.data["receipt_id"])
+        self.assertEqual(
+            attempt.data["receipt"]["selected_input"]["raw_input_sha256"],
+            hashlib.sha256(request_bytes).hexdigest(),
+        )
+
+        exported = self.client.get(
+            f"/api/foundation/definitions/{definition.pk}/package/2.1/"
+        )
+        expected_bytes = (canonical_json(package) + "\n").encode("utf-8")
+        representation_sha256 = hashlib.sha256(expected_bytes).hexdigest()
+        self.assertEqual(exported.status_code, 200)
+        self.assertEqual(exported.content, expected_bytes)
+        self.assertEqual(exported["ETag"], f'"{representation_sha256}"')
+        self.assertEqual(
+            exported["X-Foundation-Semantic-Payload-SHA256"],
+            package["manifest"]["payload_sha256"],
+        )
+        self.assertNotEqual(
+            representation_sha256,
+            package["manifest"]["payload_sha256"],
+        )
+        reimport_preview = preview_foundation_package_2_1(
+            exported.content,
+            project=self.project,
+        )
+        self.assertEqual(reimport_preview.selected_definition_id, str(definition.pk))
+
+    def test_attempt_malformed_bytes_uses_minimal_service_and_durable_receipt(self):
+        baseline_definitions = ProjectDefinitionVersion.objects.count()
+        response = self.client.generic(
+            "POST",
+            f"/api/foundation/projects/{self.project.pk}/definition-packages/2.1/attempt/",
+            b'{"format":',
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["status"], "REJECTED")
+        self.assertIsNone(response.data["preview"])
+        receipt = ImportRun.objects.get(pk=response.data["receipt_id"])
+        self.assertEqual(
+            receipt.actor_identifier,
+            f"foundation-http-import:django-user:{self.editor_user.pk}",
+        )
+        self.assertEqual(receipt.selected_input["raw_input_kind"], "HTTP_BYTES")
+        self.assertEqual(ProjectDefinitionVersion.objects.count(), baseline_definitions)
+
+    def test_create_draft_package_requires_human_create_before_service(self):
+        source = create_project_definition_draft(
+            project=self.project,
+            code="HTTP-PACKAGE-CREATE",
+            version="1.0.0",
+            manifest=self.manifest,
+            principal=self.editor_principal,
+        )
+        source_id = source.pk
+        raw = canonical_json(export_project_definition_package_2_1(source)).encode(
+            "utf-8"
+        )
+        source.delete()
+
+        User = get_user_model()
+        reader = User.objects.create_user(
+            username="http-package-reader",
+            password="test-password",
+        )
+        reader.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label="domain",
+                content_type__model="projectdefinitionversion",
+                codename="studio_read_definition",
+            ),
+            Permission.objects.get(
+                content_type__app_label="domain",
+                content_type__model="importrun",
+                codename="add_importrun",
+            ),
+        )
+        reader.groups.add(
+            Group.objects.get(name=project_access_group_name(self.project.pk))
+        )
+        prefix = f"/api/foundation/projects/{self.project.pk}/definition-packages/2.1"
+        self.client.force_authenticate(reader)
+        preview = self.client.generic(
+            "POST",
+            f"{prefix}/preview/",
+            raw,
+            content_type="application/json",
+        )
+        self.assertEqual(preview.status_code, 200, preview.data)
+        self.assertEqual(preview.data["intended_action"], "CREATE_DRAFT")
+        denied = self.client.generic(
+            "POST",
+            f"{prefix}/attempt/",
+            raw,
+            content_type="application/json",
+        )
+        self.assertEqual(denied.status_code, 403, denied.data)
+        self.assertFalse(ImportRun.objects.exists())
+        self.assertFalse(ProjectDefinitionVersion.objects.filter(pk=source_id).exists())
+
+        self.client.force_authenticate(self.editor_user)
+        committed = self.client.generic(
+            "POST",
+            f"{prefix}/attempt/",
+            raw,
+            content_type="application/json",
+        )
+        self.assertEqual(committed.status_code, 200, committed.data)
+        self.assertEqual(committed.data["status"], "COMMITTED")
+        self.assertTrue(ProjectDefinitionVersion.objects.filter(pk=source_id).exists())
+
+    def test_package_query_and_service_authority_spoof_fail_before_receipt(self):
+        definition = create_project_definition_draft(
+            project=self.project,
+            code="HTTP-PACKAGE-SPOOF",
+            version="1.0.0",
+            manifest=self.manifest,
+            principal=self.editor_principal,
+        )
+        raw = canonical_json(export_project_definition_package_2_1(definition)).encode(
+            "utf-8"
+        )
+        prefix = f"/api/foundation/projects/{self.project.pk}/definition-packages/2.1"
+        responses = (
+            self.client.generic(
+                "POST",
+                f"{prefix}/preview/",
+                raw,
+                content_type="application/json",
+                HTTP_X_SERVICE_CONTEXT="spoof",
+            ),
+            self.client.generic(
+                "POST",
+                f"{prefix}/attempt/?locale=ru",
+                raw,
+                content_type="application/json",
+            ),
+            self.client.generic(
+                "POST",
+                f"{prefix}/attempt/?service_purpose=spoof",
+                raw,
+                content_type="application/json",
+            ),
+            self.client.generic(
+                "POST",
+                f"{prefix}/attempt/",
+                raw,
+                content_type="application/json",
+                HTTP_IF_MATCH='"' + "0" * 64 + '"',
+            ),
+        )
+        self.assertEqual(
+            [item.status_code for item in responses],
+            [400, 400, 400, 400],
+        )
+        self.assertFalse(ImportRun.objects.exists())
+
+    def test_new_package_routes_have_401_403_scoped_404_and_real_csrf(self):
+        definition = create_project_definition_draft(
+            project=self.project,
+            code="HTTP-PACKAGE-AUTH",
+            version="1.0.0",
+            manifest=self.manifest,
+            principal=self.editor_principal,
+        )
+        raw = canonical_json(export_project_definition_package_2_1(definition)).encode(
+            "utf-8"
+        )
+        prefix = f"/api/foundation/projects/{self.project.pk}/definition-packages/2.1"
+        anonymous = APIClient()
+        self.assertEqual(
+            anonymous.generic(
+                "POST",
+                f"{prefix}/preview/",
+                raw,
+                content_type="application/json",
+            ).status_code,
+            401,
+        )
+
+        User = get_user_model()
+        no_import = User.objects.create_user(
+            username="http-package-no-import", password="test-password"
+        )
+        read_permission = Permission.objects.get(
+            content_type__app_label="domain",
+            content_type__model="projectdefinitionversion",
+            codename="studio_read_definition",
+        )
+        import_permission = Permission.objects.get(
+            content_type__app_label="domain",
+            content_type__model="importrun",
+            codename="add_importrun",
+        )
+        no_import.user_permissions.add(read_permission)
+        no_import.groups.add(
+            Group.objects.get(name=project_access_group_name(self.project.pk))
+        )
+        self.client.force_authenticate(no_import)
+        self.assertEqual(
+            self.client.generic(
+                "POST",
+                f"{prefix}/preview/",
+                raw,
+                content_type="application/json",
+            ).status_code,
+            403,
+        )
+
+        inaccessible = User.objects.create_user(
+            username="http-package-inaccessible", password="test-password"
+        )
+        inaccessible.user_permissions.add(read_permission, import_permission)
+        self.client.force_authenticate(inaccessible)
+        self.assertEqual(
+            self.client.generic(
+                "POST",
+                f"{prefix}/preview/",
+                raw,
+                content_type="application/json",
+            ).status_code,
+            404,
+        )
+        self.assertFalse(ImportRun.objects.exists())
+
+        session = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(
+            session.login(username="raw-editor", password="test-password")
+        )
+        definition_url = f"/api/foundation/definitions/{definition.pk}/"
+        self.assertEqual(session.get(definition_url).status_code, 200)
+        csrf_token = session.cookies["csrftoken"].value
+        denied = session.generic(
+            "POST",
+            f"{prefix}/attempt/",
+            raw,
+            content_type="application/json",
+        )
+        self.assertEqual(denied.status_code, 403)
+        self.assertFalse(ImportRun.objects.exists())
+        accepted = session.generic(
+            "POST",
+            f"{prefix}/attempt/",
+            bytes(bytearray(raw)),
+            content_type="application/json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(accepted.status_code, 200, accepted.data)
+        self.assertEqual(accepted.data["status"], "COMMITTED")
+        receipt_count = ImportRun.objects.count()
+        for content_type in ("text/plain", "application/json; charset=iso-8859-1"):
+            with self.subTest(content_type=content_type):
+                invalid_media = session.generic(
+                    "POST",
+                    f"{prefix}/attempt/",
+                    raw,
+                    content_type=content_type,
+                    HTTP_X_CSRFTOKEN=csrf_token,
+                )
+                self.assertEqual(invalid_media.status_code, 400)
+                self.assertEqual(ImportRun.objects.count(), receipt_count)
+
+    def test_successor_rejects_unknown_query_before_lifecycle_transition(self):
+        definition = create_project_definition_draft(
+            project=self.project,
+            code="HTTP-SUCCESSOR-QUERY",
+            version="1.0.0",
+            manifest=self.manifest,
+            principal=self.editor_principal,
+        )
+        User = get_user_model()
+        publisher = User.objects.create_user(
+            username="http-successor-publisher",
+            password="test-password",
+        )
+        publisher.user_permissions.add(
+            *Permission.objects.filter(
+                content_type__app_label="domain",
+                content_type__model="projectdefinitionversion",
+                codename__in=(
+                    "studio_read_definition",
+                    "studio_validate_definition",
+                    "studio_publish_definition",
+                ),
+            )
+        )
+        publisher.groups.add(
+            Group.objects.get(name=project_access_group_name(self.project.pk))
+        )
+        self.client.force_authenticate(publisher)
+        response = self.client.post(
+            f"/api/foundation/definitions/{definition.pk}/publish-successor/?unexpected=1",
+            {},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400, response.data)
+        for locale in (None, "", "ru RU", "en-" + "x" * 40):
+            with self.subTest(locale=locale):
+                malformed_locale = self.client.post(
+                    f"/api/foundation/definitions/{definition.pk}/publish-successor/",
+                    {"locale": locale},
+                    format="json",
+                )
+                self.assertEqual(
+                    malformed_locale.status_code,
+                    400,
+                    malformed_locale.data,
+                )
+        definition.refresh_from_db()
+        self.assertEqual(definition.publication_status, "DRAFT")
+
+    def test_first_project_bootstrap_is_atomic_audited_and_retries_as_409(self):
+        project_id = uuid4()
+        definition_id = uuid4()
+        manifest = copy.deepcopy(self.manifest)
+        manifest["project"].update(
+            {
+                "id": str(project_id),
+                "code": "HTTP-FIRST-PROJECT",
+                "version": "1.0.0",
+            }
+        )
+        payload = {
+            "project_primary_language": "ru",
+            "project": {
+                "id": str(project_id),
+                "code": "HTTP-FIRST-PROJECT",
+                "version": "1.0.0",
+                "name": "First project",
+                "description": "Created by the canonical bootstrap gateway.",
+                "metadata": {},
+            },
+            "definition": {
+                "id": str(definition_id),
+                "code": "HTTP-FIRST-DRAFT",
+                "version": "1.0.0",
+                "manifest": manifest,
+                "semantic_version": "1.0.0",
+                "construct_version": "1.0.0",
+            },
+        }
+        url = "/api/foundation/projects/bootstrap-first-draft/"
+        operation_id = uuid4()
+        created = self.client.post(
+            url,
+            payload,
+            format="json",
+            HTTP_IDEMPOTENCY_KEY=str(operation_id),
+        )
+        self.assertEqual(created.status_code, 201, created.data)
+        self.assertEqual(created.data["project"]["id"], str(project_id))
+        self.assertEqual(created.data["definition"]["id"], str(definition_id))
+        self.assertEqual(
+            created.data["object_scope_group"],
+            project_access_group_name(project_id),
+        )
+        self.assertTrue(
+            self.editor_user.groups.filter(
+                name=project_access_group_name(project_id)
+            ).exists()
+        )
+        audit = AuditEvent.objects.get(pk=created.data["audit_event_id"])
+        self.assertEqual(audit.pk, operation_id)
+        self.assertEqual(audit.actor_identifier, f"django-user:{self.editor_user.pk}")
+        self.assertEqual(audit.action, "CREATE")
+        self.assertEqual(
+            created.data["write_receipt"]["operation_id"],
+            str(operation_id),
+        )
+        self.assertEqual(created["X-Foundation-Operation-Replayed"], "false")
+        self.assertEqual(
+            created["ETag"],
+            f'"{created.data["definition"]["manifest_hash"]}"',
+        )
+
+        repeated = self.client.post(
+            url,
+            payload,
+            format="json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+        )
+        self.assertEqual(repeated.status_code, 409, repeated.data)
+        self.assertEqual(repeated.data["code"], "PROJECT_ID_CONFLICT")
+        self.assertEqual(Project.objects.filter(pk=project_id).count(), 1)
+        self.assertEqual(
+            ProjectDefinitionVersion.objects.filter(pk=definition_id).count(),
+            1,
+        )
+
+    def test_exact_help_query_rejects_duplicate_values(self):
+        response = self.client.get(
+            "/api/foundation/help/studio.welcome/"
+            "?application=OTHER&application=STUDIO&locale=en&version=1.0.0"
+        )
+        self.assertEqual(response.status_code, 404, response.data)
+
+
+class FoundationStudioProjectLanguageHttpTests(
+    FoundationStudioBootstrapMixin,
+    TestCase,
+):
+    url = "/api/foundation/projects/bootstrap-first-draft/"
+
+    def setUp(self) -> None:
+        self.make_contract()
+        user_model = get_user_model()
+        self.editor = user_model.objects.create_user(
+            username=f"f0l-http-editor-{uuid4().hex}",
+            password="f0l-http-password",
+        )
+        self.viewer = user_model.objects.create_user(
+            username=f"f0l-http-viewer-{uuid4().hex}",
+            password="f0l-http-password",
+        )
+        permissions = {
+            item.codename: item
+            for item in Permission.objects.filter(
+                content_type__app_label="domain",
+                content_type__model="projectdefinitionversion",
+            )
+        }
+        self.editor.user_permissions.add(
+            permissions["studio_read_definition"],
+            permissions["studio_create_definition_draft"],
+        )
+        self.viewer.user_permissions.add(permissions["studio_read_definition"])
+        scope = Group.objects.create(name=project_access_group_name(self.project.pk))
+        scope.user_set.add(self.editor, self.viewer)
+
+    def payload(
+        self,
+        language: object,
+        *,
+        project_id=None,
+        definition_id=None,
+    ) -> tuple[dict, object, object]:
+        project_id = project_id or uuid4()
+        definition_id = definition_id or uuid4()
+        project = {
+            "id": str(project_id),
+            "code": f"F0L-HTTP-{project_id.hex}",
+            "version": "1.0.0",
+            "name": "HTTP Project с явным языком",
+            "description": "Язык выбирается до единой доменной записи.",
+            "metadata": {"f0l": "http"},
+        }
+        manifest = copy.deepcopy(self.manifest)
+        manifest["project"].update(copy.deepcopy(project))
+        return (
+            {
+                "project_primary_language": language,
+                "project": project,
+                "definition": {
+                    "id": str(definition_id),
+                    "code": f"F0L-HTTP-DEF-{definition_id.hex}",
+                    "version": "1.0.0",
+                    "manifest": manifest,
+                    "semantic_version": "1.0.0",
+                    "construct_version": "1.0.0",
+                },
+            },
+            project_id,
+            definition_id,
+        )
+
+    @staticmethod
+    def raw(payload: object) -> bytes:
+        return json.dumps(
+            payload,
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
+    @staticmethod
+    def domain_counts() -> tuple[int, int, int, int, int]:
+        return (
+            Project.objects.count(),
+            Group.objects.count(),
+            Group.user_set.through.objects.count(),
+            ProjectDefinitionVersion.objects.count(),
+            AuditEvent.objects.count(),
+        )
+
+    def test_http_bootstrap_requires_exact_project_primary_language_envelope(self):
+        client = APIClient()
+        client.force_authenticate(self.editor)
+        baseline = self.domain_counts()
+        for value, code in (
+            (None, "PROJECT_PRIMARY_LANGUAGE_REQUIRED"),
+            ("", "PROJECT_PRIMARY_LANGUAGE_REQUIRED"),
+            ("ru_RU", "PROJECT_PRIMARY_LANGUAGE_INVALID"),
+            ("und", "PROJECT_PRIMARY_LANGUAGE_UND_FORBIDDEN"),
+        ):
+            with self.subTest(value=value):
+                payload, project_id, _ = self.payload(value)
+                if value is None:
+                    payload.pop("project_primary_language")
+                response = client.generic(
+                    "POST",
+                    self.url,
+                    self.raw(payload),
+                    content_type="application/json",
+                    HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+                )
+                self.assertEqual((response.status_code, response.data["code"]), (400, code))
+                self.assertEqual(self.domain_counts(), baseline)
+                self.assertFalse(Project.objects.filter(pk=project_id).exists())
+
+        spoofed, _, _ = self.payload("ru")
+        spoofed["project_primary_language_assignment"] = "LEGACY_UNKNOWN"
+        spoofed_response = client.generic(
+            "POST",
+            self.url,
+            self.raw(spoofed),
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+        )
+        self.assertEqual(
+            (spoofed_response.status_code, spoofed_response.data["code"]),
+            (400, "AUTHORING_ENVELOPE_INVALID"),
+        )
+        self.assertEqual(self.domain_counts(), baseline)
+
+        payload, project_id, definition_id = self.payload("UZ-cyrl")
+        raw = self.raw(payload)
+        operation_id = uuid4()
+        created = client.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(operation_id),
+        )
+        self.assertEqual(created.status_code, 201, created.data)
+        self.assertEqual(
+            created.data["project"],
+            {
+                **payload["project"],
+                "primary_language_tag": "uz-Cyrl",
+                "primary_language_assignment": "EXPLICIT",
+            },
+        )
+        self.assertEqual(created.data["definition"]["id"], str(definition_id))
+        receipt = created.data["write_receipt"]
+        self.assertEqual(
+            receipt["request"]["contract"],
+            "FOUNDATION_HUMAN_WRITE_REQUEST_IDENTITY_V2",
+        )
+        self.assertEqual(receipt["request"]["project_primary_language"], "uz-Cyrl")
+        self.assertEqual(
+            receipt["request"]["raw_input_sha256"],
+            hashlib.sha256(raw).hexdigest(),
+        )
+        self.assertEqual(receipt["request"]["raw_input_byte_length"], len(raw))
+        self.assertEqual(
+            receipt["bootstrap_result"]["project"]["primary_language_assignment"],
+            "EXPLICIT",
+        )
+        self.assertEqual(Project.objects.get(pk=project_id).primary_language_tag, "uz-Cyrl")
+
+    def test_http_language_admission_preserves_auth_csrf_scope_and_zero_write_order(self):
+        payload, project_id, _ = self.payload("ru_RU")
+        raw = self.raw(payload)
+        operation_id = uuid4()
+        baseline = self.domain_counts()
+
+        anonymous = APIClient(enforce_csrf_checks=True)
+        anonymous_response = anonymous.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(operation_id),
+        )
+        self.assertEqual(anonymous_response.status_code, 401)
+        self.assertEqual(self.domain_counts(), baseline)
+
+        missing_csrf = APIClient(enforce_csrf_checks=True)
+        missing_csrf.force_login(self.editor)
+        missing_csrf_response = missing_csrf.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(operation_id),
+        )
+        self.assertEqual(missing_csrf_response.status_code, 403)
+        self.assertEqual(self.domain_counts(), baseline)
+
+        viewer = APIClient(enforce_csrf_checks=True)
+        viewer.force_login(self.viewer)
+        opened = viewer.get(
+            "/api/foundation/help/studio.welcome/"
+            "?application=STUDIO&locale=en&version=1.0.0"
+        )
+        self.assertEqual(opened.status_code, 200, opened.data)
+        viewer_response = viewer.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(operation_id),
+            HTTP_X_CSRFTOKEN=viewer.cookies[settings.CSRF_COOKIE_NAME].value,
+        )
+        self.assertEqual(viewer_response.status_code, 403)
+        self.assertEqual(viewer_response.data["code"], "STUDIO_CAPABILITY_DENIED")
+        self.assertEqual(self.domain_counts(), baseline)
+
+        editor = APIClient(enforce_csrf_checks=True)
+        editor.force_login(self.editor)
+        opened = editor.get(
+            "/api/foundation/help/studio.welcome/"
+            "?application=STUDIO&locale=en&version=1.0.0"
+        )
+        self.assertEqual(opened.status_code, 200, opened.data)
+        invalid = editor.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(operation_id),
+            HTTP_X_CSRFTOKEN=editor.cookies[settings.CSRF_COOKIE_NAME].value,
+        )
+        self.assertEqual(
+            (invalid.status_code, invalid.data["code"]),
+            (400, "PROJECT_PRIMARY_LANGUAGE_INVALID"),
+        )
+        self.assertEqual(self.domain_counts(), baseline)
+        self.assertFalse(Project.objects.filter(pk=project_id).exists())
+
+        valid_payload, project_id, _ = self.payload("ru")
+        valid_raw = self.raw(valid_payload)
+        valid_key = uuid4()
+        created = editor.generic(
+            "POST",
+            self.url,
+            valid_raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(valid_key),
+            HTTP_X_CSRFTOKEN=editor.cookies[settings.CSRF_COOKIE_NAME].value,
+        )
+        self.assertEqual(created.status_code, 201, created.data)
+        scope = Group.objects.get(name=project_access_group_name(project_id))
+        scope.user_set.remove(self.editor)
+        replay = editor.generic(
+            "POST",
+            self.url,
+            valid_raw,
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(valid_key),
+            HTTP_X_CSRFTOKEN=editor.cookies[settings.CSRF_COOKIE_NAME].value,
+        )
+        self.assertEqual(replay.status_code, 403, replay.data)
+        self.assertEqual(replay.data["code"], "STUDIO_CAPABILITY_DENIED")
+        self.assertEqual(Project.objects.filter(pk=project_id).count(), 1)
+        self.assertEqual(AuditEvent.objects.filter(pk=valid_key).count(), 1)
+
+
+class FoundationStudioApplicationGatewayHttpTests(
+    FoundationStudioBootstrapMixin,
+    TestCase,
+):
+    def setUp(self) -> None:
+        self.make_contract()
+        user_model = get_user_model()
+        self.editor_user = user_model.objects.create_user(
+            username="gateway-http-editor",
+            password="test-password",
+        )
+        self.publisher_user = user_model.objects.create_user(
+            username="gateway-http-publisher",
+            password="test-password",
+        )
+        self.import_reader = user_model.objects.create_user(
+            username="gateway-http-import-reader",
+            password="test-password",
+        )
+        definition_permissions = {
+            permission.codename: permission
+            for permission in Permission.objects.filter(
+                content_type__app_label="domain",
+                content_type__model="projectdefinitionversion",
+            )
+        }
+        import_permission = Permission.objects.get(
+            content_type__app_label="domain",
+            content_type__model="importrun",
+            codename="add_importrun",
+        )
+        self.editor_user.user_permissions.add(
+            definition_permissions["studio_read_definition"],
+            definition_permissions["studio_create_definition_draft"],
+            definition_permissions["studio_clone_definition_draft"],
+            definition_permissions["studio_save_definition_draft"],
+        )
+        self.publisher_user.user_permissions.add(
+            definition_permissions["studio_read_definition"],
+            definition_permissions["studio_validate_definition"],
+            definition_permissions["studio_publish_definition"],
+            import_permission,
+        )
+        self.import_reader.user_permissions.add(
+            definition_permissions["studio_read_definition"],
+            import_permission,
+        )
+        scope = Group.objects.create(name=project_access_group_name(self.project.pk))
+        scope.user_set.add(
+            self.editor_user,
+            self.publisher_user,
+            self.import_reader,
+        )
+        self.client = APIClient()
+
+    def test_http_admission_is_transport_bounded_before_domain_work(self):
+        definition = self.draft(code="HTTP-ADMISSION-BUDGET")
+        attempt_url = (
+            f"/api/foundation/projects/{self.project.pk}/"
+            "definition-packages/2.1/attempt/"
+        )
+        oversized = (
+            b'{"padding":"'
+            + b"x" * (FOUNDATION_RAW_JSON_MAX_BYTES + 4096)
+            + b'"}'
+        )
+        basic_authorization = "Basic " + base64.b64encode(
+            b"gateway-http-import-reader:test-password"
+        ).decode("ascii")
+
+        session = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(
+            session.login(
+                username="gateway-http-import-reader",
+                password="test-password",
+            )
+        )
+        self.assertEqual(
+            session.get(
+                f"/api/foundation/definitions/{definition.pk}/"
+            ).status_code,
+            200,
+        )
+        csrf_token = session.cookies["csrftoken"].value
+
+        membership_model = Group.user_set.through
+
+        def domain_counts() -> dict[str, int]:
+            return {
+                "projects": Project.objects.count(),
+                "definitions": ProjectDefinitionVersion.objects.count(),
+                "imports": ImportRun.objects.count(),
+                "audits": AuditEvent.objects.count(),
+                "publications": ProjectPublication.objects.count(),
+                "workspaces": ProjectWorkspace.objects.count(),
+                "groups": Group.objects.count(),
+                "memberships": membership_model.objects.count(),
+            }
+
+        baseline = domain_counts()
+
+        def direct_request(
+            stream: _AdversarialBoundedWSGIInput,
+            *,
+            content_type: str = "application/json",
+            content_length: str | None = None,
+            session_csrf: str | None | bool = False,
+        ):
+            factory = APIRequestFactory(enforce_csrf_checks=True)
+            headers: dict[str, str] = {}
+            if session_csrf is False:
+                headers["HTTP_AUTHORIZATION"] = basic_authorization
+            else:
+                headers["HTTP_COOKIE"] = f"csrftoken={csrf_token}"
+                if isinstance(session_csrf, str):
+                    headers["HTTP_X_CSRFTOKEN"] = session_csrf
+            django_request = factory.generic(
+                "POST",
+                attempt_url,
+                b"",
+                content_type=content_type,
+                **headers,
+            )
+            if session_csrf is not False:
+                django_request.user = self.import_reader
+            django_request._stream = stream
+            django_request._read_started = False
+            django_request.META["CONTENT_TYPE"] = content_type
+            django_request.META.pop("CONTENT_LENGTH", None)
+            if content_length is not None:
+                django_request.META["CONTENT_LENGTH"] = content_length
+            return attempt_definition_package_2_1(
+                django_request,
+                project_id=self.project.pk,
+            )
+
+        for name, session_csrf in (
+            ("basic", False),
+            ("valid_session_csrf", csrf_token),
+        ):
+            with self.subTest(name=name):
+                stream = _AdversarialBoundedWSGIInput(
+                    oversized,
+                    max_bytes=FOUNDATION_RAW_JSON_MAX_BYTES,
+                )
+                response = direct_request(stream, session_csrf=session_csrf)
+                self.assertEqual(response.status_code, 400, response.data)
+                self.assertEqual(
+                    response.data["code"],
+                    "RAW_JSON_BYTE_BUDGET_EXCEEDED",
+                )
+                self.assertLessEqual(
+                    stream.bytes_served,
+                    FOUNDATION_RAW_JSON_MAX_BYTES + 1,
+                )
+                self.assertEqual(domain_counts(), baseline)
+
+        for name, token in (
+            ("missing_session_csrf", None),
+            ("invalid_session_csrf", "0" * 64),
+        ):
+            with self.subTest(name=name):
+                stream = _AdversarialBoundedWSGIInput(
+                    oversized,
+                    max_bytes=FOUNDATION_RAW_JSON_MAX_BYTES,
+                )
+                response = direct_request(stream, session_csrf=token)
+                self.assertEqual(response.status_code, 403)
+                self.assertEqual(stream.bytes_served, 0)
+                self.assertEqual(domain_counts(), baseline)
+
+        for name, content_type, content_length in (
+            (
+                "malformed_charset",
+                "application/json; charset=iso-8859-1",
+                None,
+            ),
+            (
+                "known_content_length_oversize",
+                "application/json",
+                str(len(oversized)),
+            ),
+        ):
+            with self.subTest(name=name):
+                stream = _AdversarialBoundedWSGIInput(
+                    oversized,
+                    max_bytes=FOUNDATION_RAW_JSON_MAX_BYTES,
+                )
+                response = direct_request(
+                    stream,
+                    content_type=content_type,
+                    content_length=content_length,
+                )
+                self.assertEqual(response.status_code, 400, response.data)
+                self.assertEqual(stream.bytes_served, 0)
+                self.assertEqual(domain_counts(), baseline)
+
+        mismatched_stream = _AdversarialBoundedWSGIInput(
+            b"{}",
+            max_bytes=FOUNDATION_RAW_JSON_MAX_BYTES,
+        )
+        mismatched = direct_request(
+            mismatched_stream,
+            content_length="16",
+        )
+        self.assertEqual(mismatched.status_code, 400, mismatched.data)
+        self.assertEqual(
+            mismatched.data["code"],
+            "RAW_JSON_CONTENT_LENGTH_MISMATCH",
+        )
+        self.assertEqual(mismatched_stream.bytes_served, 2)
+        self.assertEqual(domain_counts(), baseline)
+
+        for content_type in (
+            "application/x-www-form-urlencoded",
+            "multipart/form-data; boundary=foundation-boundary",
+        ):
+            for token_name, token in (
+                ("missing", None),
+                ("invalid", "0" * 64),
+                ("valid", csrf_token),
+            ):
+                with self.subTest(
+                    content_type=content_type,
+                    csrf_token=token_name,
+                ):
+                    stream = _ZeroReadWSGIInput()
+                    environ = {
+                        "PATH_INFO": attempt_url,
+                        "REQUEST_METHOD": "POST",
+                        "CONTENT_TYPE": content_type,
+                        "CONTENT_LENGTH": "64",
+                        "wsgi.input": stream,
+                    }
+                    if token is not None:
+                        environ["HTTP_X_CSRFTOKEN"] = token
+                    response = session.request(**environ)
+                    self.assertEqual(response.status_code, 400, response.data)
+                    self.assertEqual(
+                        response.data["code"],
+                        "RAW_JSON_MEDIA_TYPE_UNSUPPORTED",
+                    )
+                    self.assertEqual(stream.bytes_served, 0)
+                    self.assertEqual(stream.read_attempts, 0)
+                    self.assertFalse(
+                        hasattr(
+                            response.wsgi_request,
+                            "_foundation_raw_json_capture",
+                        )
+                    )
+                    self.assertEqual(domain_counts(), baseline)
+
+            basic_stream = _ZeroReadWSGIInput()
+            factory = APIRequestFactory(enforce_csrf_checks=True)
+            basic_request = factory.generic(
+                "POST",
+                attempt_url,
+                b"",
+                content_type=content_type,
+                HTTP_AUTHORIZATION=basic_authorization,
+            )
+            basic_request._stream = basic_stream
+            basic_request._read_started = False
+            basic_request.META["CONTENT_TYPE"] = content_type
+            basic_request.META["CONTENT_LENGTH"] = "64"
+            basic_response = attempt_definition_package_2_1(
+                basic_request,
+                project_id=self.project.pk,
+            )
+            self.assertEqual(basic_response.status_code, 400, basic_response.data)
+            self.assertEqual(
+                basic_response.data["code"],
+                "RAW_JSON_MEDIA_TYPE_UNSUPPORTED",
+            )
+            self.assertEqual(basic_stream.bytes_served, 0)
+            self.assertEqual(basic_stream.read_attempts, 0)
+            self.assertFalse(
+                hasattr(basic_request, "_foundation_raw_json_capture")
+            )
+            self.assertEqual(domain_counts(), baseline)
+
+    def test_preloaded_oversize_body_has_no_partial_identity_or_receipt(self):
+        attempt_url = (
+            f"/api/foundation/projects/{self.project.pk}/"
+            "definition-packages/2.1/attempt/"
+        )
+        oversized = (
+            b'{"padding":"'
+            + b"x" * (FOUNDATION_RAW_JSON_MAX_BYTES + 4096)
+            + b'"}'
+        )
+        authorization = "Basic " + base64.b64encode(
+            b"gateway-http-import-reader:test-password"
+        ).decode("ascii")
+        factory = APIRequestFactory(enforce_csrf_checks=True)
+        django_request = factory.generic(
+            "POST",
+            attempt_url,
+            b"",
+            content_type="application/json",
+            HTTP_AUTHORIZATION=authorization,
+        )
+        stream = _AdversarialBoundedWSGIInput(
+            oversized,
+            max_bytes=FOUNDATION_RAW_JSON_MAX_BYTES,
+        )
+        django_request._stream = stream
+        django_request._read_started = False
+        django_request._body = oversized
+        django_request.META["CONTENT_TYPE"] = "application/json"
+        django_request.META.pop("CONTENT_LENGTH", None)
+
+        membership_model = Group.user_set.through
+        baseline = {
+            "projects": Project.objects.count(),
+            "definitions": ProjectDefinitionVersion.objects.count(),
+            "imports": ImportRun.objects.count(),
+            "audits": AuditEvent.objects.count(),
+            "publications": ProjectPublication.objects.count(),
+            "workspaces": ProjectWorkspace.objects.count(),
+            "groups": Group.objects.count(),
+            "memberships": membership_model.objects.count(),
+        }
+        real_sha256 = hashlib.sha256
+
+        def bounded_sha256(value=b"", *args, **kwargs):
+            if isinstance(value, (bytes, bytearray, memoryview)) and len(value) > (
+                FOUNDATION_RAW_JSON_MAX_BYTES + 1
+            ):
+                raise AssertionError("oversized preloaded body was hashed")
+            return real_sha256(value, *args, **kwargs)
+
+        with patch(
+            "domain.services.foundation_packages.hashlib.sha256",
+            side_effect=bounded_sha256,
+        ):
+            response = attempt_definition_package_2_1(
+                django_request,
+                project_id=self.project.pk,
+            )
+
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertEqual(response.data["code"], "RAW_JSON_BYTE_BUDGET_EXCEEDED")
+        self.assertEqual(stream.bytes_served, 0)
+        self.assertFalse(
+            hasattr(django_request, "_foundation_raw_json_capture")
+        )
+        self.assertEqual(
+            {
+                "projects": Project.objects.count(),
+                "definitions": ProjectDefinitionVersion.objects.count(),
+                "imports": ImportRun.objects.count(),
+                "audits": AuditEvent.objects.count(),
+                "publications": ProjectPublication.objects.count(),
+                "workspaces": ProjectWorkspace.objects.count(),
+                "groups": Group.objects.count(),
+                "memberships": membership_model.objects.count(),
+            },
+            baseline,
+        )
+
+    def test_successor_http_201_etag_pin_preservation_and_stable_retry_409(self):
+        initial = bootstrap_initial_project_definition(
+            definition=self.draft(code="HTTP-SUCCESSOR-INITIAL"),
+            principal=self.publisher(actor="initial-publisher"),
+            actor_identifier="initial-publisher",
+            workspace_spec=self.workspace_spec(),
+            locale="en",
+        )
+        old_pin = (
+            initial.workspace.pk,
+            initial.workspace.definition_version_id,
+            initial.workspace.definition_manifest_hash,
+        )
+        successor = clone_project_definition_draft(
+            initial.definition,
+            code="HTTP-SUCCESSOR-V2",
+            version="2.0.0",
+            principal=self.editor(actor="successor-editor"),
+        )
+        successor = validate_project_definition(
+            successor,
+            actor_identifier="successor-publisher",
+            principal=self.publisher(actor="successor-publisher"),
+        )
+        self.client.force_authenticate(self.publisher_user)
+        url = f"/api/foundation/definitions/{successor.pk}/publish-successor/"
+        operation_id = uuid4()
+        headers = {
+            "HTTP_IDEMPOTENCY_KEY": str(operation_id),
+            "HTTP_IF_MATCH": f'"{successor.manifest_hash}"',
+        }
+        response = self.client.post(url, {"locale": "en"}, format="json", **headers)
+        payload = response.json()
+
+        self.assertEqual(response.status_code, 201, payload)
+        self.assertEqual(response["ETag"], f'"{hashlib.sha256(response.content).hexdigest()}"')
+        self.assertEqual(response["Idempotency-Replayed"], "false")
+        self.assertIsNone(payload["initial_workspace_id"])
+        self.assertEqual(payload["definition"]["id"], str(successor.pk))
+        self.assertEqual(
+            payload["definition"]["publication_status"],
+            PublicationStatus.PUBLISHED,
+        )
+        publication = ProjectPublication.objects.get(
+            pk=payload["publication_id"]
+        )
+        self.assertIsNone(publication.initial_workspace_id)
+        self.assertEqual(
+            ProjectPublication.objects.filter(initial_workspace__isnull=True).count(),
+            1,
+        )
+        self.assertEqual(ProjectPublication.objects.count(), 2)
+        self.assertEqual(ProjectWorkspace.objects.count(), 1)
+        initial.workspace.refresh_from_db()
+        self.assertEqual(
+            (
+                initial.workspace.pk,
+                initial.workspace.definition_version_id,
+                initial.workspace.definition_manifest_hash,
+            ),
+            old_pin,
+        )
+
+        retry_headers = {
+            **headers,
+            "HTTP_IDEMPOTENCY_KEY": str(uuid4()),
+        }
+        retry = self.client.post(
+            url,
+            {"locale": "en"},
+            format="json",
+            **retry_headers,
+        )
+        self.assertEqual(retry.status_code, 409, retry.content)
+        self.assertEqual(retry.json()["code"], "PUBLICATION_ALREADY_COMMITTED")
+        self.assertNotIn("detail_sha256", retry.json())
+        self.assertEqual(ProjectPublication.objects.count(), 2)
+        self.assertEqual(ProjectWorkspace.objects.count(), 1)
+
+    def test_first_project_http_rejects_non_exact_nested_dto_without_rows(self):
+        project_id = uuid4()
+        definition_id = uuid4()
+        manifest = copy.deepcopy(self.manifest)
+        manifest["project"].update(
+            {
+                "id": str(project_id),
+                "code": "HTTP-EXACT-ENVELOPE",
+                "version": "1.0.0",
+            }
+        )
+        base = {
+            "project_primary_language": "ru",
+            "project": {
+                "id": str(project_id),
+                "code": "HTTP-EXACT-ENVELOPE",
+                "version": "1.0.0",
+                "name": "Exact envelope project",
+                "description": "Must remain absent on invalid nested DTOs.",
+                "metadata": {},
+            },
+            "definition": {
+                "id": str(definition_id),
+                "code": "HTTP-EXACT-ENVELOPE-DRAFT",
+                "version": "1.0.0",
+                "manifest": manifest,
+                "semantic_version": "1.0.0",
+                "construct_version": "1.0.0",
+            },
+        }
+        baseline = {
+            "projects": Project.objects.count(),
+            "groups": Group.objects.count(),
+            "memberships": self.editor_user.groups.count(),
+            "definitions": ProjectDefinitionVersion.objects.count(),
+            "audits": AuditEvent.objects.count(),
+        }
+        variants = {}
+        invalid_string_values = {
+            "numeric": 123,
+            "boolean": True,
+            "list": [],
+            "null": None,
+        }
+        for section, fields in (
+            (
+                "project",
+                ("id", "code", "version", "name", "description"),
+            ),
+            (
+                "definition",
+                (
+                    "id",
+                    "code",
+                    "version",
+                    "semantic_version",
+                    "construct_version",
+                ),
+            ),
+        ):
+            for field in fields:
+                for value_kind, value in invalid_string_values.items():
+                    variants[f"{section}_{field}_{value_kind}"] = (
+                        section,
+                        field,
+                        value,
+                    )
+        variants.update(
+            {
+                "invalid_project_uuid": ("project", "id", "not-a-uuid"),
+                "invalid_definition_uuid": (
+                    "definition",
+                    "id",
+                    "not-a-uuid",
+                ),
+            }
+        )
+        for section, field in (
+            ("project", "metadata"),
+            ("definition", "manifest"),
+        ):
+            for value_kind, value in {
+                "string": "{}",
+                **invalid_string_values,
+            }.items():
+                variants[f"{section}_{field}_{value_kind}"] = (
+                    section,
+                    field,
+                    value,
+                )
+        self.client.force_authenticate(self.editor_user)
+        for name, (section, field, value) in variants.items():
+            with self.subTest(name=name):
+                payload = copy.deepcopy(base)
+                payload[section][field] = value
+                response = self.client.post(
+                    "/api/foundation/projects/bootstrap-first-draft/",
+                    payload,
+                    format="json",
+                    HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+                )
+                self.assertEqual(response.status_code, 400, response.data)
+                self.assertEqual(Project.objects.count(), baseline["projects"])
+                self.assertEqual(Group.objects.count(), baseline["groups"])
+                self.assertEqual(
+                    self.editor_user.groups.count(),
+                    baseline["memberships"],
+                )
+                self.assertEqual(
+                    ProjectDefinitionVersion.objects.count(),
+                    baseline["definitions"],
+                )
+                self.assertEqual(AuditEvent.objects.count(), baseline["audits"])
+                self.assertFalse(Project.objects.filter(pk=project_id).exists())
+                self.assertFalse(
+                    Group.objects.filter(
+                        name=project_access_group_name(project_id)
+                    ).exists()
+                )
+
+        surrogate_payload = copy.deepcopy(base)
+        surrogate_payload["project"]["metadata"] = {"nested": ["\ud800"]}
+        surrogate_response = self.client.generic(
+            "POST",
+            "/api/foundation/projects/bootstrap-first-draft/",
+            json.dumps(
+                surrogate_payload,
+                ensure_ascii=True,
+                separators=(",", ":"),
+            ).encode("utf-8"),
+            content_type="application/json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+        )
+        self.assertEqual(surrogate_response.status_code, 400, surrogate_response.data)
+        self.assertEqual(
+            surrogate_response.data["code"],
+            "AUTHORING_ENVELOPE_INVALID",
+        )
+        self.assertEqual(Project.objects.count(), baseline["projects"])
+        self.assertEqual(Group.objects.count(), baseline["groups"])
+        self.assertEqual(
+            ProjectDefinitionVersion.objects.count(),
+            baseline["definitions"],
+        )
+        self.assertEqual(AuditEvent.objects.count(), baseline["audits"])
+
+    def test_retired_http_get_exact_dto_etag_and_lifecycle_mutation_denial(self):
+        now = timezone.now()
+        manifest_hash = hash_project_definition_manifest_v1(
+            self.manifest,
+            project=self.project,
+        )
+        retired = ProjectDefinitionVersion(
+            project=self.project,
+            code="HTTP-RETIRED-READ",
+            version="9.0.0",
+            manifest=copy.deepcopy(self.manifest),
+            manifest_hash=manifest_hash,
+            schema_version="1.0.0",
+            semantic_version="1.0.0",
+            construct_version="1.0.0",
+            publication_status=PublicationStatus.RETIRED,
+            validated_at=now,
+            validated_by="retired-publisher",
+            validation_result={"valid": True},
+            published_at=now,
+            published_by="retired-publisher",
+        )
+        with _canonical_studio_write("definition"):
+            retired.save(force_insert=True)
+
+        self.client.force_authenticate(self.editor_user)
+        url = f"/api/foundation/definitions/{retired.pk}/"
+        response = self.client.get(url)
+        expected_dto = {
+            "id": str(retired.pk),
+            "project_id": str(self.project.pk),
+            "code": retired.code,
+            "version": retired.version,
+            "publication_status": PublicationStatus.RETIRED,
+            "is_current": retired.is_current,
+            "validation_result": retired.validation_result,
+            "validated_at": retired.validated_at.isoformat().replace("+00:00", "Z"),
+            "validated_by": retired.validated_by,
+            "published_at": retired.published_at.isoformat().replace("+00:00", "Z"),
+            "published_by": retired.published_by,
+            "manifest": retired.manifest,
+            "manifest_hash": manifest_hash,
+            "schema_version": "1.0.0",
+            "semantic_version": "1.0.0",
+            "construct_version": "1.0.0",
+            "supersedes_id": None,
+        }
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data, expected_dto)
+        self.assertEqual(response["ETag"], f'"{manifest_hash}"')
+
+        changed = copy.deepcopy(self.manifest)
+        changed["project"]["name"] = "Forbidden RETIRED mutation"
+        denied = self.client.put(
+            f"{url}draft/",
+            {"manifest": changed},
+            format="json",
+            HTTP_IF_MATCH=f'"{manifest_hash}"',
+            HTTP_IDEMPOTENCY_KEY=str(uuid4()),
+        )
+        self.assertEqual(denied.status_code, 409, denied.data)
+        self.assertEqual(denied.data["code"], "DEFINITION_NOT_DRAFT")
+        retired.refresh_from_db()
+        self.assertEqual(retired.publication_status, PublicationStatus.RETIRED)
+        self.assertEqual(retired.manifest_hash, manifest_hash)
+        self.assertEqual(retired.manifest, self.manifest)
+
+    def test_bootstrap_published_package_human_gate_query_and_service_path(self):
+        source = self.draft(code="HTTP-PACKAGE-BOOTSTRAP")
+        source_id = source.pk
+        package = export_project_definition_package_2_1(source)
+        package["project_definition"].update(
+            publication_status=PublicationStatus.PUBLISHED,
+            is_current=True,
+            validated_at="2026-08-27T00:00:00Z",
+            validated_by="source-publisher",
+            validation_result={"valid": True, "source": "external receipt"},
+            published_at="2026-08-27T00:01:00Z",
+            published_by="source-publisher",
+        )
+        package = seal_foundation_package_2_1(package)
+        source.delete()
+        raw = canonical_json(package).encode("utf-8")
+        attempt_url = (
+            f"/api/foundation/projects/{self.project.pk}/"
+            "definition-packages/2.1/attempt/"
+        )
+        query_items = [
+            ("locale", "en"),
+            ("initial_workspace_id", "28000000-0000-4000-8000-000000000001"),
+            ("initial_workspace_code", "HTTP-PACKAGE-INITIAL"),
+            ("initial_workspace_version", "1.0.0"),
+            ("initial_workspace_name", "HTTP package initial workspace"),
+            ("initial_workspace_is_default", "true"),
+        ]
+        complete_url = f"{attempt_url}?{urlencode(query_items)}"
+
+        self.client.force_authenticate(self.import_reader)
+        for invalid_query in (
+            "",
+            "?" + urlencode(query_items[:-1]),
+            "?" + urlencode(query_items + [("locale", "ru")]),
+            "?" + urlencode(query_items + [("unexpected", "value")]),
+        ):
+            with self.subTest(invalid_query=invalid_query):
+                invalid = self.client.generic(
+                    "POST",
+                    attempt_url + invalid_query,
+                    raw,
+                    content_type="application/json",
+                )
+                self.assertEqual(invalid.status_code, 400, invalid.data)
+                self.assertFalse(ImportRun.objects.exists())
+                self.assertFalse(
+                    ProjectDefinitionVersion.objects.filter(pk=source_id).exists()
+                )
+                self.assertFalse(ProjectPublication.objects.exists())
+                self.assertFalse(ProjectWorkspace.objects.exists())
+
+        denied = self.client.generic(
+            "POST",
+            complete_url,
+            raw,
+            content_type="application/json",
+        )
+        self.assertEqual(denied.status_code, 403, denied.data)
+        self.assertFalse(ImportRun.objects.exists())
+        self.assertFalse(ProjectDefinitionVersion.objects.filter(pk=source_id).exists())
+        self.assertFalse(ProjectPublication.objects.exists())
+        self.assertFalse(ProjectWorkspace.objects.exists())
+
+        observed_service_caps: list[tuple[str | None, frozenset]] = []
+
+        def observe_service_caps(intended_action):
+            capabilities = foundation_import_service_capabilities_2_1(
+                intended_action
+            )
+            observed_service_caps.append((intended_action, capabilities))
+            return capabilities
+
+        self.client.force_authenticate(self.publisher_user)
+        with patch(
+            "domain.api.studio_definitions.foundation_import_service_capabilities_2_1",
+            side_effect=observe_service_caps,
+        ):
+            committed = self.client.generic(
+                "POST",
+                complete_url,
+                raw,
+                content_type="application/json",
+            )
+        self.assertEqual(committed.status_code, 200, committed.data)
+        self.assertEqual(committed.data["status"], "COMMITTED")
+        self.assertEqual(
+            committed.data["commit"]["action"],
+            "BOOTSTRAP_PUBLISHED",
+        )
+        self.assertEqual(
+            observed_service_caps,
+            [
+                (
+                    "BOOTSTRAP_PUBLISHED",
+                    frozenset(
+                        {
+                            StudioCapability.FOUNDATION_IMPORT,
+                            StudioCapability.DRAFT_CREATE,
+                            StudioCapability.DEFINITION_VALIDATE,
+                            StudioCapability.DEFINITION_PUBLISH,
+                        }
+                    ),
+                )
+            ],
+        )
+        receipt = ImportRun.objects.get(pk=committed.data["receipt_id"])
+        self.assertEqual(receipt.status, "COMMITTED")
+        self.assertEqual(
+            receipt.actor_identifier,
+            f"foundation-http-import:django-user:{self.publisher_user.pk}",
+        )
+        self.assertEqual(
+            receipt.selected_input["intended_action"],
+            "BOOTSTRAP_PUBLISHED",
+        )
+        imported = ProjectDefinitionVersion.objects.get(pk=source_id)
+        self.assertEqual(imported.publication_status, PublicationStatus.PUBLISHED)
+        self.assertEqual(ProjectPublication.objects.count(), 1)
+        self.assertEqual(ProjectWorkspace.objects.count(), 1)
+        self.assertEqual(
+            str(ProjectWorkspace.objects.get().pk),
+            "28000000-0000-4000-8000-000000000001",
+        )
+
+        reuse_raw = canonical_json(
+            export_project_definition_package_2_1(imported)
+        ).encode("utf-8")
+        preview_url = (
+            f"/api/foundation/projects/{self.project.pk}/"
+            "definition-packages/2.1/preview/"
+        )
+        reuse_preview = self.client.generic(
+            "POST",
+            preview_url,
+            reuse_raw,
+            content_type="application/json",
+        )
+        self.assertEqual(reuse_preview.status_code, 200, reuse_preview.data)
+        self.assertEqual(reuse_preview.data["intended_action"], "REUSE_EXACT")
+        receipt_count = ImportRun.objects.count()
+        forbidden_workspace = self.client.generic(
+            "POST",
+            complete_url,
+            reuse_raw,
+            content_type="application/json",
+        )
+        self.assertEqual(forbidden_workspace.status_code, 400, forbidden_workspace.data)
+        self.assertEqual(ImportRun.objects.count(), receipt_count)
+
+
+class FoundationStudioValidationPreviewHttpTests(
+    FoundationStudioBootstrapMixin,
+    TestCase,
+):
+    def setUp(self) -> None:
+        self.make_contract()
+        user_model = get_user_model()
+        self.editor_user = user_model.objects.create_user(
+            username="fd01-preview-editor",
+            password="test-password",
+        )
+        self.no_save_user = user_model.objects.create_user(
+            username="fd01-preview-viewer",
+            password="test-password",
+        )
+        self.out_of_scope_user = user_model.objects.create_user(
+            username="fd01-preview-out",
+            password="test-password",
+        )
+        permissions = {
+            permission.codename: permission
+            for permission in Permission.objects.filter(
+                content_type__app_label="domain",
+                content_type__model="projectdefinitionversion",
+            )
+        }
+        self.editor_user.user_permissions.add(
+            permissions["studio_read_definition"],
+            permissions["studio_create_definition_draft"],
+            permissions["studio_clone_definition_draft"],
+            permissions["studio_save_definition_draft"],
+        )
+        self.no_save_user.user_permissions.add(
+            permissions["studio_read_definition"],
+        )
+        self.out_of_scope_user.user_permissions.add(
+            permissions["studio_read_definition"],
+            permissions["studio_save_definition_draft"],
+        )
+        scope = Group.objects.create(name=project_access_group_name(self.project.pk))
+        scope.user_set.add(self.editor_user, self.no_save_user)
+        self.definition = self.draft(code="FD01-VALIDATION-PREVIEW")
+        self.url = (
+            f"/api/foundation/definitions/{self.definition.pk}/validation-preview/"
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(self.editor_user)
+
+    def _body(self, manifest: dict | None = None) -> bytes:
+        selected = self.manifest if manifest is None else manifest
+        return json.dumps(
+            {"manifest": selected},
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+
+    @staticmethod
+    def _canonical_bytes(value: object) -> bytes:
+        return json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+
+    @staticmethod
+    def _database_fingerprint() -> str:
+        from django.db import connection
+
+        snapshot: dict[str, object] = {}
+        with connection.cursor() as cursor:
+            for table in sorted(connection.introspection.table_names(cursor)):
+                cursor.execute(f"SELECT * FROM {connection.ops.quote_name(table)}")
+                columns = [item[0] for item in cursor.description or ()]
+                rows = sorted(repr(tuple(row)) for row in cursor.fetchall())
+                snapshot[table] = {"columns": columns, "rows": rows}
+        payload = json.dumps(
+            snapshot,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return hashlib.sha256(payload).hexdigest()
+
+    def _post(self, raw: bytes, **headers):
+        return self.client.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            **headers,
+        )
+
+    @staticmethod
+    def _basic_authorization(username: str, password: str = "test-password") -> str:
+        encoded = base64.b64encode(f"{username}:{password}".encode("utf-8"))
+        return "Basic " + encoded.decode("ascii")
+
+    def _assert_no_response_cookie_mutation(self, response) -> None:
+        self.assertFalse(response.cookies)
+        self.assertEqual(response.cookies.output(), "")
+        self.assertNotIn("Set-Cookie", response.headers)
+        self.assertFalse(
+            response.wsgi_request.META.get("CSRF_COOKIE_NEEDS_UPDATE", False)
+        )
+
+    def test_validation_preview_valid_and_invalid_candidates_return_exact_contract(self):
+        baseline = self._database_fingerprint()
+        valid_raw = self._body()
+        valid = self._post(valid_raw)
+        self.assertEqual(valid.status_code, 200, getattr(valid, "data", None))
+        self.assertTrue(valid.content.endswith(b"\n"))
+        self.assertFalse(valid.content.endswith(b"\n\n"))
+        valid_payload = json.loads(valid.content)
+        self.assertEqual(
+            valid_payload["contract"],
+            "PROJECT_DEFINITION_MANIFEST_VALIDATION_V1",
+        )
+        self.assertEqual(valid_payload["contract_version"], "1.0.0")
+        self.assertTrue(valid_payload["valid"])
+        self.assertEqual(valid_payload["diagnostics_total"], 0)
+        self.assertEqual(valid_payload["diagnostics"], [])
+        self.assertEqual(
+            valid_payload["request_sha256"],
+            hashlib.sha256(valid_raw).hexdigest(),
+        )
+        self.assertEqual(valid_payload["request_byte_length"], len(valid_raw))
+        self.assertEqual(
+            valid_payload["candidate_sha256"],
+            hashlib.sha256(self._canonical_bytes(self.manifest)).hexdigest(),
+        )
+        self.assertEqual(
+            valid_payload["manifest_sha256"],
+            self.definition.manifest_hash,
+        )
+        response_sha256 = hashlib.sha256(valid.content).hexdigest()
+        self.assertEqual(valid["ETag"], f'"{response_sha256}"')
+        self.assertEqual(valid["Content-Length"], str(len(valid.content)))
+        self.assertEqual(
+            valid["Content-Type"],
+            "application/json; charset=utf-8",
+        )
+        self.assertEqual(self._database_fingerprint(), baseline)
+
+        invalid_manifest = copy.deepcopy(self.manifest)
+        invalid_manifest["actors"][0].pop("label")
+        invalid = self._post(self._body(invalid_manifest))
+        self.assertEqual(invalid.status_code, 200)
+        invalid_payload = json.loads(invalid.content)
+        self.assertFalse(invalid_payload["valid"])
+        self.assertGreater(invalid_payload["diagnostics_total"], 0)
+        self.assertIn(
+            "FIELD_REQUIRED",
+            {item["code"] for item in invalid_payload["diagnostics"]},
+        )
+        self.assertEqual(self._database_fingerprint(), baseline)
+
+    def test_validation_preview_matches_validate_policy_help_resolution_and_order(self):
+        from domain.policies import validate_project_definition_manifest_policy
+
+        candidate = copy.deepcopy(self.manifest)
+        candidate["help_bindings"][0]["topic_sha256"] = "0" * 64
+        direct = validate_project_definition_manifest_policy(
+            candidate,
+            project=self.project,
+        )
+        complete = [item.as_dict() for item in direct.diagnostics]
+        response = self._post(self._body(candidate))
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.content)
+        self.assertFalse(payload["valid"])
+        self.assertEqual(payload["diagnostics_total"], len(complete))
+        self.assertEqual(payload["diagnostics_returned"], len(complete))
+        self.assertEqual(
+            [
+                (item["level"], item["code"], item["path"])
+                for item in payload["diagnostics"]
+            ],
+            [
+                (item["level"], item["code"], item["path"])
+                for item in complete
+            ],
+        )
+        self.assertEqual(
+            payload["diagnostics_sha256"],
+            hashlib.sha256(self._canonical_bytes(complete)).hexdigest(),
+        )
+        policies_source = (
+            Path(__file__).resolve().parents[1] / "policies.py"
+        ).read_text(encoding="utf-8")
+        self.assertGreaterEqual(
+            policies_source.count("validate_project_definition_manifest_policy("),
+            2,
+        )
+        self.assertNotIn(
+            "validate_project_definition_manifest_v1(\n            current.manifest",
+            policies_source,
+        )
+
+    def test_validation_preview_bounds_projection_and_hashes_complete_diagnostics(self):
+        from domain.policies import validate_project_definition_manifest_policy
+
+        candidate = copy.deepcopy(self.manifest)
+        candidate["actors"] = [
+            {
+                "id": str(uuid4()),
+                "code": f"FD01-ACTOR-{index:04d}",
+                "version": "1.0.0",
+            }
+            for index in range(1200)
+        ]
+        direct = validate_project_definition_manifest_policy(
+            candidate,
+            project=self.project,
+        )
+        complete = [item.as_dict() for item in direct.diagnostics]
+        self.assertGreater(len(complete), 1000)
+        response = self._post(self._body(candidate))
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.content)
+        self.assertEqual(payload["diagnostics_total"], len(complete))
+        self.assertEqual(payload["diagnostics_returned"], 1000)
+        self.assertTrue(payload["diagnostics_truncated"])
+        self.assertEqual(len(payload["diagnostics"]), 1000)
+        self.assertEqual(
+            payload["diagnostics_sha256"],
+            hashlib.sha256(self._canonical_bytes(complete)).hexdigest(),
+        )
+        for item in payload["diagnostics"]:
+            self.assertLessEqual(len(item["path"].encode("utf-8")), 512)
+            self.assertLessEqual(len(item["message"].encode("utf-8")), 512)
+            self.assertRegex(item["path_sha256"], r"^[0-9a-f]{64}$")
+            self.assertRegex(item["message_sha256"], r"^[0-9a-f]{64}$")
+
+    def test_validation_preview_retry_is_byte_identical_and_changes_no_row(self):
+        raw = self._body()
+        before = self._database_fingerprint()
+        first = self._post(raw)
+        middle = self._database_fingerprint()
+        second = self._post(bytes(bytearray(raw)))
+        after = self._database_fingerprint()
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(first.content, second.content)
+        self.assertEqual(first["ETag"], second["ETag"])
+        self.assertEqual(first["Content-Length"], second["Content-Length"])
+        self.assertEqual(before, middle)
+        self.assertEqual(middle, after)
+
+    def test_validation_preview_auth_scope_and_capability_precede_capture(self):
+        raw = self._body()
+        baseline = self._database_fingerprint()
+        with patch(
+            "domain.api.studio_definitions.capture_http_json",
+            side_effect=AssertionError("body capture is forbidden"),
+        ) as capture:
+            self.client.force_authenticate(self.out_of_scope_user)
+            inaccessible = self._post(raw)
+            self.assertEqual(inaccessible.status_code, 404)
+            capture.assert_not_called()
+
+        with patch(
+            "domain.api.studio_definitions.capture_http_json",
+            side_effect=AssertionError("body capture is forbidden"),
+        ) as capture:
+            self.client.force_authenticate(self.no_save_user)
+            denied = self._post(raw)
+            self.assertEqual(denied.status_code, 403)
+            capture.assert_not_called()
+
+        for name, user, expected_status in (
+            ("basic_out_of_scope", self.out_of_scope_user, 404),
+            ("basic_no_capability", self.no_save_user, 403),
+        ):
+            with self.subTest(name=name), patch(
+                "domain.api.studio_definitions.capture_http_json",
+                side_effect=AssertionError("body capture is forbidden"),
+            ) as capture:
+                basic = APIClient()
+                response = basic.generic(
+                    "POST",
+                    self.url,
+                    raw,
+                    content_type="text/plain",
+                    HTTP_AUTHORIZATION=self._basic_authorization(user.username),
+                )
+                self.assertEqual(response.status_code, expected_status)
+                capture.assert_not_called()
+
+        authorized_basic = APIClient()
+        invalid_media = authorized_basic.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="text/plain",
+            HTTP_AUTHORIZATION=self._basic_authorization(
+                self.editor_user.username
+            ),
+        )
+        self.assertEqual(invalid_media.status_code, 400, invalid_media.data)
+        self.assertEqual(
+            invalid_media.data["code"],
+            "RAW_JSON_MEDIA_TYPE_UNSUPPORTED",
+        )
+
+        anonymous = APIClient()
+        self.assertEqual(
+            anonymous.generic(
+                "POST",
+                self.url,
+                raw,
+                content_type="application/json",
+            ).status_code,
+            401,
+        )
+        self.assertEqual(self._database_fingerprint(), baseline)
+
+    def test_validation_preview_session_csrf_precedes_capture_and_basic_matches_contract(self):
+        session = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(
+            session.login(
+                username="fd01-preview-editor",
+                password="test-password",
+            )
+        )
+        open_url = f"/api/foundation/definitions/{self.definition.pk}/"
+        self.assertEqual(session.get(open_url).status_code, 200)
+        csrf_token = session.cookies["csrftoken"].value
+        raw = self._body()
+        session_baseline = self._database_fingerprint()
+
+        with patch(
+            "domain.api.studio_definitions.capture_http_json",
+            side_effect=AssertionError("body capture is forbidden"),
+        ) as capture:
+            for name, content_type, csrf_header, expected_status, code in (
+                (
+                    "missing_csrf",
+                    "application/json",
+                    None,
+                    403,
+                    None,
+                ),
+                (
+                    "invalid_csrf",
+                    "application/json",
+                    "0" * 64,
+                    403,
+                    None,
+                ),
+                (
+                    "media_before_missing_csrf",
+                    "text/plain",
+                    None,
+                    400,
+                    "RAW_JSON_MEDIA_TYPE_UNSUPPORTED",
+                ),
+                (
+                    "media_before_invalid_csrf",
+                    "text/plain",
+                    "0" * 64,
+                    400,
+                    "RAW_JSON_MEDIA_TYPE_UNSUPPORTED",
+                ),
+            ):
+                with self.subTest(name=name):
+                    headers = {}
+                    if csrf_header is not None:
+                        headers["HTTP_X_CSRFTOKEN"] = csrf_header
+                    denied = session.generic(
+                        "POST",
+                        self.url,
+                        raw,
+                        content_type=content_type,
+                        **headers,
+                    )
+                    self.assertEqual(denied.status_code, expected_status)
+                    if code is not None:
+                        self.assertEqual(denied.data["code"], code)
+                    self._assert_no_response_cookie_mutation(denied)
+                    self.assertEqual(
+                        self._database_fingerprint(),
+                        session_baseline,
+                    )
+            capture.assert_not_called()
+
+        session_response = session.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(session_response.status_code, 200)
+        self._assert_no_response_cookie_mutation(session_response)
+        self.assertEqual(self._database_fingerprint(), session_baseline)
+
+        expired_store = SessionStore()
+        expired_store["fd01-expired"] = True
+        expired_store.set_expiry(-60)
+        expired_store.create()
+        expired_key = expired_store.session_key
+        self.assertIsNotNone(expired_key)
+        self.assertTrue(Session.objects.filter(pk=expired_key).exists())
+
+        valid_session_key = session.cookies[settings.SESSION_COOKIE_NAME].value
+        cookie_cases = []
+
+        missing = APIClient(enforce_csrf_checks=True)
+        cookie_cases.append(("missing_session_and_csrf", missing, 401))
+
+        malformed_session = APIClient(enforce_csrf_checks=True)
+        malformed_session.cookies[settings.SESSION_COOKIE_NAME] = "not-a-session"
+        malformed_session.cookies[settings.CSRF_COOKIE_NAME] = "bad"
+        cookie_cases.append(("malformed_session", malformed_session, 401))
+
+        expired_session = APIClient(enforce_csrf_checks=True)
+        expired_session.cookies[settings.SESSION_COOKIE_NAME] = expired_key
+        cookie_cases.append(("expired_session", expired_session, 401))
+
+        missing_csrf = APIClient(enforce_csrf_checks=True)
+        missing_csrf.cookies[settings.SESSION_COOKIE_NAME] = valid_session_key
+        cookie_cases.append(("valid_session_missing_csrf", missing_csrf, 403))
+
+        malformed_csrf = APIClient(enforce_csrf_checks=True)
+        malformed_csrf.cookies[settings.SESSION_COOKIE_NAME] = valid_session_key
+        malformed_csrf.cookies[settings.CSRF_COOKIE_NAME] = "bad"
+        cookie_cases.append(("valid_session_malformed_csrf", malformed_csrf, 403))
+
+        cookie_baseline = self._database_fingerprint()
+        with patch(
+            "domain.api.studio_definitions.capture_http_json",
+            side_effect=AssertionError("body capture is forbidden"),
+        ) as capture:
+            for name, denied_client, expected_status in cookie_cases:
+                with self.subTest(cookie_case=name):
+                    request_cookies = {
+                        key: morsel.value
+                        for key, morsel in denied_client.cookies.items()
+                    }
+                    denied = denied_client.generic(
+                        "POST",
+                        self.url,
+                        raw,
+                        content_type="application/json",
+                    )
+                    self.assertEqual(denied.status_code, expected_status)
+                    self._assert_no_response_cookie_mutation(denied)
+                    self.assertEqual(
+                        {
+                            key: morsel.value
+                            for key, morsel in denied_client.cookies.items()
+                        },
+                        request_cookies,
+                    )
+                    self.assertEqual(
+                        self._database_fingerprint(),
+                        cookie_baseline,
+                    )
+            capture.assert_not_called()
+
+        password_hasher = PBKDF2PasswordHasher()
+        upgrade_eligible = password_hasher.encode(
+            "test-password",
+            password_hasher.salt(),
+            iterations=1,
+        )
+        self.assertTrue(password_hasher.must_update(upgrade_eligible))
+        get_user_model().objects.filter(pk=self.editor_user.pk).update(
+            password=upgrade_eligible
+        )
+        stored_password = get_user_model().objects.values_list(
+            "password", flat=True
+        ).get(pk=self.editor_user.pk)
+        self.assertEqual(stored_password, upgrade_eligible)
+        basic_baseline = self._database_fingerprint()
+
+        basic = APIClient()
+        basic_response = basic.generic(
+            "POST",
+            self.url,
+            raw,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=self._basic_authorization(
+                self.editor_user.username
+            ),
+        )
+        self.assertEqual(basic_response.status_code, 200)
+        self.assertEqual(basic_response.content, session_response.content)
+        self.assertEqual(basic_response["ETag"], session_response["ETag"])
+        self._assert_no_response_cookie_mutation(basic_response)
+        self.assertEqual(
+            get_user_model().objects.values_list("password", flat=True).get(
+                pk=self.editor_user.pk
+            ),
+            stored_password,
+        )
+        self.assertEqual(self._database_fingerprint(), basic_baseline)
+
+    def test_validation_preview_reuses_all_raw_json_ingress_vectors(self):
+        manifest_text = json.dumps(
+            self.manifest,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        valid = ('{"manifest":' + manifest_text + "}").encode("utf-8")
+        duplicate = (
+            '{"manifest":'
+            + manifest_text
+            + ',"manifest":'
+            + manifest_text
+            + "}"
+        ).encode("utf-8")
+        deep = (
+            b'{"manifest":{"deep":'
+            + b"[" * (FOUNDATION_RAW_JSON_MAX_NESTING + 1)
+            + b"0"
+            + b"]" * (FOUNDATION_RAW_JSON_MAX_NESTING + 1)
+            + b"}}"
+        )
+        oversized = (
+            b'{"manifest":{"padding":"'
+            + b"x" * FOUNDATION_RAW_JSON_MAX_BYTES
+            + b'"}}'
+        )
+        exact_prefix = b'{"manifest":{"padding":"'
+        exact_suffix = b'"}}'
+        exact_limit = (
+            exact_prefix
+            + b"x"
+            * (
+                FOUNDATION_RAW_JSON_MAX_BYTES
+                - len(exact_prefix)
+                - len(exact_suffix)
+            )
+            + exact_suffix
+        )
+        self.assertEqual(len(exact_limit), FOUNDATION_RAW_JSON_MAX_BYTES)
+        vectors = (
+            (duplicate, "RAW_JSON_DUPLICATE_KEY"),
+            (b"\xef\xbb\xbf" + valid, "RAW_JSON_BOM_FORBIDDEN"),
+            (valid[:-1] + b"\xff}", "RAW_JSON_INVALID_UTF8"),
+            (valid.replace(b'"order":0', b'"order":NaN', 1), "RAW_JSON_NON_FINITE_NUMBER"),
+            (valid + b"{}", "RAW_JSON_TRAILING_DOCUMENT"),
+            (deep, "RAW_JSON_NESTING_EXCEEDED"),
+            (oversized, "RAW_JSON_BYTE_BUDGET_EXCEEDED"),
+        )
+        before = self._database_fingerprint()
+
+        boundary = self._post(exact_limit)
+        self.assertEqual(boundary.status_code, 200)
+        boundary_payload = json.loads(boundary.content)
+        self.assertEqual(
+            boundary_payload["request_byte_length"],
+            FOUNDATION_RAW_JSON_MAX_BYTES,
+        )
+        self.assertFalse(boundary_payload["valid"])
+        self.assertEqual(self._database_fingerprint(), before)
+
+        for raw, code in vectors:
+            with self.subTest(code=code):
+                response = self._post(raw)
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.data["code"], code)
+
+        unicode_vectors = (
+            b'{"manifest":{"outer":[{"value":"\\ud800"}]}}',
+            b'{"manifest":{"outer":[{"\\udfff":"value"}]}}',
+        )
+        expected_unicode_error = {
+            "code": "RAW_JSON_UNICODE_SCALAR_INVALID",
+            "path": "$",
+            "message": (
+                "JSON object keys and string values must contain only "
+                "Unicode scalar values."
+            ),
+        }
+        with patch(
+            "domain.api.studio_definitions."
+            "validate_project_definition_manifest_policy",
+            side_effect=AssertionError("policy must not receive lone surrogates"),
+        ) as policy:
+            for raw in unicode_vectors:
+                with self.subTest(unicode_raw=raw):
+                    response = self._post(raw)
+                    self.assertEqual(response.status_code, 400, response.data)
+                    self.assertEqual(response.data, expected_unicode_error)
+                    self.assertNotIn("detail_sha256", response.data)
+                    self.assertEqual(self._database_fingerprint(), before)
+            policy.assert_not_called()
+
+        invalid_media = self.client.generic(
+            "POST",
+            self.url,
+            valid,
+            content_type="text/plain",
+        )
+        self.assertEqual(invalid_media.status_code, 400)
+        self.assertEqual(
+            invalid_media.data["code"],
+            "RAW_JSON_MEDIA_TYPE_UNSUPPORTED",
+        )
+        self.assertEqual(self._database_fingerprint(), before)
+
+    def test_validation_preview_rejects_nonexact_envelope_query_headers_and_non_draft(self):
+        raw = self._body()
+        exact_invalid = (
+            b"{}",
+            json.dumps(
+                {"manifest": self.manifest, "extra": True},
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ).encode("utf-8"),
+        )
+        for body in exact_invalid:
+            response = self._post(body)
+            self.assertEqual(response.status_code, 400)
+            self.assertEqual(
+                response.data["code"],
+                "VALIDATION_PREVIEW_ENVELOPE_INVALID",
+            )
+
+        metadata_variants = (
+            (self.url + "?unexpected=1", {}),
+            (self.url, {"HTTP_IF_MATCH": '"' + "0" * 64 + '"'}),
+            (self.url, {"HTTP_IDEMPOTENCY_KEY": str(uuid4())}),
+            (self.url, {"HTTP_X_ACTOR": "spoof"}),
+        )
+        for url, headers in metadata_variants:
+            with self.subTest(url=url, headers=headers):
+                response = self.client.generic(
+                    "POST",
+                    url,
+                    raw,
+                    content_type="application/json",
+                    **headers,
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(
+                    response.data["code"],
+                    "VALIDATION_PREVIEW_ENVELOPE_INVALID",
+                )
+
+        anonymous = APIClient(enforce_csrf_checks=True)
+        session = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(
+            session.login(
+                username=self.editor_user.username,
+                password="test-password",
+            )
+        )
+        basic = APIClient(enforce_csrf_checks=True)
+        basic.credentials(
+            HTTP_AUTHORIZATION=self._basic_authorization(
+                self.editor_user.username
+            )
+        )
+        method_baseline = self._database_fingerprint()
+        exact_response = None
+        with patch(
+            "domain.api.studio_definitions."
+            "_ReadOnlyBasicAuthentication.authenticate",
+            side_effect=AssertionError("method gate must precede Basic auth"),
+        ) as basic_auth, patch(
+            "domain.api.studio_definitions."
+            "_RawJSONSessionAuthentication.authenticate",
+            side_effect=AssertionError("method gate must precede session auth"),
+        ) as session_auth, patch(
+            "domain.api.studio_definitions.capture_http_json",
+            side_effect=AssertionError("method gate must precede body capture"),
+        ) as capture:
+            for principal_name, method_client in (
+                ("anonymous", anonymous),
+                ("session", session),
+                ("basic", basic),
+            ):
+                for method in (
+                    "GET",
+                    "PUT",
+                    "PATCH",
+                    "DELETE",
+                    "HEAD",
+                    "OPTIONS",
+                    "TRACE",
+                    "CONNECT",
+                ):
+                    with self.subTest(principal=principal_name, method=method):
+                        stream = _ZeroReadWSGIInput()
+                        request_cookies = {
+                            key: morsel.value
+                            for key, morsel in method_client.cookies.items()
+                        }
+                        response = method_client.request(
+                            PATH_INFO=self.url,
+                            REQUEST_METHOD=method,
+                            CONTENT_TYPE="application/json",
+                            CONTENT_LENGTH="64",
+                            **{"wsgi.input": stream},
+                        )
+                        self.assertEqual(response.status_code, 405)
+                        self.assertEqual(response["Allow"], "POST")
+                        self.assertEqual(response["Content-Length"], "0")
+                        self.assertEqual(response.content, b"")
+                        self.assertEqual(stream.read_attempts, 0)
+                        self.assertEqual(stream.bytes_served, 0)
+                        self._assert_no_response_cookie_mutation(response)
+                        self.assertEqual(
+                            {
+                                key: morsel.value
+                                for key, morsel in method_client.cookies.items()
+                            },
+                            request_cookies,
+                        )
+                        response_identity = (
+                            response.status_code,
+                            response.content,
+                            response["Allow"],
+                            response["Content-Length"],
+                            response["Content-Type"],
+                        )
+                        if exact_response is None:
+                            exact_response = response_identity
+                        self.assertEqual(response_identity, exact_response)
+                        self.assertEqual(
+                            self._database_fingerprint(),
+                            method_baseline,
+                        )
+            basic_auth.assert_not_called()
+            session_auth.assert_not_called()
+            capture.assert_not_called()
+
+        validated = validate_project_definition(
+            self.definition,
+            actor_identifier="fd01-preview-publisher",
+            principal=self.publisher(actor="fd01-preview-publisher"),
+        )
+        self.assertEqual(validated.publication_status, PublicationStatus.VALIDATED)
+        response = self._post(raw)
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.data["code"], "DEFINITION_NOT_DRAFT")
+
+
+class FoundationStudioLifecycleReadResultHttpTests(
+    FoundationStudioBootstrapMixin,
+    TestCase,
+):
+    def setUp(self) -> None:
+        self.make_contract()
+        user_model = get_user_model()
+        self.reader = user_model.objects.create_user(
+            username="fd03-reader",
+            password="test-password",
+        )
+        self.no_capability = user_model.objects.create_user(
+            username="fd03-no-capability",
+            password="test-password",
+        )
+        self.out_of_scope = user_model.objects.create_user(
+            username="fd03-out-of-scope",
+            password="test-password",
+        )
+        read_permission = Permission.objects.get(
+            content_type__app_label="domain",
+            content_type__model="projectdefinitionversion",
+            codename="studio_read_definition",
+        )
+        self.reader.user_permissions.add(read_permission)
+        self.out_of_scope.user_permissions.add(read_permission)
+        scope = Group.objects.create(name=project_access_group_name(self.project.pk))
+        scope.user_set.add(self.reader, self.no_capability)
+        self.client = APIClient()
+        self.client.force_authenticate(self.reader)
+
+    @staticmethod
+    def _persisted_datetime(value) -> str | None:
+        return value.isoformat().replace("+00:00", "Z") if value is not None else None
+
+    @staticmethod
+    def _database_fingerprint() -> str:
+        from django.db import connection
+
+        snapshot: dict[str, object] = {}
+        with connection.cursor() as cursor:
+            for table in sorted(connection.introspection.table_names(cursor)):
+                cursor.execute(f"SELECT * FROM {connection.ops.quote_name(table)}")
+                columns = [item[0] for item in cursor.description or ()]
+                rows = sorted(repr(tuple(row)) for row in cursor.fetchall())
+                snapshot[table] = {"columns": columns, "rows": rows}
+        payload = json.dumps(
+            snapshot,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return hashlib.sha256(payload).hexdigest()
+
+    def _definition(
+        self,
+        *,
+        code: str,
+        version: str,
+        status: str,
+        is_current: bool = False,
+        supersedes: ProjectDefinitionVersion | None = None,
+        project: Project | None = None,
+        manifest: dict | None = None,
+    ) -> ProjectDefinitionVersion:
+        selected_project = self.project if project is None else project
+        selected_manifest = copy.deepcopy(self.manifest if manifest is None else manifest)
+        manifest_hash = hash_project_definition_manifest_v1(
+            selected_manifest,
+            project=selected_project,
+        )
+        lifecycle: dict[str, object] = {}
+        if status in {
+            PublicationStatus.VALIDATED,
+            PublicationStatus.PUBLISHED,
+            PublicationStatus.RETIRED,
+        }:
+            lifecycle.update(
+                validated_at=timezone.now(),
+                validated_by=f"validator:{code}",
+                validation_result={"valid": True, "source": code},
+            )
+        if status in {PublicationStatus.PUBLISHED, PublicationStatus.RETIRED}:
+            lifecycle.update(
+                published_at=timezone.now(),
+                published_by=f"publisher:{code}",
+            )
+        definition = ProjectDefinitionVersion(
+            project=selected_project,
+            code=code,
+            version=version,
+            is_current=is_current,
+            publication_status=status,
+            manifest=selected_manifest,
+            manifest_hash=manifest_hash,
+            schema_version="1.0.0",
+            semantic_version="1.0.0",
+            construct_version="1.0.0",
+            supersedes=supersedes,
+            **lifecycle,
+        )
+        with _canonical_studio_write("definition"):
+            definition.save(force_insert=True)
+        return definition
+
+    def _workspace(
+        self,
+        definition: ProjectDefinitionVersion,
+    ) -> ProjectWorkspace:
+        workspace = ProjectWorkspace(
+            project=definition.project,
+            definition_version=definition,
+            definition_manifest_hash=definition.manifest_hash,
+            code=f"FD03-WS-{definition.code}",
+            version="1.0.0",
+            name="FD03 exact initial workspace",
+            is_default=True,
+            metadata={"source": "persisted-workspace-pin"},
+        )
+        workspace.save(force_insert=True)
+        return workspace
+
+    def _publication(
+        self,
+        definition: ProjectDefinitionVersion,
+        *,
+        code: str,
+        workspace: ProjectWorkspace | None = None,
+    ) -> ProjectPublication:
+        publication = ProjectPublication(
+            project=definition.project,
+            definition_version=definition,
+            initial_workspace=workspace,
+            code=code,
+            version="1.0.0",
+            locale="ru",
+            actor_identifier=f"actor:{code}",
+            validation_result={"valid": True, "receipt": code},
+            published_at=timezone.now(),
+        )
+        with _canonical_studio_write("publication"):
+            publication.save(force_insert=True)
+        return publication
+
+    def _definition_dto(
+        self,
+        definition: ProjectDefinitionVersion,
+    ) -> dict[str, object]:
+        return {
+            "id": str(definition.pk),
+            "project_id": str(definition.project_id),
+            "code": definition.code,
+            "version": definition.version,
+            "publication_status": definition.publication_status,
+            "is_current": definition.is_current,
+            "validation_result": definition.validation_result,
+            "validated_at": self._persisted_datetime(definition.validated_at),
+            "validated_by": definition.validated_by,
+            "published_at": self._persisted_datetime(definition.published_at),
+            "published_by": definition.published_by,
+            "manifest": definition.manifest,
+            "manifest_hash": definition.manifest_hash,
+            "schema_version": definition.schema_version,
+            "semantic_version": definition.semantic_version,
+            "construct_version": definition.construct_version,
+            "supersedes_id": (
+                str(definition.supersedes_id) if definition.supersedes_id else None
+            ),
+        }
+
+    def _publication_dto(
+        self,
+        publication: ProjectPublication,
+    ) -> dict[str, object]:
+        workspace = publication.initial_workspace
+        definition = publication.definition_version
+        return {
+            "publication_id": str(publication.pk),
+            "project_id": str(publication.project_id),
+            "definition_id": str(definition.pk),
+            "definition_manifest_hash": definition.manifest_hash,
+            "definition_publication_status": definition.publication_status,
+            "definition_is_current": definition.is_current,
+            "initial_workspace_id": str(workspace.pk) if workspace else None,
+            "initial_workspace_definition_id": (
+                str(workspace.definition_version_id) if workspace else None
+            ),
+            "initial_workspace_definition_manifest_hash": (
+                workspace.definition_manifest_hash if workspace else None
+            ),
+            "locale": publication.locale,
+            "actor_identifier": publication.actor_identifier,
+            "validation_result": publication.validation_result,
+            "published_at": self._persisted_datetime(publication.published_at),
+        }
+
+    def _publication_url(self, publication: ProjectPublication) -> str:
+        return (
+            f"/api/foundation/projects/{publication.project_id}/"
+            f"publication-results/{publication.pk}/"
+        )
+
+    def test_fd03_open_definition_returns_exact_persisted_lifecycle_values(self):
+        definitions = tuple(
+            self._definition(
+                code=f"FD03-{status}",
+                version=f"{index}.0.0",
+                status=status,
+            )
+            for index, status in enumerate(PublicationStatus.values, start=1)
+        )
+        for definition in definitions:
+            with self.subTest(status=definition.publication_status):
+                response = self.client.get(
+                    f"/api/foundation/definitions/{definition.pk}/"
+                )
+                self.assertEqual(response.status_code, 200, response.data)
+                self.assertEqual(response.data, self._definition_dto(definition))
+                self.assertEqual(response["ETag"], f'"{definition.manifest_hash}"')
+        draft = definitions[0]
+        self.assertEqual(draft.validation_result, {})
+        self.assertIsNone(draft.validated_at)
+        self.assertEqual(draft.validated_by, "")
+        self.assertIsNone(draft.published_at)
+        self.assertEqual(draft.published_by, "")
+
+    def test_fd03_open_definition_distinguishes_current_successor_and_published_predecessor(self):
+        predecessor = self._definition(
+            code="FD03-PUBLISHED-PREDECESSOR",
+            version="1.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=False,
+        )
+        successor = self._definition(
+            code="FD03-PUBLISHED-SUCCESSOR",
+            version="2.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=True,
+            supersedes=predecessor,
+        )
+        predecessor_response = self.client.get(
+            f"/api/foundation/definitions/{predecessor.pk}/"
+        )
+        successor_response = self.client.get(
+            f"/api/foundation/definitions/{successor.pk}/"
+        )
+        self.assertEqual(predecessor_response.status_code, 200)
+        self.assertEqual(successor_response.status_code, 200)
+        self.assertEqual(
+            predecessor_response.data,
+            self._definition_dto(predecessor),
+        )
+        self.assertEqual(successor_response.data, self._definition_dto(successor))
+        self.assertEqual(
+            predecessor_response.data["publication_status"],
+            PublicationStatus.PUBLISHED,
+        )
+        self.assertFalse(predecessor_response.data["is_current"])
+        self.assertEqual(
+            successor_response.data["publication_status"],
+            PublicationStatus.PUBLISHED,
+        )
+        self.assertTrue(successor_response.data["is_current"])
+        self.assertEqual(
+            successor_response.data["supersedes_id"],
+            str(predecessor.pk),
+        )
+
+    def test_fd03_initial_publication_result_recovers_exact_workspace_pin(self):
+        definition = self._definition(
+            code="FD03-INITIAL-PUBLISHED",
+            version="1.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=True,
+        )
+        workspace = self._workspace(definition)
+        publication = self._publication(
+            definition,
+            code="FD03-INITIAL-PUBLICATION",
+            workspace=workspace,
+        )
+        response = self.client.get(self._publication_url(publication))
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data, self._publication_dto(publication))
+        self.assertEqual(response.data["initial_workspace_id"], str(workspace.pk))
+        self.assertEqual(
+            response.data["initial_workspace_definition_id"],
+            str(definition.pk),
+        )
+        self.assertEqual(
+            response.data["initial_workspace_definition_manifest_hash"],
+            definition.manifest_hash,
+        )
+
+    def test_fd03_successor_publication_result_has_exact_null_workspace_fields(self):
+        definition = self._definition(
+            code="FD03-SUCCESSOR-PUBLISHED",
+            version="2.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=True,
+        )
+        publication = self._publication(
+            definition,
+            code="FD03-SUCCESSOR-PUBLICATION",
+        )
+        response = self.client.get(self._publication_url(publication))
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data, self._publication_dto(publication))
+        self.assertIsNone(response.data["initial_workspace_id"])
+        self.assertIsNone(response.data["initial_workspace_definition_id"])
+        self.assertIsNone(
+            response.data["initial_workspace_definition_manifest_hash"]
+        )
+
+    def test_fd03_publication_result_scope_identity_and_get_only_boundary_are_indistinguishable(self):
+        definition = self._definition(
+            code="FD03-SCOPE-PUBLISHED",
+            version="1.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=True,
+        )
+        publication = self._publication(definition, code="FD03-SCOPE-PUBLICATION")
+
+        other_project = Project.objects.create(
+            id=uuid4(),
+            code="FD03-OTHER-PROJECT",
+            version="1.0.0",
+            name="FD03 inaccessible project",
+            primary_language_tag="ru",
+            primary_language_assignment="EXPLICIT",
+        )
+        other_manifest = copy.deepcopy(self.manifest)
+        other_manifest["project"].update(
+            id=str(other_project.pk),
+            code=other_project.code,
+            version=other_project.version,
+            name=other_project.name,
+        )
+        other_definition = self._definition(
+            code="FD03-OTHER-PUBLISHED",
+            version="1.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=True,
+            project=other_project,
+            manifest=other_manifest,
+        )
+        other_publication = self._publication(
+            other_definition,
+            code="FD03-OTHER-PUBLICATION",
+        )
+
+        unavailable_urls = (
+            f"/api/foundation/projects/{uuid4()}/publication-results/{uuid4()}/",
+            self._publication_url(other_publication),
+            (
+                f"/api/foundation/projects/{self.project.pk}/"
+                f"publication-results/{uuid4()}/"
+            ),
+            (
+                f"/api/foundation/projects/{self.project.pk}/"
+                f"publication-results/{other_publication.pk}/"
+            ),
+        )
+        unavailable_responses = [self.client.get(url) for url in unavailable_urls]
+        for response in unavailable_responses:
+            self.assertEqual(response.status_code, 404, response.data)
+            self.assertEqual(
+                response.data,
+                {"code": "STUDIO_RESOURCE_NOT_FOUND", "errors": ["Resource not found."]},
+            )
+        self.assertEqual(
+            {response.content for response in unavailable_responses},
+            {unavailable_responses[0].content},
+        )
+
+        self.client.force_authenticate(self.no_capability)
+        denied = self.client.get(self._publication_url(publication))
+        self.assertEqual(denied.status_code, 403, denied.data)
+        self.assertEqual(denied.data["code"], "STUDIO_CAPABILITY_DENIED")
+        self.client.force_authenticate(self.reader)
+
+        baseline = self._database_fingerprint()
+        for method in ("POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "CONNECT"):
+            with self.subTest(method=method):
+                response = self.client.generic(
+                    method,
+                    self._publication_url(publication),
+                    b'{"forbidden":true}',
+                    content_type="application/json",
+                )
+                self.assertEqual(response.status_code, 405)
+                self.assertEqual(response["Allow"], "GET")
+                self.assertEqual(response["Content-Length"], "0")
+                self.assertEqual(response.content, b"")
+                self.assertFalse(response.cookies)
+                self.assertEqual(self._database_fingerprint(), baseline)
+
+    def test_fd03_reads_are_repeat_stable_and_non_mutating(self):
+        definition = self._definition(
+            code="FD03-STABLE-PUBLISHED",
+            version="1.0.0",
+            status=PublicationStatus.PUBLISHED,
+            is_current=True,
+        )
+        publication = self._publication(definition, code="FD03-STABLE-PUBLICATION")
+        session = APIClient(enforce_csrf_checks=True)
+        self.assertTrue(session.login(username="fd03-reader", password="test-password"))
+        baseline = self._database_fingerprint()
+
+        first_definition = session.get(
+            f"/api/foundation/definitions/{definition.pk}/"
+        )
+        definition_baseline = self._database_fingerprint()
+        second_definition = session.get(
+            f"/api/foundation/definitions/{definition.pk}/"
+        )
+        cookies_after_definition = {
+            key: morsel.value for key, morsel in session.cookies.items()
+        }
+        first_publication = session.get(self._publication_url(publication))
+        second_publication = session.get(self._publication_url(publication))
+
+        self.assertEqual(first_definition.status_code, 200)
+        self.assertEqual(second_definition.status_code, 200)
+        self.assertEqual(first_definition.data, second_definition.data)
+        self.assertEqual(first_definition.content, second_definition.content)
+        self.assertEqual(first_publication.status_code, 200)
+        self.assertEqual(second_publication.status_code, 200)
+        self.assertEqual(first_publication.data, second_publication.data)
+        self.assertEqual(first_publication.content, second_publication.content)
+        self.assertEqual(baseline, definition_baseline)
+        self.assertEqual(definition_baseline, self._database_fingerprint())
+        self.assertFalse(first_publication.cookies)
+        self.assertFalse(second_publication.cookies)
+        self.assertEqual(
+            {key: morsel.value for key, morsel in session.cookies.items()},
+            cookies_after_definition,
+        )
+
+        password_hasher = PBKDF2PasswordHasher()
+        upgrade_eligible = password_hasher.encode(
+            "test-password",
+            password_hasher.salt(),
+            iterations=1,
+        )
+        self.assertTrue(password_hasher.must_update(upgrade_eligible))
+        get_user_model().objects.filter(pk=self.reader.pk).update(
+            password=upgrade_eligible
+        )
+        stored_password = get_user_model().objects.values_list(
+            "password", flat=True
+        ).get(pk=self.reader.pk)
+        self.assertEqual(stored_password, upgrade_eligible)
+        basic_baseline = self._database_fingerprint()
+        basic_authorization = "Basic " + base64.b64encode(
+            b"fd03-reader:test-password"
+        ).decode("ascii")
+
+        basic = APIClient(enforce_csrf_checks=True)
+        basic_response = basic.get(
+            self._publication_url(publication),
+            HTTP_AUTHORIZATION=basic_authorization,
+        )
+        self.assertEqual(basic_response.status_code, 200, basic_response.data)
+        self.assertEqual(basic_response.data, self._publication_dto(publication))
+        self.assertFalse(basic_response.cookies)
+        self.assertNotIn("Set-Cookie", basic_response.headers)
+        self.assertEqual(
+            get_user_model().objects.values_list("password", flat=True).get(
+                pk=self.reader.pk
+            ),
+            stored_password,
+        )
+        self.assertEqual(self._database_fingerprint(), basic_baseline)
+
+        invalid = APIClient(enforce_csrf_checks=True)
+        invalid_authorization = "Basic " + base64.b64encode(
+            b"fd03-reader:not-the-password"
+        ).decode("ascii")
+        invalid_response = invalid.get(
+            self._publication_url(publication),
+            HTTP_AUTHORIZATION=invalid_authorization,
+        )
+        self.assertEqual(invalid_response.status_code, 401, invalid_response.data)
+        self.assertEqual(
+            invalid_response.data,
+            {"detail": "Invalid username/password."},
+        )
+        self.assertFalse(invalid_response.cookies)
+        self.assertNotIn("Set-Cookie", invalid_response.headers)
+        self.assertEqual(
+            get_user_model().objects.values_list("password", flat=True).get(
+                pk=self.reader.pk
+            ),
+            stored_password,
+        )
+        self.assertEqual(self._database_fingerprint(), basic_baseline)

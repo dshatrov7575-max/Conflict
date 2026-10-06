@@ -1,0 +1,20 @@
+{
+  "review_id": "AI_EXCEPTION_REVIEW_V1",
+  "state": "WAITING_FOR_COMPARISON",
+  "entries": [],
+  "empty_entries_mean": "NO_COMPARISON_YET_NOT_ZERO_CANDIDATES",
+  "required_fields_after_population": [
+    "unit_id",
+    "independent_verifier",
+    "verified_exact_evidence",
+    "result",
+    "reason",
+    "remaining_unknowns"
+  ],
+  "allowed_result": [
+    "CONFIRMED_EVIDENCE",
+    "HUMAN_EXCEPTION_QUEUE",
+    "STILL_OPEN"
+  ],
+  "rule": "No promotion of a 2/3 candidate by vote or confidence; separate verification of the exact evidence and residual objection required. Discovery of material disagreement/NEED_HUMAN creates a supplemental HUMAN_EXCEPTION_QUEUE record and a new human packet; preserve the primary comparison."
+}

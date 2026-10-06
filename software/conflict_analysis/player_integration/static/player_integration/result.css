@@ -1,0 +1,23 @@
+:root { color-scheme: light; font: 16px/1.55 system-ui, sans-serif; color: #192d3b; background: #f4f6f8; }
+body { margin: 0; }
+main { max-width: 1180px; margin: auto; padding: 2rem; }
+nav { margin-bottom: 2rem; }
+a { color: #155778; }
+h1, h2, h3 { line-height: 1.25; }
+aside, details, form, dl { padding: 1rem; background: white; border: 1px solid #c7d2dc; border-radius: 6px; margin: 1rem 0; }
+dt { font-weight: 600; }
+dd { margin: 0 0 .6rem; overflow-wrap: anywhere; }
+table { border-collapse: collapse; width: 100%; background: white; }
+th, td { text-align: left; border-bottom: 1px solid #c7d2dc; padding: .6rem; }
+caption { text-align: left; padding: .6rem; }
+th { vertical-align: top; }
+code { overflow-wrap: anywhere; }
+.table-scroll { overflow-x: auto; }
+input, select, textarea, button { font: inherit; box-sizing: border-box; }
+input, select { width: 100%; min-width: 9rem; }
+button { background: #155778; color: white; border: 0; border-radius: 4px; padding: .7rem 1rem; margin-top: 1rem; cursor: pointer; }
+textarea { width: 100%; font-family: monospace; }
+summary { cursor: pointer; font-weight: 600; overflow-wrap: anywhere; }
+.errorlist { color: #962b25; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+@media (max-width: 600px) { main { padding: 1rem; } }

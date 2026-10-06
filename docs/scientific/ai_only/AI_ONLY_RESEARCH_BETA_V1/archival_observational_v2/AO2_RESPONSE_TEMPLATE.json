@@ -1,0 +1,244 @@
+{
+  "route_id": "AI_ARCHIVAL_OBSERVATIONAL_V2",
+  "rubric_version": "2.0.0-draft1",
+  "coder_role": null,
+  "actual_model_label": null,
+  "run_id": null,
+  "completed_at_utc": null,
+  "attestation": {
+    "other_coder_output_seen": null,
+    "prior_ao2_outputs_seen": null,
+    "outcome_used_as_evidence": null,
+    "external_sources_used": null
+  },
+  "entries": [
+    {
+      "item_id": "AO2-01",
+      "factor": "POS_AO2",
+      "status": null,
+      "value": null,
+      "admission_checks": {
+        "A1": null,
+        "A2": null,
+        "A3": null,
+        "A4": null,
+        "A5": null,
+        "A6": null,
+        "A7": null,
+        "A8": null
+      },
+      "evidence_ids": [],
+      "rationale": null,
+      "confidence": null
+    },
+    {
+      "item_id": "AO2-01",
+      "factor": "KVS_AO2",
+      "status": null,
+      "value": null,
+      "admission_checks": {
+        "A1": null,
+        "A2": null,
+        "A3": null,
+        "A4": null,
+        "A5": null,
+        "A6": null,
+        "A7": null,
+        "A8": null
+      },
+      "evidence_ids": [],
+      "rationale": null,
+      "confidence": null
+    },
+    {
+      "item_id": "AO2-02",
+      "factor": "POS_AO2",
+      "status": null,
+      "value": null,
+      "admission_checks": {
+        "A1": null,
+        "A2": null,
+        "A3": null,
+        "A4": null,
+        "A5": null,
+        "A6": null,
+        "A7": null,
+        "A8": null
+      },
+      "evidence_ids": [],
+      "rationale": null,
+      "confidence": null
+    },
+    {
+      "item_id": "AO2-02",
+      "factor": "KVS_AO2",
+      "status": null,
+      "value": null,
+      "admission_checks": {
+        "A1": null,
+        "A2": null,
+        "A3": null,
+        "A4": null,
+        "A5": null,
+        "A6": null,
+        "A7": null,
+        "A8": null
+      },
+      "evidence_ids": [],
+      "rationale": null,
+      "confidence": null
+    },
+    {
+      "item_id": "AO2-03",
+      "factor": "POS_AO2",
+      "status": null,
+      "value": null,
+      "admission_checks": {
+        "A1": null,
+        "A2": null,
+        "A3": null,
+        "A4": null,
+        "A5": null,
+        "A6": null,
+        "A7": null,
+        "A8": null
+      },
+      "evidence_ids": [],
+      "rationale": null,
+      "confidence": null
+    },
+    {
+      "item_id": "AO2-03",
+      "factor": "KVS_AO2",
+      "status": null,
+      "value": null,
+      "admission_checks": {
+        "A1": null,
+        "A2": null,
+        "A3": null,
+        "A4": null,
+        "A5": null,
+        "A6": null,
+        "A7": null,
+        "A8": null
+      },
+      "evidence_ids": [],
+      "rationale": null,
+      "confidence": null
+    },
+    {
+      "item_id": "AO2-04",
+      "factor": "POS_AO2",
+      "status": null,
+      "value": null,
+      "admission_checks": {
+        "A1": null,
+        "A2": null,
+        "A3": null,
+        "A4": null,
+        "A5": null,
+        "A6": null,
+        "A7": null,
+        "A8": null
+      },
+      "evidence_ids": [],
+      "rationale": null,
+      "confidence": null
+    },
+    {
+      "item_id": "AO2-04",
+      "factor": "KVS_AO2",
+      "status": null,
+      "value": null,
+      "admission_checks": {
+        "A1": null,
+        "A2": null,
+        "A3": null,
+        "A4": null,
+        "A5": null,
+        "A6": null,
+        "A7": null,
+        "A8": null
+      },
+      "evidence_ids": [],
+      "rationale": null,
+      "confidence": null
+    },
+    {
+      "item_id": "AO2-05",
+      "factor": "POS_AO2",
+      "status": null,
+      "value": null,
+      "admission_checks": {
+        "A1": null,
+        "A2": null,
+        "A3": null,
+        "A4": null,
+        "A5": null,
+        "A6": null,
+        "A7": null,
+        "A8": null
+      },
+      "evidence_ids": [],
+      "rationale": null,
+      "confidence": null
+    },
+    {
+      "item_id": "AO2-05",
+      "factor": "KVS_AO2",
+      "status": null,
+      "value": null,
+      "admission_checks": {
+        "A1": null,
+        "A2": null,
+        "A3": null,
+        "A4": null,
+        "A5": null,
+        "A6": null,
+        "A7": null,
+        "A8": null
+      },
+      "evidence_ids": [],
+      "rationale": null,
+      "confidence": null
+    },
+    {
+      "item_id": "AO2-06",
+      "factor": "POS_AO2",
+      "status": null,
+      "value": null,
+      "admission_checks": {
+        "A1": null,
+        "A2": null,
+        "A3": null,
+        "A4": null,
+        "A5": null,
+        "A6": null,
+        "A7": null,
+        "A8": null
+      },
+      "evidence_ids": [],
+      "rationale": null,
+      "confidence": null
+    },
+    {
+      "item_id": "AO2-06",
+      "factor": "KVS_AO2",
+      "status": null,
+      "value": null,
+      "admission_checks": {
+        "A1": null,
+        "A2": null,
+        "A3": null,
+        "A4": null,
+        "A5": null,
+        "A6": null,
+        "A7": null,
+        "A8": null
+      },
+      "evidence_ids": [],
+      "rationale": null,
+      "confidence": null
+    }
+  ]
+}

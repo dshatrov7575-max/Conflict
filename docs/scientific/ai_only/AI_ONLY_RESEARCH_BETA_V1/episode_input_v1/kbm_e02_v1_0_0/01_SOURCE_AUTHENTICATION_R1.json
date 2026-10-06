@@ -1,0 +1,27 @@
+{
+  "source_authentication_id": "KBM_E02_V100_SOURCE_AUTH_R1",
+  "status": "P1_ARCHIVE_REPLAY_AUTHENTICATED",
+  "source_id": "KBM_NOMAD_PRESS_RESPONSE_20110527",
+  "title": "Решением районного суда забастовка работников АО Каражанбасмунай, ТОО АргымакТрансСервис и ТОО ТулпарМунайСервис признана незаконной",
+  "publisher": "Nomad",
+  "page_publication_date": "2011-05-27",
+  "reported_dateline_date": "2011-05-26",
+  "actor_attribution": "The page explicitly states that the information is from the press service of AO KBM.",
+  "original_url": "http://nomad.su/?a=11-201105270010",
+  "wayback": {
+    "timestamp": "20110528153227",
+    "capture_utc": "2011-05-28T15:32:27Z",
+    "archive_url": "https://web.archive.org/web/20110528153227id_/http://www.nomad.su/?a=11-201105270010",
+    "availability_api_status": 200,
+    "payload_bytes": 30312,
+    "payload_sha256": "4280ad5774d94cae7efc788943301852550080c69c28a02fb99ddbadb4b9f06a",
+    "retrieved_and_rehashed_on": "2026-09-30"
+  },
+  "content_checks": {
+    "contains_company_wage_increase_range_59_5_to_90_1": true,
+    "contains_minimum_tariff_70038_tenge": true,
+    "contains_negotiation_table_phrase": true
+  },
+  "scope": "Content-level company source statement for KBM only. It does not authenticate the truth of the company's fairness claims, does not cover ATS/TMS company positions, and is not a same-date worker/company snapshot.",
+  "factor_values": null
+}

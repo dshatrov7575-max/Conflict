@@ -1,0 +1,1 @@
+"""Conflict Analysis Django project."""

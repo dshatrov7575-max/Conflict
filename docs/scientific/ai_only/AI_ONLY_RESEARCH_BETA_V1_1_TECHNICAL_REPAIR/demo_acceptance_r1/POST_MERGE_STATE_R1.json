@@ -1,0 +1,27 @@
+{
+  "schema": "CONFLICT_ANALYSIS_POST_MERGE_STATE_R1",
+  "created_at_msk": "2026-10-03T00:03:30.904166+03:00",
+  "project": "Conflict Analysis / MVP7",
+  "integration_branch": "review/ai-only-research-beta-v1",
+  "integrated_head": "d72e03b1be0748df0dc461b5aa72a7fe21872474",
+  "scientific_merge_commit": "18050ed8402d98b94ccc5b2fc4f5d0be7e7cc67a",
+  "accepted_product_ui_commit": "eb22b479946b7f1a7d7188e0fd1c7c2a01c69f06",
+  "main_head_unchanged": "21907f6519c99438a1b78e93884132334f0bbd4b",
+  "scientific_state": "AI_ONLY_RESEARCH_BETA_RC_PASS_WITH_VISIBLE_INCOMPLETENESS",
+  "independent_review_state": "PASS_WITH_P1",
+  "owner_visual_acceptance": "ACCEPTED_FOR_LIMITED_DEMO",
+  "merge_state": "MERGED_WITHOUT_PUBLICATION",
+  "publication_state": "NOT_EXECUTED",
+  "release_state": "NOT_EXECUTED",
+  "deployment_state": "NOT_EXECUTED",
+  "rollback_checkpoint": "checkpoint/conflict-analysis/20261002T222521MSK/base-pre-merge",
+  "rollback_verified_tag": "checkpoint-conflict-analysis-20261002T222521MSK-postmerge-verified",
+  "mandatory_boundaries": {
+    "unknown_not_equal_zero": true,
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "human_validation_reliability": "NOT_PERFORMED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED",
+    "deepseek_identity": "DeepSeek Web — Глубокое мышление; backend model not UI-disclosed"
+  }
+}

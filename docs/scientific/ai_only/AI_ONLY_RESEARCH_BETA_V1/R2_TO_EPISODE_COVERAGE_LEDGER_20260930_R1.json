@@ -1,0 +1,130 @@
+{
+  "ledger_id": "R2_TO_EPISODE_COVERAGE_LEDGER_20260930_R1",
+  "status": "FROZEN_BEFORE_NEW_PRIMARY_RESULTS",
+  "source_route": "AO2_SOURCE_STATEMENT_R2_20260928",
+  "purpose": "Account for all six R2 source-statement units and document why each is or is not promoted to a prospectively frozen replication lane.",
+  "units": [
+    {
+      "unit_id": "AO2S-C1-01",
+      "actor_id": "AOV2_OMG_STRIKERS",
+      "element_code": "E02",
+      "source_report_date": "2011-08-11",
+      "primary_evidence_id": "C03-CACI-20110817",
+      "r2_ai1": {
+        "POS": "UNKNOWN",
+        "KVS": "UNKNOWN"
+      },
+      "r2_ai2": {
+        "POS": "UNKNOWN",
+        "KVS": "UNKNOWN"
+      },
+      "disposition": "NOT_LAUNCHED",
+      "reason": "Primary source content/historical provenance unresolved; no cross-date substitution allowed.",
+      "numeric_repair": "FORBIDDEN"
+    },
+    {
+      "unit_id": "AO2S-C1-02",
+      "actor_id": "AOV2_OMG_STRIKERS",
+      "element_code": "E05",
+      "source_report_date": "2011-08-11",
+      "primary_evidence_id": "C03-CACI-20110817",
+      "r2_ai1": {
+        "POS": "UNKNOWN",
+        "KVS": "UNKNOWN"
+      },
+      "r2_ai2": {
+        "POS": "UNKNOWN",
+        "KVS": "UNKNOWN"
+      },
+      "disposition": "NOT_LAUNCHED",
+      "reason": "Primary source content/historical provenance unresolved; no May-source substitution into August.",
+      "numeric_repair": "FORBIDDEN"
+    },
+    {
+      "unit_id": "AO2S-C1-03",
+      "actor_id": "AOV2_KBM_STRIKERS",
+      "element_code": "E02",
+      "source_report_date": "2011-05-17",
+      "primary_evidence_id": "D01-FPAY",
+      "r2_ai1": {
+        "POS": -5,
+        "KVS": 5
+      },
+      "r2_ai2": {
+        "POS": -5,
+        "KVS": 5
+      },
+      "disposition": "PROMOTED_TO_FROZEN_LANE",
+      "route_id": "AI_ONLY_DYAD_KBM_E02_V100",
+      "note": "Worker-side values may be inherited only under exact frozen identity; company-side is freshly coded."
+    },
+    {
+      "unit_id": "AO2S-C1-04",
+      "actor_id": "AOV2_KBM_STRIKERS",
+      "element_code": "E05",
+      "source_report_date": "2011-05-27",
+      "primary_evidence_id": "D04-FUNION",
+      "r2_ai1": {
+        "POS": -5,
+        "KVS": 5
+      },
+      "r2_ai2": {
+        "POS": -5,
+        "KVS": 5
+      },
+      "disposition": "PROMOTED_TO_FROZEN_LANE",
+      "route_id": "AI_ONLY_PAIR_KBM_E05_V100",
+      "note": "Worker-side values may be inherited only under exact frozen identity; company-side is freshly coded."
+    },
+    {
+      "unit_id": "AO2S-C1-05",
+      "actor_id": "AOV2_DISMISSED_KMG_EP_WORKERS_D25",
+      "element_code": "E02",
+      "source_report_date": "2011-10-13",
+      "primary_evidence_id": "D25-FREINSTATE",
+      "r2_ai1": {
+        "POS": "UNKNOWN",
+        "KVS": 5
+      },
+      "r2_ai2": {
+        "POS": -5,
+        "KVS": 5
+      },
+      "disposition": "PROMOTED_TO_FRESH_REPLICATION_WITHOUT_INHERITANCE",
+      "route_id": "AI_ONLY_DYAD_D25_E02_V100",
+      "note": "Prior disagreement is hidden from new primary coders and cannot adjudicate the new lane."
+    },
+    {
+      "unit_id": "AO2S-C1-06",
+      "actor_id": "AOV2_KMG_EP_MANAGEMENT",
+      "element_code": "E02",
+      "source_report_date": "2011-10-13",
+      "primary_evidence_id": "D25-FFAIR",
+      "r2_ai1": {
+        "POS": 5,
+        "KVS": "UNKNOWN"
+      },
+      "r2_ai2": {
+        "POS": 5,
+        "KVS": "UNKNOWN"
+      },
+      "disposition": "PROMOTED_TO_FRESH_REPLICATION_WITHOUT_INHERITANCE",
+      "route_id": "AI_ONLY_DYAD_D25_E02_V100",
+      "note": "Shared UNKNOWN company KVS is not replaced; new lane tests reproducibility from frozen source/rubric."
+    }
+  ],
+  "accounting": {
+    "total_units": 6,
+    "not_launched_unresolved_provenance": 2,
+    "promoted_with_exact_identity_worker_inheritance": 2,
+    "promoted_to_fresh_replication_without_factor_inheritance": 2,
+    "omitted_numeric_units": 0
+  },
+  "claims": {
+    "random_sample": false,
+    "representative_sample": false,
+    "no_hidden_numeric_r2_units_omitted": true,
+    "human_validation": "NOT_PERFORMED",
+    "historical_area_UNO": "NOT_COMPUTED"
+  }
+}

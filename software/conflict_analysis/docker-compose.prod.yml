@@ -1,0 +1,104 @@
+x-app-environment: &app-environment
+  DJANGO_SETTINGS_MODULE: conflict_analysis.production_settings
+  DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?DJANGO_SECRET_KEY is required}
+  DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?DJANGO_ALLOWED_HOSTS is required}
+  DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-}
+  FD08_PROJECTION_LEASE_SECRET: ${FD08_PROJECTION_LEASE_SECRET:?FD08_PROJECTION_LEASE_SECRET is required}
+  UPSTREAM_AUTH_SHARED_SECRET: ${UPSTREAM_AUTH_SHARED_SECRET:?UPSTREAM_AUTH_SHARED_SECRET is required}
+  POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+  POSTGRES_HOST: db
+  POSTGRES_PORT: "5432"
+  POSTGRES_CONN_MAX_AGE: ${POSTGRES_CONN_MAX_AGE:-60}
+  USE_SQLITE: "false"
+  DJANGO_DEBUG: "false"
+
+x-app: &app
+  build:
+    context: .
+    target: production
+  image: conflict-analysis:${CONFLICT_IMAGE_TAG:-local}
+  platform: linux/amd64
+  environment:
+    <<: *app-environment
+    POSTGRES_USER: ${POSTGRES_RUNTIME_USER:?POSTGRES_RUNTIME_USER is required}
+    POSTGRES_PASSWORD: ${POSTGRES_RUNTIME_PASSWORD:?POSTGRES_RUNTIME_PASSWORD is required}
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=64m
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+
+services:
+  db:
+    image: postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    platform: linux/amd64
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_MIGRATION_USER:?POSTGRES_MIGRATION_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_MIGRATION_PASSWORD:?POSTGRES_MIGRATION_PASSWORD is required}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"'
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - postgres_production_data:/var/lib/postgresql
+    restart: unless-stopped
+
+  migrate:
+    <<: *app
+    command: ["python", "-m", "django", "migrate", "--noinput"]
+    environment:
+      <<: *app-environment
+      POSTGRES_USER: ${POSTGRES_MIGRATION_USER:?POSTGRES_MIGRATION_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_MIGRATION_PASSWORD:?POSTGRES_MIGRATION_PASSWORD is required}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  db-runtime-role:
+    <<: *app
+    command: ["python", "-m", "django", "provision_runtime_db_role"]
+    environment:
+      <<: *app-environment
+      POSTGRES_USER: ${POSTGRES_MIGRATION_USER:?POSTGRES_MIGRATION_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_MIGRATION_PASSWORD:?POSTGRES_MIGRATION_PASSWORD is required}
+      POSTGRES_RUNTIME_USER: ${POSTGRES_RUNTIME_USER:?POSTGRES_RUNTIME_USER is required}
+      POSTGRES_RUNTIME_PASSWORD: ${POSTGRES_RUNTIME_PASSWORD:?POSTGRES_RUNTIME_PASSWORD is required}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  web:
+    <<: *app
+    command:
+      - gunicorn
+      - conflict_analysis.wsgi:application
+      - --bind=0.0.0.0:8000
+      - --workers=${GUNICORN_WORKERS:-3}
+      - --timeout=${GUNICORN_TIMEOUT:-120}
+      - --access-logfile=-
+      - --error-logfile=-
+      - --forwarded-allow-ips=127.0.0.1,::1
+    depends_on:
+      db-runtime-role:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${APP_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-m", "conflict_analysis.production_health_probe"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  postgres_production_data:

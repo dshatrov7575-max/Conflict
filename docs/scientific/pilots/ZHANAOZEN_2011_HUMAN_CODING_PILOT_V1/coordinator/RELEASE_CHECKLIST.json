@@ -1,0 +1,57 @@
+{
+  "pilot_id": "ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1",
+  "state": "HOLD_DO_NOT_DISTRIBUTE",
+  "human_coding": "NOT_STARTED",
+  "authorizes_human_start": false,
+  "adjudication_started": false,
+  "input_admission": {
+    "G1_model_mapping_and_time_scope": "NOT_ESTABLISHED",
+    "G2_original_context_locators_translation": "NOT_ESTABLISHED",
+    "G3_pre_cutoff_edition_availability": "NOT_ESTABLISHED",
+    "G4_actor_representation": "NOT_ESTABLISHED_BY_PREPARATION",
+    "G6_counterevidence_completeness": "NOT_ESTABLISHED_BY_LINK_SUBSET"
+  },
+  "future_release_requirements": [
+    {
+      "requirement": "Input admission documented without relaxing rubric; changed inputs require new frozen version before any answers.",
+      "verified_by": null,
+      "verified_at_utc": null,
+      "evidence_reference": null
+    },
+    {
+      "requirement": "Two distinct eligible human coders screened for no outcome/key/result exposure and language competence.",
+      "verified_by": null,
+      "verified_at_utc": null,
+      "evidence_reference": null
+    },
+    {
+      "requirement": "Separate own-packet-only delivery and private submission channels; no repository access during primary coding.",
+      "verified_by": null,
+      "verified_at_utc": null,
+      "evidence_reference": null
+    },
+    {
+      "requirement": "All participant attestations signed; coordinator access control verified.",
+      "verified_by": null,
+      "verified_at_utc": null,
+      "evidence_reference": null
+    },
+    {
+      "requirement": "Explicit subsequent human-start authorization; current task ends before people begin.",
+      "verified_by": null,
+      "verified_at_utc": null,
+      "evidence_reference": null
+    }
+  ],
+  "H1_person": null,
+  "H2_person": null,
+  "adjudicator_person": null,
+  "distribution_time": null,
+  "start_time": null,
+  "primary_submission_hashes": {
+    "H1": null,
+    "H2": null
+  },
+  "primary_comparison_hash": null,
+  "freeze_preservation": "No edits in this version; amendments/supplements require new version/freeze before start."
+}

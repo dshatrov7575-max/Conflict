@@ -1,0 +1,101 @@
+{
+  "artifact_kind": "EXACT_EDITION_TRANCHE_FREEZE_MANIFEST",
+  "assessor_type": "AI_PREPARATION",
+  "schema_version": "1.0.0",
+  "base_commit": "ae5770467f93efdf4a3bf988b4339e1ef4577998",
+  "base_tree": "19ccc23a96ccbe2cd3cd1422879aac9059e37cf2",
+  "inputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/RECOVERY_PLAN.json",
+      "sha256": "348d6f1c72a9f8b0c016f2c5db4be463a5d99e6b6ee91f781045f3c853a97a19",
+      "git_blob_sha1": "23717a9e193a1e398116fbd46a1d1c6e1d984525",
+      "bytes": 224003
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1/ATTEMPT_LEDGER_TEMPLATE.json",
+      "sha256": "7e1bd48d6dc5c2e56cd337813153bc1aa3321266aba9c97d4fdc102b315f40a9",
+      "git_blob_sha1": "20a8c2fe520032c902920494f262d5c7231e39d0",
+      "bytes": 5533
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/EXECUTED_ATTEMPT_LEDGER.json",
+      "sha256": "1bbabb69ffa896f9d7822aed9bf37367a6a38ec169114a4816c88e3babe6089f",
+      "git_blob_sha1": "6829a98f0aa519e1f50c0b6374874632ffc3ca00",
+      "bytes": 178996
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/EXACT_EDITION_DECISIONS.json",
+      "sha256": "d6eafcc34b83b0e6176f52bf7cf117259329943dd08eda2ff89ca38510702bcd",
+      "git_blob_sha1": "fd9020f5817ea33e08d7306d1f6d84a147c039a6",
+      "bytes": 12900
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/VALIDATION_RECEIPT.json",
+      "sha256": "eabfe5255806131f86f50f2bb4a974e059c1c0af43e80ce1d4933c5b2d2fd25a",
+      "git_blob_sha1": "350d1cae2295e3e41ad194e2c443ab4e1aadd652",
+      "bytes": 2035
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/FREEZE_MANIFEST.json",
+      "sha256": "090838a156232762a5c5bb327617c6db5f4feb2222b5acb7b607fb8d95264a92",
+      "git_blob_sha1": "d3e087b8af19fed53430bfb0068e421d24479829",
+      "bytes": 4133
+    },
+    {
+      "path": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json",
+      "sha256": "24638c284ca258f0aec9fab5166260471b6b4f662f5747de0c2da5f3e17aa4da",
+      "git_blob_sha1": "7324bcdb008164939171c5b1ae6ac112d09212a6",
+      "bytes": 82780
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/EVIDENCE_TRACE_INDEX.csv",
+      "sha256": "9d3757c9318696a606f942f374a363bd9c904605cc802bab81e4206097fac679",
+      "git_blob_sha1": "b1874033d136a75ea567d3c340a2d20b0ad0363f",
+      "bytes": 53666
+    }
+  ],
+  "outputs": [
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1/EXECUTED_ATTEMPT_LEDGER.json",
+      "sha256": "cdd333a280be39fdc5f772610bd83e9df48b6c55264db3483f3e2a9b16a378f8",
+      "git_blob_sha1": "b7b78112d731350fd982780515a0fcacdc16b37a",
+      "bytes": 108319
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1/EXACT_EDITION_DECISIONS.json",
+      "sha256": "112f4f052676489fea8e7df996e6144ff1298ccaffe332e011108dea6cdb34d2",
+      "git_blob_sha1": "b84dcaa4167b98020b2fddeac44ea16ca38a8f27",
+      "bytes": 18606
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1/RECOVERY_TRANCHE_SUMMARY.md",
+      "sha256": "3a385bac38d8cb9aea266a7c1a513e3a34fa7b20ca6e9caebdf3b9f8b2a641a3",
+      "git_blob_sha1": "704859aa370bb0af446433227e3354e3bd5f2ae4",
+      "bytes": 1283
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1/VALIDATION_RECEIPT.json",
+      "sha256": "b4ce54c85b841f85e609d25d318b73b15818ae03bf31946a21f98e20f6929cdc",
+      "git_blob_sha1": "2a2505260232b2cf31477f093103137bd6f6f0ef",
+      "bytes": 1912
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1/validate_exact_edition_tranche.py",
+      "sha256": "82569dc65fb58d72a2f3b886273bcf73a58b5f773ef8519e0e56da3bb579e0a9",
+      "git_blob_sha1": "d8f754fc2f7b6154ce96231406f2193d6bb3347d",
+      "bytes": 18392
+    }
+  ],
+  "scope": {
+    "allowed_directory": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1/",
+    "file_count": 6,
+    "existing_files_modified": false,
+    "network_query_count": 22,
+    "document_version_count": 11,
+    "fragment_route_live_budget_consumed": 0,
+    "human_coding": "NOT_PERFORMED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "publication_release_deployment": "NOT_EXECUTED"
+  },
+  "self_binding": "This manifest is bound by the delivery commit and external receipt; no recursive self-hash is embedded."
+}

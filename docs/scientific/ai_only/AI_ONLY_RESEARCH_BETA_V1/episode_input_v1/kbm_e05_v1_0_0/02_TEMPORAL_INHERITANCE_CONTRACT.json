@@ -1,0 +1,49 @@
+{
+  "contract_id": "KBM_E05_V100_TEMPORAL_INHERITANCE",
+  "status": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+  "object_label": "AI_ONLY_NON_SIMULTANEOUS_KBM_E05_COMPANY_STANCE_TO_WORKER_DEMAND_PAIR",
+  "temporal_object": {
+    "t0": {
+      "source_report_date": "2011-05-14",
+      "actor_id": "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514",
+      "source_id": "AKTAU_BUSINESS_KBM_RELEASE_20110514",
+      "kind": "COMPANY_REPRESENTATION_NEGOTIATION_STANCE_SOURCE_STATEMENT"
+    },
+    "t1": {
+      "source_report_date": "2011-05-27",
+      "actor_id": "AOV2_KBM_STRIKERS",
+      "source_id": "D04-FUNION",
+      "kind": "WORKER_REPRESENTATION_DEMAND_SOURCE_STATEMENT"
+    },
+    "simultaneous_snapshot": false,
+    "carry_forward": "NONE",
+    "interpretation": "Two dated source statements in the same May 2011 representation conflict; not a state estimate for any single date."
+  },
+  "inherited_worker_record": {
+    "source_route": "AO2_SOURCE_STATEMENT_R2_20260928",
+    "unit_id": "AO2S-C1-04",
+    "actor_id": "AOV2_KBM_STRIKERS",
+    "source_id": "D04-FUNION",
+    "source_report_date": "2011-05-27",
+    "ptn_id": "728c8406-ba99-5787-9557-933b5670be7c",
+    "reference_sha256": "f689f671787c35619a3a32c6079908fb8ac5436a30cd832355b0238fe44f1deb",
+    "POS_AO2": -5,
+    "KVS_AO2": 5,
+    "status": "INHERITED_TWO_PRIMARY_NUMERIC_AGREEMENT",
+    "visible_to_company_primary_coders": false
+  },
+  "company_release_gate": {
+    "required": "Both new independent company coders must agree on NUMERIC status, value and C1-C8 for both company factors.",
+    "coordinator_substitution": "FORBIDDEN",
+    "targeted_content_review_rounds": 0,
+    "if_any_unknown_or_disputed": "HOLD_FACTOR_INCOMPLETE",
+    "if_any_mismatch": "HOLD_DISAGREEMENT",
+    "if_both_numeric_consensus": "ELIGIBLE_FOR_READ_ONLY_PAIR_SCENARIO_REPLAY"
+  },
+  "claims": {
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  }
+}

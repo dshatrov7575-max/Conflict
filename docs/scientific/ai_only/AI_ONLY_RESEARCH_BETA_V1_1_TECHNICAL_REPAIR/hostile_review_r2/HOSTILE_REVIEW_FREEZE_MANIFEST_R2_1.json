@@ -1,0 +1,45 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_FREEZE_MANIFEST_R2_1",
+  "frozen_at_date": "2026-10-01",
+  "state": "FROZEN_BEFORE_REVIEWER_D_OUTPUT",
+  "supersedes_model_binding_only": "AI_ONLY_RESEARCH_BETA_V1_1_HOSTILE_REVIEW_FREEZE_MANIFEST_R2",
+  "target": {
+    "path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2/EXPANDED_REVIEW_TARGET_MANIFEST_R2.json",
+    "git_blob": "4b27f7eb0a393de53dde4ff737e9f2a606b16611",
+    "unchanged": true
+  },
+  "reviewer_c": {
+    "provider": "Qwen",
+    "exact_ui_model": "Qwen 3.8-Max",
+    "state": "UNCHANGED_ALREADY_FROZEN"
+  },
+  "reviewer_d": {
+    "role": "V1_1_HOSTILE_REVIEWER_D_R2",
+    "service": "DeepSeek Web",
+    "ui_provider_identity": "DeepSeek",
+    "ui_reasoning_mode": "Глубокое мышление",
+    "backend_model_identity": "NOT_UI_DISCLOSED",
+    "smart_search": "OFF",
+    "binding_amendment_path": "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1_1_TECHNICAL_REPAIR/hostile_review_r2/DEEPSEEK_REVIEWER_D_BINDING_AMENDMENT_R2_1.md",
+    "binding_amendment_blob": "14e1ae60630686c33322480f07b6bf746421d1f5",
+    "dispatch_state": "READY",
+    "substantive_attempt_limit": 1,
+    "output_filename": "V1_1_HOSTILE_REVIEW_D_R2_COMPLETED.json"
+  },
+  "isolation": {
+    "reviewer_d_must_not_see_reviewer_c_output": true,
+    "reviewer_d_must_not_see_r1_hostile_reviews": true,
+    "external_search": false,
+    "known_outcome": false,
+    "coordinator_adjudication": false
+  },
+  "forbidden": [
+    "INVENT_BACKEND_MODEL_LABEL",
+    "ENABLE_SMART_SEARCH",
+    "SHOW_REVIEWER_C_OUTPUT",
+    "SHOW_R1_HOSTILE_REVIEW_OUTPUTS",
+    "RERUN_UNTIL_FAVORABLE",
+    "MODIFY_PRIMARY_OUTPUTS",
+    "AUTO_MERGE"
+  ]
+}

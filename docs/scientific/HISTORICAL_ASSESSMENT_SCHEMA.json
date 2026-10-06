@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Conflict Analysis MVP7 HistoricalAssessment 1.0.0",
+  "description": "Manual qualitative research records only. STRUCTURE_ONLY forbids assessment content. No numerical input, scoring, calculation or validation conclusion. Cross-record identities and evidence resolution require separate checks.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "document_kind", "assessments"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "document_kind": {"enum": ["STRUCTURE_ONLY", "HISTORICAL_ASSESSMENT"]},
+    "assessments": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/HistoricalAssessment"}}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"document_kind": {"const": "STRUCTURE_ONLY"}}},
+      "then": {"properties": {"assessments": {"items": {"properties": {
+        "assessment_id": {"type": "null"},
+        "evidence_references": {"maxItems": 0},
+        "observed_indicator": {"type": "null"},
+        "assessment_value": {"type": "null"},
+        "confidence": {"const": "UNKNOWN"},
+        "rationale": {"type": "null"},
+        "assessor_type": {"type": "null"},
+        "status": {"const": "UNKNOWN"}
+      }}}}},
+      "else": {"properties": {"assessments": {"items": {"properties": {
+        "assessment_id": {"$ref": "#/$defs/text"}
+      }}}}}
+    }
+  ],
+  "$defs": {
+    "text": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "nullable_text": {"anyOf": [{"$ref": "#/$defs/text"}, {"type": "null"}]},
+    "factor_mapping_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "sha256", "json_pointer", "mapping_id"],
+      "properties": {
+        "reference": {"$ref": "#/$defs/text"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "json_pointer": {"type": "string", "format": "json-pointer", "pattern": "^(/([^~/]|~[01])*)+$"},
+        "mapping_id": {"$ref": "#/$defs/text"}
+      }
+    },
+    "HistoricalAssessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assessment_id", "case_id", "factor_id", "factor_mapping_reference", "evidence_references", "observed_indicator", "assessment_value", "confidence", "rationale", "assessor_type", "status"],
+      "properties": {
+        "assessment_id": {"$ref": "#/$defs/nullable_text"},
+        "case_id": {"$ref": "#/$defs/text"},
+        "factor_id": {"enum": ["POS", "KVS", "RGU", "KVPTN", null]},
+        "factor_mapping_reference": {"anyOf": [{"$ref": "#/$defs/factor_mapping_reference"}, {"type": "null"}]},
+        "evidence_references": {
+          "description": "Existing evidence_id values in the same case and episode as the pinned factor mapping; each must also occur in that mapping's evidence_reference. Empty means no evidence selected, not absence of the factor.",
+          "type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/text"}
+        },
+        "observed_indicator": {"$ref": "#/$defs/nullable_text"},
+        "assessment_value": {
+          "description": "Qualitative interpretation or null; never a factor score, numerical weight, country rating, prediction or calculation input. A number encoded as text is also prohibited by the model rules.",
+          "$ref": "#/$defs/nullable_text"
+        },
+        "confidence": {"enum": ["UNKNOWN", "LOW", "MEDIUM", "HIGH"]},
+        "rationale": {"$ref": "#/$defs/nullable_text"},
+        "assessor_type": {"enum": ["HUMAN", null]},
+        "status": {"enum": ["CONFIRMED", "PARTIAL", "DISPUTED", "UNKNOWN"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "UNKNOWN"}}},
+          "then": {"properties": {
+            "assessment_value": {"type": "null"},
+            "confidence": {"const": "UNKNOWN"}
+          }},
+          "else": {"properties": {
+            "assessment_id": {"$ref": "#/$defs/text"},
+            "factor_id": {"enum": ["POS", "KVS", "RGU", "KVPTN"]},
+            "factor_mapping_reference": {"$ref": "#/$defs/factor_mapping_reference"},
+            "evidence_references": {"minItems": 1},
+            "observed_indicator": {"$ref": "#/$defs/text"},
+            "assessment_value": {"$ref": "#/$defs/text"},
+            "rationale": {"$ref": "#/$defs/text"},
+            "assessor_type": {"const": "HUMAN"}
+          }}
+        },
+        {
+          "if": {"anyOf": [
+            {"properties": {"observed_indicator": {"type": "string"}}},
+            {"properties": {"assessment_value": {"type": "string"}}},
+            {"properties": {"rationale": {"type": "string"}}},
+            {"properties": {"confidence": {"enum": ["LOW", "MEDIUM", "HIGH"]}}}
+          ]},
+          "then": {"properties": {
+            "evidence_references": {"minItems": 1},
+            "rationale": {"$ref": "#/$defs/text"},
+            "assessor_type": {"const": "HUMAN"}
+          }}
+        },
+        {
+          "if": {"properties": {"evidence_references": {"minItems": 1}}},
+          "then": {"properties": {
+            "factor_mapping_reference": {"$ref": "#/$defs/factor_mapping_reference"}
+          }}
+        }
+      ]
+    }
+  }
+}

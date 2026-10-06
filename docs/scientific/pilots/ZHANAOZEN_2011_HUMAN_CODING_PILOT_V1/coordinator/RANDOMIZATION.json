@@ -1,0 +1,310 @@
+{
+  "pilot_id": "ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1",
+  "generated_at_utc": "2026-09-26T14:46:59.956621+00:00",
+  "seeds_hex": {
+    "selection": "36e3fd30cc6676e09245b852c26c6cbfa568a18c980c27ee6cc6228da81670c8",
+    "H1": "6ae721c5b528940fa1a6f4d323749d815b3908373b6aac2373585ed72a35b5ce",
+    "H2": "81e50201fc8f8aff41df365a75cdcb689c6e79caf6f1d5b214048dfd463019b6"
+  },
+  "entropy_source": "Python secrets.token_hex(32), OS cryptographic RNG; drawn once per purpose",
+  "algorithm": "HMAC-SHA256; key=bytes.fromhex(seed); message=UTF8(pilot_id + LF + domain + LF + coding_item_id); sort digest ascending, UUID tie-break",
+  "selection_domain": "selection:<stratum>",
+  "order_domain": "order:<H1_or_H2>",
+  "plan_sha256_before_randomization": "8772d3c2338cd25ed1c19ae95e4e6f999de5dfd1810d96f9e78e2cf447347f0e",
+  "frame_sha256_before_randomization": "0e61197f8c454c9231c9dfd37021fb06c4641596cdda618b12d0d7a359e7394b",
+  "selection_ranks": [
+    {
+      "stratum": "E02",
+      "coding_item_id": "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+      "rank": 1,
+      "hmac_sha256": "8183c14b3a236f3a916ab2188cb733e7712cde7cd652a0df288014c3d0e35631",
+      "selected": true
+    },
+    {
+      "stratum": "E02",
+      "coding_item_id": "2c58ce09-3654-5a87-89be-4b1953f467c7",
+      "rank": 2,
+      "hmac_sha256": "9df35f9fe25243d4ff3504ef7892d5b2d7d1527ea8b41f35dd046b59e317f844",
+      "selected": true
+    },
+    {
+      "stratum": "E02",
+      "coding_item_id": "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+      "rank": 3,
+      "hmac_sha256": "d9d83903505478ceecf66ea4059ec4d24c258059a6de8ebf0f2b93c87860e1ec",
+      "selected": true
+    },
+    {
+      "stratum": "E02",
+      "coding_item_id": "bcbda52d-282f-5567-a4ce-f576f6f13a35",
+      "rank": 4,
+      "hmac_sha256": "e6fe264c1da2971d8db37d72a46b93b9353f10dcb8543f51280e8b4a428bf241",
+      "selected": false
+    },
+    {
+      "stratum": "E04",
+      "coding_item_id": "a6f0883a-d5fc-521b-8662-1c160fded750",
+      "rank": 1,
+      "hmac_sha256": "3fdfccb6193f0bb39d9b0b282ac5a22053bfc2607de2ab824080f1f4e07327af",
+      "selected": true
+    },
+    {
+      "stratum": "E04",
+      "coding_item_id": "5e3146aa-0dfd-5be2-8f8d-39b94edee3ff",
+      "rank": 2,
+      "hmac_sha256": "80d18f79833a6de0e741037cb41f6c9ea66586f6bde3c9d9ad29d29b0ac75cca",
+      "selected": true
+    },
+    {
+      "stratum": "E04",
+      "coding_item_id": "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+      "rank": 3,
+      "hmac_sha256": "975909e909630d986ef92d61cd5a90e5e872d43d867319c6685da01b8ff96178",
+      "selected": true
+    },
+    {
+      "stratum": "E04",
+      "coding_item_id": "3c17560c-c6c6-5133-82f5-19b451c4e836",
+      "rank": 4,
+      "hmac_sha256": "b2f97174f8ee7a61d65b6506bbe3852004876127779038f3e04c83256e25d25e",
+      "selected": false
+    },
+    {
+      "stratum": "E04",
+      "coding_item_id": "258efca3-9f6e-550b-8b80-bf27b70424b0",
+      "rank": 5,
+      "hmac_sha256": "f8e7794e9c4c17842a85960fb29d97d86ceba62921c61ca8a4b58229143aea05",
+      "selected": false
+    },
+    {
+      "stratum": "E05",
+      "coding_item_id": "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+      "rank": 1,
+      "hmac_sha256": "2cdaec4e98f720962368b06abc005b731f6926f0db3c998696adca87bac309fb",
+      "selected": true
+    },
+    {
+      "stratum": "E05",
+      "coding_item_id": "3f4dc104-40c7-59db-ad5c-61f8a80232bc",
+      "rank": 2,
+      "hmac_sha256": "647960f90e637ba819b18e73b8a814c4be18dc8a16be5f2553a884ccf3fdc0ce",
+      "selected": true
+    },
+    {
+      "stratum": "E05",
+      "coding_item_id": "bc34ea72-a9ac-5e81-ab20-3f2efb729872",
+      "rank": 3,
+      "hmac_sha256": "77557b096dc206bbb28d9c9901d98a5948c34facde01f04917e05afac946041d",
+      "selected": true
+    },
+    {
+      "stratum": "E05",
+      "coding_item_id": "e32ebf92-ffa3-51da-b933-b10a9c0ba8df",
+      "rank": 4,
+      "hmac_sha256": "85d6f402c3743835d2ee6d74b61e3829dbb0a1fb0d37e6ad5d08014c645237b9",
+      "selected": false
+    },
+    {
+      "stratum": "E05",
+      "coding_item_id": "39d9db22-402b-59e7-a000-63c6d85c3435",
+      "rank": 5,
+      "hmac_sha256": "d1d1ea0c5d68712b20f5af7f577ca7de12edc998a55ff164932b8d6fbc4ec5a4",
+      "selected": false
+    },
+    {
+      "stratum": "E05",
+      "coding_item_id": "28161a20-6dd9-525b-97a0-10787a4ba0da",
+      "rank": 6,
+      "hmac_sha256": "da94f5f51123e8995b6e62763adf4c9144732c7c388fa204dcc0b7944e992f9d",
+      "selected": false
+    },
+    {
+      "stratum": "E05",
+      "coding_item_id": "451a0d8c-ddec-5395-b631-24323628eb69",
+      "rank": 7,
+      "hmac_sha256": "e74e29f183fb0fa910618ccd2d43e85a64eed2f55b3f09689d3404cbd6e1b60d",
+      "selected": false
+    },
+    {
+      "stratum": "E05",
+      "coding_item_id": "190e3801-e98f-559d-b055-04502db625e9",
+      "rank": 8,
+      "hmac_sha256": "e75cb0a70d3fc0fd2d59c87208e58d9758ccae0449b5c094edb1147dcfe1df38",
+      "selected": false
+    },
+    {
+      "stratum": "E06",
+      "coding_item_id": "951f300c-27d0-5a09-b312-e3fdad147f54",
+      "rank": 1,
+      "hmac_sha256": "23f762be9ecdc7ba4af9efd52e9c34989637b2181022d2ee565ddcb5dcc0714e",
+      "selected": true
+    },
+    {
+      "stratum": "E06",
+      "coding_item_id": "cd9eb952-6af0-5708-8703-49673415cbe7",
+      "rank": 2,
+      "hmac_sha256": "88bf6c7a7bdd2fabf8cb906b2fc30fbd071eb23f5589e5a43a9eac97ffcadc86",
+      "selected": true
+    },
+    {
+      "stratum": "E06",
+      "coding_item_id": "79748746-11e6-506c-82d5-bc5fe877beb0",
+      "rank": 3,
+      "hmac_sha256": "ea6a91bcf27b79e88ea272813278b6c20cce02383a5219c8af3b61efc905d00e",
+      "selected": true
+    }
+  ],
+  "orders": {
+    "H1": [
+      {
+        "position": 1,
+        "packet_item_id": "H1-01",
+        "coding_item_id": "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "hmac_sha256": "0bbdf280af0ecffc89a7da06c7a1fcad56f217ad268b99266a37f48451400c5c"
+      },
+      {
+        "position": 2,
+        "packet_item_id": "H1-02",
+        "coding_item_id": "cd9eb952-6af0-5708-8703-49673415cbe7",
+        "hmac_sha256": "1222672170fac04367f2e2ec6fe3c7da17ad687579f0210f51a5c13435e1c4c2"
+      },
+      {
+        "position": 3,
+        "packet_item_id": "H1-03",
+        "coding_item_id": "bc34ea72-a9ac-5e81-ab20-3f2efb729872",
+        "hmac_sha256": "2b385b8bbb7d03d31a4e7c2663e32d6560302a74f1b53e2c265fcd02260f5eaa"
+      },
+      {
+        "position": 4,
+        "packet_item_id": "H1-04",
+        "coding_item_id": "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+        "hmac_sha256": "42be5062d5f53138103825793b50ac2a2ed1f59dfe8781e85ca6bd71364bdae2"
+      },
+      {
+        "position": 5,
+        "packet_item_id": "H1-05",
+        "coding_item_id": "79748746-11e6-506c-82d5-bc5fe877beb0",
+        "hmac_sha256": "56bbc0104cffcfbae1edb95eb241bc8540868e8ba4c7902e335320d9758720db"
+      },
+      {
+        "position": 6,
+        "packet_item_id": "H1-06",
+        "coding_item_id": "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+        "hmac_sha256": "693ad04f6ab2644065eb9755c21de3d850d2f037b5e00d6add3ec369efa332db"
+      },
+      {
+        "position": 7,
+        "packet_item_id": "H1-07",
+        "coding_item_id": "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+        "hmac_sha256": "76966b7348aa7e730aa8addac3a89230f751a0c354b7f9c85ac8242670272ea1"
+      },
+      {
+        "position": 8,
+        "packet_item_id": "H1-08",
+        "coding_item_id": "5e3146aa-0dfd-5be2-8f8d-39b94edee3ff",
+        "hmac_sha256": "bb7a493f7fee9f9aa2d14e0492901e6793b52676290fe7ac461d0a13e22652ee"
+      },
+      {
+        "position": 9,
+        "packet_item_id": "H1-09",
+        "coding_item_id": "2c58ce09-3654-5a87-89be-4b1953f467c7",
+        "hmac_sha256": "d3566216edebf0d395278f9640e83464cec07d5e1289991384e53e411f866189"
+      },
+      {
+        "position": 10,
+        "packet_item_id": "H1-10",
+        "coding_item_id": "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+        "hmac_sha256": "d44b2b13eef0851b933a3dd8a39e100cab2b9b83b1e988bbddbc24d109faedc2"
+      },
+      {
+        "position": 11,
+        "packet_item_id": "H1-11",
+        "coding_item_id": "3f4dc104-40c7-59db-ad5c-61f8a80232bc",
+        "hmac_sha256": "f24016690b305d37a13ecfa3bacca93eaa74374c8d0ffb5bacfde024da7f155f"
+      },
+      {
+        "position": 12,
+        "packet_item_id": "H1-12",
+        "coding_item_id": "a6f0883a-d5fc-521b-8662-1c160fded750",
+        "hmac_sha256": "fcd64538118dfd57c49ce5c979e8393065580e7bcad2a42e495c5caf9c07dc48"
+      }
+    ],
+    "H2": [
+      {
+        "position": 1,
+        "packet_item_id": "H2-01",
+        "coding_item_id": "a6f0883a-d5fc-521b-8662-1c160fded750",
+        "hmac_sha256": "0bb077a45b4c69ea36fbedba090454a9c76b3ece23cfc89510f1ece604c65659"
+      },
+      {
+        "position": 2,
+        "packet_item_id": "H2-02",
+        "coding_item_id": "5e3146aa-0dfd-5be2-8f8d-39b94edee3ff",
+        "hmac_sha256": "0e44c554c1e5e04bcc15705a70423cb1d99ff8b6628ce65a625c9a6c76b9206a"
+      },
+      {
+        "position": 3,
+        "packet_item_id": "H2-03",
+        "coding_item_id": "79748746-11e6-506c-82d5-bc5fe877beb0",
+        "hmac_sha256": "1152c9634c6e13dbd6d8d19e8d3f3713e946d991a15c9401bbcac4cf97874ffd"
+      },
+      {
+        "position": 4,
+        "packet_item_id": "H2-04",
+        "coding_item_id": "3f4dc104-40c7-59db-ad5c-61f8a80232bc",
+        "hmac_sha256": "2b85bb3311533b128c0cd40966cd641b2dd36dac9ce3cc860e85b79a4061e7f7"
+      },
+      {
+        "position": 5,
+        "packet_item_id": "H2-05",
+        "coding_item_id": "bc34ea72-a9ac-5e81-ab20-3f2efb729872",
+        "hmac_sha256": "5422355f8205f8ed250055da3078bfd27104e7a1187f2d2055451337c4039df3"
+      },
+      {
+        "position": 6,
+        "packet_item_id": "H2-06",
+        "coding_item_id": "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "hmac_sha256": "7017a427c8ceabb10a961288ba7ac79cd0b189bbeb71e9d868f69ba075431fa3"
+      },
+      {
+        "position": 7,
+        "packet_item_id": "H2-07",
+        "coding_item_id": "2c58ce09-3654-5a87-89be-4b1953f467c7",
+        "hmac_sha256": "975243bdc904354c224da10091a3881a463d2152d5cf0a9f7355b5260ca6f79b"
+      },
+      {
+        "position": 8,
+        "packet_item_id": "H2-08",
+        "coding_item_id": "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+        "hmac_sha256": "97f05c2167818db888a062520fba7bba653717a0d4bc8e9a9a5faefdda68ca4c"
+      },
+      {
+        "position": 9,
+        "packet_item_id": "H2-09",
+        "coding_item_id": "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+        "hmac_sha256": "a1cd548831944bd467c8657e26169244a1eddd486cc00ba808663f3d85924b6c"
+      },
+      {
+        "position": 10,
+        "packet_item_id": "H2-10",
+        "coding_item_id": "cd9eb952-6af0-5708-8703-49673415cbe7",
+        "hmac_sha256": "df91267bfcd02075b0f8c1e94fdaea1dabb5b822829388a71479c6c825cd4dc4"
+      },
+      {
+        "position": 11,
+        "packet_item_id": "H2-11",
+        "coding_item_id": "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+        "hmac_sha256": "ec435cc2afaa7678c5143de89654cd094efca678fbca824abd5b22d202caa9e2"
+      },
+      {
+        "position": 12,
+        "packet_item_id": "H2-12",
+        "coding_item_id": "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+        "hmac_sha256": "f2abe784b46abc24ba3a8964ec4adca2741526b94cc3896acee976e16a038fa0"
+      }
+    ]
+  },
+  "same_position_count": 0,
+  "redraws": 0,
+  "contains_factor_answers": false
+}

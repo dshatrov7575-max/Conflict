@@ -1,0 +1,39 @@
+{
+  "source_authentication_id": "KBM_E05_V100_COMPANY_SOURCE_AUTH_R1",
+  "status": "P1_ARCHIVE_REPLAY_AUTHENTICATED",
+  "source_id": "AKTAU_BUSINESS_KBM_RELEASE_20110514",
+  "publisher": "aktau-business.com",
+  "publication_date": "2011-05-14",
+  "original_url": "http://www.aktau-business.com/2011/05/14/kbm.html",
+  "wayback": {
+    "timestamp": "20110515054706",
+    "capture_utc": "2011-05-15T05:47:06Z",
+    "archive_url": "https://web.archive.org/web/20110515054706id_/http://www.aktau-business.com:80/2011/05/14/kbm.html",
+    "payload_bytes": 58775,
+    "payload_sha256": "8c88985bf55e2cfa149395cb8e98de6d87798edcb9f18e614f58279935a8f63b",
+    "retrieved_and_rehashed_on": "2026-09-30"
+  },
+  "content_checks": {
+    "company_calls_removal_demand_unlawful_on_procedure": true,
+    "company_rejects_negotiation_by_protest_method": true,
+    "company_reports_some_collective_agreement_items_already_considered_and_agreed": true
+  },
+  "current_page_corroboration_only": [
+    {
+      "publisher": "Kazinform",
+      "publication_date": "2011-05-14",
+      "url": "https://www.inform.kz/ru/zavershena-akciya-protesta-chlenov-profsoyuza-rabotnikov-ao-karazhanbasmunay_a2380062"
+    },
+    {
+      "publisher": "Ak Zhaiyk",
+      "publication_date": "2011-05-17",
+      "url": "https://azh.kz/ru/news/view/6538"
+    }
+  ],
+  "limits": [
+    "The archive authenticates the content of the company-release republication, not the truth of every company characterization.",
+    "Do not import worker allegations, HRW retrospective paraphrases, or government-only positions as company evidence.",
+    "The company source predates the worker D04 statement by 13 days; the pair is explicitly non-simultaneous."
+  ],
+  "factor_values": null
+}

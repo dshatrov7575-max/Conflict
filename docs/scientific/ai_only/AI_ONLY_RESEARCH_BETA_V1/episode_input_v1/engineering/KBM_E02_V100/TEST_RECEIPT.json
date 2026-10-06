@@ -1,0 +1,27 @@
+{
+  "engineering_id": "KBM_E02_V100_READ_ONLY_COMPARATOR",
+  "route_id": "AI_ONLY_DYAD_KBM_E02_V100",
+  "input_sha256": "d0fb1f4a87f1cf64380f99167d77ecd63fd37b2827c48d044679b6abf027bf42",
+  "status": "READY_BEFORE_PRIMARY_RESPONSES",
+  "comparator_path": "compare_primary.py",
+  "self_test": {
+    "command": "python compare_primary.py --self-test",
+    "result": "PASS",
+    "cases": 8,
+    "executed_from_fresh_raw_github_download": true,
+    "date": "2026-09-30"
+  },
+  "outcome_matrix": "EXPECTED_OUTCOME_MATRIX.json",
+  "inherited_worker_record": {
+    "unit_id": "AO2S-C1-03",
+    "POS_AO2": -5,
+    "KVS_AO2": 5,
+    "source_report_date": "2011-05-17"
+  },
+  "writes_to_core": false,
+  "changes_core": false,
+  "coordinator_substitution": "FORBIDDEN",
+  "targeted_content_review_rounds": 0,
+  "human_validation": "NOT_PERFORMED",
+  "historical_area_UNO": "NOT_COMPUTED"
+}

@@ -1,0 +1,397 @@
+{
+  "artifact_kind": "TECHNICAL_FAILURE_RETRY_PROTOCOL_PLAN",
+  "assessor_type": "AI_PREPARATION",
+  "schema_version": "1.0.0",
+  "protocol_id": "6384e953-8c88-58e2-ac31-cc9ee18ee6d1",
+  "base_commit": "127f682beba758be36d07ce6ee8a7e8166ecd72d",
+  "base_tree": "7aa4d2a022e99496ae64ee6a7941a00d52e8386c",
+  "case_id": "292d238f-9fee-578f-bddd-6f923163788a",
+  "plan_id": "ZHANAOZEN_2011_RECOVERY_PROTOCOL_V1",
+  "target_time": "2011-12-15T23:59:59Z",
+  "execution_state": "NOT_EXECUTED_PROTOCOL_FREEZE_ONLY",
+  "network_access_executed_by_pr20": false,
+  "retrieval_executed_by_pr20": false,
+  "substantive_review_executed_by_pr20": false,
+  "source_consolidation_reference": {
+    "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_CONSOLIDATION_V1/CONSOLIDATED_ATTEMPT_LEDGER.json",
+    "sha256": "5a403ad370af9b1815206b668e3676cdb69c6612f8208de0c5d596ff0a514747",
+    "git_blob_sha1": "ab28b5ea43098833f8da2f05907a01e81905135a"
+  },
+  "failure_class_enum": [
+    "INITIAL_ARCHIVE_QUERY_FAILURE",
+    "REPLAY_AFTER_CANDIDATE_FAILURE"
+  ],
+  "future_retry_budget": {
+    "authorized_attempts": 4,
+    "maximum_executions_per_failed_source_attempt": 1,
+    "total_maximum_future_http_attempts": 4,
+    "execution_requires_separate_explicit_task": true,
+    "execution_authorized_by_pr20": false
+  },
+  "prohibited_retry_population": {
+    "completed_nonadmissible_attempts": 35,
+    "finite_no_result_attempts": 15,
+    "total_prohibited_attempts": 50,
+    "retry_permitted": false,
+    "reason": "Completed nonadmissible and finite no-result states are substantive/finite outcomes, not technical failures; retry would be query expansion or rerun-until-favorable.",
+    "planned_query_ids_sha256": "569b68d6ecfba2c23d04204817172dd3a557efab93044686b29b152b770eab3d"
+  },
+  "transport_contract": {
+    "method": "GET",
+    "connect_timeout_seconds": 15,
+    "read_timeout_seconds": 45,
+    "maximum_redirects": 5,
+    "automatic_library_retries": 0,
+    "tls_verification": true,
+    "user_agent": "ConflictAnalysis-PR20-TechnicalRetry/1.0 (+repository-audit)",
+    "accepted_http_status_for_payload": "200-299",
+    "empty_payload_is_success": false
+  },
+  "parser_contract": {
+    "cdx_expected_fields": [
+      "timestamp",
+      "original",
+      "statuscode",
+      "digest",
+      "mimetype",
+      "length"
+    ],
+    "cutoff_inclusive": "2011-12-15T23:59:59Z",
+    "candidate_sort": "timestamp ascending",
+    "candidate_selection": "latest candidate at or before cutoff",
+    "candidate_switching_after_frozen_selection": false,
+    "finite_empty_result_state": "FINITE_NO_RESULT_PRIOR_STATE_RETAINED",
+    "parser_failure_state": "TECHNICAL_FAILURE_PRIOR_STATE_RETAINED"
+  },
+  "custody_and_logging_contract": {
+    "record_request_and_completion_timestamps": true,
+    "record_exact_request_url_and_final_url": true,
+    "record_redirect_chain": true,
+    "record_http_status_content_type_and_bytes": true,
+    "record_payload_sha256": true,
+    "for_archive_payload_record_cdx_digest_and_computed_sha1_base32": true,
+    "store_payload_body_in_repository": false,
+    "store_full_article_text_in_repository": false,
+    "append_only_retry_ledger_required": true,
+    "original_source_ledgers_mutable": false
+  },
+  "stop_rules": [
+    "Stop after the one authorized future execution for a retry_attempt_id, regardless of result.",
+    "Do not retry a timeout, transport error, parser error, finite no-result, non-2xx response, digest mismatch, or incomplete payload again.",
+    "Do not switch candidate, locator, query text, query hash, cutoff, DocumentVersion, publisher route, mirror, or substantive search.",
+    "Technical completion cannot satisfy EXACT_EDITION without the full frozen exact-edition contract and exact DocumentVersion binding.",
+    "Any successful technical response remains NOT_PROVEN unless a separately authorized admission step proves every frozen gate."
+  ],
+  "retry_units": [
+    {
+      "retry_ordinal": 1,
+      "retry_attempt_id": "3ff7f9b4-fdb7-5cdc-9f13-48a1582e066c",
+      "linked_failed_source_attempt_id": "0f0b5bb1-cf7b-541b-ba48-7b5709c9181d",
+      "source_attempt_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1/EXECUTED_ATTEMPT_LEDGER.json",
+        "json_pointer": "/attempts/29"
+      },
+      "source_attempt_canonical_sha256": "ed147824d0868ca127ec9bf9955ffbe526c984d279cbb10a28ddf4c8c55ec624",
+      "source_tranche_id": "ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_B_V1",
+      "planned_query_id": "f69f7aee-d93f-5010-8b28-9e033870e0f3",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-ff6bdb6f-0cb3-5c83-945c-d6b2e519a487",
+      "document_version_id": "ff6bdb6f-0cb3-5c83-945c-d6b2e519a487",
+      "document_id": "24f9aa6b-a244-54cb-bc4b-07988536f846",
+      "source_id": "2c04fb05-8565-5cc3-b97b-0588179e89f2",
+      "label": "D28",
+      "affected_coding_item_ids": [
+        "39d9db22-402b-59e7-a000-63c6d85c3435",
+        "451a0d8c-ddec-5395-b631-24323628eb69"
+      ],
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "frozen_rendered_query": "Web-archive capture lookup for the exact source locator with capture timestamp not later than the information cutoff. | blocker_id=BLOCKER-DOCUMENT-VERSION-ff6bdb6f-0cb3-5c83-945c-d6b2e519a487 | scope=DOCUMENT_VERSION | affected_ids_sha256=3770f5bdb7342c43c32cf33ea062e7c16b33d7d503aeae92483f6d9c950f4fa9",
+      "query_text_sha256": "2e47c6dafbb44b8b7ed3e73e1e5c8cc91aea3538e660c9d004cd09c8b9495447",
+      "query_hash_verified_against_pr15": true,
+      "original_request_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.azattyqasia.org%2Fa%2Foil_workers_strike_zhanaozen%2F24401004.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "information_cutoff": "2011-12-15T23:59:59Z",
+      "source_response_status": "TECHNICAL_FAILURE",
+      "source_technical_error": "ReadTimeout: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=45)",
+      "failure_class": "INITIAL_ARCHIVE_QUERY_FAILURE",
+      "candidate_state": {
+        "candidate_count": 0,
+        "candidate_ids": [],
+        "archive_candidates": [],
+        "selected_candidate": null,
+        "selected_replay_target": null,
+        "successful_cdx_subrequest_reused_without_rerun": false
+      },
+      "future_retry_contract": {
+        "authorization_state": "AUTHORIZED_NOT_EXECUTED",
+        "maximum_future_executions": 1,
+        "retry_stage": "EXACT_CDX_LOOKUP_THEN_ONE_DETERMINISTIC_REPLAY_IF_CANDIDATE",
+        "exact_target_locator": "https://web.archive.org/cdx/search/cdx?url=https%3A%2F%2Fwww.azattyqasia.org%2Fa%2Foil_workers_strike_zhanaozen%2F24401004.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+        "query_expansion_permitted": false,
+        "mirror_search_permitted": false,
+        "publisher_rerun_permitted": false,
+        "alternate_candidate_permitted": false,
+        "substantive_search_permitted": false,
+        "new_retry_attempt_id_required": true,
+        "must_link_failed_source_attempt_id": "0f0b5bb1-cf7b-541b-ba48-7b5709c9181d"
+      },
+      "state_after_pr20": {
+        "full_edition_status": "NOT_PROVEN",
+        "mapping_admission_changed": false,
+        "target_time_applicability": "UNKNOWN",
+        "automatic_carry_forward": false,
+        "scientific_state_changed_by_pr20": false
+      }
+    },
+    {
+      "retry_ordinal": 2,
+      "retry_attempt_id": "3f604eb0-23fd-590f-a119-f33de4819a94",
+      "linked_failed_source_attempt_id": "b604abf6-3d7b-5525-bf63-9130f0a872b1",
+      "source_attempt_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/EXECUTED_ATTEMPT_LEDGER.json",
+        "json_pointer": "/attempts/21"
+      },
+      "source_attempt_canonical_sha256": "cf2755c1adf1abb4dcef8dd942601a0593ad46f6dc04a80756779b9fa1775fb9",
+      "source_tranche_id": "ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1",
+      "planned_query_id": "30eb5f84-fd10-5546-a0cc-7824f628620c",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "document_version_id": "86135a7f-79d7-5d6f-870c-f8bdaa925023",
+      "document_id": "43a82618-e2f4-5340-b3db-5a08a84dfed1",
+      "source_id": "93272924-00d5-527a-9ace-4ea593c021ad",
+      "label": "D25",
+      "affected_coding_item_ids": [
+        "258efca3-9f6e-550b-8b80-bf27b70424b0",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+        "2c58ce09-3654-5a87-89be-4b1953f467c7"
+      ],
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "frozen_rendered_query": "Web-archive capture lookup for the exact source locator with capture timestamp not later than the information cutoff. | blocker_id=BLOCKER-DOCUMENT-VERSION-86135a7f-79d7-5d6f-870c-f8bdaa925023 | scope=DOCUMENT_VERSION | affected_ids_sha256=f423059fcd79f6341f4d2dee1c58d99412a14c380f7f7771f84e01b8f9069dfe",
+      "query_text_sha256": "d801f64457aef6fe00ce46fc0981a264755103ca042bd578db4215a1f619c52c",
+      "query_hash_verified_against_pr15": true,
+      "original_request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.eurasianet.org%3A80%2Fnode%2F64310&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "information_cutoff": "2011-12-15T23:59:59Z",
+      "source_response_status": "TECHNICAL_FAILURE_AFTER_CANDIDATE",
+      "source_technical_error": "ConnectionError: HTTPSConnectionPool(host='web.archive.org', port=443): Max retries exceeded with url: /web/20111116125247id_/http://www.eurasianet.org:80/node/64310 (Caused by NewConnectionError(\"HTTPSConnection(host='web.archive.org', port=443): Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение\"))",
+      "failure_class": "REPLAY_AFTER_CANDIDATE_FAILURE",
+      "candidate_state": {
+        "candidate_count": 3,
+        "candidate_ids": [
+          "711810bf-17bf-538b-be4e-ae8a61ec270b",
+          "fd89ab4f-221b-5a0f-911a-9ceaf4f2297d",
+          "f030afd4-5c2f-52d5-b6a7-edd0a6848cb4"
+        ],
+        "archive_candidates": [
+          {
+            "timestamp": "20111016060958",
+            "original": "http://www.eurasianet.org:80/node/64310",
+            "digest_sha1_base32": "XR7PYY6TK4LJPBKR4GRR75RSBY5STQT4",
+            "mimetype": "text/html",
+            "recorded_length": "12356",
+            "candidate_id": "711810bf-17bf-538b-be4e-ae8a61ec270b"
+          },
+          {
+            "timestamp": "20111016171055",
+            "original": "http://www.eurasianet.org:80/node/64310",
+            "digest_sha1_base32": "UXEK2XF4QVBJVM5JAKFIWLP7J5MU5E7F",
+            "mimetype": "text/html",
+            "recorded_length": "12468",
+            "candidate_id": "fd89ab4f-221b-5a0f-911a-9ceaf4f2297d"
+          },
+          {
+            "timestamp": "20111116125247",
+            "original": "http://www.eurasianet.org:80/node/64310",
+            "digest_sha1_base32": "7YHK6FDDO6SY5E65OBHLKWNVI3ZFCPL5",
+            "mimetype": "text/html",
+            "recorded_length": "12358",
+            "candidate_id": "f030afd4-5c2f-52d5-b6a7-edd0a6848cb4"
+          }
+        ],
+        "selected_candidate": {
+          "timestamp": "20111116125247",
+          "original": "http://www.eurasianet.org:80/node/64310",
+          "digest_sha1_base32": "7YHK6FDDO6SY5E65OBHLKWNVI3ZFCPL5",
+          "mimetype": "text/html",
+          "recorded_length": "12358",
+          "candidate_id": "f030afd4-5c2f-52d5-b6a7-edd0a6848cb4"
+        },
+        "selected_replay_target": "https://web.archive.org/web/20111116125247id_/http://www.eurasianet.org:80/node/64310",
+        "successful_cdx_subrequest_reused_without_rerun": true
+      },
+      "future_retry_contract": {
+        "authorization_state": "AUTHORIZED_NOT_EXECUTED",
+        "maximum_future_executions": 1,
+        "retry_stage": "EXACT_REPLAY_ONLY_FOR_ALREADY_SELECTED_LATEST_PRE_CUTOFF_CANDIDATE",
+        "exact_target_locator": "https://web.archive.org/web/20111116125247id_/http://www.eurasianet.org:80/node/64310",
+        "query_expansion_permitted": false,
+        "mirror_search_permitted": false,
+        "publisher_rerun_permitted": false,
+        "alternate_candidate_permitted": false,
+        "substantive_search_permitted": false,
+        "new_retry_attempt_id_required": true,
+        "must_link_failed_source_attempt_id": "b604abf6-3d7b-5525-bf63-9130f0a872b1"
+      },
+      "state_after_pr20": {
+        "full_edition_status": "NOT_PROVEN",
+        "mapping_admission_changed": false,
+        "target_time_applicability": "UNKNOWN",
+        "automatic_carry_forward": false,
+        "scientific_state_changed_by_pr20": false
+      }
+    },
+    {
+      "retry_ordinal": 3,
+      "retry_attempt_id": "dab41481-bbb3-5694-9f8e-93a8165359d6",
+      "linked_failed_source_attempt_id": "bab13970-a3bc-5322-a25b-7d45fa3e78b5",
+      "source_attempt_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/EXECUTED_ATTEMPT_LEDGER.json",
+        "json_pointer": "/attempts/13"
+      },
+      "source_attempt_canonical_sha256": "aaaff0abca819428b7f3c640d4626aa4f44e4d4905c28fc2ddfe901813891822",
+      "source_tranche_id": "ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1",
+      "planned_query_id": "c9a4c9a4-480d-5ff4-a852-33779ad18384",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "document_version_id": "00527651-bbea-5b17-89b0-c79f68fb39f6",
+      "document_id": "46609b00-8ecc-5239-816f-e28da8ae18f3",
+      "source_id": "a31e3834-1227-5f14-acfe-2e43bee2fe47",
+      "label": "D13",
+      "affected_coding_item_ids": [
+        "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+        "3fba0d88-4c72-5d24-b879-52904c88a0e5"
+      ],
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "frozen_rendered_query": "Web-archive capture lookup for the exact source locator with capture timestamp not later than the information cutoff. | blocker_id=BLOCKER-DOCUMENT-VERSION-00527651-bbea-5b17-89b0-c79f68fb39f6 | scope=DOCUMENT_VERSION | affected_ids_sha256=61c0fe08856d9564a946f7d86535fd755fc789bc74969dbadd09018ce011acf3",
+      "query_text_sha256": "8bd10db3b35f0bfdca4b0f38beb1fc861d124a0adc03e015bc129f0a1337002e",
+      "query_hash_verified_against_pr15": true,
+      "original_request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_strike_desperation_poverty%2F24331987.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "information_cutoff": "2011-12-15T23:59:59Z",
+      "source_response_status": "TECHNICAL_FAILURE",
+      "source_technical_error": "ReadTimeout: HTTPSConnectionPool(host='web.archive.org', port=443): Read timed out. (read timeout=45)",
+      "failure_class": "INITIAL_ARCHIVE_QUERY_FAILURE",
+      "candidate_state": {
+        "candidate_count": 0,
+        "candidate_ids": [],
+        "archive_candidates": [],
+        "selected_candidate": null,
+        "selected_replay_target": null,
+        "successful_cdx_subrequest_reused_without_rerun": false
+      },
+      "future_retry_contract": {
+        "authorization_state": "AUTHORIZED_NOT_EXECUTED",
+        "maximum_future_executions": 1,
+        "retry_stage": "EXACT_CDX_LOOKUP_THEN_ONE_DETERMINISTIC_REPLAY_IF_CANDIDATE",
+        "exact_target_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Fwww.rferl.org%2Fcontent%2Fkazakhstan_oil_workers_strike_desperation_poverty%2F24331987.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+        "query_expansion_permitted": false,
+        "mirror_search_permitted": false,
+        "publisher_rerun_permitted": false,
+        "alternate_candidate_permitted": false,
+        "substantive_search_permitted": false,
+        "new_retry_attempt_id_required": true,
+        "must_link_failed_source_attempt_id": "bab13970-a3bc-5322-a25b-7d45fa3e78b5"
+      },
+      "state_after_pr20": {
+        "full_edition_status": "NOT_PROVEN",
+        "mapping_admission_changed": false,
+        "target_time_applicability": "UNKNOWN",
+        "automatic_carry_forward": false,
+        "scientific_state_changed_by_pr20": false
+      }
+    },
+    {
+      "retry_ordinal": 4,
+      "retry_attempt_id": "7de596e2-0981-5151-ac8c-3a99edc39d0f",
+      "linked_failed_source_attempt_id": "f9791b6b-487b-548e-bf0b-0ecefaf1a240",
+      "source_attempt_reference": {
+        "path": "docs/scientific/pilots/ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1/EXECUTED_ATTEMPT_LEDGER.json",
+        "json_pointer": "/attempts/19"
+      },
+      "source_attempt_canonical_sha256": "b65d4a238a52d19b06607ac15cee46d47034c611408bee61f5c6c77ae3419900",
+      "source_tranche_id": "ZHANAOZEN_2011_EXACT_EDITION_RECOVERY_TRANCHE_A_V1",
+      "planned_query_id": "77b32e21-f78b-5574-ad79-550de8f9bd3e",
+      "blocker_id": "BLOCKER-DOCUMENT-VERSION-53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "document_version_id": "53cf6bd9-b51d-5f0a-b56f-addd0caa6af2",
+      "document_id": "2c31843a-9181-5786-8ded-86762eae6779",
+      "source_id": "ae117c91-c49a-5022-abb1-4e39a4e8c38d",
+      "label": "D22",
+      "affected_coding_item_ids": [
+        "39d9db22-402b-59e7-a000-63c6d85c3435",
+        "28161a20-6dd9-525b-97a0-10787a4ba0da",
+        "451a0d8c-ddec-5395-b631-24323628eb69",
+        "a6f0883a-d5fc-521b-8662-1c160fded750",
+        "e32ebf92-ffa3-51da-b933-b10a9c0ba8df"
+      ],
+      "route_id": "ROUTE_PUBLISHER_OR_ARCHIVE_EXACT_EDITION",
+      "query_template_id": "EDITION-ARCHIVE-CAPTURE",
+      "query_ordinal": 2,
+      "frozen_rendered_query": "Web-archive capture lookup for the exact source locator with capture timestamp not later than the information cutoff. | blocker_id=BLOCKER-DOCUMENT-VERSION-53cf6bd9-b51d-5f0a-b56f-addd0caa6af2 | scope=DOCUMENT_VERSION | affected_ids_sha256=4461af09265ca6ba2b42ea8e4379723460995dadb4125ee93e331d45e971abb8",
+      "query_text_sha256": "9aabcfdaa99850b93ccdd09f13c093663bce1eec007ab0f0ca84c3d6e6e3a675",
+      "query_hash_verified_against_pr15": true,
+      "original_request_locator": "https://web.archive.org/cdx/search/cdx?url=http%3A%2F%2Flada.kz%3A80%2Faktau_news%2Fsociety%2F1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html&output=json&filter=statuscode%3A200&from=2011&to=20111215235959&fl=timestamp%2Coriginal%2Cstatuscode%2Cdigest%2Cmimetype%2Clength&collapse=digest",
+      "information_cutoff": "2011-12-15T23:59:59Z",
+      "source_response_status": "TECHNICAL_FAILURE_AFTER_CANDIDATE",
+      "source_technical_error": "ConnectionError: HTTPSConnectionPool(host='web.archive.org', port=443): Max retries exceeded with url: /web/20111120030853id_/http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html (Caused by NewConnectionError(\"HTTPSConnection(host='web.archive.org', port=443): Failed to establish a new connection: [WinError 10061] Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение\"))",
+      "failure_class": "REPLAY_AFTER_CANDIDATE_FAILURE",
+      "candidate_state": {
+        "candidate_count": 1,
+        "candidate_ids": [
+          "379ad1f4-5ed2-5b78-b64e-c773192481e1"
+        ],
+        "archive_candidates": [
+          {
+            "timestamp": "20111120030853",
+            "original": "http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+            "digest_sha1_base32": "D6ZMCKKXPKQRTGOVCGBBAWGEHZAYFIBH",
+            "mimetype": "text/html",
+            "recorded_length": "19770",
+            "candidate_id": "379ad1f4-5ed2-5b78-b64e-c773192481e1"
+          }
+        ],
+        "selected_candidate": {
+          "timestamp": "20111120030853",
+          "original": "http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+          "digest_sha1_base32": "D6ZMCKKXPKQRTGOVCGBBAWGEHZAYFIBH",
+          "mimetype": "text/html",
+          "recorded_length": "19770",
+          "candidate_id": "379ad1f4-5ed2-5b78-b64e-c773192481e1"
+        },
+        "selected_replay_target": "https://web.archive.org/web/20111120030853id_/http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+        "successful_cdx_subrequest_reused_without_rerun": true
+      },
+      "future_retry_contract": {
+        "authorization_state": "AUTHORIZED_NOT_EXECUTED",
+        "maximum_future_executions": 1,
+        "retry_stage": "EXACT_REPLAY_ONLY_FOR_ALREADY_SELECTED_LATEST_PRE_CUTOFF_CANDIDATE",
+        "exact_target_locator": "https://web.archive.org/web/20111120030853id_/http://lada.kz:80/aktau_news/society/1153-zamestitel-ministra-truda-i-socialnoy-zaschity-naseleniya-vstretilsya-s-bastuyuschimi-neftyanikami-mangistau.html",
+        "query_expansion_permitted": false,
+        "mirror_search_permitted": false,
+        "publisher_rerun_permitted": false,
+        "alternate_candidate_permitted": false,
+        "substantive_search_permitted": false,
+        "new_retry_attempt_id_required": true,
+        "must_link_failed_source_attempt_id": "f9791b6b-487b-548e-bf0b-0ecefaf1a240"
+      },
+      "state_after_pr20": {
+        "full_edition_status": "NOT_PROVEN",
+        "mapping_admission_changed": false,
+        "target_time_applicability": "UNKNOWN",
+        "automatic_carry_forward": false,
+        "scientific_state_changed_by_pr20": false
+      }
+    }
+  ],
+  "scientific_boundaries": {
+    "full_edition_status_for_all_four": "NOT_PROVEN",
+    "mapping_admission_changes": 0,
+    "target_time_applicability": "UNKNOWN",
+    "automatic_carry_forward": false,
+    "human_validation_reliability": "NOT_PERFORMED",
+    "human_coding_adjudication": "NOT_PERFORMED",
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED",
+    "publication_release_deployment": "NOT_EXECUTED"
+  }
+}

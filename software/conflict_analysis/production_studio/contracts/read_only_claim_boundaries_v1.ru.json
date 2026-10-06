@@ -1,0 +1,43 @@
+{
+  "contract": "STUDIO_READ_ONLY_CLAIM_BOUNDARIES_V1",
+  "locale": "ru",
+  "statements": [
+    {
+      "code": "STATUS",
+      "text": "Production Studio C — интеграционный прототип в режиме только чтения."
+    },
+    {
+      "code": "AUTHORITY",
+      "text": "Foundation — единственный источник данных, жизненного цикла, публикации, авторизации и пакетов."
+    },
+    {
+      "code": "TRACEABILITY",
+      "text": "Прослеживаемость показывает происхождение записи, но не подтверждает её истинность, полноту или научную корректность."
+    },
+    {
+      "code": "SCIENTIFIC_STATUS",
+      "text": "Научная валидность, превосходство, production readiness и соответствие международным стандартам не заявляются."
+    },
+    {
+      "code": "UNAVAILABLE_FUNCTIONS",
+      "text": "Формулы, scalar Power, POW, POW×SAL, прогнозирование, вероятность, риск, ранжирование, рекомендации, сценарный движок, OCR, Чат, LLM и RAG недоступны."
+    },
+    {
+      "code": "EXPORT_STATUS",
+      "text": "Экспорт Foundation 2.1 является пакетом обмена данными, а не научным отчётом или рекомендацией."
+    },
+    {
+      "code": "BASELINE_SEPARATION",
+      "text": "Этот Studio C build не заменяет weekly partner-visible Showcase artifact 9589796412 и не наследует его rehearsal PASS."
+    },
+    {
+      "code": "DISTINCT_VALUES",
+      "text": "UNKNOWN, NOT_APPLICABLE, DISPUTED, null и числовой ноль являются различными состояниями."
+    },
+    {
+      "code": "NO_PSEUDO_AGGREGATION",
+      "text": "Ранжирование, сопоставимые heatmap, строки total/average и единичные Power/risk badges запрещены."
+    }
+  ],
+  "version": "1.0.0"
+}

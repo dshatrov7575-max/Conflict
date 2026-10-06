@@ -1,0 +1,91 @@
+{
+  "route_id": "AI_ONLY_PAIR_KBM_E05_V100",
+  "contract_version": "1.0.0",
+  "rubric_version": "2.1.0",
+  "input_sha256": "51f1a805986f7550828d8b05e0a1aa7aa2c80d43410540cd0f72a82448660f95",
+  "coder_role": "KBM_E05_V100_AI1",
+  "actual_model_label": "GPT-5.6 Sol Pro",
+  "model_label_source": "SYSTEM_MODEL_IDENTITY",
+  "run_id": "1c63c2b1-9392-4a7b-b7c7-fb38686c428a",
+  "completed_at_utc": "2026-10-01T08:08:40Z",
+  "attestation": {
+    "other_coder_output_seen": false,
+    "prior_episode_outputs_seen": false,
+    "outcome_used_as_evidence": false,
+    "external_sources_used": false
+  },
+  "entries": [
+    {
+      "actor_id": "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514",
+      "factor": "POS_AO2",
+      "status": "NUMERIC",
+      "value": 5,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": true,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        {
+          "source_id": "AKTAU_BUSINESS_KBM_RELEASE_20110514",
+          "authentication": "P1_ARCHIVE_REPLAY_AUTHENTICATED",
+          "relevant_content": [
+            "Management states that it is not entitled to interfere in the union's internal affairs.",
+            "Management characterizes removal of the incumbent union chairman without the required general-meeting procedure as unlawful.",
+            "The company reports that collective-agreement demands were considered by a commission and that some agreements were reached pending worker approval.",
+            "Management rejects negotiation through the protest action in that manner and directs defence of rights toward lawful procedures.",
+            "The company reports that constructive dialogue ended the 12 May protest action."
+          ]
+        }
+      ],
+      "rationale": "Компания явно защищает сохранение и применение как минимум одного существующего компонента представительства и согласования интересов: автономию внутренних профсоюзных процедур, установленный порядок общего собрания, комиссионное рассмотрение требований и законный переговорный диалог. Это удовлетворяет якорю POS_AO2=+5. Якорь +10 не выполнен, поскольку компания не защищает явно всю референсную конструкцию по всем существенным компонентам и не подтверждает в полном объеме достаточность любых механизмов коллективных действий.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "Направленная защита существующих процедур прямо атрибутирована компании и соответствует якорю +5; оснований для кодирования всей референсной позиции как +10 недостаточно."
+      },
+      "calculation_release": false
+    },
+    {
+      "actor_id": "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514",
+      "factor": "KVS_AO2",
+      "status": "NUMERIC",
+      "value": 5,
+      "admission_checks": {
+        "C1": true,
+        "C2": true,
+        "C3": true,
+        "C4": true,
+        "C5": true,
+        "C6": true,
+        "C7": true,
+        "C8": true
+      },
+      "evidence_references": [
+        {
+          "source_id": "AKTAU_BUSINESS_KBM_RELEASE_20110514",
+          "authentication": "P1_ARCHIVE_REPLAY_AUTHENTICATED",
+          "relevant_content": [
+            "The company reports its own commission-based consideration of collective-agreement demands and agreements pending worker approval.",
+            "Management declares a negotiation rule rejecting negotiation through the protest action in that manner and requiring lawful procedures.",
+            "The company reports its participation in constructive dialogue that ended the protest action."
+          ]
+        }
+      ],
+      "rationale": "E05 включен в собственный переговорный и процедурный набор компании: руководство описывает комиссионное рассмотрение требований, достигнутые договоренности, правило ведения переговоров через законные процедуры и собственное участие в конструктивном диалоге. Это превышает простое опровержение требований оппонента и удовлетворяет KVS_AO2=5. KVS=8 не поддержан, поскольку нет явного условия, согласно которому существенное действие, продолжение участия или урегулирование зависело бы от предварительного разрешения E05; общего отказа от протестной формы переговоров для этого недостаточно. Непереговоримость, необходимая для KVS=10, также не заявлена.",
+      "confidence": {
+        "kind": "QUALITATIVE_UNCALIBRATED",
+        "value": "HIGH",
+        "meaning": "CONFIDENCE_IN_RECORDED_CODING_DECISION",
+        "rationale": "Источник прямо связывает вопрос с собственными переговорными процедурами и действиями компании, поддерживая якорь 5, но не содержит явной обусловленности или непереговоримости для якорей 8 или 10."
+      },
+      "calculation_release": false
+    }
+  ]
+}

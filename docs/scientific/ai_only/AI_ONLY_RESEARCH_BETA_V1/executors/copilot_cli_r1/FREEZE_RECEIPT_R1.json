@@ -1,0 +1,40 @@
+{
+  "freeze_id": "COPILOT_CLI_PRIMARY_EXECUTOR_R1_FREEZE_20260930",
+  "status": "READY_CREDENTIAL_BLOCKED",
+  "date": "2026-09-30",
+  "workflow": ".github/workflows/ai-only-primary-executor-r1.yml",
+  "workflow_blob_sha": "4b222e521ecd081aeddfb0108a1b978211cb91b5",
+  "validation": {
+    "exact_head_workflow_run_id": 36716764102,
+    "exact_head_workflow_head_sha": "1ec187663648a8355dfc48677a20825a79c40697",
+    "yaml_parse": "PASS",
+    "model_pins_present": "PASS",
+    "cli_asset_sha_pin_present": "PASS",
+    "trigger_file_absent": "PASS",
+    "executor_workflow_runs_observed": 0
+  },
+  "credential": {
+    "required": "COPILOT_GITHUB_TOKEN",
+    "present": false,
+    "repository_owner_type": "PERSONAL"
+  },
+  "executor": {
+    "cli_version": "1.0.89",
+    "cli_linux_x64_sha256": "c5c234ccba6fae2b7a9eae462caf628e86c21b5e6240ec2e885727fc148a1dcc",
+    "ai1_model": "gpt-5.6-sol",
+    "ai2_model": "claude-fable-5-1",
+    "matrix_jobs": 8,
+    "one_primary_per_fresh_vm": true,
+    "available_tools": [
+      "read"
+    ],
+    "model_substitution": false,
+    "retries": 0
+  },
+  "scientific_effect": {
+    "primary_outputs_generated": 0,
+    "cohort_unchanged": true,
+    "weight_grid_unchanged": true,
+    "calculation_release": false
+  }
+}

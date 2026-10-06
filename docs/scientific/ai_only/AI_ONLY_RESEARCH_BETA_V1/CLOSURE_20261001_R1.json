@@ -1,0 +1,94 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_CLOSURE_R1",
+  "date": "2026-10-01",
+  "route": "AI_ONLY_RESEARCH_BETA_V1",
+  "cohort_id": "AI_ONLY_REPLICATION_COHORT_R1_20260930",
+  "status": "CLOSED_HOLD",
+  "release_gate": {
+    "state": "AI_ONLY_RESEARCH_BETA_RC_HOLD",
+    "github_run_id": "36845373815",
+    "github_run_conclusion": "success",
+    "gates": {
+      "G1": "PASS",
+      "G2": "FAIL",
+      "G3": "PASS",
+      "G4": "FAIL",
+      "G5": "PASS",
+      "G6": "PASS",
+      "G7": "PASS",
+      "G8": "PASS"
+    },
+    "blocking_gates": ["G2", "G4"]
+  },
+  "eligible_replay": {
+    "github_run_id": "36844856009",
+    "github_run_conclusion": "success",
+    "state": "PASS",
+    "routes": [
+      "AI_ONLY_DYAD_KBM_E02_V100",
+      "AI_ONLY_PAIR_KBM_E05_V100"
+    ],
+    "sensitivity_scenarios_per_route": 15,
+    "calculation_core_parity": "PASS",
+    "calculation_core_json_replay": "PASS"
+  },
+  "lane_states": {
+    "AI_ONLY_DYAD_KBM_E02_V100": {
+      "state": "ELIGIBLE_FOR_READ_ONLY_DYAD_SCENARIO_REPLAY",
+      "core_replay": "PASS"
+    },
+    "AI_ONLY_DYAD_OMG_NOV24_V100": {
+      "state": "INVALID_PRIMARY_OUTPUT_TECHNICAL_MISMATCH",
+      "reason": "Both raw primary outputs omitted the required non-empty run_id field.",
+      "core_replay": "NOT_TRIGGERED"
+    },
+    "AI_ONLY_PAIR_KBM_E05_V100": {
+      "state": "ELIGIBLE_FOR_READ_ONLY_PAIR_SCENARIO_REPLAY",
+      "core_replay": "PASS"
+    },
+    "AI_ONLY_DYAD_D25_E02_V100": {
+      "state": "HOLD_FACTOR_INCOMPLETE",
+      "reason": "Shared UNKNOWN for worker POS_AO2 and company KVS_AO2.",
+      "core_replay": "NOT_TRIGGERED"
+    }
+  },
+  "cohort_aggregate": {
+    "state": "PARTIAL",
+    "expected_decisions": 12,
+    "observed_decisions": 8,
+    "exact_agreement_count": 8,
+    "numeric_consensus_count": 6,
+    "shared_unknown_count": 2,
+    "disagreement_count": 0,
+    "unresolved_count": 4
+  },
+  "closure_rules": {
+    "repair_raw_primary_outputs": "FORBIDDEN",
+    "supply_missing_run_id_by_coordinator": "FORBIDDEN",
+    "retry_under_r1": "FORBIDDEN",
+    "coordinator_substitution": "FORBIDDEN",
+    "targeted_content_review": "FORBIDDEN",
+    "post_result_cohort_expansion": "FORBIDDEN",
+    "post_result_weight_tuning": "FORBIDDEN",
+    "future_continuation": "NEW_PROSPECTIVE_ROUTE_OR_VERSION_ONLY"
+  },
+  "scientific_boundaries": {
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED",
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED_BLOCKED",
+    "predictive_probability_risk_validation": "NOT_CLAIMED",
+    "old_OMG_company_KVS_5": "SUPERSEDED_NOT_RESTORED",
+    "old_OMG_Pol_50": "SUPERSEDED_NOT_RESTORED"
+  },
+  "separate_blocker": {
+    "route": "OMG_DYAD_E1_V102",
+    "exact_frozen_zip": "UNAVAILABLE",
+    "reconstruction": "FORBIDDEN"
+  },
+  "pull_request": {
+    "number": 123,
+    "state": "DRAFT_OPEN_NOT_MERGED",
+    "auto_merge": false
+  }
+}

@@ -1,0 +1,690 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.conflict-analysis.example/project-package/1.1.0",
+  "title": "Conflict Analysis Project Package 1.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "format_version",
+    "manifest",
+    "project",
+    "project_lock",
+    "schema_versions",
+    "time_slices",
+    "tension_points",
+    "participant_groups",
+    "group_tension_relations",
+    "assessment_sets",
+    "parameter_definitions",
+    "parameter_values",
+    "evidence_sources",
+    "evidence_links",
+    "calculation_strategies",
+    "scenarios",
+    "scenario_overrides",
+    "audit_events"
+  ],
+  "properties": {
+    "format": {"const": "conflict-analysis-project"},
+    "format_version": {"const": "1.1.0"},
+    "manifest": {"$ref": "#/$defs/manifest"},
+    "project": {"$ref": "#/$defs/project"},
+    "project_lock": {
+      "anyOf": [{"$ref": "#/$defs/projectLock"}, {"type": "null"}]
+    },
+    "schema_versions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/schemaVersion"}
+    },
+    "time_slices": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/timeSlice"}
+    },
+    "tension_points": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/structuralEntity"}
+    },
+    "participant_groups": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/structuralEntity"}
+    },
+    "group_tension_relations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/groupTensionRelation"}
+    },
+    "assessment_sets": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/assessmentSet"}
+    },
+    "parameter_definitions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/parameterDefinition"}
+    },
+    "parameter_values": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/parameterValue"}
+    },
+    "evidence_sources": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/evidenceSource"}
+    },
+    "evidence_links": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/evidenceLink"}
+    },
+    "calculation_strategies": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/calculationStrategy"}
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/scenario"}
+    },
+    "scenario_overrides": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/scenarioOverride"}
+    },
+    "audit_events": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/auditEvent"}
+    }
+  },
+  "$defs": {
+    "uuid": {"type": "string", "format": "uuid"},
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "baseProperties": {
+      "type": "object",
+      "required": ["id", "code", "version"],
+      "properties": {
+        "id": {"$ref": "#/$defs/uuid"},
+        "code": {"$ref": "#/$defs/code"},
+        "version": {"$ref": "#/$defs/version"}
+      }
+    },
+    "targetType": {
+      "enum": [
+        "PROJECT",
+        "TIME_SLICE",
+        "TENSION_POINT",
+        "PARTICIPANT_GROUP",
+        "GROUP_TENSION_RELATION"
+      ]
+    },
+    "valueStatus": {
+      "enum": [
+        "UNKNOWN",
+        "NOT_APPLICABLE",
+        "INSUFFICIENT_DATA",
+        "PROVISIONAL",
+        "CONFIRMED",
+        "OPEN_METHOD"
+      ]
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hash_algorithm",
+        "payload_sha256",
+        "entity_counts",
+        "ptn_version",
+        "gu_version"
+      ],
+      "properties": {
+        "hash_algorithm": {"const": "sha256"},
+        "payload_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "ptn_version": {"type": ["string", "null"]},
+        "gu_version": {"type": ["string", "null"]},
+        "entity_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "project",
+            "project_lock",
+            "schema_versions",
+            "time_slices",
+            "tension_points",
+            "participant_groups",
+            "group_tension_relations",
+            "assessment_sets",
+            "parameter_definitions",
+            "parameter_values",
+            "evidence_sources",
+            "evidence_links",
+            "calculation_strategies",
+            "scenarios",
+            "scenario_overrides",
+            "audit_events"
+          ],
+          "properties": {
+            "project": {"const": 1},
+            "project_lock": {"type": "integer", "minimum": 0, "maximum": 1},
+            "schema_versions": {"type": "integer", "minimum": 0},
+            "time_slices": {"type": "integer", "minimum": 0},
+            "tension_points": {"type": "integer", "minimum": 0},
+            "participant_groups": {"type": "integer", "minimum": 0},
+            "group_tension_relations": {"type": "integer", "minimum": 0},
+            "assessment_sets": {"type": "integer", "minimum": 0},
+            "parameter_definitions": {"type": "integer", "minimum": 0},
+            "parameter_values": {"type": "integer", "minimum": 0},
+            "evidence_sources": {"type": "integer", "minimum": 0},
+            "evidence_links": {"type": "integer", "minimum": 0},
+            "calculation_strategies": {"type": "integer", "minimum": 0},
+            "scenarios": {"type": "integer", "minimum": 0},
+            "scenario_overrides": {"type": "integer", "minimum": 0},
+            "audit_events": {"type": "integer", "minimum": 0}
+          }
+        }
+      }
+    },
+    "project": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "description",
+            "metadata",
+            "primary_language_tag",
+            "primary_language_assignment"
+          ],
+          "properties": {
+            "name": {"type": "string", "minLength": 1, "maxLength": 255},
+            "description": {"type": "string"},
+            "metadata": {"type": "object"},
+            "primary_language_tag": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "primary_language_assignment": {
+              "enum": ["EXPLICIT", "LEGACY_UNKNOWN"]
+            }
+          }
+        },
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "primary_language_assignment": {"const": "EXPLICIT"},
+                "primary_language_tag": {"not": {"const": "und"}}
+              }
+            },
+            {
+              "properties": {
+                "primary_language_assignment": {"const": "LEGACY_UNKNOWN"},
+                "primary_language_tag": {"const": "und"}
+              }
+            }
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "projectLock": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": [
+            "is_structure_locked",
+            "ordinary_user_can_edit_structure",
+            "studio_can_edit_structure",
+            "reason"
+          ],
+          "properties": {
+            "is_structure_locked": {"type": "boolean"},
+            "ordinary_user_can_edit_structure": {"type": "boolean"},
+            "studio_can_edit_structure": {"type": "boolean"},
+            "reason": {"type": "string"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "schemaVersion": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": ["is_current", "schema_manifest", "schema_manifest_hash"],
+          "properties": {
+            "is_current": {"type": "boolean"},
+            "schema_manifest": {"type": "object"},
+            "schema_manifest_hash": {
+              "type": "string",
+              "anyOf": [{"maxLength": 0}, {"pattern": "^[0-9a-f]{64}$"}]
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "timeSlice": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": ["name", "cutoff_date", "order"],
+          "properties": {
+            "name": {"type": "string", "maxLength": 255},
+            "cutoff_date": {"type": "string", "format": "date"},
+            "order": {"type": "integer", "minimum": 0}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "structuralEntity": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": ["name", "short_name", "definition", "order"],
+          "properties": {
+            "name": {"type": "string", "minLength": 1, "maxLength": 500},
+            "short_name": {"type": "string", "maxLength": 255},
+            "definition": {"type": "string", "minLength": 1},
+            "order": {"type": "integer", "minimum": 0}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "groupTensionRelation": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": ["participant_group_id", "tension_point_id"],
+          "properties": {
+            "participant_group_id": {"$ref": "#/$defs/uuid"},
+            "tension_point_id": {"$ref": "#/$defs/uuid"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "assessmentSet": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": ["kind", "name", "description"],
+          "properties": {
+            "kind": {"enum": ["HUMAN", "AI", "CONSENSUS", "SCENARIO"]},
+            "name": {"type": "string", "minLength": 1, "maxLength": 255},
+            "description": {"type": "string"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "parameterDefinition": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "description",
+            "target_type",
+            "value_type",
+            "scale_min",
+            "scale_max",
+            "scale_metadata"
+          ],
+          "properties": {
+            "name": {"type": "string", "minLength": 1, "maxLength": 255},
+            "description": {"type": "string"},
+            "target_type": {"$ref": "#/$defs/targetType"},
+            "value_type": {"enum": ["DECIMAL", "INTEGER", "BOOLEAN", "TEXT", "JSON"]},
+            "scale_min": {
+              "type": ["string", "null"],
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "scale_max": {
+              "type": ["string", "null"],
+              "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$"
+            },
+            "scale_metadata": {"type": "object"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "parameterValue": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": [
+            "time_slice_id",
+            "assessment_set_id",
+            "parameter_definition_id",
+            "target_type",
+            "target_id",
+            "status",
+            "value",
+            "note",
+            "confidence",
+            "range_min",
+            "range_max",
+            "rationale"
+          ],
+          "properties": {
+            "time_slice_id": {"$ref": "#/$defs/uuid"},
+            "assessment_set_id": {"$ref": "#/$defs/uuid"},
+            "parameter_definition_id": {"$ref": "#/$defs/uuid"},
+            "target_type": {"$ref": "#/$defs/targetType"},
+            "target_id": {"$ref": "#/$defs/uuid"},
+            "status": {"$ref": "#/$defs/valueStatus"},
+            "value": {},
+            "note": {"type": "string"},
+            "confidence": {
+              "type": ["string", "null"],
+              "pattern": "^(?:0(?:\\.[0-9]{1,4})?|1(?:\\.0{1,4})?)$"
+            },
+            "range_min": {},
+            "range_max": {},
+            "rationale": {"type": "string"}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": ["UNKNOWN", "NOT_APPLICABLE", "INSUFFICIENT_DATA", "OPEN_METHOD"]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {"type": "null"},
+              "confidence": {"type": "null"},
+              "range_min": {"type": "null"},
+              "range_max": {"type": "null"}
+            }
+          },
+          "else": {
+            "allOf": [
+              {
+                "properties": {
+                  "value": {"not": {"type": "null"}},
+                  "confidence": {"type": "string"},
+                  "rationale": {"pattern": ".*\\S.*"}
+                }
+              },
+              {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "range_min": {"type": "null"},
+                      "range_max": {"type": "null"}
+                    }
+                  },
+                  {
+                    "properties": {
+                      "range_min": {"not": {"type": "null"}},
+                      "range_max": {"not": {"type": "null"}}
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "evidenceSource": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": [
+            "title",
+            "url",
+            "additional_urls",
+            "published_on",
+            "accessed_on",
+            "metadata"
+          ],
+          "properties": {
+            "title": {"type": "string", "minLength": 1, "maxLength": 500},
+            "url": {
+              "anyOf": [
+                {"const": ""},
+                {"type": "string", "format": "uri", "pattern": "^(?:https?|ftps?)://"}
+              ]
+            },
+            "additional_urls": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uri",
+                "pattern": "^(?:https?|ftps?)://"
+              }
+            },
+            "published_on": {"type": ["string", "null"], "format": "date"},
+            "accessed_on": {"type": ["string", "null"], "format": "date"},
+            "metadata": {"type": "object"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "evidenceLink": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": ["parameter_value_id", "source_id", "relation", "rationale"],
+          "properties": {
+            "parameter_value_id": {"$ref": "#/$defs/uuid"},
+            "source_id": {"$ref": "#/$defs/uuid"},
+            "relation": {"enum": ["SUPPORTS", "CONTRADICTS", "CONTEXT"]},
+            "rationale": {"type": "string", "minLength": 1}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "calculationStrategy": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": [
+            "name",
+            "description",
+            "status",
+            "input_schema",
+            "output_schema",
+            "metadata"
+          ],
+          "properties": {
+            "name": {"type": "string", "minLength": 1, "maxLength": 255},
+            "description": {"type": "string"},
+            "status": {"enum": ["DRAFT", "ACTIVE", "DEPRECATED"]},
+            "input_schema": {"type": "object"},
+            "output_schema": {"type": "object"},
+            "metadata": {"type": "object"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "scenario": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": [
+            "time_slice_id",
+            "assessment_set_id",
+            "base_assessment_set_id",
+            "name",
+            "description",
+            "status"
+          ],
+          "properties": {
+            "time_slice_id": {"$ref": "#/$defs/uuid"},
+            "assessment_set_id": {"$ref": "#/$defs/uuid"},
+            "base_assessment_set_id": {"$ref": "#/$defs/uuid"},
+            "name": {"type": "string", "minLength": 1, "maxLength": 255},
+            "description": {"type": "string"},
+            "status": {"enum": ["DRAFT", "ACTIVE", "ARCHIVED"]}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "scenarioOverride": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": [
+            "scenario_id",
+            "parameter_definition_id",
+            "target_type",
+            "target_id",
+            "status",
+            "value",
+            "note",
+            "confidence",
+            "range_min",
+            "range_max",
+            "rationale"
+          ],
+          "properties": {
+            "scenario_id": {"$ref": "#/$defs/uuid"},
+            "parameter_definition_id": {"$ref": "#/$defs/uuid"},
+            "target_type": {"$ref": "#/$defs/targetType"},
+            "target_id": {"$ref": "#/$defs/uuid"},
+            "status": {"$ref": "#/$defs/valueStatus"},
+            "value": {},
+            "note": {"type": "string"},
+            "confidence": {
+              "type": ["string", "null"],
+              "pattern": "^(?:0(?:\\.[0-9]{1,4})?|1(?:\\.0{1,4})?)$"
+            },
+            "range_min": {},
+            "range_max": {},
+            "rationale": {"type": "string"}
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": ["UNKNOWN", "NOT_APPLICABLE", "INSUFFICIENT_DATA", "OPEN_METHOD"]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {"type": "null"},
+              "confidence": {"type": "null"},
+              "range_min": {"type": "null"},
+              "range_max": {"type": "null"}
+            }
+          },
+          "else": {
+            "allOf": [
+              {
+                "properties": {
+                  "value": {"not": {"type": "null"}},
+                  "confidence": {"type": "string"},
+                  "rationale": {"pattern": ".*\\S.*"}
+                }
+              },
+              {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "range_min": {"type": "null"},
+                      "range_max": {"type": "null"}
+                    }
+                  },
+                  {
+                    "properties": {
+                      "range_min": {"not": {"type": "null"}},
+                      "range_max": {"not": {"type": "null"}}
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "auditEvent": {
+      "allOf": [
+        {"$ref": "#/$defs/baseProperties"},
+        {
+          "type": "object",
+          "required": [
+            "assessment_set_id",
+            "parameter_value_id",
+            "action",
+            "actor_type",
+            "actor_identifier",
+            "entity_type",
+            "entity_id",
+            "before",
+            "after",
+            "occurred_at"
+          ],
+          "properties": {
+            "assessment_set_id": {
+              "anyOf": [{"$ref": "#/$defs/uuid"}, {"type": "null"}]
+            },
+            "parameter_value_id": {
+              "anyOf": [{"$ref": "#/$defs/uuid"}, {"type": "null"}]
+            },
+            "action": {"enum": ["CREATE", "UPDATE", "DELETE", "IMPORT", "LOCK", "UNLOCK"]},
+            "actor_type": {"enum": ["HUMAN", "AI", "SYSTEM"]},
+            "actor_identifier": {"type": "string", "minLength": 1, "maxLength": 255},
+            "entity_type": {
+              "enum": [
+                "PROJECT",
+                "PROJECT_SCHEMA_VERSION",
+                "PROJECT_LOCK",
+                "TIME_SLICE",
+                "TENSION_POINT",
+                "PARTICIPANT_GROUP",
+                "GROUP_TENSION_RELATION",
+                "ASSESSMENT_SET",
+                "PARAMETER_DEFINITION",
+                "PARAMETER_VALUE",
+                "EVIDENCE_SOURCE",
+                "EVIDENCE_LINK",
+                "CALCULATION_STRATEGY_DEFINITION",
+                "SCENARIO",
+                "SCENARIO_OVERRIDE",
+                "AUDIT_EVENT"
+              ]
+            },
+            "entity_id": {"$ref": "#/$defs/uuid"},
+            "before": {},
+            "after": {},
+            "occurred_at": {"type": "string", "format": "date-time"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    }
+  }
+}

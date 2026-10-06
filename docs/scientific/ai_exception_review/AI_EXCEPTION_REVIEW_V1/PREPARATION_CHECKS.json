@@ -1,0 +1,1240 @@
+{
+  "review_id": "AI_EXCEPTION_REVIEW_V1",
+  "validated_at_utc": "2026-09-26T16:40:59.652954+00:00",
+  "status": "PASS",
+  "checks_passed": 306,
+  "checks": [
+    {
+      "check": "exact 42 unique units",
+      "result": "PASS"
+    },
+    {
+      "check": "9 availability 12 mapping 21 translation",
+      "result": "PASS"
+    },
+    {
+      "check": "exact unresolved version labels",
+      "result": "PASS"
+    },
+    {
+      "check": "20 EN and 1 KK translation targets",
+      "result": "PASS"
+    },
+    {
+      "check": "common canonical material hash",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO four self-contained JSON blocks",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO exact same factual material",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO instructions same and no other expert names",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO hash matches manifest registry",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO no prior verdict/translation fields",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO schema only own identity",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO blank response matches standalone block",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO no completed answers",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q01 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q02 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q03 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q04 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q05 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q06 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q07 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q08 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q09 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q10 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q11 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q12 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q13 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q14 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q15 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q16 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q17 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q18 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q19 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q20 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q21 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q22 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q23 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q24 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q25 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q26 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q27 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q28 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q29 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q30 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q31 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q32 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q33 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q34 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q35 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q36 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q37 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q38 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q39 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q40 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q41 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO Q42 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO deterministic seeded order; no omitted unit",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_A_CHATGPT_PRO blank rejected as completed response",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO four self-contained JSON blocks",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO exact same factual material",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO instructions same and no other expert names",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO hash matches manifest registry",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO no prior verdict/translation fields",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO schema only own identity",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO blank response matches standalone block",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO no completed answers",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q01 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q02 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q03 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q04 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q05 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q06 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q07 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q08 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q09 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q10 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q11 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q12 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q13 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q14 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q15 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q16 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q17 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q18 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q19 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q20 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q21 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q22 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q23 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q24 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q25 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q26 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q27 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q28 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q29 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q30 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q31 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q32 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q33 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q34 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q35 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q36 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q37 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q38 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q39 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q40 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q41 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO Q42 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO deterministic seeded order; no omitted unit",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_B_CHATGPT_PRO blank rejected as completed response",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 four self-contained JSON blocks",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 exact same factual material",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 instructions same and no other expert names",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 hash matches manifest registry",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 no prior verdict/translation fields",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 schema only own identity",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 blank response matches standalone block",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 no completed answers",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q01 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q02 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q03 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q04 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q05 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q06 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q07 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q08 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q09 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q10 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q11 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q12 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q13 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q14 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q15 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q16 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q17 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q18 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q19 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q20 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q21 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q22 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q23 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q24 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q25 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q26 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q27 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q28 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q29 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q30 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q31 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q32 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q33 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q34 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q35 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q36 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q37 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q38 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q39 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q40 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q41 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 Q42 unchanged task content",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 deterministic seeded order; no omitted unit",
+      "result": "PASS"
+    },
+    {
+      "check": "EXPERT_C_CLAUDE_FABLE_5_1 blank rejected as completed response",
+      "result": "PASS"
+    },
+    {
+      "check": "three different permutations",
+      "result": "PASS"
+    },
+    {
+      "check": "coding_items exactly preserved source fields",
+      "result": "PASS"
+    },
+    {
+      "check": "facts exactly preserved source fields",
+      "result": "PASS"
+    },
+    {
+      "check": "text_fragments exactly preserved source fields",
+      "result": "PASS"
+    },
+    {
+      "check": "document_versions exactly preserved source fields",
+      "result": "PASS"
+    },
+    {
+      "check": "documents exactly preserved source fields",
+      "result": "PASS"
+    },
+    {
+      "check": "sources exactly preserved source fields",
+      "result": "PASS"
+    },
+    {
+      "check": "29 original fragment hashes",
+      "result": "PASS"
+    },
+    {
+      "check": "all fact fragment links close",
+      "result": "PASS"
+    },
+    {
+      "check": "all fragment version links close",
+      "result": "PASS"
+    },
+    {
+      "check": "all version document source links close",
+      "result": "PASS"
+    },
+    {
+      "check": "all 12 frozen CodingItems have mapping task",
+      "result": "PASS"
+    },
+    {
+      "check": "AV-D07 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "AV-D15 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "AV-D17 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "AV-D19 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "AV-D20 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "AV-D21 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "AV-D23 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "AV-D24 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "AV-D29 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU01-E02 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU01-E02 complete exact chain set",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU01-E06 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU01-E06 complete exact chain set",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU02-E05 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU02-E05 complete exact chain set",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU03-E02 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU03-E02 complete exact chain set",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU03-E06 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU03-E06 complete exact chain set",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU04-E04 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU04-E04 complete exact chain set",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU04-E05 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU04-E05 complete exact chain set",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU05-E02 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU05-E02 complete exact chain set",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU05-E04 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU05-E04 complete exact chain set",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU07-E04 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU07-E04 complete exact chain set",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU08-E05 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU08-E05 complete exact chain set",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU08-E06 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "MAP-GU08-E06 complete exact chain set",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-d3e6a365-8150-545b-8005-c18c4939142b fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-cc839407-9eb7-5e05-acca-70f1577883d4 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-d521033f-59ce-5518-9227-b5fe9cb7570f fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-7f0b0752-387d-5def-ba3d-ab11c4f1414b fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-04ab9fff-fe17-5b34-8733-f046d1b1ed06 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-b344006d-0950-57af-b0e7-60eb7b4f5217 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-d1067ad6-51d6-5a42-b6ea-8cf74c4fd71c fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-2c47a771-1301-55be-a2ab-9b2ef1f82510 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-56d19d98-707a-5deb-9472-d355b3835d79 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-49c356b3-3585-587c-9573-d4326e97de77 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-15e6b7e7-98f3-5830-8d5d-ae44862e445a fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-51e5ac30-63a9-5433-8472-a22727f1db36 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-33ce2949-0da2-5839-9b01-566ae7e4bbf4 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-b5fdecb6-2ac4-5f56-aae6-6aef4bb7b956 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-fcd2397b-c4e9-5035-9ff9-45969f55ecf4 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-150704f4-c65a-50f4-b758-b9b456f909ff fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-6295e487-c225-5445-ae8b-653d1691579a fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-3ca46849-549e-544d-b72c-d62ef1706612 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-a7869dd7-97d1-56de-86b4-aadf1e970c0a fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "LANG-ef7df23c-ba67-5903-9265-adbd1936ffa3 fragment references close",
+      "result": "PASS"
+    },
+    {
+      "check": "18 witness records all pre-cutoff",
+      "result": "PASS"
+    },
+    {
+      "check": "no historical fact date after cutoff",
+      "result": "PASS"
+    },
+    {
+      "check": "no translation candidates or outcome fields in material",
+      "result": "PASS"
+    },
+    {
+      "check": "synthetic valid three-answer batch",
+      "result": "PASS"
+    },
+    {
+      "check": "missing expert rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "shared session rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "missing item rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "duplicate item rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "wrong material rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "wrong expert rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "wrong target rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "foreign fragment rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "quote hash mismatch rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "unsupported RESOLVED rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "RESOLVED with unknowns rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "unresolved without unknowns rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "confidence over 1 rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "confidence boolean rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "extra POS scoring field rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "false isolation rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "contamination quarantines all units",
+      "result": "PASS"
+    },
+    {
+      "check": "routing 3 same proof",
+      "result": "PASS"
+    },
+    {
+      "check": "routing 2 same plus unresolved",
+      "result": "PASS"
+    },
+    {
+      "check": "routing NEED_HUMAN overrides majority",
+      "result": "PASS"
+    },
+    {
+      "check": "routing all unresolved",
+      "result": "PASS"
+    },
+    {
+      "check": "routing one resolved",
+      "result": "PASS"
+    },
+    {
+      "check": "routing material issue overrides consensus",
+      "result": "PASS"
+    },
+    {
+      "check": "routing different bytes",
+      "result": "PASS"
+    },
+    {
+      "check": "routing translation wording requires review",
+      "result": "PASS"
+    },
+    {
+      "check": "routing contradiction in third answer",
+      "result": "PASS"
+    },
+    {
+      "check": "routing confidence does not change result",
+      "result": "PASS"
+    },
+    {
+      "check": "fragment proof accepted without rebinding",
+      "result": "PASS"
+    },
+    {
+      "check": "post-cutoff witness rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "date-only current copy rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "fragment-to-edition promotion rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "unsupported full edition rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "mapping six dimensions proof accepted",
+      "result": "PASS"
+    },
+    {
+      "check": "mapping dimensions without proof rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "human renderer includes only selected exception",
+      "result": "PASS"
+    },
+    {
+      "check": "human renderer excludes other 41 tasks",
+      "result": "PASS"
+    },
+    {
+      "check": "human renderer strips AI verdicts/confidence",
+      "result": "PASS"
+    },
+    {
+      "check": "human future template explicitly pending",
+      "result": "PASS"
+    },
+    {
+      "check": "pending queue cannot be exported as empty success",
+      "result": "PASS"
+    },
+    {
+      "check": "docs\\scientific\\pilots\\ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1\\FREEZE_MANIFEST.json original outer manifest unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/MVP7_HUMAN_CODING_PILOT_PREREGISTRATION.md original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H1/ACCESS_ATTESTATION.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H1/CODER_PACKET.md original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H1/PACKET_MANIFEST.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H1/POS_KVS_V1_2_INSTRUCTIONS.md original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H1/RESPONSE_TEMPLATE.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H2/ACCESS_ATTESTATION.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H2/CODER_PACKET.md original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H2/PACKET_MANIFEST.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H2/POS_KVS_V1_2_INSTRUCTIONS.md original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/H2/RESPONSE_TEMPLATE.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/TECHNICAL_VALIDATION.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/EVIDENCE_SUBSET.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/RANDOMIZATION.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/RELEASE_CHECKLIST.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/RESPONSE_SCHEMA.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/SELECTED_CODING_ITEMS.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/SELECTION_FRAME.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/SOURCE_MANIFEST.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/pilots/ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1/coordinator/STUDY_PLAN.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs\\scientific\\admission\\ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1\\FREEZE_MANIFEST.json original outer manifest unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/AVAILABILITY_WITNESSES.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/CONTEXT_ATTRIBUTION_TRANSLATION.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/ADMISSION_REASSESSMENT.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/SEARCH_LEDGER.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/HUMAN_REVIEW_QUEUE.md original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_REPORT.md original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/admission/ZHANAOZEN_2011_HISTORICAL_AVAILABILITY_RECOVERY_V1/RECOVERY_CHECKS.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/admission/ZHANAOZEN_2011_HUMAN_PILOT_ADMISSION_V1/ADMISSION_AUDIT.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/ZHANAOZEN_2011_HUMAN_PILOT_ADMISSION_REPORT.md original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "docs/scientific/admission/ZHANAOZEN_2011_HUMAN_PILOT_ADMISSION_V1/ADMISSION_CHECKS.json original frozen hash unchanged",
+      "result": "PASS"
+    },
+    {
+      "check": "HEAD remains exact PR122 commit",
+      "result": "PASS"
+    },
+    {
+      "check": "no pre-existing tracked changes including code Core Evidence H1 H2",
+      "result": "PASS"
+    },
+    {
+      "check": "no actual expert result file",
+      "result": "PASS"
+    },
+    {
+      "check": "no actual populated human queue",
+      "result": "PASS"
+    }
+  ],
+  "expert_review": "NOT_RUN",
+  "human_coding": "NOT_STARTED",
+  "synthetic_tests": "UTILITY_ONLY_FICTITIOUS_TEST_IDS_NO_HISTORICAL_ANSWERS",
+  "limitations": [
+    "External evidence authenticity not re-evaluated during packet preparation.",
+    "Blind distribution and actual independent sessions have not happened.",
+    "No statistical human reliability or factor assessment performed."
+  ]
+}

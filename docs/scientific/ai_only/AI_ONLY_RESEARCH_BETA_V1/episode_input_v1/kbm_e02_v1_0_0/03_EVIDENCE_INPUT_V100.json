@@ -1,0 +1,101 @@
+{
+  "route_id": "AI_ONLY_DYAD_KBM_E02_V100",
+  "contract_version": "1.0.0",
+  "rubric_version": "2.1.0",
+  "status": "FROZEN_BEFORE_PRIMARY_RESPONSES",
+  "object_label": "AI_ONLY_NON_SIMULTANEOUS_KBM_E02_DEMAND_TO_FORMAL_RESPONSE_DYAD",
+  "ptn": {
+    "element_code": "E02",
+    "ptn_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+    "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+    "reference_sha256": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172"
+  },
+  "temporal_object": {
+    "t0": {
+      "source_report_date": "2011-05-17",
+      "actor_id": "AOV2_KBM_STRIKERS",
+      "source_id": "D01-FPAY",
+      "kind": "INITIATING_PAY_DEMAND_SOURCE_STATEMENT",
+      "note": "2011-05-21 is the Wayback capture date, not the source-report date."
+    },
+    "t1": {
+      "source_report_date": "2011-05-27",
+      "reported_dateline_date": "2011-05-26",
+      "actor_id": "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527",
+      "source_id": "KBM_NOMAD_PRESS_RESPONSE_20110527",
+      "kind": "FORMAL_COMPANY_RESPONSE_SOURCE_STATEMENT"
+    },
+    "simultaneous_snapshot": false,
+    "carry_forward": "NONE",
+    "as_of_time_utc": null,
+    "interpretation": "Two dated source statements in a demand-to-formal-response sequence; not a state estimate for any single date."
+  },
+  "worker_context_for_temporal_identity_only": {
+    "source_id": "D01-FPAY",
+    "publisher": "RFE/RL",
+    "publication_date": "2011-05-17",
+    "archive_capture_utc": "2011-05-21T18:15:20Z",
+    "archive_url": "https://web.archive.org/web/20110521181520id_/http://www.rferl.org:80/content/oil_workers_strike_in_kazakhstan_grows/24177839.html",
+    "payload_sha256": "5b171ee61f7e202da0b00899aef7659237e01ed6000c2626e4834f265ef66907",
+    "payload_bytes": 61956,
+    "exact_fragment": "strikers are demanding a pay rise",
+    "fragment_sha256": "fc3fefbdcd67497c70405602e47bb7a3d29bcac9e8ea5faba2dc5cfd68734901",
+    "actor_scope": "Striking workers at the Qarazhanbas oil and gas field described in D01; no extrapolation to non-strikers, contractors, or the sector as a whole.",
+    "factor_values_visible_to_company_coder": false
+  },
+  "company_evidence": {
+    "source_id": "KBM_NOMAD_PRESS_RESPONSE_20110527",
+    "publisher": "Nomad",
+    "page_publication_date": "2011-05-27",
+    "reported_dateline": "ASTANA, 26 May 2011; the page states that the information is from the KBM press service.",
+    "original_url": "http://nomad.su/?a=11-201105270010",
+    "archive": {
+      "capture_utc": "2011-05-28T15:32:27Z",
+      "archive_url": "https://web.archive.org/web/20110528153227id_/http://www.nomad.su/?a=11-201105270010",
+      "http_status_from_availability_api": 200,
+      "payload_bytes": 30312,
+      "payload_sha256": "4280ad5774d94cae7efc788943301852550080c69c28a02fb99ddbadb4b9f06a",
+      "replay_retrieved_and_rehashed_on": "2026-09-30",
+      "authentication_status": "P1_ARCHIVE_REPLAY_AUTHENTICATED"
+    },
+    "attribution_scope": "KBM company/management position only. Salary figures and wage-action claims are explicitly statements about KBM; do not attribute them to ATS/TMS or to all employers.",
+    "coder_visible_source_summary": [
+      "The archived page explicitly attributes the information to the KBM press service.",
+      "The company rejects the strikers' pay-coefficient demands as unfounded and cites official/legal opinions supporting that position.",
+      "The company describes its own recurring wage/tariff increases and states that over 2007–2011 employee wages increased within a 59.5%–90.1% range.",
+      "The company gives current minimum and maximum tariff figures, including a minimum monthly-equivalent tariff of 70,038 tenge and a maximum tariff of 181,822 tenge before additional payments.",
+      "The page reports that KBM management had repeatedly proposed resolving the dispute at the negotiating table.",
+      "These are company-declared positions/actions, not independent proof that compensation was fair or that the workers accepted the claims."
+    ],
+    "limited_verbatim_evidence": [
+      "КБМ произведено повышение заработных плат работников в диапазоне от 59,5% до 90,1 % от размера заработной платы",
+      "за столом переговоров"
+    ],
+    "local_replay_checks": {
+      "contains_59_5_percent_phrase": true,
+      "contains_70038_tariff": true,
+      "contains_negotiation_table_phrase": true
+    }
+  },
+  "coding_scope": {
+    "entries_per_coder": 2,
+    "factors": [
+      "POS_AO2",
+      "KVS_AO2"
+    ],
+    "company_actor_id": "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527",
+    "company_values_preassigned": false,
+    "worker_factor_values_not_shown_to_company_coders": true,
+    "external_search": "FORBIDDEN",
+    "prior_episode_outputs": "FORBIDDEN",
+    "other_coder_output": "FORBIDDEN",
+    "known_outcome": "FORBIDDEN"
+  },
+  "scientific_boundaries": {
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "historical_area_UNO": "NOT_COMPUTED",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED",
+    "unknown_is_zero": false
+  }
+}

@@ -1,0 +1,435 @@
+{
+  "pilot_id": "ZHANAOZEN_2011_HUMAN_CODING_PILOT_V1",
+  "count": 12,
+  "items": [
+    {
+      "source_coding_item": {
+        "coding_item_id": "092a3bde-2c62-5bae-a31d-b5c8751eb201",
+        "actor_id": "744feea3-d4d4-5a3c-9d65-394894389e67",
+        "actor_code": "KZ.ZHANAOZEN.ACTOR.GU04",
+        "actor_name": "Жители территории вне нефтегазовых трудовых групп",
+        "element_id": "2fecb360-274b-55da-a7d4-6020a87de286",
+        "element_code": "KZ.ZHANAOZEN.ELEMENT.E04",
+        "element_name": "Доступ местных жителей к нефтегазовой занятости",
+        "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+        "cutoff_date": "2011-12-15",
+        "reference_statement": "Существующий доступ местных жителей к нефтегазовым рабочим местам достаточен и не требует существенного расширения.",
+        "power_status": "POWER_PROFILE_PENDING",
+        "identity_namespace": "urn:conflictology:v4:kz:zhanaozen:coding_item"
+      },
+      "reference_sha256_utf8": "9f8dfaf65197fa359ee5ee5526c4ea4e985ae0998a0c23d5c9a96431682512f2",
+      "target_time_utc": "2011-12-15T23:59:59Z",
+      "item_fact_link_ids": [
+        "668afc2a-ce63-51f4-a475-8f3db1cdd99c",
+        "69155ce0-39b6-5416-acbc-79d4081e059e",
+        "bf7a147c-6dec-5305-bffa-7ec7c6863802"
+      ],
+      "fact_fragment_link_ids": [
+        "47dd7a1c-a546-5108-b345-dcdc6c583a8c",
+        "73866456-884b-5cac-9940-3eb5b47f51fc",
+        "fc45dc13-eec5-5d41-8a2d-cf7568a5550e"
+      ],
+      "pilot_binding": {
+        "study_issue_identity": "2fecb360-274b-55da-a7d4-6020a87de286",
+        "reference_scope": "EXACT_UNCHANGED",
+        "model_ptn_mapping": "NOT_ESTABLISHED",
+        "numeric_admission": "NOT_PREJUDGED"
+      },
+      "human_answers": "NOT_CREATED"
+    },
+    {
+      "source_coding_item": {
+        "coding_item_id": "1abf6c8c-5295-5837-b75f-00c55daf3a8c",
+        "actor_id": "d31904bd-a9e2-52bc-886d-d959d8e6f86d",
+        "actor_code": "KZ.ZHANAOZEN.ACTOR.GU01",
+        "actor_name": "Работники основных нефтегазовых предприятий",
+        "element_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+        "element_code": "KZ.ZHANAOZEN.ELEMENT.E02",
+        "element_name": "Оплата труда и социальные гарантии в нефтегазовом секторе",
+        "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+        "cutoff_date": "2011-12-15",
+        "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+        "power_status": "POWER_PROFILE_PENDING",
+        "identity_namespace": "urn:conflictology:v4:kz:zhanaozen:coding_item"
+      },
+      "reference_sha256_utf8": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172",
+      "target_time_utc": "2011-12-15T23:59:59Z",
+      "item_fact_link_ids": [
+        "54c952ba-0c40-5494-8592-545e5e50cb08",
+        "743eb695-9df3-5557-addc-759ff726af5c",
+        "80067969-da12-5ccd-8f3a-dbe2bb28930c",
+        "822e4a06-7a43-5912-aabc-ca2e67001e95"
+      ],
+      "fact_fragment_link_ids": [
+        "1e7fec6b-118a-55ac-9b5e-cbfb14328c2e",
+        "34c226d3-8e31-5734-ad74-cc42d758ee4f",
+        "4b6e8cd6-dff4-5d12-9092-e86477fee8a4",
+        "4e0565a6-c170-51e9-9997-a7190eb2b8a0",
+        "cbcc9b78-9a8f-569d-b0be-738ec694d301"
+      ],
+      "pilot_binding": {
+        "study_issue_identity": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+        "reference_scope": "EXACT_UNCHANGED",
+        "model_ptn_mapping": "NOT_ESTABLISHED",
+        "numeric_admission": "NOT_PREJUDGED"
+      },
+      "human_answers": "NOT_CREATED"
+    },
+    {
+      "source_coding_item": {
+        "coding_item_id": "2c58ce09-3654-5a87-89be-4b1953f467c7",
+        "actor_id": "d803888d-ec24-5c7e-905b-96f88d01c36f",
+        "actor_code": "KZ.ZHANAOZEN.ACTOR.GU05",
+        "actor_name": "Работодатели нефтегазового сектора и подрядного контура",
+        "element_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+        "element_code": "KZ.ZHANAOZEN.ELEMENT.E02",
+        "element_name": "Оплата труда и социальные гарантии в нефтегазовом секторе",
+        "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+        "cutoff_date": "2011-12-15",
+        "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+        "power_status": "POWER_PROFILE_PENDING",
+        "identity_namespace": "urn:conflictology:v4:kz:zhanaozen:coding_item"
+      },
+      "reference_sha256_utf8": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172",
+      "target_time_utc": "2011-12-15T23:59:59Z",
+      "item_fact_link_ids": [
+        "b933bed3-fc16-527a-9f96-bb240f337320",
+        "f121001b-af69-5186-ac1d-c83898bb5508",
+        "f97b4eec-7121-5d83-a227-2f0daa7393f9"
+      ],
+      "fact_fragment_link_ids": [
+        "904af249-41ef-5986-9bea-1a00f59d9f19",
+        "a6efe35a-1792-5574-9fed-1d9ce640561b",
+        "c9036ec1-6b3c-55d0-aa15-7f63bea91fa6"
+      ],
+      "pilot_binding": {
+        "study_issue_identity": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+        "reference_scope": "EXACT_UNCHANGED",
+        "model_ptn_mapping": "NOT_ESTABLISHED",
+        "numeric_admission": "NOT_PREJUDGED"
+      },
+      "human_answers": "NOT_CREATED"
+    },
+    {
+      "source_coding_item": {
+        "coding_item_id": "3f4dc104-40c7-59db-ad5c-61f8a80232bc",
+        "actor_id": "744feea3-d4d4-5a3c-9d65-394894389e67",
+        "actor_code": "KZ.ZHANAOZEN.ACTOR.GU04",
+        "actor_name": "Жители территории вне нефтегазовых трудовых групп",
+        "element_id": "728c8406-ba99-5787-9557-933b5670be7c",
+        "element_code": "KZ.ZHANAOZEN.ELEMENT.E05",
+        "element_name": "Представительство интересов и доступ к коллективным переговорам",
+        "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+        "cutoff_date": "2011-12-15",
+        "reference_statement": "Существующие механизмы представительства, переговоров и коллективных действий обеспечивают достаточный доступ к выражению и согласованию интересов.",
+        "power_status": "POWER_PROFILE_PENDING",
+        "identity_namespace": "urn:conflictology:v4:kz:zhanaozen:coding_item"
+      },
+      "reference_sha256_utf8": "f689f671787c35619a3a32c6079908fb8ac5436a30cd832355b0238fe44f1deb",
+      "target_time_utc": "2011-12-15T23:59:59Z",
+      "item_fact_link_ids": [
+        "043f00d5-a034-5c7a-8ec5-a2b20e8a5ee6",
+        "72996190-93cb-5413-93a8-941a885d12ed"
+      ],
+      "fact_fragment_link_ids": [
+        "c17d0910-ff76-5f32-a278-fe97306b6ae8",
+        "fc45dc13-eec5-5d41-8a2d-cf7568a5550e"
+      ],
+      "pilot_binding": {
+        "study_issue_identity": "728c8406-ba99-5787-9557-933b5670be7c",
+        "reference_scope": "EXACT_UNCHANGED",
+        "model_ptn_mapping": "NOT_ESTABLISHED",
+        "numeric_admission": "NOT_PREJUDGED"
+      },
+      "human_answers": "NOT_CREATED"
+    },
+    {
+      "source_coding_item": {
+        "coding_item_id": "3fba0d88-4c72-5d24-b879-52904c88a0e5",
+        "actor_id": "6e5f84f6-8988-5e72-8fbd-bf67d4c8bb45",
+        "actor_code": "KZ.ZHANAOZEN.ACTOR.GU03",
+        "actor_name": "Уволенные и соискатели нефтегазовой занятости",
+        "element_id": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+        "element_code": "KZ.ZHANAOZEN.ELEMENT.E02",
+        "element_name": "Оплата труда и социальные гарантии в нефтегазовом секторе",
+        "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+        "cutoff_date": "2011-12-15",
+        "reference_statement": "Существующий порядок оплаты и социальных гарантий работников нефтегазового сектора является приемлемым и не требует существенного изменения.",
+        "power_status": "POWER_PROFILE_PENDING",
+        "identity_namespace": "urn:conflictology:v4:kz:zhanaozen:coding_item"
+      },
+      "reference_sha256_utf8": "197738bbdb7c8cd7dcc7b66cb2aa0b95084f72aa24e14c6604401ebd75eec172",
+      "target_time_utc": "2011-12-15T23:59:59Z",
+      "item_fact_link_ids": [
+        "a0b4f08c-150f-582a-abf2-7742dec34c20",
+        "bc4770a0-3ef8-5d4b-96dd-8b925db4aab3",
+        "f6381f5d-0131-5b9a-a39e-102dc5765c90"
+      ],
+      "fact_fragment_link_ids": [
+        "4b6e8cd6-dff4-5d12-9092-e86477fee8a4",
+        "4d016edb-801c-5b2f-a4b7-0a2211f03711",
+        "f07fb0c1-2fea-5341-bdab-96681a75de89"
+      ],
+      "pilot_binding": {
+        "study_issue_identity": "74872afd-9303-5d0f-a70a-d5fe7154645c",
+        "reference_scope": "EXACT_UNCHANGED",
+        "model_ptn_mapping": "NOT_ESTABLISHED",
+        "numeric_admission": "NOT_PREJUDGED"
+      },
+      "human_answers": "NOT_CREATED"
+    },
+    {
+      "source_coding_item": {
+        "coding_item_id": "5e3146aa-0dfd-5be2-8f8d-39b94edee3ff",
+        "actor_id": "d803888d-ec24-5c7e-905b-96f88d01c36f",
+        "actor_code": "KZ.ZHANAOZEN.ACTOR.GU05",
+        "actor_name": "Работодатели нефтегазового сектора и подрядного контура",
+        "element_id": "2fecb360-274b-55da-a7d4-6020a87de286",
+        "element_code": "KZ.ZHANAOZEN.ELEMENT.E04",
+        "element_name": "Доступ местных жителей к нефтегазовой занятости",
+        "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+        "cutoff_date": "2011-12-15",
+        "reference_statement": "Существующий доступ местных жителей к нефтегазовым рабочим местам достаточен и не требует существенного расширения.",
+        "power_status": "POWER_PROFILE_PENDING",
+        "identity_namespace": "urn:conflictology:v4:kz:zhanaozen:coding_item"
+      },
+      "reference_sha256_utf8": "9f8dfaf65197fa359ee5ee5526c4ea4e985ae0998a0c23d5c9a96431682512f2",
+      "target_time_utc": "2011-12-15T23:59:59Z",
+      "item_fact_link_ids": [
+        "4ec3f71f-cfb7-5e74-b62a-1d4a4fa2c5d5",
+        "d5dda83a-2cf0-5b6a-9623-895cb4e8189a",
+        "e83d76b4-ec9e-5f11-96a1-4c9637e39959"
+      ],
+      "fact_fragment_link_ids": [
+        "0fac41c8-4af0-5808-8d16-28ebf4ba1616",
+        "2dcee05b-f6d2-5660-a752-0108800a4088",
+        "e3286e30-8ddd-5598-a9c7-182ab890694f"
+      ],
+      "pilot_binding": {
+        "study_issue_identity": "2fecb360-274b-55da-a7d4-6020a87de286",
+        "reference_scope": "EXACT_UNCHANGED",
+        "model_ptn_mapping": "NOT_ESTABLISHED",
+        "numeric_admission": "NOT_PREJUDGED"
+      },
+      "human_answers": "NOT_CREATED"
+    },
+    {
+      "source_coding_item": {
+        "coding_item_id": "79748746-11e6-506c-82d5-bc5fe877beb0",
+        "actor_id": "6782018f-1868-5aa7-b40e-fb5ad11269ca",
+        "actor_code": "KZ.ZHANAOZEN.ACTOR.GU08",
+        "actor_name": "Правоохранительные, судебные и надзорные органы",
+        "element_id": "0ca209e6-ca1a-5751-b27e-cbd0d180ffa9",
+        "element_code": "KZ.ZHANAOZEN.ELEMENT.E06",
+        "element_name": "Государственное принуждение и правовые процедуры в конфликте",
+        "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+        "cutoff_date": "2011-12-15",
+        "reference_statement": "Существующие правоохранительные и судебные процедуры реагирования на трудовой конфликт достаточны и соразмерны с точки зрения данного актора.",
+        "power_status": "POWER_PROFILE_PENDING",
+        "identity_namespace": "urn:conflictology:v4:kz:zhanaozen:coding_item"
+      },
+      "reference_sha256_utf8": "690666cdf713d75e095073573145b45e98195adf580b98fcfc410e72784523ed",
+      "target_time_utc": "2011-12-15T23:59:59Z",
+      "item_fact_link_ids": [
+        "1651b5fe-79f9-5664-b62a-66645053b438",
+        "2594c60f-a911-5390-aeb0-6fbf87ef0f4e",
+        "f0fdc14f-71ae-5448-a1b0-7637eee65236"
+      ],
+      "fact_fragment_link_ids": [
+        "3375e9a8-4315-5451-a505-e354314c36b3",
+        "6530b92f-e4d5-514d-a0e0-0640a25587a6",
+        "b7c4c3a7-2f92-5f35-984c-9f6fc4c8c6db",
+        "e096e9bc-09b3-5cf7-a598-e1cff13ad4a7"
+      ],
+      "pilot_binding": {
+        "study_issue_identity": "0ca209e6-ca1a-5751-b27e-cbd0d180ffa9",
+        "reference_scope": "EXACT_UNCHANGED",
+        "model_ptn_mapping": "NOT_ESTABLISHED",
+        "numeric_admission": "NOT_PREJUDGED"
+      },
+      "human_answers": "NOT_CREATED"
+    },
+    {
+      "source_coding_item": {
+        "coding_item_id": "951f300c-27d0-5a09-b312-e3fdad147f54",
+        "actor_id": "d31904bd-a9e2-52bc-886d-d959d8e6f86d",
+        "actor_code": "KZ.ZHANAOZEN.ACTOR.GU01",
+        "actor_name": "Работники основных нефтегазовых предприятий",
+        "element_id": "0ca209e6-ca1a-5751-b27e-cbd0d180ffa9",
+        "element_code": "KZ.ZHANAOZEN.ELEMENT.E06",
+        "element_name": "Государственное принуждение и правовые процедуры в конфликте",
+        "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+        "cutoff_date": "2011-12-15",
+        "reference_statement": "Существующие правоохранительные и судебные процедуры реагирования на трудовой конфликт достаточны и соразмерны с точки зрения данного актора.",
+        "power_status": "POWER_PROFILE_PENDING",
+        "identity_namespace": "urn:conflictology:v4:kz:zhanaozen:coding_item"
+      },
+      "reference_sha256_utf8": "690666cdf713d75e095073573145b45e98195adf580b98fcfc410e72784523ed",
+      "target_time_utc": "2011-12-15T23:59:59Z",
+      "item_fact_link_ids": [
+        "06e56a70-44d2-5797-9b26-59e64facfb66",
+        "5c92a9d9-4637-55d1-ab1b-1683cee85f3c",
+        "c605ee71-740a-5232-97d0-bf5b700a3b93",
+        "cb821c7d-09c8-5231-b4bf-4c559bf44d6e"
+      ],
+      "fact_fragment_link_ids": [
+        "06771a8f-8172-51a4-aed0-806c820c328f",
+        "0a80d046-9dd0-58ac-b1df-41508cb34b5a",
+        "6530b92f-e4d5-514d-a0e0-0640a25587a6",
+        "e096e9bc-09b3-5cf7-a598-e1cff13ad4a7",
+        "fb265c9c-83c9-53b4-a2aa-3fbc6413a65a"
+      ],
+      "pilot_binding": {
+        "study_issue_identity": "0ca209e6-ca1a-5751-b27e-cbd0d180ffa9",
+        "reference_scope": "EXACT_UNCHANGED",
+        "model_ptn_mapping": "NOT_ESTABLISHED",
+        "numeric_admission": "NOT_PREJUDGED"
+      },
+      "human_answers": "NOT_CREATED"
+    },
+    {
+      "source_coding_item": {
+        "coding_item_id": "a6f0883a-d5fc-521b-8662-1c160fded750",
+        "actor_id": "fd80f79b-7c39-58db-b122-7245b77ff0c5",
+        "actor_code": "KZ.ZHANAOZEN.ACTOR.GU07",
+        "actor_name": "Центральные органы государственной власти",
+        "element_id": "2fecb360-274b-55da-a7d4-6020a87de286",
+        "element_code": "KZ.ZHANAOZEN.ELEMENT.E04",
+        "element_name": "Доступ местных жителей к нефтегазовой занятости",
+        "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+        "cutoff_date": "2011-12-15",
+        "reference_statement": "Существующий доступ местных жителей к нефтегазовым рабочим местам достаточен и не требует существенного расширения.",
+        "power_status": "POWER_PROFILE_PENDING",
+        "identity_namespace": "urn:conflictology:v4:kz:zhanaozen:coding_item"
+      },
+      "reference_sha256_utf8": "9f8dfaf65197fa359ee5ee5526c4ea4e985ae0998a0c23d5c9a96431682512f2",
+      "target_time_utc": "2011-12-15T23:59:59Z",
+      "item_fact_link_ids": [
+        "02d40bd0-2dfa-588c-b8ee-7cc056d6a1db",
+        "1366d429-3f5b-5dd4-b4f6-d301aa2855e4",
+        "fbcb1210-a5b1-5275-a487-50fe1901e1f0"
+      ],
+      "fact_fragment_link_ids": [
+        "0fac41c8-4af0-5808-8d16-28ebf4ba1616",
+        "a2b5e54e-c200-5a27-8bfa-f55758794fe2",
+        "b5751043-17fe-5475-bf3e-f2e16190d8ed"
+      ],
+      "pilot_binding": {
+        "study_issue_identity": "2fecb360-274b-55da-a7d4-6020a87de286",
+        "reference_scope": "EXACT_UNCHANGED",
+        "model_ptn_mapping": "NOT_ESTABLISHED",
+        "numeric_admission": "NOT_PREJUDGED"
+      },
+      "human_answers": "NOT_CREATED"
+    },
+    {
+      "source_coding_item": {
+        "coding_item_id": "bc34ea72-a9ac-5e81-ab20-3f2efb729872",
+        "actor_id": "4c215889-7a31-56ae-8a60-cc546c915241",
+        "actor_code": "KZ.ZHANAOZEN.ACTOR.GU02",
+        "actor_name": "Работники подрядных и нефтесервисных организаций",
+        "element_id": "728c8406-ba99-5787-9557-933b5670be7c",
+        "element_code": "KZ.ZHANAOZEN.ELEMENT.E05",
+        "element_name": "Представительство интересов и доступ к коллективным переговорам",
+        "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+        "cutoff_date": "2011-12-15",
+        "reference_statement": "Существующие механизмы представительства, переговоров и коллективных действий обеспечивают достаточный доступ к выражению и согласованию интересов.",
+        "power_status": "POWER_PROFILE_PENDING",
+        "identity_namespace": "urn:conflictology:v4:kz:zhanaozen:coding_item"
+      },
+      "reference_sha256_utf8": "f689f671787c35619a3a32c6079908fb8ac5436a30cd832355b0238fe44f1deb",
+      "target_time_utc": "2011-12-15T23:59:59Z",
+      "item_fact_link_ids": [
+        "0e5871e6-afef-53f7-a8cd-95170b45641d",
+        "69615021-a032-501c-8055-af9631b47f90",
+        "bc50dd89-1a14-53cb-a50c-b906b5e8ae30"
+      ],
+      "fact_fragment_link_ids": [
+        "9b2a572b-bf18-55ba-9de3-1dbb0b8f04f6",
+        "a012a5b0-6790-513d-b274-d759b2c8b950",
+        "dadf11cf-66ca-594f-a7c3-30e4114b4a7a"
+      ],
+      "pilot_binding": {
+        "study_issue_identity": "728c8406-ba99-5787-9557-933b5670be7c",
+        "reference_scope": "EXACT_UNCHANGED",
+        "model_ptn_mapping": "NOT_ESTABLISHED",
+        "numeric_admission": "NOT_PREJUDGED"
+      },
+      "human_answers": "NOT_CREATED"
+    },
+    {
+      "source_coding_item": {
+        "coding_item_id": "cd9eb952-6af0-5708-8703-49673415cbe7",
+        "actor_id": "6e5f84f6-8988-5e72-8fbd-bf67d4c8bb45",
+        "actor_code": "KZ.ZHANAOZEN.ACTOR.GU03",
+        "actor_name": "Уволенные и соискатели нефтегазовой занятости",
+        "element_id": "0ca209e6-ca1a-5751-b27e-cbd0d180ffa9",
+        "element_code": "KZ.ZHANAOZEN.ELEMENT.E06",
+        "element_name": "Государственное принуждение и правовые процедуры в конфликте",
+        "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+        "cutoff_date": "2011-12-15",
+        "reference_statement": "Существующие правоохранительные и судебные процедуры реагирования на трудовой конфликт достаточны и соразмерны с точки зрения данного актора.",
+        "power_status": "POWER_PROFILE_PENDING",
+        "identity_namespace": "urn:conflictology:v4:kz:zhanaozen:coding_item"
+      },
+      "reference_sha256_utf8": "690666cdf713d75e095073573145b45e98195adf580b98fcfc410e72784523ed",
+      "target_time_utc": "2011-12-15T23:59:59Z",
+      "item_fact_link_ids": [
+        "1c1e9eb1-877e-5153-83eb-b6c4bdc3b44e",
+        "c762d3db-99a1-5bf3-8e2e-2bd46b568253",
+        "db567463-8e6c-5c8c-ae34-3824772e9f36",
+        "fb7d55b5-4c08-5949-b437-6520476d5c34"
+      ],
+      "fact_fragment_link_ids": [
+        "0a80d046-9dd0-58ac-b1df-41508cb34b5a",
+        "6530b92f-e4d5-514d-a0e0-0640a25587a6",
+        "cbf31553-ffdf-5d61-86ee-04e6dfe0b683",
+        "e096e9bc-09b3-5cf7-a598-e1cff13ad4a7",
+        "fb265c9c-83c9-53b4-a2aa-3fbc6413a65a"
+      ],
+      "pilot_binding": {
+        "study_issue_identity": "0ca209e6-ca1a-5751-b27e-cbd0d180ffa9",
+        "reference_scope": "EXACT_UNCHANGED",
+        "model_ptn_mapping": "NOT_ESTABLISHED",
+        "numeric_admission": "NOT_PREJUDGED"
+      },
+      "human_answers": "NOT_CREATED"
+    },
+    {
+      "source_coding_item": {
+        "coding_item_id": "d0c7e8eb-6859-55ff-921a-f2e43e8f03d0",
+        "actor_id": "6782018f-1868-5aa7-b40e-fb5ad11269ca",
+        "actor_code": "KZ.ZHANAOZEN.ACTOR.GU08",
+        "actor_name": "Правоохранительные, судебные и надзорные органы",
+        "element_id": "728c8406-ba99-5787-9557-933b5670be7c",
+        "element_code": "KZ.ZHANAOZEN.ELEMENT.E05",
+        "element_name": "Представительство интересов и доступ к коллективным переговорам",
+        "time_slice_id": "434c73fa-abfb-54f1-85cf-821431bf098b",
+        "cutoff_date": "2011-12-15",
+        "reference_statement": "Существующие механизмы представительства, переговоров и коллективных действий обеспечивают достаточный доступ к выражению и согласованию интересов.",
+        "power_status": "POWER_PROFILE_PENDING",
+        "identity_namespace": "urn:conflictology:v4:kz:zhanaozen:coding_item"
+      },
+      "reference_sha256_utf8": "f689f671787c35619a3a32c6079908fb8ac5436a30cd832355b0238fe44f1deb",
+      "target_time_utc": "2011-12-15T23:59:59Z",
+      "item_fact_link_ids": [
+        "4038e6a1-ee3e-5f9d-b14c-761e18d97912",
+        "82af7ff0-bd54-5d7b-abf6-cf13a77324e2",
+        "afe8009e-c16d-5bb3-bc97-633e2bc109b8"
+      ],
+      "fact_fragment_link_ids": [
+        "6530b92f-e4d5-514d-a0e0-0640a25587a6",
+        "b7c4c3a7-2f92-5f35-984c-9f6fc4c8c6db",
+        "e096e9bc-09b3-5cf7-a598-e1cff13ad4a7",
+        "f2d96bce-433e-559a-b187-adacac6238e4"
+      ],
+      "pilot_binding": {
+        "study_issue_identity": "728c8406-ba99-5787-9557-933b5670be7c",
+        "reference_scope": "EXACT_UNCHANGED",
+        "model_ptn_mapping": "NOT_ESTABLISHED",
+        "numeric_admission": "NOT_PREJUDGED"
+      },
+      "human_answers": "NOT_CREATED"
+    }
+  ]
+}

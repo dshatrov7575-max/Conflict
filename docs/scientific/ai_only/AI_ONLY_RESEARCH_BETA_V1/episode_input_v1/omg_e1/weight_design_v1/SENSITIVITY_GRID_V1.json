@@ -1,0 +1,82 @@
+{
+  "episode_id": "OMG_INITIAL_WAGE_DISPUTE_2011_05_26_2011_06_28",
+  "ptn_id": "E02_PAY",
+  "status": "FROZEN_BEFORE_EPISODE_PRIMARY_RESPONSES",
+  "baseline": {
+    "rgu": {
+      "OMG_WORKERS_INITIAL_STRIKE": "1",
+      "KMG_EP_MANAGEMENT_FORMAL_RESPONSE": "1"
+    },
+    "kvptn": {
+      "E02_PAY": "1"
+    }
+  },
+  "rgu_relative_scenarios": [
+    {
+      "scenario_id": "WORKER_DOMINANT_10_1",
+      "r_worker": "10",
+      "r_company": "1"
+    },
+    {
+      "scenario_id": "WORKER_DOMINANT_4_1",
+      "r_worker": "4",
+      "r_company": "1"
+    },
+    {
+      "scenario_id": "WORKER_DOMINANT_2_1",
+      "r_worker": "2",
+      "r_company": "1"
+    },
+    {
+      "scenario_id": "EQUAL_1_1",
+      "r_worker": "1",
+      "r_company": "1"
+    },
+    {
+      "scenario_id": "COMPANY_DOMINANT_1_2",
+      "r_worker": "1",
+      "r_company": "2"
+    },
+    {
+      "scenario_id": "COMPANY_DOMINANT_1_4",
+      "r_worker": "1",
+      "r_company": "4"
+    },
+    {
+      "scenario_id": "COMPANY_DOMINANT_1_10",
+      "r_worker": "1",
+      "r_company": "10"
+    }
+  ],
+  "positive_q_scale_checks": [
+    "0.1",
+    "1",
+    "10"
+  ],
+  "zero_weight_stress": [
+    {
+      "scenario_id": "R_WORKER_ZERO",
+      "r_worker": "0",
+      "r_company": "1",
+      "q": "1"
+    },
+    {
+      "scenario_id": "R_COMPANY_ZERO",
+      "r_worker": "1",
+      "r_company": "0",
+      "q": "1"
+    },
+    {
+      "scenario_id": "R_ALL_ZERO",
+      "r_worker": "0",
+      "r_company": "0",
+      "q": "1"
+    },
+    {
+      "scenario_id": "Q_ZERO_EXCLUSION",
+      "r_worker": "1",
+      "r_company": "1",
+      "q": "0"
+    }
+  ]
+}

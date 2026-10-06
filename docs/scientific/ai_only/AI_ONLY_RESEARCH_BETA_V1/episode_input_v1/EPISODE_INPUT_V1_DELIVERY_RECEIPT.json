@@ -1,0 +1,85 @@
+{
+  "package_id": "MVP7_EPISODE_INPUT_V1_20260929",
+  "status": "PREPARED_NOT_RELEASED",
+  "source_r2_final": "MVP7_R2_FINAL_COMPARISON_20260929",
+  "source_head_before_episode_layer": "50f2b90ad58819ab005cc8c2a08dca42c98cbcb5",
+  "temporal_policy": {
+    "carry_forward_policy": "NONE",
+    "historical_snapshot_2011_12_15": "NOT_ESTABLISHED",
+    "episode_window_must_be_frozen_before_recoding": true
+  },
+  "source_statement_rows": {
+    "total": 6,
+    "complete_actor_rows": 2,
+    "matched_date_opposing_complete_rows": 0
+  },
+  "episodes": [
+    {
+      "episode_id": "KBM_INITIAL_PAY_2011_05_17",
+      "ptn": "E02_PAY",
+      "rows": ["AO2-03"],
+      "actor_universe": "INCOMPLETE",
+      "core_admission": "BLOCKED"
+    },
+    {
+      "episode_id": "KBM_INITIAL_UNION_2011_05_27",
+      "ptn": "E05_REPRESENTATION",
+      "rows": ["AO2-04"],
+      "actor_universe": "INCOMPLETE",
+      "core_admission": "BLOCKED"
+    },
+    {
+      "episode_id": "KMG_EP_PAY_2011_10_13",
+      "ptn": "E02_PAY",
+      "rows": ["AO2-05", "AO2-06"],
+      "actor_universe": "BOUNDED_TWO_ACTOR_CANDIDATE",
+      "core_admission": "BLOCKED_MISSING_WORKER_POS_AND_COMPANY_KVS"
+    },
+    {
+      "episode_id": "OMG_SOURCE_2011_08_11",
+      "ptns": ["E02_PAY", "E05_REPRESENTATION"],
+      "rows": ["AO2-01", "AO2-02"],
+      "actor_universe": "SOURCE_PROVENANCE_UNRESOLVED",
+      "core_admission": "BLOCKED"
+    }
+  ],
+  "read_only_sensitivity": {
+    "scenario": "KMG_EP_PAY_2011_10_13_TWO_ACTOR_EQUAL_RGU",
+    "assumptions": [
+      "exactly two actors",
+      "equal RGU=1",
+      "single PTN q=1",
+      "worker KVS=5",
+      "company POS=+5",
+      "worker POS ranges over {-10,-5,0,5,10}",
+      "company KVS ranges over {0,2,5,8,10}"
+    ],
+    "scenario_count": 25,
+    "Pol_min": "0.00000000",
+    "Pol_max": "66.66666667",
+    "historical_claim": false,
+    "interpretation": "The range is too broad for a historical conclusion and demonstrates that missingness dominates the result."
+  },
+  "calculation": {
+    "real_snapshot_created": false,
+    "calculation_release": false,
+    "uno": "NOT_COMPUTED",
+    "allowed_engineering_action": "SYNTHETIC_READ_ONLY_COMPLETENESS_AND_SENSITIVITY_TESTS_ONLY"
+  },
+  "technical_checks": {
+    "episode_sensitivity_unit_tests": "5/5 PASS",
+    "zip_crc": "PASS",
+    "package_files": 10,
+    "zip_name": "MVP7_EPISODE_INPUT_V1_20260929.zip",
+    "zip_bytes": 8577,
+    "zip_sha256": "12a9efbe2953fcf0ff972986b08fee19bcbd8142e13e8e23449bf9dbf135c82c"
+  },
+  "scientific_boundary": {
+    "human_validation": "NOT_PERFORMED",
+    "human_reliability": "NOT_PERFORMED",
+    "strict_v1_overwritten": false,
+    "source_statement_values_overwritten": false,
+    "core_changed": false
+  },
+  "next_required_state": "MATCHED_EPISODE_EVIDENCE_WITH_COMPLETE_POS_KVS_AND_FIXED_ACTOR_UNIVERSE"
+}

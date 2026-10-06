@@ -1,0 +1,160 @@
+{
+  "schema": "AI_ONLY_ELIGIBLE_REPLAY_ARTIFACT_REVIEW_R1",
+  "state": "PASS",
+  "github_run_id": "36844856009",
+  "github_run_attempt": "1",
+  "github_run_conclusion": "success",
+  "github_head_sha": "83e9704d481aec96ddab09bb94351265c73467ce",
+  "artifact_id": "11153425007",
+  "artifact_name": "eligible-replay-r1",
+  "artifact_zip_digest": "sha256:1b31f30ffd5f435c1f0dd48a014e7c0fe5fbbb2829d8ffc506c736175a181580",
+  "manifest_state_before_review": "PASS_PENDING_ARTIFACT_REVIEW",
+  "file_hash_verification": "PASS",
+  "artifact_files": {
+    "KBM_E02_V100_CORE_REPLAY_RECEIPT_R1.json": {
+      "bytes": 16501,
+      "sha256": "ef975c4671f0c2c1f9ea52ea6f72d0118e276455636fe416555dad42514e0d6d"
+    },
+    "KBM_E02_V100_READ_ONLY_SENSITIVITY_R1.json": {
+      "bytes": 14417,
+      "sha256": "24ec099fd6d5cc7b0fa17c8458d1b2e1ddec3ab6e438ad4ae3e881cb41590a1b"
+    },
+    "KBM_E05_V100_CORE_REPLAY_RECEIPT_R1.json": {
+      "bytes": 16573,
+      "sha256": "b76d29f33033c14a8cbf17d14876050e6017cce49ccba29fb0e9b511c681c988"
+    },
+    "KBM_E05_V100_READ_ONLY_SENSITIVITY_R1.json": {
+      "bytes": 14573,
+      "sha256": "3cc0298e1f1998a9a06364ac7f3dd1ce6822ec3d82200cfed675be069d5b2b40"
+    }
+  },
+  "git_blobs": {
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/eligible_replay_r1/verify_sensitivity_against_core_r1.py": "bbf2539a21edb4551e1dbe6cdeeb854e50c1b3a6",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E02_V100_PRIMARY_COMPARISON.json": "2ea59f263ac83f34e458272d10202dc0b2829131",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/executors/manual_dual_model_r1/derived/KBM_E05_V100_PRIMARY_COMPARISON.json": "056e3bbda09afc2738fba82cce354a8a5f4a0a1e",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/LANE_BINDINGS_R2.json": "6492a799309f91cda6644d2195dad8a76e6291d6",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/SENSITIVITY_GRID_V2.json": "f59628b850749f2032b2df35422e9a0da5b11589",
+    "docs/scientific/ai_only/AI_ONLY_RESEARCH_BETA_V1/exogenous_weight_design_v2/read_only_sensitivity_runner_v2_1.py": "04ed2c062d35e04cd073a001f81523a0342283ab",
+    "software/conflict_analysis/calculation/__init__.py": "669e9162fbc4ea348cef7cb6d81a73a07f95cf0b",
+    "software/conflict_analysis/calculation/contracts.py": "5eaad9022804b192911f5fab498e56c788017d73",
+    "software/conflict_analysis/calculation/strategy.py": "434aafd8044410049ae14a76a88b66df5b0da658"
+  },
+  "lane_results": {
+    "AI_ONLY_DYAD_KBM_E02_V100": {
+      "sensitivity_state": "COMPUTED_READ_ONLY_RESEARCH_SCENARIOS",
+      "baseline": {
+        "status": "COMPLETE",
+        "W": "10.00000000",
+        "P": "25.00000000",
+        "N": "25.00000000",
+        "A": "50.00000000",
+        "B": "0.00000000",
+        "Pol": "50.00000000",
+        "single_ptn_uno_field": "50.00000000",
+        "q": "1.00000000",
+        "trace": [
+          {
+            "actor_id": "AOV2_KBM_STRIKERS",
+            "POS": "-5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          },
+          {
+            "actor_id": "KBM_MANAGEMENT_FORMAL_RESPONSE_20110527",
+            "POS": "5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          }
+        ]
+      },
+      "envelope": {
+        "Pol_min": "9.09090909",
+        "Pol_max": "50.00000000",
+        "baseline_Pol": "50.00000000",
+        "robustness_label": "NOT_ASSIGNED_BY_PROTOCOL"
+      },
+      "positive_q_invariance": {
+        "passed": true,
+        "values_checked": ["0.1", "1", "10"],
+        "observed_Pol_values": ["50.00000000"],
+        "interpretation": "Expected one-PTN q-scale invariance; not substantive KVPTN sensitivity."
+      },
+      "core_replay_state": "PASS_CORE_PARITY",
+      "scenario_count": 15,
+      "all_snapshot_json_replays": "PASS",
+      "all_core_result_digests_stable": true
+    },
+    "AI_ONLY_PAIR_KBM_E05_V100": {
+      "sensitivity_state": "COMPUTED_READ_ONLY_RESEARCH_SCENARIOS",
+      "baseline": {
+        "status": "COMPLETE",
+        "W": "10.00000000",
+        "P": "25.00000000",
+        "N": "25.00000000",
+        "A": "50.00000000",
+        "B": "0.00000000",
+        "Pol": "50.00000000",
+        "single_ptn_uno_field": "50.00000000",
+        "q": "1.00000000",
+        "trace": [
+          {
+            "actor_id": "AOV2_KBM_STRIKERS",
+            "POS": "-5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          },
+          {
+            "actor_id": "KBM_MANAGEMENT_REPRESENTATION_STANCE_20110514",
+            "POS": "5.00000000",
+            "KVS": "5.00000000",
+            "RGU": "1.00000000",
+            "effective_weight": "5.00000000"
+          }
+        ]
+      },
+      "envelope": {
+        "Pol_min": "9.09090909",
+        "Pol_max": "50.00000000",
+        "baseline_Pol": "50.00000000",
+        "robustness_label": "NOT_ASSIGNED_BY_PROTOCOL"
+      },
+      "positive_q_invariance": {
+        "passed": true,
+        "values_checked": ["0.1", "1", "10"],
+        "observed_Pol_values": ["50.00000000"],
+        "interpretation": "Expected one-PTN q-scale invariance; not substantive KVPTN sensitivity."
+      },
+      "core_replay_state": "PASS_CORE_PARITY",
+      "scenario_count": 15,
+      "all_snapshot_json_replays": "PASS",
+      "all_core_result_digests_stable": true
+    }
+  },
+  "eligible_routes_executed": [
+    "AI_ONLY_DYAD_KBM_E02_V100",
+    "AI_ONLY_PAIR_KBM_E05_V100"
+  ],
+  "ineligible_routes_not_executed": [
+    "AI_ONLY_DYAD_OMG_NOV24_V100",
+    "AI_ONLY_DYAD_D25_E02_V100"
+  ],
+  "scientific_boundaries": {
+    "auto_merge": false,
+    "coordinator_substitution": false,
+    "factor_or_weight_mutation": false,
+    "historical_area_UNO": "NOT_COMPUTED",
+    "historical_snapshot": "NOT_ESTABLISHED",
+    "human_validation": "NOT_PERFORMED",
+    "predictive_validation": "NOT_CLAIMED"
+  },
+  "review_findings": [
+    "Both eligible lanes produced deterministic frozen sensitivity outputs.",
+    "Each lane replayed 15 frozen scenarios through POLARIZATION_V1_BETA/1.0.0.",
+    "Every CalculationSnapshot JSON replay and result digest check passed.",
+    "Runner metrics and pinned Core metrics matched for every returned scenario.",
+    "No ineligible lane was executed and no factor or weight was changed."
+  ]
+}

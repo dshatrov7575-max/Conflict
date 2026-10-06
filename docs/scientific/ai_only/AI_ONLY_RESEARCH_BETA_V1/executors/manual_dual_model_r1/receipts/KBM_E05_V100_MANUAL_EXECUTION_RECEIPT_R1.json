@@ -1,0 +1,35 @@
+{
+  "schema": "MANUAL_DUAL_MODEL_EXECUTION_RECEIPT_R1",
+  "route_id": "AI_ONLY_PAIR_KBM_E05_V100",
+  "status": "ACCEPTED_FOR_FROZEN_COMPARISON",
+  "binding_commit": "c949d592150f079a9013fc77e9ad1b03f622d19b",
+  "dispatch_commit": "63940f52f97cdf039ebd3d38cd70adbc68e0a064",
+  "ai1": {
+    "service": "ChatGPT",
+    "frozen_selection": "GPT-5.6 Sol Pro",
+    "raw_actual_model_label": "GPT-5.6 Sol Pro",
+    "role": "KBM_E05_V100_AI1",
+    "run_id": "1c63c2b1-9392-4a7b-b7c7-fb38686c428a",
+    "capture_mode": "owner pasted raw JSON into coordinator chat"
+  },
+  "ai2": {
+    "service": "Claude",
+    "frozen_selection": "Claude Opus 5.5 High",
+    "raw_actual_model_label": "Claude Opus 5.5",
+    "raw_model_label_source": "SYSTEM_PROMPT_SELF_IDENTIFICATION",
+    "operator_selection_evidence": "owner prospectively specified Claude Opus 5.5 High before manual primary responses and then executed the instructed fresh Claude chat",
+    "role": "KBM_E05_V100_AI2",
+    "run_id": "KBM_E05_V100_AI2_RUN_20261001T082100Z",
+    "capture_mode": "owner uploaded raw JSON file to coordinator chat"
+  },
+  "contamination_checks": {
+    "sibling_output_seen": false,
+    "prior_episode_outputs_seen": false,
+    "outcome_used_as_evidence": false,
+    "external_sources_used": false,
+    "coordinator_substitution": false,
+    "targeted_content_review": false,
+    "retry_or_repair": false
+  },
+  "note": "Raw outputs are preserved unchanged. The Claude raw self-label reports the model family as Claude Opus 5.5; the pre-response operator selection records High separately as the chosen UI effort/mode."
+}

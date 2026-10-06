@@ -1,0 +1,19 @@
+{
+  "stage": "RAW_AI_RESPONSES_FIXED_BEFORE_FINAL_AGGREGATION",
+  "recorded_at_utc": "2026-09-26T11:00:01.362079+00:00",
+  "agents": {
+    "A": "/root/holdout_coder_a",
+    "B": "/root/holdout_coder_b",
+    "auditor": "/root/holdout_key_audit"
+  },
+  "context_policy": "fork_turns=none; coder inputs limited to public packet and patched rubric; no keys or other answers; same underlying model and shared filesystem",
+  "user_authorized_independent_ai": true,
+  "human_coding": false,
+  "files": {
+    "AI_CODER_A.json": "2c586c80126c19a8c52ae50b7bdf2a55388e1a158fcaade2c701b784e502e406",
+    "AI_CODER_B.json": "9db4d9d9967344782b8ae68eccd02545a69720dd47624f4c434a65fb7e4d0c56",
+    "AUDITOR_PRE_KEY_REVIEW.json": "cc33cb4f4b62acc730d6250fa1ed11cf38290dc6410c0cbdd689aab8ee7cbc21",
+    "ANONYMIZED_RESPONSES.json": "fe61819e075c9bcf09b14ad2dca1ce8a69d7f3092b19db3d8bc5068843dd0dfa",
+    "ANONYMIZED_RESPONSE_BINDING.json": "65a3a0e9747dbb3a16df14eb0cb044607da0599b2a36c86e9bf43d12526a1835"
+  }
+}

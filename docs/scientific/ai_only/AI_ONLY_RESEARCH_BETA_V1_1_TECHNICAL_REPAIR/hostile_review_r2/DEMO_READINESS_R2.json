@@ -1,0 +1,32 @@
+{
+  "schema": "AI_ONLY_RESEARCH_BETA_V1_1_DEMO_READINESS_R2",
+  "state": "READY_FOR_LIMITED_DEMO_AFTER_PREFLIGHT",
+  "source_demo_preflight_run_id": "36888617846",
+  "source_demo_preflight_conclusion": "success",
+  "source_demo_preflight_receipt_blob": "3295a442558bd1296bd99a1e264bf21d159edc2f",
+  "allowed_scope": [
+    "raw OMG V1.1 outputs and frozen comparison",
+    "fixed cohort arithmetic",
+    "KBM E02/E05 eligible Core replay parity",
+    "D25 and OMG incompleteness/HOLD behavior",
+    "release-gate output as a deterministic project artifact",
+    "explicit scientific claim boundaries"
+  ],
+  "mandatory_limitations": [
+    "AI-кодирование; человеческая проверка не проводилась; исследовательская версия; прогнозная точность не установлена.",
+    "Historical snapshot NOT_ESTABLISHED.",
+    "Historical area UNO NOT_COMPUTED/BLOCKED.",
+    "HUMAN validation/reliability NOT_PERFORMED.",
+    "Predictive/probability/risk validation NOT_CLAIMED.",
+    "Prospective Model B non-access to AI1 is protocol-declared and Git-timestamped but not independently service-audited.",
+    "Absence of hidden external attempts is not independently provable."
+  ],
+  "forbidden": [
+    "CLAIM_HISTORICAL_TRUTH",
+    "CLAIM_HUMAN_VALIDATION",
+    "CLAIM_PREDICTIVE_VALIDITY",
+    "CLAIM_SERVICE_AUDITED_ABSENCE_OF_HIDDEN_RUNS",
+    "CLAIM_MODEL_IDENTITY_BEYOND_AVAILABLE_RECEIPTS",
+    "AUTO_MERGE"
+  ]
+}

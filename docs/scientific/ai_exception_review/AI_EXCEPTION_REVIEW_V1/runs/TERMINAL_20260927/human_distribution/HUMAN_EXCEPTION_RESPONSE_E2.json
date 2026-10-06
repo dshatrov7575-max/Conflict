@@ -1,0 +1,382 @@
+{
+  "E2": [
+    {
+      "unit_id": "AV-D07",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "AV-D15",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "AV-D17",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "AV-D19",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "AV-D20",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "AV-D21",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "AV-D23",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "AV-D24",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "AV-D29",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "MAP-GU01-E02",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "MAP-GU01-E06",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "MAP-GU02-E05",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "MAP-GU03-E02",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "MAP-GU03-E06",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "MAP-GU04-E04",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "MAP-GU04-E05",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "MAP-GU05-E02",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "MAP-GU05-E04",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "MAP-GU07-E04",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "MAP-GU08-E05",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "MAP-GU08-E06",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-d3e6a365-8150-545b-8005-c18c4939142b",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-cc839407-9eb7-5e05-acca-70f1577883d4",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-d521033f-59ce-5518-9227-b5fe9cb7570f",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-7f0b0752-387d-5def-ba3d-ab11c4f1414b",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-04ab9fff-fe17-5b34-8733-f046d1b1ed06",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-b344006d-0950-57af-b0e7-60eb7b4f5217",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-d1067ad6-51d6-5a42-b6ea-8cf74c4fd71c",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-2c47a771-1301-55be-a2ab-9b2ef1f82510",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-82d1bacf-3ed4-5b42-9d8c-7ee7cd105e94",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-56d19d98-707a-5deb-9472-d355b3835d79",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-49c356b3-3585-587c-9573-d4326e97de77",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-15e6b7e7-98f3-5830-8d5d-ae44862e445a",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-51e5ac30-63a9-5433-8472-a22727f1db36",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-33ce2949-0da2-5839-9b01-566ae7e4bbf4",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-b5fdecb6-2ac4-5f56-aae6-6aef4bb7b956",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-fcd2397b-c4e9-5035-9ff9-45969f55ecf4",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-150704f4-c65a-50f4-b758-b9b456f909ff",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-6295e487-c225-5445-ae8b-653d1691579a",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-3ca46849-549e-544d-b72c-d62ef1706612",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-a7869dd7-97d1-56de-86b4-aadf1e970c0a",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    },
+    {
+      "unit_id": "LANG-ef7df23c-ba67-5903-9265-adbd1936ffa3",
+      "status": null,
+      "exact_evidence": null,
+      "evidence_reference": null,
+      "reason": null,
+      "confidence": null,
+      "remaining_unknowns": null
+    }
+  ]
+}

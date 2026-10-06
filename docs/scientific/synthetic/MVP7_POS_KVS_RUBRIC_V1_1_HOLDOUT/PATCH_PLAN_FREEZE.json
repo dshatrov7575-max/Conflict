@@ -1,0 +1,18 @@
+{
+  "phase": "PATCH_AND_PLAN_LOCKED_BEFORE_HOLDOUT_AUTHORING",
+  "time_utc": "2026-09-26T10:47:36.691027+00:00",
+  "files": [
+    {
+      "path": "docs/scientific/MVP7_POS_KVS_RUBRIC_V1_1_PATCH.md",
+      "sha256": "76644923f3ca66fb6760ac5ffb64540f7ec8f5bbe0e9b4c3868787b6579e160d"
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/PREREGISTRATION.md",
+      "sha256": "38642b5dfae34b2b3243fec346b7e67d0fb7c6ba782f0ef45e3004c7d018437e"
+    },
+    {
+      "path": "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_V1_1_HOLDOUT/PATCHED_RUBRIC_FOR_CODERS.md",
+      "sha256": "cbcf0aa2b09aaabcbbc4b9b083b33aaeab69d10b78f45eb1daf6eea14933e08d"
+    }
+  ]
+}

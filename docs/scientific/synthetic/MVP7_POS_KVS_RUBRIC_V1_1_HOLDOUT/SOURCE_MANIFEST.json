@@ -1,0 +1,172 @@
+{
+  "artifact_id": "MVP7_POS_KVS_V1_1_SOURCE_MANIFEST",
+  "status": "READ_ONLY_BASELINE",
+  "sources": [
+    {
+      "path": "C:\\Users\\dshatrov\\.codex\\visualizations\\2026\\09\\25\\01a0da56-6a31-7b72-8ae0-6a5f3365fe5f\\pr9-zhanaozen-pilot\\docs\\scientific\\MVP7_POS_KVS_NUMERIC_ANCHORS_V1.md",
+      "sha256": "3971a424225b8789c1b4cbceec54b29406b1a26d5bcb92f353aa2753c4c0362c",
+      "bytes": 88317
+    },
+    {
+      "path": "C:\\Users\\dshatrov\\.codex\\visualizations\\2026\\09\\25\\01a0da56-6a31-7b72-8ae0-6a5f3365fe5f\\pr9-zhanaozen-pilot\\docs\\scientific\\MVP7_POS_KVS_RUBRIC_STRESS_TEST_V1.md",
+      "sha256": "7cb5a92430a3eba9261f5b1fab02cf55de49324de6ec28f88969350c16936686",
+      "bytes": 69272
+    },
+    {
+      "path": "C:\\Users\\dshatrov\\.codex\\visualizations\\2026\\09\\25\\01a0da56-6a31-7b72-8ae0-6a5f3365fe5f\\pr9-zhanaozen-pilot\\docs\\scientific\\synthetic\\MVP7_POS_KVS_RUBRIC_STRESS_TEST_V1\\CODER_PACKET.md",
+      "sha256": "2d46bb0231569b1100d298fe944978861f23e8a299072d679911e48ea6c3791d",
+      "bytes": 58644
+    },
+    {
+      "path": "C:\\Users\\dshatrov\\.codex\\visualizations\\2026\\09\\25\\01a0da56-6a31-7b72-8ae0-6a5f3365fe5f\\pr9-zhanaozen-pilot\\docs\\scientific\\synthetic\\MVP7_POS_KVS_RUBRIC_STRESS_TEST_V1\\FREEZE_MANIFEST.json",
+      "sha256": "97dc1afe7405c343b23215eefb77c34ba2cdec4a34f884ae621f216a1c2fd658",
+      "bytes": 4219
+    },
+    {
+      "path": "C:\\Users\\dshatrov\\.codex\\visualizations\\2026\\09\\25\\01a0da56-6a31-7b72-8ae0-6a5f3365fe5f\\pr9-zhanaozen-pilot\\docs\\scientific\\synthetic\\MVP7_POS_KVS_RUBRIC_STRESS_TEST_V1\\INTENDED_KEY.json",
+      "sha256": "2278d18a2366e4675fb3f568cee200c6cd8e3c2fe9c34b3e47a5b6481047ef1f",
+      "bytes": 45254
+    },
+    {
+      "path": "C:\\Users\\dshatrov\\.codex\\visualizations\\2026\\09\\25\\01a0da56-6a31-7b72-8ae0-6a5f3365fe5f\\pr9-zhanaozen-pilot\\docs\\scientific\\synthetic\\MVP7_POS_KVS_RUBRIC_STRESS_TEST_V1\\RUBRIC_FOR_CODERS.md",
+      "sha256": "fd3cf3633fa5397dead5c673be96fa800dc91555a498a23ea27769091d63a1d6",
+      "bytes": 35968
+    }
+  ],
+  "existing_scientific_files": [
+    {
+      "path": "docs/scientific/CASE_MAPPING_MODEL.md",
+      "sha256": "0203baff886dc9c7b24920553beff475de6ff152f7fa9b4e70f2bfd628b6eba5"
+    },
+    {
+      "path": "docs/scientific/CASE_MAPPING_SCHEMA.json",
+      "sha256": "b9da37273f37540a9f8d72dfea03a4542ec6b128acbbc570af6d2de2d801abfd"
+    },
+    {
+      "path": "docs/scientific/CASE_MAPPING_VALIDATION.md",
+      "sha256": "3e721673bc2b14fa4f7ffcec00d71bae17f7db67e4d0794b33d05dedd2b3f942"
+    },
+    {
+      "path": "docs/scientific/check_empirical_validation_pilot.py",
+      "sha256": "ba482bcb4511b9860905be38324ad8979e1949dc2386a474cc3f373062b8361e"
+    },
+    {
+      "path": "docs/scientific/EMPIRICAL_VALIDATION_PILOT.md",
+      "sha256": "1268d9d331e52be9ec94051571ceee6f425dc020ec23d4fdb998387115ef04c5"
+    },
+    {
+      "path": "docs/scientific/EMPIRICAL_VALIDATION_SCHEMA.json",
+      "sha256": "72167ad0096894d0993f72f4ce8ebfd9bbc0ff1c2fd80e4ad6915e827be2da9b"
+    },
+    {
+      "path": "docs/scientific/factor-metadata.schema.json",
+      "sha256": "0b2a7f539c13b9e5451e71a85d26ec5bd7dc1898a8d42465401ae1644ae6f2e3"
+    },
+    {
+      "path": "docs/scientific/factors.metadata.json",
+      "sha256": "ff970793eefb89ac5a861bc373322bdd07be123546ae992a6b0954ee7d80c6c0"
+    },
+    {
+      "path": "docs/scientific/FACTOR_ONTOLOGY.md",
+      "sha256": "068a8f4333885ca08fe67f990c5839196b0c7d0b742b91352137905d0ad64195"
+    },
+    {
+      "path": "docs/scientific/HISTORICAL_ASSESSMENT_MODEL.md",
+      "sha256": "4643f71316b45fe170c735528589a59a9a9541627810423e691ee1d1cc4bc94a"
+    },
+    {
+      "path": "docs/scientific/HISTORICAL_ASSESSMENT_SCHEMA.json",
+      "sha256": "0293337a12129097f3da28d7488e87aede0c7463e45048ebc11fd83a2ae42fb0"
+    },
+    {
+      "path": "docs/scientific/MODEL_LIMITATIONS.md",
+      "sha256": "496da0933b65dc0e7965c394ac207479a792ff3d04d0ac2f1f41947909a8e253"
+    },
+    {
+      "path": "docs/scientific/NON_INFERENCE_RULES.md",
+      "sha256": "3cc48a94aa349a549d123226e5075141c8a258f626bb6b0b2a4348276b39af77"
+    },
+    {
+      "path": "docs/scientific/OBSERVED_OUTCOME_CLASSIFICATION.md",
+      "sha256": "f5797f79ee439a52bbbafdcad2b13172fae2cc5dcfb4995005faac7b389ee240"
+    },
+    {
+      "path": "docs/scientific/SCIENTIFIC_METADATA.md",
+      "sha256": "7787b48cb19bcb1b76a736bd42cd562bacc26d423ef1e7e7003f6dfc6b03070d"
+    },
+    {
+      "path": "docs/scientific/THEORETICAL_FOUNDATION.md",
+      "sha256": "a874a420ff3a48c2d6020d23fbbffb19c8a55e66b567104931796b42f26f7224"
+    },
+    {
+      "path": "docs/scientific/VALIDATION.md",
+      "sha256": "7a52a8987692b6014b2224a1c0be4b4313ca3f326bd1062ea11d0b27303f52ad"
+    },
+    {
+      "path": "docs/scientific/VALIDATION_EXAMPLE_TEMPLATE.json",
+      "sha256": "68ca37348a5881a82e7b00b9e16ff5394fe18e00117776320e33aed9a415bdf3"
+    },
+    {
+      "path": "docs/scientific/VALIDATION_PROTOCOL.md",
+      "sha256": "ddbdfedb07d65ae28809f9012220865043e964e7cf1a8fd48b6c4a1f2df17b73"
+    },
+    {
+      "path": "docs/scientific/VALIDATION_PROTOCOL_CHECKS.md",
+      "sha256": "649c59dda15a5d55ebd706c6012a6e1ec1d1ede19859ed63283498e0600b6792"
+    },
+    {
+      "path": "docs/scientific/VALIDATION_SCHEMA.json",
+      "sha256": "7f5454ca1f8d84becbfbc7c38a2b0c9c9e27178554e61ddea083b0b4d2554a1e"
+    },
+    {
+      "path": "docs/scientific/ZHANAOZEN_2011_ASSESSMENT_TEMPLATE.json",
+      "sha256": "6fd648fb109c8297707afd7973c441a30946d2d2bfaf30559f1dce3f62de6ede"
+    },
+    {
+      "path": "docs/scientific/ZHANAOZEN_2011_EXAMPLE.json",
+      "sha256": "997ab230a4ca8ce21e49fef21ddfaab8f8f0d255fde4dfe49758cb91246b8152"
+    },
+    {
+      "path": "docs/scientific/ZHANAOZEN_2011_HISTORICAL_ASSESSMENT_REPORT.md",
+      "sha256": "fa026cb899fb54d56e29ce26a9e38a83851911712a4360956a99a6ff91810bab"
+    },
+    {
+      "path": "docs/scientific/ZHANAOZEN_2011_VALIDATION_TEMPLATE.json",
+      "sha256": "0ff0830c99e93e7cfaedc3f76157445ab828f37b33601c0c8204b946285d0c5d"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/audit_packet.py",
+      "sha256": "44d39292c174d7dbbb9c417e0c045eb10445768729179fd5ad757807073fa76f"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/CODING_ITEM_COVERAGE.csv",
+      "sha256": "1669e092532d594c13fa340f51fa83435e84150aeea3df1d881fc72eeadabee9"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/EVIDENCE_TRACE_INDEX.csv",
+      "sha256": "9d3757c9318696a606f942f374a363bd9c904605cc802bab81e4206097fac679"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/INPUT_MANIFEST.json",
+      "sha256": "57a2673fe66f964a5bab1fe1e521d28acf6eeee330e97478f642b031c4cb8fe9"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/PACKET_AUDIT.json",
+      "sha256": "a71473f11b4329cf0f5c05b759d605538583df3648aceb25a0499b86bc156104"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/sources/ZHANAOZEN_V4_2011_CP3_VALIDATION_PACKAGE.zip",
+      "sha256": "a1903fd0cc492b877a80c00a0fb2c70fd601477df8373b5251ac5ab2ffa3b4bc"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/sources/ZHANAOZEN_V4_2011_SEALED_EVIDENCE_PACKET_CP3.json",
+      "sha256": "3a24135df10f1610854478b4526b176d6c3f912a8837044fecf700b04e147256"
+    },
+    {
+      "path": "docs/scientific/pilots/ZHANAOZEN_2011_V4_PILOT_V1/sources/ZHANAOZEN_V4_2011_SEALED_EVIDENCE_PACKET_CP3.xlsx",
+      "sha256": "04a5098cdbcbed580f9f71ce0b28c0a4f50fbae48a97f579274556bcf26030df"
+    }
+  ],
+  "tracked_baseline_diff": "",
+  "git_head": "ea7b8c40f18bd1dc78bc41564af146c0f13b3012"
+}

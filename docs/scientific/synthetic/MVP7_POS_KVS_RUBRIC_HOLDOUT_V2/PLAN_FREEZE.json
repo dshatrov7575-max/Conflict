@@ -1,0 +1,12 @@
+{
+  "phase": "BEFORE_NEW_CASE_AUTHORING",
+  "frozen_at_utc": "2026-09-26T11:20:30.049084+00:00",
+  "files": {
+    "docs/scientific/MVP7_POS_KVS_RUBRIC_V1_2_PATCH.md": "dd176760c2c314e46364e6b27e09ac5cb3a1d9d7d7fe6e17484a5496ec8a514b",
+    "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/PREREGISTRATION.md": "e8fb4c965ec277d95d44b77359621899a7cc0304760aff544f0a7c107b827524",
+    "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/PATCHED_RUBRIC_FOR_CODERS.md": "e3d57484e6df3bc6a7e31e560ac803a3a0ac7c30bf9204d2698f409f9e3040cd",
+    "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/EXCLUSION_CATALOG.json": "fc7fa7607159797c1a843d93903d5630acbd65d9ea9c2f43a12343039dea4ffa",
+    "docs/scientific/synthetic/MVP7_POS_KVS_RUBRIC_HOLDOUT_V2/BASELINE_MANIFEST.json": "bc8d0d259b9fb908f5fff4566ca9b6ebf0b3e04886d953b772e09846f599c054"
+  },
+  "amendments": "No changes after this freeze within V2; any defects remain findings."
+}
