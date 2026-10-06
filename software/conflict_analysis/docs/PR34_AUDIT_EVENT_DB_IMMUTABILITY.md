@@ -9,7 +9,7 @@ immutability and drift detection did not prevent a direct SQL UPDATE of
 ## Change
 
 Migration `0021_audit_event_db_immutability` installs a PostgreSQL trigger that
-rejects every UPDATE and DELETE of an existing `AuditEvent` row. INSERT remains
+rejects every UPDATE, DELETE and TRUNCATE affecting `AuditEvent`. INSERT remains
 allowed.
 
 SQLite remains unchanged. Production settings already reject SQLite; the

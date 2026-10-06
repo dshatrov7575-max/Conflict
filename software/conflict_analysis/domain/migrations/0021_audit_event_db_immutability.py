@@ -2,7 +2,7 @@
 
 Production uses PostgreSQL.  The existing ORM contract already rejects
 AuditEvent update/delete operations, and receipt reads detect drift.  This
-migration adds the missing database-side UPDATE/DELETE denial.  Role
+migration adds the missing database-side UPDATE/DELETE/TRUNCATE denial.  Role
 separation remains a distinct follow-up: a table owner/superuser can still
 alter or remove database triggers and therefore is outside this guard's trust
 boundary.
@@ -12,6 +12,7 @@ from django.db import migrations
 
 
 _TRIGGER = "domain_audit_event_immutable_guard"
+_TRUNCATE_TRIGGER = "domain_audit_event_truncate_guard"
 _FUNCTION = "domain_guard_audit_event_immutable"
 _TABLE = "domain_auditevent"
 
@@ -41,6 +42,14 @@ def _install_guard(apps, schema_editor):
             f"BEFORE UPDATE OR DELETE ON {quote(_TABLE)} "
             f"FOR EACH ROW EXECUTE FUNCTION {_FUNCTION}()"
         )
+        cursor.execute(
+            f"DROP TRIGGER IF EXISTS {quote(_TRUNCATE_TRIGGER)} ON {quote(_TABLE)}"
+        )
+        cursor.execute(
+            f"CREATE TRIGGER {quote(_TRUNCATE_TRIGGER)} "
+            f"BEFORE TRUNCATE ON {quote(_TABLE)} "
+            f"FOR EACH STATEMENT EXECUTE FUNCTION {_FUNCTION}()"
+        )
 
 
 def _drop_guard(apps, schema_editor):
@@ -50,6 +59,9 @@ def _drop_guard(apps, schema_editor):
         return
     quote = schema_editor.quote_name
     with connection.cursor() as cursor:
+        cursor.execute(
+            f"DROP TRIGGER IF EXISTS {quote(_TRUNCATE_TRIGGER)} ON {quote(_TABLE)}"
+        )
         cursor.execute(
             f"DROP TRIGGER IF EXISTS {quote(_TRIGGER)} ON {quote(_TABLE)}"
         )
