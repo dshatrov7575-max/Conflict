@@ -29,6 +29,11 @@ class Command(BaseCommand):
 
         runtime_user = _required("POSTGRES_RUNTIME_USER")
         runtime_password = _required("POSTGRES_RUNTIME_PASSWORD")
+        projection_capability = _required("FD08_PROJECTION_CAPABILITY_TOKEN")
+        if len(projection_capability) < 32:
+            raise CommandError(
+                "FD08_PROJECTION_CAPABILITY_TOKEN must be at least 32 characters."
+            )
         if not _ROLE_RE.fullmatch(runtime_user):
             raise CommandError("POSTGRES_RUNTIME_USER is not a safe PostgreSQL role identifier.")
         if len(runtime_password) < 20 or runtime_password == runtime_user:
@@ -129,10 +134,24 @@ class Command(BaseCommand):
                         "IN SCHEMA public TO {}"
                     ).format(role_ident)
                 )
+                cursor.execute(
+                    """
+                    INSERT INTO domain_fd08_projection_capability
+                        (singleton, token, updated_at)
+                    VALUES (true, %s, CURRENT_TIMESTAMP)
+                    ON CONFLICT (singleton) DO UPDATE
+                    SET token = EXCLUDED.token, updated_at = EXCLUDED.updated_at
+                    """,
+                    [projection_capability],
+                )
                 # No ALTER DEFAULT PRIVILEGES: this command is deliberately
                 # rerun after every migration and grants only the tables/sequences
                 # that actually exist at that checkpoint before applying the deny-list.
-                for table in ("domain_auditevent", "django_migrations"):
+                for table in (
+                    "domain_auditevent",
+                    "django_migrations",
+                    "domain_fd08_projection_capability",
+                ):
                     table_ident = sql.Identifier(table)
                     cursor.execute(
                         sql.SQL("REVOKE UPDATE, DELETE ON TABLE {} FROM {}").format(
@@ -143,6 +162,12 @@ class Command(BaseCommand):
                 cursor.execute(
                     sql.SQL(
                         "REVOKE INSERT ON TABLE django_migrations FROM {}"
+                    ).format(role_ident)
+                )
+                cursor.execute(
+                    sql.SQL(
+                        "REVOKE SELECT, INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER "
+                        "ON TABLE domain_fd08_projection_capability FROM {}"
                     ).format(role_ident)
                 )
 
@@ -244,6 +269,12 @@ class Command(BaseCommand):
                 )
                 audit_owner = cursor.fetchone()[0]
                 checks["audit_owned_by_runtime"] = audit_owner == runtime_user
+                cursor.execute(
+                    "SELECT has_table_privilege(%s, "
+                    "'domain_fd08_projection_capability', 'SELECT')",
+                    [runtime_user],
+                )
+                checks["projection_capability_select"] = bool(cursor.fetchone()[0])
                 if checks != {
                     "audit_select": True,
                     "audit_insert": True,
@@ -259,6 +290,7 @@ class Command(BaseCommand):
                     "database_create": False,
                     "database_temp": False,
                     "audit_owned_by_runtime": False,
+                    "projection_capability_select": False,
                 }:
                     raise CommandError(
                         f"Runtime PostgreSQL privilege verification failed: {checks!r}"

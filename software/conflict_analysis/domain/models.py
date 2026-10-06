@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import os
+import secrets
 import json
 import re
 import uuid
@@ -162,7 +164,7 @@ _ASSESSMENT_PROJECTION_WRITE_AUTHORITIES: ContextVar[frozenset[str]] = ContextVa
     "assessment_projection_write_authorities",
     default=frozenset(),
 )
-_ASSESSMENT_PROJECTION_DB_SETTING = "domain.fd08_projection_write_authorized"
+_ASSESSMENT_PROJECTION_DB_SETTING = "domain.fd08_projection_write_capability"
 
 
 @contextmanager
@@ -184,9 +186,30 @@ def _canonical_assessment_projection_write(*authorities: str) -> Iterator[None]:
                         [_ASSESSMENT_PROJECTION_DB_SETTING],
                     )
                     previous_setting = cursor.fetchone()[0] or ""
+                    capability = os.getenv(
+                        "FD08_PROJECTION_CAPABILITY_TOKEN", ""
+                    ).strip()
+                    cursor.execute(
+                        "SELECT token FROM "
+                        "domain_fd08_projection_capability "
+                        "WHERE singleton = true"
+                    )
+                    row = cursor.fetchone()
+                    if not capability:
+                        if row is None:
+                            capability = secrets.token_hex(32)
+                        else:
+                            capability = row[0]
+                    if row is None:
+                        cursor.execute(
+                            "INSERT INTO domain_fd08_projection_capability "
+                            "(singleton, token, updated_at) "
+                            "VALUES (true, %s, CURRENT_TIMESTAMP)",
+                            [capability],
+                        )
                     cursor.execute(
                         "SELECT set_config(%s, %s, true)",
-                        [_ASSESSMENT_PROJECTION_DB_SETTING, "1"],
+                        [_ASSESSMENT_PROJECTION_DB_SETTING, capability],
                     )
             try:
                 yield

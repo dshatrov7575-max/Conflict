@@ -24,6 +24,7 @@ def _production_env(**overrides: str) -> dict[str, str]:
             "POSTGRES_DB": "conflict_analysis",
             "POSTGRES_USER": "conflict_analysis",
             "POSTGRES_PASSWORD": "test-production-database-password",
+            "FD08_PROJECTION_CAPABILITY_TOKEN": "test-fd08-projection-capability-" + "y" * 40,
             "POSTGRES_HOST": "db.example.org",
             "POSTGRES_PORT": "5432",
             "POSTGRES_CONN_MAX_AGE": "60",

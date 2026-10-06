@@ -86,6 +86,7 @@ def main() -> None:
         "POSTGRES_MIGRATION_PASSWORD",
         "POSTGRES_RUNTIME_USER",
         "POSTGRES_RUNTIME_PASSWORD",
+        "FD08_PROJECTION_CAPABILITY_TOKEN",
     ):
         require(f"${{{name}:?" in prod_compose, f"production compose must require {name}")
     require('command: ["python", "-m", "django", "provision_runtime_db_role"]' in prod_compose, "production compose must invoke runtime role provisioning from the installed wheel")
