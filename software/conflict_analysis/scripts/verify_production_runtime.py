@@ -31,6 +31,7 @@ def main() -> None:
     urls = (root / "conflict_analysis/production_urls.py").read_text(encoding="utf-8")
     probe = (root / "conflict_analysis/production_probe.py").read_text(encoding="utf-8")
     role_command = (root / "domain/management/commands/provision_runtime_db_role.py").read_text(encoding="utf-8")
+    upstream_auth = (root / "conflict_analysis/upstream_auth.py").read_text(encoding="utf-8")
     pyproject = (root / "pyproject.toml").read_text(encoding="utf-8")
     wheel_builder = (root / "scripts/build_reproducible_wheel.py").read_text(encoding="utf-8")
     build_lock_lines = (root / "requirements/build-lock.txt").read_text(encoding="utf-8").splitlines()
@@ -56,6 +57,12 @@ def main() -> None:
             "FD08_PROJECTION_LEASE_SECRET=build-only-fd08-projection-capability-not-secret-123456"
         ) == 2,
         "production image build-time Django checks must receive only the explicit build-only FD08 capability",
+    )
+    require(
+        dockerfile.count(
+            "UPSTREAM_AUTH_SHARED_SECRET=build-only-upstream-auth-secret-not-secret-123456"
+        ) == 2,
+        "production image build-time Django checks must receive only the explicit build-only upstream auth secret",
     )
     require("FROM base AS development" in dockerfile, "development target is missing")
     require("FROM base AS production" in dockerfile, "production target is missing")
@@ -93,6 +100,7 @@ def main() -> None:
         "POSTGRES_RUNTIME_USER",
         "POSTGRES_RUNTIME_PASSWORD",
         "FD08_PROJECTION_LEASE_SECRET",
+        "UPSTREAM_AUTH_SHARED_SECRET",
     ):
         require(f"${{{name}:?" in prod_compose, f"production compose must require {name}")
     require('command: ["python", "-m", "django", "provision_runtime_db_role"]' in prod_compose, "production compose must invoke runtime role provisioning from the installed wheel")
@@ -147,9 +155,27 @@ def main() -> None:
         'replace-with-a-strong-database-password',
         'FD08_PROJECTION_LEASE_SECRET = _required("FD08_PROJECTION_LEASE_SECRET")',
         'development-only-fd08-projection-capability-0123456789abcdef',
+        'UPSTREAM_AUTH_SHARED_SECRET = _required("UPSTREAM_AUTH_SHARED_SECRET")',
+        'TrustedUpstreamAuthMiddleware',
+        'ProvisionedRemoteUserBackend',
+        '"rest_framework.authentication.SessionAuthentication"',
         'USE_X_FORWARDED_HOST = False',
     ):
         require(token in settings, f"production settings contract is missing: {token}")
+    for token in (
+        "create_unknown_user = False",
+        "HTTP_X_CONFLICT_AUTH_USER",
+        "HTTP_X_CONFLICT_AUTH_SECRET",
+        "hmac.compare_digest",
+        "auth.authenticate(request, remote_user=username)",
+        "auth.login(request, user)",
+        "UPSTREAM_AUTH_USER_NOT_PROVISIONED",
+    ):
+        require(token in upstream_auth, f"upstream auth contract is missing: {token}")
+    require(
+        "rest_framework.authentication.BasicAuthentication" not in settings,
+        "BasicAuthentication is forbidden in production",
+    )
     require("django.contrib.admin" not in urls and 'path("admin/' not in urls, "production URL graph exposes admin")
     workflow = (root.parent.parent / ".github/workflows/conflict-analysis-required.yml").read_text(encoding="utf-8")
     require("python -m conflict_analysis.production_probe" in workflow, "production image job does not execute the installed runtime probe")

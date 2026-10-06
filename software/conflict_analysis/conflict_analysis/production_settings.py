@@ -19,6 +19,10 @@ _FORBIDDEN_DATABASE_PASSWORDS = {
     "local-development-only",
     "replace-with-a-strong-database-password",
 }
+_FORBIDDEN_UPSTREAM_AUTH_SECRETS = {
+    "replace-with-a-strong-upstream-auth-secret",
+    "development-only-upstream-auth-secret",
+}
 
 
 def _required(name: str) -> str:
@@ -56,6 +60,7 @@ if _enabled("USE_SQLITE"):
 DEBUG = False
 SECRET_KEY = _required("DJANGO_SECRET_KEY")
 FD08_PROJECTION_LEASE_SECRET = _required("FD08_PROJECTION_LEASE_SECRET")
+UPSTREAM_AUTH_SHARED_SECRET = _required("UPSTREAM_AUTH_SHARED_SECRET")
 if (
     len(FD08_PROJECTION_LEASE_SECRET) < 32
     or FD08_PROJECTION_LEASE_SECRET
@@ -66,6 +71,13 @@ if (
     )
 if len(SECRET_KEY) < 50 or SECRET_KEY in _FORBIDDEN_DJANGO_SECRETS:
     raise ImproperlyConfigured("DJANGO_SECRET_KEY must be a non-placeholder value of at least 50 characters")
+if (
+    len(UPSTREAM_AUTH_SHARED_SECRET) < 32
+    or UPSTREAM_AUTH_SHARED_SECRET in _FORBIDDEN_UPSTREAM_AUTH_SECRETS
+):
+    raise ImproperlyConfigured(
+        "UPSTREAM_AUTH_SHARED_SECRET must be a non-placeholder value of at least 32 characters"
+    )
 
 ALLOWED_HOSTS = _csv("DJANGO_ALLOWED_HOSTS", required=True)
 if any(host == "*" or "://" in host or "/" in host for host in ALLOWED_HOSTS):
@@ -99,6 +111,21 @@ INSTALLED_APPS = [app for app in INSTALLED_APPS if app != "django.contrib.admin"
 ROOT_URLCONF = "conflict_analysis.production_urls"
 MIDDLEWARE = list(MIDDLEWARE)  # noqa: F405
 MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
+_authentication_index = MIDDLEWARE.index(
+    "django.contrib.auth.middleware.AuthenticationMiddleware"
+)
+MIDDLEWARE.insert(
+    _authentication_index + 1,
+    "conflict_analysis.upstream_auth.TrustedUpstreamAuthMiddleware",
+)
+AUTHENTICATION_BACKENDS = [
+    "conflict_analysis.upstream_auth.ProvisionedRemoteUserBackend",
+]
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+}
 
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

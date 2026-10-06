@@ -269,6 +269,7 @@ jobs:
           DJANGO_ALLOWED_HOSTS=conflict.example.org
           DJANGO_CSRF_TRUSTED_ORIGINS=https://conflict.example.org
           FD08_PROJECTION_LEASE_SECRET=ci-only-fd08-projection-capability-not-secret
+          UPSTREAM_AUTH_SHARED_SECRET=ci-only-upstream-auth-secret-not-secret
           POSTGRES_DB=conflict_analysis
           POSTGRES_MIGRATION_USER=conflict_migration
           POSTGRES_MIGRATION_PASSWORD=ci-only-migration-database-password-not-secret
@@ -300,6 +301,7 @@ jobs:
             -e DJANGO_ALLOWED_HOSTS=conflict.example.org
             -e DJANGO_CSRF_TRUSTED_ORIGINS=https://conflict.example.org
             -e FD08_PROJECTION_LEASE_SECRET=ci-only-fd08-projection-capability-not-secret
+            -e UPSTREAM_AUTH_SHARED_SECRET=ci-only-upstream-auth-secret-not-secret
             -e POSTGRES_DB=conflict_analysis
             -e POSTGRES_USER=conflict_runtime
             -e POSTGRES_PASSWORD=ci-only-runtime-database-password-not-secret
@@ -330,6 +332,13 @@ jobs:
           assert payload["static_root_present"] is True, payload
           assert payload["uid"] != 0, payload
           assert payload["wheel_identity_present"] is True, payload
+          assert payload["upstream_auth_middleware"] is True, payload
+          assert payload["authentication_backends"] == [
+              "conflict_analysis.upstream_auth.ProvisionedRemoteUserBackend"
+          ], payload
+          assert payload["drf_authentication_classes"] == [
+              "rest_framework.authentication.SessionAuthentication"
+          ], payload
           wheel_sha256 = payload["application_wheel_sha256"]
           assert isinstance(wheel_sha256, str) and len(wheel_sha256) == 64, payload
           assert all(character in "0123456789abcdef" for character in wheel_sha256), payload
@@ -442,6 +451,67 @@ jobs:
           "${compose[@]}" exec -T web python -c \
             "import django; django.setup(); from django.contrib.auth import get_user_model; U=get_user_model(); assert not U.objects.filter(username='${sentinel}').exists(); u=U(username='${sentinel}', is_active=True); u.set_unusable_password(); u.save()"
 
+          auth_cookie="${RUNNER_TEMP}/conflict-production-auth.cookie"
+          valid_auth_status="$(
+            curl --silent --show-error \
+              --cookie-jar "${auth_cookie}" \
+              --output "${RUNNER_TEMP}/conflict-production-auth-body.html" \
+              --write-out '%{http_code}' \
+              -H 'Host: conflict.example.org' \
+              -H 'X-Forwarded-Proto: https' \
+              -H "X-Conflict-Auth-User: ${sentinel}" \
+              -H 'X-Conflict-Auth-Secret: ci-only-upstream-auth-secret-not-secret' \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${valid_auth_status}" = "200"
+
+          session_value="$(
+            awk '$6 == "sessionid" {print $7}' "${auth_cookie}" | tail -n 1
+          )"
+          test -n "${session_value}"
+          stale_session_status="$(
+            curl --silent --show-error \
+              --output /dev/null \
+              --write-out '%{http_code}' \
+              -H 'Host: conflict.example.org' \
+              -H 'X-Forwarded-Proto: https' \
+              -H "Cookie: sessionid=${session_value}" \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${stale_session_status}" = "401"
+
+          bad_secret_status="$(
+            curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              -H 'Host: conflict.example.org' \
+              -H 'X-Forwarded-Proto: https' \
+              -H "X-Conflict-Auth-User: ${sentinel}" \
+              -H 'X-Conflict-Auth-Secret: wrong-secret' \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${bad_secret_status}" = "403"
+
+          unknown_user_status="$(
+            curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              -H 'Host: conflict.example.org' \
+              -H 'X-Forwarded-Proto: https' \
+              -H 'X-Conflict-Auth-User: not-provisioned' \
+              -H 'X-Conflict-Auth-Secret: ci-only-upstream-auth-secret-not-secret' \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${unknown_user_status}" = "403"
+          "${compose[@]}" exec -T web python -c \
+            "import django; django.setup(); from django.contrib.auth import get_user_model; assert not get_user_model().objects.filter(username='not-provisioned').exists()"
+
+          cat > "${RUNNER_TEMP}/conflict-production-auth.json" <<EOF
+          {
+            "bad_secret_status": ${bad_secret_status},
+            "stale_session_status": ${stale_session_status},
+            "status": "PASS",
+            "unknown_user_status": ${unknown_user_status},
+            "valid_auth_status": ${valid_auth_status}
+          }
+          EOF
+
           backup="${RUNNER_TEMP}/conflict-production-backup.dump"
           restore_db="conflict_restore_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
           "${compose[@]}" exec -T db \
@@ -522,6 +592,8 @@ jobs:
             ${{ runner.temp }}/conflict-production-compose.log
             ${{ runner.temp }}/conflict-production-http.json
             ${{ runner.temp }}/conflict-production-http-body.html
+            ${{ runner.temp }}/conflict-production-auth.json
+            ${{ runner.temp }}/conflict-production-auth-body.html
             ${{ runner.temp }}/conflict-production-db-authority.json
             ${{ runner.temp }}/conflict-production-restore-db-authority.json
             ${{ runner.temp }}/conflict-production-backup-restore.json
