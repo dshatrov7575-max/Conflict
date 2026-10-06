@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
-from django.db import connection
+from django.db import DatabaseError, connection, transaction
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -99,18 +99,45 @@ class CalculationRunReceiptTests(PlayerIntegrationHTTPFixture, TestCase):
         with self.assertRaises(ValidationError):
             AuditEvent.objects.filter(pk=operation_id).delete()
 
-    def test_raw_sql_tamper_is_detected_on_read(self):
+    def test_raw_sql_tamper_is_rejected_or_detected_fail_closed(self):
         operation_id = uuid4()
         created = self.run_json(operation_id=operation_id)
         code = f"CALC-RUN-{operation_id}"
-        with connection.cursor() as cursor:
-            cursor.execute(
-                "UPDATE domain_auditevent SET actor_identifier = %s WHERE code = %s",
-                ["tampered-actor", code],
+        original_actor = AuditEvent.objects.get(pk=operation_id).actor_identifier
+
+        if connection.vendor == "postgresql":
+            with self.assertRaises(DatabaseError), transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "UPDATE domain_auditevent "
+                        "SET actor_identifier = %s WHERE code = %s",
+                        ["tampered-actor", code],
+                    )
+            with self.assertRaises(DatabaseError), transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "DELETE FROM domain_auditevent WHERE code = %s",
+                        [code],
+                    )
+            row = AuditEvent.objects.get(pk=operation_id)
+            self.assertEqual(row.actor_identifier, original_actor)
+            detail = self.client.get(self.receipt_url(operation_id))
+            self.assertEqual(detail.status_code, 200, detail.content)
+            self.assertEqual(detail.json(), created["receipt"])
+        else:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE domain_auditevent "
+                    "SET actor_identifier = %s WHERE code = %s",
+                    ["tampered-actor", code],
+                )
+            detail = self.client.get(self.receipt_url(operation_id))
+            self.assertEqual(detail.status_code, 409, detail.content)
+            self.assertEqual(
+                detail.json()["code"],
+                "PLAYER_OPERATION_RESULT_DRIFT",
             )
-        detail = self.client.get(self.receipt_url(operation_id))
-        self.assertEqual(detail.status_code, 409, detail.content)
-        self.assertEqual(detail.json()["code"], "PLAYER_OPERATION_RESULT_DRIFT")
+
         self.assertEqual(created["receipt"]["operation_id"], str(operation_id))
 
     def test_operation_key_reuse_cross_lane_scope_and_corruption_fail_closed(self):

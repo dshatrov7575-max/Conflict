@@ -212,6 +212,30 @@ def _projection_semantic_counts() -> tuple[int, int, int, int, int, int]:
     )
 
 
+def _delete_audit_receipt_as_privileged_corruption(receipt: AuditEvent) -> None:
+    """Construct a receipt-loss state that production runtime cannot create."""
+
+    table = connection.ops.quote_name(AuditEvent._meta.db_table)
+    pk_column = connection.ops.quote_name(AuditEvent._meta.pk.column)
+    prepared_pk = AuditEvent._meta.pk.get_db_prep_value(receipt.pk, connection)
+    with connection.cursor() as cursor:
+        if connection.vendor == "postgresql":
+            trigger = connection.ops.quote_name("domain_audit_event_immutable_guard")
+            cursor.execute(f"ALTER TABLE {table} DISABLE TRIGGER {trigger}")
+            try:
+                cursor.execute(
+                    f"DELETE FROM {table} WHERE {pk_column} = %s",
+                    [prepared_pk],
+                )
+            finally:
+                cursor.execute(f"ALTER TABLE {table} ENABLE TRIGGER {trigger}")
+        else:
+            cursor.execute(
+                f"DELETE FROM {table} WHERE {pk_column} = %s",
+                [prepared_pk],
+            )
+
+
 def _make_workspace(
     *,
     definition,
@@ -1360,33 +1384,34 @@ class FoundationWorkspaceAssessmentProjectionTests(
             self.assertTrue(ProjectWorkspace.objects.filter(pk=workspace.pk).exists())
             self.assertTrue(Actor.objects.filter(pk=protected_rows[0].pk).exists())
 
-        # The initial workspace also has bootstrap records with RESTRICT FKs, so
-        # prove the actual cascade lane separately.  Removing only the derived
-        # receipt by raw SQL leaves a non-initial workspace whose sole dependent
-        # structure is the canonical projection.  A workspace queryset delete
-        # must still fail closed rather than cascade through those rows.
+        # Prove the canonical-row cascade guard independently of AuditEvent:
+        # construct a non-initial workspace with a canonical actor but no receipt.
+        # Ancestor deletion must still fail closed rather than cascade through it.
         cascade_workspace = _make_workspace(
             definition=definition,
             project=self.project,
             code=f"FD08-CASCADE-{uuid4().hex[:10]}",
         )
-        self._materialize(cascade_workspace, uuid4(), principal)
-        cascade_actor = _canonical_rows(cascade_workspace)["actors"][0]
-        receipt = AuditEvent.objects.get(
-            workspace=cascade_workspace,
-            entity_type=_PROJECTION_RECEIPT_ENTITY_TYPE,
-        )
-        audit_table = connection.ops.quote_name(AuditEvent._meta.db_table)
-        audit_pk = connection.ops.quote_name(AuditEvent._meta.pk.column)
-        prepared_receipt_pk = AuditEvent._meta.pk.get_db_prep_value(
-            receipt.pk,
-            connection,
-        )
-        with connection.cursor() as cursor:
-            cursor.execute(
-                f"DELETE FROM {audit_table} WHERE {audit_pk} = %s",
-                [prepared_receipt_pk],
+        with _canonical_assessment_projection_write("projection"):
+            cascade_actor = Actor.objects.create(
+                id=uuid4(),
+                workspace=cascade_workspace,
+                code=f"FD08-CASCADE-ACTOR-{uuid4().hex[:10]}",
+                version="1.0.0",
+                actor_type="GROUP",
+                label="Canonical cascade guard",
+                description="Must survive an attempted ancestor cascade.",
+                order=0,
+                metadata={},
+                source_manifest_entity_id=uuid4(),
+                source_manifest_entity_sha256="d" * 64,
             )
+        self.assertFalse(
+            AuditEvent.objects.filter(
+                workspace=cascade_workspace,
+                entity_type=_PROJECTION_RECEIPT_ENTITY_TYPE,
+            ).exists()
+        )
         with self.subTest(d09="ancestor-cascade-without-receipt-blocker"):
             with self.assertRaises((ValidationError, DatabaseError)):
                 ProjectWorkspace.objects.filter(pk=cascade_workspace.pk).delete()
@@ -1733,17 +1758,7 @@ class FoundationWorkspaceAssessmentProjectionTests(
             workspace=receiptless_workspace,
             entity_type=_PROJECTION_RECEIPT_ENTITY_TYPE,
         )
-        audit_table = connection.ops.quote_name(AuditEvent._meta.db_table)
-        audit_pk = connection.ops.quote_name(AuditEvent._meta.pk.column)
-        prepared_receipt_pk = AuditEvent._meta.pk.get_db_prep_value(
-            receiptless_receipt.pk,
-            connection,
-        )
-        with connection.cursor() as cursor:
-            cursor.execute(
-                f"DELETE FROM {audit_table} WHERE {audit_pk} = %s",
-                [prepared_receipt_pk],
-            )
+        _delete_audit_receipt_as_privileged_corruption(receiptless_receipt)
         before_receipt_refusal = _projection_semantic_counts()
         with self.assertRaises(FoundationPackageConflictError):
             preview_foundation_package_2_2(
