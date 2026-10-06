@@ -280,7 +280,7 @@ jobs:
           APP_PORT=8000
           GUNICORN_WORKERS=2
           GUNICORN_TIMEOUT=120
-          CONFLICT_IMAGE_TAG=required
+          CONFLICT_IMAGE_TAG=required-${{ github.run_id }}-${{ github.run_attempt }}
           EOF
           docker compose --env-file "${RUNNER_TEMP}/conflict-production.env" \
             -f docker-compose.prod.yml config --quiet
@@ -340,6 +340,104 @@ jobs:
           echo "sha256=${wheel_sha256}" >> "${GITHUB_OUTPUT}"
           docker image inspect "${CONFLICT_IMAGE}" > "${RUNNER_TEMP}/conflict-production-image.json"
 
+      - name: Run production Compose end-to-end gate
+        run: |
+          compose=(
+            docker compose
+            --env-file "${RUNNER_TEMP}/conflict-production.env"
+            -f docker-compose.prod.yml
+          )
+          cleanup() {
+            "${compose[@]}" ps --all > "${RUNNER_TEMP}/conflict-production-compose-ps.txt" || true
+            "${compose[@]}" logs --no-color > "${RUNNER_TEMP}/conflict-production-compose.log" || true
+            "${compose[@]}" down -v --remove-orphans || true
+          }
+          trap cleanup EXIT
+
+          "${compose[@]}" up --no-build --wait --wait-timeout 180 web
+
+          redirect_status="$(
+            curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              -H 'Host: conflict.example.org' \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${redirect_status}" = "301"
+
+          admitted_status="$(
+            curl --silent --show-error \
+              --output "${RUNNER_TEMP}/conflict-production-http-body.html" \
+              --write-out '%{http_code}' \
+              -H 'Host: conflict.example.org' \
+              -H 'X-Forwarded-Proto: https' \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${admitted_status}" = "401"
+          cat > "${RUNNER_TEMP}/conflict-production-http.json" <<EOF
+          {
+            "http_redirect_status": ${redirect_status},
+            "https_unauthenticated_status": ${admitted_status},
+            "status": "PASS"
+          }
+          EOF
+
+          "${compose[@]}" exec -T web \
+            python -m conflict_analysis.production_db_probe \
+            > "${RUNNER_TEMP}/conflict-production-db-authority.json"
+
+          python - "${RUNNER_TEMP}/conflict-production-db-authority.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert payload["status"] == "PASS", payload
+          assert payload["current_user"] == "conflict_runtime", payload
+          assert payload["configured_user"] == "conflict_runtime", payload
+          assert payload["runtime_is_database_owner"] is False, payload
+          assert payload["runtime_is_audit_owner"] is False, payload
+          assert payload["role_memberships"] == 0, payload
+          assert payload["owned_relations"] == 0, payload
+          assert payload["owned_schemas"] == 0, payload
+          assert payload["schema_create"] is False, payload
+          assert payload["database_temp"] is False, payload
+          assert payload["migration_user_env_present"] is False, payload
+          assert payload["postgres_password_present"] is True, payload
+          assert payload["fd08_projection_secret_present"] is True, payload
+          assert payload["role_flags"] == {
+              "superuser": False,
+              "createdb": False,
+              "createrole": False,
+              "inherit": False,
+              "replication": False,
+              "bypassrls": False,
+          }, payload
+          assert payload["audit_privileges"] == {
+              "select": True,
+              "insert": True,
+              "update": False,
+              "delete": False,
+              "truncate": False,
+              "trigger": False,
+          }, payload
+          assert payload["capability_privileges"] == {
+              "select": False,
+              "insert": False,
+              "update": False,
+              "delete": False,
+              "truncate": False,
+              "references": False,
+              "trigger": False,
+          }, payload
+          assert payload["migration_privileges"] == {
+              "insert": False,
+              "update": False,
+              "delete": False,
+              "truncate": False,
+              "trigger": False,
+          }, payload
+          assert payload["migration_sequence_update"] is False, payload
+          PY
+
       - name: Upload production image evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -349,6 +447,11 @@ jobs:
             ${{ runner.temp }}/conflict-production-contract.json
             ${{ runner.temp }}/conflict-production-runtime.json
             ${{ runner.temp }}/conflict-production-image.json
+            ${{ runner.temp }}/conflict-production-compose-ps.txt
+            ${{ runner.temp }}/conflict-production-compose.log
+            ${{ runner.temp }}/conflict-production-http.json
+            ${{ runner.temp }}/conflict-production-http-body.html
+            ${{ runner.temp }}/conflict-production-db-authority.json
           if-no-files-found: error
           retention-days: 7
 

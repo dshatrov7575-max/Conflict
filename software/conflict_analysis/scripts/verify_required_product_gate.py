@@ -29,6 +29,7 @@ PRODUCT_TEST_PATHS = (
 )
 
 REQUIRED_WHEEL_MEMBERS = (
+    "conflict_analysis/production_db_probe.py",
     "player_integration/__init__.py",
     "player_integration/apps.py",
     "player_integration/inputs.py",
@@ -154,6 +155,12 @@ def verify_workflow(repo_root: Path) -> None:
         "-e POSTGRES_PASSWORD=ci-only-runtime-database-password-not-secret",
         "docker build --target production",
         "python -m django check --deploy --fail-level WARNING",
+        "Run production Compose end-to-end gate",
+        "up --no-build --wait --wait-timeout 180 web",
+        "python -m conflict_analysis.production_db_probe",
+        "http://127.0.0.1:8000/player/",
+        "X-Forwarded-Proto: https",
+        "conflict-production-db-authority.json",
         "PRODUCTION_IMAGE_RESULT: ${{ needs.production-image.result }}",
         "WHEEL_SQLITE_SHA256: ${{ needs.wheel-sqlite.outputs.wheel_sha256 }}",
         "POSTGRESQL_WHEEL_SHA256: ${{ needs.postgresql-product.outputs.wheel_sha256 }}",
