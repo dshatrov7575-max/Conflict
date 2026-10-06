@@ -452,10 +452,8 @@ jobs:
           "${compose[@]}" exec -T web python -c \
             "import django; django.setup(); from django.contrib.auth import get_user_model; U=get_user_model(); assert not U.objects.filter(username='${sentinel}').exists(); assert not U.objects.filter(username='${basic_sentinel}').exists(); u=U(username='${sentinel}', is_active=True); u.set_unusable_password(); u.save(); b=U(username='${basic_sentinel}', is_active=True); b.set_password('ci-basic-bypass-password'); b.save()"
 
-          auth_cookie="${RUNNER_TEMP}/conflict-production-auth.cookie"
           valid_auth_status="$(
             curl --silent --show-error \
-              --cookie-jar "${auth_cookie}" \
               --output "${RUNNER_TEMP}/conflict-production-auth-body.html" \
               --write-out '%{http_code}' \
               -H 'Host: conflict.example.org' \
@@ -466,8 +464,15 @@ jobs:
           )"
           test "${valid_auth_status}" = "200"
 
+          # The CI connection to the loopback-bound container is plain HTTP while
+          # X-Forwarded-Proto models the trusted TLS terminator. Secure cookies are
+          # therefore intentionally not relied on by curl. Read the one server-side
+          # session key created by the successful upstream-auth request and present
+          # it explicitly to prove that a stale valid session cannot bypass fresh
+          # upstream headers.
           session_value="$(
-            awk '$6 == "sessionid" {print $7}' "${auth_cookie}" | tail -n 1
+            "${compose[@]}" exec -T web python -c \
+              "import django; django.setup(); from django.contrib.sessions.models import Session; rows=list(Session.objects.values_list('session_key', flat=True)); assert len(rows) == 1, rows; print(rows[0])"
           )"
           test -n "${session_value}"
           stale_session_status="$(
