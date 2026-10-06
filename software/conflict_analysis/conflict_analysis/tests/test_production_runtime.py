@@ -21,6 +21,7 @@ def _production_env(**overrides: str) -> dict[str, str]:
             "DJANGO_SECRET_KEY": "test-production-secret-" + "x" * 60,
             "DJANGO_ALLOWED_HOSTS": "conflict.example.org",
             "DJANGO_CSRF_TRUSTED_ORIGINS": "https://conflict.example.org",
+            "FD08_PROJECTION_LEASE_SECRET": "test-fd08-projection-capability-" + "z" * 32,
             "POSTGRES_DB": "conflict_analysis",
             "POSTGRES_USER": "conflict_analysis",
             "POSTGRES_PASSWORD": "test-production-database-password",
@@ -141,6 +142,12 @@ class ProductionRuntimeContractTests(SimpleTestCase):
             {"POSTGRES_PASSWORD": "replace-with-a-strong-database-password"},
             {"POSTGRES_PASSWORD": "too-short"},
             {"POSTGRES_PASSWORD": "conflict_analysis"},
+            {"FD08_PROJECTION_LEASE_SECRET": ""},
+            {"FD08_PROJECTION_LEASE_SECRET": "too-short"},
+            {
+                "FD08_PROJECTION_LEASE_SECRET":
+                "development-only-fd08-projection-capability-0123456789abcdef"
+            },
         ):
             with self.subTest(overrides=overrides):
                 completed = _settings_probe(_production_env(**overrides))

@@ -86,6 +86,7 @@ def main() -> None:
         "POSTGRES_MIGRATION_PASSWORD",
         "POSTGRES_RUNTIME_USER",
         "POSTGRES_RUNTIME_PASSWORD",
+        "FD08_PROJECTION_LEASE_SECRET",
     ):
         require(f"${{{name}:?" in prod_compose, f"production compose must require {name}")
     require('command: ["python", "-m", "django", "provision_runtime_db_role"]' in prod_compose, "production compose must invoke runtime role provisioning from the installed wheel")
@@ -114,6 +115,8 @@ def main() -> None:
         "REVOKE UPDATE, DELETE ON TABLE",
         "domain_auditevent",
         "django_migrations",
+        "domain_fd08_projection_authority_secret",
+        "FD08_PROJECTION_LEASE_SECRET",
         "pg_auth_members",
         "audit_owned_by_runtime",
     ):
@@ -136,6 +139,8 @@ def main() -> None:
         'ROOT_URLCONF = "conflict_analysis.production_urls"',
         'replace-with-at-least-50-random-characters-before-starting',
         'replace-with-a-strong-database-password',
+        'FD08_PROJECTION_LEASE_SECRET = _required("FD08_PROJECTION_LEASE_SECRET")',
+        'development-only-fd08-projection-capability-0123456789abcdef',
         'USE_X_FORWARDED_HOST = False',
     ):
         require(token in settings, f"production settings contract is missing: {token}")

@@ -55,6 +55,15 @@ if _enabled("USE_SQLITE"):
 
 DEBUG = False
 SECRET_KEY = _required("DJANGO_SECRET_KEY")
+FD08_PROJECTION_LEASE_SECRET = _required("FD08_PROJECTION_LEASE_SECRET")
+if (
+    len(FD08_PROJECTION_LEASE_SECRET) < 32
+    or FD08_PROJECTION_LEASE_SECRET
+    == "development-only-fd08-projection-capability-0123456789abcdef"
+):
+    raise ImproperlyConfigured(
+        "FD08_PROJECTION_LEASE_SECRET must be a non-placeholder value of at least 32 characters"
+    )
 if len(SECRET_KEY) < 50 or SECRET_KEY in _FORBIDDEN_DJANGO_SECRETS:
     raise ImproperlyConfigured("DJANGO_SECRET_KEY must be a non-placeholder value of at least 50 characters")
 

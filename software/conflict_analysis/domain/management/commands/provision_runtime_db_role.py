@@ -29,11 +29,16 @@ class Command(BaseCommand):
 
         runtime_user = _required("POSTGRES_RUNTIME_USER")
         runtime_password = _required("POSTGRES_RUNTIME_PASSWORD")
+        projection_capability = _required("FD08_PROJECTION_LEASE_SECRET")
         if not _ROLE_RE.fullmatch(runtime_user):
             raise CommandError("POSTGRES_RUNTIME_USER is not a safe PostgreSQL role identifier.")
         if len(runtime_password) < 20 or runtime_password == runtime_user:
             raise CommandError(
                 "POSTGRES_RUNTIME_PASSWORD must be at least 20 characters and differ from the role name."
+            )
+        if len(projection_capability) < 32:
+            raise CommandError(
+                "FD08_PROJECTION_LEASE_SECRET must contain at least 32 characters."
             )
 
         database_name = connection.settings_dict["NAME"]
@@ -129,10 +134,29 @@ class Command(BaseCommand):
                         "IN SCHEMA public TO {}"
                     ).format(role_ident)
                 )
+                cursor.execute(
+                    """
+                    INSERT INTO domain_fd08_projection_authority_secret
+                        (singleton, secret)
+                    VALUES (TRUE, %s)
+                    ON CONFLICT (singleton)
+                    DO UPDATE SET secret = EXCLUDED.secret
+                    """,
+                    [projection_capability],
+                )
+                cursor.execute(
+                    "REVOKE ALL ON TABLE "
+                    "domain_fd08_projection_authority_secret FROM PUBLIC"
+                )
+
                 # No ALTER DEFAULT PRIVILEGES: this command is deliberately
                 # rerun after every migration and grants only the tables/sequences
                 # that actually exist at that checkpoint before applying the deny-list.
-                for table in ("domain_auditevent", "django_migrations"):
+                for table in (
+                    "domain_auditevent",
+                    "django_migrations",
+                    "domain_fd08_projection_authority_secret",
+                ):
                     table_ident = sql.Identifier(table)
                     cursor.execute(
                         sql.SQL("REVOKE UPDATE, DELETE ON TABLE {} FROM {}").format(
@@ -143,6 +167,12 @@ class Command(BaseCommand):
                 cursor.execute(
                     sql.SQL(
                         "REVOKE INSERT ON TABLE django_migrations FROM {}"
+                    ).format(role_ident)
+                )
+                cursor.execute(
+                    sql.SQL(
+                        "REVOKE SELECT, INSERT, TRUNCATE, REFERENCES, TRIGGER "
+                        "ON TABLE domain_fd08_projection_authority_secret FROM {}"
                     ).format(role_ident)
                 )
 
@@ -173,6 +203,24 @@ class Command(BaseCommand):
                         [runtime_user, privilege],
                     )
                     checks[f"audit_{privilege.lower()}"] = bool(cursor.fetchone()[0])
+                for privilege in (
+                    "SELECT",
+                    "INSERT",
+                    "UPDATE",
+                    "DELETE",
+                    "TRUNCATE",
+                    "REFERENCES",
+                    "TRIGGER",
+                ):
+                    cursor.execute(
+                        "SELECT has_table_privilege("
+                        "%s, 'domain_fd08_projection_authority_secret', %s"
+                        ")",
+                        [runtime_user, privilege],
+                    )
+                    checks[f"fd08_secret_{privilege.lower()}"] = bool(
+                        cursor.fetchone()[0]
+                    )
                 cursor.execute(
                     "SELECT has_schema_privilege(%s, 'public', 'CREATE')",
                     [runtime_user],
@@ -251,6 +299,13 @@ class Command(BaseCommand):
                     "audit_delete": False,
                     "audit_truncate": False,
                     "audit_trigger": False,
+                    "fd08_secret_select": False,
+                    "fd08_secret_insert": False,
+                    "fd08_secret_update": False,
+                    "fd08_secret_delete": False,
+                    "fd08_secret_truncate": False,
+                    "fd08_secret_references": False,
+                    "fd08_secret_trigger": False,
                     "schema_create": False,
                     "role_memberships": 0,
                     "owned_relations": 0,

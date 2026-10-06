@@ -366,6 +366,67 @@ class FoundationWorkspaceAssessmentProjectionTests(
             models.Model.save(canonical, force_insert=True)
         self.assertFalse(Actor.objects.filter(pk=canonical.pk).exists())
 
+        if connection.vendor == "postgresql":
+            for setting, value in (
+                ("domain.fd08_projection_write_authorized", "1"),
+                ("domain.fd08_projection_write_capability", "attacker-controlled"),
+            ):
+                with self.subTest(spoofed_setting=setting):
+                    bypass = Actor(
+                        id=uuid4(),
+                        workspace=workspace,
+                        code=f"FD08-DB-BYPASS-{uuid4().hex[:10]}",
+                        version="1.0.0",
+                        actor_type="GROUP",
+                        label="Rejected self-authorized canonical row",
+                        description="A session-set GUC must not mint projection authority.",
+                        order=1,
+                        metadata={},
+                        source_manifest_entity_id=uuid4(),
+                        source_manifest_entity_sha256="f" * 64,
+                    )
+                    with transaction.atomic():
+                        with connection.cursor() as cursor:
+                            cursor.execute(
+                                "SELECT set_config("
+                                "'domain.fd08_projection_write_capability', '', true"
+                                ")"
+                            )
+                            cursor.execute(
+                                "SELECT set_config(%s, %s, true)",
+                                [setting, value],
+                            )
+                            cursor.execute(
+                                "SELECT current_setting("
+                                "'domain.fd08_projection_write_capability', true"
+                                ")"
+                            )
+                            observed_capability = cursor.fetchone()[0] or ""
+                            cursor.execute(
+                                "SELECT secret FROM "
+                                "domain_fd08_projection_authority_secret"
+                            )
+                            protected_capability = cursor.fetchone()[0]
+                        expected_capability = (
+                            "attacker-controlled"
+                            if setting
+                            == "domain.fd08_projection_write_capability"
+                            else ""
+                        )
+                        self.assertEqual(
+                            observed_capability,
+                            expected_capability,
+                            setting,
+                        )
+                        self.assertNotEqual(
+                            observed_capability,
+                            protected_capability,
+                            setting,
+                        )
+                        with self.assertRaises(DatabaseError), transaction.atomic():
+                            models.Model.save(bypass, force_insert=True)
+                    self.assertFalse(Actor.objects.filter(pk=bypass.pk).exists())
+
         authorized = Actor(
             id=uuid4(),
             workspace=workspace,
@@ -461,6 +522,102 @@ class FoundationWorkspaceAssessmentProjectionTests(
             AssessmentProjectionStatus.NOT_PROVEN,
         )
         self.assertIsNone(workspace.assessment_projection_sha256)
+
+        if connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT pg_get_functiondef("
+                    "'domain_fd08_guard_workspace_projection()'::regprocedure"
+                    ")"
+                )
+                guard_definition = cursor.fetchone()[0]
+                cursor.execute(
+                    """
+                    SELECT pg_get_triggerdef(oid)
+                    FROM pg_trigger
+                    WHERE tgname = 'domain_fd08_workspace_projection_guard'
+                      AND NOT tgisinternal
+                    """
+                )
+                trigger_definition = cursor.fetchone()[0]
+            self.assertIn(
+                "domain_fd08_projection_authority_secret",
+                guard_definition,
+            )
+            self.assertIn(
+                "domain.fd08_projection_write_capability",
+                guard_definition,
+            )
+            self.assertNotIn(
+                "domain.fd08_projection_write_authorized",
+                guard_definition,
+            )
+            self.assertIn(
+                "domain_fd08_guard_workspace_projection",
+                trigger_definition,
+            )
+
+            for setting, value in (
+                ("domain.fd08_projection_write_authorized", "1"),
+                ("domain.fd08_projection_write_capability", "attacker-controlled"),
+            ):
+                with self.subTest(spoofed_setting=setting):
+                    with transaction.atomic():
+                        with connection.cursor() as cursor:
+                            cursor.execute(
+                                "SELECT set_config("
+                                "'domain.fd08_projection_write_capability', '', true"
+                                ")"
+                            )
+                            cursor.execute(
+                                "SELECT set_config(%s, %s, true)",
+                                [setting, value],
+                            )
+                            cursor.execute(
+                                "SELECT current_setting("
+                                "'domain.fd08_projection_write_capability', true"
+                                ")"
+                            )
+                            observed_capability = cursor.fetchone()[0] or ""
+                            cursor.execute(
+                                "SELECT secret FROM "
+                                "domain_fd08_projection_authority_secret"
+                            )
+                            protected_capability = cursor.fetchone()[0]
+                        expected_capability = (
+                            "attacker-controlled"
+                            if setting
+                            == "domain.fd08_projection_write_capability"
+                            else ""
+                        )
+                        self.assertEqual(
+                            observed_capability,
+                            expected_capability,
+                            setting,
+                        )
+                        self.assertNotEqual(
+                            observed_capability,
+                            protected_capability,
+                            setting,
+                        )
+                        with self.assertRaises(DatabaseError, msg=setting), transaction.atomic():
+                            with connection.cursor() as cursor:
+                                cursor.execute(
+                                    f"UPDATE {workspace_table} "
+                                    "SET assessment_projection_status = %s, "
+                                    "assessment_projection_sha256 = %s WHERE id = %s",
+                                    [
+                                        AssessmentProjectionStatus.COMPLETE,
+                                        "f" * 64,
+                                        workspace_pk,
+                                    ],
+                                )
+                    workspace.refresh_from_db()
+                    self.assertEqual(
+                        workspace.assessment_projection_status,
+                        AssessmentProjectionStatus.NOT_PROVEN,
+                    )
+                    self.assertIsNone(workspace.assessment_projection_sha256)
 
         result = self._materialize(workspace, uuid4(), principal)
         self.assertFalse(result.replayed)

@@ -9,6 +9,7 @@ from contextvars import ContextVar
 from decimal import Decimal, InvalidOperation
 from typing import Any, Iterator
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import (
     MaxValueValidator,
@@ -162,7 +163,7 @@ _ASSESSMENT_PROJECTION_WRITE_AUTHORITIES: ContextVar[frozenset[str]] = ContextVa
     "assessment_projection_write_authorities",
     default=frozenset(),
 )
-_ASSESSMENT_PROJECTION_DB_SETTING = "domain.fd08_projection_write_authorized"
+_ASSESSMENT_PROJECTION_DB_SETTING = "domain.fd08_projection_write_capability"
 
 
 @contextmanager
@@ -184,9 +185,16 @@ def _canonical_assessment_projection_write(*authorities: str) -> Iterator[None]:
                         [_ASSESSMENT_PROJECTION_DB_SETTING],
                     )
                     previous_setting = cursor.fetchone()[0] or ""
+                    capability = str(
+                        getattr(settings, "FD08_PROJECTION_LEASE_SECRET", "")
+                    )
+                    if len(capability) < 32:
+                        raise RuntimeError(
+                            "FD08 projection database capability is unavailable."
+                        )
                     cursor.execute(
                         "SELECT set_config(%s, %s, true)",
-                        [_ASSESSMENT_PROJECTION_DB_SETTING, "1"],
+                        [_ASSESSMENT_PROJECTION_DB_SETTING, capability],
                     )
             try:
                 yield

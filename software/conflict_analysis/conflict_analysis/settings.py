@@ -29,6 +29,10 @@ ALLOWED_HOSTS = _env_list(
     "DJANGO_ALLOWED_HOSTS",
     "localhost,127.0.0.1,[::1],testserver",
 )
+FD08_PROJECTION_LEASE_SECRET = os.getenv(
+    "FD08_PROJECTION_LEASE_SECRET",
+    "development-only-fd08-projection-capability-0123456789abcdef",
+)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
