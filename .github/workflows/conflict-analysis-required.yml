@@ -448,8 +448,9 @@ jobs:
           PY
 
           sentinel="backup_restore_probe"
+          basic_sentinel="basic_bypass_probe"
           "${compose[@]}" exec -T web python -c \
-            "import django; django.setup(); from django.contrib.auth import get_user_model; U=get_user_model(); assert not U.objects.filter(username='${sentinel}').exists(); u=U(username='${sentinel}', is_active=True); u.set_unusable_password(); u.save()"
+            "import django; django.setup(); from django.contrib.auth import get_user_model; U=get_user_model(); assert not U.objects.filter(username='${sentinel}').exists(); assert not U.objects.filter(username='${basic_sentinel}').exists(); u=U(username='${sentinel}', is_active=True); u.set_unusable_password(); u.save(); b=U(username='${basic_sentinel}', is_active=True); b.set_password('ci-basic-bypass-password'); b.save()"
 
           auth_cookie="${RUNNER_TEMP}/conflict-production-auth.cookie"
           valid_auth_status="$(
@@ -490,6 +491,15 @@ jobs:
           )"
           test "${bad_secret_status}" = "403"
 
+          basic_bypass_status="$(
+            curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              --user "${basic_sentinel}:ci-basic-bypass-password" \
+              -H 'Host: conflict.example.org' \
+              -H 'X-Forwarded-Proto: https' \
+              http://127.0.0.1:8000/player/
+          )"
+          test "${basic_bypass_status}" = "403"
+
           unknown_user_status="$(
             curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
               -H 'Host: conflict.example.org' \
@@ -505,6 +515,7 @@ jobs:
           cat > "${RUNNER_TEMP}/conflict-production-auth.json" <<EOF
           {
             "bad_secret_status": ${bad_secret_status},
+            "basic_bypass_status": ${basic_bypass_status},
             "stale_session_status": ${stale_session_status},
             "status": "PASS",
             "unknown_user_status": ${unknown_user_status},

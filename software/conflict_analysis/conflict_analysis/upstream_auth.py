@@ -66,6 +66,15 @@ class TrustedUpstreamAuthMiddleware:
 
         username = request.META.pop(UPSTREAM_USER_META, None)
         presented_secret = request.META.pop(UPSTREAM_SECRET_META, None)
+        authorization = request.META.pop("HTTP_AUTHORIZATION", None)
+
+        # Production has exactly one authentication ingress: the trusted
+        # upstream bridge. Per-view DRF declarations in legacy/Foundation
+        # surfaces may still mention BasicAuthentication, so relying only on
+        # DEFAULT_AUTHENTICATION_CLASSES would leave a second credential path.
+        if authorization is not None:
+            _logout(request)
+            return HttpResponse("UPSTREAM_AUTH_ALTERNATIVE_AUTH_FORBIDDEN\n", status=403)
 
         if username is None and presented_secret is None:
             _logout(request)

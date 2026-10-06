@@ -170,6 +170,8 @@ def main() -> None:
         "auth.authenticate(request, remote_user=username)",
         "auth.login(request, user)",
         "UPSTREAM_AUTH_USER_NOT_PROVISIONED",
+        "UPSTREAM_AUTH_ALTERNATIVE_AUTH_FORBIDDEN",
+        'request.META.pop("HTTP_AUTHORIZATION", None)',
     ):
         require(token in upstream_auth, f"upstream auth contract is missing: {token}")
     require(

@@ -113,6 +113,20 @@ class TrustedUpstreamAuthMiddlewareTests(TestCase):
                 },
                 400,
             ),
+            (
+                {
+                    "HTTP_AUTHORIZATION": "Basic YW5hbHlzdDpwYXNzd29yZA==",
+                },
+                403,
+            ),
+            (
+                {
+                    "HTTP_AUTHORIZATION": "Bearer attacker-token",
+                    "HTTP_X_CONFLICT_AUTH_USER": "analyst",
+                    "HTTP_X_CONFLICT_AUTH_SECRET": AUTH_SECRET,
+                },
+                403,
+            ),
         )
         for meta, expected_status in cases:
             with self.subTest(meta=meta):

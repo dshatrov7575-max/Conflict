@@ -47,9 +47,12 @@ independent authentication channel.
 
 ## Alternative auth paths
 
-Production DRF authentication is explicitly restricted to
-`SessionAuthentication`. `BasicAuthentication` is not enabled in production,
-so an Authorization: Basic header cannot bypass the upstream SSO boundary.
+Production has exactly one authentication ingress. The middleware removes and
+rejects every `Authorization` header before downstream view authentication, including
+valid Basic credentials and Bearer tokens. This is required because some legacy
+Foundation endpoints still declare per-view Basic authentication independently of
+the global DRF defaults. Production DRF defaults are also restricted to
+`SessionAuthentication`.
 
 ## Verification
 
@@ -62,8 +65,9 @@ Unit/contract tests prove:
 - wrong shared secret returns 403;
 - ambiguous/comma-joined and malformed usernames are rejected;
 - a session without fresh trusted headers is logged out;
+- valid Basic credentials and Bearer-style `Authorization` headers are rejected before downstream view authentication;
 - production middleware/backend order is exact;
-- BasicAuthentication is absent.
+- global DRF `BasicAuthentication` is absent.
 
 Production Compose CI additionally proves:
 

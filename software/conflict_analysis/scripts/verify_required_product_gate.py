@@ -174,6 +174,7 @@ def verify_workflow(repo_root: Path) -> None:
         "conflict-production-auth.json",
         "\"valid_auth_status\"",
         "\"stale_session_status\"",
+        "\"basic_bypass_status\"",
         "\"unknown_user_status\"",
         "\"dump_uploaded\": false",
         "PRODUCTION_IMAGE_RESULT: ${{ needs.production-image.result }}",
