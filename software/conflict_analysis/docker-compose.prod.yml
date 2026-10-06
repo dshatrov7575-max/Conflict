@@ -93,7 +93,7 @@ services:
     ports:
       - "127.0.0.1:${APP_PORT:-8000}:8000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1',8000),5); s.close()"]
+      test: ["CMD", "python", "-m", "conflict_analysis.production_health_probe"]
       interval: 15s
       timeout: 5s
       retries: 5

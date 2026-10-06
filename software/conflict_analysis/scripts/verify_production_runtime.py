@@ -30,6 +30,8 @@ def main() -> None:
     settings = (root / "conflict_analysis/production_settings.py").read_text(encoding="utf-8")
     urls = (root / "conflict_analysis/production_urls.py").read_text(encoding="utf-8")
     probe = (root / "conflict_analysis/production_probe.py").read_text(encoding="utf-8")
+    health = (root / "conflict_analysis/production_health.py").read_text(encoding="utf-8")
+    health_probe = (root / "conflict_analysis/production_health_probe.py").read_text(encoding="utf-8")
     role_command = (root / "domain/management/commands/provision_runtime_db_role.py").read_text(encoding="utf-8")
     upstream_auth = (root / "conflict_analysis/upstream_auth.py").read_text(encoding="utf-8")
     pyproject = (root / "pyproject.toml").read_text(encoding="utf-8")
@@ -90,6 +92,8 @@ def main() -> None:
         require(token in prod_compose, f"production compose contract is missing: {token}")
     require(prod_compose.count("platform: linux/amd64") == 2, "production lock requires explicit linux/amd64 services")
     require("runserver" not in prod_compose, "runserver is forbidden in production compose")
+    require('test: ["CMD", "python", "-m", "conflict_analysis.production_health_probe"]' in prod_compose, "production web healthcheck must execute the installed HTTP+DB readiness probe")
+    require("socket.create_connection" not in prod_compose, "TCP-only production web healthcheck is forbidden")
     require(".:/app" not in prod_compose, "source bind mounts are forbidden in production compose")
     for name in (
         "DJANGO_SECRET_KEY",
@@ -178,6 +182,11 @@ def main() -> None:
         "rest_framework.authentication.BasicAuthentication" not in settings,
         "BasicAuthentication is forbidden in production",
     )
+    require('path("health/ready/", production_health.ready' in urls, "production URL graph omits readiness endpoint")
+    for token in ("SELECT 1", "NOT_READY\\n", "READY\\n", "Cache-Control", "no-store"):
+        require(token in health, f"production readiness contract is missing: {token}")
+    for token in ("HTTPConnection", '/health/ready/', "X-Forwarded-Proto", "READY\\n"):
+        require(token in health_probe, f"production readiness probe is missing: {token}")
     require("django.contrib.admin" not in urls and 'path("admin/' not in urls, "production URL graph exposes admin")
     workflow = (root.parent.parent / ".github/workflows/conflict-analysis-required.yml").read_text(encoding="utf-8")
     require("python -m conflict_analysis.production_probe" in workflow, "production image job does not execute the installed runtime probe")
