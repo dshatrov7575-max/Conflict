@@ -40,6 +40,7 @@ def snapshot() -> dict[str, object]:
         application_wheel_sha256 = candidate
 
     getuid = getattr(os, "getuid", None)
+    rest_framework = getattr(settings, "REST_FRAMEWORK", {})
     return {
         "admin_exposed": admin_exposed,
         "admin_installed": "django.contrib.admin" in settings.INSTALLED_APPS,
@@ -49,6 +50,14 @@ def snapshot() -> dict[str, object]:
         "package_path": str(Path(conflict_analysis.__file__).resolve()),
         "source_tree_present": Path("/app/manage.py").exists(),
         "static_root_present": Path(settings.STATIC_ROOT).is_dir(),
+        "upstream_auth_middleware": (
+            "conflict_analysis.upstream_auth.TrustedUpstreamAuthMiddleware"
+            in settings.MIDDLEWARE
+        ),
+        "authentication_backends": list(settings.AUTHENTICATION_BACKENDS),
+        "drf_authentication_classes": list(
+            rest_framework.get("DEFAULT_AUTHENTICATION_CLASSES", [])
+        ),
         "uid": getuid() if getuid is not None else None,
         "wheel_identity_present": wheel_identity_present,
     }

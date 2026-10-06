@@ -22,6 +22,7 @@ def _production_env(**overrides: str) -> dict[str, str]:
             "DJANGO_ALLOWED_HOSTS": "conflict.example.org",
             "DJANGO_CSRF_TRUSTED_ORIGINS": "https://conflict.example.org",
             "FD08_PROJECTION_LEASE_SECRET": "test-fd08-projection-capability-" + "z" * 32,
+            "UPSTREAM_AUTH_SHARED_SECRET": "test-upstream-auth-secret-" + "y" * 32,
             "POSTGRES_DB": "conflict_analysis",
             "POSTGRES_USER": "conflict_analysis",
             "POSTGRES_PASSWORD": "test-production-database-password",
@@ -63,6 +64,9 @@ print(json.dumps({
     'admin_installed': 'django.contrib.admin' in settings.INSTALLED_APPS,
     'forwarded_host': settings.USE_X_FORWARDED_HOST,
     'static_backend': settings.STORAGES['staticfiles']['BACKEND'],
+    'middleware': settings.MIDDLEWARE,
+    'authentication_backends': settings.AUTHENTICATION_BACKENDS,
+    'drf_authentication_classes': settings.REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'],
 }, sort_keys=True))
 """
     return subprocess.run(
@@ -111,6 +115,21 @@ class ProductionRuntimeContractTests(SimpleTestCase):
             payload["static_backend"],
             "whitenoise.storage.CompressedManifestStaticFilesStorage",
         )
+        auth_middleware = "django.contrib.auth.middleware.AuthenticationMiddleware"
+        upstream_middleware = "conflict_analysis.upstream_auth.TrustedUpstreamAuthMiddleware"
+        self.assertIn(upstream_middleware, payload["middleware"])
+        self.assertGreater(
+            payload["middleware"].index(upstream_middleware),
+            payload["middleware"].index(auth_middleware),
+        )
+        self.assertEqual(
+            payload["authentication_backends"],
+            ["conflict_analysis.upstream_auth.ProvisionedRemoteUserBackend"],
+        )
+        self.assertEqual(
+            payload["drf_authentication_classes"],
+            ["rest_framework.authentication.SessionAuthentication"],
+        )
 
     def test_production_probe_is_machine_readable(self):
         completed = subprocess.run(
@@ -148,6 +167,13 @@ class ProductionRuntimeContractTests(SimpleTestCase):
                 "FD08_PROJECTION_LEASE_SECRET":
                 "development-only-fd08-projection-capability-0123456789abcdef"
             },
+            {"UPSTREAM_AUTH_SHARED_SECRET": ""},
+            {"UPSTREAM_AUTH_SHARED_SECRET": "too-short"},
+            {
+                "UPSTREAM_AUTH_SHARED_SECRET":
+                "replace-with-a-strong-upstream-auth-secret"
+            },
+            {"UPSTREAM_AUTH_SHARED_SECRET": "development-only-upstream-auth-secret"},
         ):
             with self.subTest(overrides=overrides):
                 completed = _settings_probe(_production_env(**overrides))
