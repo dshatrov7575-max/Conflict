@@ -438,6 +438,77 @@ jobs:
           assert payload["migration_sequence_update"] is False, payload
           PY
 
+          sentinel="backup_restore_probe"
+          "${compose[@]}" exec -T web python -c \
+            "import django; django.setup(); from django.contrib.auth import get_user_model; U=get_user_model(); assert not U.objects.filter(username='${sentinel}').exists(); u=U(username='${sentinel}', is_active=True); u.set_unusable_password(); u.save()"
+
+          backup="${RUNNER_TEMP}/conflict-production-backup.dump"
+          restore_db="conflict_restore_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          "${compose[@]}" exec -T db \
+            pg_dump -U conflict_migration -d conflict_analysis \
+              --format=custom --no-owner --no-privileges \
+            > "${backup}"
+          test -s "${backup}"
+          backup_bytes="$(stat --format='%s' "${backup}")"
+          backup_sha256="$(sha256sum "${backup}" | awk '{print $1}')"
+          [[ "${backup_sha256}" =~ ^[0-9a-f]{64}$ ]]
+
+          "${compose[@]}" exec -T db \
+            createdb -U conflict_migration -O conflict_migration "${restore_db}"
+          cat "${backup}" | "${compose[@]}" exec -T db \
+            pg_restore -U conflict_migration -d "${restore_db}" \
+              --no-owner --no-privileges --exit-on-error
+
+          "${compose[@]}" run --rm --no-deps -T \
+            -e POSTGRES_DB="${restore_db}" \
+            migrate python -m django migrate --check
+
+          "${compose[@]}" run --rm --no-deps -T \
+            -e POSTGRES_DB="${restore_db}" \
+            db-runtime-role
+
+          "${compose[@]}" run --rm --no-deps -T \
+            -e POSTGRES_DB="${restore_db}" \
+            web python -c \
+            "import django; django.setup(); from django.contrib.auth import get_user_model; assert get_user_model().objects.filter(username='${sentinel}').count() == 1"
+
+          "${compose[@]}" run --rm --no-deps -T \
+            -e POSTGRES_DB="${restore_db}" \
+            web python -m conflict_analysis.production_db_probe \
+            > "${RUNNER_TEMP}/conflict-production-restore-db-authority.json"
+
+          python - "${RUNNER_TEMP}/conflict-production-restore-db-authority.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert payload["status"] == "PASS", payload
+          assert payload["current_user"] == "conflict_runtime", payload
+          assert payload["configured_user"] == "conflict_runtime", payload
+          assert payload["runtime_is_database_owner"] is False, payload
+          assert payload["runtime_is_audit_owner"] is False, payload
+          assert payload["role_memberships"] == 0, payload
+          assert payload["owned_relations"] == 0, payload
+          assert payload["owned_schemas"] == 0, payload
+          assert payload["schema_create"] is False, payload
+          assert payload["database_temp"] is False, payload
+          assert not any(payload["capability_privileges"].values()), payload
+          assert payload["migration_sequence_update"] is False, payload
+          PY
+
+          cat > "${RUNNER_TEMP}/conflict-production-backup-restore.json" <<EOF
+          {
+            "backup_bytes": ${backup_bytes},
+            "backup_sha256": "${backup_sha256}",
+            "dump_uploaded": false,
+            "restore_database": "${restore_db}",
+            "sentinel": "${sentinel}",
+            "status": "PASS"
+          }
+          EOF
+          rm -f "${backup}"
+
       - name: Upload production image evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -452,6 +523,8 @@ jobs:
             ${{ runner.temp }}/conflict-production-http.json
             ${{ runner.temp }}/conflict-production-http-body.html
             ${{ runner.temp }}/conflict-production-db-authority.json
+            ${{ runner.temp }}/conflict-production-restore-db-authority.json
+            ${{ runner.temp }}/conflict-production-backup-restore.json
           if-no-files-found: error
           retention-days: 7
 
