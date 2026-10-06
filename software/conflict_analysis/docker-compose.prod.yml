@@ -62,7 +62,7 @@ services:
 
   db-runtime-role:
     <<: *app
-    command: ["python", "manage.py", "provision_runtime_db_role"]
+    command: ["python", "-m", "django", "provision_runtime_db_role"]
     environment:
       <<: *app-environment
       POSTGRES_USER: ${POSTGRES_MIGRATION_USER:?POSTGRES_MIGRATION_USER is required}

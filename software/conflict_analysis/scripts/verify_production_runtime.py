@@ -88,7 +88,8 @@ def main() -> None:
         "POSTGRES_RUNTIME_PASSWORD",
     ):
         require(f"${{{name}:?" in prod_compose, f"production compose must require {name}")
-    require("provision_runtime_db_role" in prod_compose, "production compose omits runtime role provisioning")
+    require('command: ["python", "-m", "django", "provision_runtime_db_role"]' in prod_compose, "production compose must invoke runtime role provisioning from the installed wheel")
+    require('command: ["python", "manage.py", "provision_runtime_db_role"]' not in prod_compose, "production compose must not depend on absent manage.py")
     require(
         prod_compose.count("POSTGRES_USER: ${POSTGRES_RUNTIME_USER:?") == 1,
         "web/application anchor must expose exactly the runtime PostgreSQL role",
