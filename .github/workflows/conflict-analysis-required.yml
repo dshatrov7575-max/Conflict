@@ -273,6 +273,7 @@ jobs:
           POSTGRES_MIGRATION_PASSWORD=ci-only-migration-database-password-not-secret
           POSTGRES_RUNTIME_USER=conflict_runtime
           POSTGRES_RUNTIME_PASSWORD=ci-only-runtime-database-password-not-secret
+          FD08_PROJECTION_CAPABILITY_TOKEN=ci-only-fd08-projection-capability-1234567890abcdef
           POSTGRES_HOST=db
           POSTGRES_PORT=5432
           POSTGRES_CONN_MAX_AGE=60
@@ -301,6 +302,7 @@ jobs:
             -e POSTGRES_DB=conflict_analysis
             -e POSTGRES_USER=conflict_runtime
             -e POSTGRES_PASSWORD=ci-only-runtime-database-password-not-secret
+            -e FD08_PROJECTION_CAPABILITY_TOKEN=ci-only-fd08-projection-capability-1234567890abcdef
             -e POSTGRES_HOST=127.0.0.1
             -e POSTGRES_PORT=5432
             -e POSTGRES_CONN_MAX_AGE=0

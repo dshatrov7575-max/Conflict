@@ -22,6 +22,7 @@ class PostgreSQLRuntimeRoleTests(TransactionTestCase):
         super().setUp()
         self.runtime_user = f"conflict_rt_{uuid4().hex[:12]}"
         self.runtime_password = "runtime-test-password-" + uuid4().hex
+        self.projection_capability = "projection-capability-" + uuid4().hex
         with connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -53,6 +54,7 @@ class PostgreSQLRuntimeRoleTests(TransactionTestCase):
             {
                 "POSTGRES_RUNTIME_USER": self.runtime_user,
                 "POSTGRES_RUNTIME_PASSWORD": self.runtime_password,
+                "FD08_PROJECTION_CAPABILITY_TOKEN": self.projection_capability,
             },
             clear=False,
         ):
@@ -153,6 +155,24 @@ class PostgreSQLRuntimeRoleTests(TransactionTestCase):
                 current_user, search_path = cursor.fetchone()
                 self.assertEqual(current_user, self.runtime_user)
                 self.assertEqual(search_path, "pg_catalog, public")
+                with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                    cursor.execute(
+                        "SELECT token FROM domain_fd08_projection_capability"
+                    )
+                cursor.execute(
+                    "SELECT set_config("
+                    "'domain.fd08_projection_write_capability', %s, false)",
+                    ["1"],
+                )
+                cursor.execute("SELECT domain_fd08_projection_authorized()")
+                self.assertFalse(cursor.fetchone()[0])
+                cursor.execute(
+                    "SELECT set_config("
+                    "'domain.fd08_projection_write_capability', %s, false)",
+                    [self.projection_capability],
+                )
+                cursor.execute("SELECT domain_fd08_projection_authorized()")
+                self.assertTrue(cursor.fetchone()[0])
 
                 probe_key = f"rt-{uuid4().hex}"
                 cursor.execute(

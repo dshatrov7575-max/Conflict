@@ -67,6 +67,11 @@ if any(not origin.startswith("https://") or "*" in origin for origin in CSRF_TRU
 
 POSTGRES_USER = _required("POSTGRES_USER")
 POSTGRES_PASSWORD = _required("POSTGRES_PASSWORD")
+FD08_PROJECTION_CAPABILITY_TOKEN = _required("FD08_PROJECTION_CAPABILITY_TOKEN")
+if len(FD08_PROJECTION_CAPABILITY_TOKEN) < 32:
+    raise ImproperlyConfigured(
+        "FD08_PROJECTION_CAPABILITY_TOKEN must be at least 32 characters"
+    )
 if (
     len(POSTGRES_PASSWORD) < 20
     or POSTGRES_PASSWORD in _FORBIDDEN_DATABASE_PASSWORDS
