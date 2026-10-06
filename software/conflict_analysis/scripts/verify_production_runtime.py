@@ -30,6 +30,7 @@ def main() -> None:
     settings = (root / "conflict_analysis/production_settings.py").read_text(encoding="utf-8")
     urls = (root / "conflict_analysis/production_urls.py").read_text(encoding="utf-8")
     probe = (root / "conflict_analysis/production_probe.py").read_text(encoding="utf-8")
+    role_command = (root / "domain/management/commands/provision_runtime_db_role.py").read_text(encoding="utf-8")
     pyproject = (root / "pyproject.toml").read_text(encoding="utf-8")
     wheel_builder = (root / "scripts/build_reproducible_wheel.py").read_text(encoding="utf-8")
     build_lock_lines = (root / "requirements/build-lock.txt").read_text(encoding="utf-8").splitlines()
@@ -77,8 +78,50 @@ def main() -> None:
     require(prod_compose.count("platform: linux/amd64") == 2, "production lock requires explicit linux/amd64 services")
     require("runserver" not in prod_compose, "runserver is forbidden in production compose")
     require(".:/app" not in prod_compose, "source bind mounts are forbidden in production compose")
-    for name in ("DJANGO_SECRET_KEY", "DJANGO_ALLOWED_HOSTS", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD"):
+    for name in (
+        "DJANGO_SECRET_KEY",
+        "DJANGO_ALLOWED_HOSTS",
+        "POSTGRES_DB",
+        "POSTGRES_MIGRATION_USER",
+        "POSTGRES_MIGRATION_PASSWORD",
+        "POSTGRES_RUNTIME_USER",
+        "POSTGRES_RUNTIME_PASSWORD",
+    ):
         require(f"${{{name}:?" in prod_compose, f"production compose must require {name}")
+    require('command: ["python", "-m", "django", "provision_runtime_db_role"]' in prod_compose, "production compose must invoke runtime role provisioning from the installed wheel")
+    require('command: ["python", "manage.py", "provision_runtime_db_role"]' not in prod_compose, "production compose must not depend on absent manage.py")
+    require(
+        prod_compose.count("POSTGRES_USER: ${POSTGRES_RUNTIME_USER:?") == 1,
+        "web/application anchor must expose exactly the runtime PostgreSQL role",
+    )
+    require(
+        prod_compose.count("POSTGRES_USER: ${POSTGRES_MIGRATION_USER:?") == 3,
+        "db, migrate and role-provisioning services must use the migration role",
+    )
+    for token in (
+        "NOSUPERUSER",
+        "NOCREATEDB",
+        "NOCREATEROLE",
+        "NOINHERIT",
+        "NOREPLICATION",
+        "NOBYPASSRLS",
+        "REVOKE TEMPORARY, CREATE ON DATABASE",
+        "REVOKE CREATE ON SCHEMA public FROM PUBLIC",
+        "search_path = pg_catalog, public",
+        "REVOKE ALL PRIVILEGES ON ALL TABLES",
+        "REVOKE ALL PRIVILEGES ON ALL SEQUENCES",
+        "GRANT USAGE, SELECT ON ALL SEQUENCES",
+        "REVOKE UPDATE, DELETE ON TABLE",
+        "domain_auditevent",
+        "django_migrations",
+        "pg_auth_members",
+        "audit_owned_by_runtime",
+    ):
+        require(token in role_command, f"runtime role command is missing: {token}")
+    require(
+        "GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES" not in role_command,
+        "runtime role must not receive sequence UPDATE/setval authority",
+    )
 
     for token in (
         'DEBUG = False',
