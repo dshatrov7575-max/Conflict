@@ -30,6 +30,8 @@ PRODUCT_TEST_PATHS = (
 
 REQUIRED_WHEEL_MEMBERS = (
     "conflict_analysis/production_db_probe.py",
+    "conflict_analysis/production_health.py",
+    "conflict_analysis/production_health_probe.py",
     "conflict_analysis/upstream_auth.py",
     "player_integration/__init__.py",
     "player_integration/apps.py",
