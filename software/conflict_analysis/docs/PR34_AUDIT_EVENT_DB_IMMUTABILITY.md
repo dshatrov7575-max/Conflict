@@ -9,8 +9,10 @@ immutability and drift detection did not prevent a direct SQL UPDATE of
 ## Change
 
 Migration `0021_audit_event_db_immutability` installs a PostgreSQL trigger that
-rejects every UPDATE, DELETE and TRUNCATE affecting `AuditEvent`. INSERT remains
-allowed.
+rejects every UPDATE and DELETE affecting `AuditEvent`. INSERT remains allowed.
+TRUNCATE is intentionally deferred to the separate least-privilege runtime-role
+layer: Django's PostgreSQL test isolation legitimately uses TRUNCATE while the
+production web role must not receive that privilege.
 
 SQLite remains unchanged. Production settings already reject SQLite; the
 portable SQLite lane continues to exercise ORM immutability and receipt

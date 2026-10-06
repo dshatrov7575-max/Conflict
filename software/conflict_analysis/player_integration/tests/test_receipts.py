@@ -119,9 +119,6 @@ class CalculationRunReceiptTests(PlayerIntegrationHTTPFixture, TestCase):
                         "DELETE FROM domain_auditevent WHERE code = %s",
                         [code],
                     )
-            with self.assertRaises(DatabaseError), transaction.atomic():
-                with connection.cursor() as cursor:
-                    cursor.execute("TRUNCATE TABLE domain_auditevent")
             row = AuditEvent.objects.get(pk=operation_id)
             self.assertEqual(row.actor_identifier, original_actor)
             detail = self.client.get(self.receipt_url(operation_id))
