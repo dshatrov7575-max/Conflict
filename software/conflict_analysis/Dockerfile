@@ -42,6 +42,7 @@ RUN --network=none python -m pip install --no-index --find-links=/wheels --requi
     && python -m pip check \
     && DJANGO_SECRET_KEY=build-only-not-secret-build-only-not-secret-build-only-not-secret-1234 \
        DJANGO_ALLOWED_HOSTS=localhost \
+       FD08_PROJECTION_LEASE_SECRET=build-only-fd08-projection-capability-not-secret-123456 \
        POSTGRES_DB=build_only \
        POSTGRES_USER=build_only \
        POSTGRES_PASSWORD=build-only-database-password-not-secret \
@@ -49,6 +50,7 @@ RUN --network=none python -m pip install --no-index --find-links=/wheels --requi
        python -m django check --deploy --fail-level WARNING \
     && DJANGO_SECRET_KEY=build-only-not-secret-build-only-not-secret-build-only-not-secret-1234 \
        DJANGO_ALLOWED_HOSTS=localhost \
+       FD08_PROJECTION_LEASE_SECRET=build-only-fd08-projection-capability-not-secret-123456 \
        POSTGRES_DB=build_only \
        POSTGRES_USER=build_only \
        POSTGRES_PASSWORD=build-only-database-password-not-secret \
