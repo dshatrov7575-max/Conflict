@@ -7,6 +7,7 @@ from unittest import skipUnless
 from unittest.mock import patch
 from uuid import uuid4
 
+from django.conf import settings
 from django.core.management import call_command
 from django.db import connection
 from django.test import TransactionTestCase
@@ -22,6 +23,7 @@ class PostgreSQLRuntimeRoleTests(TransactionTestCase):
         super().setUp()
         self.runtime_user = f"conflict_rt_{uuid4().hex[:12]}"
         self.runtime_password = "runtime-test-password-" + uuid4().hex
+        self.projection_secret = settings.FD08_PROJECTION_LEASE_SECRET
         with connection.cursor() as cursor:
             cursor.execute(
                 """
@@ -53,6 +55,7 @@ class PostgreSQLRuntimeRoleTests(TransactionTestCase):
             {
                 "POSTGRES_RUNTIME_USER": self.runtime_user,
                 "POSTGRES_RUNTIME_PASSWORD": self.runtime_password,
+                "FD08_PROJECTION_LEASE_SECRET": self.projection_secret,
             },
             clear=False,
         ):
@@ -113,6 +116,22 @@ class PostgreSQLRuntimeRoleTests(TransactionTestCase):
                     [self.runtime_user, privilege],
                 )
                 self.assertFalse(bool(cursor.fetchone()[0]))
+            for privilege in (
+                "SELECT",
+                "INSERT",
+                "UPDATE",
+                "DELETE",
+                "TRUNCATE",
+                "REFERENCES",
+                "TRIGGER",
+            ):
+                cursor.execute(
+                    "SELECT has_table_privilege("
+                    "%s, 'domain_fd08_projection_authority_secret', %s"
+                    ")",
+                    [self.runtime_user, privilege],
+                )
+                self.assertFalse(bool(cursor.fetchone()[0]), privilege)
             cursor.execute(
                 "SELECT has_schema_privilege(%s, 'public', 'CREATE')",
                 [self.runtime_user],
@@ -172,6 +191,11 @@ class PostgreSQLRuntimeRoleTests(TransactionTestCase):
                     [probe_key],
                 )
 
+                with self.assertRaises(psycopg.errors.InsufficientPrivilege):
+                    cursor.execute(
+                        "SELECT secret FROM "
+                        "domain_fd08_projection_authority_secret"
+                    )
                 with self.assertRaises(psycopg.errors.InsufficientPrivilege):
                     cursor.execute("CREATE TEMP TABLE runtime_temp_escape(id integer)")
                 with self.assertRaises(psycopg.errors.InsufficientPrivilege):

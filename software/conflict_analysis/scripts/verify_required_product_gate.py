@@ -149,6 +149,7 @@ def verify_workflow(repo_root: Path) -> None:
         "verify_production_runtime.py",
         "POSTGRES_MIGRATION_USER=conflict_migration",
         "POSTGRES_RUNTIME_USER=conflict_runtime",
+        "FD08_PROJECTION_LEASE_SECRET=ci-only-fd08-projection-capability-not-secret",
         "-e POSTGRES_USER=conflict_runtime",
         "-e POSTGRES_PASSWORD=ci-only-runtime-database-password-not-secret",
         "docker build --target production",

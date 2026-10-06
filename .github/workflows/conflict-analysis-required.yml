@@ -268,6 +268,7 @@ jobs:
           DJANGO_SECRET_KEY=ci-only-not-secret-ci-only-not-secret-ci-only-not-secret-1234567890
           DJANGO_ALLOWED_HOSTS=conflict.example.org
           DJANGO_CSRF_TRUSTED_ORIGINS=https://conflict.example.org
+          FD08_PROJECTION_LEASE_SECRET=ci-only-fd08-projection-capability-not-secret
           POSTGRES_DB=conflict_analysis
           POSTGRES_MIGRATION_USER=conflict_migration
           POSTGRES_MIGRATION_PASSWORD=ci-only-migration-database-password-not-secret
@@ -298,6 +299,7 @@ jobs:
             -e DJANGO_SECRET_KEY=ci-only-not-secret-ci-only-not-secret-ci-only-not-secret-1234567890
             -e DJANGO_ALLOWED_HOSTS=conflict.example.org
             -e DJANGO_CSRF_TRUSTED_ORIGINS=https://conflict.example.org
+            -e FD08_PROJECTION_LEASE_SECRET=ci-only-fd08-projection-capability-not-secret
             -e POSTGRES_DB=conflict_analysis
             -e POSTGRES_USER=conflict_runtime
             -e POSTGRES_PASSWORD=ci-only-runtime-database-password-not-secret

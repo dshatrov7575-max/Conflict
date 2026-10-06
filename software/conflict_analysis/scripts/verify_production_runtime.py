@@ -51,6 +51,12 @@ def main() -> None:
     require('environment["SOURCE_DATE_EPOCH"] = canonical_epoch' in wheel_builder, "wheel builder does not seal SOURCE_DATE_EPOCH")
     require("output directory must be outside the project source tree" in wheel_builder, "wheel builder permits output inside source tree")
     require(dockerfile.count("RUN --network=none") >= 2, "wheel build and final installation must be offline")
+    require(
+        dockerfile.count(
+            "FD08_PROJECTION_LEASE_SECRET=build-only-fd08-projection-capability-not-secret-123456"
+        ) == 2,
+        "production image build-time Django checks must receive only the explicit build-only FD08 capability",
+    )
     require("FROM base AS development" in dockerfile, "development target is missing")
     require("FROM base AS production" in dockerfile, "production target is missing")
     require("--require-hashes" in dockerfile and "requirements/production-lock.txt" in dockerfile, "builder must verify the production lock")
@@ -86,6 +92,7 @@ def main() -> None:
         "POSTGRES_MIGRATION_PASSWORD",
         "POSTGRES_RUNTIME_USER",
         "POSTGRES_RUNTIME_PASSWORD",
+        "FD08_PROJECTION_LEASE_SECRET",
     ):
         require(f"${{{name}:?" in prod_compose, f"production compose must require {name}")
     require('command: ["python", "-m", "django", "provision_runtime_db_role"]' in prod_compose, "production compose must invoke runtime role provisioning from the installed wheel")
@@ -114,6 +121,8 @@ def main() -> None:
         "REVOKE UPDATE, DELETE ON TABLE",
         "domain_auditevent",
         "django_migrations",
+        "domain_fd08_projection_authority_secret",
+        "FD08_PROJECTION_LEASE_SECRET",
         "pg_auth_members",
         "audit_owned_by_runtime",
     ):
@@ -136,6 +145,8 @@ def main() -> None:
         'ROOT_URLCONF = "conflict_analysis.production_urls"',
         'replace-with-at-least-50-random-characters-before-starting',
         'replace-with-a-strong-database-password',
+        'FD08_PROJECTION_LEASE_SECRET = _required("FD08_PROJECTION_LEASE_SECRET")',
+        'development-only-fd08-projection-capability-0123456789abcdef',
         'USE_X_FORWARDED_HOST = False',
     ):
         require(token in settings, f"production settings contract is missing: {token}")
