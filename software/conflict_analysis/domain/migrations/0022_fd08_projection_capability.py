@@ -8,6 +8,8 @@ the capability transaction-locally, but cannot read or alter the authoritative
 copy through database privileges.
 """
 
+from importlib import import_module
+
 from django.conf import settings
 from django.db import migrations
 
@@ -157,6 +159,28 @@ def _install(apps, schema_editor):
             "REVOKE ALL ON FUNCTION "
             "domain_fd08_guard_workspace_projection() FROM PUBLIC"
         )
+
+
+def _legacy_guard_module():
+    return import_module("domain.migrations.0019_projection_db_authority_guards")
+
+
+def _drop_for_test_flush(schema_editor):
+    """Temporarily remove the active FD08 guard generation around Django flush.
+
+    TransactionTestCase flushes raw migration tables too. Keeping this helper on
+    the newest guard migration prevents test teardown from reinstalling the
+    superseded 0019 boolean-GUC functions while 0022 remains recorded applied.
+    """
+
+    _legacy_guard_module()._drop_authority_guards(schema_editor)
+
+
+def _install_after_test_flush(apps, schema_editor):
+    """Restore trigger structure and the current capability after test flush."""
+
+    _legacy_guard_module()._install_authority_guards(apps, schema_editor)
+    _install(apps, schema_editor)
 
 
 def _reverse(apps, schema_editor):

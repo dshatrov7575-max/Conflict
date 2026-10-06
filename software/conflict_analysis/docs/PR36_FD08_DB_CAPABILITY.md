@@ -43,7 +43,11 @@ The focused database tests prove:
 - the canonical projection context continues to create the deterministic
   projection successfully;
 - the runtime role cannot read or mutate the protected capability table;
-- the existing runtime least-privilege contract remains intact.
+- the existing runtime least-privilege contract remains intact;
+- Django TransactionTestCase teardown restores the currently applied 0022
+  capability generation after flush instead of silently reinstalling the
+  superseded 0019 boolean-GUC functions, and repopulates the protected singleton
+  erased by flush.
 
 SQLite retains its process-local ContextVar-backed guard and does not use the
 PostgreSQL capability table.

@@ -267,6 +267,11 @@ class _FD08ProjectionGuardTeardownMixin:
     _guard_migration_app = "domain"
     _guard_migrations = (
         (
+            "0022_fd08_projection_capability",
+            "_drop_for_test_flush",
+            "_install_after_test_flush",
+        ),
+        (
             "0019_projection_db_authority_guards",
             "_drop_authority_guards",
             "_install_authority_guards",
