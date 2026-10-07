@@ -1,3 +1,4 @@
+from unittest.mock import patch
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
@@ -146,6 +147,22 @@ class CalculationRunReceiptTests(PlayerIntegrationHTTPFixture, TestCase):
         self.assertEqual(created["receipt"]["operation_id"], str(operation_id))
 
 
+    def test_receipt_and_replay_artifact_are_one_outer_transaction(self):
+        operation_id = uuid4()
+        with patch(
+            "player_integration.services.record_replay_artifact",
+            side_effect=DatabaseError("forced artifact failure"),
+        ):
+            response = self.post_json(
+                self.url(), self.weights(), operation_id=operation_id,
+            )
+        self.assertEqual(response.status_code, 503, response.content)
+        self.assertFalse(AuditEvent.objects.filter(pk=operation_id).exists())
+        self.assertFalse(AuditEvent.objects.filter(
+            entity_type="PLAYER_CALCULATION_REPLAY_ARTIFACT_V1",
+            entity_id=operation_id,
+        ).exists())
+
     def test_replay_artifact_tamper_is_rejected_or_detected_fail_closed(self):
         operation_id = uuid4()
         self.run_json(operation_id=operation_id)
@@ -175,6 +192,20 @@ class CalculationRunReceiptTests(PlayerIntegrationHTTPFixture, TestCase):
             self.assertEqual(conflict.status_code, 409, conflict.content)
             self.assertEqual(conflict.json()["code"], "PLAYER_OPERATION_RESULT_DRIFT")
 
+    def test_exact_replay_does_not_revalidate_current_time_slice(self):
+        operation_id = uuid4()
+        first = self.run_json(operation_id=operation_id)
+        with patch(
+            "player_integration.services.TimeSlice.objects.filter",
+            side_effect=AssertionError("exact replay must not recapture current TimeSlice"),
+        ):
+            second = self.run_json(
+                operation_id=operation_id,
+                expected_audit_inserts=0,
+            )
+        self.assertEqual(second["snapshot"], first["snapshot"])
+        self.assertEqual(second["run"], first["run"])
+
     def test_operation_key_reuse_cross_lane_scope_and_corruption_fail_closed(self):
         operation_id = uuid4()
         created = self.run_json(operation_id=operation_id)
@@ -193,6 +224,13 @@ class CalculationRunReceiptTests(PlayerIntegrationHTTPFixture, TestCase):
         ))
         self.assertEqual(hidden.status_code, 404)
         self.assertEqual(hidden.json()["code"], "PLAYER_NOT_FOUND")
+        cross_lane = self.measured(lambda: self.post_json(
+            self.url(experiment_id=ai_id),
+            self.weights(experiment_id=ai_id),
+            operation_id=operation_id,
+        ))
+        self.assertEqual(cross_lane.status_code, 409, cross_lane.content)
+        self.assertEqual(cross_lane.json()["code"], "PLAYER_OPERATION_KEY_REUSE")
 
         source_row = AuditEvent.objects.exclude(entity_type__in={
             BASELINE_RECEIPT_CONTRACT, SCENARIO_RECEIPT_CONTRACT,

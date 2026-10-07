@@ -200,7 +200,13 @@ def replay_baseline_if_present(
         if receipt_row is not None and artifact_row is None:
             return None
         raise PlayerExperimentError("PLAYER_OPERATION_RESULT_DRIFT")
-    if receipt_row.entity_type != BASELINE_RECEIPT_CONTRACT:
+    if (
+        receipt_row.entity_type != BASELINE_RECEIPT_CONTRACT
+        or receipt_row.actor_identifier != principal.actor_identifier
+        or receipt_row.project_id != experiment.workspace.project_id
+        or receipt_row.workspace_id != experiment.workspace_id
+        or receipt_row.assessment_set_id != experiment.assessment_set_id
+    ):
         raise PlayerExperimentError("PLAYER_OPERATION_KEY_REUSE")
     return _validate_artifact(
         artifact_row,

@@ -193,11 +193,6 @@ def calculate_and_record_experiment(
         time_id = UUID(str(time_slice_id))
     except (ValueError, TypeError, AttributeError) as exc:
         raise PlayerExperimentError("PLAYER_REQUEST_INVALID", 400) from exc
-    if not TimeSlice.objects.filter(
-        pk=time_id, workspace_id=experiment.workspace_id,
-        project_id=experiment.workspace.project_id,
-    ).exists():
-        raise PlayerExperimentError("PLAYER_NOT_FOUND", 404)
     if beta_weights is not None and (
         beta_weights.experiment_id != str(experiment.pk)
         or beta_weights.time_slice_id != str(time_id)
@@ -229,6 +224,12 @@ def calculate_and_record_experiment(
             replayed.input_metadata,
         )
         return view, replayed.receipt
+
+    if not TimeSlice.objects.filter(
+        pk=time_id, workspace_id=experiment.workspace_id,
+        project_id=experiment.workspace.project_id,
+    ).exists():
+        raise PlayerExperimentError("PLAYER_NOT_FOUND", 404)
 
     experiment, snapshot, input_metadata = capture_for_player(
         user=user, experiment_id=experiment_id, time_slice_id=time_id,
