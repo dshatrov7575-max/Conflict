@@ -62,7 +62,12 @@ class CalculationRunReceiptTests(PlayerIntegrationHTTPFixture, TestCase):
         self.assertEqual(receipt["input_digest"], first["snapshot"]["input_digest"])
         self.assertEqual(receipt["result_digest"], first["result_digest"])
         self.assertEqual(receipt["strategy_id"], first["run"]["strategy_id"])
-        self.assertEqual(receipt["quality"], first["quality"])
+        self.assertEqual(receipt["quality"]["contract"], "PLAYER_CALCULATION_QUALITY_V1")
+        self.assertEqual(first["quality"]["contract"], "PLAYER_CALCULATION_QUALITY_V2")
+        for key, value in receipt["quality"].items():
+            if key != "contract":
+                self.assertEqual(value, first["quality"][key])
+        self.assertIn("temporal_status_counts", first["quality"])
         self.assertEqual(receipt["context"], {
             "kind": "BASELINE",
             "scenario_id": None,

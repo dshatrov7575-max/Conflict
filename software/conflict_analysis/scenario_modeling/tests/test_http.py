@@ -27,7 +27,7 @@ class ScenarioHTTPFixture(PlayerIntegrationHTTPFixture):
         response = self.measured(lambda: self.client.post(
             self.url(**scope), urlencode(data), content_type="application/x-www-form-urlencoded",
             HTTP_X_CSRFTOKEN=self.client.cookies["csrftoken"].value),
-            expected_audit_inserts=1)
+            expected_audit_inserts=2)
         self.assertEqual(response.status_code, 200, response.content)
         return response
 

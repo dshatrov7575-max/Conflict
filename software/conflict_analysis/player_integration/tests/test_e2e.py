@@ -124,7 +124,7 @@ class PlayerIntegrationHTTPFixture(PlayerExperimentsFixture):
         self.assertEqual(response["Cache-Control"], "no-store")
         return response
 
-    def run_json(self, weights=None, *, operation_id=None, expected_audit_inserts=1, **scope):
+    def run_json(self, weights=None, *, operation_id=None, expected_audit_inserts=2, **scope):
         operation_id = operation_id or uuid4()
         response = self.measured(lambda: self.post_json(
             self.url(**scope), self.weights(**scope) if weights is None else weights,
@@ -177,7 +177,7 @@ class PlayerIntegrationE2ETests(PlayerIntegrationHTTPFixture, TestCase):
         inputs = self.measured(lambda: self.client.get(self.url()))
         response = self.measured(
             lambda: self.post_form(self.form_body(inputs, self.weights())),
-            expected_audit_inserts=1,
+            expected_audit_inserts=2,
         )
         self.assertEqual(response.status_code, 200, response.content)
         self.assertContains(response, 'data-testid="uno">100</span>')
@@ -309,7 +309,11 @@ class PlayerIntegrationE2ETests(PlayerIntegrationHTTPFixture, TestCase):
         self.assertEqual(row["value_status"], "PROVISIONAL")
         self.assertEqual(row["temporal_status"], "RETROSPECTIVE_KNOWLEDGE")
         self.assertEqual(result["quality"]["temporal_status_counts"]["RETROSPECTIVE_KNOWLEDGE"], 1)
-        self.assertEqual(result["receipt"]["input_metadata_sha256"], metadata["sha256"])
+        artifact = AuditEvent.objects.get(
+            entity_type="PLAYER_CALCULATION_REPLAY_ARTIFACT_V1",
+            entity_id=result["receipt"]["operation_id"],
+        )
+        self.assertEqual(artifact.after["input_metadata"]["sha256"], metadata["sha256"])
 
     def test_idempotent_replay_returns_original_result_after_source_correction(self):
         self.fill()

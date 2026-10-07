@@ -9,6 +9,7 @@ from calculation import CalculationRun, CalculationSnapshot, InputValue
 from calculation.contracts import ABSENT_STATUSES, NUMERIC_STATUSES
 
 QUALITY_CONTRACT = "PLAYER_CALCULATION_QUALITY_V1"
+QUALITY_CONTRACT_V2 = "PLAYER_CALCULATION_QUALITY_V2"
 SCIENTIFIC_ADMISSION_STATUS = "NOT_ESTABLISHED"
 HUMAN_VALIDATION_STATUS = "NOT_PERFORMED"
 PREDICTIVE_VALIDITY_STATUS = "NOT_CLAIMED"
@@ -50,6 +51,7 @@ class CalculationQuality:
     missing_input_count: int
     scenario_input_count: int
     status_counts: tuple[tuple[str, int], ...]
+    temporal_status_counts: tuple[tuple[str, int], ...] = ()
     contract: str = QUALITY_CONTRACT
 
     def as_dict(self) -> dict[str, object]:
@@ -65,12 +67,15 @@ class CalculationQuality:
             "missing_input_count": self.missing_input_count,
             "scenario_input_count": self.scenario_input_count,
             "status_counts": dict(self.status_counts),
+            **({"temporal_status_counts": dict(self.temporal_status_counts)}
+               if self.contract == QUALITY_CONTRACT_V2 else {}),
         }
 
 
 def summarize_quality(
     snapshot: CalculationSnapshot,
     run: CalculationRun,
+    input_metadata: dict[str, object] | None = None,
 ) -> CalculationQuality:
     """Return a deterministic quality summary without changing Core or its digest."""
 
@@ -84,16 +89,21 @@ def summarize_quality(
     missing = sum(counts[status] for status in ABSENT_STATUSES)
     known = len(values) - missing
     scenario = sum(value.source_id.startswith("SCENARIO:") for value in values)
+    temporal_counts = Counter()
+    if input_metadata is not None:
+        for item in input_metadata.get("inputs", []):
+            if isinstance(item, dict) and item.get("temporal_status"):
+                temporal_counts[str(item["temporal_status"])] += 1
     if not values:
         evidence = "NO_REQUIRED_INPUTS"
     elif missing:
         evidence = "REQUIRED_INPUTS_MISSING"
     elif counts["DISPUTED"]:
         evidence = "DISPUTED_INPUTS_PRESENT"
+    elif temporal_counts["RETROSPECTIVE_KNOWLEDGE"] or counts["RETROSPECTIVE_KNOWLEDGE"]:
+        evidence = "RETROSPECTIVE_KNOWLEDGE_PRESENT"
     elif counts["PROVISIONAL"]:
         evidence = "PROVISIONAL_INPUTS_PRESENT"
-    elif counts["RETROSPECTIVE_KNOWLEDGE"]:
-        evidence = "RETROSPECTIVE_KNOWLEDGE_PRESENT"
     elif counts["CONFIRMED"] == len(values):
         evidence = "CONFIRMED_INPUTS_ONLY"
     else:
@@ -109,6 +119,8 @@ def summarize_quality(
         missing_input_count=missing,
         scenario_input_count=scenario,
         status_counts=tuple(sorted(counts.items())),
+        temporal_status_counts=tuple(sorted(temporal_counts.items())),
+        contract=QUALITY_CONTRACT_V2 if input_metadata is not None else QUALITY_CONTRACT,
     )
 
 
