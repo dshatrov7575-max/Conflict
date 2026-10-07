@@ -36,6 +36,9 @@ def test_repeated_runs_offline_replay_and_override_order_are_deterministic():
     reordered = original.with_override("kvs:relation-1", "2").with_override("attitude:relation-0", "6")
     replayed = ScenarioModel.from_dict(json.loads(first.to_json()))
     expected = result_view(first)
+    assert expected["contract"] == "SCENARIO_RESULT_V2"
+    assert "baseline_input_metadata" not in expected
+    assert "scenario_input_metadata" not in expected
     for candidate in (first, reordered, replayed):
         assert result_view(candidate) == expected
     with localcontext() as context:

@@ -49,7 +49,7 @@ try {
   await wait("document.querySelector('[data-testid=create-scenario]') !== null");
   const baseline = await evaluate("JSON.parse(document.querySelector('#snapshot-json').value)");
   const baselineReceipt = await evaluate("JSON.parse(document.querySelector('#receipt-json').value)");
-  assert.equal(baselineReceipt.contract, "PLAYER_CALCULATION_RUN_RECEIPT_V1");
+  assert.equal(baselineReceipt.contract, "PLAYER_CALCULATION_RUN_RECEIPT_V2");
   await click("[data-testid=create-scenario]");
   await wait("document.querySelector('#slider-controls')?.hidden === false");
   const initialScenarioReceipt = await evaluate("JSON.parse(document.querySelector('#scenario-receipt-json').value)");

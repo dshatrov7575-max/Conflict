@@ -101,7 +101,7 @@ baseline по-прежнему доступен в PR-2, но без кнопк�
 scenario UUID, baseline snapshot ID, model SHA-256, result digest и quality status.
 Для полного числового replay по-прежнему сохраните Scenario Model JSON; durable
 temporal-metadata replay отдельным scenario companion не обещается. HTTP-импорт
-неподписанного JSON не предоставляется. Offline Python replay:
+неподписанного JSON не предоставляется. Offline Python replay remains DB-independent. The default pure adapter path preserves the frozen `SCENARIO_RESULT_V2` shape and does not query Foundation temporal metadata. The authenticated HTTP composition explicitly supplies the strict metadata provider and returns `SCENARIO_RESULT_V4` with the temporal axis.
 
 ```python
 import json
@@ -112,6 +112,7 @@ model = ScenarioModel.from_dict(json.loads(saved_model_json))
 run = CalculationAdapter.run(model)
 assert run.run.to_json() == saved_scenario_run_json
 comparison = result_view(model)
+assert comparison["contract"] == "SCENARIO_RESULT_V2"
 ```
 
 `scenario_modeling` входит в корневой wheel и штатный
