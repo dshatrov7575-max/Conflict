@@ -102,6 +102,27 @@ class ScenarioHTTPTests(ScenarioHTTPFixture, TestCase):
         snapshot = CalculationSnapshot.from_json(changed.context["scenario_snapshot_json"])
         self.assertEqual(calculate(snapshot).to_json(), changed.context["scenario_run_json"])
 
+    def test_temporal_metadata_survives_into_scenario_quality(self):
+        self.write_value_http(
+            self.pair[0], "POS", 10, temporal_status="RETROSPECTIVE_KNOWLEDGE",
+        )
+        self.write_value_http(self.pair[0], "SAL", 1)
+        self.write_value_http(self.pair[1], "POS", -10)
+        self.write_value_http(self.pair[1], "SAL", 1)
+        response = self.begin()
+        self.assertEqual(
+            response.context["baseline_quality"]["temporal_status_counts"]["RETROSPECTIVE_KNOWLEDGE"],
+            1,
+        )
+        self.assertEqual(
+            response.context["scenario_quality"]["temporal_status_counts"]["RETROSPECTIVE_KNOWLEDGE"],
+            1,
+        )
+        self.assertEqual(
+            response.context["baseline_input_metadata"]["sha256"],
+            response.context["scenario_input_metadata"]["sha256"],
+        )
+
     def test_existing_baseline_survives_correction_freeze_and_archive(self):
         self.fill()
         start = self.begin()

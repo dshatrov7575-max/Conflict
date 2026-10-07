@@ -23,7 +23,7 @@ from .replay_artifacts import (
 
 
 
-def _input_metadata(snapshot: CalculationSnapshot) -> dict[str, object]:
+def input_metadata_for_snapshot(snapshot: CalculationSnapshot) -> dict[str, object]:
     """Preserve non-arithmetic Foundation metadata without changing snapshot 1.0.0."""
 
     rows: list[dict[str, object]] = []
@@ -59,6 +59,8 @@ def _input_metadata(snapshot: CalculationSnapshot) -> dict[str, object]:
             "id", "version", "status", "temporal_status"
         )
     }
+    if set(stored) != {str(identity) for identity in source_ids}:
+        raise PlayerExperimentError("PLAYER_OPERATION_RESULT_DRIFT")
     for row in rows:
         value = stored.get(str(row["source_id"]))
         if value is None:
@@ -114,7 +116,7 @@ def capture_for_player(*, user, experiment_id, time_slice_id, beta_weights=None,
         experiment_id=experiment.pk, time_slice_id=time_id, beta_weights=beta_weights,
     )
     if include_metadata:
-        return experiment, snapshot, _input_metadata(snapshot)
+        return experiment, snapshot, input_metadata_for_snapshot(snapshot)
     return experiment, snapshot
 
 
