@@ -59,7 +59,8 @@ class PlayerIntegrationHTTPFixture(PlayerExperimentsFixture):
     def values_url(self, experiment_id=None):
         return f"/api/foundation/player/experiments/{experiment_id or self.experiment_id}/values/"
 
-    def write_value_http(self, role, code, value, *, experiment_id=None, predecessor=None):
+    def write_value_http(self, role, code, value, *, experiment_id=None, predecessor=None,
+                         temporal_status="UNKNOWN"):
         url = self.values_url(experiment_id)
         dto = self.client.get(url).json()
         etag = dto["experiment"]["etag"] if predecessor is None else next(
@@ -71,7 +72,7 @@ class PlayerIntegrationHTTPFixture(PlayerExperimentsFixture):
             "time_slice_id": str(self.time.pk), "actor_code": role.actor.code,
             "element_code": role.element.code, "parameter_code": code,
             "status": "UNKNOWN" if value is None else "PROVISIONAL", "value": value,
-            "temporal_status": "UNKNOWN", "confidence_category": "MEDIUM",
+            "temporal_status": temporal_status, "confidence_category": "MEDIUM",
             "rationale": "Synthetic PR-2 E2E input", "note": "", "supersedes_id": predecessor,
         }
         response = self.post_json(url, body, etag=etag)
@@ -293,6 +294,44 @@ class PlayerIntegrationE2ETests(PlayerIntegrationHTTPFixture, TestCase):
             replay = calculate(CalculationSnapshot.from_json(json.dumps(before["snapshot"])))
             self.assertEqual(replay.UNO, 100)
             self.assertEqual(replay.result_digest, before["result_digest"])
+
+
+    def test_temporal_status_survives_foundation_to_result_metadata(self):
+        pos_id = self.write_value_http(
+            self.pair[0], "POS", 10, temporal_status="RETROSPECTIVE_KNOWLEDGE",
+        )
+        self.write_value_http(self.pair[0], "SAL", 1)
+        self.write_value_http(self.pair[1], "POS", -10)
+        self.write_value_http(self.pair[1], "SAL", 1)
+        result = self.run_json()
+        metadata = result["input_metadata"]
+        row = next(item for item in metadata["inputs"] if item["source_id"] == pos_id)
+        self.assertEqual(row["value_status"], "PROVISIONAL")
+        self.assertEqual(row["temporal_status"], "RETROSPECTIVE_KNOWLEDGE")
+        self.assertEqual(result["quality"]["temporal_status_counts"]["RETROSPECTIVE_KNOWLEDGE"], 1)
+        self.assertEqual(result["receipt"]["input_metadata_sha256"], metadata["sha256"])
+
+    def test_idempotent_replay_returns_original_result_after_source_correction(self):
+        self.fill()
+        operation_id = uuid4()
+        weights = self.weights()
+        first = self.run_json(weights, operation_id=operation_id)
+        pos = ParameterValue.objects.get(
+            actor_element_assessment__experiment_id=self.experiment_id,
+            actor_element_assessment__actor_id=self.pair[0].actor_id,
+            parameter_definition__code="POS", successor__isnull=True,
+        )
+        self.write_value_http(self.pair[0], "POS", 0, predecessor=str(pos.pk))
+        response = self.measured(
+            lambda: self.post_json(self.url(), weights, operation_id=operation_id),
+            expected_audit_inserts=0,
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        replay = response.json()
+        self.assertTrue(replay["receipt_replayed"])
+        self.assertEqual(replay["snapshot"], first["snapshot"])
+        self.assertEqual(replay["run"], first["run"])
+        self.assertEqual(replay["result_digest"], first["result_digest"])
 
     def test_other_time_slice_does_not_borrow_values(self):
         self.fill()
