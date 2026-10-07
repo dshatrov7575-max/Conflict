@@ -145,6 +145,36 @@ class CalculationRunReceiptTests(PlayerIntegrationHTTPFixture, TestCase):
 
         self.assertEqual(created["receipt"]["operation_id"], str(operation_id))
 
+
+    def test_replay_artifact_tamper_is_rejected_or_detected_fail_closed(self):
+        operation_id = uuid4()
+        self.run_json(operation_id=operation_id)
+        artifact = AuditEvent.objects.get(
+            entity_type="PLAYER_CALCULATION_REPLAY_ARTIFACT_V1",
+            entity_id=operation_id,
+        )
+
+        if connection.vendor == "postgresql":
+            with self.assertRaises(DatabaseError), transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "UPDATE domain_auditevent "
+                        "SET actor_identifier = %s WHERE code = %s",
+                        ["tampered-artifact", artifact.code],
+                    )
+        else:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE domain_auditevent "
+                    "SET actor_identifier = %s WHERE code = %s",
+                    ["tampered-artifact", artifact.code],
+                )
+            conflict = self.measured(lambda: self.post_json(
+                self.url(), self.weights(), operation_id=operation_id,
+            ))
+            self.assertEqual(conflict.status_code, 409, conflict.content)
+            self.assertEqual(conflict.json()["code"], "PLAYER_OPERATION_RESULT_DRIFT")
+
     def test_operation_key_reuse_cross_lane_scope_and_corruption_fail_closed(self):
         operation_id = uuid4()
         created = self.run_json(operation_id=operation_id)
