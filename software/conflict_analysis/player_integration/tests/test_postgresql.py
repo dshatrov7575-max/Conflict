@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import close_old_connections, connection
+from django.db import close_old_connections, connection, connections
 from django.test import TransactionTestCase, override_settings
 
 from domain.models import ParameterValue
@@ -99,7 +99,7 @@ class PlayerIntegrationPostgreSQLConcurrencyTests(
                 with result_lock:
                     failures[name] = exc
             finally:
-                close_old_connections()
+                connections.close_all()
 
         def t1(user):
             return services.calculate_and_record_experiment(
