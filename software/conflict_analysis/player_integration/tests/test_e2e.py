@@ -5,6 +5,7 @@ Every measured integration request must leave all domain records unchanged.
 """
 import json
 import re
+from dataclasses import replace
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -20,7 +21,7 @@ from domain.models import ActorElementRole, AuditEvent, ParameterValue, TimeSlic
 from domain.services import zhanaozen_typed_manifest as typed
 from domain.services.player_experiments import PlayerExperimentError
 from domain.tests.test_player_experiments import PlayerExperimentsFixture
-from player_integration.services import calculate_experiment
+from player_integration.services import calculate_experiment, input_metadata_for_snapshot
 
 
 TEST_APPS = [*settings.INSTALLED_APPS, *(
@@ -131,7 +132,7 @@ class PlayerIntegrationHTTPFixture(PlayerExperimentsFixture):
             operation_id=operation_id), expected_audit_inserts=expected_audit_inserts)
         self.assertEqual(response.status_code, 200, response.content)
         payload = response.json()
-        self.assertEqual(payload["contract"], "PLAYER_CALCULATION_RESULT_V3")
+        self.assertEqual(payload["contract"], "PLAYER_CALCULATION_RESULT_V4")
         self.assertEqual(payload["receipt"]["operation_id"], str(operation_id))
         self.assertEqual(payload["receipt"]["result_digest"], payload["result_digest"])
         self.assertEqual(payload["receipt_replayed"], expected_audit_inserts == 0)
@@ -310,10 +311,25 @@ class PlayerIntegrationE2ETests(PlayerIntegrationHTTPFixture, TestCase):
         self.assertEqual(row["temporal_status"], "RETROSPECTIVE_KNOWLEDGE")
         self.assertEqual(result["quality"]["temporal_status_counts"]["RETROSPECTIVE_KNOWLEDGE"], 1)
         artifact = AuditEvent.objects.get(
-            entity_type="PLAYER_CALCULATION_REPLAY_ARTIFACT_V1",
+            entity_type="PLAYER_CALCULATION_REPLAY_ARTIFACT_V2",
             entity_id=result["receipt"]["operation_id"],
         )
         self.assertEqual(artifact.after["input_metadata"]["sha256"], metadata["sha256"])
+        inputs = self.client.get(self.url())
+        html = self.post_form(self.form_body(inputs, self.weights()))
+        self.assertEqual(html.status_code, 200, html.content)
+        self.assertContains(
+            html,
+            'data-testid="evidence-status" title="REQUIRED_INPUTS_MISSING"',
+        )
+        self.assertContains(
+            html,
+            'data-testid="temporal-status" title="RETROSPECTIVE_KNOWLEDGE_PRESENT"',
+        )
+        self.assertContains(
+            html,
+            'data-testid="temporal-retrospective-count">1</span>',
+        )
 
     def test_idempotent_replay_returns_original_result_after_source_correction(self):
         self.fill()
@@ -336,6 +352,50 @@ class PlayerIntegrationE2ETests(PlayerIntegrationHTTPFixture, TestCase):
         self.assertEqual(replay["snapshot"], first["snapshot"])
         self.assertEqual(replay["run"], first["run"])
         self.assertEqual(replay["result_digest"], first["result_digest"])
+
+    def test_metadata_helper_rejects_foreign_or_unknown_pos_sources(self):
+        self.fill()
+        original = self.run_json()
+        snapshot = CalculationSnapshot.from_json(json.dumps(original["snapshot"]))
+        ptn = snapshot.ptns[0]
+        actor = ptn.actors[0]
+
+        ai_id = self.create_experiment_http("AI")
+        foreign_id = self.write_value_http(
+            self.pair[0], "POS", 10, experiment_id=ai_id,
+            temporal_status="RETROSPECTIVE_KNOWLEDGE",
+        )
+        forged_foreign = replace(
+            snapshot,
+            ptns=(replace(
+                ptn,
+                actors=(replace(
+                    actor,
+                    attitude=replace(actor.attitude, source_id=foreign_id),
+                ),) + ptn.actors[1:],
+            ),) + snapshot.ptns[1:],
+        )
+        with self.assertRaises(PlayerExperimentError) as foreign_error:
+            input_metadata_for_snapshot(forged_foreign)
+        self.assertEqual(
+            foreign_error.exception.code, "PLAYER_OPERATION_RESULT_DRIFT",
+        )
+
+        forged_text = replace(
+            snapshot,
+            ptns=(replace(
+                ptn,
+                actors=(replace(
+                    actor,
+                    attitude=replace(actor.attitude, source_id="FORGED"),
+                ),) + ptn.actors[1:],
+            ),) + snapshot.ptns[1:],
+        )
+        with self.assertRaises(PlayerExperimentError) as source_error:
+            input_metadata_for_snapshot(forged_text)
+        self.assertEqual(
+            source_error.exception.code, "PLAYER_OPERATION_RESULT_DRIFT",
+        )
 
     def test_other_time_slice_does_not_borrow_values(self):
         self.fill()

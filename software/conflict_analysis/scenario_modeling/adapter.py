@@ -85,7 +85,7 @@ def result_view(model):
     baseline_quality = summarize_quality(model.baseline, baseline, baseline_input_metadata)
     scenario_quality = summarize_quality(scenario.snapshot, scenario.run, scenario_input_metadata)
     return {
-        "contract": "SCENARIO_RESULT_V3", "scenario_id": model.id,
+        "contract": "SCENARIO_RESULT_V4", "scenario_id": model.id,
         "baseline": json.loads(baseline.to_json()),
         "scenario": json.loads(scenario.run.to_json()),
         "baseline_input_metadata": baseline_input_metadata,

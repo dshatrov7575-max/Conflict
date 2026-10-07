@@ -63,7 +63,7 @@ class ScenarioHTTPTests(ScenarioHTTPFixture, TestCase):
         baseline_json = response.context["model"].baseline.to_json()
         self.assertContains(response, 'data-testid="baseline-uno">100</strong>')
         self.assertContains(response, 'data-testid="delta-uno">0</strong>')
-        self.assertEqual(response.context["contract"], "SCENARIO_RESULT_V3")
+        self.assertEqual(response.context["contract"], "SCENARIO_RESULT_V4")
         self.assertEqual(response.context["baseline_quality"]["computation_status"], "PARTIAL")
         self.assertEqual(response.context["baseline_quality"]["evidence_status"], "REQUIRED_INPUTS_MISSING")
         self.assertEqual(response.context["baseline_quality"]["scientific_admission_status"], "NOT_ESTABLISHED")
@@ -121,6 +121,35 @@ class ScenarioHTTPTests(ScenarioHTTPFixture, TestCase):
         self.assertEqual(
             response.context["baseline_input_metadata"]["sha256"],
             response.context["scenario_input_metadata"]["sha256"],
+        )
+        self.assertContains(
+            response,
+            'data-testid="baseline-temporal-retrospective-count">1</span>',
+        )
+        self.assertContains(
+            response,
+            'data-testid="scenario-temporal-retrospective-count">1</span>',
+        )
+        changed = self.change(
+            response, "5", parameter=f"attitude:{self.pair[0].pk}",
+        )
+        self.assertEqual(
+            changed.context["baseline_quality"]["temporal_status_counts"]["RETROSPECTIVE_KNOWLEDGE"],
+            1,
+        )
+        self.assertEqual(
+            changed.context["scenario_quality"]["temporal_status_counts"].get(
+                "RETROSPECTIVE_KNOWLEDGE", 0
+            ),
+            0,
+        )
+        self.assertContains(
+            changed,
+            'data-testid="baseline-temporal-retrospective-count">1</span>',
+        )
+        self.assertContains(
+            changed,
+            'data-testid="scenario-temporal-retrospective-count">0</span>',
         )
 
     def test_existing_baseline_survives_correction_freeze_and_archive(self):

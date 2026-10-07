@@ -40,22 +40,32 @@ composition root рядом с `/player/`, `/studio/` и `/api/foundation/`.
   Веса RGU/KVPTN передаются только через существующий `BetaWeights`; отсутствующие
   значения остаются UNKNOWN. Веса привязаны к Experiment/TimeSlice и topology.
 - Расчёт не создаёт и не обновляет ParameterValue, Experiment, Assessment или
-  ImportRun. После успешного HTTP-расчёта добавляется ровно один immutable
-  `AuditEvent`-receipt с identity/digest/status, но без snapshot/run/input payload.
-  Новых моделей, миграций, фоновых запусков и browser storage нет.
+  ImportRun. Для нового baseline-расчёта создаются две append-only записи AuditEvent
+  в одной транзакции: payload-light receipt `PLAYER_CALCULATION_RUN_RECEIPT_V2`
+  и обязательный companion `PLAYER_CALCULATION_REPLAY_ARTIFACT_V2`. Receipt не
+  дублирует snapshot/run/input values; companion хранит исходный snapshot, входной
+  metadata-envelope и versioned quality, необходимые для точного idempotent replay.
+  Старые receipt V1 не переписываются. Новых ORM-моделей и миграций этот патч не требует.
 - HTML показывает отдельную lane, provenance/pins, UNO, все PTN-метрики,
   completeness, предупреждения, trace, исходные статусы и source ID/version.
-  Компактные поля «Вычисление», «Входы» и «Научный допуск» исключают трактовку
-  `COMPLETE` как научной подтверждённости.
+  Временная ось показывается отдельно от evidence-status: количество входов
+  `RETROSPECTIVE_KNOWLEDGE` видно даже при REQUIRED_INPUTS_MISSING или DISPUTED.
+  Поля «Вычисление», «Входы», «Временная ось» и «Научный допуск» не смешиваются:
+  `COMPLETE` не означает научной подтверждённости, а temporal-status не заменяет
+  value/evidence-status.
   Ноль отображается как `0`, отсутствие результата — как `—`/«Недостаточно данных».
 - POST защищён стандартным Django CSRF. Ответы обработчиков имеют `no-store`,
   `Vary: Cookie`, CSP и `nosniff`. Caller identity/role override headers отклоняются.
-- Snapshot и Run остаются эфемерными payload; Foundation-сервис хранит только
-  ORM-неизменяемую digest-квитанцию: actor, scope/pins, digests входа/snapshot/результата,
-  стратегию, статусы качества и время. При каждом чтении проверяется hash квитанции.
-  Этот PR не добавляет raw-SQL trigger для `domain_auditevent`, поэтому абсолютная
-  гарантия защиты от изменения на уровне БД не заявляется. Точные Snapshot/Run JSON
-  остаются доступны в Result View для offline replay и не дублируются в БД.
+- Receipt V2 остаётся payload-light: actor, scope/pins, request/snapshot/input/result
+  digests, quality contract/hash, обязательная ссылка на companion и время. Полный
+  replay-material хранится отдельно в `PLAYER_CALCULATION_REPLAY_ARTIFACT_V2`:
+  snapshot JSON, input metadata envelope, versioned quality и lane display. По решению
+  владельца эта append-only копия хранится бессрочно. PostgreSQL защищает AuditEvent
+  от UPDATE/DELETE триггером миграции 0021; SQLite-тесты дополнительно проверяют
+  fail-closed при tamper/удалении companion.
+- Legacy `PLAYER_CALCULATION_RUN_RECEIPT_V1` остаётся читаемым побайтно как прежде.
+  Для V1 без companion нельзя реконструировать исторический payload после изменения
+  источника: такой receipt идёт по legacy exact-current пути и не «апгрейдится» в V2.
 
 ## HTTP и Python
 
@@ -69,15 +79,24 @@ GET /player/calculations/experiments/<experiment_uuid>/receipts/<operation_uuid>
 ```
 
 GET последнего маршрута открывает форму. Form-urlencoded POST возвращает HTML.
-JSON POST требует канонический UUIDv4 `Idempotency-Key` и возвращает
-`PLAYER_CALCULATION_RESULT_V3` с `lane`, `snapshot`, `run`, `quality`,
-`result_digest`, `receipt` и `receipt_replayed`. `run.status` остаётся только
-вычислительным статусом Core.
+JSON POST требует канонический UUIDv4 `Idempotency-Key`. Новый baseline receipt V2
+возвращается в `PLAYER_CALCULATION_RESULT_V4` с `lane`, `snapshot`, `run`,
+`input_metadata`, `quality`, `result_digest`, `receipt` и `receipt_replayed`.
+Legacy replay receipt V1 остаётся совместим с `PLAYER_CALCULATION_RESULT_V3`.
+Pure Python composition без receipt сохраняет прежний `PLAYER_CALCULATION_RESULT_V2`
+и не получает новые durable-поля. `run.status` остаётся только вычислительным
+статусом Core.
 `quality` отдельно фиксирует состояние входов, научный допуск, HUMAN validation и
 predictive validity; эти поля не входят в формулу и не меняют digest Core. Обе формы вызывают один сервис. JSON-запрос требует существующей
 session и стандартного cookie/header CSRF, как HTML-форма. Form flow передаёт
 тот же UUIDv4 в скрытом поле. Точный повтор возвращает ту же receipt; иной запрос
 с тем же ключом получает `PLAYER_OPERATION_KEY_REUSE`.
+
+Диагностическая классификация idempotency/replay:
+
+- `PLAYER_OPERATION_KEY_REUSE` — тот же UUID операции уже принадлежит другому caller-controlled запросу, lane/scope или иному immutable operation identity;
+- `PLAYER_OPERATION_RESULT_DRIFT` — операция и scope совпали, но обязательный V2 companion отсутствует/повреждён либо receipt/artifact/hash/metadata не согласованы;
+- `PLAYER_NOT_FOUND` — list/detail скрывает receipt вне текущего допущенного experiment.
 
 Тело JSON ограничено 256 KiB; дополнительные/повторные поля отклоняются:
 
@@ -145,8 +164,9 @@ python -m pytest calculation/tests -p no:cacheprovider
 
 HTTP E2E создают тестовые эксперименты и оценки через реальный Foundation API,
 затем проходят admission, Core capture/calculate и HTML/JSON Result View без
-моков. Тесты допускают только один `INSERT domain_auditevent` на новый успешный
-запуск, запрещают остальные domain writes и проверяют неизменность ParameterValue.
+моков. Новый baseline V2 выполняет ровно два разрешённых
+`INSERT domain_auditevent`: receipt + replay companion; scenario V1 — один receipt.
+Остальные domain writes запрещены, ParameterValue остаются неизменными.
 Точный idempotent replay не выполняет повторный INSERT. Создание тестовых оценок
 в fixture не является поведением расчёта.
 
@@ -179,7 +199,7 @@ PostgreSQL row locks. Версия и фактические результат�
 | Файлы внутри `player_integration/` | Назначение |
 |---|---|
 | `services.py` | Foundation admission, snapshot → run и recorded/pure composition |
-| `receipts.py` | Digest-only append-only run receipts, replay, list/detail scope |
+| `receipts.py` | Legacy receipt V1 + payload-light baseline receipt V2, list/detail и scope |
 | `inputs.py` | Ограниченный JSON-контракт и форма beta-весов |
 | `views.py`, `urls.py` | HTML/JSON HTTP-путь и защита запросов |
 | `apps.py`, `settings.py`, `project_urls.py`, `__init__.py` | Подключаемый профиль без правок вне каталога |

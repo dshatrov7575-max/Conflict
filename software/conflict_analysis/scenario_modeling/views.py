@@ -111,7 +111,7 @@ def update(request):
         )
         payload = {
             **payload,
-            "contract": "SCENARIO_RESULT_V3",
+            "contract": "SCENARIO_RESULT_V4",
             "receipt": dict(receipt.payload),
             "receipt_replayed": receipt.replayed,
             "receipt_json": canonical_receipt_bytes(receipt.payload).decode("utf-8"),
