@@ -21,7 +21,7 @@ from calculation.contracts_v1_1 import (
 )
 from calculation.strategy import PolarizationV1Beta
 from calculation.strategy_v1_1 import (
-    PolarizationV1_1Beta, classify_row_v1_1, publish_bound_v1_1, scenario_delta_v1_1,
+    PolarizationV1_1Beta, calculate_v1_1, classify_row_v1_1, publish_bound_v1_1, scenario_delta_v1_1,
 )
 
 
@@ -135,7 +135,7 @@ class StrategyV11Tests(unittest.TestCase):
             with self.subTest(vector=name):
                 rows = tuple(actor(i, *v) for i, v in enumerate(data))
                 s = snapshot(rows, topology=authority(excluded=((rows[-1], "p"),)) if name == "V12b" else None)
-                run = calculate(s)
+                run = calculate_v1_1(s)
                 result = run.ptns[0]
                 self.assertEqual((result.exact_lo, result.exact_hi, result.status), (lo, hi, status))
                 self.assertEqual((run.exact_lo, run.exact_hi, run.status), (lo, hi, status))
@@ -189,7 +189,7 @@ class StrategyV11Tests(unittest.TestCase):
                 replace(actor(0), **{field: empirical(1, status="DISPUTED")})
 
     def test_decimal_lexical_and_domain_validation(self):
-        invalid = [True, 1.0, "1e0", "1E+0", " 1", "1 ", "\t1", "１", "١", "+1", "01",
+        invalid = [True, 1.0, "1e0", "1E+0", " 1", "1 ", "\t1", "пј‘", "ЩЎ", "+1", "01",
                    "1.", ".1", "NaN", "Infinity", "-Infinity", Decimal("NaN"), Decimal("Infinity"),
                    "0." + "1" * 33, "11", "-11", 100, {}, []]
         for value in invalid:
@@ -214,22 +214,24 @@ class StrategyV11Tests(unittest.TestCase):
         retro = replace(rows[0], attitude=empirical(10, status="PROVISIONAL", temporal="RETROSPECTIVE_KNOWLEDGE"),
                         kvs=empirical(1, status="RETROSPECTIVE_KNOWLEDGE"))
         changed = replace(original, ptns=(replace(original.ptns[0], actors=(retro, rows[1])),))
-        run = calculate(changed)
-        self.assertEqual(run.UNO_point, calculate(original).UNO_point)
+        run = calculate_v1_1(changed)
+        self.assertEqual(run.UNO_point, calculate_v1_1(original).UNO_point)
         self.assertNotEqual(changed.input_digest, original.input_digest)
         self.assertEqual((run.ptns[0].retrospective_value_count, run.ptns[0].retrospective_temporal_count), (1, 1))
         self.assertIn("RETROSPECTIVE_INPUTS_PRESENT", run.warnings)
         with self.assertRaisesRegex(CalculationInputError, "NO_DIRECT_POSITION_REQUIRES_UNKNOWN"):
             empirical(1, temporal="NO_DIRECT_POSITION")
         self.assertEqual(empirical(temporal="NO_DIRECT_POSITION").value_status, "UNKNOWN")
+        with self.assertRaisesRegex(CalculationInputError, "ASSESSMENT_KIND_INVALID"):
+            replace(original, assessment_kind="MIXED")
         nonnumeric = snapshot((actor(0, empirical((-5, 5), temporal="RETROSPECTIVE_KNOWLEDGE")),))
-        self.assertNotIn("RETROSPECTIVE_INPUTS_PRESENT", calculate(nonnumeric).warnings)
+        self.assertNotIn("RETROSPECTIVE_INPUTS_PRESENT", calculate_v1_1(nonnumeric).warnings)
 
     def test_topology_authority_tb15_through_tb20(self):
         rows = (actor(0, 10), actor(1, -10), actor(2, empirical(status="NOT_APPLICABLE"), 5))
         auth = authority(excluded=((rows[2], "p"),))
         s = snapshot(rows, topology=auth)
-        run = calculate(s)
+        run = calculate_v1_1(s)
         self.assertEqual(run.UNO_point, 100)
         self.assertEqual(s.topology_exclusion_set_sha256, digest([asdict(e) for e in auth.exclusions]))
         self.assertEqual(snapshot(rows).topology_exclusion_set_sha256, digest([]))
@@ -241,11 +243,11 @@ class StrategyV11Tests(unittest.TestCase):
         self.assertEqual(other.topology_exclusion_set_sha256, s.topology_exclusion_set_sha256)
         revised = replace(s, topology_authority=authority(version="definition-2"))
         self.assertNotEqual(revised.input_digest, s.input_digest)
-        self.assertEqual(calculate(revised).status, "BOUNDED")
-        self.assertEqual(calculate(CalculationSnapshotV1_1.from_json(s.to_json())).to_json(), run.to_json())
-        self.assertIn("NOT_APPLICABLE_VALUE_TREATED_AS_ABSENT", calculate(revised).warnings)
+        self.assertEqual(calculate_v1_1(revised).status, "BOUNDED")
+        self.assertEqual(calculate_v1_1(CalculationSnapshotV1_1.from_json(s.to_json())).to_json(), run.to_json())
+        self.assertIn("NOT_APPLICABLE_VALUE_TREATED_AS_ABSENT", calculate_v1_1(revised).warnings)
         strict = snapshot(rows, topology=authority(excluded=((rows[2], "p"),), strict=True))
-        self.assertEqual(calculate(strict).UNO_point, 100)
+        self.assertEqual(calculate_v1_1(strict).UNO_point, 100)
         with self.assertRaisesRegex(CalculationInputError, "TOPOLOGY_EXCLUSION_SET_MISMATCH"):
             replace(strict.topology_authority, method_topology_exclusion_set_sha256="e" * 64)
         with self.assertRaisesRegex(CalculationInputError, "METHOD_TOPOLOGY_RULE_MISMATCH"):
@@ -263,7 +265,7 @@ class StrategyV11Tests(unittest.TestCase):
         with self.assertRaisesRegex(CalculationInputError, "TOPOLOGY_EXCLUSION_RELATION_MISMATCH"):
             snapshot(rows[:2], topology=auth)
         changed_excluded = replace(rows[2], attitude=empirical(-10), kvs=empirical(10), rgu=weight(None))
-        ignored = calculate(snapshot((*rows[:2], changed_excluded), topology=auth))
+        ignored = calculate_v1_1(snapshot((*rows[:2], changed_excluded), topology=auth))
         self.assertEqual(ignored.UNO_point, 100)
         self.assertIn("VALUE_ON_EXCLUDED_RELATION", ignored.warnings)
         self.assertEqual((ignored.ptns[0].trace[-1].exclusion_id, ignored.ptns[0].trace[-1].rule_id),
@@ -281,12 +283,12 @@ class StrategyV11Tests(unittest.TestCase):
                            topology_authority=replace(s.topology_authority,
                                                       exclusions=s.topology_exclusions[::-1]))
         self.assertEqual(s.to_json(), shuffled.to_json())
-        self.assertEqual(calculate(s).to_json(), calculate(shuffled).to_json())
-        self.assertEqual(calculate(s).result_digest, calculate(shuffled).result_digest)
+        self.assertEqual(calculate_v1_1(s).to_json(), calculate_v1_1(shuffled).to_json())
+        self.assertEqual(calculate_v1_1(s).result_digest, calculate_v1_1(shuffled).result_digest)
         replay = CalculationSnapshotV1_1.from_json(s.to_json())
         self.assertEqual(replay, s)
-        self.assertEqual(calculate(replay).to_json(), calculate(s).to_json())
-        self.assert_witnesses(s, calculate(s).ptns[0])
+        self.assertEqual(calculate_v1_1(replay).to_json(), calculate_v1_1(s).to_json())
+        self.assert_witnesses(s, calculate_v1_1(s).ptns[0])
         with self.assertRaises(FrozenInstanceError):
             s.assessment_kind = "AI"
         with self.assertRaises(FrozenInstanceError):
@@ -312,7 +314,7 @@ class StrategyV11Tests(unittest.TestCase):
         # by an odd number of fixed unit contributions at exactly Pol=100.
         rows = (actor(0, 10),) + tuple(actor(i, None) for i in range(1, 22))
         s = snapshot(rows)
-        p = calculate(s).ptns[0]
+        p = calculate_v1_1(s).ptns[0]
         self.assertEqual(p.envelope_sharpness, "OUTER_BOUND_NONSHARP")
         self.assertEqual((p.exact_lo, p.exact_hi), (0, 100))
         self.assertIsNone(p.witness_hi)
@@ -322,7 +324,7 @@ class StrategyV11Tests(unittest.TestCase):
         # More than 2**20 finite combinations: lower factoring must not
         # enumerate alternatives after the upper budget has been exceeded.
         finite = snapshot(tuple(actor(i, (-5, 5), (0, 2)) for i in range(11)))
-        p = calculate(finite).ptns[0]
+        p = calculate_v1_1(finite).ptns[0]
         self.assertEqual(p.envelope_sharpness, "OUTER_BOUND_NONSHARP")
         self.assertEqual(p.exact_lo, 0)
         self.assert_witnesses(finite, p)
@@ -332,29 +334,34 @@ class StrategyV11Tests(unittest.TestCase):
         first = snapshot((actor(0, 10), actor(1, -10)))
         second = PtnInputV1_1("q", weight(1), (actor(0, 10, ptn="q"), actor(1, None, ptn="q")))
         s = replace(first, ptns=(*first.ptns, second))
-        run = calculate(s)
+        run = calculate_v1_1(s)
         self.assertEqual((run.UNO_lo, run.UNO_hi, run.UNO_point, run.status), (50, 100, None, "BOUNDED"))
         second = replace(second, kvptn=weight(3))
-        self.assertEqual(calculate(replace(s, ptns=(s.ptns[0], second))).exact_lo, 25)
+        self.assertEqual(calculate_v1_1(replace(s, ptns=(s.ptns[0], second))).exact_lo, 25)
         for q in (None, 1):
             empty = replace(second, actors=(), kvptn=weight(q))
-            blocked = calculate(replace(s, ptns=(s.ptns[0], empty)))
+            blocked = calculate_v1_1(replace(s, ptns=(s.ptns[0], empty)))
             self.assertIsNone(blocked.UNO_lo)
             self.assertEqual(blocked.status, "NOT_COMPUTABLE")
         empty_zero = replace(second, actors=(), kvptn=weight(0))
-        run = calculate(replace(s, ptns=(s.ptns[0], empty_zero)))
+        run = calculate_v1_1(replace(s, ptns=(s.ptns[0], empty_zero)))
         self.assertEqual((run.UNO_point, run.status), (100, "COMPLETE"))
         self.assertIsNone(run.ptns[1].UNO_contribution_lo)  # R-B22, unlike 1.0.
         known_zero = replace(second, kvptn=weight(0))
-        run = calculate(replace(s, ptns=(s.ptns[0], known_zero)))
+        run = calculate_v1_1(replace(s, ptns=(s.ptns[0], known_zero)))
         self.assertEqual((run.ptns[1].UNO_contribution_lo, run.ptns[1].UNO_contribution_hi), (0, 0))
-        self.assertIsNone(calculate(snapshot((actor(0, 10),), q=0)).UNO_lo)
-        self.assertIsNone(calculate(replace(s, ptns=())).UNO_lo)
+        zero_area = calculate_v1_1(snapshot((actor(0, 10),), q=0))
+        self.assertIsNone(zero_area.UNO_lo)
+        self.assertEqual(
+            (zero_area.ptns[0].UNO_contribution_lo, zero_area.ptns[0].UNO_contribution_hi),
+            (0, 0),
+        )
+        self.assertIsNone(calculate_v1_1(replace(s, ptns=())).UNO_lo)
         # Area rounding uses exact PTN endpoints, never their rounded displays.
         third = snapshot((actor(0, 10, 1), actor(1, -10, 1), actor(2, None, 5)))
         p = third.ptns[0]
         one_sided = PtnInputV1_1("q", weight(2), (actor(0, 10, ptn="q"),))
-        run = calculate(replace(third, ptns=(p, one_sided)))
+        run = calculate_v1_1(replace(third, ptns=(p, one_sided)))
         self.assertEqual(run.exact_lo, Fraction(200, 21))
         self.assertEqual(run.UNO_lo, Decimal("9.52380952"))
         self.assertEqual(run.UNO_hi, Decimal("9.52380953"))
@@ -372,7 +379,10 @@ class StrategyV11Tests(unittest.TestCase):
         moved = replace(complete, ptns=(replace(complete.ptns[0], actors=(complete.ptns[0].actors[0],
             replace(complete.ptns[0].actors[1], attitude=empirical(-10, source="SCENARIO")))),))
         delta = scenario_delta_v1_1(complete, moved)
-        self.assertEqual((delta.delta_point, delta.delta_outer, delta.direction), (100, None, "INCREASE_ON_ALL_COMPLETIONS"))
+        self.assertEqual(
+            (delta.delta_point, delta.delta_outer, delta.direction),
+            (100, None, "DIRECTION_NOT_ESTABLISHED"),
+        )
         blocked_base = snapshot((actor(0, 10), actor(1, None, r=None)))
         blocked_ptn = blocked_base.ptns[0]
         blocked_scenario = replace(blocked_base, ptns=(replace(
@@ -382,7 +392,7 @@ class StrategyV11Tests(unittest.TestCase):
             )),
         ),))
         self.assertEqual(
-            (calculate(blocked_base).status, calculate(blocked_scenario).status),
+            (calculate_v1_1(blocked_base).status, calculate_v1_1(blocked_scenario).status),
             ("NOT_COMPUTABLE", "NOT_COMPUTABLE"),
         )
         self.assertIsNone(scenario_delta_v1_1(blocked_base, blocked_scenario).delta_outer)
@@ -404,17 +414,21 @@ class StrategyV11Tests(unittest.TestCase):
                 scenario_delta_v1_1(before, after)
         with self.assertRaisesRegex(CalculationInputError, "SCENARIO_EMPIRICAL_OVERRIDE_INVALID"):
             scenario_delta_v1_1(base, complete)
+        for field in ("experiment_id", "assessment_set_id"):
+            with self.subTest(field=field), self.assertRaisesRegex(
+                    CalculationInputError, "SCENARIO_BASE_IDENTITY_MISMATCH"):
+                scenario_delta_v1_1(base, replace(scenario, **{field: f"other-{field}"}))
 
     def test_exact_arithmetic_is_decimal_context_independent(self):
         s = snapshot((actor(0, 10, "0.00000000000000000000000000000001"),
                       actor(1, -5, None), actor(2, (-5, 5), (0, 2))))
-        expected = calculate(s).to_json()
+        expected = calculate_v1_1(s).to_json()
         with localcontext() as context:
             context.prec = 2
             context.rounding = ROUND_DOWN
             context.traps[Inexact] = True
             replay = CalculationSnapshotV1_1.from_json(s.to_json())
-            self.assertEqual(calculate(replay).to_json(), expected)
+            self.assertEqual(calculate_v1_1(replay).to_json(), expected)
 
     def test_grid_containment_and_witness_attainment_mixed_classes(self):
         rng = random.Random(1105)
@@ -423,7 +437,7 @@ class StrategyV11Tests(unittest.TestCase):
         for case in range(50):
             rows = tuple(actor(i, *rng.choice(classes), r=rng.choice((0, 1, 2))) for i in range(3))
             s = snapshot(rows)
-            p = calculate(s).ptns[0]
+            p = calculate_v1_1(s).ptns[0]
             if p.status == "BOUNDED":
                 self.assert_witnesses(s, p)
             completions = []

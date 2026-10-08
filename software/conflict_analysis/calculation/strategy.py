@@ -123,20 +123,11 @@ class PolarizationV1Beta:
                               tuple(results), UNO, completeness, tuple(sorted(warnings)), status)
 
 
-from .contracts_v1_1 import CalculationRunV1_1, CalculationSnapshotV1_1
-from .strategy_v1_1 import PolarizationV1_1Beta
+_EXECUTORS = MappingProxyType({(STRATEGY_ID, STRATEGY_VERSION): PolarizationV1Beta()})
 
 
-_EXECUTORS = MappingProxyType({
-    (STRATEGY_ID, STRATEGY_VERSION): PolarizationV1Beta(),
-    (PolarizationV1_1Beta.strategy_id, PolarizationV1_1Beta.strategy_version): PolarizationV1_1Beta(),
-})
-
-
-def calculate(snapshot: CalculationSnapshot | CalculationSnapshotV1_1) -> CalculationRun | CalculationRunV1_1:
+def calculate(snapshot: CalculationSnapshot) -> CalculationRun:
     """Exact version dispatch only; no latest-version or method fallback."""
-    if type(snapshot) not in (CalculationSnapshot, CalculationSnapshotV1_1):
-        raise CalculationInputError("Unsupported calculation snapshot schema.")
     try:
         executor = _EXECUTORS[(snapshot.strategy_id, snapshot.strategy_version)]
     except KeyError as exc:

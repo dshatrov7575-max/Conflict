@@ -338,6 +338,11 @@ class PolarizationV1_1Beta:
             warnings.add("NONCOMPUTABLE_POSITIVE_WEIGHT_PTN")
         if not results:
             warnings.add("EMPTY_TOPOLOGY")
+        # R-B22: a q=0 PTN has exact zero area contribution whenever its
+        # polarization is defined, even if the area as a whole has Q=0.
+        results = tuple(replace(
+            p, UNO_contribution_lo=Decimal("0"), UNO_contribution_hi=Decimal("0")
+        ) if p.kvptn.value == 0 and p.exact_lo is not None else p for p in results)
         lo = hi = sharpness = None
         status = "NOT_COMPUTABLE"
         if not missing_q and total_q and not blocked:
@@ -402,8 +407,8 @@ def scenario_delta_v1_1(base: CalculationSnapshotV1_1,
         raise CalculationInputError("SCENARIO_TOPOLOGY_EXCLUSION_MISMATCH")
     if base.topology_authority != scenario.topology_authority:
         raise CalculationInputError("SCENARIO_TOPOLOGY_AUTHORITY_MISMATCH")
-    for name in ("assessment_kind", "project_id", "time_slice_id", "workspace_id",
-                 "time_slice_version", "cutoff_date"):
+    for name in ("experiment_id", "assessment_set_id", "assessment_kind", "project_id",
+                 "time_slice_id", "workspace_id", "time_slice_version", "cutoff_date"):
         if getattr(base, name) != getattr(scenario, name):
             raise CalculationInputError("SCENARIO_BASE_IDENTITY_MISMATCH")
     _scenario_empirical_overrides_valid(base, scenario)
@@ -416,10 +421,8 @@ def scenario_delta_v1_1(base: CalculationSnapshotV1_1,
 
     if base_run.status == scenario_run.status == "COMPLETE":
         exact = scenario_run.exact_lo - base_run.exact_lo
-        if exact > 0:
-            direction = "INCREASE_ON_ALL_COMPLETIONS"
-        elif exact < 0:
-            direction = "DECREASE_ON_ALL_COMPLETIONS"
+        # R-B25 reports a direction only from delta_outer. COMPLETE/COMPLETE
+        # publishes delta_point and no outer interval, so direction stays unknown.
         return ScenarioDeltaV1_1(
             base.id, scenario.id, publish_v1_1(exact, "nearest"),
             None, None, None, direction,
@@ -437,3 +440,7 @@ def scenario_delta_v1_1(base: CalculationSnapshotV1_1,
          publish_bound_v1_1(exact_hi, upper=True)),
         (exact_lo, exact_hi), "OUTER_BOUND_NONSHARP", direction,
     )
+
+def calculate_v1_1(snapshot: CalculationSnapshotV1_1) -> CalculationRunV1_1:
+    """Execute only POLARIZATION_V1_BETA / 1.1.0; no fallback or upgrade."""
+    return PolarizationV1_1Beta().calculate(snapshot)

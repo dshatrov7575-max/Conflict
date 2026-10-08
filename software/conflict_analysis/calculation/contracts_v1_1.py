@@ -327,6 +327,8 @@ class CalculationSnapshotV1_1:
         for name in ("experiment_id", "assessment_set_id", "assessment_kind", "project_id",
                      "time_slice_id", "workspace_id", "time_slice_version", "cutoff_date"):
             _identity(getattr(self, name))
+        if self.assessment_kind not in {"HUMAN", "AI"}:
+            _fail("ASSESSMENT_KIND_INVALID")
         if (self.strategy_id, self.strategy_version) != (STRATEGY_ID_V1_1, STRATEGY_VERSION_V1_1):
             _fail("SNAPSHOT_STRATEGY_VERSION_MISMATCH")
         if type(self.topology_authority) is not TopologyAuthorityV1_1:
