@@ -31,7 +31,10 @@ python manage.py runserver
 
 Результат показывает baseline UNO, scenario UNO, delta UNO, статусы,
 completeness, список изменений, источники baseline, предупреждения Core,
-PTN-результаты и JSON для offline replay. Ноль отображается как 0,
+PTN-результаты и JSON для offline replay. Временная ось baseline и scenario
+показывается отдельно от evidence-status; сценарный override получает
+`temporal_status = null`, не наследуя ретроспективность заменённого входа.
+Ноль отображается как 0,
 отсутствующий результат — «Недостаточно данных». Delta недоступна,
 если хотя бы один UNO отсутствует.
 
@@ -41,9 +44,15 @@ PTN-результаты и JSON для offline replay. Ноль отображ�
 
 ## Контракт и изоляция
 
-- Baseline сохраняется целиком, включая hash, topology, исходные статусы,
-  source ID/version, Experiment, AssessmentSet и TimeSlice. Повторные запросы
-  не захватывают новый snapshot и не перечитывают ParameterValue.
+- Baseline snapshot сохраняется целиком, включая hash, topology, исходные статусы,
+  source ID/version, Experiment, AssessmentSet и TimeSlice. Повторные запросы не
+  захватывают новый numerical snapshot. Temporal metadata для UUID-backed POS/KVS
+  строится по pinned source_id из неизменяемой старой ParameterValue revision;
+  легальная коррекция создаёт successor и не меняет metadata старого baseline.
+  `SCENARIO_MODEL_V1` при этом не является полностью self-contained архивом
+  temporal metadata: для отображения envelope сервер всё ещё читает pinned старые
+  ParameterValue rows. Durable offline scenario-metadata replay этим beta-патчем
+  не заявляется.
 - `ScenarioModel` — frozen Python value object, не Django ORM-модель.
   Он содержит UUID, baseline и канонически упорядоченный tuple override.
   Изменение возвращает новый объект. Повторный override заменяет предыдущее
@@ -65,9 +74,10 @@ PTN-результаты и JSON для offline replay. Ноль отображ�
   объединяет значения. Проверка Foundation admission выполняется при каждом
   запросе, в том числе после изменения прав, freeze и archive.
 - Нет записей в AssessmentSet, ParameterValue, Experiment или исходные данные.
-  Каждый успешный action добавляет один immutable digest-only `AuditEvent` receipt
-  сценарного запуска; snapshot/run/override payload в БД не дублируется.
-  Нет миграций, изменения Core или формулы.
+  Каждый успешный action по-прежнему добавляет один legacy
+  `SCENARIO_CALCULATION_RUN_RECEIPT_V1` без companion; snapshot/run/override payload
+  сценария в БД не дублируется. Baseline V2 replay-companion относится только к
+  baseline calculation path. Нет миграций, изменения Core или формулы.
 
 ## Хранение Scenario Model
 
@@ -87,10 +97,11 @@ cookie или browser storage; ответ имеет `no-store`, CSRF и CSP.
 Максимум 256 override и 1 000 000 символов подписанного state. Слишком большой
 baseline по-прежнему доступен в PR-2, но без кнопки создания сценария.
 Постоянного каталога Scenario Model, shared editing и восстановления модели
-через URL нет. Серверная история содержит только digest receipts с scenario UUID,
-baseline snapshot ID, model SHA-256, result digest и quality status. Для полного
-replay по-прежнему сохраните Scenario Model JSON; HTTP-импорт неподписанного JSON
-не предоставляется. Offline Python replay:
+через URL нет. Серверная история сценария содержит только digest receipt V1 с
+scenario UUID, baseline snapshot ID, model SHA-256, result digest и quality status.
+Для полного числового replay по-прежнему сохраните Scenario Model JSON; durable
+temporal-metadata replay отдельным scenario companion не обещается. HTTP-импорт
+неподписанного JSON не предоставляется. Offline Python replay remains DB-independent. The default pure adapter path preserves the frozen `SCENARIO_RESULT_V2` shape and does not query Foundation temporal metadata. The authenticated HTTP composition explicitly supplies the strict metadata provider and returns `SCENARIO_RESULT_V4` with the temporal axis.
 
 ```python
 import json
@@ -101,6 +112,7 @@ model = ScenarioModel.from_dict(json.loads(saved_model_json))
 run = CalculationAdapter.run(model)
 assert run.run.to_json() == saved_scenario_run_json
 comparison = result_view(model)
+assert comparison["contract"] == "SCENARIO_RESULT_V2"
 ```
 
 `scenario_modeling` входит в корневой wheel и штатный
@@ -151,4 +163,4 @@ python -m pytest -c scenario_modeling/pytest.ini scenario_modeling/tests player_
 
 ## Статусы результата
 
-`SCENARIO_RESULT_V3` ??????? ???????? ?????????????? ?????? Core, ????????? ?????? ? ??????? ?????? ? ????????? digest-only ????????? ??????? ????????? ?????????? ???????. Scenario override ???????? `PROVISIONAL`; `COMPLETE` ???????? ?????? ???????????? ? ?? ???????? scientific admission.
+`SCENARIO_RESULT_V4` добавляет раздельное отображение temporal metadata поверх прежнего Core результата; сценарный receipt остаётся `SCENARIO_CALCULATION_RUN_RECEIPT_V1` без companion. Scenario override остаётся `PROVISIONAL`; `COMPLETE` означает только вычислимость и не означает scientific admission.

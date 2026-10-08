@@ -71,13 +71,18 @@ try {
     assert.equal(result.snapshot.time_slice_id, lane.weights.time_slice_id);
     assert.equal(result.run.snapshot_id, result.snapshot.id);
     assert.equal(result.run.UNO, lane.expected);
-    assert.equal(result.receipt.contract, "PLAYER_CALCULATION_RUN_RECEIPT_V1");
+    assert.equal(result.receipt.contract, "PLAYER_CALCULATION_RUN_RECEIPT_V2");
     assert.equal(result.receipt.operation_id, result.receiptId);
     assert.equal(result.receipt.snapshot_id, result.snapshot.id);
     assert.equal(result.receipt.result_digest.length, 64);
     assert.deepEqual(result.receipt.payload_storage, {
-      snapshot_payload_stored: false, run_payload_stored: false, input_values_duplicated: false,
+      receipt_snapshot_payload_stored: false,
+      receipt_run_payload_stored: false,
+      receipt_input_values_duplicated: false,
+      companion_replay_payload_required: true,
     });
+    assert.equal(result.receipt.companion.contract, "PLAYER_CALCULATION_REPLAY_ARTIFACT_V2");
+    assert.equal(result.receipt.quality_contract, "PLAYER_CALCULATION_QUALITY_V2");
     assert.equal(result.computation, "частично");
     assert.equal(result.evidence, "есть пропуски");
     assert.equal(result.admission, "не установлен");

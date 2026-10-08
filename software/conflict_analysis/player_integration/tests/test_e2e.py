@@ -5,6 +5,7 @@ Every measured integration request must leave all domain records unchanged.
 """
 import json
 import re
+from dataclasses import replace
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -20,7 +21,7 @@ from domain.models import ActorElementRole, AuditEvent, ParameterValue, TimeSlic
 from domain.services import zhanaozen_typed_manifest as typed
 from domain.services.player_experiments import PlayerExperimentError
 from domain.tests.test_player_experiments import PlayerExperimentsFixture
-from player_integration.services import calculate_experiment
+from player_integration.services import calculate_experiment, input_metadata_for_snapshot
 
 
 TEST_APPS = [*settings.INSTALLED_APPS, *(
@@ -59,7 +60,8 @@ class PlayerIntegrationHTTPFixture(PlayerExperimentsFixture):
     def values_url(self, experiment_id=None):
         return f"/api/foundation/player/experiments/{experiment_id or self.experiment_id}/values/"
 
-    def write_value_http(self, role, code, value, *, experiment_id=None, predecessor=None):
+    def write_value_http(self, role, code, value, *, experiment_id=None, predecessor=None,
+                         temporal_status="UNKNOWN"):
         url = self.values_url(experiment_id)
         dto = self.client.get(url).json()
         etag = dto["experiment"]["etag"] if predecessor is None else next(
@@ -71,7 +73,7 @@ class PlayerIntegrationHTTPFixture(PlayerExperimentsFixture):
             "time_slice_id": str(self.time.pk), "actor_code": role.actor.code,
             "element_code": role.element.code, "parameter_code": code,
             "status": "UNKNOWN" if value is None else "PROVISIONAL", "value": value,
-            "temporal_status": "UNKNOWN", "confidence_category": "MEDIUM",
+            "temporal_status": temporal_status, "confidence_category": "MEDIUM",
             "rationale": "Synthetic PR-2 E2E input", "note": "", "supersedes_id": predecessor,
         }
         response = self.post_json(url, body, etag=etag)
@@ -123,14 +125,14 @@ class PlayerIntegrationHTTPFixture(PlayerExperimentsFixture):
         self.assertEqual(response["Cache-Control"], "no-store")
         return response
 
-    def run_json(self, weights=None, *, operation_id=None, expected_audit_inserts=1, **scope):
+    def run_json(self, weights=None, *, operation_id=None, expected_audit_inserts=2, **scope):
         operation_id = operation_id or uuid4()
         response = self.measured(lambda: self.post_json(
             self.url(**scope), self.weights(**scope) if weights is None else weights,
             operation_id=operation_id), expected_audit_inserts=expected_audit_inserts)
         self.assertEqual(response.status_code, 200, response.content)
         payload = response.json()
-        self.assertEqual(payload["contract"], "PLAYER_CALCULATION_RESULT_V3")
+        self.assertEqual(payload["contract"], "PLAYER_CALCULATION_RESULT_V4")
         self.assertEqual(payload["receipt"]["operation_id"], str(operation_id))
         self.assertEqual(payload["receipt"]["result_digest"], payload["result_digest"])
         self.assertEqual(payload["receipt_replayed"], expected_audit_inserts == 0)
@@ -176,7 +178,7 @@ class PlayerIntegrationE2ETests(PlayerIntegrationHTTPFixture, TestCase):
         inputs = self.measured(lambda: self.client.get(self.url()))
         response = self.measured(
             lambda: self.post_form(self.form_body(inputs, self.weights())),
-            expected_audit_inserts=1,
+            expected_audit_inserts=2,
         )
         self.assertEqual(response.status_code, 200, response.content)
         self.assertContains(response, 'data-testid="uno">100</span>')
@@ -293,6 +295,107 @@ class PlayerIntegrationE2ETests(PlayerIntegrationHTTPFixture, TestCase):
             replay = calculate(CalculationSnapshot.from_json(json.dumps(before["snapshot"])))
             self.assertEqual(replay.UNO, 100)
             self.assertEqual(replay.result_digest, before["result_digest"])
+
+
+    def test_temporal_status_survives_foundation_to_result_metadata(self):
+        pos_id = self.write_value_http(
+            self.pair[0], "POS", 10, temporal_status="RETROSPECTIVE_KNOWLEDGE",
+        )
+        self.write_value_http(self.pair[0], "SAL", 1)
+        self.write_value_http(self.pair[1], "POS", -10)
+        self.write_value_http(self.pair[1], "SAL", 1)
+        result = self.run_json()
+        metadata = result["input_metadata"]
+        row = next(item for item in metadata["inputs"] if item["source_id"] == pos_id)
+        self.assertEqual(row["value_status"], "PROVISIONAL")
+        self.assertEqual(row["temporal_status"], "RETROSPECTIVE_KNOWLEDGE")
+        self.assertEqual(result["quality"]["temporal_status_counts"]["RETROSPECTIVE_KNOWLEDGE"], 1)
+        artifact = AuditEvent.objects.get(
+            entity_type="PLAYER_CALCULATION_REPLAY_ARTIFACT_V2",
+            entity_id=result["receipt"]["operation_id"],
+        )
+        self.assertEqual(artifact.after["input_metadata"]["sha256"], metadata["sha256"])
+        inputs = self.client.get(self.url())
+        html = self.post_form(self.form_body(inputs, self.weights()))
+        self.assertEqual(html.status_code, 200, html.content)
+        self.assertContains(
+            html,
+            'data-testid="evidence-status" title="REQUIRED_INPUTS_MISSING"',
+        )
+        self.assertContains(
+            html,
+            'data-testid="temporal-status" title="RETROSPECTIVE_KNOWLEDGE_PRESENT"',
+        )
+        self.assertContains(
+            html,
+            'data-testid="temporal-retrospective-count">1</span>',
+        )
+
+    def test_idempotent_replay_returns_original_result_after_source_correction(self):
+        self.fill()
+        operation_id = uuid4()
+        weights = self.weights()
+        first = self.run_json(weights, operation_id=operation_id)
+        pos = ParameterValue.objects.get(
+            actor_element_assessment__experiment_id=self.experiment_id,
+            actor_element_assessment__actor_id=self.pair[0].actor_id,
+            parameter_definition__code="POS", successor__isnull=True,
+        )
+        self.write_value_http(self.pair[0], "POS", 0, predecessor=str(pos.pk))
+        response = self.measured(
+            lambda: self.post_json(self.url(), weights, operation_id=operation_id),
+            expected_audit_inserts=0,
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        replay = response.json()
+        self.assertTrue(replay["receipt_replayed"])
+        self.assertEqual(replay["snapshot"], first["snapshot"])
+        self.assertEqual(replay["run"], first["run"])
+        self.assertEqual(replay["result_digest"], first["result_digest"])
+
+    def test_metadata_helper_rejects_foreign_or_unknown_pos_sources(self):
+        self.fill()
+        original = self.run_json()
+        snapshot = CalculationSnapshot.from_json(json.dumps(original["snapshot"]))
+        ptn = snapshot.ptns[0]
+        actor = ptn.actors[0]
+
+        ai_id = self.create_experiment_http("AI")
+        foreign_id = self.write_value_http(
+            self.pair[0], "POS", 10, experiment_id=ai_id,
+            temporal_status="RETROSPECTIVE_KNOWLEDGE",
+        )
+        forged_foreign = replace(
+            snapshot,
+            ptns=(replace(
+                ptn,
+                actors=(replace(
+                    actor,
+                    attitude=replace(actor.attitude, source_id=foreign_id),
+                ),) + ptn.actors[1:],
+            ),) + snapshot.ptns[1:],
+        )
+        with self.assertRaises(PlayerExperimentError) as foreign_error:
+            input_metadata_for_snapshot(forged_foreign)
+        self.assertEqual(
+            foreign_error.exception.code, "PLAYER_OPERATION_RESULT_DRIFT",
+        )
+
+        forged_text = replace(
+            snapshot,
+            ptns=(replace(
+                ptn,
+                actors=(replace(
+                    actor,
+                    attitude=replace(actor.attitude, source_id="FORGED"),
+                ),) + ptn.actors[1:],
+            ),) + snapshot.ptns[1:],
+        )
+        with self.assertRaises(PlayerExperimentError) as source_error:
+            input_metadata_for_snapshot(forged_text)
+        self.assertEqual(
+            source_error.exception.code, "PLAYER_OPERATION_RESULT_DRIFT",
+        )
 
     def test_other_time_slice_does_not_borrow_values(self):
         self.fill()

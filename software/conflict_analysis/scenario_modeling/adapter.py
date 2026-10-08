@@ -61,7 +61,14 @@ _EXPLANATIONS = {
 }
 
 
-def result_view(model):
+def result_view(model, *, input_metadata_provider=None):
+    """Build a pure offline view unless an explicit metadata provider is supplied.
+
+    The default path preserves the frozen pre-temporal SCENARIO_RESULT_V2 shape
+    and performs no ORM reads. HTTP composition supplies the strict Foundation
+    metadata provider and receives SCENARIO_RESULT_V4 with the temporal axis.
+    """
+
     baseline = calculate(model.baseline)
     scenario = CalculationAdapter.run(model)
     targets = {row.key: row for row in parameters(model.baseline)}
@@ -79,10 +86,25 @@ def result_view(model):
             "isolated_uno": None if isolated.UNO is None else decimal_text(isolated.UNO),
             "isolated_delta": delta(baseline.UNO, isolated.UNO),
         })
-    baseline_quality = summarize_quality(model.baseline, baseline)
-    scenario_quality = summarize_quality(scenario.snapshot, scenario.run)
-    return {
-        "contract": "SCENARIO_RESULT_V2", "scenario_id": model.id,
+    if input_metadata_provider is None:
+        baseline_input_metadata = None
+        scenario_input_metadata = None
+        baseline_quality = summarize_quality(model.baseline, baseline)
+        scenario_quality = summarize_quality(scenario.snapshot, scenario.run)
+        contract = "SCENARIO_RESULT_V2"
+    else:
+        baseline_input_metadata = input_metadata_provider(model.baseline)
+        scenario_input_metadata = input_metadata_provider(scenario.snapshot)
+        baseline_quality = summarize_quality(
+            model.baseline, baseline, baseline_input_metadata
+        )
+        scenario_quality = summarize_quality(
+            scenario.snapshot, scenario.run, scenario_input_metadata
+        )
+        contract = "SCENARIO_RESULT_V4"
+
+    payload = {
+        "contract": contract, "scenario_id": model.id,
         "baseline": json.loads(baseline.to_json()),
         "scenario": json.loads(scenario.run.to_json()),
         "baseline_quality": baseline_quality.as_dict(),
@@ -94,3 +116,7 @@ def result_view(model):
         "scenario_snapshot_json": scenario.snapshot.to_json(),
         "scenario_run_json": scenario.run.to_json(), "model_json": model.to_json(),
     }
+    if baseline_input_metadata is not None:
+        payload["baseline_input_metadata"] = baseline_input_metadata
+        payload["scenario_input_metadata"] = scenario_input_metadata
+    return payload

@@ -12,6 +12,7 @@ from calculation.contracts import decimal_text
 from domain.services.player_workspaces import canonical_receipt_bytes
 from player_integration.quality import summarize_quality
 from player_integration.receipts import parse_operation_id, record_calculation_receipt
+from player_integration.services import input_metadata_for_snapshot
 from player_integration.views import _endpoint
 
 from .adapter import result_view
@@ -90,7 +91,9 @@ def update(request):
     choices = [{"key": row.key, "label": row.label, "min": row.minimum, "max": row.maximum,
                 "value": decimal_text(current.get(row.key, row.baseline.value)) if row.baseline.known else None,
                 "status": row.baseline.status} for row in parameters(model.baseline)]
-    payload = result_view(model)
+    payload = result_view(
+        model, input_metadata_provider=input_metadata_for_snapshot,
+    )
     receipt = None
     if status == 200:
         scenario_snapshot = CalculationSnapshot.from_json(payload["scenario_snapshot_json"])
@@ -111,7 +114,7 @@ def update(request):
         )
         payload = {
             **payload,
-            "contract": "SCENARIO_RESULT_V3",
+            "contract": "SCENARIO_RESULT_V4",
             "receipt": dict(receipt.payload),
             "receipt_replayed": receipt.replayed,
             "receipt_json": canonical_receipt_bytes(receipt.payload).decode("utf-8"),

@@ -27,7 +27,7 @@ class ScenarioHTTPFixture(PlayerIntegrationHTTPFixture):
         response = self.measured(lambda: self.client.post(
             self.url(**scope), urlencode(data), content_type="application/x-www-form-urlencoded",
             HTTP_X_CSRFTOKEN=self.client.cookies["csrftoken"].value),
-            expected_audit_inserts=1)
+            expected_audit_inserts=2)
         self.assertEqual(response.status_code, 200, response.content)
         return response
 
@@ -63,7 +63,7 @@ class ScenarioHTTPTests(ScenarioHTTPFixture, TestCase):
         baseline_json = response.context["model"].baseline.to_json()
         self.assertContains(response, 'data-testid="baseline-uno">100</strong>')
         self.assertContains(response, 'data-testid="delta-uno">0</strong>')
-        self.assertEqual(response.context["contract"], "SCENARIO_RESULT_V3")
+        self.assertEqual(response.context["contract"], "SCENARIO_RESULT_V4")
         self.assertEqual(response.context["baseline_quality"]["computation_status"], "PARTIAL")
         self.assertEqual(response.context["baseline_quality"]["evidence_status"], "REQUIRED_INPUTS_MISSING")
         self.assertEqual(response.context["baseline_quality"]["scientific_admission_status"], "NOT_ESTABLISHED")
@@ -101,6 +101,56 @@ class ScenarioHTTPTests(ScenarioHTTPFixture, TestCase):
         self.assertEqual(sets, list(AssessmentSet.objects.order_by("pk").values()))
         snapshot = CalculationSnapshot.from_json(changed.context["scenario_snapshot_json"])
         self.assertEqual(calculate(snapshot).to_json(), changed.context["scenario_run_json"])
+
+    def test_temporal_metadata_survives_into_scenario_quality(self):
+        self.write_value_http(
+            self.pair[0], "POS", 10, temporal_status="RETROSPECTIVE_KNOWLEDGE",
+        )
+        self.write_value_http(self.pair[0], "SAL", 1)
+        self.write_value_http(self.pair[1], "POS", -10)
+        self.write_value_http(self.pair[1], "SAL", 1)
+        response = self.begin()
+        self.assertEqual(
+            response.context["baseline_quality"]["temporal_status_counts"]["RETROSPECTIVE_KNOWLEDGE"],
+            1,
+        )
+        self.assertEqual(
+            response.context["scenario_quality"]["temporal_status_counts"]["RETROSPECTIVE_KNOWLEDGE"],
+            1,
+        )
+        self.assertEqual(
+            response.context["baseline_input_metadata"]["sha256"],
+            response.context["scenario_input_metadata"]["sha256"],
+        )
+        self.assertContains(
+            response,
+            'data-testid="baseline-temporal-retrospective-count">1</span>',
+        )
+        self.assertContains(
+            response,
+            'data-testid="scenario-temporal-retrospective-count">1</span>',
+        )
+        changed = self.change(
+            response, "5", parameter=f"attitude:{self.pair[0].pk}",
+        )
+        self.assertEqual(
+            changed.context["baseline_quality"]["temporal_status_counts"]["RETROSPECTIVE_KNOWLEDGE"],
+            1,
+        )
+        self.assertEqual(
+            changed.context["scenario_quality"]["temporal_status_counts"].get(
+                "RETROSPECTIVE_KNOWLEDGE", 0
+            ),
+            0,
+        )
+        self.assertContains(
+            changed,
+            'data-testid="baseline-temporal-retrospective-count">1</span>',
+        )
+        self.assertContains(
+            changed,
+            'data-testid="scenario-temporal-retrospective-count">0</span>',
+        )
 
     def test_existing_baseline_survives_correction_freeze_and_archive(self):
         self.fill()

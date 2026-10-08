@@ -61,3 +61,33 @@ class CalculationQualityTests(TestCase):
         second = replace(first, experiment_id="another")
         with self.assertRaisesRegex(ValueError, "does not belong"):
             summarize_quality(first, calculate(second))
+
+    def test_v1_keeps_provisional_ahead_of_legacy_retrospective_status(self):
+        item = snapshot(attitude="PROVISIONAL", rgu="RETROSPECTIVE_KNOWLEDGE")
+        quality = summarize_quality(item, calculate(item))
+        self.assertEqual(quality.contract, "PLAYER_CALCULATION_QUALITY_V1")
+        self.assertEqual(quality.evidence_status, "PROVISIONAL_INPUTS_PRESENT")
+
+    def test_v2_counts_temporal_status_without_replacing_evidence_axis(self):
+        item = snapshot(attitude="PROVISIONAL")
+        run = calculate(item)
+        metadata = {
+            "contract": "PLAYER_INPUT_METADATA_ENVELOPE_V1",
+            "snapshot_id": item.id,
+            "inputs": [{
+                "kind": "POS",
+                "ptn_id": "ptn",
+                "actor_id": "actor",
+                "source_id": "source-attitude",
+                "source_version": "1",
+                "value_status": "PROVISIONAL",
+                "temporal_status": "RETROSPECTIVE_KNOWLEDGE",
+            }],
+        }
+        quality = summarize_quality(item, run, metadata)
+        self.assertEqual(quality.contract, "PLAYER_CALCULATION_QUALITY_V2")
+        self.assertEqual(quality.evidence_status, "PROVISIONAL_INPUTS_PRESENT")
+        self.assertEqual(
+            dict(quality.temporal_status_counts)["RETROSPECTIVE_KNOWLEDGE"], 1,
+        )
+        self.assertEqual(quality_ui(quality)["temporal_retrospective_count"], 1)

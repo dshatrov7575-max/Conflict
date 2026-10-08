@@ -22,6 +22,7 @@
 <dl class="ui-data ui-status-grid">
   <dt>Вычисление</dt><dd><strong data-testid="run-status" title="{{ quality_ui.computation_code }}">{{ quality_ui.computation_label }}</strong></dd>
   <dt>Входы</dt><dd><strong data-testid="evidence-status" title="{{ quality_ui.evidence_code }}">{{ quality_ui.evidence_label }}</strong></dd>
+  {% if quality_ui.temporal_available %}<dt>Временная ось</dt><dd><strong data-testid="temporal-status" title="{{ quality_ui.temporal_code }}">{{ quality_ui.temporal_label }}</strong> · <span data-testid="temporal-retrospective-count">{{ quality_ui.temporal_retrospective_count }}</span></dd>{% endif %}
   <dt>Научный допуск</dt><dd><strong data-testid="admission-status" title="{{ quality_ui.admission_code }}">{{ quality_ui.admission_label }}</strong></dd>
 </dl>
 {% if scenario_token %}<form method="post" action="{% url 'scenario_modeling:update' %}">
