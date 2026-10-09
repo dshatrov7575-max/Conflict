@@ -180,13 +180,20 @@ class StrategyV11Tests(unittest.TestCase):
         cases = [(10, 1, 1, "E"), (None, 1, 1, "M1"), (10, None, 1, "M2a"),
                  (None, None, 1, "M2b"), ((-5, 5), 1, 1, "PD"),
                  (10, (0, 2), 1, "KD"), ((-5, 5), (0, 2), 1, "PDKD"),
-                 (10, 1, None, "X"), (empirical(status="DISPUTED"), 1, 1, "M1"),
+                 (10, 1, None, "X"),
                  (empirical(status="NOT_APPLICABLE"), 1, 1, "M1")]
         for x, c, r, expected in cases:
             self.assertEqual(classify_row_v1_1(actor(0, x, c, r)), expected)
         for field in ("attitude", "kvs"):
             with self.subTest(field=field), self.assertRaisesRegex(CalculationInputError, "NONNUMERIC"):
                 replace(actor(0), **{field: empirical(1, status="DISPUTED")})
+
+        for alternatives in ((), (1,), (1, 1), (1, "1.0")):
+            with self.subTest(disputed_alternatives=alternatives), self.assertRaisesRegex(
+                    CalculationInputError, "ALTERNATIVES_INVALID"):
+                InputValueV1_1("DISPUTED", "UNKNOWN", alternatives=alternatives)
+        with self.assertRaisesRegex(CalculationInputError, "ALTERNATIVES_INVALID"):
+            InputValueV1_1("UNKNOWN", "UNKNOWN", alternatives=(1, 2))
 
     def test_decimal_lexical_and_domain_validation(self):
         invalid = [True, 1.0, "1e0", "1E+0", " 1", "1 ", "\t1", "пј‘", "ЩЎ", "+1", "01",

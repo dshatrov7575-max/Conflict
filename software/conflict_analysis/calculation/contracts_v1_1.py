@@ -85,8 +85,10 @@ class InputValueV1_1:
         if type(self.alternatives) not in (tuple, list):
             _fail("ALTERNATIVES_INVALID")
         alternatives = tuple(sorted(decimal_v1_1(v) for v in self.alternatives))
-        if alternatives and (self.value_status != "DISPUTED" or len(alternatives) < 2
-                             or len(set(alternatives)) != len(alternatives)):
+        if self.value_status == "DISPUTED":
+            if len(alternatives) < 2 or len(set(alternatives)) != len(alternatives):
+                _fail("ALTERNATIVES_INVALID")
+        elif alternatives:
             _fail("ALTERNATIVES_INVALID")
         object.__setattr__(self, "alternatives", alternatives)
 
