@@ -52,16 +52,6 @@ def decimal_v1_1(value, *, minimum=-10):
         number = value
         if not number.is_finite():
             _fail("DECIMAL_LEXICAL_INVALID")
-        sign, digits, exponent = number.as_tuple()
-        if not all(d == 0 for d in digits):
-            trailing = 0
-            for digit in reversed(digits):
-                if digit != 0:
-                    break
-                trailing += 1
-            effective_scale = max(0, -exponent - trailing)
-            if effective_scale > 32:
-                _fail("DECIMAL_LEXICAL_INVALID")
     else:
         if type(value) not in (str, int):
             _fail("DECIMAL_LEXICAL_INVALID")

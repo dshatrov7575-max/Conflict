@@ -226,8 +226,12 @@ class StrategyV11Tests(unittest.TestCase):
             replace(disputed, source_version="2").alternatives,
             (Decimal("0.0000001"), Decimal("0.0000002")),
         )
-        with self.assertRaisesRegex(CalculationInputError, "DECIMAL_LEXICAL_INVALID"):
-            InputValueV1_1("CONFIRMED", "UNKNOWN", Decimal("1E-33"))
+        very_small = InputValueV1_1("CONFIRMED", "UNKNOWN", Decimal("1E-33"))
+        self.assertEqual(very_small.value, Decimal("1E-33"))
+        self.assertEqual(
+            replace(very_small, source_version="2").value,
+            Decimal("1E-33"),
+        )
 
         s = snapshot((actor(0, 10), actor(1, -10)))
         self.assertEqual(replace(s, cutoff_date="2024-02-29").cutoff_date, "2024-02-29")
@@ -482,6 +486,27 @@ class StrategyV11Tests(unittest.TestCase):
         self.assertEqual((delta.delta_point, delta.delta_outer, delta.envelope_sharpness, delta.direction),
                          (None, (0, 100), "OUTER_BOUND_NONSHARP", "DIRECTION_NOT_ESTABLISHED"))
         self.assertEqual(scenario_delta_v1_1(scenario, base).delta_outer if False else delta.exact_outer, (0, 100))
+
+        # R-B25 is defined on the published outer interval, not the exact
+        # pre-publication interval. A sub-1e-8 positive lower bound rounds
+        # outward to published zero and therefore cannot establish direction.
+        tiny_disputed = InputValueV1_1(
+            "DISPUTED", "UNKNOWN", alternatives=(0, "0.000000000001"))
+        tiny_base = snapshot((actor(0, 10, 1), actor(1, -10, tiny_disputed)))
+        tiny_ptn = tiny_base.ptns[0]
+        tiny_scenario = replace(tiny_base, ptns=(replace(
+            tiny_ptn,
+            actors=(tiny_ptn.actors[0], replace(
+                tiny_ptn.actors[1],
+                kvs=InputValueV1_1(
+                    "CONFIRMED", "UNKNOWN", "0.00000000001", source_id="SCENARIO"),
+            )),
+        ),))
+        tiny_delta = scenario_delta_v1_1(tiny_base, tiny_scenario)
+        self.assertGreater(tiny_delta.exact_outer[0], 0)
+        self.assertEqual(tiny_delta.delta_outer, (Decimal("0E-8"), Decimal("1E-8")))
+        self.assertEqual(tiny_delta.direction, "DIRECTION_NOT_ESTABLISHED")
+
         complete = snapshot((actor(0, 10), actor(1, 10)))
         moved = replace(complete, ptns=(replace(complete.ptns[0], actors=(complete.ptns[0].actors[0],
             replace(complete.ptns[0].actors[1], attitude=empirical(-10, source="SCENARIO")))),))

@@ -430,14 +430,18 @@ def scenario_delta_v1_1(base: CalculationSnapshotV1_1,
 
     exact_lo = scenario_run.exact_lo - base_run.exact_hi
     exact_hi = scenario_run.exact_hi - base_run.exact_lo
-    if exact_lo > 0:
+    delta_outer = (
+        publish_bound_v1_1(exact_lo, upper=False),
+        publish_bound_v1_1(exact_hi, upper=True),
+    )
+    # R-B25 defines direction on the published delta_outer. Directed outward
+    # rounding can move a strictly signed exact endpoint onto published zero.
+    if delta_outer[0] > 0:
         direction = "INCREASE_ON_ALL_COMPLETIONS"
-    elif exact_hi < 0:
+    elif delta_outer[1] < 0:
         direction = "DECREASE_ON_ALL_COMPLETIONS"
     return ScenarioDeltaV1_1(
-        base.id, scenario.id, None,
-        (publish_bound_v1_1(exact_lo, upper=False),
-         publish_bound_v1_1(exact_hi, upper=True)),
+        base.id, scenario.id, None, delta_outer,
         (exact_lo, exact_hi), "OUTER_BOUND_NONSHARP", direction,
     )
 
