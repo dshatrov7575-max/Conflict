@@ -7,7 +7,7 @@ content identity, not the producer's authorization or historical freeze time.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from fractions import Fraction
 from hashlib import sha256
@@ -47,13 +47,28 @@ def _hash(value):
 
 
 def decimal_v1_1(value, *, minimum=-10):
-    """Lexical validation precedes domain validation; never use Decimal context."""
-    if type(value) not in (str, int, Decimal):
-        _fail("DECIMAL_LEXICAL_INVALID")
-    text = str(value)
-    if _DECIMAL.fullmatch(text) is None:
-        _fail("DECIMAL_LEXICAL_INVALID")
-    number = Decimal(text)
+    """Validate external spelling once; revalidate stored Decimals numerically."""
+    if type(value) is Decimal:
+        number = value
+        if not number.is_finite():
+            _fail("DECIMAL_LEXICAL_INVALID")
+        sign, digits, exponent = number.as_tuple()
+        if not all(d == 0 for d in digits):
+            trailing = 0
+            for digit in reversed(digits):
+                if digit != 0:
+                    break
+                trailing += 1
+            effective_scale = max(0, -exponent - trailing)
+            if effective_scale > 32:
+                _fail("DECIMAL_LEXICAL_INVALID")
+    else:
+        if type(value) not in (str, int):
+            _fail("DECIMAL_LEXICAL_INVALID")
+        text = str(value)
+        if _DECIMAL.fullmatch(text) is None:
+            _fail("DECIMAL_LEXICAL_INVALID")
+        number = Decimal(text)
     if not minimum <= number <= 10:
         _fail("DECIMAL_DOMAIN_INVALID")
     # Normalize spelling, including negative zero, without normalize()/rounding.
@@ -157,6 +172,8 @@ class PtnInputV1_1:
     def __post_init__(self):
         _identity(self.ptn_id)
         _design(self.kvptn)
+        if type(self.actors) not in (tuple, list):
+            _fail("ACTOR_INPUT_SCHEMA_INVALID")
         actors = tuple(self.actors)
         if any(type(row) is not ActorInputV1_1 for row in actors):
             _fail("ACTOR_INPUT_SCHEMA_INVALID")
@@ -258,6 +275,9 @@ class TopologyAuthorityV1_1:
         _digest(self.topology_exclusion_set_sha256)
         if type(self.provenance) is not FreezeProvenanceV1_1:
             _fail("FREEZE_PROVENANCE_INVALID")
+        if any(type(value) not in (tuple, list)
+               for value in (self.rules, self.exclusions, self.method_rules)):
+            _fail("TOPOLOGY_AUTHORITY_COLLECTION_INVALID")
         rules, exclusions, method_rules = tuple(self.rules), tuple(self.exclusions), tuple(self.method_rules)
         if any(type(r) is not TopologyRuleV1_1 for r in (*rules, *method_rules)):
             _fail("TOPOLOGY_RULE_INVALID")
@@ -296,14 +316,31 @@ class TopologyAuthorityV1_1:
 
 
 def _authority_from_payload(payload):
+    if type(payload) is not dict:
+        _fail("TOPOLOGY_AUTHORITY_PAYLOAD_INVALID")
     data = dict(payload)
-    data["provenance"] = FreezeProvenanceV1_1(**data["provenance"])
-    for name in ("rules", "method_rules"):
-        data[name] = tuple(TopologyRuleV1_1(**r) for r in data[name])
-    data["exclusions"] = tuple(TopologyExclusionV1_1(**{
-        **e, "provenance": FreezeProvenanceV1_1(**e["provenance"]),
-    }) for e in data["exclusions"])
-    return TopologyAuthorityV1_1(**data)
+    try:
+        if type(data["provenance"]) is not dict:
+            _fail("TOPOLOGY_AUTHORITY_PAYLOAD_INVALID")
+        for name in ("rules", "method_rules", "exclusions"):
+            if type(data[name]) is not list:
+                _fail("TOPOLOGY_AUTHORITY_PAYLOAD_INVALID")
+        if any(type(r) is not dict for r in (*data["rules"], *data["method_rules"])):
+            _fail("TOPOLOGY_AUTHORITY_PAYLOAD_INVALID")
+        if any(type(e) is not dict or type(e.get("provenance")) is not dict
+               for e in data["exclusions"]):
+            _fail("TOPOLOGY_AUTHORITY_PAYLOAD_INVALID")
+        data["provenance"] = FreezeProvenanceV1_1(**data["provenance"])
+        for name in ("rules", "method_rules"):
+            data[name] = tuple(TopologyRuleV1_1(**r) for r in data[name])
+        data["exclusions"] = tuple(TopologyExclusionV1_1(**{
+            **e, "provenance": FreezeProvenanceV1_1(**e["provenance"]),
+        }) for e in data["exclusions"])
+        return TopologyAuthorityV1_1(**data)
+    except CalculationInputError:
+        raise
+    except (KeyError, TypeError, AttributeError) as exc:
+        raise CalculationInputError("TOPOLOGY_AUTHORITY_PAYLOAD_INVALID") from exc
 
 
 @dataclass(frozen=True, slots=True)
@@ -331,10 +368,18 @@ class CalculationSnapshotV1_1:
             _identity(getattr(self, name))
         if self.assessment_kind not in {"HUMAN", "AI"}:
             _fail("ASSESSMENT_KIND_INVALID")
+        try:
+            parsed_cutoff = date.fromisoformat(self.cutoff_date)
+        except ValueError as exc:
+            raise CalculationInputError("CUTOFF_DATE_INVALID") from exc
+        if parsed_cutoff.isoformat() != self.cutoff_date:
+            _fail("CUTOFF_DATE_INVALID")
         if (self.strategy_id, self.strategy_version) != (STRATEGY_ID_V1_1, STRATEGY_VERSION_V1_1):
             _fail("SNAPSHOT_STRATEGY_VERSION_MISMATCH")
         if type(self.topology_authority) is not TopologyAuthorityV1_1:
             _fail("TOPOLOGY_AUTHORITY_REQUIRED")
+        if type(self.ptns) not in (tuple, list):
+            _fail("PTN_INPUT_SCHEMA_INVALID")
         ptns = tuple(self.ptns)
         if any(type(p) is not PtnInputV1_1 for p in ptns):
             _fail("PTN_INPUT_SCHEMA_INVALID")
@@ -379,10 +424,19 @@ class CalculationSnapshotV1_1:
             digest, identity = data.pop("input_digest"), data.pop("id")
             exclusions = data.pop("topology_exclusions")
             set_digest = data.pop("topology_exclusion_set_sha256")
+            if type(exclusions) is not list or type(data.get("ptns")) is not list:
+                _fail("SNAPSHOT_PAYLOAD_INVALID")
             data["topology_authority"] = _authority_from_payload(data["topology_authority"])
             for ptn in data["ptns"]:
-                if type(ptn) is not dict or set(ptn) != {"ptn_id", "kvptn", "actors"}:
+                if (type(ptn) is not dict or set(ptn) != {"ptn_id", "kvptn", "actors"}
+                        or type(ptn["kvptn"]) is not dict or type(ptn["actors"]) is not list):
                     _fail("PTN_PAYLOAD_INVALID")
+                for row in ptn["actors"]:
+                    if (type(row) is not dict
+                            or set(row) != {"actor_id", "relation_id", "assessment_id", "attitude", "kvs", "rgu"}
+                            or type(row["attitude"]) is not dict or type(row["kvs"]) is not dict
+                            or type(row["rgu"]) is not dict):
+                        _fail("ACTOR_PAYLOAD_INVALID")
             data["ptns"] = tuple(PtnInputV1_1(
                 ptn_id=p["ptn_id"], kvptn=DesignWeightInputV1_1.from_payload(p["kvptn"]),
                 actors=tuple(ActorInputV1_1(**{
@@ -480,6 +534,32 @@ class PtnResultV1_1:
     warnings: tuple[str, ...]
     trace: tuple[ActorTraceV1_1, ...]
 
+    def __post_init__(self):
+        if type(self.kvptn) is not DesignWeightInputV1_1:
+            _fail("RESULT_SCHEMA_INVALID")
+        for name in ("witness_lo", "witness_hi"):
+            value = getattr(self, name)
+            if value is None:
+                continue
+            if type(value) not in (tuple, list):
+                _fail("RESULT_SCHEMA_INVALID")
+            rows = tuple(value)
+            if any(type(row) is not WitnessRowV1_1 for row in rows):
+                _fail("RESULT_SCHEMA_INVALID")
+            object.__setattr__(self, name, rows)
+        if type(self.warnings) not in (tuple, list):
+            _fail("RESULT_SCHEMA_INVALID")
+        warnings = tuple(self.warnings)
+        if any(type(value) is not str for value in warnings):
+            _fail("RESULT_SCHEMA_INVALID")
+        if type(self.trace) not in (tuple, list):
+            _fail("RESULT_SCHEMA_INVALID")
+        trace = tuple(self.trace)
+        if any(type(value) is not ActorTraceV1_1 for value in trace):
+            _fail("RESULT_SCHEMA_INVALID")
+        object.__setattr__(self, "warnings", warnings)
+        object.__setattr__(self, "trace", trace)
+
 
 @dataclass(frozen=True, slots=True)
 class CalculationRunV1_1(_ResultJSONV1_1):
@@ -496,6 +576,20 @@ class CalculationRunV1_1(_ResultJSONV1_1):
     warnings: tuple[str, ...]
     status: str
 
+    def __post_init__(self):
+        if type(self.ptns) not in (tuple, list):
+            _fail("RESULT_SCHEMA_INVALID")
+        ptns = tuple(self.ptns)
+        if any(type(value) is not PtnResultV1_1 for value in ptns):
+            _fail("RESULT_SCHEMA_INVALID")
+        if type(self.warnings) not in (tuple, list):
+            _fail("RESULT_SCHEMA_INVALID")
+        warnings = tuple(self.warnings)
+        if any(type(value) is not str for value in warnings):
+            _fail("RESULT_SCHEMA_INVALID")
+        object.__setattr__(self, "ptns", ptns)
+        object.__setattr__(self, "warnings", warnings)
+
 
 @dataclass(frozen=True, slots=True)
 class ScenarioDeltaV1_1(_ResultJSONV1_1):
@@ -506,3 +600,15 @@ class ScenarioDeltaV1_1(_ResultJSONV1_1):
     exact_outer: tuple[Fraction, Fraction] | None
     envelope_sharpness: str | None
     direction: str
+
+    def __post_init__(self):
+        for name, expected in (("delta_outer", Decimal), ("exact_outer", Fraction)):
+            value = getattr(self, name)
+            if value is None:
+                continue
+            if type(value) not in (tuple, list) or len(value) != 2:
+                _fail("RESULT_SCHEMA_INVALID")
+            pair = tuple(value)
+            if any(type(item) is not expected for item in pair):
+                _fail("RESULT_SCHEMA_INVALID")
+            object.__setattr__(self, name, pair)

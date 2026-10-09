@@ -215,6 +215,106 @@ class StrategyV11Tests(unittest.TestCase):
         with self.assertRaisesRegex(CalculationInputError, "DECIMAL_DOMAIN_INVALID"):
             weight(-1)
 
+    def test_decimal_revalidation_cutoff_wire_shapes_and_result_container_freeze(self):
+        tiny = InputValueV1_1("CONFIRMED", "UNKNOWN", Decimal("0.0000001"))
+        self.assertEqual(replace(tiny, source_version="2").value, Decimal("0.0000001"))
+        tiny_weight = DesignWeightInputV1_1(Decimal("0.0000001"), "design", "d" * 64)
+        self.assertEqual(replace(tiny_weight, design_record_id="design-2").value, Decimal("0.0000001"))
+        disputed = InputValueV1_1(
+            "DISPUTED", "UNKNOWN", alternatives=(Decimal("0.0000001"), Decimal("0.0000002")))
+        self.assertEqual(
+            replace(disputed, source_version="2").alternatives,
+            (Decimal("0.0000001"), Decimal("0.0000002")),
+        )
+        with self.assertRaisesRegex(CalculationInputError, "DECIMAL_LEXICAL_INVALID"):
+            InputValueV1_1("CONFIRMED", "UNKNOWN", Decimal("1E-33"))
+
+        s = snapshot((actor(0, 10), actor(1, -10)))
+        self.assertEqual(replace(s, cutoff_date="2024-02-29").cutoff_date, "2024-02-29")
+        for invalid in ("2026-02-30", "not-a-date", "2026-2-03"):
+            with self.subTest(cutoff_date=invalid), self.assertRaisesRegex(
+                    CalculationInputError, "CUTOFF_DATE_INVALID"):
+                replace(s, cutoff_date=invalid)
+
+        empty = replace(s, ptns=())
+        for malformed in ({}, ""):
+            payload = json.loads(empty.to_json())
+            payload["ptns"] = malformed
+            with self.subTest(ptns=repr(malformed)), self.assertRaisesRegex(
+                    CalculationInputError, "SNAPSHOT_PAYLOAD_INVALID"):
+                CalculationSnapshotV1_1.from_json(json.dumps(payload))
+
+        empty_rows = snapshot(())
+        payload = json.loads(empty_rows.to_json())
+        payload["ptns"][0]["actors"] = {}
+        with self.assertRaisesRegex(CalculationInputError, "PTN_PAYLOAD_INVALID"):
+            CalculationSnapshotV1_1.from_json(json.dumps(payload))
+
+        payload = json.loads(s.to_json())
+        authority_payload = payload["topology_authority"]
+        payload["topology_authority"] = [
+            ["definition_version_id", "wrong"],
+            *[[key, value] for key, value in authority_payload.items()],
+        ]
+        with self.assertRaisesRegex(CalculationInputError, "TOPOLOGY_AUTHORITY_PAYLOAD_INVALID"):
+            CalculationSnapshotV1_1.from_json(json.dumps(payload))
+
+        for malformed in ("", {}):
+            with self.subTest(direct_ptns=repr(malformed)), self.assertRaisesRegex(
+                    CalculationInputError, "PTN_INPUT_SCHEMA_INVALID"):
+                replace(s, ptns=malformed)
+            with self.subTest(direct_actors=repr(malformed)), self.assertRaisesRegex(
+                    CalculationInputError, "ACTOR_INPUT_SCHEMA_INVALID"):
+                PtnInputV1_1("direct-p", weight(1), malformed)
+            for field in ("rules", "exclusions", "method_rules"):
+                with self.subTest(authority_field=field, value=repr(malformed)), self.assertRaisesRegex(
+                        CalculationInputError, "TOPOLOGY_AUTHORITY_COLLECTION_INVALID"):
+                    replace(authority(), **{field: malformed})
+
+        bounded = calculate_v1_1(snapshot((actor(0, 10), actor(1, None))))
+        ptn = bounded.ptns[0]
+        trace_source = list(ptn.trace)
+        warnings_source = list(ptn.warnings)
+        witness_source = list(ptn.witness_lo)
+        frozen_ptn = replace(
+            ptn, trace=trace_source, warnings=warnings_source, witness_lo=witness_source)
+        trace_source.clear()
+        warnings_source.append("EXTERNAL_MUTATION")
+        witness_source.clear()
+        self.assertIsInstance(frozen_ptn.trace, tuple)
+        self.assertIsInstance(frozen_ptn.warnings, tuple)
+        self.assertIsInstance(frozen_ptn.witness_lo, tuple)
+        self.assertNotIn("EXTERNAL_MUTATION", frozen_ptn.warnings)
+        self.assertTrue(frozen_ptn.trace)
+        self.assertTrue(frozen_ptn.witness_lo)
+
+        run_ptns = list(bounded.ptns)
+        run_warnings = list(bounded.warnings)
+        frozen_run = replace(bounded, ptns=run_ptns, warnings=run_warnings)
+        digest_before = frozen_run.result_digest
+        run_ptns.clear()
+        run_warnings.append("EXTERNAL_MUTATION")
+        self.assertEqual(frozen_run.result_digest, digest_before)
+        self.assertIsInstance(frozen_run.ptns, tuple)
+        self.assertIsInstance(frozen_run.warnings, tuple)
+
+        base = snapshot((actor(0, 10), actor(1, None)))
+        scenario = replace(base, ptns=(replace(
+            base.ptns[0],
+            actors=(base.ptns[0].actors[0], replace(
+                base.ptns[0].actors[1], attitude=empirical(-10, source="SCENARIO"))),
+        ),))
+        delta = scenario_delta_v1_1(base, scenario)
+        outer_source = list(delta.delta_outer)
+        exact_source = list(delta.exact_outer)
+        frozen_delta = replace(delta, delta_outer=outer_source, exact_outer=exact_source)
+        digest_before = frozen_delta.result_digest
+        outer_source[1] = Decimal("999")
+        exact_source.clear()
+        self.assertEqual(frozen_delta.result_digest, digest_before)
+        self.assertIsInstance(frozen_delta.delta_outer, tuple)
+        self.assertIsInstance(frozen_delta.exact_outer, tuple)
+
     def test_temporal_axis_is_orthogonal_and_hashed(self):
         original = snapshot((actor(0, 10), actor(1, -10)))
         rows = original.ptns[0].actors
